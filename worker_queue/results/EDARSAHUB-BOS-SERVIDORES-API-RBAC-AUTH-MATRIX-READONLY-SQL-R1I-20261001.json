@@ -1,0 +1,316 @@
+{
+  "base_sha": "d8b839a8722c807a8f15e7b2deb15000e66b3469",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-01T21:05:34Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-SERVIDORES-API-RBAC-AUTH-MATRIX-READONLY-SQL-R1I-20261001",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T21:05:55Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "usuario_activo",
+              "RolID",
+              "rol_asignacion_activa",
+              "CodigoRol",
+              "NombreRol",
+              "NivelJerarquia",
+              "rol_activo"
+            ],
+            "name": "ricardo_identity_roles",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                true,
+                6,
+                true,
+                "SUPERADMIN",
+                "SuperAdministrador",
+                100,
+                true
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                true,
+                42,
+                true,
+                "ALERTAS_CRITICAS_RECIBIR",
+                "Receptor de Alertas Críticas",
+                0,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "CodigoRol",
+              "CodigoModulo",
+              "CodigoAccion",
+              "PermissionCode",
+              "Permitido",
+              "permiso_activo",
+              "modulo_activo",
+              "accion_activa"
+            ],
+            "name": "ricardo_servidores_permissions",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "SUPERADMIN",
+                "servidores",
+                "VER",
+                "servidores_VER",
+                true,
+                true,
+                true,
+                true
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "SUPERADMIN",
+                "servidores",
+                "VER",
+                "servidores_VER",
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "EmpresaID",
+              "CodigoEmpresa",
+              "NombreEmpresa",
+              "NombreComercial",
+              "EsPrincipal",
+              "asignacion_activa",
+              "FechaInicio",
+              "FechaFin"
+            ],
+            "name": "ricardo_empresa_scope_rows",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "nombre",
+              "connection_id",
+              "activo",
+              "visible_en_operaciones",
+              "visible_en_listado",
+              "connection_EmpresaID",
+              "connection_empresa_id_text",
+              "has_SERVIDORES_VER",
+              "has_SISTEMA_SERVIDORES_VER",
+              "has_superadmin",
+              "has_explicit_empresa_scope",
+              "authorization_verdict"
+            ],
+            "name": "api_local_final_auth_matrix_current_runtime",
+            "row_count_returned": 9,
+            "rows": [
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "130° QRO LOCAL",
+                "72F6E9A7-8EA2-4EB2-802E-4EE31753435E",
+                true,
+                true,
+                true,
+                2,
+                "",
+                1,
+                0,
+                1,
+                0,
+                "BLOCKED_BY_SUPERADMIN_SCOPE_BUG"
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "API ManagmentPro",
+                "B597D88A-AB37-4B4E-897B-EFE68C9B3732",
+                true,
+                false,
+                true,
+                null,
+                "",
+                1,
+                0,
+                1,
+                0,
+                "BLOCKED_BY_CONNECTION_EMPRESAID_NULL"
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "CHAPUR BACKOFFICE",
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                true,
+                false,
+                true,
+                null,
+                "",
+                1,
+                0,
+                1,
+                0,
+                "BLOCKED_BY_CONNECTION_EMPRESAID_NULL"
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "CHAPUR NORTE",
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                true,
+                true,
+                true,
+                null,
+                "",
+                1,
+                0,
+                1,
+                0,
+                "BLOCKED_BY_CONNECTION_EMPRESAID_NULL"
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "CIENFUEGOS NOMINPAQ",
+                "31D62F39-632B-4684-B735-256BD9293A8F",
+                true,
+                false,
+                true,
+                null,
+                "",
+                1,
+                0,
+                1,
+                0,
+                "BLOCKED_BY_CONNECTION_EMPRESAID_NULL"
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "GARIBALDI",
+                "2BEAD18C-73C9-4D86-AF92-2355940274F7",
+                true,
+                true,
+                true,
+                null,
+                "",
+                1,
+                0,
+                1,
+                0,
+                "BLOCKED_BY_CONNECTION_EMPRESAID_NULL"
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "ORIGEN LOCAL",
+                "817A0AA8-6170-4738-A8F6-A72AC36BA0DF",
+                true,
+                false,
+                true,
+                1,
+                "",
+                1,
+                0,
+                1,
+                0,
+                "BLOCKED_BY_SUPERADMIN_SCOPE_BUG"
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "TEST API LOCAL",
+                "DC44C86B-8F1F-4B44-9704-6CEA89297C69",
+                false,
+                false,
+                true,
+                null,
+                "None",
+                1,
+                0,
+                1,
+                0,
+                "BLOCKED_BY_CONNECTION_EMPRESAID_NULL"
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "TEST_COMMIT_1785357429",
+                "EE896463-DAC4-439A-A5EC-8D4CC183E4FA",
+                false,
+                false,
+                true,
+                null,
+                "",
+                1,
+                0,
+                1,
+                0,
+                "BLOCKED_BY_CONNECTION_EMPRESAID_NULL"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-01T21:05:33Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
