@@ -3,66 +3,66 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "df89bae448a9e945c04da8bebbe82b82b8ed9bf7",
-  "generated_at_utc": "2026-10-01T03:06:03Z",
+  "development_sha": "012921ebc92508c8b76891931bc5720344a7055c",
+  "generated_at_utc": "2026-10-01T03:07:23Z",
   "history": {
-    "done_total_local": 1230,
+    "done_total_local": 1231,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 1081,
-    "results_total_local": 2112
+    "results_total_local": 2113
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 160,
+      "age_seconds": 240,
       "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-CANARY-READONLY-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2468,
+      "age_seconds": 68,
+      "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-DONE-REGRESSION-GUARD-R1-20260930",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2548,
       "job_id": "EDARSAHUB-SINCRONIZADOR-CIENFUEGOS-202603-HEADER-DETAIL-R24-CARLOS-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 47,
+      "age_seconds": 127,
       "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-MAPPING-READONLY-R2-20260930",
       "reason": null,
       "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1,
-      "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-DONE-REGRESSION-GUARD-R1-20260930",
-      "reason": null,
-      "state": "RUNNING"
     }
   ],
-  "local_development_sha": "df89bae448a9e945c04da8bebbe82b82b8ed9bf7",
+  "local_development_sha": "012921ebc92508c8b76891931bc5720344a7055c",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
-  "queue_running": 1,
-  "remote_development_sha": "df89bae448a9e945c04da8bebbe82b82b8ed9bf7",
+  "queue_result_ready_recent": 4,
+  "queue_running": 0,
+  "remote_development_sha": "012921ebc92508c8b76891931bc5720344a7055c",
   "runtime": {
-    "current_job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-DONE-REGRESSION-GUARD-R1-20260930",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T03:05:59Z",
-    "last_receive_utc": "2026-10-01T03:05:54Z",
-    "last_terminal_utc": "2026-10-01T03:05:15Z",
+    "last_cycle_utc": "2026-10-01T03:07:17Z",
+    "last_receive_utc": "2026-10-01T03:07:21Z",
+    "last_terminal_utc": "2026-10-01T03:06:14Z",
     "pid": "1551643",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "d68b475192c3c688137911a09b06144faf578fa4",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "df89bae448a9e945c04da8bebbe82b82b8ed9bf7",
+      "development_sha": "012921ebc92508c8b76891931bc5720344a7055c",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
