@@ -1,0 +1,57 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_three_properties_contract.py",
+      "replacement": "\n\ndef test_property_3b_terminal_success_moves_processing_to_done():\n    dispatcher = text(DISPATCHER)\n\n    assert 'DONE = STATE / \"done\"' in dispatcher\n    assert 'RESULTS = STATE / \"results\"' in dispatcher\n    assert 'result[\"completed_at_utc\"] = now()' in dispatcher\n    assert 'write_json(RESULTS / path.name, result)' in dispatcher\n    assert (\n        'target = DONE / path.name if result[\"status\"] in '\n        '{\"INTEGRATED\", \"READ_ONLY_COMPLETE\", \"OPERATIONAL_COMPLETE\"} '\n        'else REJECTED / path.name'\n    ) in dispatcher\n    assert 'os.replace(processing, target)' in dispatcher\n",
+      "source_sha256": "b14e51c5cf5159be53970a30b341a305c3117ec822658e499e5a31c1051a79b3",
+      "type": "append_once"
+    }
+  ],
+  "base_sha": "df89bae448a9e945c04da8bebbe82b82b8ed9bf7",
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_three_properties_contract.py",
+        "tools/mirror_sync/universal_job_dispatcher.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-DONE-REGRESSION-GUARD-R1-20260930",
+  "mode": "MUTATION",
+  "objective": "Agregar un guard de regresion para el lifecycle canonico del Universal Worker. Verificar explicitamente que un resultado terminal se escriba en RESULTS y que el request en PROCESSING se mueva atomicamente a DONE. No cambiar el runtime porque el canario READ_ONLY ya demostro que el lifecycle funciona.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Universal Worker Git Self-Healing Hardening",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
