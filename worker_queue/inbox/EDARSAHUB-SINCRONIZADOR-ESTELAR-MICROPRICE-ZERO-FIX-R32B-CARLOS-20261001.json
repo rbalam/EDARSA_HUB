@@ -1,0 +1,55 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-MICROPRICE-ZERO-FIX-R32B-CARLOS-20261001",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c6a726c4e655eb0fb6c7f0ce2984aa99174958c8",
+  "mode": "MUTATION",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Sincronizador | Corregir exclusivamente el caso SoftRestaurant de encabezado cero con microprecio tecnico que bloquea LA ESTELAR 23/04/2026. Mantener fail-closed para encabezados cero normales. No tocar ventas abiertas.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "        # Un encabezado en cero con detalle monetario no explicado sigue siendo\n        # un caso anomalo y se bloquea. Las unicas excepciones son conceptos\n        # negativos explicitos de franquicia o aplicacion de anticipo ya resueltos\n        # arriba. Esto conserva el guard historico R80C.\n        if header_total == Decimal(\"0\"):\n            raise RuntimeError(\n                f\"SoftRestaurant: diferencia no explicada en ticket {ticket_key}; \"\n                f\"productos={product_total}; encabezado={header_total}; delta={delta}; \"\n                f\"indicador_descuento_cortesia={discount_indicator}\"\n            )\n",
+      "new": "        technical_microprice_zero = (\n            header_total == Decimal(\"0\")\n            and discount_indicator == Decimal(\"0\")\n            and product_total > Decimal(\"0\")\n            and product_total <= Decimal(\"0.50\")\n            and all(\n                Decimal(\"0\") <= _d(row.get(\"precio_unitario\")) <= Decimal(\"0.001\")\n                for row in items\n            )\n        )\n        if technical_microprice_zero:\n            adjustment = dict(items[0])\n            adjustment[\"producto_codigo_fuente\"] = SOFT_AJUSTE_ENCABEZADO\n            adjustment[\"producto_nombre\"] = \"AJUSTE DE CIERRE A CERO (MICROPRECIO TECNICO)\"\n            adjustment[\"cantidad\"] = Decimal(\"0\")\n            adjustment[\"precio_unitario\"] = Decimal(\"0\")\n            adjustment[\"importe_bruto\"] = Decimal(\"0\")\n            adjustment[\"importe_neto\"] = delta\n            out.append(adjustment)\n            continue\n\n        if header_total == Decimal(\"0\"):\n            raise RuntimeError(\n                f\"SoftRestaurant: diferencia no explicada en ticket {ticket_key}; \"\n                f\"productos={product_total}; encabezado={header_total}; delta={delta}; \"\n                f\"indicador_descuento_cortesia={discount_indicator}\"\n            )\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_soft_microprice_zero_r32b.py",
+      "content": "from decimal import Decimal\nimport pytest\n\nfrom scripts.poblar_ventas_detalle_producto_canonico import (\n    SOFT_AJUSTE_ENCABEZADO,\n    _soft_add_ticket_adjustments,\n)\n\n\ndef row(ticket, header, detail, price):\n    return {\n        \"id_transaccion\": f\"SOFT:{ticket}\",\n        \"numero_ticket\": str(ticket),\n        \"folio_origen\": str(ticket),\n        \"importe_neto_ticket\": Decimal(str(header)),\n        \"descuento_ticket\": Decimal(\"0\"),\n        \"importe_neto\": Decimal(str(detail)),\n        \"importe_bruto\": Decimal(str(detail)),\n        \"pax_ticket\": 1,\n        \"producto_codigo_fuente\": \"TEST\",\n        \"producto_nombre\": \"TEST\",\n        \"cantidad\": Decimal(\"1\"),\n        \"precio_unitario\": Decimal(str(price)),\n        \"es_kpi_valido\": 1,\n    }\n\n\ndef test_microprice_zero_header_is_reconciled():\n    out = _soft_add_ticket_adjustments([\n        row(\"16308\", \"0\", \"0.197\", \"0.001\"),\n    ])\n    assert out[-1][\"producto_codigo_fuente\"] == SOFT_AJUSTE_ENCABEZADO\n    assert sum(x[\"importe_neto\"] for x in out) == Decimal(\"0.000\")\n\n\ndef test_regular_zero_header_still_fails_closed():\n    with pytest.raises(RuntimeError, match=\"diferencia no explicada\"):\n        _soft_add_ticket_adjustments([\n            row(\"regular\", \"0\", \"180\", \"30\"),\n        ])\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_soft_microprice_zero_r32b.py",
+        "backend/tests/test_iscam_scheduler_definitive_fix_r80c.py"
+      ]
+    }
+  ],
+  "constraints": [
+    "No modificar backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+    "No modificar ventas abiertas",
+    "Solo modificar el extractor de detalle y agregar una prueba aislada",
+    "Mantener bloqueados los encabezados cero normales"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  }
+}
