@@ -4,43 +4,49 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "d8b839a8722c807a8f15e7b2deb15000e66b3469",
-  "generated_at_utc": "2026-10-01T21:05:18Z",
+  "generated_at_utc": "2026-10-01T21:06:37Z",
   "history": {
-    "done_total_local": 1269,
+    "done_total_local": 1270,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1129,
-    "results_total_local": 2194
+    "results_total_local": 2195
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 356,
+      "age_seconds": 435,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-EMPRESA-MAPPING-DISCOVERY-READONLY-SQL-R1F-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 244,
+      "age_seconds": 323,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-EMPRESA-MAPPING-MATRIX-READONLY-SQL-R1G-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 601,
+      "age_seconds": 62,
+      "job_id": "EDARSAHUB-BOS-SERVIDORES-API-RBAC-AUTH-MATRIX-READONLY-SQL-R1I-20261001",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 680,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-RBAC-SCOPE-ACTUAL-COLUMNS-READONLY-SQL-R1E-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 501,
+      "age_seconds": 579,
       "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-RETRY-NOT-CERTIFIED-INFRASTRUCTURE-R1-RETRY1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 529,
+      "age_seconds": 608,
       "job_id": "MEJORA-TABEJE-VENTAS-DIA-SYNC-CANONICO-R16C-CARLOS-20261001T2000Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,15 +60,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
   "remote_development_sha": "d8b839a8722c807a8f15e7b2deb15000e66b3469",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T21:04:29Z",
-    "last_receive_utc": "2026-10-01T21:04:23Z",
-    "last_terminal_utc": "2026-10-01T21:01:13Z",
+    "last_cycle_utc": "2026-10-01T21:06:30Z",
+    "last_receive_utc": "2026-10-01T21:06:34Z",
+    "last_terminal_utc": "2026-10-01T21:05:34Z",
     "pid": "614",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "33216964c521aa8ba1385a9d5d92814269cd2ce9",
