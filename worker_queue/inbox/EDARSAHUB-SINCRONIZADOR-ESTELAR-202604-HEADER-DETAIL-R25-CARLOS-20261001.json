@@ -1,0 +1,65 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-202604-HEADER-DETAIL-R25-CARLOS-20261001",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Sincronizador | LA ESTELAR | Abril 2026 | Sincronizar y reconciliar encabezados de Ventas Cerradas y detalle canonico para 2026-04-01 a 2026-04-30. El usuario reporta que falta 1 dia y que el resync manual devuelve RUNTIMEERROR_UNCLASSIFIED. Usar el handler oficial idempotente, procesar el mes completo para asegurar el encabezado y luego el detalle, y certificar por SQL que no queden diferencias de ventas, tickets ni PAX. Identificar en la evidencia cualquier fecha que permanezca bloqueada y su error real. No tocar ventas abiertas ni sync_comercial_abiertas_v2.",
+  "actions": [],
+  "units": [
+    "ESTELAR"
+  ],
+  "fecha_inicio": "2026-04-01",
+  "fecha_fin": "2026-04-30",
+  "dry_run": false,
+  "confirm_comercial_range_resync": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 100,
+      "queries": [
+        {
+          "name": "estelar_abr2026_runtime_coverage_after_r25",
+          "sql": "\nSELECT\n    COUNT(DISTINCT fecha_operacion) AS dias_runtime,\n    MIN(fecha_operacion) AS fecha_min,\n    MAX(fecha_operacion) AS fecha_max,\n    CAST(ROUND(SUM(ISNULL(ventas_total,0)),2) AS decimal(18,2)) AS ventas_runtime,\n    SUM(ISNULL(tickets_total,0)) AS tickets_runtime,\n    SUM(ISNULL(pax_total,0)) AS pax_runtime\nFROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\nWHERE unidad_negocio_id='ESTELAR'\n  AND fecha_operacion >= '2026-04-01'\n  AND fecha_operacion < '2026-05-01'"
+        },
+        {
+          "name": "estelar_abr2026_detail_coverage_after_r25",
+          "sql": "\nSELECT\n    COUNT(DISTINCT fecha_operacion) AS dias_detalle,\n    COUNT(DISTINCT numero_ticket) AS tickets,\n    COUNT(*) AS lineas,\n    MIN(fecha_operacion) AS fecha_min,\n    MAX(fecha_operacion) AS fecha_max,\n    CAST(ROUND(SUM(ISNULL(importe_neto,0)),2) AS decimal(18,2)) AS importe_detalle\nFROM dbo.Comercial_Inteligencia_VentasDetalleProducto\nWHERE unidad_negocio_id='ESTELAR'\n  AND fecha_operacion >= '2026-04-01'\n  AND fecha_operacion < '2026-05-01'\n  AND ISNULL(activo,1)=1\n  AND ISNULL(es_kpi_valido,1)=1"
+        },
+        {
+          "name": "estelar_abr2026_mismatches_after_r25",
+          "sql": "\nWITH detalle_ticket AS (\n    SELECT\n        fecha_operacion,\n        numero_ticket,\n        SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) AS ventas_ticket,\n        MAX(CAST(ISNULL(pax,0) AS bigint)) AS pax_ticket\n    FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n    WHERE unidad_negocio_id='ESTELAR'\n      AND fecha_operacion >= '2026-04-01'\n      AND fecha_operacion < '2026-05-01'\n      AND ISNULL(activo,1)=1\n      AND ISNULL(es_kpi_valido,1)=1\n    GROUP BY fecha_operacion, numero_ticket\n),\ndetalle_dia AS (\n    SELECT\n        fecha_operacion,\n        SUM(ventas_ticket) AS ventas_detalle,\n        COUNT(*) AS tickets_detalle,\n        SUM(pax_ticket) AS pax_detalle\n    FROM detalle_ticket\n    GROUP BY fecha_operacion\n),\nruntime_dia AS (\n    SELECT\n        fecha_operacion,\n        SUM(CAST(ISNULL(ventas_total,0) AS decimal(18,4))) AS ventas_runtime,\n        SUM(ISNULL(tickets_total,0)) AS tickets_runtime,\n        SUM(ISNULL(pax_total,0)) AS pax_runtime\n    FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n    WHERE unidad_negocio_id='ESTELAR'\n      AND fecha_operacion >= '2026-04-01'\n      AND fecha_operacion < '2026-05-01'\n    GROUP BY fecha_operacion\n)\nSELECT\n    r.fecha_operacion,\n    r.ventas_runtime,\n    ISNULL(d.ventas_detalle,0) AS ventas_detalle,\n    CAST(ISNULL(d.ventas_detalle,0)-r.ventas_runtime AS decimal(18,4)) AS delta_ventas,\n    r.tickets_runtime,\n    ISNULL(d.tickets_detalle,0) AS tickets_detalle,\n    ISNULL(d.tickets_detalle,0)-r.tickets_runtime AS delta_tickets,\n    r.pax_runtime,\n    ISNULL(d.pax_detalle,0) AS pax_detalle,\n    ISNULL(d.pax_detalle,0)-r.pax_runtime AS delta_pax\nFROM runtime_dia r\nLEFT JOIN detalle_dia d\n  ON d.fecha_operacion=r.fecha_operacion\nWHERE ABS(ISNULL(d.ventas_detalle,0)-r.ventas_runtime)>0.01\n   OR ISNULL(d.tickets_detalle,0)<>r.tickets_runtime\n   OR ISNULL(d.pax_detalle,0)<>r.pax_runtime\nORDER BY r.fecha_operacion"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "Procesar solo ESTELAR",
+    "Rango cerrado 2026-04-01 a 2026-04-30",
+    "No modificar sync_comercial_abiertas_v2",
+    "No procesar ventas abiertas",
+    "Usar handler oficial idempotente",
+    "No modificar codigo",
+    "Etiquetar Sincronizador"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [
+      "EDARSAHUB_SQL_ESTELAR_202604"
+    ],
+    "conflict_domains": []
+  }
+}
