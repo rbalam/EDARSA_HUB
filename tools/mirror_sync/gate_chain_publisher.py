@@ -868,6 +868,49 @@ def _submit_local_lifecycle(
 ) -> str | None:
 
     name = f"{job_id}.json"
+    result_path = RESULTS / name
+
+    # A terminal result is immutable except for a narrowly
+    # defined pre-execution infrastructure block.
+    if result_path.is_file():
+        try:
+            result = json.loads(
+                result_path.read_text(
+                    encoding="utf-8"
+                )
+            )
+        except Exception:
+            result = None
+
+        retryable_infrastructure_block = (
+            isinstance(result, dict)
+            and result.get("status") == "BLOCKED"
+            and result.get("certification") == "NOT_CERTIFIED"
+            and result.get("percent_complete") == 0
+            and result.get("production_touched") is False
+            and isinstance(result.get("blockers"), list)
+            and "dispatcher_exception:SlotRuntimeError:SLOT_ALREADY_CLAIMED"
+            in result.get("blockers", [])
+        )
+
+        if not retryable_infrastructure_block:
+            return "ALREADY_COMPLETED"
+
+    if (DONE / name).is_file():
+        return "ALREADY_COMPLETED"
+
+    if (PROCESSING / name).is_file():
+        return "ALREADY_PROCESSING"
+
+    if (PENDING / name).is_file():
+        return "ALREADY_SUBMITTED"
+
+    if (REJECTED / name).is_file():
+        return "INVALID_JOB"
+
+    return None
+
+    name = f"{job_id}.json"
 
     if (
         (RESULTS / name).is_file()

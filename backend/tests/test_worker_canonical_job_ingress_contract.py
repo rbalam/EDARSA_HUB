@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -222,3 +223,41 @@ def test_submit_reuses_canonical_publisher():
 
     assert "def submit(" in source
     assert "publication = publish(" in source
+
+
+def test_not_certified_slot_claim_block_is_retryable(
+    tmp_path,
+    monkeypatch,
+):
+
+    redirect_state(
+        tmp_path,
+        monkeypatch,
+    )
+    result_path = (
+        ingress.RESULTS
+        / "INGRESS-SLOT-BLOCKED.json"
+    )
+
+    result_path.write_text(
+        json.dumps(
+            {
+                "status": "BLOCKED",
+                "certification": "NOT_CERTIFIED",
+                "percent_complete": 0,
+                "production_touched": False,
+                "blockers": [
+                    "dispatcher_exception:"
+                    "SlotRuntimeError:"
+                    "SLOT_ALREADY_CLAIMED"
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = ingress._submit_local_lifecycle(
+        "INGRESS-SLOT-BLOCKED"
+    )
+
+    assert result is None
