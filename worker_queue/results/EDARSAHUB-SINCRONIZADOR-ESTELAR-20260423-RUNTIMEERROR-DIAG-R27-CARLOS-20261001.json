@@ -1,0 +1,172 @@
+{
+  "base_sha": "a3ee49f54c84c814de69ac587b21967af860a914",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-01T15:32:27Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-20260423-RUNTIMEERROR-DIAG-R27-CARLOS-20261001",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T15:33:08Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "cheque_rows",
+              "folios_distintos",
+              "venta_total",
+              "pax_total"
+            ],
+            "name": "estelar_20260423_source_aggregate",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                68,
+                68,
+                "97305.00",
+                "201"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "folio",
+              "cheque_rows",
+              "turnos",
+              "totales_distintos",
+              "pax_distintos",
+              "total_min",
+              "total_max",
+              "pax_min",
+              "pax_max",
+              "fecha_min",
+              "fecha_max",
+              "apertura_min",
+              "apertura_max"
+            ],
+            "name": "estelar_20260423_duplicate_or_inconsistent_folios",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "folio",
+              "idturno",
+              "fecha",
+              "total_header",
+              "pax",
+              "bruto_detalle",
+              "delta",
+              "lineas"
+            ],
+            "name": "estelar_20260423_zero_header_with_detail",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                "16308",
+                "305",
+                "2026-04-23T00:38:00",
+                "0.0000",
+                "1",
+                "0.1970",
+                "0.1970",
+                10
+              ],
+              [
+                "16333",
+                "305",
+                "2026-04-22T19:15:57",
+                "0.0000",
+                "2",
+                "180.0000",
+                "180.0000",
+                4
+              ],
+              [
+                "16343",
+                "305",
+                "2026-04-22T23:06:03",
+                "0.0000",
+                "2",
+                "1500.0000",
+                "1500.0000",
+                1
+              ],
+              [
+                "16344",
+                "305",
+                "2026-04-22T20:38:35",
+                "0.0000",
+                "1",
+                "1600.0000",
+                "1600.0000",
+                4
+              ],
+              [
+                "16346",
+                "305",
+                "2026-04-22T23:16:35",
+                "0.0000",
+                "2",
+                "1500.0000",
+                "1500.0000",
+                1
+              ],
+              [
+                "16347",
+                "305",
+                "2026-04-22T23:17:08",
+                "0.0000",
+                "2",
+                "1500.0000",
+                "1500.0000",
+                1
+              ],
+              [
+                "16348",
+                "305",
+                "2026-04-22T23:17:41",
+                "0.0000",
+                "3",
+                "2250.0000",
+                "2250.0000",
+                1
+              ],
+              [
+                "16352",
+                "305",
+                "2026-04-23T21:11:25",
+                "0.0000",
+                "1",
+                "345.0000",
+                "345.0000",
+                6
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-01T15:32:25Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
