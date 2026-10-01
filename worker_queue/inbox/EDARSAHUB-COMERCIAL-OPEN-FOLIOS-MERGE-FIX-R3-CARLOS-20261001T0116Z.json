@@ -1,0 +1,68 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-OPEN-FOLIOS-MERGE-FIX-R3-CARLOS-20261001T0116Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Reintento de la correccion integral del drilldown diario de Comercial tras GIT_LOCK_BUSY. Resolver detalle_abiertas_json por unidad_negocio_id canonica + fecha_operacion, sin filtrar por sucursal_id no homologado, para que 130MID, 130QRO, CIENFUEGOS, ESTELAR y ORIGEN muestren folios cerrados + abiertos y permitan abrir Ticket de Venta. No modificar ni ejecutar sincronizadores. No tocar Inteligencia Comercial, Tablero Ejecutivo ni Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/ticket_service.py",
+      "old": "def load_open_snapshot_lines(\n    unidad_codigo: str,\n    sucursal_id: str,\n    fecha_operacion: str,\n) -> List[Dict[str, Any]]:\n    if not _open_detail_column_available():\n        return []\n\n    unidad = _safe_sql(unidad_codigo)\n    sucursal = _safe_sql(sucursal_id)\n    fecha = _safe_sql(fecha_operacion)\n\n    sql = f\"\"\"\n    SELECT TOP 1 detalle_abiertas_json\n    FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK)\n    WHERE unidad_negocio_id = '{unidad}'\n      AND fecha_operacion = '{fecha}'\n    \"\"\"\n    if sucursal and sucursal.upper() not in {\"DEFAULT\", \"ALL\", \"TODAS\"}:\n        sql += f\" AND CONVERT(varchar(100), sucursal_id) = '{sucursal}'\"\n    sql += \" ORDER BY snapshot_timestamp DESC\"\n\n    rows = _query_edarsahub_tablero(sql)\n",
+      "new": "def load_open_snapshot_lines(\n    unidad_codigo: str,\n    sucursal_id: str,\n    fecha_operacion: str,\n) -> List[Dict[str, Any]]:\n    \"\"\"Carga el detalle abierto por unidad canonica y fecha operativa.\n\n    La unidad_negocio_id es la llave estable entre motores. No se filtra por\n    sucursal_id porque ese valor no es homologado entre la UI y el snapshot:\n    SoftRestaurant persiste DEFAULT y MPRO usa claves como 0021/0023. El\n    filtro adicional provocaba falsos vacios aun cuando el JSON existia.\n    \"\"\"\n    if not _open_detail_column_available():\n        return []\n\n    unidad = _safe_sql(unidad_codigo)\n    fecha = _safe_sql(fecha_operacion)\n    _ = sucursal_id  # compatibilidad de firma; la unidad canonica delimita el snapshot.\n\n    sql = f\"\"\"\n    SELECT TOP 1 detalle_abiertas_json\n    FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK)\n    WHERE UPPER(LTRIM(RTRIM(unidad_negocio_id))) =\n          UPPER(LTRIM(RTRIM('{unidad}')))\n      AND fecha_operacion = '{fecha}'\n    ORDER BY snapshot_timestamp DESC\n    \"\"\"\n\n    rows = _query_edarsahub_tablero(sql)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_comercial_open_folios_snapshot_resolution.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[1]\nSERVICE = ROOT / \"modules/comercial/ticket_service.py\"\nROUTES = ROOT / \"modules/comercial/routes.py\"\n\n\ndef test_open_snapshot_is_resolved_by_canonical_unit_not_ui_sucursal():\n    text = SERVICE.read_text(encoding=\"utf-8\")\n    start = text.index(\"def load_open_snapshot_lines(\")\n    end = text.index(\"def merge_open_snapshot_tickets(\", start)\n    block = text[start:end]\n\n    assert \"unidad_negocio_id\" in block\n    assert \"fecha_operacion\" in block\n    assert \"ORDER BY snapshot_timestamp DESC\" in block\n    assert \"CONVERT(varchar(100), sucursal_id)\" not in block\n    assert \"sucursal.upper()\" not in block\n\n\ndef test_daily_drilldown_and_ticket_use_same_open_snapshot_loader():\n    service = SERVICE.read_text(encoding=\"utf-8\")\n    routes = ROUTES.read_text(encoding=\"utf-8\")\n\n    assert \"load_open_snapshot_lines(\" in service\n    assert \"merge_open_snapshot_tickets(\" in service\n    assert \"merge_open_snapshot_tickets(\" in routes\n    assert \"build_ticket_venta(\" in service\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial/ticket_service.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_open_folios_snapshot_resolution.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial/ticket_service.py",
+          "backend/modules/comercial/routes.py"
+        ],
+        "search_terms": [
+          "unidad_negocio_id",
+          "fecha_operacion",
+          "merge_open_snapshot_tickets",
+          "build_ticket_venta",
+          "detalle_abiertas_json"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
