@@ -1,0 +1,74 @@
+{
+  "acceptance_criteria": [
+    "READ_ONLY_COMPLETE",
+    "CERTIFIED_READ_ONLY",
+    "production_touched=false",
+    "No DDL or DML detected",
+    "No remote connectivity attempted",
+    "Empresa catalog and relationship candidates discovered"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "api_local_connections_missing_empresa_id",
+          "sql": "SELECT TOP 100 CONVERT(nvarchar(100), id) AS connection_id, nombre, system_type, tipo_conexion, activo, visible_en_operaciones, visible_en_listado, empresa_id, TRY_CONVERT(int, NULLIF(LTRIM(RTRIM(empresa_id)), '')) AS empresa_id_int FROM dbo.Servidores_Conexiones WHERE tipo_conexion = 'API_LOCAL' ORDER BY nombre"
+        },
+        {
+          "name": "empresa_candidate_tables",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE '%Empresa%' OR TABLE_NAME LIKE '%Compania%' OR TABLE_NAME LIKE '%UnidadNegocio%' OR TABLE_NAME LIKE '%Sucursal%' ORDER BY TABLE_SCHEMA, TABLE_NAME"
+        },
+        {
+          "name": "empresa_candidate_columns",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME LIKE '%Empresa%' OR TABLE_NAME LIKE '%Compania%' OR TABLE_NAME LIKE '%UnidadNegocio%' OR TABLE_NAME LIKE '%Sucursal%' OR COLUMN_NAME LIKE '%Empresa%' OR COLUMN_NAME IN ('EmpresaID', 'id_empresa', 'Nombre', 'NombreComercial', 'RazonSocial', 'RFC', 'Codigo', 'Activo') ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "specific_relation_columns",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Sistema_EmpresasServidores', 'Sistema_Empresas', 'Empresa_Catalogo', 'Empresas', 'Usuario_EmpresasAsignacion', 'Usuario_RolesContexto', 'Usuario_ServidoresAsignacion', 'Servidores_Conexiones') ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "active_user_empresa_scope_distribution",
+          "sql": "SELECT EmpresaID, COUNT(DISTINCT UsuarioID) AS usuarios_con_alcance FROM dbo.Usuario_EmpresasAsignacion WHERE Activo = 1 GROUP BY EmpresaID ORDER BY EmpresaID"
+        },
+        {
+          "name": "active_role_context_empresa_distribution",
+          "sql": "SELECT EmpresaID, COUNT(DISTINCT UsuarioID) AS usuarios_con_contexto, COUNT(DISTINCT RolID) AS roles_distintos FROM dbo.Usuario_RolesContexto WHERE Activo = 1 AND EmpresaID IS NOT NULL GROUP BY EmpresaID ORDER BY EmpresaID"
+        },
+        {
+          "name": "server_assignment_distribution",
+          "sql": "SELECT CONVERT(nvarchar(100), ServidorID) AS servidor_id, COUNT(DISTINCT UsuarioID) AS usuarios_asignados FROM dbo.Usuario_ServidoresAsignacion WHERE Activo = 1 GROUP BY ServidorID ORDER BY servidor_id"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-SERVIDORES-API-EMPRESA-MAPPING-DISCOVERY-READONLY-SQL-R1F-20261001",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Discover canonical Empresa catalog and Empresa-to-Servidor relationship needed to populate dbo.Servidores_Conexiones.empresa_id for API_LOCAL connections. No DML, no connectivity test.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "",
+    "requested_at_utc": "2026-10-01T20:59:11.722451+00:00",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
