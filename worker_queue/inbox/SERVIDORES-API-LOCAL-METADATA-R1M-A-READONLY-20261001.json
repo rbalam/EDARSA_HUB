@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "tools/mirror_sync"
+        ],
+        "search_terms": [
+          "130° QRO LOCAL",
+          "ORIGEN LOCAL",
+          "EmpresaID",
+          "empresa_id",
+          "empresaId",
+          "Servidores_Conexiones",
+          "API_LOCAL"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SERVIDORES-API-LOCAL-METADATA-R1M-A-READONLY-20261001",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente el repositorio para detectar hardcode funcional relacionado con la asignacion de EmpresaID a conexiones API_LOCAL de Servidores_Conexiones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Conexiones y Comunicaciones",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
