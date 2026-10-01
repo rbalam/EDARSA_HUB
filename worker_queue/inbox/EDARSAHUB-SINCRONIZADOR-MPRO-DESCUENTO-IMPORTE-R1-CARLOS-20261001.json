@@ -6,7 +6,7 @@
   "base_sha": "252faf0a21f252dc8233a8e4530966cbe4458de4",
   "production_allowed": false,
   "mode": "MUTATION",
-  "objective": "Sincronizador: corregir el detalle cerrado de ManagementPro para ORIGEN y 130QRO usando la tabla Venta como fuente monetaria real. Persistir descuento de producto desde Venta.Vn_Descuento_Importe, derivar descuento_pct sobre Venta.Vn_Precio_Lista_Importe, conservar vendedor ya integrado y mantener Venta_Encabezado.Vn_Precio_Neto_Importe como autoridad final. Cualquier diferencia adicional queda como ajuste tecnico de cuenta/cierre, no prorrateada entre productos. No tocar Produccion.",
+  "objective": "Sincronizador: corregir el detalle cerrado de ManagementPro para ORIGEN y 130QRO usando la tabla Venta como fuente monetaria real. Persistir descuento de producto desde Venta.Vn_Descuento_Importe, derivar descuento_pct sobre Venta.Vn_Precio_Lista_Importe, conservar vendedor ya integrado y mantener Venta_Encabezado.Vn_Precio_Neto_Importe como autoridad final. Cualquier diferencia adicional queda como ajuste tecnico de cuenta/cierre, no prorrateada entre productos. No tocar Produccion. Re-wake del mismo R1 por falta de pickup; no duplicar trabajo funcional.",
   "requester": {
     "email": "carlosruz@edarsa.com.mx",
     "source": "chatgpt",
