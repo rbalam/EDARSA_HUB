@@ -28,7 +28,8 @@ from fastapi.responses import JSONResponse
 router = APIRouter(tags=["worker-runtime-internal"])
 
 REPO_ROOT = Path("/app")
-RUNTIME_DIR = REPO_ROOT / ".git" / "universal-worker-queue" / "runtime"
+QUEUE_STATE_DIR = REPO_ROOT / ".git" / "universal-worker-queue"
+RUNTIME_DIR = QUEUE_STATE_DIR / "runtime"
 LAST_RECEIVE = RUNTIME_DIR / "last_receive_utc"
 QUEUE_REF = "refs/heads/worker/requests"
 CANONICAL_QUEUE_REMOTE = "https://github.com/rbalam/EDARSA_HUB.git"
@@ -271,7 +272,16 @@ def _active_job_id() -> str | None:
         value = (RUNTIME_DIR / "current_job_id").read_text(encoding="utf-8").strip()
     except OSError:
         return None
-    return value or None
+    if not value:
+        return None
+
+    # Un current_job_id solo es autoritativo mientras exista su claim real.
+    # Si el runtime reencolo/rechazo el job y processing ya esta vacio, el
+    # puntero es huerfano y no debe impedir un wake/restart seguro.
+    processing_job = QUEUE_STATE_DIR / "processing" / f"{value}.json"
+    if not processing_job.is_file():
+        return None
+    return value
 
 
 def _register_preferred_job(job_id: str, queue_sha: str) -> str | None:
