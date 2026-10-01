@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-MICROPRICE-BASELINE-R31-CARLOS-20261001",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "715d1eaab4884fb7ec25213864228b9d22b44b95",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Sincronizador | Baseline de pruebas antes de reintentar la correccion de microprecio tecnico de LA ESTELAR 23/04/2026. Ejecutar exactamente las cuatro pruebas usadas por R30 sin modificar archivos para separar fallo preexistente de fallo introducido por la mutacion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_header_folio_parent_r92.py",
+        "backend/tests/test_iscam_scheduler_definitive_fix_r80c.py",
+        "backend/tests/test_iscam_soft_detail_window_parity_r35.py",
+        "backend/tests/test_softrestaurant_canonical_window_join_r40.py"
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY",
+    "No modificar codigo",
+    "No tocar ventas abiertas",
+    "No modificar sync_comercial_abiertas_v2"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": []
+  }
+}
