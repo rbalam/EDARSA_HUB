@@ -293,31 +293,85 @@ def verify_expected_hash(path: Path, action: dict[str, Any]) -> None:
         raise RuntimeError(f"EXPECTED_SHA256_MISMATCH:{action['path']}:{actual}")
 
 
+def _cleanup_residual_worker_worktree(path: Path, branch: str) -> None:
+    # Remove stale worktree registrations before deleting the per-job branch.
+    # This is intentionally scoped to the exact deterministic branch/path of
+    # the current job and never touches unrelated worktrees.
+    git("worktree", "prune", check=False)
+
+    if path.exists():
+        status = git(
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+            cwd=path,
+            check=False,
+        )
+        if status.returncode == 0 and status.stdout.strip():
+            raise RuntimeError(
+                f"AGENT_GUARD_RESIDUAL_WORKTREE_DIRTY:{path}"
+            )
+        git("worktree", "remove", "--force", str(path), check=False)
+        shutil.rmtree(path, ignore_errors=True)
+
+    git("worktree", "prune", check=False)
+    deleted = git("branch", "-D", branch, check=False)
+
+    still_exists = git(
+        "show-ref",
+        "--verify",
+        "--quiet",
+        f"refs/heads/{branch}",
+        check=False,
+    )
+    if still_exists.returncode == 0:
+        detail = (deleted.stdout or "")[-1200:]
+        raise RuntimeError(
+            "AGENT_GUARD_RESIDUAL_BRANCH_BUSY:"
+            + branch
+            + ":"
+            + detail
+        )
+
+
 def prepare_worktree(job_id: str, base_sha: str, allowed_paths: list[str]) -> tuple[Path, str]:
     safe_id = re.sub(r"[^A-Za-z0-9._-]", "-", job_id)
     branch = f"agent/worker/{safe_id}"
     path = WORKTREES / safe_id
     agent_id = f"worker-{safe_id}"
-    if path.exists():
-        git("worktree", "remove", "--force", str(path), check=False)
-        shutil.rmtree(path, ignore_errors=True)
-    git("branch", "-D", branch, check=False)
+
+    _cleanup_residual_worker_worktree(path, branch)
+
     git("branch", branch, base_sha)
     guard = ROOT / ".git" / "agent-guard" / "bin" / "agent_guard.py"
     if not guard.is_file():
+        git("branch", "-D", branch, check=False)
         raise RuntimeError("AGENT_GUARD_NOT_FOUND")
     if not allowed_paths:
+        git("branch", "-D", branch, check=False)
         raise RuntimeError("AGENT_GUARD_PATHS_REQUIRED")
     command = [PYTHON_BIN, str(guard), "worktree-create", "--agent-id", agent_id, "--task-id", safe_id, "--description", f"ChatGPT deterministic worker job {job_id}", "--domain", f"worker_job_{safe_id}", "--branch", branch, "--directory", str(path)]
     for allowed_path in allowed_paths:
         command.extend(["--path", allowed_path])
     created = run(command, cwd=ROOT)
     if created.returncode != 0:
+        # A failed Agent Guard worktree creation must not poison the next retry
+        # with a checked-out branch or stale worktree registration.
+        git("worktree", "remove", "--force", str(path), check=False)
+        shutil.rmtree(path, ignore_errors=True)
+        git("worktree", "prune", check=False)
+        git("branch", "-D", branch, check=False)
         raise RuntimeError(f"AGENT_GUARD_WORKTREE_CREATE_FAILED:{created.stdout[-2000:]}")
     if not path.is_dir():
+        git("worktree", "prune", check=False)
+        git("branch", "-D", branch, check=False)
         raise RuntimeError("AGENT_GUARD_WORKTREE_NOT_CREATED")
     head = git("rev-parse", "HEAD", cwd=path).stdout.strip()
     if head != base_sha:
+        git("worktree", "remove", "--force", str(path), check=False)
+        shutil.rmtree(path, ignore_errors=True)
+        git("worktree", "prune", check=False)
+        git("branch", "-D", branch, check=False)
         raise RuntimeError(f"WORKTREE_BASE_MISMATCH:expected={base_sha}:actual={head}")
     return path, branch
 
@@ -565,7 +619,10 @@ def release_agent_guard_claim(job_id: str) -> tuple[bool, str]:
         return False, "AGENT_GUARD_NOT_FOUND"
     released = run([PYTHON_BIN, str(guard), "release", "--agent-id", agent_id], cwd=ROOT)
     if released.returncode != 0:
-        return False, released.stdout[-1000:]
+        detail = released.stdout[-1000:]
+        if "Claim no encontrado" in detail or "claim not found" in detail.lower():
+            return True, "ALREADY_RELEASED"
+        return False, detail
     return True, released.stdout[-1000:]
 
 
