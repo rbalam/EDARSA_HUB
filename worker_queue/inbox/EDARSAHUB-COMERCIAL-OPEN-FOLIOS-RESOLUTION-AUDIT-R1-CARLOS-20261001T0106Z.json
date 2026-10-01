@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-OPEN-FOLIOS-RESOLUTION-AUDIT-R1-CARLOS-20261001T0106Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar por que el drilldown diario de Comercial muestra solo el folio cerrado y no incorpora folios abiertos, aunque detalle_abiertas_json esta poblado. Comparar la resolucion de Unidades_Negocio contra Comercial_Ventas_Dia_Abiertas_v2 para las cinco sucursales y contar folios JSON por server_id. No modificar codigo ni ejecutar sincronizadores.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "unit_mapping_vs_daily_snapshot",
+          "sql": "SELECT u.codigo AS unidad_codigo,u.nombre AS unidad_nombre,CONVERT(varchar(100),u.server_id) AS server_id,CONVERT(varchar(100),u.sucursal_origen_id) AS sucursal_origen_id,s.unidad_negocio_id AS snapshot_unidad_id,s.sucursal_id AS snapshot_sucursal,s.fecha_operacion,s.tickets_abiertos,s.tickets_cerrados_dia,LEN(s.detalle_abiertas_json) AS json_len FROM dbo.Unidades_Negocio u WITH (NOLOCK) LEFT JOIN dbo.Comercial_Ventas_Dia_Abiertas_v2 s WITH (NOLOCK) ON CONVERT(varchar(100),s.server_id)=CONVERT(varchar(100),u.server_id) WHERE ISNULL(u.activo,1)=1 AND (UPPER(ISNULL(u.codigo,'')) IN ('ESTELAR','LA ESTELAR','CIENFUEGOS','130MID','ORIGEN','130QRO') OR UPPER(ISNULL(u.nombre,'')) LIKE '%ESTELAR%' OR UPPER(ISNULL(u.nombre,'')) LIKE '%CIENFUEGOS%' OR UPPER(ISNULL(u.nombre,'')) LIKE '%MERIDA%' OR UPPER(ISNULL(u.nombre,'')) LIKE '%ORIGEN%' OR UPPER(ISNULL(u.nombre,'')) LIKE '%QUERETARO%') ORDER BY u.codigo"
+        },
+        {
+          "name": "open_json_folio_counts_by_server",
+          "sql": "SELECT unidad_negocio_id,server_id,sucursal_id,fecha_operacion,tickets_abiertos,COUNT(DISTINCT JSON_VALUE(j.value,'$.folio')) AS json_folios,COUNT(*) AS json_lines FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 s WITH (NOLOCK) CROSS APPLY OPENJSON(s.detalle_abiertas_json) j WHERE fecha_operacion='2026-09-30' AND unidad_negocio_id IN ('ESTELAR','CIENFUEGOS','130MID','ORIGEN','130QRO') GROUP BY unidad_negocio_id,server_id,sucursal_id,fecha_operacion,tickets_abiertos ORDER BY unidad_negocio_id"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
