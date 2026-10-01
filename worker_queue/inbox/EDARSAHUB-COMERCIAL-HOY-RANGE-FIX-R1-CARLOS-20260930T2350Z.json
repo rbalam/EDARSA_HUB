@@ -1,0 +1,66 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-HOY-RANGE-FIX-R1-CARLOS-20260930T2350Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir el periodo Hoy del Dashboard Comercial. El frontend envia meses/anios aun cuando periodo=dia; la ruta no debe interpretar esos selectores como rango mensual. Aplicar el bloque de multiseleccion de meses exclusivamente cuando periodo=mes, conservando dia y semana. No tocar sincronizadores, Inteligencia Comercial, Tablero Ejecutivo ni Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/routes.py",
+      "old": "        if meses and lista_anios:\n",
+      "new": "        if periodo == \"mes\" and meses and lista_anios:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_comercial_hoy_range_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[1]\nROUTES = ROOT / \"modules/comercial/routes.py\"\n\n\ndef test_periodo_dia_precedes_month_selectors():\n    text = ROUTES.read_text(encoding=\"utf-8\")\n    assert 'if periodo == \"mes\" and meses and lista_anios:' in text\n    assert 'elif periodo == \"dia\":' in text\n\n    month_idx = text.index('if periodo == \"mes\" and meses and lista_anios:')\n    day_idx = text.index('elif periodo == \"dia\":', month_idx)\n    assert month_idx < day_idx\n\n    block = text[month_idx:day_idx]\n    assert 'fecha_ini = f\"{year}-{str(mes_min).zfill(2)}-01\"' in block\n\n\ndef test_hoy_has_single_day_range():\n    text = ROUTES.read_text(encoding=\"utf-8\")\n    day_idx = text.index('elif periodo == \"dia\":')\n    week_idx = text.index('elif periodo == \"semana\":', day_idx)\n    block = text[day_idx:week_idx]\n    assert \"fecha_ini = hoy.strftime('%Y-%m-%d')\" in block\n    assert \"fecha_fin = hoy.strftime('%Y-%m-%d')\" in block\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial/routes.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_hoy_range_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial/routes.py"
+        ],
+        "search_terms": [
+          "periodo == \"mes\" and meses and lista_anios",
+          "elif periodo == \"dia\"",
+          "fecha_ini = hoy.strftime",
+          "fecha_fin = hoy.strftime"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 60
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
