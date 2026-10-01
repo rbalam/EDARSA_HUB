@@ -24,6 +24,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 // AUDITORIA-TABLEROS-KPIS-FILTROS-01: Migrado de axios directo a api centralizado
 import api from '../lib/api';
 import logger from '../services/logger';
+import IAContextualLauncher from '../components/ia/IAContextual';
 // FASE AUTH-SECURITY-01 / FASE 4.1: getToken eliminado, auth viaja en cookie httpOnly
 import { fetchUnidadesNegocio, getServerIdFromUnidad } from '../services/unidadesNegocioService';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
@@ -556,6 +557,53 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
   const ventasItems = data?.items || data?.movimientos || [];
   const hayDatos = esVentas ? ventasItems.length > 0 : data?.movimientos?.length > 0;
 
+  const contextoVistaIA = {
+    modulo: 'comercial',
+    view_id: 'comercial_detalle_ventas',
+    titulo: config.titulo,
+    scope: {
+      server_id: serverId || null,
+      unidad: sucursal || null,
+      periodo: periodo || null,
+      meses: selectedMeses || [],
+      anios: selectedAnios || [],
+      metric: tipoKpi || null
+    },
+    filtros: {
+      periodo: periodo || null,
+      meses: selectedMeses || [],
+      anios: selectedAnios || []
+    },
+    periodo: {
+      label: data?.periodo
+        ? ((data.periodo.inicio || '') + ' a ' + (data.periodo.fin || ''))
+        : null,
+      fecha_inicio: data?.periodo?.inicio || null,
+      fecha_fin: data?.periodo?.fin || null
+    },
+    unidad_negocio: data?.servidor || sucursal || null,
+    seleccion: ticketSeleccionado
+      ? {
+          numero_ticket: ticketSeleccionado.folio || null,
+          fecha: ticketSeleccionado.fecha || null
+        }
+      : null,
+    columnas_visibles: esVentas
+      ? [
+          { key: 'folio', label: 'Período / Folio' },
+          { key: 'fecha', label: 'Fecha' },
+          { key: 'folios', label: 'Folios' },
+          { key: 'pax', label: 'PAX' },
+          { key: 'total_venta', label: 'Total Venta' }
+        ]
+      : [],
+    estado_vista: {
+      total_folios: Number(data?.resumen_periodo?.folios || 0),
+      total_pax: Number(data?.resumen_periodo?.pax || 0),
+      total_venta: Number(data?.resumen_periodo?.total_venta || 0)
+    }
+  };
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -574,15 +622,23 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
             </div>
           ) : hayDatos ? (
             <div className="flex-1 overflow-hidden flex flex-col">
-              <div className="flex items-center justify-between mb-3 px-1">
+              <div className="flex items-center justify-between mb-3 px-1 gap-3">
                 <span className="text-sm text-zinc-500">
                   Período: {data.periodo?.inicio} a {data.periodo?.fin}
                 </span>
-                <span className="text-sm font-medium">
-                  {esVentas
-                    ? (formatNumber(data.resumen_periodo?.folios || 0) + ' folio(s)')
-                    : (data.total + ' ' + (esRotacion ? 'mes(es)' : 'folio(s)'))}
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium">
+                    {esVentas
+                      ? (formatNumber(data.resumen_periodo?.folios || 0) + ' folio(s)')
+                      : (data.total + ' ' + (esRotacion ? 'mes(es)' : 'folio(s)'))}
+                  </span>
+                  {esVentas && (
+                    <IAContextualLauncher
+                      contextoVista={contextoVistaIA}
+                      viewData={{ tickets: ventasItems, lines: [] }}
+                    />
+                  )}
+                </div>
               </div>
 
               {esVentas && (

@@ -7,6 +7,7 @@ ROUTES = ROOT / "modules/ia_assistant/routes.py"
 SERVICE = ROOT / "modules/ia_assistant/service.py"
 QUERY_BRIDGE = ROOT / "modules/ia_assistant/query_bridge.py"
 FRONT = ROOT.parent / "frontend/src/components/comercial/analytics/CanonicalTicketDrilldown.jsx"
+COMERCIAL_PAGE = ROOT.parent / "frontend/src/pages/Comercial.js"
 CONTEXTUAL_FRONT = ROOT.parent / "frontend/src/components/ia/IAContextual.jsx"
 API = ROOT.parent / "frontend/src/services/iaAssistantApi.js"
 GENERAL = ROOT.parent / "frontend/src/pages/IAAsistente.jsx"
@@ -62,9 +63,13 @@ def test_frontend_reuses_existing_assistant_client_and_has_no_worker_key():
     front = CONTEXTUAL_FRONT.read_text(encoding="utf-8")
     api = API.read_text(encoding="utf-8")
     drill = FRONT.read_text(encoding="utf-8")
+    comercial = COMERCIAL_PAGE.read_text(encoding="utf-8")
     general = GENERAL.read_text(encoding="utf-8")
     assert "iaAssistantApi" in front
     assert "IAContextualLauncher" in drill
+    assert "IAContextualLauncher" in comercial
+    assert "view_id: 'comercial_detalle_ventas'" in comercial
+    assert "Selecciona un folio para abrir el ticket de venta." in comercial
     assert "contexto_vista" in api
     assert "EDARSA_AI_API_KEY" not in front
     assert "EDARSA_AI_API_KEY" not in api
