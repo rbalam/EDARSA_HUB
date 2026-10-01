@@ -1,0 +1,54 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-MIGRATION-R3-CARLOS-20261001T0412Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e7078e82a853a55e7a453519422ae9afd9ec1918",
+  "production_allowed": false,
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "objective": "Reejecutar de forma idempotente en EDARSAHUB Development la migracion versionada de enriquecimiento de tickets cerrados para vendedor_id, vendedor_nombre y descuento_pct, con preflight y post-audit READ_ONLY. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20261001_001_comercial_ticket_closed_enrichment.sql",
+  "migration_sha256": "6bc32e126e64511bde54405fb4d8d9650142b186615a93c83527e8b45dbe9289",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "preflight_checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "pre_schema_ticket_closed_enrichment",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Comercial_Inteligencia_VentasDetalleProducto' AND COLUMN_NAME IN ('vendedor_id','vendedor_nombre','descuento_pct') ORDER BY COLUMN_NAME"
+        },
+        {
+          "name": "pre_index_ticket_closed",
+          "sql": "SELECT i.name,c.name AS column_name,ic.key_ordinal FROM sys.indexes i JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto') AND i.name='UX_Comercial_Intel_VentasDetalle_NoDup' ORDER BY ic.key_ordinal"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "post_schema_ticket_closed_enrichment",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Comercial_Inteligencia_VentasDetalleProducto' AND COLUMN_NAME IN ('vendedor_id','vendedor_nombre','descuento_pct') ORDER BY COLUMN_NAME"
+        },
+        {
+          "name": "post_index_ticket_closed",
+          "sql": "SELECT i.name,i.is_unique,c.name AS column_name,ic.key_ordinal FROM sys.indexes i JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto') AND i.name='UX_Comercial_Intel_VentasDetalle_NoDup' ORDER BY ic.key_ordinal"
+        }
+      ]
+    }
+  ]
+}
