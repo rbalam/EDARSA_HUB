@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "31e4a8c888c7223346ea3d8210593d3972d51f2e",
-  "generated_at_utc": "2026-10-01T02:08:40Z",
+  "generated_at_utc": "2026-10-01T02:09:59Z",
   "history": {
     "done_total_local": 1228,
     "pending_total_local": 0,
@@ -16,43 +16,43 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3375,
+      "age_seconds": 3454,
       "job_id": "EDARSAHUB-COMERCIAL-OPEN-FOLIOS-MERGE-FIX-R2-CARLOS-20261001T0110Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2911,
+      "age_seconds": 2991,
       "job_id": "EDARSAHUB-COMERCIAL-OPEN-FOLIOS-MERGE-FIX-R3-CARLOS-20261001T0116Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 794,
+      "age_seconds": 873,
       "job_id": "EDARSAHUB-COMERCIAL-SR-ZERO-DISCOUNT-TICKET-FIX-R5-CARLOS-20261001T0153Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1385,
+      "age_seconds": 1464,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-NUMCHEQUE-DATE-R4-CARLOS-20261001T0148Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1447,
+      "age_seconds": 1526,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-SELLER-DISCOUNT-AUDIT-R1-CARLOS-20261001T0144Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3319,
+      "age_seconds": 3398,
       "job_id": "EDARSAHUB-SINCRONIZADOR-130MID-202603-HEADER-DETAIL-RECONCILE-R22-CARLOS-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 181,
+      "age_seconds": 260,
       "job_id": "EDARSAHUB-SINCRONIZADOR-130MID-202603-HEADER-DETAIL-RECONCILE-R23-CARLOS-20260930",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,8 +72,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T02:08:35Z",
-    "last_receive_utc": "2026-10-01T02:08:38Z",
+    "last_cycle_utc": "2026-10-01T02:09:56Z",
+    "last_receive_utc": "2026-10-01T02:09:59Z",
     "last_terminal_utc": "2026-10-01T02:05:38Z",
     "pid": "1089318",
     "runtime_fingerprint": {
