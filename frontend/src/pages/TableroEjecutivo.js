@@ -1210,8 +1210,13 @@ export default function TableroEjecutivo() {
                   return {
                     unidad_negocio_id: item.unidad_negocio_id,
                     id: item.unidad_negocio_id,
-                    sucursal_id: item.unidad_negocio_id,
-                    sucursal_nombre: item.unidad_negocio_nombre,
+                    server_id: item.server_id || null,
+                    sucursal_id: item.sucursal_id || null,
+                    sucursal_nombre: (
+                      item.sucursal_nombre
+                      || item.unidad_negocio_nombre
+                    ),
+                    sistema_origen: item.sistema_origen || null,
                     unidad_negocio_codigo: item.unidad_negocio_id,
                     unidad: item.unidad_negocio_nombre,
                     fecha_operacion: item.fecha_operacion,

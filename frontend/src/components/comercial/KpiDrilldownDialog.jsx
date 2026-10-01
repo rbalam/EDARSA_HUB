@@ -267,13 +267,23 @@ const rangeLabel = (ranges, temporalSelection, modoVentasDia) => {
   return `${starts[0]} a ${ends[ends.length - 1]}${suffix}`;
 };
 
-function TicketVentaModal({ open, onClose, ticketPk }) {
+function TicketVentaModal({
+  open,
+  onClose,
+  ticketPk,
+  serverId = null,
+  sucursal = '',
+  seleccion = null,
+}) {
   const [loading, setLoading] = useState(false);
   const [ticket, setTicket] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!open || !ticketPk) return;
+    const comercialDirecto = Boolean(
+      serverId && seleccion?.folio && seleccion?.fecha
+    );
+    if (!open || (!ticketPk && !comercialDirecto)) return;
 
     let active = true;
 
@@ -283,6 +293,28 @@ function TicketVentaModal({ open, onClose, ticketPk }) {
       setError('');
 
       try {
+        if (comercialDirecto) {
+          const response = await api.get(
+            `/comercial/ticket-venta/${serverId}`,
+            {
+              params: {
+                sucursal,
+                folio: seleccion.folio,
+                fecha: String(seleccion.fecha).slice(0, 10),
+              },
+              timeout: 30000,
+            }
+          );
+          const ticketComercial = response.data?.ticket || null;
+
+          if (!ticketComercial) {
+            throw new Error('No se encontró información para este folio.');
+          }
+
+          if (active) setTicket(ticketComercial);
+          return;
+        }
+
         const response = await api.get(
           `/v2/comercial/analytics/tickets/${encodeURIComponent(ticketPk)}`,
           { timeout: 30000 }
@@ -356,7 +388,13 @@ function TicketVentaModal({ open, onClose, ticketPk }) {
     return () => {
       active = false;
     };
-  }, [open, ticketPk]);
+  }, [
+    open,
+    ticketPk,
+    serverId,
+    sucursal,
+    seleccion,
+  ]);
 
   if (!open) return null;
 
@@ -609,12 +647,71 @@ export default function KpiDrilldownDialog({
           throw new Error('No se pudo identificar la unidad de negocio.');
         }
 
-        if (modoVentasDia && expectedClosed.cheques <= 0) {
-          return;
-        }
-
         if (ranges.length === 0) {
           throw new Error('No se pudo resolver el período del detalle.');
+        }
+
+        if (modoVentasDia) {
+          const serverId = unidad?.server_id;
+          const sucursal = (
+            unidad?.sucursal_id
+            || unidad?.sucursal
+            || unidadCodigo
+          );
+
+          if (!serverId) {
+            throw new Error(
+              'No se pudo resolver el servidor para el detalle de ventas del día.'
+            );
+          }
+
+          const response = await api.get(
+            `/comercial/detalle-ventas-agrupado/${serverId}`,
+            {
+              params: {
+                sucursal,
+                periodo: 'dia',
+                meses: String(
+                  new Date(`${ranges[0].start}T12:00:00`).getMonth() + 1
+                ).padStart(2, '0'),
+                anios: String(ranges[0].start).slice(0, 4),
+                nivel: 'auto',
+                page: 1,
+                limit: 5000,
+              },
+              timeout: 30000,
+            }
+          );
+
+          const payload = response.data || {};
+          if (payload.source_status === 'ERROR') {
+            throw new Error(
+              payload.source_message
+              || 'Error al consultar detalle de ventas del día.'
+            );
+          }
+
+          const pageRows = Array.isArray(payload.items)
+            ? payload.items
+            : [];
+
+          const normalized = pageRows.map((row) => ({
+            numero_ticket: String(row.folio || row.label || ''),
+            fecha_operacion: String(
+              row.fecha || ranges[0].start
+            ).slice(0, 10),
+            fecha_hora: row.fecha || ranges[0].start,
+            pax: toNumber(row.pax),
+            ventas: toNumber(row.total_venta ?? row.importe),
+            fuente_ticket: row.fuente_ticket || 'CERRADA',
+            _commercial_selection: {
+              folio: String(row.folio || row.label || ''),
+              fecha: String(row.fecha || ranges[0].start).slice(0, 10),
+            },
+          }));
+
+          if (active) setRows(normalized);
+          return;
         }
 
         const allRows = [];
@@ -685,9 +782,32 @@ export default function KpiDrilldownDialog({
     ranges,
   ]);
 
+  const detailedClosedRows = useMemo(
+    () => (
+      modoVentasDia
+        ? rows.filter((row) => row?.fuente_ticket !== 'ABIERTA')
+        : rows
+    ),
+    [modoVentasDia, rows]
+  );
+
+  const detailedOpenRows = useMemo(
+    () => (
+      modoVentasDia
+        ? rows.filter((row) => row?.fuente_ticket === 'ABIERTA')
+        : []
+    ),
+    [modoVentasDia, rows]
+  );
+
   const closedDetailTotals = useMemo(
-    () => totalsFor(rows),
-    [rows]
+    () => totalsFor(detailedClosedRows),
+    [detailedClosedRows]
+  );
+
+  const openDetailTotals = useMemo(
+    () => totalsFor(detailedOpenRows),
+    [detailedOpenRows]
   );
 
   const missingClosed = useMemo(() => ({
@@ -700,6 +820,18 @@ export default function KpiDrilldownDialog({
     missingClosed.cheques > 0
     || missingClosed.pax > 0
     || missingClosed.ventas > 0.01
+  );
+
+  const missingOpen = useMemo(() => ({
+    cheques: Math.max(0, openTotals.cheques - openDetailTotals.cheques),
+    pax: Math.max(0, openTotals.pax - openDetailTotals.pax),
+    ventas: Math.max(0, openTotals.ventas - openDetailTotals.ventas),
+  }), [openTotals, openDetailTotals]);
+
+  const hasMissingOpen = (
+    missingOpen.cheques > 0
+    || missingOpen.pax > 0
+    || missingOpen.ventas > 0.01
   );
 
   const mode = useMemo(
@@ -760,7 +892,23 @@ export default function KpiDrilldownDialog({
                 className="font-mono text-xs font-medium underline decoration-dotted underline-offset-2 cursor-pointer"
                 onDoubleClick={() => {
                   if (item.ticket_pk) {
-                    setTicketSeleccionado(item.ticket_pk);
+                    setTicketSeleccionado({
+                      ticketPk: item.ticket_pk,
+                    });
+                  } else if (
+                    modoVentasDia
+                    && unidad?.server_id
+                    && item?._commercial_selection?.folio
+                  ) {
+                    setTicketSeleccionado({
+                      serverId: unidad.server_id,
+                      sucursal: (
+                        unidad?.sucursal_id
+                        || unidad?.sucursal
+                        || unidadCodigo
+                      ),
+                      seleccion: item._commercial_selection,
+                    });
                   }
                 }}
                 title="Doble clic para abrir el ticket de venta"
@@ -852,6 +1000,7 @@ export default function KpiDrilldownDialog({
     modoVentasDia
     && expectedClosed.cheques <= 0
     && openTotals.cheques > 0
+    && detailedOpenRows.length === 0
   );
 
   const footerTotals = modoVentasDia
@@ -902,7 +1051,11 @@ export default function KpiDrilldownDialog({
               </div>
             )}
 
-            {!onlyOpen && modoVentasDia && expectedClosed.cheques > 0 && rows.length === 0 && (
+            {!onlyOpen
+              && modoVentasDia
+              && expectedClosed.cheques > 0
+              && detailedClosedRows.length === 0
+              && (
               <div className="mb-3 p-3 rounded border border-amber-200 bg-amber-50 text-amber-800 flex gap-2">
                 <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
                 <p>
@@ -979,7 +1132,7 @@ export default function KpiDrilldownDialog({
                     </tr>
                   )}
 
-                  {modoVentasDia && openTotals.cheques > 0 && (
+                  {modoVentasDia && hasMissingOpen && (
                     <tr className="border-b bg-amber-50 font-semibold">
                       <td className="py-2 px-3 text-amber-800">
                         Cuentas no cerradas
@@ -988,13 +1141,13 @@ export default function KpiDrilldownDialog({
                         Sin detalle por folio
                       </td>
                       <td className="py-2 px-3 text-right">
-                        {number(openTotals.cheques)}
+                        {number(missingOpen.cheques)}
                       </td>
                       <td className="py-2 px-3 text-center">
-                        {number(openTotals.pax)}
+                        {number(missingOpen.pax)}
                       </td>
                       <td className="py-2 px-3 text-right font-semibold text-green-600">
-                        {money(openTotals.ventas)}
+                        {money(missingOpen.ventas)}
                       </td>
                     </tr>
                   )}
@@ -1038,7 +1191,10 @@ export default function KpiDrilldownDialog({
         <TicketVentaModal
           open={true}
           onClose={() => setTicketSeleccionado(null)}
-          ticketPk={ticketSeleccionado}
+          ticketPk={ticketSeleccionado.ticketPk || null}
+          serverId={ticketSeleccionado.serverId || null}
+          sucursal={ticketSeleccionado.sucursal || ''}
+          seleccion={ticketSeleccionado.seleccion || null}
         />
       )}
     </>

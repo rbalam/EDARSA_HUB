@@ -182,3 +182,51 @@ def test_closed_and_open_values_remain_separate():
     assert item["operacion_estimada"]["ventas"] == 200
     assert item["operacion_estimada"]["cheques"] == 6
     assert item["operacion_estimada"]["pax"] == 11
+def test_current_operation_preserves_comercial_drilldown_metadata():
+    result = build_current_operation(
+        allowed_unit_codes=["ORIGEN"],
+        date_resolver=lambda unit: date(2026, 10, 1),
+        sales_reader=lambda operation_date, units: [{
+            "unidad_negocio_id": "ORIGEN",
+            "unidad_negocio_nombre": "ORIGEN",
+            "server_id": "SERVER-MPRO",
+            "sucursal_id": "0023",
+            "sucursal_nombre": "ORIGEN",
+            "sistema_origen": "MPRO",
+            "fecha_operacion": "2026-10-01",
+            "ventas_abiertas": 2095,
+            "tickets_abiertos": 3,
+            "pax_abiertos": 7,
+            "ventas_cerradas_dia": 4231,
+            "tickets_cerrados_dia": 2,
+            "pax_cerrados_dia": 15,
+        }],
+    )
+
+    item = result["items"][0]
+
+    assert item["server_id"] == "SERVER-MPRO"
+    assert item["sucursal_id"] == "0023"
+    assert item["sucursal_nombre"] == "ORIGEN"
+    assert item["sistema_origen"] == "MPRO"
+
+
+def test_executive_current_day_uses_certified_comercial_sales_detail():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    tablero = (
+        root / "frontend/src/pages/TableroEjecutivo.js"
+    ).read_text(encoding="utf-8")
+    drill = (
+        root
+        / "frontend/src/components/comercial/KpiDrilldownDialog.jsx"
+    ).read_text(encoding="utf-8")
+
+    assert "server_id: item.server_id || null" in tablero
+    assert "sucursal_id: item.sucursal_id || null" in tablero
+    assert "/comercial/detalle-ventas-agrupado/" in drill
+    assert "periodo: 'dia'" in drill
+    assert "row.fuente_ticket || 'CERRADA'" in drill
+    assert "/comercial/ticket-venta/" in drill
+    assert "hasMissingOpen" in drill

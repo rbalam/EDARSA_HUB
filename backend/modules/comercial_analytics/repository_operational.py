@@ -218,6 +218,15 @@ def build_current_operation(
         )
 
         item = snapshot["items"][0]
+
+        # Metadatos de conexión necesarios para que el Ejecutivo reutilice
+        # exactamente el drill-down certificado de Tablero Comercial.
+        if source_row:
+            item["server_id"] = source_row.get("server_id")
+            item["sucursal_id"] = source_row.get("sucursal_id")
+            item["sucursal_nombre"] = source_row.get("sucursal_nombre")
+            item["sistema_origen"] = source_row.get("sistema_origen")
+
         effective_dates.add(item["fecha_operacion"])
         items.append(item)
 
