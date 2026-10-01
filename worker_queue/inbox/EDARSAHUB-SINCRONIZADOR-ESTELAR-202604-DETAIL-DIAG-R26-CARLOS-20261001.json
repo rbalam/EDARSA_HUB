@@ -1,0 +1,52 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-202604-DETAIL-DIAG-R26-CARLOS-20261001",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Sincronizador | LA ESTELAR | Abril 2026 | Diagnostico READ-ONLY de detalle ISCAM despues de R25. Identificar dia o dias que no concilian contra Runtime V2 y conservar evidencia de ventas, tickets, PAX y error seguro. No escribir datos.",
+  "actions": [],
+  "units": [
+    "ESTELAR"
+  ],
+  "fecha_inicio": "2026-04-01",
+  "fecha_fin": "2026-05-01",
+  "dry_run": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 100,
+      "queries": [
+        {
+          "name": "estelar_abr2026_current_mismatches",
+          "sql": "\nWITH detalle_ticket AS (\n    SELECT fecha_operacion, numero_ticket,\n           SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) AS ventas_ticket,\n           MAX(CAST(ISNULL(pax,0) AS bigint)) AS pax_ticket\n    FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n    WHERE unidad_negocio_id='ESTELAR'\n      AND fecha_operacion >= '2026-04-01'\n      AND fecha_operacion < '2026-05-01'\n      AND ISNULL(activo,1)=1\n      AND ISNULL(es_kpi_valido,1)=1\n    GROUP BY fecha_operacion,numero_ticket\n),\ndetalle_dia AS (\n    SELECT fecha_operacion,\n           SUM(ventas_ticket) AS ventas_detalle,\n           COUNT(*) AS tickets_detalle,\n           SUM(pax_ticket) AS pax_detalle\n    FROM detalle_ticket\n    GROUP BY fecha_operacion\n),\nruntime_dia AS (\n    SELECT fecha_operacion,\n           SUM(CAST(ISNULL(ventas_total,0) AS decimal(18,4))) AS ventas_runtime,\n           SUM(ISNULL(tickets_total,0)) AS tickets_runtime,\n           SUM(ISNULL(pax_total,0)) AS pax_runtime\n    FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n    WHERE unidad_negocio_id='ESTELAR'\n      AND fecha_operacion >= '2026-04-01'\n      AND fecha_operacion < '2026-05-01'\n    GROUP BY fecha_operacion\n)\nSELECT r.fecha_operacion,\n       r.ventas_runtime,\n       ISNULL(d.ventas_detalle,0) AS ventas_detalle,\n       CAST(ISNULL(d.ventas_detalle,0)-r.ventas_runtime AS decimal(18,4)) AS delta_ventas,\n       r.tickets_runtime,\n       ISNULL(d.tickets_detalle,0) AS tickets_detalle,\n       ISNULL(d.tickets_detalle,0)-r.tickets_runtime AS delta_tickets,\n       r.pax_runtime,\n       ISNULL(d.pax_detalle,0) AS pax_detalle,\n       ISNULL(d.pax_detalle,0)-r.pax_runtime AS delta_pax\nFROM runtime_dia r\nLEFT JOIN detalle_dia d ON d.fecha_operacion=r.fecha_operacion\nWHERE ABS(ISNULL(d.ventas_detalle,0)-r.ventas_runtime)>0.01\n   OR ISNULL(d.tickets_detalle,0)<>r.tickets_runtime\n   OR ISNULL(d.pax_detalle,0)<>r.pax_runtime\nORDER BY r.fecha_operacion"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY diagnostico",
+    "No modificar encabezados",
+    "No modificar detalle",
+    "No modificar sync_comercial_abiertas_v2",
+    "No modificar codigo"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": []
+  }
+}
