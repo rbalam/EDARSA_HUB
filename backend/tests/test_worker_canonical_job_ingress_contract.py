@@ -261,3 +261,172 @@ def test_not_certified_slot_claim_block_is_retryable(
     )
 
     assert result is None
+
+
+def _bridge_redirect_state(tmp_path, monkeypatch):
+    from tools.mirror_sync import universal_job_bridge as bridge
+
+    for name in (
+        "PENDING",
+        "PROCESSING",
+        "REJECTED",
+        "REJECTED_HISTORY",
+        "DONE",
+        "RESULTS",
+    ):
+        path = tmp_path / ("bridge-" + name.lower())
+        path.mkdir()
+        monkeypatch.setattr(bridge, name, path)
+
+    monkeypatch.setattr(bridge, "REQUIRE_REQUESTER", False)
+    return bridge
+
+
+def _bridge_readonly_job(job_id):
+    return {
+        "schema": "edarsahub.worker-job.v2",
+        "job_id": job_id,
+        "target_repo": "rbalam/EDARSA_HUB",
+        "target_branch": "Edarsahub_Desarrollo",
+        "objective": "Canonical bridge same-job retry contract.",
+        "production_allowed": False,
+        "human_summary_language": "es",
+        "mode": "READ_ONLY",
+        "actions": [],
+        "checks": [{"type": "git_diff_check"}],
+    }
+
+
+def _write_bridge_result(bridge, name, **overrides):
+    payload = {
+        "status": "BLOCKED",
+        "certification": "NOT_CERTIFIED",
+        "percent_complete": 0,
+        "production_touched": False,
+        "blockers": [
+            "dispatcher_exception:SlotRuntimeError:SLOT_ALREADY_CLAIMED"
+        ],
+    }
+    payload.update(overrides)
+    path = bridge.RESULTS / name
+    path.write_text(
+        json.dumps(payload, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_bridge_slot_claim_block_reenters_same_job_and_preserves_evidence(
+    tmp_path,
+    monkeypatch,
+):
+    bridge = _bridge_redirect_state(tmp_path, monkeypatch)
+    name = "INGRESS-SLOT-BLOCKED.json"
+    result_path = _write_bridge_result(bridge, name)
+    result_before = result_path.read_bytes()
+
+    rejected_path = bridge.REJECTED / name
+    rejected_raw = bridge.REJECTED / f"{name}.raw"
+    rejected_path.write_text('{"status":"REJECTED"}\n', encoding="utf-8")
+    rejected_raw.write_text('{"historical":true}\n', encoding="utf-8")
+    rejected_before = rejected_path.read_bytes()
+    rejected_raw_before = rejected_raw.read_bytes()
+
+    job = _bridge_readonly_job("INGRESS-SLOT-BLOCKED")
+    raw = json.dumps(job)
+    monkeypatch.setattr(
+        bridge,
+        "queue_files",
+        lambda: ["worker_queue/inbox/" + name],
+    )
+    monkeypatch.setattr(bridge, "read_remote", lambda path: raw)
+
+    assert bridge.already_claimed(name) is False
+    assert bridge.receive() == 0
+
+    pending = bridge.PENDING / name
+    assert pending.is_file()
+    envelope = json.loads(pending.read_text(encoding="utf-8"))
+    assert envelope["job"]["job_id"] == "INGRESS-SLOT-BLOCKED"
+    assert envelope["_worker_slot_claim_retry"]["same_job_id"] is True
+    assert envelope["_worker_slot_claim_retry"]["evidence_preserved"] is True
+
+    assert result_path.read_bytes() == result_before
+    assert rejected_path.read_bytes() == rejected_before
+    assert rejected_raw.read_bytes() == rejected_raw_before
+
+
+def test_bridge_certified_result_remains_terminal(
+    tmp_path,
+    monkeypatch,
+):
+    bridge = _bridge_redirect_state(tmp_path, monkeypatch)
+    name = "INGRESS-CERTIFIED.json"
+    _write_bridge_result(
+        bridge,
+        name,
+        status="INTEGRATED",
+        certification="CERTIFIED",
+        percent_complete=100,
+        blockers=[],
+    )
+    assert bridge.already_claimed(name) is True
+
+
+def test_bridge_other_not_certified_blocker_remains_terminal(
+    tmp_path,
+    monkeypatch,
+):
+    bridge = _bridge_redirect_state(tmp_path, monkeypatch)
+    name = "INGRESS-OTHER-BLOCKER.json"
+    _write_bridge_result(
+        bridge,
+        name,
+        blockers=["dispatcher_exception:RuntimeError:OTHER_BLOCKER"],
+    )
+    assert bridge.already_claimed(name) is True
+
+
+def test_bridge_slot_claim_with_extra_blocker_remains_terminal(
+    tmp_path,
+    monkeypatch,
+):
+    bridge = _bridge_redirect_state(tmp_path, monkeypatch)
+    name = "INGRESS-EXTRA-BLOCKER.json"
+    _write_bridge_result(
+        bridge,
+        name,
+        blockers=[
+            "dispatcher_exception:SlotRuntimeError:SLOT_ALREADY_CLAIMED",
+            "another_blocker",
+        ],
+    )
+    assert bridge.already_claimed(name) is True
+
+
+def test_bridge_not_certified_nonzero_progress_remains_terminal(
+    tmp_path,
+    monkeypatch,
+):
+    bridge = _bridge_redirect_state(tmp_path, monkeypatch)
+    name = "INGRESS-NONZERO.json"
+    _write_bridge_result(
+        bridge,
+        name,
+        percent_complete=1,
+    )
+    assert bridge.already_claimed(name) is True
+
+
+def test_bridge_production_touched_result_remains_terminal(
+    tmp_path,
+    monkeypatch,
+):
+    bridge = _bridge_redirect_state(tmp_path, monkeypatch)
+    name = "INGRESS-PRODUCTION.json"
+    _write_bridge_result(
+        bridge,
+        name,
+        production_touched=True,
+    )
+    assert bridge.already_claimed(name) is True

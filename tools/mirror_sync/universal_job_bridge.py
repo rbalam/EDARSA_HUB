@@ -556,23 +556,61 @@ def read_remote(path: str) -> str:
     return git("show", f"{QUEUE_REF}:{path}").stdout
 
 
-def already_claimed(name: str) -> bool:
-    # worker_queue/inbox is immutable audit history. Normal lifecycle evidence
-    # remains terminal. REJECTED is evaluated separately so a strictly
-    # metadata-only contract correction can retry the same immutable job
-    # identity while preserving its prior rejection evidence.
-    return any(
-        (folder / name).exists()
-        for folder in (PENDING, PROCESSING, DONE, RESULTS)
-    )
-
-
 def _read_json_file(path: Path) -> dict[str, Any]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
         return payload if isinstance(payload, dict) else {}
     except Exception:
         return {}
+
+
+_SLOT_ALREADY_CLAIMED_BLOCKER = (
+    "dispatcher_exception:SlotRuntimeError:SLOT_ALREADY_CLAIMED"
+)
+
+
+def slot_claim_retry_decision(name: str) -> dict[str, Any]:
+    result_path = RESULTS / name
+    if not result_path.is_file():
+        return {
+            "present": False,
+            "allowed": False,
+        }
+
+    result = _read_json_file(result_path)
+    allowed = (
+        result.get("status") == "BLOCKED"
+        and result.get("certification") == "NOT_CERTIFIED"
+        and result.get("percent_complete") == 0
+        and result.get("production_touched") is False
+        and result.get("blockers") == [
+            _SLOT_ALREADY_CLAIMED_BLOCKER
+        ]
+    )
+
+    return {
+        "present": True,
+        "allowed": allowed,
+        "result_path": str(result_path),
+        "blockers": result.get("blockers"),
+    }
+
+
+def already_claimed(name: str) -> bool:
+    # worker_queue/inbox is immutable audit history. PENDING, PROCESSING and
+    # DONE remain terminal/active claims. RESULTS is terminal except for the
+    # single pre-execution infrastructure block explicitly allowed below.
+    if any(
+        (folder / name).exists()
+        for folder in (PENDING, PROCESSING, DONE)
+    ):
+        return True
+
+    result_retry = slot_claim_retry_decision(name)
+    if result_retry["present"]:
+        return not result_retry["allowed"]
+
+    return False
 
 
 def rejected_correction_retry_decision(name: str, raw: str, job: dict[str, Any]) -> dict[str, Any]:
@@ -650,6 +688,7 @@ def receive() -> int:
     accepted = rejected = skipped = 0
     for path in queue_files():
         name = Path(path).name
+        result_retry = slot_claim_retry_decision(name)
         if already_claimed(name):
             skipped += 1
             continue
@@ -663,7 +702,17 @@ def receive() -> int:
             write_rejection(path, ["INVALID_JSON"], raw)
             rejected += 1
             continue
-        retry_decision = rejected_correction_retry_decision(name, raw, job)
+
+        if result_retry.get("allowed"):
+            # Preserve prior RESULTS/REJECTED evidence in place. This retry is
+            # not a contract-correction retry and must not archive/delete it.
+            retry_decision = {
+                "present": False,
+                "allowed": True,
+            }
+        else:
+            retry_decision = rejected_correction_retry_decision(name, raw, job)
+
         if retry_decision.get("present") and not retry_decision.get("allowed"):
             skipped += 1
             continue
@@ -708,6 +757,13 @@ def receive() -> int:
             "requester_authorization": requester_authorization,
             "job": job,
         }
+        if result_retry.get("allowed"):
+            envelope["_worker_slot_claim_retry"] = {
+                "same_job_id": True,
+                "previous_result_path": result_retry.get("result_path"),
+                "previous_blockers": result_retry.get("blockers"),
+                "evidence_preserved": True,
+            }
         if retry_decision.get("present"):
             envelope["_worker_rejected_correction_retry"] = {
                 "retry_count": 1,
