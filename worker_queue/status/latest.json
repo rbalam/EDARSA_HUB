@@ -4,19 +4,19 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "012921ebc92508c8b76891931bc5720344a7055c",
-  "generated_at_utc": "2026-10-01T03:31:56Z",
+  "generated_at_utc": "2026-10-01T03:33:21Z",
   "history": {
     "done_total_local": 1235,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1084,
+    "rejected_total_local": 1085,
     "results_total_local": 2119
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 137,
+      "age_seconds": 221,
       "job_id": "EDARSAHUB-BOS-CAPABILITY-API-LOCAL-EMPRESA-HOMOLOGATION-R1-20261001",
       "reasons": [
         "ACTIONS_REQUIRED"
@@ -25,55 +25,68 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 752,
+      "age_seconds": 23,
+      "job_id": "EDARSAHUB-BOS-CAPABILITY-API-LOCAL-EMPRESA-HOMOLOGATION-R2-20261001",
+      "reasons": [
+        "SUMMARY_LANGUAGE_MUST_BE_ES",
+        "ACTION_2_SOURCE_SHA256_REQUIRED_OR_INVALID",
+        "ACTION_2_REPLACEMENT_REQUIRED",
+        "ACTION_3_SOURCE_SHA256_REQUIRED_OR_INVALID",
+        "ACTION_3_REPLACEMENT_REQUIRED"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 837,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-SQL-READONLY-R7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 307,
+      "age_seconds": 392,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-SQL-READONLY-R7-RETRY1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1713,
+      "age_seconds": 1798,
       "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-CANARY-READONLY-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1541,
+      "age_seconds": 1626,
       "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-DONE-REGRESSION-GUARD-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1134,
+      "age_seconds": 1219,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-FINAL-READONLY-R1-CARLOS-20261001T0307Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 660,
+      "age_seconds": 744,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-FINAL-READONLY-R2-CARLOS-20261001T0318Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 726,
+      "age_seconds": 811,
       "job_id": "SERVIDORES-API-CIENFUEGOS-SERVER-BRIDGE-READONLY-R1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 948,
+      "age_seconds": 1033,
       "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-IDENTITY-READONLY-R1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1600,
+      "age_seconds": 1685,
       "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-MAPPING-READONLY-R2-20260930",
       "reason": null,
       "state": "RESULT_READY"
@@ -86,15 +99,15 @@
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 1,
+  "queue_rejected_recent": 2,
   "queue_result_ready_recent": 9,
   "queue_running": 0,
   "remote_development_sha": "012921ebc92508c8b76891931bc5720344a7055c",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T03:31:46Z",
-    "last_receive_utc": "2026-10-01T03:31:51Z",
+    "last_cycle_utc": "2026-10-01T03:33:20Z",
+    "last_receive_utc": "2026-10-01T03:33:15Z",
     "last_terminal_utc": "2026-10-01T03:26:48Z",
     "pid": "1551643",
     "runtime_fingerprint": {
