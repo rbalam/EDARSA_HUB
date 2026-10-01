@@ -4,77 +4,77 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "3e77e4d89d97e6e7a8e995f54b9234804ed19705",
-  "generated_at_utc": "2026-10-01T15:00:55Z",
+  "generated_at_utc": "2026-10-01T15:02:15Z",
   "history": {
-    "done_total_local": 1249,
+    "done_total_local": 1250,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 1102,
-    "results_total_local": 2149
+    "results_total_local": 2150
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 830,
+      "age_seconds": 909,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-CONTRACT-R5",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 847,
+      "age_seconds": 926,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-URL-PROFILE-R1-20260930T2350Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 844,
+      "age_seconds": 924,
       "job_id": "EDARSA-LOGISTICS-GATE4A1-PHYSICAL-FOUNDATION-SCRIPTS-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 832,
+      "age_seconds": 9,
+      "job_id": "EDARSAHUB-COMERCIAL-HIST-202609-D01-05-MPRO2-R6-CARLOS",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 911,
       "job_id": "EDARSAHUB-EDARSA-AI-FINOPS-GATE1-CAPABILITY-DISCOVERY-READONLY-R1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 826,
+      "age_seconds": 906,
       "job_id": "EDARSAHUB-SINCRONIZADOR-MPRO-DESCUENTO-IMPORTE-R1-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 495,
+      "age_seconds": 575,
       "job_id": "EDARSAHUB-SINCRONIZADOR-MPRO-DESCUENTO-IMPORTE-R2-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 112,
-      "job_id": "EDARSAHUB-COMERCIAL-HIST-202609-D01-05-MPRO2-R6-CARLOS",
-      "reason": null,
-      "state": "RUNNING"
     }
   ],
   "local_development_sha": "3e77e4d89d97e6e7a8e995f54b9234804ed19705",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
-  "queue_running": 1,
+  "queue_result_ready_recent": 7,
+  "queue_running": 0,
   "remote_development_sha": "3e77e4d89d97e6e7a8e995f54b9234804ed19705",
   "runtime": {
-    "current_job_id": "EDARSAHUB-COMERCIAL-HIST-202609-D01-05-MPRO2-R6-CARLOS",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T15:00:51Z",
-    "last_receive_utc": "2026-10-01T15:00:54Z",
-    "last_terminal_utc": "2026-10-01T14:52:40Z",
+    "last_cycle_utc": "2026-10-01T15:02:08Z",
+    "last_receive_utc": "2026-10-01T15:02:12Z",
+    "last_terminal_utc": "2026-10-01T15:02:06Z",
     "pid": "2867",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "47b3cc277220d437b497831939aed642478394d6",
