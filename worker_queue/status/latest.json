@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "a3ee49f54c84c814de69ac587b21967af860a914",
-  "generated_at_utc": "2026-10-01T16:08:01Z",
+  "generated_at_utc": "2026-10-01T16:09:21Z",
   "history": {
     "done_total_local": 1256,
     "pending_total_local": 0,
@@ -16,55 +16,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3440,
+      "age_seconds": 3520,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-POST-INTEGRATION-CERT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2897,
+      "age_seconds": 2977,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-URL-PROFILE-R2-20261001T1510Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3433,
+      "age_seconds": 3514,
       "job_id": "EDARSA-LOGISTICS-GATE4A1-PHYSICAL-FOUNDATION-SCRIPTS-DESIGN-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3442,
+      "age_seconds": 3522,
       "job_id": "EDARSAHUB-COMERCIAL-HIST-202609-D06-10-ALL5-R7-CARLOS",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2501,
+      "age_seconds": 2581,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-202604-DETAIL-DIAG-R26-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2903,
+      "age_seconds": 2983,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-202604-HEADER-DETAIL-R25-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2134,
+      "age_seconds": 2214,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-20260423-RUNTIMEERROR-DIAG-R27-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1435,
+      "age_seconds": 1515,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-20260423-ZERO-TICKETS-DIAG-R28-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 212,
+      "age_seconds": 292,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-PARIDAD-COMERCIAL-R14-CARLOS-20261001T1545Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,8 +84,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T16:07:55Z",
-    "last_receive_utc": "2026-10-01T16:07:59Z",
+    "last_cycle_utc": "2026-10-01T16:09:18Z",
+    "last_receive_utc": "2026-10-01T16:09:19Z",
     "last_terminal_utc": "2026-10-01T16:04:29Z",
     "pid": "232098",
     "runtime_fingerprint": {
