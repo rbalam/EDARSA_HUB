@@ -1,0 +1,53 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-SR-OPEN-DETAIL-DIAG-R2-CARLOS-20261001T0006Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Reintentar diagnostico en solo lectura del detalle de folios abiertos SoftRestaurant para LA ESTELAR, CIENFUEGOS y 130MID. Confirmar si detalle_abiertas_json se esta poblando y si tickets_abiertos/ventas_abiertas corresponden a la fecha operativa actual. No modificar ni ejecutar sincronizadores. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "snapshots_sr_ticket_detail",
+          "sql": "SELECT unidad_negocio_id,unidad_negocio_nombre,server_id,sucursal_id,sistema_origen,fecha_operacion,snapshot_timestamp,ventas_abiertas,tickets_abiertos,pax_abiertos,ventas_cerradas_dia,tickets_cerrados_dia,pax_cerrados_dia,total_estimado_dia,LEN(detalle_abiertas_json) AS detalle_json_len,CASE WHEN detalle_abiertas_json IS NULL THEN 'NULL' WHEN detalle_abiertas_json='[]' THEN 'EMPTY' WHEN ISJSON(detalle_abiertas_json)=1 THEN 'JSON' ELSE 'INVALID' END AS detalle_json_status,LEFT(detalle_abiertas_json,1500) AS detalle_json_sample FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK) WHERE UPPER(ISNULL(unidad_negocio_id,'')) IN ('LA ESTELAR','ESTELAR','CIENFUEGOS','130MID') OR UPPER(ISNULL(unidad_negocio_nombre,'')) LIKE '%ESTELAR%' OR UPPER(ISNULL(unidad_negocio_nombre,'')) LIKE '%CIENFUEGOS%' OR UPPER(ISNULL(unidad_negocio_id,''))='130MID' ORDER BY fecha_operacion DESC,snapshot_timestamp DESC"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+          "backend/modules/comercial_v2/ticket_snapshot.py",
+          "backend/modules/comercial/ticket_service.py"
+        ],
+        "search_terms": [
+          "QUERY_SOFTRESTAURANT_DETALLE_ABIERTAS",
+          "detalle_abiertas_json",
+          "tempcheqdet",
+          "merge_open_snapshot_tickets"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 80
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
