@@ -384,12 +384,16 @@ def apply_action(worktree: Path, action: dict[str, Any]) -> str:
     raise ValueError(f"UNSUPPORTED_ACTION:{kind}")
 
 
-def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False) -> dict[str, Any]:
+def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False, base_sha: str | None = None) -> dict[str, Any]:
     kind = str(check.get("type"))
     started = now()
     env_extra: dict[str, str] = {}
     if kind == "git_diff_check":
-        cmd = ["git", "diff", "--check"]
+        cmd = (
+            ["git", "diff", "--check", base_sha, "HEAD"]
+            if base_sha
+            else ["git", "diff", "--check"]
+        )
         cwd = worktree
     elif kind == "py_compile":
         paths = [str(p) for p in check.get("paths") or []]
@@ -1683,10 +1687,22 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                 result["blockers"].extend(scope_blockers)
                 break
             result["files_changed"] = changed_files(worktree, execution_base_sha)
+
+            # Create the protected candidate while the Agent Guard claim is fresh.
+            # Long checks (notably frontend_build) run against this local candidate,
+            # but nothing is pushed until every validation passes.
+            head = create_commit(worktree, job_id, sorted(allowed_files))
+            result["candidate_sha"] = head
+            result["commit_created"] = head
+
             check_results: list[dict[str, Any]] = []
             checks = job.get("checks") or [{"type": "git_diff_check"}]
             for check in checks:
-                check_result = run_check(worktree, check)
+                check_result = run_check(
+                    worktree,
+                    check,
+                    base_sha=execution_base_sha,
+                )
                 check_results.append(check_result)
                 if check_result["status"] != "PASS":
                     result["status"] = "GIT_TESTS_FAILED"
@@ -1717,10 +1733,6 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
             if result["blockers"]:
                 break
-
-            head = create_commit(worktree, job_id, sorted(allowed_files))
-            result["candidate_sha"] = head
-            result["commit_created"] = head
             ok, detail, final_head, integration_evidence = integrate(worktree, branch, head, execution_base_sha, allowed_files, job_id, result["remote_at_start"])
             accumulated_integration.extend(integration_evidence)
             result["concurrency"]["integration"] = accumulated_integration
