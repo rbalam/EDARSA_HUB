@@ -1,0 +1,23 @@
+{
+  "base_sha": "e703ee850fd0170840fe90e5df6928e74de83b0e",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:WRITE_EXISTING_REQUIRES_EXPECTED_SHA256:backend/scripts/poblar_ventas_detalle_producto_canonico.py"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-01T04:34:14Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-CODE-R1-CARLOS-20261001T0436Z",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T04:34:50Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-01T04:34:08Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
