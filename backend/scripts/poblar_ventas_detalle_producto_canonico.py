@@ -965,10 +965,27 @@ def _soft_add_ticket_adjustments(src_rows: List[Dict[str, Any]]) -> List[Dict[st
             out.append(adjustment)
             continue
 
-        # Un encabezado en cero con detalle monetario no explicado sigue siendo
-        # un caso anomalo y se bloquea. Las unicas excepciones son conceptos
-        # negativos explicitos de franquicia o aplicacion de anticipo ya resueltos
-        # arriba. Esto conserva el guard historico R80C.
+        technical_microprice_zero = (
+            header_total == Decimal("0")
+            and discount_indicator == Decimal("0")
+            and product_total > Decimal("0")
+            and product_total <= Decimal("0.50")
+            and all(
+                Decimal("0") <= _d(row.get("precio_unitario")) <= Decimal("0.001")
+                for row in items
+            )
+        )
+        if technical_microprice_zero:
+            adjustment = dict(items[0])
+            adjustment["producto_codigo_fuente"] = SOFT_AJUSTE_ENCABEZADO
+            adjustment["producto_nombre"] = "AJUSTE DE CIERRE A CERO (MICROPRECIO TECNICO)"
+            adjustment["cantidad"] = Decimal("0")
+            adjustment["precio_unitario"] = Decimal("0")
+            adjustment["importe_bruto"] = Decimal("0")
+            adjustment["importe_neto"] = delta
+            out.append(adjustment)
+            continue
+
         if header_total == Decimal("0"):
             raise RuntimeError(
                 f"SoftRestaurant: diferencia no explicada en ticket {ticket_key}; "
