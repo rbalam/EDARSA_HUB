@@ -1,0 +1,76 @@
+{
+  "acceptance_criteria": [
+    "Only backend/core/rbac_sql/service.py and focused test file changed",
+    "SUPERADMIN can access valid EmpresaID without Usuario_EmpresasAsignacion",
+    "Normal users still require active Usuario_EmpresasAsignacion",
+    "Missing blank zero or nonnumeric empresa_id denied",
+    "No DDL",
+    "No DML",
+    "No production touched",
+    "py_compile PASS",
+    "focused pytest PASS",
+    "git_diff_check PASS"
+  ],
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "    @staticmethod\n    def can_access_empresa(usuario_id, empresa_id):\n        return bool(fetch_one_dict(\"\"\"\n            SELECT TOP 1 1 AS permitido\n            FROM dbo.Usuario_EmpresasAsignacion\n            WHERE UsuarioID = %s\n              AND EmpresaID = %s\n              AND ISNULL(Activo, 1) = 1\n        \"\"\", [usuario_id, empresa_id]))\n",
+      "path": "backend/core/rbac_sql/service.py",
+      "replacement": "    @staticmethod\n    def _has_superadmin_role(usuario_id):\n        if not usuario_id:\n            return False\n\n        return bool(fetch_one_dict(\"\"\"\n            SELECT TOP 1 1 AS permitido\n            FROM dbo.Usuario_RolesAsignacion AS ura\n            INNER JOIN dbo.Usuario_Roles AS r\n                ON r.RolID = ura.RolID\n            WHERE ura.UsuarioID = %s\n              AND UPPER(LTRIM(RTRIM(r.CodigoRol))) = 'SUPERADMIN'\n              AND ISNULL(ura.Activo, 1) = 1\n              AND ISNULL(r.Activo, 1) = 1\n        \"\"\", [usuario_id]))\n\n    @staticmethod\n    def can_access_empresa(usuario_id, empresa_id):\n        if not usuario_id or empresa_id is None:\n            return False\n\n        empresa_id_text = str(empresa_id).strip()\n        if not empresa_id_text:\n            return False\n\n        try:\n            if int(empresa_id_text) <= 0:\n                return False\n        except (TypeError, ValueError):\n            return False\n\n        if RBACSQLService._has_superadmin_role(usuario_id):\n            return True\n\n        return bool(fetch_one_dict(\"\"\"\n            SELECT TOP 1 1 AS permitido\n            FROM dbo.Usuario_EmpresasAsignacion\n            WHERE UsuarioID = %s\n              AND EmpresaID = %s\n              AND ISNULL(Activo, 1) = 1\n        \"\"\", [usuario_id, empresa_id]))\n",
+      "source_sha256": "2efff5fed893aa20b2ed76cc3f13c3c9e44db2e36df323f600b887679456b26c",
+      "type": "replace_text"
+    },
+    {
+      "content": "from core.rbac_sql import service\n\n\ndef test_superadmin_can_access_empresa_without_explicit_scope(monkeypatch):\n    calls = []\n\n    def fake_fetch_one_dict(sql, params):\n        calls.append(sql)\n        if \"Usuario_EmpresasAsignacion\" in sql:\n            raise AssertionError(\"SUPERADMIN must not require explicit company scope\")\n        if \"Usuario_RolesAsignacion AS ura\" in sql and \"Usuario_Roles AS r\" in sql:\n            return {\"permitido\": 1}\n        return None\n\n    monkeypatch.setattr(service, \"fetch_one_dict\", fake_fetch_one_dict)\n\n    assert service.RBACSQLService.can_access_empresa(8, 2) is True\n    assert any(\"Usuario_RolesAsignacion AS ura\" in sql for sql in calls)\n\n\ndef test_can_access_empresa_fails_closed_for_missing_or_invalid_empresa(monkeypatch):\n    def fake_fetch_one_dict(sql, params):\n        raise AssertionError(\"No SQL should run for invalid empresa_id\")\n\n    monkeypatch.setattr(service, \"fetch_one_dict\", fake_fetch_one_dict)\n\n    assert service.RBACSQLService.can_access_empresa(8, None) is False\n    assert service.RBACSQLService.can_access_empresa(8, \"\") is False\n    assert service.RBACSQLService.can_access_empresa(8, \"   \") is False\n    assert service.RBACSQLService.can_access_empresa(8, 0) is False\n    assert service.RBACSQLService.can_access_empresa(8, \"0\") is False\n    assert service.RBACSQLService.can_access_empresa(8, \"abc\") is False\n\n\ndef test_normal_user_requires_explicit_empresa_scope(monkeypatch):\n    calls = []\n\n    def fake_fetch_one_dict(sql, params):\n        calls.append(sql)\n        if \"Usuario_RolesAsignacion AS ura\" in sql and \"Usuario_Roles AS r\" in sql:\n            return None\n        if \"Usuario_EmpresasAsignacion\" in sql:\n            return {\"permitido\": 1}\n        return None\n\n    monkeypatch.setattr(service, \"fetch_one_dict\", fake_fetch_one_dict)\n\n    assert service.RBACSQLService.can_access_empresa(12, 3) is True\n    assert any(\"Usuario_EmpresasAsignacion\" in sql for sql in calls)\n\n\ndef test_normal_user_without_explicit_empresa_scope_is_denied(monkeypatch):\n    def fake_fetch_one_dict(sql, params):\n        return None\n\n    monkeypatch.setattr(service, \"fetch_one_dict\", fake_fetch_one_dict)\n\n    assert service.RBACSQLService.can_access_empresa(12, 3) is False\n",
+      "path": "backend/tests/test_rbac_sql_superadmin_empresa_scope.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/core/rbac_sql/service.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_rbac_sql_superadmin_empresa_scope.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "paths": [
+        "backend/core/rbac_sql/service.py",
+        "backend/tests/test_rbac_sql_superadmin_empresa_scope.py"
+      ],
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-SERVIDORES-API-SUPERADMIN-EMPRESA-SCOPE-FIX-R1J-V2-20261001",
+  "mode": "MUTATION",
+  "objective": "Surgical backend fix for Servidores API authorization: allow canonical active SUPERADMIN users to pass RBACSQLService.can_access_empresa for valid EmpresaID without requiring Usuario_EmpresasAsignacion. Preserve fail-closed behavior and normal-user explicit scope requirement.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "",
+    "requested_at_utc": "2026-10-01T21:11:32.738469+00:00",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
