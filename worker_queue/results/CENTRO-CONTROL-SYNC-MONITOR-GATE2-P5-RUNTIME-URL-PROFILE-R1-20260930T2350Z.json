@@ -1,0 +1,22 @@
+{
+  "blockers": [
+    "dispatcher_exception:SlotRuntimeError:SLOT_ALREADY_CLAIMED"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-01T14:46:48Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-URL-PROFILE-R1-20260930T2350Z",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T14:49:51Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-01T14:46:48Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
