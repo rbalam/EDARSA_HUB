@@ -374,6 +374,199 @@ def fast_forward_refresh(repo: Path, *, expected_remote: str, job_id: str, owner
 
 
 
+def reconcile_divergent_dev_mirror(
+    repo: Path,
+    *,
+    development: str,
+    mirror: str,
+    merge_base: str,
+    job_id: str,
+    owner: str,
+    remote: str = REMOTE,
+    owner_pid: int | None = None,
+) -> dict[str, Any]:
+    token = acquire_writer_lock(
+        repo,
+        job_id=job_id,
+        owner=owner,
+        owner_pid=owner_pid,
+    )
+    try:
+        index_lock_recovery = recover_orphan_index_lock(repo)
+        dirty = _status_counts(repo)
+        if dirty["worktree_dirty"]:
+            raise GitGuardError("GIT_WORKTREE_NOT_CLEAN", dirty)
+
+        _run(repo, "fetch", remote, DEV_BRANCH)
+        _run(repo, "fetch", remote, MIRROR_BRANCH)
+        development_now = _run(
+            repo, "rev-parse", f"{remote}/{DEV_BRANCH}"
+        ).stdout.strip()
+        mirror_now = _run(
+            repo, "rev-parse", f"{remote}/{MIRROR_BRANCH}"
+        ).stdout.strip()
+        if development_now != development or mirror_now != mirror:
+            raise GitGuardError(
+                "REMOTE_MOVED_RETRY_REQUIRED",
+                {
+                    "development_expected": development,
+                    "development_now": development_now,
+                    "mirror_expected": mirror,
+                    "mirror_now": mirror_now,
+                },
+            )
+
+        merge_tree = _run(
+            repo,
+            "merge-tree",
+            "--write-tree",
+            development,
+            mirror,
+            check=False,
+        )
+        if merge_tree.returncode != 0:
+            return {
+                "status": "BLOCKED_DIVERGENCE_CONFLICT",
+                "converged": False,
+                "safe": False,
+                "auto_fix_applied": False,
+                "development": development,
+                "mirror_before": mirror,
+                "mirror_after": mirror,
+                "merge_base": merge_base,
+                "merge_tree_output": (merge_tree.stdout or "")[-4000:],
+                "index_lock_recovery": index_lock_recovery,
+            }
+
+        tree = (merge_tree.stdout or "").splitlines()[0].strip()
+        commit_env = dict(os.environ)
+        commit_env.update({
+            "GIT_AUTHOR_NAME": "EDARSAHUB Worker Publisher",
+            "GIT_AUTHOR_EMAIL": "worker-publisher@edarsahub.local",
+            "GIT_COMMITTER_NAME": "EDARSAHUB Worker Publisher",
+            "GIT_COMMITTER_EMAIL": "worker-publisher@edarsahub.local",
+        })
+        commit = _run(
+            repo,
+            "commit-tree",
+            tree,
+            "-p",
+            development,
+            "-p",
+            mirror,
+            "-m",
+            "chore(worker): canonical DEV/MIRROR convergence",
+            env=commit_env,
+        ).stdout.strip()
+
+        # CAS immediately before the atomic non-forced publication.
+        _run(repo, "fetch", remote, DEV_BRANCH)
+        _run(repo, "fetch", remote, MIRROR_BRANCH)
+        if (
+            _run(repo, "rev-parse", f"{remote}/{DEV_BRANCH}").stdout.strip()
+            != development
+            or _run(repo, "rev-parse", f"{remote}/{MIRROR_BRANCH}").stdout.strip()
+            != mirror
+        ):
+            raise GitGuardError(
+                "REMOTE_MOVED_RETRY_REQUIRED",
+                {"reason": "REF_MOVED_BEFORE_CONVERGENCE_PUSH"},
+            )
+
+        push = authorized_push(
+            repo,
+            args=[
+                "push",
+                "--atomic",
+                remote,
+                f"{commit}:refs/heads/{DEV_BRANCH}",
+                f"{commit}:refs/heads/{MIRROR_BRANCH}",
+            ],
+            job_id=job_id,
+            owner=owner,
+        )
+        if push.returncode != 0:
+            raise GitGuardError(
+                "GIT_PUSH_FAILED",
+                {"output": (push.stdout or "")[-4000:]},
+            )
+
+        # Local Development is a parent of the convergence commit, so this is
+        # a strict local fast-forward with no history rewrite.
+        local_before = _run(repo, "rev-parse", "HEAD").stdout.strip()
+        if local_before == development:
+            ff = _run(
+                repo,
+                "merge",
+                "--ff-only",
+                commit,
+                check=False,
+            )
+            if ff.returncode != 0:
+                raise GitGuardError(
+                    "GIT_DIVERGENCE_BLOCKED",
+                    {
+                        "reason": "LOCAL_CONVERGENCE_FAST_FORWARD_FAILED",
+                        "output": (ff.stdout or "")[-2000:],
+                    },
+                )
+
+        _run(repo, "fetch", remote, DEV_BRANCH)
+        _run(repo, "fetch", remote, MIRROR_BRANCH)
+        final_local = _run(repo, "rev-parse", "HEAD").stdout.strip()
+        final_development = _run(
+            repo, "rev-parse", f"{remote}/{DEV_BRANCH}"
+        ).stdout.strip()
+        final_mirror = _run(
+            repo, "rev-parse", f"{remote}/{MIRROR_BRANCH}"
+        ).stdout.strip()
+        final_dirty = _status_counts(repo)
+        parents = _run(
+            repo, "show", "-s", "--format=%P", commit
+        ).stdout.strip().split()
+
+        if (
+            final_dirty["worktree_dirty"]
+            or final_local != commit
+            or final_development != commit
+            or final_mirror != commit
+            or parents != [development, mirror]
+        ):
+            raise GitGuardError(
+                "GIT_DIVERGENCE_BLOCKED",
+                {
+                    "reason": "DIVERGENCE_CONVERGENCE_POSTCHECK_FAILED",
+                    "local": final_local,
+                    "development": final_development,
+                    "mirror": final_mirror,
+                    "parents": parents,
+                    "dirty": final_dirty,
+                },
+            )
+
+        return {
+            "status": "MERGED_CONVERGED_PASS",
+            "converged": True,
+            "safe": True,
+            "auto_fix_applied": True,
+            "local": final_local,
+            "development": final_development,
+            "mirror_before": mirror,
+            "mirror_after": final_mirror,
+            "merge_base": merge_base,
+            "convergence_commit": commit,
+            "parents": parents,
+            "history_preserved": True,
+            "worktree_dirty": False,
+            "force_push": False,
+            "reset_used": False,
+            "rebase_used": False,
+            "index_lock_recovery": index_lock_recovery,
+        }
+    finally:
+        release_writer_lock(repo, token)
+
+
 def classify_submit_convergence(
     *,
     local: str,
@@ -527,6 +720,23 @@ def ensure_submit_convergence(
             mirror_merge_base=mirror_merge_base,
             worktree_dirty=bool(state.get("worktree_dirty")),
         )
+
+        if (
+            decision["status"] == "BLOCKED_DIVERGENCE"
+            and local == development
+            and mirror_before != development
+            and mirror_merge_base not in {mirror_before, development}
+        ):
+            return reconcile_divergent_dev_mirror(
+                repo,
+                development=development,
+                mirror=mirror_before,
+                merge_base=mirror_merge_base,
+                job_id=job_id,
+                owner=owner,
+                remote=remote,
+                owner_pid=owner_pid,
+            )
 
         if decision["status"].startswith("BLOCKED"):
             return {

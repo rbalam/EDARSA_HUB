@@ -68,3 +68,61 @@ def test_runtime_contract_has_no_destructive_commands_or_persistent_push_guard()
  c=executable_lines(APPLY);assert 'git merge --ff-only' not in c and 'git pull' not in c and 'reset --hard' not in c and 'git clean' not in c;assert 'EDARSA_ALLOW_PUSH="1"' not in SUPERVISOR.read_text();assert 'export EDARSA_ALLOW_PUSH=1' not in BACKUP.read_text();assert 'export EDARSA_ALLOW_PUSH=1' not in FINALIZER.read_text();assert 'edarsahub_acquire_git_writer_lock' in FINALIZER.read_text() and 'edarsahub_release_git_writer_lock' in FINALIZER.read_text()
 def test_dispatcher_uses_cas_and_no_replay_on_remote_move():
  text=DISPATCHER.read_text();block=text.split('def integrate(',1)[1].split('def release_agent_guard_claim',1)[0];assert 'compare_and_swap' in block and 'CONCURRENT_REPLAY_REQUIRED' not in block and 'EDARSA_ALLOW_PUSH' in block and 'force-with-lease' not in text
+
+
+def test_case_15_submit_convergence_true_divergence_preserves_both_histories(tmp_path):
+    m=load_guard();_,l,p=setup_pair(tmp_path)
+    g(l,'push','origin','HEAD:refs/heads/mirror/emergent-live')
+    commit(l,'dev-only','dev')
+    dev=g(l,'rev-parse','HEAD').stdout.strip()
+    g(l,'push','origin','HEAD:refs/heads/Edarsahub_Desarrollo')
+    g(p,'fetch','origin','mirror/emergent-live')
+    g(p,'checkout','-B','mirror-test','origin/mirror/emergent-live')
+    commit(p,'mirror-only','mirror')
+    mirror=g(p,'rev-parse','HEAD').stdout.strip()
+    g(p,'push','origin','HEAD:refs/heads/mirror/emergent-live')
+    install_push_guard(l)
+
+    result=m.ensure_submit_convergence(
+        l,
+        job_id='case15',
+        owner='universal-worker',
+    )
+
+    assert result['status']=='MERGED_CONVERGED_PASS'
+    assert result['converged'] is True
+    assert result['history_preserved'] is True
+    assert result['force_push'] is False
+    assert result['reset_used'] is False
+    assert result['rebase_used'] is False
+    final=result['convergence_commit']
+    assert g(l,'rev-parse','HEAD').stdout.strip()==final
+    assert g(l,'rev-parse','origin/Edarsahub_Desarrollo').stdout.strip()==final
+    assert g(l,'rev-parse','origin/mirror/emergent-live').stdout.strip()==final
+    assert g(l,'show','-s','--format=%P',final).stdout.strip().split()==[dev,mirror]
+
+
+def test_case_16_submit_convergence_real_conflict_blocks_without_moving_refs(tmp_path):
+    m=load_guard();_,l,p=setup_pair(tmp_path)
+    g(l,'push','origin','HEAD:refs/heads/mirror/emergent-live')
+    (l/'seed.txt').write_text('dev\n');g(l,'add','seed.txt');g(l,'commit','-m','dev-conflict')
+    dev=g(l,'rev-parse','HEAD').stdout.strip()
+    g(l,'push','origin','HEAD:refs/heads/Edarsahub_Desarrollo')
+    g(p,'fetch','origin','mirror/emergent-live')
+    g(p,'checkout','-B','mirror-test','origin/mirror/emergent-live')
+    (p/'seed.txt').write_text('mirror\n');g(p,'add','seed.txt');g(p,'commit','-m','mirror-conflict')
+    mirror=g(p,'rev-parse','HEAD').stdout.strip()
+    g(p,'push','origin','HEAD:refs/heads/mirror/emergent-live')
+    install_push_guard(l)
+
+    result=m.ensure_submit_convergence(
+        l,
+        job_id='case16',
+        owner='universal-worker',
+    )
+
+    assert result['status']=='BLOCKED_DIVERGENCE_CONFLICT'
+    assert result['converged'] is False
+    g(l,'fetch','origin','Edarsahub_Desarrollo','mirror/emergent-live')
+    assert g(l,'rev-parse','origin/Edarsahub_Desarrollo').stdout.strip()==dev
+    assert g(l,'rev-parse','origin/mirror/emergent-live').stdout.strip()==mirror
