@@ -1,0 +1,80 @@
+{
+  "actions": [],
+  "bounded_context": "usuarios_rbac_menu",
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [
+          "__pycache__",
+          "*.pyc",
+          "node_modules",
+          "dist",
+          "build"
+        ],
+        "include_patterns": [
+          "*.js",
+          "*.jsx",
+          "*.py"
+        ],
+        "max_results": 100,
+        "paths": [
+          "frontend/src/pages/Usuarios.js",
+          "backend/modules/auth/routes.py",
+          "backend/modules/sistema/menu_service.py",
+          "backend/core/rbac_sql/service.py"
+        ],
+        "search_terms": [
+          "usuarios: 'USUARIOS_VER'",
+          "usuarios: 'SISTEMA_USUARIOS_VER'",
+          "TAB_PERMISSIONS",
+          "canViewTab",
+          "effective-permissions",
+          "permissions_flat",
+          "MENU_PERMISSION_MAP",
+          "USUARIOS_VER",
+          "SISTEMA_USUARIOS_VER"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-CANONICAL-ALIGNMENT-POSTPATCH-READONLY-R2-20261001",
+  "mode": "READ_ONLY",
+  "objective": "Certificar en READ_ONLY que el parche de Usuarios alinea la visibilidad del tab usuarios al permiso canonico USUARIOS_VER, sin tocar SQL, sin produccion, sin Mongo y sin permisos duplicados.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "",
+    "reason": "Post-patch READ_ONLY certification R2 after mirror history reconciliation.",
+    "source": "chat"
+  },
+  "rules": {
+    "do_not_touch": [
+      "DEVENV-FILE-WATCHER"
+    ],
+    "no_ddl": true,
+    "no_dml": true,
+    "no_duplicate_permissions": true,
+    "no_global_rollback": true,
+    "no_manual_rbac_changes": true,
+    "no_mongo": true,
+    "no_production": true,
+    "sql_server_is_canonical": true
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
