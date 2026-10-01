@@ -1,0 +1,82 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-TICKET-NUMCHEQUE-DATE-R4-CARLOS-20261001T0148Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir dos aspectos del Ticket de Venta: (1) en SoftRestaurant mostrar numcheque como folio visible y conservar ch.folio solo como folio_origen tecnico para unir tempcheqdet; ejemplo folio interno 2 debe mostrarse como 103658 si numcheque=103658; (2) mostrar fecha en formato AAAA-MM-DD HH:MM:SS sin microsegundos. No modificar MPRO, sincronizadores de Inteligencia Comercial, Tablero Ejecutivo ni Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/ticket_snapshot.py",
+      "old": "SELECT\n    CONVERT(varchar(64), ch.folio) AS folio,\n    MIN(ch.fecha) AS fecha_hora,\n",
+      "new": "SELECT\n    COALESCE(\n        NULLIF(MAX(LTRIM(RTRIM(CONVERT(varchar(64), ch.numcheque)))), ''),\n        CONVERT(varchar(64), ch.folio)\n    ) AS folio,\n    CONVERT(varchar(64), ch.folio) AS folio_origen,\n    MIN(ch.fecha) AS fecha_hora,\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/ticket_snapshot.py",
+      "old": "        normalized.append({\n            \"folio\": folio,\n            \"fecha_hora\": row.get(\"fecha_hora\"),\n",
+      "new": "        normalized.append({\n            \"folio\": folio,\n            \"folio_origen\": str(row.get(\"folio_origen\") or \"\").strip() or None,\n            \"fecha_hora\": row.get(\"fecha_hora\"),\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Comercial.js",
+      "old": "                <span className=\"text-right\">{ticket.fecha_hora}</span>",
+      "new": "                <span className=\"text-right\">{String(ticket.fecha_hora || '').replace('T', ' ').slice(0, 19)}</span>",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_comercial_ticket_numcheque_date_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[1]\nSNAPSHOT = ROOT / \"modules/comercial_v2/ticket_snapshot.py\"\nFRONTEND = ROOT.parent / \"frontend/src/pages/Comercial.js\"\n\n\ndef test_softrestaurant_visible_folio_uses_numcheque():\n    text = SNAPSHOT.read_text(encoding=\"utf-8\")\n    start = text.index(\"QUERY_SOFTRESTAURANT_DETALLE_ABIERTAS\")\n    end = text.index(\"QUERY_MPRO_DETALLE_ABIERTAS\", start)\n    block = text[start:end]\n    assert \"ch.numcheque\" in block\n    assert \"AS folio_origen\" in block\n    assert \"ON d.foliodet = ch.folio\" in block\n\n\ndef test_ticket_date_is_trimmed_to_seconds():\n    text = FRONTEND.read_text(encoding=\"utf-8\")\n    assert \".replace('T', ' ').slice(0, 19)\" in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial_v2/ticket_snapshot.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_ticket_numcheque_date_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial_v2/ticket_snapshot.py",
+          "frontend/src/pages/Comercial.js"
+        ],
+        "search_terms": [
+          "ch.numcheque",
+          "folio_origen",
+          "slice(0, 19)",
+          "TicketVentaModal"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js"
+        ],
+        "exclude_patterns": [],
+        "max_results": 60
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
