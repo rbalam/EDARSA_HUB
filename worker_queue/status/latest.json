@@ -4,68 +4,62 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "b625ba37f0c25712a5746393da0cdf8c6ea4578f",
-  "generated_at_utc": "2026-10-01T04:52:09Z",
+  "generated_at_utc": "2026-10-01T04:53:40Z",
   "history": {
     "done_total_local": 1242,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1093,
-    "results_total_local": 2133
+    "rejected_total_local": 1094,
+    "results_total_local": 2134
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3591,
-      "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-R8-CONTRACT-READONLY-RETRY1-20261001",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 776,
+      "age_seconds": 867,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-R9-RETRY1-CANONICAL-ALIGNMENT-PLAN-READONLY-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 390,
+      "age_seconds": 481,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-R9-RETRY2-DISPATCHER-CONTRACT-READONLY-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3121,
+      "age_seconds": 3212,
       "job_id": "EDARSAHUB-BOS-WORKER-CONVERGENCE-GUARD-E2E-MIRROR-FF-FIX-R2-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1074,
+      "age_seconds": 51,
+      "job_id": "EDARSAHUB-BOS-WORKER-CONVERGENCE-GUARD-E2E-MIRROR-FF-FIX-R3-20260930",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1165,
       "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-CODE-R1-CARLOS-20261001T0436Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 231,
+      "age_seconds": 322,
       "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-CODE-R2-CARLOS-20261001T0454Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2595,
+      "age_seconds": 2686,
       "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-MIGRATION-R2-CARLOS-20261001T0350Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1278,
+      "age_seconds": 1368,
       "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-MIGRATION-R3-CARLOS-20261001T0412Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3561,
-      "job_id": "SERVIDORES-API-UI-CONNECTIVITY-HOMOLOGATION-STATE-R1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -78,15 +72,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 9,
+  "queue_result_ready_recent": 8,
   "queue_running": 0,
   "remote_development_sha": "b625ba37f0c25712a5746393da0cdf8c6ea4578f",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T04:52:03Z",
-    "last_receive_utc": "2026-10-01T04:52:07Z",
-    "last_terminal_utc": "2026-10-01T04:48:17Z",
+    "last_cycle_utc": "2026-10-01T04:53:31Z",
+    "last_receive_utc": "2026-10-01T04:53:38Z",
+    "last_terminal_utc": "2026-10-01T04:52:48Z",
     "pid": "201258",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "47b3cc277220d437b497831939aed642478394d6",
