@@ -70,6 +70,7 @@ from typing import Optional, Dict, List
 import logging
 import calendar
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from core.db import execute_sql_query
 from core.security import (
@@ -3232,7 +3233,7 @@ async def comercial_detalle_ventas_agrupado(
     try:
         from .service import _query_edarsahub_tablero
 
-        hoy = datetime.now()
+        hoy = datetime.now(ZoneInfo("America/Mexico_City"))
         hoy_inicio = datetime(hoy.year, hoy.month, hoy.day)
         lista_anios = sorted(set(
             int(a.strip()) for a in anios.split(",")
@@ -4185,8 +4186,8 @@ async def comercial_dashboard(
     # ============================================================================
     
     try:
-        # Calcular fechas según período
-        hoy = datetime.now()
+        # Calcular fechas según período con calendario local de México.
+        hoy = datetime.now(ZoneInfo("America/Mexico_City"))
         
         # Obtener lista de años (priorizar 'anios' sobre 'anio')
         if anios:
@@ -4367,7 +4368,59 @@ async def comercial_dashboard(
         logging.info(f"Comercial Dashboard: {server['name']} - Período: {periodo} ({fecha_ini} a {fecha_fin}) - Tipo: {tipo_comparacion}")
         logging.info(f"Comparación mes ant: {fecha_ini_ant} a {fecha_fin_ant}")
         logging.info(f"Comparación año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant}")
-        
+
+        # HOY: fuente integral para todas las sucursales y motores.
+        # El sincronizador autorizado ya consolida ventas abiertas + cerradas
+        # en Comercial_Ventas_Dia_Abiertas_v2 para SoftRestaurant y MPRO.
+        # No consultar POS desde este endpoint.
+        if periodo == "dia":
+            snapshot_hoy = get_ventas_dia_snapshot_from_edarsahub(
+                server_id=server_id,
+                fecha_operacion=fecha_ini,
+            )
+            if snapshot_hoy.get("exists"):
+                ventas_hoy = float(snapshot_hoy.get("ventas") or 0)
+                pax_hoy = int(snapshot_hoy.get("pax") or 0)
+                cheques_hoy = int(snapshot_hoy.get("cheques") or 0)
+                ticket_promedio_hoy = (
+                    ventas_hoy / cheques_hoy if cheques_hoy > 0 else 0
+                )
+                pax_promedio_hoy = (
+                    ventas_hoy / pax_hoy if pax_hoy > 0 else 0
+                )
+                return {
+                    "source_status": "SUCCESS",
+                    "source_message": (
+                        "Datos de Hoy desde snapshot EDARSAHUB "
+                        f"({snapshot_hoy.get('estado_dato', 'VIGENTE')})"
+                    ),
+                    "source_type": "EDARSAHUB_SNAPSHOT_DIA",
+                    "server_name": server.get("name", "Desconocido"),
+                    "server_type": server.get("system_type", "Desconocido"),
+                    "fecha_inicio": fecha_ini,
+                    "fecha_fin": fecha_fin,
+                    "kpis": {
+                        "ventas_periodo": ventas_hoy,
+                        "ticket_promedio": ticket_promedio_hoy,
+                        "cheques_total": cheques_hoy,
+                        "pax_total": pax_hoy,
+                        "pax_promedio": pax_promedio_hoy,
+                        "consumo_persona": pax_promedio_hoy,
+                        "mesas_atendidas": cheques_hoy,
+                        "rotacion_mesas": 0,
+                        "venta_por_hora": 0,
+                    },
+                    "comparativo": {
+                        "vs_periodo_anterior": None,
+                        "vs_ano_anterior": None,
+                        "vs_presupuesto": None,
+                        "tipo_comparacion": tipo_comparacion,
+                        "ventas_anterior": None,
+                        "ventas_ano_anterior": None,
+                    },
+                    "alertas": [],
+                }
+
         # FASE 3A.2: Migrado a helper centralizado
         if is_softrestaurant_system(server.get('system_type')):
             # Usar formato YYYYMMDD universal (funciona en cualquier configuración regional)
