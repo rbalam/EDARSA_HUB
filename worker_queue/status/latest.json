@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "715d1eaab4884fb7ec25213864228b9d22b44b95",
-  "generated_at_utc": "2026-10-01T16:55:39Z",
+  "generated_at_utc": "2026-10-01T16:56:52Z",
   "history": {
     "done_total_local": 1258,
     "pending_total_local": 0,
@@ -16,37 +16,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 564,
+      "age_seconds": 637,
       "job_id": "EDARSAHUB-COMERCIAL-HISTORY-2026-RUNNER-R1-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2769,
+      "age_seconds": 2842,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-MICROPRICE-ZERO-FIX-R29-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1338,
+      "age_seconds": 1411,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-MICROPRICE-ZERO-FIX-R30-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3070,
+      "age_seconds": 3143,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-PARIDAD-COMERCIAL-R14-CARLOS-20261001T1545Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1654,
+      "age_seconds": 1727,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-PARIDAD-COMERCIAL-R14B-CARLOS-20261001T1620Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 994,
+      "age_seconds": 1068,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-PARIDAD-COMERCIAL-R14C-CARLOS-20261001T1640Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,8 +66,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T16:55:34Z",
-    "last_receive_utc": "2026-10-01T16:55:37Z",
+    "last_cycle_utc": "2026-10-01T16:56:46Z",
+    "last_receive_utc": "2026-10-01T16:56:48Z",
     "last_terminal_utc": "2026-10-01T16:46:15Z",
     "pid": "588094",
     "runtime_fingerprint": {
