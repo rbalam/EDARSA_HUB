@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "a3ee49f54c84c814de69ac587b21967af860a914",
-  "generated_at_utc": "2026-10-01T16:11:56Z",
+  "generated_at_utc": "2026-10-01T16:13:14Z",
   "history": {
     "done_total_local": 1256,
     "pending_total_local": 0,
@@ -16,43 +16,43 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3132,
+      "age_seconds": 3210,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-URL-PROFILE-R2-20261001T1510Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2736,
+      "age_seconds": 2814,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-202604-DETAIL-DIAG-R26-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3138,
+      "age_seconds": 3216,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-202604-HEADER-DETAIL-R25-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2369,
+      "age_seconds": 2447,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-20260423-RUNTIMEERROR-DIAG-R27-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1670,
+      "age_seconds": 1748,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-20260423-ZERO-TICKETS-DIAG-R28-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 146,
+      "age_seconds": 224,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-MICROPRICE-ZERO-FIX-R29-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 446,
+      "age_seconds": 525,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-PARIDAD-COMERCIAL-R14-CARLOS-20261001T1545Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,8 +72,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T16:11:49Z",
-    "last_receive_utc": "2026-10-01T16:11:54Z",
+    "last_cycle_utc": "2026-10-01T16:13:07Z",
+    "last_receive_utc": "2026-10-01T16:13:11Z",
     "last_terminal_utc": "2026-10-01T16:09:29Z",
     "pid": "232098",
     "runtime_fingerprint": {
