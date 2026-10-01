@@ -1,0 +1,37 @@
+{
+  "actions": [],
+  "base_sha": null,
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "created_at_utc": "2026-10-01T03:03:05.527291+00:00",
+  "domain": "universal_worker_lifecycle",
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-CANARY-READONLY-R1-20260930",
+  "mode": "READ_ONLY",
+  "objective": "Canario READ_ONLY del lifecycle canonico del Universal Worker. Verificar que un job terminal produce evidencia en RESULTS y que el dispatcher mueve atomicamente PROCESSING a DONE. No modificar codigo, datos, SQL, MongoDB ni Produccion.",
+  "priority": "P1",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Universal Worker Git Self-Healing Hardening",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
