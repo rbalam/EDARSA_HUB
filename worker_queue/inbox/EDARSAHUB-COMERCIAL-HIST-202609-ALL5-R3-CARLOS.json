@@ -6,7 +6,7 @@
   "base_sha": "4d7d215bdb2530e7649b1b3f86dd7c858e65751d",
   "production_allowed": false,
   "mode": "COMERCIAL_RANGE_RESYNC",
-  "objective": "Reejecutar septiembre 2026 para las cinco sucursales con la correccion force_refresh ya certificada. Repoblar detalle canonico aunque los dias ya concilien y validar persistencia de NUMCHEQUE, vendedor_nombre y descuento_pct. No tocar Produccion. Re-wake del mismo R3 tras fallo de pickup del agente Emergent; no crear trabajo funcional duplicado.",
+  "objective": "Reejecutar septiembre 2026 para las cinco sucursales con la correccion force_refresh ya certificada. Repoblar detalle canonico aunque los dias ya concilien y validar persistencia de NUMCHEQUE, vendedor_nombre y descuento_pct. No tocar Produccion. Re-wake del mismo R3 tras fallo de pickup del agente Emergent; no crear trabajo funcional duplicado. Re-wake posterior a fix de current_job_id huerfano en wake; consumir este mismo R3 sin duplicar trabajo funcional.",
   "requester": {
     "email": "carlosruz@edarsa.com.mx",
     "source": "chatgpt",
