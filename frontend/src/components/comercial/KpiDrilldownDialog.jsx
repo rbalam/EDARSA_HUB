@@ -308,14 +308,30 @@ function TicketVentaModal({ open, onClose, ticketPk }) {
               || header.fecha_operacion
             ),
             pax: header.pax,
+            vendedor: header.vendedor || null,
+            sistema_origen: header.sistema_origen || null,
             estado: header.estado || 'CERRADA',
             items: lines.map((line) => ({
               cantidad: line.cantidad,
               descripcion: line.producto || line.descripcion,
               precio_unitario: line.precio_unitario,
               importe: line.importe_bruto ?? line.importe,
+              descuento_pct: line.descuento_pct ?? 0,
+              descuento_importe: (
+                line.descuento_importe
+                ?? line.descuento
+                ?? 0
+              ),
+              importe_neto: (
+                line.importe_neto
+                ?? line.importe
+                ?? line.importe_bruto
+                ?? 0
+              ),
             })),
             subtotal: header.subtotal ?? header.total ?? header.ventas,
+            descuento_productos: header.descuento_productos ?? 0,
+            descuento_cuenta: header.descuento_cuenta ?? 0,
             descuento: header.descuento ?? 0,
             impuesto: header.impuesto ?? null,
             total: header.total ?? header.ventas,
@@ -375,8 +391,14 @@ function TicketVentaModal({ open, onClose, ticketPk }) {
               </div>
               <div className="flex justify-between gap-3">
                 <span>FECHA:</span>
-                <span className="text-right">{ticket.fecha_hora}</span>
+                <span className="text-right">{String(ticket.fecha_hora || '').replace('T', ' ').slice(0, 19)}</span>
               </div>
+              {ticket.vendedor && (
+                <div className="flex justify-between gap-3">
+                  <span>VENDEDOR:</span>
+                  <span className="text-right uppercase">{ticket.vendedor}</span>
+                </div>
+              )}
               {Number(ticket.pax || 0) > 0 && (
                 <div className="flex justify-between gap-3">
                   <span>PAX:</span>
@@ -410,7 +432,26 @@ function TicketVentaModal({ open, onClose, ticketPk }) {
                         </p>
                       )}
                     </div>
-                    <span className="text-right">{money(item.importe)}</span>
+                    <div className="text-right">
+                      <span>{money(item.importe_neto ?? item.importe)}</span>
+                      {Number(item.descuento_importe || 0) > 0.005 && (
+                        <div className="text-[11px] mt-1">
+                          <p className="text-zinc-500">
+                            BRUTO {money(item.importe)}
+                          </p>
+                          <p className="text-zinc-500">
+                            DESC. {Number(item.descuento_pct || 0).toLocaleString('es-MX', { maximumFractionDigits: 2 })}%:
+                            {' '}
+                            <span className="text-red-600 font-semibold">
+                              -{money(item.descuento_importe)}
+                            </span>
+                          </p>
+                          <p className="font-semibold">
+                            TOTAL PROD. {money(item.importe_neto ?? 0)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -421,10 +462,24 @@ function TicketVentaModal({ open, onClose, ticketPk }) {
                 <span>SUBTOTAL</span>
                 <span>{money(ticket.subtotal)}</span>
               </div>
-              {Number(ticket.descuento || 0) > 0.005 && (
+              {Number(ticket.descuento_productos || 0) > 0.005 && (
+                <div className="flex justify-between">
+                  <span>DESC. PRODUCTOS</span>
+                  <span className="text-red-600 font-semibold">-{money(ticket.descuento_productos)}</span>
+                </div>
+              )}
+              {Number(ticket.descuento_cuenta || 0) > 0.005 && (
+                <div className="flex justify-between">
+                  <span>DESC. CUENTA</span>
+                  <span className="text-red-600 font-semibold">-{money(ticket.descuento_cuenta)}</span>
+                </div>
+              )}
+              {Number(ticket.descuento || 0) > 0.005 &&
+               Number(ticket.descuento_productos || 0) <= 0.005 &&
+               Number(ticket.descuento_cuenta || 0) <= 0.005 && (
                 <div className="flex justify-between">
                   <span>DESCUENTO</span>
-                  <span>-{money(ticket.descuento)}</span>
+                  <span className="text-red-600 font-semibold">-{money(ticket.descuento)}</span>
                 </div>
               )}
               {ticket.impuesto != null && (

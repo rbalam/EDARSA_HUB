@@ -293,7 +293,6 @@ def test_ticket_detail_falls_back_to_certified_comercial_ticket(monkeypatch):
     result = get_ticket_detail(
         identity=parse_ticket_pk(ticket_pk),
         allowed_unit_codes=["CIENFUEGOS"],
-        query_executor=lambda sql, params: [],
     )
 
     assert result["ticket"]["numero_ticket"] == "105118"
@@ -301,3 +300,25 @@ def test_ticket_detail_falls_back_to_certified_comercial_ticket(monkeypatch):
     assert result["traceability"]["fallback"] == (
         "COMERCIAL_TICKET_CERTIFIED_PATH"
     )
+    assert result["traceability"]["contract"] == (
+        "TABLERO_COMERCIAL_TICKET_CERTIFIED_PATH"
+    )
+
+
+def test_executive_ticket_visual_contract_matches_comercial():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    executive = (
+        root
+        / "frontend/src/components/comercial/KpiDrilldownDialog.jsx"
+    ).read_text(encoding="utf-8")
+
+    assert "VENDEDOR:" in executive
+    assert "replace('T', ' ').slice(0, 19)" in executive
+    assert "item.descuento_importe" in executive
+    assert "item.descuento_pct" in executive
+    assert "TOTAL PROD." in executive
+    assert "DESC. PRODUCTOS" in executive
+    assert "DESC. CUENTA" in executive
+    assert "text-red-600 font-semibold" in executive

@@ -135,6 +135,18 @@ def _fallback_ticket_from_comercial(
 
     for index, item in enumerate(source_items, start=1):
         importe = round(float(item.get("importe") or 0), 2)
+        descuento_importe = round(
+            float(item.get("descuento_importe") or 0),
+            2,
+        )
+        importe_neto = round(
+            float(
+                item.get("importe_neto")
+                if item.get("importe_neto") is not None
+                else importe - descuento_importe
+            ),
+            2,
+        )
         lines.append({
             "linea_pk": (
                 f"{identity.numero_ticket}:fallback:{index}"
@@ -160,8 +172,14 @@ def _fallback_ticket_from_comercial(
                 2,
             ),
             "importe_bruto": importe,
-            "importe": importe,
-            "descuento": 0.0,
+            "importe": importe_neto,
+            "descuento": descuento_importe,
+            "descuento_importe": descuento_importe,
+            "descuento_pct": round(
+                float(item.get("descuento_pct") or 0),
+                2,
+            ),
+            "importe_neto": importe_neto,
             "propina": 0.0,
             "pax": int(source_ticket.get("pax") or 0),
         })
@@ -203,8 +221,18 @@ def _fallback_ticket_from_comercial(
                 or "CERRADA"
             ),
             "pax": int(source_ticket.get("pax") or 0),
+            "vendedor": source_ticket.get("vendedor"),
+            "sistema_origen": source_ticket.get("sistema_origen"),
             "lineas": len(lines),
             "subtotal": subtotal,
+            "descuento_productos": round(
+                float(source_ticket.get("descuento_productos") or 0),
+                2,
+            ),
+            "descuento_cuenta": round(
+                float(source_ticket.get("descuento_cuenta") or 0),
+                2,
+            ),
             "descuento": descuento,
             "impuesto": source_ticket.get("impuesto"),
             "ventas": total,
@@ -428,6 +456,17 @@ def get_ticket_detail(
         allowed_unit_codes,
     )
 
+    if query_executor is None:
+        comercial_ticket = _fallback_ticket_from_comercial(identity)
+        if comercial_ticket:
+            comercial_ticket.setdefault(
+                "traceability",
+                {},
+            )["contract"] = (
+                "TABLERO_COMERCIAL_TICKET_CERTIFIED_PATH"
+            )
+            return comercial_ticket
+
     sql = f"""
         SELECT
             d.unidad_negocio_id,
@@ -486,9 +525,10 @@ def get_ticket_detail(
     )
 
     if not rows:
-        fallback = _fallback_ticket_from_comercial(identity)
-        if fallback:
-            return fallback
+        if query_executor is None:
+            fallback = _fallback_ticket_from_comercial(identity)
+            if fallback:
+                return fallback
         raise LookupError("Ticket no encontrado")
 
     lines = []
