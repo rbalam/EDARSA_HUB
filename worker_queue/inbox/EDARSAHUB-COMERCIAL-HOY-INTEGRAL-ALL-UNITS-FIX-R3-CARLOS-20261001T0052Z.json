@@ -1,0 +1,89 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-HOY-INTEGRAL-ALL-UNITS-FIX-R3-CARLOS-20261001T0052Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Aplicar una solucion integral para periodo Hoy en Comercial para TODAS las sucursales y ambos motores, incluyendo ESTELAR, CIENFUEGOS, 130MID, ORIGEN y 130QRO. Usar fecha local America/Mexico_City en Dashboard y Detalle de Ventas. Para periodo Hoy, leer el snapshot canonico ya producido por sync_comercial_abiertas_v2 en dbo.Comercial_Ventas_Dia_Abiertas_v2, que contiene ventas abiertas + cerradas para SoftRestaurant y MPRO, antes de bifurcar por motor. Mantener el drilldown diario mezclando detalle cerrado canonico + detalle_abiertas_json. No modificar ni ejecutar sincronizadores. No tocar Inteligencia Comercial, Tablero Ejecutivo ni Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/routes.py",
+      "old": "from datetime import datetime, timedelta, timezone\n",
+      "new": "from datetime import datetime, timedelta, timezone\nfrom zoneinfo import ZoneInfo\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/routes.py",
+      "old": "        hoy = datetime.now()\n        hoy_inicio = datetime(hoy.year, hoy.month, hoy.day)\n",
+      "new": "        hoy = datetime.now(ZoneInfo(\"America/Mexico_City\"))\n        hoy_inicio = datetime(hoy.year, hoy.month, hoy.day)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/routes.py",
+      "old": "        # Calcular fechas según período\n        hoy = datetime.now()\n",
+      "new": "        # Calcular fechas según período con calendario local de México.\n        hoy = datetime.now(ZoneInfo(\"America/Mexico_City\"))\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/routes.py",
+      "old": "        logging.info(f\"Comercial Dashboard: {server['name']} - Período: {periodo} ({fecha_ini} a {fecha_fin}) - Tipo: {tipo_comparacion}\")\n        logging.info(f\"Comparación mes ant: {fecha_ini_ant} a {fecha_fin_ant}\")\n        logging.info(f\"Comparación año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant}\")\n        \n        # FASE 3A.2: Migrado a helper centralizado\n",
+      "new": "        logging.info(f\"Comercial Dashboard: {server['name']} - Período: {periodo} ({fecha_ini} a {fecha_fin}) - Tipo: {tipo_comparacion}\")\n        logging.info(f\"Comparación mes ant: {fecha_ini_ant} a {fecha_fin_ant}\")\n        logging.info(f\"Comparación año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant}\")\n\n        # HOY: fuente integral para todas las sucursales y motores.\n        # El sincronizador autorizado ya consolida ventas abiertas + cerradas\n        # en Comercial_Ventas_Dia_Abiertas_v2 para SoftRestaurant y MPRO.\n        # No consultar POS desde este endpoint.\n        if periodo == \"dia\":\n            snapshot_hoy = get_ventas_dia_snapshot_from_edarsahub(\n                server_id=server_id,\n                fecha_operacion=fecha_ini,\n            )\n            if snapshot_hoy.get(\"exists\"):\n                ventas_hoy = float(snapshot_hoy.get(\"ventas\") or 0)\n                pax_hoy = int(snapshot_hoy.get(\"pax\") or 0)\n                cheques_hoy = int(snapshot_hoy.get(\"cheques\") or 0)\n                ticket_promedio_hoy = (\n                    ventas_hoy / cheques_hoy if cheques_hoy > 0 else 0\n                )\n                pax_promedio_hoy = (\n                    ventas_hoy / pax_hoy if pax_hoy > 0 else 0\n                )\n                return {\n                    \"source_status\": \"SUCCESS\",\n                    \"source_message\": (\n                        \"Datos de Hoy desde snapshot EDARSAHUB \"\n                        f\"({snapshot_hoy.get('estado_dato', 'VIGENTE')})\"\n                    ),\n                    \"source_type\": \"EDARSAHUB_SNAPSHOT_DIA\",\n                    \"server_name\": server.get(\"name\", \"Desconocido\"),\n                    \"server_type\": server.get(\"system_type\", \"Desconocido\"),\n                    \"fecha_inicio\": fecha_ini,\n                    \"fecha_fin\": fecha_fin,\n                    \"kpis\": {\n                        \"ventas_periodo\": ventas_hoy,\n                        \"ticket_promedio\": ticket_promedio_hoy,\n                        \"cheques_total\": cheques_hoy,\n                        \"pax_total\": pax_hoy,\n                        \"pax_promedio\": pax_promedio_hoy,\n                        \"consumo_persona\": pax_promedio_hoy,\n                        \"mesas_atendidas\": cheques_hoy,\n                        \"rotacion_mesas\": 0,\n                        \"venta_por_hora\": 0,\n                    },\n                    \"comparativo\": {\n                        \"vs_periodo_anterior\": None,\n                        \"vs_ano_anterior\": None,\n                        \"vs_presupuesto\": None,\n                        \"tipo_comparacion\": tipo_comparacion,\n                        \"ventas_anterior\": None,\n                        \"ventas_ano_anterior\": None,\n                    },\n                    \"alertas\": [],\n                }\n\n        # FASE 3A.2: Migrado a helper centralizado\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_comercial_hoy_integral_all_units_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[1]\nROUTES = ROOT / \"modules/comercial/routes.py\"\n\n\ndef test_hoy_uses_mexico_timezone_in_dashboard_and_drilldown():\n    text = ROUTES.read_text(encoding=\"utf-8\")\n    assert \"from zoneinfo import ZoneInfo\" in text\n    assert text.count('datetime.now(ZoneInfo(\"America/Mexico_City\"))') >= 2\n\n\ndef test_hoy_uses_daily_snapshot_before_engine_branch():\n    text = ROUTES.read_text(encoding=\"utf-8\")\n    dash = text.index(\"async def comercial_dashboard(\")\n    snap = text.index('if periodo == \"dia\":\\n            snapshot_hoy = get_ventas_dia_snapshot_from_edarsahub(', dash)\n    sr = text.index(\"if is_softrestaurant_system(server.get('system_type')):\", snap)\n    mp = text.index(\"elif is_mpro_system(server.get('system_type')):\", sr)\n    assert dash < snap < sr < mp\n    block = text[snap:sr]\n    assert '\"source_type\": \"EDARSAHUB_SNAPSHOT_DIA\"' in block\n    assert '\"ventas_periodo\": ventas_hoy' in block\n    assert '\"cheques_total\": cheques_hoy' in block\n    assert '\"pax_total\": pax_hoy' in block\n\n\ndef test_daily_drilldown_keeps_open_snapshot_merge_for_all_engines():\n    text = ROUTES.read_text(encoding=\"utf-8\")\n    start = text.index(\"async def comercial_detalle_ventas_agrupado(\")\n    end = text.index('@router.get(\"/comercial/ticket-venta/{server_id}\")', start)\n    block = text[start:end]\n    assert 'if periodo == \"dia\":' in block\n    assert 'merge_open_snapshot_tickets(' in block\n    assert 'fecha_ini_dt = hoy_inicio' in block\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial/routes.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_hoy_integral_all_units_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial/routes.py",
+          "backend/modules/comercial/ticket_service.py"
+        ],
+        "search_terms": [
+          "America/Mexico_City",
+          "EDARSAHUB_SNAPSHOT_DIA",
+          "get_ventas_dia_snapshot_from_edarsahub",
+          "merge_open_snapshot_tickets",
+          "Comercial_Ventas_Dia_Abiertas_v2"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
