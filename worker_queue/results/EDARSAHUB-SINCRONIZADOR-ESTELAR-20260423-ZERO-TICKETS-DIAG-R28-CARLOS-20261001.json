@@ -1,0 +1,414 @@
+{
+  "base_sha": "a3ee49f54c84c814de69ac587b21967af860a914",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-01T15:44:05Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-20260423-ZERO-TICKETS-DIAG-R28-CARLOS-20261001",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T15:44:26Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "folio",
+              "idturno",
+              "fecha",
+              "total_header",
+              "descuento_cortesia",
+              "pax",
+              "cancelado"
+            ],
+            "name": "estelar_20260423_zero_folios_header",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                "16308",
+                "305",
+                "2026-04-23T00:38:00",
+                "0.0000",
+                "0.0000",
+                "1",
+                false
+              ],
+              [
+                "16333",
+                "305",
+                "2026-04-22T19:15:57",
+                "0.0000",
+                "155.1724",
+                "2",
+                false
+              ],
+              [
+                "16343",
+                "305",
+                "2026-04-22T23:06:03",
+                "0.0000",
+                "1293.1034",
+                "2",
+                false
+              ],
+              [
+                "16344",
+                "305",
+                "2026-04-22T20:38:35",
+                "0.0000",
+                "732.7586",
+                "1",
+                false
+              ],
+              [
+                "16346",
+                "305",
+                "2026-04-22T23:16:35",
+                "0.0000",
+                "1293.1034",
+                "2",
+                false
+              ],
+              [
+                "16347",
+                "305",
+                "2026-04-22T23:17:08",
+                "0.0000",
+                "1293.1034",
+                "2",
+                false
+              ],
+              [
+                "16348",
+                "305",
+                "2026-04-22T23:17:41",
+                "0.0000",
+                "1939.6552",
+                "3",
+                false
+              ],
+              [
+                "16352",
+                "305",
+                "2026-04-23T21:11:25",
+                "0.0000",
+                "297.4138",
+                "1",
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "folio",
+              "lineas",
+              "bruto_detalle"
+            ],
+            "name": "estelar_20260423_zero_folios_detail_summary",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                "16308",
+                10,
+                "0.1970"
+              ],
+              [
+                "16333",
+                4,
+                "180.0000"
+              ],
+              [
+                "16343",
+                1,
+                "1500.0000"
+              ],
+              [
+                "16344",
+                4,
+                "1600.0000"
+              ],
+              [
+                "16346",
+                1,
+                "1500.0000"
+              ],
+              [
+                "16347",
+                1,
+                "1500.0000"
+              ],
+              [
+                "16348",
+                1,
+                "2250.0000"
+              ],
+              [
+                "16352",
+                6,
+                "345.0000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "folio",
+              "idproducto",
+              "producto",
+              "cantidad",
+              "precio",
+              "importe_linea"
+            ],
+            "name": "estelar_20260423_zero_folios_detail_lines",
+            "row_count_returned": 28,
+            "rows": [
+              [
+                "16308",
+                "C030023",
+                "TASTING MEZ 400 CONEJO ESPADIN",
+                "33.0000",
+                "0.0010",
+                "0.0330"
+              ],
+              [
+                "16308",
+                "C030023",
+                "TASTING MEZ 400 CONEJO ESPADIN",
+                "5.0000",
+                "0.0010",
+                "0.0050"
+              ],
+              [
+                "16308",
+                "C030024",
+                "TASTING MEZ 400 CONEJOS REPOSADO",
+                "33.0000",
+                "0.0010",
+                "0.0330"
+              ],
+              [
+                "16308",
+                "C030024",
+                "TASTING MEZ 400 CONEJOS REPOSADO",
+                "5.0000",
+                "0.0010",
+                "0.0050"
+              ],
+              [
+                "16308",
+                "C030025",
+                "TASTING MEZ 400 CONEJOS TOBALA",
+                "33.0000",
+                "0.0010",
+                "0.0330"
+              ],
+              [
+                "16308",
+                "C030025",
+                "TASTING MEZ 400 CONEJOS TOBALA",
+                "5.0000",
+                "0.0010",
+                "0.0050"
+              ],
+              [
+                "16308",
+                "C030026",
+                "TASTING 400 CONEJOS CRISTALINO",
+                "33.0000",
+                "0.0010",
+                "0.0330"
+              ],
+              [
+                "16308",
+                "C030026",
+                "TASTING 400 CONEJOS CRISTALINO",
+                "12.0000",
+                "0.0010",
+                "0.0120"
+              ],
+              [
+                "16308",
+                "C030027",
+                "COC COCTEL DE BIENVENIDA",
+                "33.0000",
+                "0.0010",
+                "0.0330"
+              ],
+              [
+                "16308",
+                "C030027",
+                "COC COCTEL DE BIENVENIDA",
+                "5.0000",
+                "0.0010",
+                "0.0050"
+              ],
+              [
+                "16333",
+                "B070023",
+                "MIX CHELADA",
+                "1.0000",
+                "30.0000",
+                "30.0000"
+              ],
+              [
+                "16333",
+                "B070029        ",
+                "B COCA COLA ZERO 355 ML",
+                "1.0000",
+                "50.0000",
+                "50.0000"
+              ],
+              [
+                "16333",
+                "B070029        ",
+                "B COCA COLA ZERO 355 ML",
+                "1.0000",
+                "50.0000",
+                "50.0000"
+              ],
+              [
+                "16333",
+                "B070066",
+                "B AGUA MINERAL PEÑAFIEL 355 ML",
+                "1.0000",
+                "50.0000",
+                "50.0000"
+              ],
+              [
+                "16343",
+                "C030022",
+                "CENA MARIDAJE",
+                "2.0000",
+                "750.0000",
+                "1500.0000"
+              ],
+              [
+                "16344",
+                "B070027",
+                "B COCA COLA 355 ML",
+                "1.0000",
+                "50.0000",
+                "50.0000"
+              ],
+              [
+                "16344",
+                "B070027",
+                "B COCA COLA 355 ML",
+                "1.0000",
+                "50.0000",
+                "50.0000"
+              ],
+              [
+                "16344",
+                "C030022",
+                "CENA MARIDAJE",
+                "1.0000",
+                "750.0000",
+                "750.0000"
+              ],
+              [
+                "16344",
+                "C030022",
+                "CENA MARIDAJE",
+                "1.0000",
+                "750.0000",
+                "750.0000"
+              ],
+              [
+                "16346",
+                "C030022",
+                "CENA MARIDAJE",
+                "2.0000",
+                "750.0000",
+                "1500.0000"
+              ],
+              [
+                "16347",
+                "C030022",
+                "CENA MARIDAJE",
+                "2.0000",
+                "750.0000",
+                "1500.0000"
+              ],
+              [
+                "16348",
+                "C030022",
+                "CENA MARIDAJE",
+                "3.0000",
+                "750.0000",
+                "2250.0000"
+              ],
+              [
+                "16352",
+                "B070018",
+                "CERVEZA MODELO NEGRA 355 ML",
+                "1.0000",
+                "70.0000",
+                "70.0000"
+              ],
+              [
+                "16352",
+                "B070018",
+                "CERVEZA MODELO NEGRA 355 ML",
+                "1.0000",
+                "70.0000",
+                "70.0000"
+              ],
+              [
+                "16352",
+                "B070048",
+                "LIMONADA NATURAL",
+                "1.0000",
+                "65.0000",
+                "65.0000"
+              ],
+              [
+                "16352",
+                "B070056",
+                "CERVEZA CORONA ZERO 355 ML",
+                "1.0000",
+                "70.0000",
+                "70.0000"
+              ],
+              [
+                "16352",
+                "B070056",
+                "CERVEZA CORONA ZERO 355 ML",
+                "1.0000",
+                "70.0000",
+                "70.0000"
+              ],
+              [
+                "16352",
+                "B070059",
+                "LIMONADA",
+                "1.0000",
+                "0.0000",
+                "0.0000"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-01T15:44:04Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
