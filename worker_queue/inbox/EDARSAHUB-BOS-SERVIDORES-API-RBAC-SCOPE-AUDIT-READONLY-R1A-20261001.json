@@ -1,0 +1,90 @@
+{
+  "acceptance_criteria": [
+    "READ_ONLY_COMPLETE",
+    "production_touched=false",
+    "No DDL or DML detected",
+    "No secrets exposed",
+    "No remote connectivity attempted",
+    "Root cause classified per API connection"
+  ],
+  "actions": [],
+  "audit_plan": {
+    "code_evidence": {
+      "file": "backend/modules/api_connections/universal_test_routes.py",
+      "function": "validate_api_connection_access",
+      "requires": [
+        "sql UsuarioID resolvable",
+        "SERVIDORES_VER",
+        "connection EmpresaID",
+        "effective user scope over EmpresaID"
+      ]
+    },
+    "expected_matrix_columns": [
+      "usuario_email",
+      "usuario_id",
+      "rol",
+      "connection_id",
+      "nombre_conexion",
+      "tipo_conexion",
+      "activo",
+      "EmpresaID",
+      "tiene_SERVIDORES_VER",
+      "tiene_alcance_empresa",
+      "resultado_autorizacion",
+      "causa_bloqueo"
+    ],
+    "possible_causes": [
+      "PASS",
+      "BLOCKED_BY_IDENTITY_NOT_RESOLVED",
+      "BLOCKED_BY_MISSING_SERVIDORES_VER",
+      "BLOCKED_BY_CONNECTION_EMPRESAID_NULL",
+      "BLOCKED_BY_EMPRESA_SCOPE",
+      "BLOCKED_BY_SUPERADMIN_SCOPE_BUG"
+    ],
+    "read_only_validations": [
+      "Resolve relevant UI users to SQL UsuarioID.",
+      "Confirm whether user or role has SERVIDORES_VER.",
+      "List active API_LOCAL connections visible in Servidores.",
+      "Confirm EmpresaID for each API connection.",
+      "Confirm user effective scope over each EmpresaID.",
+      "Confirm whether ADMIN or SUPERADMIN have real SQL effective scope or fail too.",
+      "Classify authorization block cause per connection."
+    ]
+  },
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-SERVIDORES-API-RBAC-SCOPE-AUDIT-READONLY-R1A-20261001",
+  "mode": "READ_ONLY",
+  "objective": "READ_ONLY audit for Servidores / API connections RBAC scope. Determine why visible API connections cannot be tested from UI and return 'Sin permiso para acceder a esta conexion API'.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "",
+    "requested_at_utc": "2026-10-01T19:40:12.008300+00:00",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "scope": {
+    "domain": "SERVIDORES_API_RBAC_SCOPE",
+    "no_connection_changes": true,
+    "no_ddl": true,
+    "no_dml": true,
+    "no_host_port_api_key_activo_hora_replica_changes": true,
+    "no_permission_changes": true,
+    "no_remote_connectivity_test": true,
+    "no_secret_access": true
+  },
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
