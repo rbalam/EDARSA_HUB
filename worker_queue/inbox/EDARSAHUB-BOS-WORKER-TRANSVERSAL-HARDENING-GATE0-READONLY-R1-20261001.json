@@ -1,0 +1,68 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-BOS-WORKER-TRANSVERSAL-HARDENING-GATE0-READONLY-R1-20261001",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e37d2be86d8f5872d80f63fb290c834cc27f1a04",
+  "mode": "READ_ONLY",
+  "objective": "Certificar en READ_ONLY el estado transversal actual del Universal Worker antes de cualquier nueva mutacion: refresh determinista de worker/requests; Canonical Job Ingress; registro/persistencia de capabilities y recovery bootstrap; cadena job_spec->publisher->worker/requests->bridge->pending->processing->dispatcher->checks->results->done->result publisher; observabilidad supervisor/launcher independiente; self-update/restart controlado; lifecycle results+done. No tocar dominios funcionales, SQL, MongoDB ni Produccion.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS",
+    "chat": "Universal Worker Git Self-Healing Hardening"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/worker_repair_planner.py",
+        "tools/mirror_sync/worker_control_plane.py",
+        "tools/mirror_sync/runtime_health_publisher.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "backend/modules/worker_runtime_wake/routes.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_canonical_job_ingress_contract.py",
+        "backend/tests/test_worker_repair_planner_canonical_ingress_capability.py",
+        "backend/tests/test_worker_repair_execution_bridge_contract.py",
+        "backend/tests/test_worker_repair_retry_binding_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_control_plane_supervisor_ownership_contract.py",
+        "backend/tests/test_worker_control_plane_maintenance_integration_contract.py",
+        "backend/tests/test_worker_automatic_repair_orchestration_contract.py",
+        "backend/tests/test_worker_automatic_repair_activation_boundary_contract.py",
+        "backend/tests/test_runtime_health_publisher_git_auth_contract.py",
+        "backend/tests/test_runtime_health_operational_stale_threshold.py",
+        "backend/tests/test_worker_runtime_startup_selfheal_r1.py",
+        "backend/tests/test_worker_runtime_wake_convergence_r42.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_universal_job_result_publisher_queue_retry.py",
+        "backend/tests/test_worker_operational_complete_lifecycle.py"
+      ]
+    }
+  ]
+}
