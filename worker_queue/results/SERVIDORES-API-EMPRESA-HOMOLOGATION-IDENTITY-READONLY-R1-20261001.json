@@ -1,0 +1,371 @@
+{
+  "base_sha": "012921ebc92508c8b76891931bc5720344a7055c",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-01T03:16:07Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-IDENTITY-READONLY-R1-20261001",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T03:16:25Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "ConexionID",
+              "nombre",
+              "system_type",
+              "database_name",
+              "api_url",
+              "EmpresaID",
+              "empresa_id",
+              "visible_en_listado",
+              "visible_en_operaciones"
+            ],
+            "name": "orphan_api_identity",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "B597D88A-AB37-4B4E-897B-EFE68C9B3732",
+                "API ManagmentPro",
+                "MPRO",
+                "CLOUD",
+                "http://54.39.104.176:8008/query",
+                null,
+                "",
+                true,
+                false
+              ],
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "CHAPUR BACKOFFICE",
+                "ENTERPRISE",
+                "CHAPUR",
+                "http://54.39.104.176:8009/query",
+                null,
+                "",
+                true,
+                false
+              ],
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                "CHAPUR",
+                "http://54.39.104.176:8007/query",
+                null,
+                "",
+                true,
+                true
+              ],
+              [
+                "31D62F39-632B-4684-B735-256BD9293A8F",
+                "CIENFUEGOS NOMINPAQ",
+                "SOFTRESTAURANT_PRO",
+                "CIENFUEGOS",
+                "http://54.39.104.176:8005/query",
+                null,
+                "",
+                true,
+                false
+              ],
+              [
+                "2BEAD18C-73C9-4D86-AF92-2355940274F7",
+                "GARIBALDI",
+                "SOFTRESTAURANT_PRO",
+                "GARIBALDI",
+                "http://54.39.104.176:8014/query",
+                null,
+                "",
+                true,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ConexionNombre",
+              "database_name",
+              "EmpresaID",
+              "CodigoEmpresa",
+              "NombreComercial",
+              "Activo"
+            ],
+            "name": "orphan_api_empresa_name_matches",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "CIENFUEGOS NOMINPAQ",
+                "CIENFUEGOS",
+                3,
+                "CIENFUEGOS",
+                "Restaurante Cienfuegos S.A. de C.V.",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ConexionNombre",
+              "database_name",
+              "UnidadNegocioID",
+              "codigo",
+              "UnidadNombre",
+              "server_id",
+              "activo"
+            ],
+            "name": "orphan_api_unit_name_matches",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "CIENFUEGOS NOMINPAQ",
+                "CIENFUEGOS",
+                "b06ee652-0370-4267-b0a8-da6fc39b590a",
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ConexionNombre",
+              "system_type",
+              "database_name",
+              "EmpresaID",
+              "CodigoEmpresa",
+              "NombreComercial"
+            ],
+            "name": "orphan_api_system_type_company_inventory",
+            "row_count_returned": 25,
+            "rows": [
+              [
+                "API ManagmentPro",
+                "MPRO",
+                "CLOUD",
+                1,
+                "ORIGEN",
+                "Restaurante Origen S.A. de C.V."
+              ],
+              [
+                "API ManagmentPro",
+                "MPRO",
+                "CLOUD",
+                2,
+                "130QRO",
+                "130 Grados Querétaro S.A. de C.V."
+              ],
+              [
+                "API ManagmentPro",
+                "MPRO",
+                "CLOUD",
+                3,
+                "CIENFUEGOS",
+                "Restaurante Cienfuegos S.A. de C.V."
+              ],
+              [
+                "API ManagmentPro",
+                "MPRO",
+                "CLOUD",
+                4,
+                "ESTELAR",
+                "La Estelar S.A. de C.V."
+              ],
+              [
+                "API ManagmentPro",
+                "MPRO",
+                "CLOUD",
+                5,
+                "130MID",
+                "130 Grados Mérida S.A. de C.V."
+              ],
+              [
+                "CHAPUR BACKOFFICE",
+                "ENTERPRISE",
+                "CHAPUR",
+                1,
+                "ORIGEN",
+                "Restaurante Origen S.A. de C.V."
+              ],
+              [
+                "CHAPUR BACKOFFICE",
+                "ENTERPRISE",
+                "CHAPUR",
+                2,
+                "130QRO",
+                "130 Grados Querétaro S.A. de C.V."
+              ],
+              [
+                "CHAPUR BACKOFFICE",
+                "ENTERPRISE",
+                "CHAPUR",
+                3,
+                "CIENFUEGOS",
+                "Restaurante Cienfuegos S.A. de C.V."
+              ],
+              [
+                "CHAPUR BACKOFFICE",
+                "ENTERPRISE",
+                "CHAPUR",
+                4,
+                "ESTELAR",
+                "La Estelar S.A. de C.V."
+              ],
+              [
+                "CHAPUR BACKOFFICE",
+                "ENTERPRISE",
+                "CHAPUR",
+                5,
+                "130MID",
+                "130 Grados Mérida S.A. de C.V."
+              ],
+              [
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                "CHAPUR",
+                1,
+                "ORIGEN",
+                "Restaurante Origen S.A. de C.V."
+              ],
+              [
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                "CHAPUR",
+                2,
+                "130QRO",
+                "130 Grados Querétaro S.A. de C.V."
+              ],
+              [
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                "CHAPUR",
+                3,
+                "CIENFUEGOS",
+                "Restaurante Cienfuegos S.A. de C.V."
+              ],
+              [
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                "CHAPUR",
+                4,
+                "ESTELAR",
+                "La Estelar S.A. de C.V."
+              ],
+              [
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                "CHAPUR",
+                5,
+                "130MID",
+                "130 Grados Mérida S.A. de C.V."
+              ],
+              [
+                "CIENFUEGOS NOMINPAQ",
+                "SOFTRESTAURANT_PRO",
+                "CIENFUEGOS",
+                1,
+                "ORIGEN",
+                "Restaurante Origen S.A. de C.V."
+              ],
+              [
+                "CIENFUEGOS NOMINPAQ",
+                "SOFTRESTAURANT_PRO",
+                "CIENFUEGOS",
+                2,
+                "130QRO",
+                "130 Grados Querétaro S.A. de C.V."
+              ],
+              [
+                "CIENFUEGOS NOMINPAQ",
+                "SOFTRESTAURANT_PRO",
+                "CIENFUEGOS",
+                3,
+                "CIENFUEGOS",
+                "Restaurante Cienfuegos S.A. de C.V."
+              ],
+              [
+                "CIENFUEGOS NOMINPAQ",
+                "SOFTRESTAURANT_PRO",
+                "CIENFUEGOS",
+                4,
+                "ESTELAR",
+                "La Estelar S.A. de C.V."
+              ],
+              [
+                "CIENFUEGOS NOMINPAQ",
+                "SOFTRESTAURANT_PRO",
+                "CIENFUEGOS",
+                5,
+                "130MID",
+                "130 Grados Mérida S.A. de C.V."
+              ],
+              [
+                "GARIBALDI",
+                "SOFTRESTAURANT_PRO",
+                "GARIBALDI",
+                1,
+                "ORIGEN",
+                "Restaurante Origen S.A. de C.V."
+              ],
+              [
+                "GARIBALDI",
+                "SOFTRESTAURANT_PRO",
+                "GARIBALDI",
+                2,
+                "130QRO",
+                "130 Grados Querétaro S.A. de C.V."
+              ],
+              [
+                "GARIBALDI",
+                "SOFTRESTAURANT_PRO",
+                "GARIBALDI",
+                3,
+                "CIENFUEGOS",
+                "Restaurante Cienfuegos S.A. de C.V."
+              ],
+              [
+                "GARIBALDI",
+                "SOFTRESTAURANT_PRO",
+                "GARIBALDI",
+                4,
+                "ESTELAR",
+                "La Estelar S.A. de C.V."
+              ],
+              [
+                "GARIBALDI",
+                "SOFTRESTAURANT_PRO",
+                "GARIBALDI",
+                5,
+                "130MID",
+                "130 Grados Mérida S.A. de C.V."
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-01T03:16:06Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
