@@ -1,0 +1,30 @@
+{
+  "base_sha": "c4bf767e0a202b1b137d8166c71fa4380806de4c",
+  "blockers": [],
+  "candidate_sha": "7a9fdf35599df8c9638cbad68973914295a2cd0e",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-10-01T17:38:30Z",
+  "development_sha": "7a9fdf35599df8c9638cbad68973914295a2cd0e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/comercial_analytics/repository_operational.py",
+    "backend/tests/test_comercial_operacion_en_curso_repository.py",
+    "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+    "frontend/src/pages/TableroEjecutivo.js"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "MEJORA-TABEJE-VENTAS-DIA-MISMO-DETALLE-COMERCIAL-R15C-CARLOS-20261001T1728Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T17:38:33Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-01T17:38:25Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
