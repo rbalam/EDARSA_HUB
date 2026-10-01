@@ -1,22 +1,100 @@
 {
-  "blockers": [
-    "dispatcher_exception:SlotRuntimeError:SLOT_ALREADY_CLAIMED"
-  ],
-  "certification": "NOT_CERTIFIED",
-  "completed_at_utc": "2026-09-23T00:45:53Z",
+  "base_sha": "d79406e2050303b293840bb4816f5e37b1075b5d",
+  "blockers": [],
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-10-01T21:34:57Z",
+  "dry_run": false,
   "executor": "chatgpt-deterministic",
+  "files_changed": [],
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "EDARSAHUB-ISCAM-130QRO-0808-POST-CONVERGENCE-BACKFILL-R18-CARLOS-20260922",
-  "percent_complete": 0,
+  "operation": "ISCAM_DETAIL_BACKFILL",
+  "operation_summary": {
+    "dias_bloqueados": 0,
+    "dias_candidatos": 0,
+    "dias_evaluados": 1,
+    "dias_reparables": 0,
+    "dias_sin_runtime": 0,
+    "dias_ya_ok": 1,
+    "fecha_fin_exclusivo": "2026-08-09",
+    "fecha_inicio": "2026-08-08",
+    "filas_insertadas": 0,
+    "modo": "COMMIT",
+    "unidades": [
+      {
+        "bloqueados": 0,
+        "candidatos": 0,
+        "dias": [
+          {
+            "fecha_operacion": "2026-08-08",
+            "status": "YA_CONCILIADO"
+          }
+        ],
+        "filas_insertadas": 0,
+        "reparables": 0,
+        "sin_runtime": 0,
+        "unidad": "130QRO",
+        "ya_ok": 1
+      }
+    ]
+  },
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-09-23T00:46:56Z",
-  "quality_gate": "FAIL",
+  "published_at_utc": "2026-10-01T21:35:04Z",
+  "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
   "source_repo": "rbalam/EDARSA_HUB",
-  "started_at_utc": "2026-09-23T00:45:53Z",
-  "status": "BLOCKED",
-  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
-  "work_completion": "NOT_CERTIFIED"
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "ventas_runtime",
+              "ventas_detalle",
+              "delta_ventas",
+              "tickets_runtime",
+              "tickets_detalle",
+              "delta_tickets",
+              "pax_runtime",
+              "pax_detalle",
+              "delta_pax",
+              "gate_pass"
+            ],
+            "name": "qro_0808_post_convergence_final",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "233021.0000",
+                "233021.0000",
+                "0.0000",
+                "57",
+                "57",
+                "0",
+                "159",
+                "159",
+                "0",
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-01T21:34:55Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto el backfill cerrado de detalle ISCAM para las unidades y fechas autorizadas y certifico el resultado con SQL de solo lectura. No acepto shell, rutas ni comandos externos y no toco Produccion.",
+  "tests": "PASS",
+  "units": [
+    "130QRO"
+  ],
+  "work_completion": "COMPLETE"
 }
