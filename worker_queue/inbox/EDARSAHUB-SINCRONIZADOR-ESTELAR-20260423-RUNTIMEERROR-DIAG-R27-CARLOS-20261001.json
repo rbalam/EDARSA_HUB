@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-20260423-RUNTIMEERROR-DIAG-R27-CARLOS-20261001",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Sincronizador | LA ESTELAR | 23/04/2026 | Diagnosticar la causa real del RUNTIMEERROR_UNCLASSIFIED del extractor SoftRestaurant. Revisar exclusivamente la ventana canonica 2026-04-23 09:00 a 2026-04-24 09:00 para detectar folios duplicados/inconsistentes o encabezados en cero con detalle monetario. Solo lectura.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ESTELAR"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "max_rows": 100,
+      "queries": [
+        {
+          "name": "estelar_20260423_source_aggregate",
+          "sql": "\nSELECT\n    COUNT(*) AS cheque_rows,\n    COUNT(DISTINCT CONVERT(varchar(64),ch.folio)) AS folios_distintos,\n    CAST(ROUND(SUM(ISNULL(ch.total,0)),2) AS decimal(18,2)) AS venta_total,\n    SUM(ISNULL(ch.nopersonas,0)) AS pax_total\nFROM cheques ch WITH (NOLOCK)\nINNER JOIN turnos tr WITH (NOLOCK)\n    ON tr.idturno=ch.idturno\nWHERE tr.apertura >= '2026-04-23 09:00:00'\n  AND tr.apertura <  '2026-04-24 09:00:00'\n  AND ISNULL(ch.cancelado,0)=0"
+        },
+        {
+          "name": "estelar_20260423_duplicate_or_inconsistent_folios",
+          "sql": "\nSELECT\n    ch.folio,\n    COUNT(*) AS cheque_rows,\n    COUNT(DISTINCT ch.idturno) AS turnos,\n    COUNT(DISTINCT CAST(ISNULL(ch.total,0) AS decimal(18,2))) AS totales_distintos,\n    COUNT(DISTINCT ISNULL(ch.nopersonas,0)) AS pax_distintos,\n    MIN(CAST(ISNULL(ch.total,0) AS decimal(18,2))) AS total_min,\n    MAX(CAST(ISNULL(ch.total,0) AS decimal(18,2))) AS total_max,\n    MIN(ISNULL(ch.nopersonas,0)) AS pax_min,\n    MAX(ISNULL(ch.nopersonas,0)) AS pax_max,\n    MIN(ch.fecha) AS fecha_min,\n    MAX(ch.fecha) AS fecha_max,\n    MIN(tr.apertura) AS apertura_min,\n    MAX(tr.apertura) AS apertura_max\nFROM cheques ch WITH (NOLOCK)\nINNER JOIN turnos tr WITH (NOLOCK)\n    ON tr.idturno=ch.idturno\nWHERE tr.apertura >= '2026-04-23 09:00:00'\n  AND tr.apertura <  '2026-04-24 09:00:00'\n  AND ISNULL(ch.cancelado,0)=0\nGROUP BY ch.folio\nHAVING COUNT(*)>1\n    OR COUNT(DISTINCT CAST(ISNULL(ch.total,0) AS decimal(18,2)))>1\n    OR COUNT(DISTINCT ISNULL(ch.nopersonas,0))>1\nORDER BY ch.folio"
+        },
+        {
+          "name": "estelar_20260423_zero_header_with_detail",
+          "sql": "\nWITH h AS (\n    SELECT ch.folio, ch.idturno, ch.fecha,\n           CAST(ISNULL(ch.total,0) AS decimal(18,4)) AS total_header,\n           ISNULL(ch.nopersonas,0) AS pax\n    FROM cheques ch WITH (NOLOCK)\n    INNER JOIN turnos tr WITH (NOLOCK)\n      ON tr.idturno=ch.idturno\n    WHERE tr.apertura >= '2026-04-23 09:00:00'\n      AND tr.apertura <  '2026-04-24 09:00:00'\n      AND ISNULL(ch.cancelado,0)=0\n),\nd AS (\n    SELECT foliodet,\n           CAST(SUM(CAST(ISNULL(cantidad,0)*ISNULL(precio,0) AS decimal(18,4))) AS decimal(18,4)) AS bruto_detalle,\n           COUNT(*) AS lineas\n    FROM cheqdet WITH (NOLOCK)\n    GROUP BY foliodet\n)\nSELECT h.folio,h.idturno,h.fecha,h.total_header,h.pax,\n       ISNULL(d.bruto_detalle,0) AS bruto_detalle,\n       CAST(ISNULL(d.bruto_detalle,0)-h.total_header AS decimal(18,4)) AS delta,\n       ISNULL(d.lineas,0) AS lineas\nFROM h\nLEFT JOIN d ON d.foliodet=h.folio\nWHERE h.total_header=0\n  AND ABS(ISNULL(d.bruto_detalle,0))>0.05\nORDER BY h.folio"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No DDL/DML",
+    "No resync",
+    "No modificar sync_comercial_abiertas_v2",
+    "No modificar codigo"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": []
+  }
+}
