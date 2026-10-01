@@ -1,0 +1,124 @@
+{
+  "base_sha": "81819e393df1c5336669387df23ffe6c89af3e71",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-01T21:14:15Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-SERVIDORES-API-SUPERADMIN-EMPRESA-SCOPE-POSTFIX-AUDIT-R1K-20261001",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T21:14:34Z",
+  "quality_gate": "FAIL",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.rbac_sql",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.db"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "_has_superadmin_role",
+              "can_access_empresa",
+              "superadmin",
+              "usuario_empresasasignacion",
+              "usuario_rolesasignacion"
+            ],
+            "path": "backend/core/rbac_sql/service.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACSQLService",
+              "_has_superadmin_role",
+              "build_context",
+              "can_access_empresa",
+              "can_access_permission",
+              "can_access_servidor",
+              "can_access_sucursal",
+              "can_access_unidad",
+              "can_access_unit_metadata",
+              "get_effective_permissions",
+              "get_empresas",
+              "get_permission_scope_by_code",
+              "get_roles",
+              "get_scope_assignment_state",
+              "get_servidores",
+              "get_sucursales",
+              "get_unidades"
+            ],
+            "tables_referenced": [
+              "Unidades_Negocio",
+              "Usuario_Acciones",
+              "Usuario_EmpresasAsignacion",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion",
+              "Usuario_ServidoresAsignacion",
+              "Usuario_SucursalesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.rbac_sql"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "can_access_empresa",
+              "superadmin",
+              "usuario_empresasasignacion",
+              "usuario_rolesasignacion"
+            ],
+            "path": "backend/tests/test_rbac_sql_superadmin_empresa_scope.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "fake_fetch_one_dict",
+              "test_can_access_empresa_fails_closed_for_missing_or_invalid_empresa",
+              "test_normal_user_requires_explicit_empresa_scope",
+              "test_normal_user_without_explicit_empresa_scope_is_denied",
+              "test_superadmin_can_access_empresa_without_explicit_scope"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 2,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-01T21:14:14Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
