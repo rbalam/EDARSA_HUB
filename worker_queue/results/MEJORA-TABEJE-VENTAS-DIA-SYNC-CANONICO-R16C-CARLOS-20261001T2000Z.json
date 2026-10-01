@@ -1,0 +1,32 @@
+{
+  "base_sha": "d8b839a8722c807a8f15e7b2deb15000e66b3469",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "candidate_sha": "6679b4e97dc95bd5fb4d3adf239d55345b866b80",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-01T20:56:28Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/comercial_analytics/repository_tickets.py",
+    "backend/scripts/backfill_detalle_producto_pendientes.py",
+    "backend/tests/test_comercial_ejecutivo_ventas_dia_sync_path_r16c.py",
+    "backend/tests/test_comercial_operacion_en_curso_repository.py",
+    "frontend/src/components/comercial/KpiDrilldownDialog.jsx"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "MEJORA-TABEJE-VENTAS-DIA-SYNC-CANONICO-R16C-CARLOS-20261001T2000Z",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T20:56:54Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-01T20:56:23Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
