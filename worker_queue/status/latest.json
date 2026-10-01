@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "dad52803270f8e3348c32a9b45e5705be1ff9aeb",
-  "generated_at_utc": "2026-10-01T06:13:42Z",
+  "generated_at_utc": "2026-10-01T06:15:03Z",
   "history": {
     "done_total_local": 1246,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1255,
+      "age_seconds": 1337,
       "job_id": "EDARSAHUB-COMERCIAL-HIST-202609-ALL5-R2-CARLOS",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1474,
+      "age_seconds": 1556,
       "job_id": "EDARSAHUB-COMERCIAL-HIST-202609-ALL5-R3-CARLOS",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 997,
+      "age_seconds": 1078,
       "job_id": "EDARSAHUB-COMERCIAL-HIST-202609-ALL5-R4-CARLOS",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 284,
+      "age_seconds": 366,
       "job_id": "EDARSAHUB-COMERCIAL-HIST-202609-D01-05-ALL5-R5A-CARLOS",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2578,
+      "age_seconds": 2659,
       "job_id": "EDARSAHUB-SINCRONIZADOR-FORCE-DETAIL-REFRESH-R2-CARLOS-20261001T0540Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-COMERCIAL-HIST-202609-D01-05-ALL5-R5A-CARLOS",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T06:13:42Z",
-    "last_receive_utc": "2026-10-01T06:13:37Z",
+    "last_cycle_utc": "2026-10-01T06:14:56Z",
+    "last_receive_utc": "2026-10-01T06:15:01Z",
     "last_terminal_utc": "2026-10-01T06:08:57Z",
     "pid": "142790",
     "runtime_fingerprint": {
