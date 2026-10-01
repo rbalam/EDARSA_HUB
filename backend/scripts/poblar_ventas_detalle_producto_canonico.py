@@ -1040,7 +1040,9 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 v.Vn_Documento,
                 v.Vn_Fecha,
                 v.Sc_Cve_Sucursal,
-                  ISNULL(v.Es_Cve_Estado, '') AS estado_origen,
+                CONVERT(varchar(100), v.Vn_Cve_Vendedor) AS vendedor_id,
+                NULLIF(LTRIM(RTRIM(CONVERT(varchar(200), vnd.Vn_Descripcion))), '') AS vendedor_nombre,
+                ISNULL(v.Es_Cve_Estado, '') AS estado_origen,
                 ISNULL(c.Co_Personas, 0) AS pax_ticket,
                 ISNULL(v.Vn_Precio_Neto_Importe, 0) AS importe_neto_ticket,
                 ISNULL(c.Co_Propina, 0) AS propina_ticket,
@@ -1050,6 +1052,8 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             LEFT JOIN Comanda c WITH (NOLOCK)
                 ON c.Co_Folio = v.Vn_Documento
                AND c.Sc_Cve_Sucursal = v.Sc_Cve_Sucursal
+            LEFT JOIN Vendedor vnd WITH (NOLOCK)
+                ON vnd.Vn_Cve_Vendedor = v.Vn_Cve_Vendedor
             WHERE CONVERT(date, v.Vn_Fecha) >= CONVERT(date, %s)
               AND CONVERT(date, v.Vn_Fecha) < CONVERT(date, %s)
               AND v.Sc_Cve_Sucursal = %s
@@ -1061,7 +1065,9 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 h.Vn_Folio,
                 h.Vn_Documento,
                 h.Vn_Fecha,
-                  h.estado_origen,
+                h.vendedor_id,
+                h.vendedor_nombre,
+                h.estado_origen,
                 h.pax_ticket,
                 h.importe_neto_ticket,
                 h.propina_ticket,
@@ -1088,7 +1094,9 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 h.Vn_Folio,
                 h.Vn_Documento,
                 h.Vn_Fecha,
-                  h.estado_origen,
+                h.vendedor_id,
+                h.vendedor_nombre,
+                h.estado_origen,
                 h.pax_ticket,
                 h.importe_neto_ticket,
                 h.propina_ticket,
@@ -1105,17 +1113,19 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             CONVERT(varchar(64), l.Vn_Folio) AS numero_ticket,
             CONCAT('MPRO:', %s, ':', CONVERT(varchar(64), l.Vn_Folio)) AS id_transaccion,
             l.Vn_Fecha AS fecha_hora,
-              CASE
-                  WHEN ISNULL(l.estado_origen, '') = 'CA' THEN 1
-                  ELSE 0
-              END AS cancelado_origen,
-              l.estado_origen,
-              CASE
-                  WHEN ISNULL(l.estado_origen, '') IN ('AC', 'FA') THEN 1
-                  ELSE 0
-              END AS es_kpi_valido,
-              CONVERT(varchar(64), l.Vn_Folio) AS folio_origen,
-              CONVERT(varchar(64), l.Vn_Documento) AS documento_origen,
+            CASE
+                WHEN ISNULL(l.estado_origen, '') = 'CA' THEN 1
+                ELSE 0
+            END AS cancelado_origen,
+            l.estado_origen,
+            CASE
+                WHEN ISNULL(l.estado_origen, '') IN ('AC', 'FA') THEN 1
+                ELSE 0
+            END AS es_kpi_valido,
+            CONVERT(varchar(64), l.Vn_Folio) AS folio_origen,
+            CONVERT(varchar(64), l.Vn_Documento) AS documento_origen,
+            l.vendedor_id,
+            l.vendedor_nombre,
             l.pax_ticket,
             l.importe_neto_ticket,
             l.propina_ticket,
@@ -1143,7 +1153,6 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         return _prorratear_mpro_por_ticket(rows)
     finally:
         conn.close()
-
 
 
 
