@@ -1,0 +1,77 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-MICROPRICE-ZERO-FIX-R30-CARLOS-20261001",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a3ee49f54c84c814de69ac587b21967af860a914",
+  "mode": "MUTATION",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Sincronizador | Reintento corregido R30 de la excepcion quirurgica de microprecio tecnico SoftRestaurant para LA ESTELAR 23/04/2026. Resolver el REPLACE_COUNT_MISMATCH de R29 usando un ancla unica de prueba. Mantener fail-closed para cualquier otro header cero. No tocar sync_comercial_abiertas_v2.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "        # Un encabezado en cero con detalle monetario no explicado sigue siendo\n        # un caso anomalo y se bloquea. Las unicas excepciones son conceptos\n        # negativos explicitos de franquicia o aplicacion de anticipo ya resueltos\n        # arriba. Esto conserva el guard historico R80C.\n        if header_total == Decimal(\"0\"):\n            raise RuntimeError(\n                f\"SoftRestaurant: diferencia no explicada en ticket {ticket_key}; \"\n                f\"productos={product_total}; encabezado={header_total}; delta={delta}; \"\n                f\"indicador_descuento_cortesia={discount_indicator}\"\n            )\n",
+      "new": "        # SoftRestaurant puede usar microprecios tecnicos (por ejemplo 0.001)\n        # para consumos/tastings cuyo encabezado comercial autoritativo es cero.\n        # La excepcion es deliberadamente estrecha: sin descuento/cortesia,\n        # solo importes positivos diminutos y un total tecnico <= 0.50.\n        technical_microprice_zero = (\n            header_total == Decimal(\"0\")\n            and discount_indicator == Decimal(\"0\")\n            and product_total > Decimal(\"0\")\n            and product_total <= Decimal(\"0.50\")\n            and all(\n                Decimal(\"0\") <= _d(row.get(\"precio_unitario\")) <= Decimal(\"0.001\")\n                for row in items\n            )\n        )\n        if technical_microprice_zero:\n            adjustment = dict(items[0])\n            adjustment[\"producto_codigo_fuente\"] = SOFT_AJUSTE_ENCABEZADO\n            adjustment[\"producto_nombre\"] = (\n                \"AJUSTE DE CIERRE A CERO (MICROPRECIO TECNICO)\"\n            )\n            adjustment[\"cantidad\"] = Decimal(\"0\")\n            adjustment[\"precio_unitario\"] = Decimal(\"0\")\n            adjustment[\"importe_bruto\"] = Decimal(\"0\")\n            adjustment[\"importe_neto\"] = delta\n            out.append(adjustment)\n            continue\n\n        # Un encabezado en cero con detalle monetario no explicado sigue siendo\n        # un caso anomalo y se bloquea. Las unicas excepciones son conceptos\n        # explicitamente conciliables resueltos arriba. Esto conserva el guard\n        # historico R80C para cualquier importe comercial real.\n        if header_total == Decimal(\"0\"):\n            raise RuntimeError(\n                f\"SoftRestaurant: diferencia no explicada en ticket {ticket_key}; \"\n                f\"productos={product_total}; encabezado={header_total}; delta={delta}; \"\n                f\"indicador_descuento_cortesia={discount_indicator}\"\n            )\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_header_folio_parent_r92.py",
+      "old": "from decimal import Decimal\nfrom pathlib import Path\n\nfrom scripts.poblar_ventas_detalle_producto_canonico import (\n",
+      "new": "from decimal import Decimal\nfrom pathlib import Path\n\nimport pytest\n\nfrom scripts.poblar_ventas_detalle_producto_canonico import (\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_header_folio_parent_r92.py",
+      "old": "def test_zero_header_accepts_negative_advance_application():\n    rows = [\n        _row('21167', '0.00', '1985.00', pax=1, product='CONSUMO POSITIVO'),\n        _row('21167', '0.00', '-2000.00', pax=1, product='ANTICIPO S/VENTAS APLICACION'),\n    ]\n    out = _soft_add_ticket_adjustments(rows)\n    assert out[-1]['producto_codigo_fuente'] == SOFT_AJUSTE_ANTICIPO_CERO\n    assert out[-1]['importe_neto'] == Decimal('15.00')\n    assert sum(x['importe_neto'] for x in out) == Decimal('0.00')\n\n    result = _validate(out, {'ventas': Decimal('0.00'), 'tickets': 1, 'pax': 1})\n    assert result['ok'] is True\n    assert result['ventas_detalle'] == Decimal('0.00')\n    assert result['tickets_no_conciliados'] == []\n",
+      "new": "def test_zero_header_accepts_negative_advance_application():\n    rows = [\n        _row('21167', '0.00', '1985.00', pax=1, product='CONSUMO POSITIVO'),\n        _row('21167', '0.00', '-2000.00', pax=1, product='ANTICIPO S/VENTAS APLICACION'),\n    ]\n    out = _soft_add_ticket_adjustments(rows)\n    assert out[-1]['producto_codigo_fuente'] == SOFT_AJUSTE_ANTICIPO_CERO\n    assert out[-1]['importe_neto'] == Decimal('15.00')\n    assert sum(x['importe_neto'] for x in out) == Decimal('0.00')\n\n    result = _validate(out, {'ventas': Decimal('0.00'), 'tickets': 1, 'pax': 1})\n    assert result['ok'] is True\n    assert result['ventas_detalle'] == Decimal('0.00')\n    assert result['tickets_no_conciliados'] == []\n\n\ndef test_zero_header_accepts_only_tiny_technical_microprice():\n    row = _row(\n        '16308',\n        '0.00',\n        '0.197',\n        pax=1,\n        product='TASTING MEZ 400 CONEJO ESPADIN',\n    )\n    row['cantidad'] = Decimal('197')\n    row['precio_unitario'] = Decimal('0.001')\n\n    out = _soft_add_ticket_adjustments([row])\n\n    assert out[-1]['producto_codigo_fuente'] == SOFT_AJUSTE_ENCABEZADO\n    assert out[-1]['importe_neto'] == Decimal('-0.197')\n    assert sum(x['importe_neto'] for x in out) == Decimal('0.000')\n\n\ndef test_zero_header_regular_positive_detail_still_fails_closed():\n    row = _row(\n        'regular-zero',\n        '0.00',\n        '180.00',\n        pax=1,\n        product='CONSUMO NORMAL',\n    )\n    row['precio_unitario'] = Decimal('30.00')\n\n    with pytest.raises(RuntimeError, match='diferencia no explicada'):\n        _soft_add_ticket_adjustments([row])\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_header_folio_parent_r92.py",
+        "backend/tests/test_iscam_scheduler_definitive_fix_r80c.py",
+        "backend/tests/test_iscam_soft_detail_window_parity_r35.py",
+        "backend/tests/test_softrestaurant_canonical_window_join_r40.py"
+      ]
+    }
+  ],
+  "constraints": [
+    "No modificar backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+    "No modificar ventas abiertas",
+    "Solo modificar script de detalle canonico y test R92",
+    "Mantener fail-closed para headers cero no tecnicos"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [
+      "GIT_EDARSAHUB_DETAIL_MICROPRICE"
+    ],
+    "conflict_domains": []
+  }
+}
