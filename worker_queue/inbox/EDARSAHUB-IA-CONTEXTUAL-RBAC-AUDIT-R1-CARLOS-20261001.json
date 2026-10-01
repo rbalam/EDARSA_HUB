@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-IA-CONTEXTUAL-RBAC-AUDIT-R1-CARLOS-20261001",
+  "created_at_utc": "2026-10-01T21:55:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d79406e2050303b293840bb4816f5e37b1075b5d",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar en solo lectura por que el launcher del Asistente IA contextual no se muestra en Preview. Verificar identidad SQL canonica y el permiso efectivo por rol IA_ASSISTANT_VER (Modulo IA_ASSISTANT + Accion VER), sin modificar RBAC ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "IA_RBAC_00_IDENTITY",
+          "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS database_user;"
+        },
+        {
+          "name": "IA_RBAC_01_MODULE_ACTION",
+          "sql": "SELECT m.ModuloID, m.CodigoModulo, m.NombreModulo, m.Ruta, m.Activo AS modulo_activo, a.AccionID, a.CodigoAccion, a.NombreAccion, a.Activo AS accion_activa FROM dbo.Usuario_Modulos m CROSS JOIN dbo.Usuario_Acciones a WHERE m.CodigoModulo=N'IA_ASSISTANT' AND a.CodigoAccion=N'VER';"
+        },
+        {
+          "name": "IA_RBAC_02_ROLE_PERMISSION",
+          "sql": "SELECT r.RolID, r.CodigoRol, r.NombreRol, r.NivelJerarquia, r.Activo AS rol_activo, prm.Permitido, prm.Activo AS permiso_activo, CONCAT(m.CodigoModulo,N'_',a.CodigoAccion) AS permiso FROM dbo.Usuario_Roles r INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID=r.RolID INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID WHERE m.CodigoModulo=N'IA_ASSISTANT' AND a.CodigoAccion=N'VER' ORDER BY r.NivelJerarquia DESC,r.CodigoRol;"
+        },
+        {
+          "name": "IA_RBAC_03_SUPERADMIN_ADMIN_GATE",
+          "sql": "SELECT CASE WHEN EXISTS (SELECT 1 FROM dbo.Usuario_PermisosRolModulo prm INNER JOIN dbo.Usuario_Roles r ON r.RolID=prm.RolID INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID WHERE m.CodigoModulo=N'IA_ASSISTANT' AND a.CodigoAccion=N'VER' AND prm.Permitido=1 AND prm.Activo=1 AND r.Activo=1 AND r.CodigoRol IN (N'SUPERADMIN',N'SUPERADMINISTRADOR')) THEN 1 ELSE 0 END AS superadmin_permission_ok, CASE WHEN EXISTS (SELECT 1 FROM dbo.Usuario_PermisosRolModulo prm INNER JOIN dbo.Usuario_Roles r ON r.RolID=prm.RolID INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID WHERE m.CodigoModulo=N'IA_ASSISTANT' AND a.CodigoAccion=N'VER' AND prm.Permitido=1 AND prm.Activo=1 AND r.Activo=1 AND r.CodigoRol IN (N'ADMIN',N'ADMINISTRADOR')) THEN 1 ELSE 0 END AS admin_permission_ok;"
+        }
+      ]
+    }
+  ]
+}
