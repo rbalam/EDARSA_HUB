@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "012921ebc92508c8b76891931bc5720344a7055c",
-  "generated_at_utc": "2026-10-01T03:10:09Z",
+  "generated_at_utc": "2026-10-01T03:11:32Z",
   "history": {
     "done_total_local": 1231,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 406,
+      "age_seconds": 489,
       "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-CANARY-READONLY-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 234,
+      "age_seconds": 317,
       "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-DONE-REGRESSION-GUARD-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2714,
+      "age_seconds": 2797,
       "job_id": "EDARSAHUB-SINCRONIZADOR-CIENFUEGOS-202603-HEADER-DETAIL-R24-CARLOS-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 293,
+      "age_seconds": 376,
       "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-MAPPING-READONLY-R2-20260930",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,8 +54,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T03:10:06Z",
-    "last_receive_utc": "2026-10-01T03:10:01Z",
+    "last_cycle_utc": "2026-10-01T03:11:28Z",
+    "last_receive_utc": "2026-10-01T03:11:31Z",
     "last_terminal_utc": "2026-10-01T03:06:14Z",
     "pid": "1551643",
     "runtime_fingerprint": {
