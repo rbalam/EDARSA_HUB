@@ -1,0 +1,42 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-HIST-202609-D01-05-MPRO2-R6-CARLOS",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3e77e4d89d97e6e7a8e995f54b9234804ed19705",
+  "production_allowed": false,
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "objective": "Sincronizador: reprocesar 01-05 septiembre 2026 solo ORIGEN y 130QRO despues de certificar el nuevo detalle MPRO basado en Venta. Forzar refresh del detalle canonico y validar vendedor, descuento_pct y descuento monetario real por producto. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "units": [
+    "ORIGEN",
+    "130QRO"
+  ],
+  "fecha_inicio": "2026-09-01",
+  "fecha_fin": "2026-09-05",
+  "dry_run": false,
+  "confirm_comercial_range_resync": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "hist_202609_01_05_mpro_discount_coverage",
+          "sql": "SELECT unidad_negocio_id, COUNT(*) AS filas, COUNT(DISTINCT numero_ticket) AS tickets, SUM(CASE WHEN NULLIF(LTRIM(RTRIM(vendedor_nombre)),'') IS NOT NULL THEN 1 ELSE 0 END) AS filas_con_vendedor, SUM(CASE WHEN descuento_pct IS NOT NULL THEN 1 ELSE 0 END) AS filas_con_descuento_pct, SUM(CASE WHEN ISNULL(descuento,0) > 0.0001 THEN 1 ELSE 0 END) AS filas_con_descuento_importe, CAST(SUM(ISNULL(descuento,0)) AS decimal(18,2)) AS descuento_importe_total, CAST(MAX(ISNULL(descuento_pct,0)) AS decimal(18,4)) AS descuento_pct_max, COUNT(DISTINCT fecha_operacion) AS dias FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE fecha_operacion >= '2026-09-01' AND fecha_operacion <= '2026-09-05' AND unidad_negocio_id IN ('ORIGEN','130QRO') AND ISNULL(activo,1)=1 GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        },
+        {
+          "name": "hist_202609_01_05_mpro_sample_discounts",
+          "sql": "SELECT TOP 20 unidad_negocio_id, fecha_operacion, numero_ticket, producto_codigo_fuente, producto_nombre, cantidad, precio_unitario, importe_bruto, descuento, descuento_pct, importe_neto, vendedor_nombre FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE fecha_operacion >= '2026-09-01' AND fecha_operacion <= '2026-09-05' AND unidad_negocio_id IN ('ORIGEN','130QRO') AND ISNULL(activo,1)=1 AND (ISNULL(descuento,0) > 0.0001 OR ISNULL(descuento_pct,0) > 0.0001) ORDER BY fecha_operacion, unidad_negocio_id, numero_ticket"
+        }
+      ]
+    }
+  ]
+}
