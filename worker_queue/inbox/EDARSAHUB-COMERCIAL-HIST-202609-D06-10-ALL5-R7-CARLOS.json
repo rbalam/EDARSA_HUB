@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-HIST-202609-D06-10-ALL5-R7-CARLOS",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3e77e4d89d97e6e7a8e995f54b9234804ed19705",
+  "production_allowed": false,
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "objective": "Sincronizador: procesar historico Comercial 06-10 septiembre 2026 para las cinco sucursales, con force_refresh del detalle canonico ya certificado. SoftRestaurant debe conservar NUMCHEQUE, vendedor y descuento_pct. MPRO debe usar Venta como detalle monetario, vendedor, Vn_Descuento_Importe por producto y porcentaje derivado, manteniendo encabezado final autoritativo. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "units": [
+    "ESTELAR",
+    "CIENFUEGOS",
+    "130MID",
+    "ORIGEN",
+    "130QRO"
+  ],
+  "fecha_inicio": "2026-09-06",
+  "fecha_fin": "2026-09-10",
+  "dry_run": false,
+  "confirm_comercial_range_resync": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "hist_202609_06_10_all5_coverage",
+          "sql": "SELECT unidad_negocio_id, COUNT(*) AS filas, COUNT(DISTINCT numero_ticket) AS tickets, SUM(CASE WHEN NULLIF(LTRIM(RTRIM(vendedor_nombre)),'') IS NOT NULL THEN 1 ELSE 0 END) AS filas_con_vendedor, SUM(CASE WHEN descuento_pct IS NOT NULL THEN 1 ELSE 0 END) AS filas_con_descuento_pct, COUNT(DISTINCT fecha_operacion) AS dias FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE fecha_operacion >= '2026-09-06' AND fecha_operacion <= '2026-09-10' AND unidad_negocio_id IN ('ESTELAR','CIENFUEGOS','130MID','ORIGEN','130QRO') AND ISNULL(activo,1)=1 GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        },
+        {
+          "name": "hist_202609_06_10_mpro_real_product_discounts",
+          "sql": "SELECT unidad_negocio_id, SUM(CASE WHEN producto_codigo_fuente NOT LIKE '__ISCAM_AJUSTE_%' AND ISNULL(descuento,0) > 0.0001 THEN 1 ELSE 0 END) AS lineas_producto_con_descuento, CAST(SUM(CASE WHEN producto_codigo_fuente NOT LIKE '__ISCAM_AJUSTE_%' AND ISNULL(descuento,0) > 0 THEN descuento ELSE 0 END) AS decimal(18,2)) AS descuento_producto_total, CAST(MAX(CASE WHEN producto_codigo_fuente NOT LIKE '__ISCAM_AJUSTE_%' THEN ISNULL(descuento_pct,0) ELSE 0 END) AS decimal(18,4)) AS descuento_pct_max FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE fecha_operacion >= '2026-09-06' AND fecha_operacion <= '2026-09-10' AND unidad_negocio_id IN ('ORIGEN','130QRO') AND ISNULL(activo,1)=1 GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        }
+      ]
+    }
+  ]
+}
