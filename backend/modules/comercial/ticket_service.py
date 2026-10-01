@@ -118,13 +118,48 @@ def merge_open_snapshot_tickets(
                 "pax": _integer(row.get("pax")),
                 "total_venta": _money(row.get("total_ticket")),
                 "num_productos": 0,
+                "descuento_productos": 0.0,
+                "descuento_encabezado_reportado": 0.0,
+                "descuento_total_reportado": 0.0,
+                "descuento_pct_max": 0.0,
+                "vendedor": None,
             },
         )
         ticket["num_productos"] += 1
+        ticket["descuento_productos"] += max(
+            0.0,
+            _money(row.get("descuento_producto")),
+        )
+        ticket["descuento_encabezado_reportado"] = max(
+            ticket["descuento_encabezado_reportado"],
+            max(0.0, _money(row.get("descuento_encabezado_reportado"))),
+        )
+        ticket["descuento_total_reportado"] = max(
+            ticket["descuento_total_reportado"],
+            max(0.0, _money(row.get("descuento_total_reportado"))),
+        )
+        ticket["descuento_pct_max"] = max(
+            ticket["descuento_pct_max"],
+            max(0.0, _money(row.get("descuento_pct"))),
+        )
+        if not ticket.get("vendedor"):
+            vendedor = str(row.get("vendedor_nombre") or "").strip()
+            if vendedor:
+                ticket["vendedor"] = vendedor
         if not ticket.get("fecha") and row.get("fecha_hora"):
             ticket["fecha"] = row.get("fecha_hora")
 
     for folio, ticket in grouped.items():
+        descuento_total = max(
+            ticket["descuento_productos"],
+            ticket["descuento_total_reportado"],
+            ticket["descuento_encabezado_reportado"],
+        )
+        tiene_descuento = descuento_total > 0.005 or ticket["descuento_pct_max"] > 0.005
+        total_cero_por_descuento = (
+            abs(_money(ticket["total_venta"])) <= 0.005
+            and tiene_descuento
+        )
         result.append({
             "nivel": "detalle",
             "clave": None,
@@ -136,6 +171,11 @@ def merge_open_snapshot_tickets(
             "total_venta": ticket["total_venta"],
             "importe": ticket["total_venta"],
             "num_productos": ticket["num_productos"],
+            "tiene_descuento": tiene_descuento,
+            "total_cero_por_descuento": total_cero_por_descuento,
+            "descuento_total": descuento_total,
+            "descuento_pct_max": ticket["descuento_pct_max"],
+            "vendedor": ticket["vendedor"],
             "expandible": False,
             "siguiente_nivel": None,
             "fuente_ticket": "ABIERTA",
@@ -292,6 +332,14 @@ def build_ticket_venta(
     # de cuenta/encabezado para que el ticket concilie exactamente.
     descuento_cuenta = max(0.0, neto_productos - total)
     descuento = descuento_productos + descuento_cuenta
+    vendedor = next(
+        (
+            str(row.get("vendedor_nombre") or "").strip()
+            for row in open_rows
+            if str(row.get("vendedor_nombre") or "").strip()
+        ),
+        None,
+    )
     return {
         "source_status": "SUCCESS",
         "source": "Comercial_Ventas_Dia_Abiertas_v2.detalle_abiertas_json",
@@ -301,6 +349,7 @@ def build_ticket_venta(
             "folio": folio,
             "fecha_hora": str(open_rows[0].get("fecha_hora") or ""),
             "pax": pax,
+            "vendedor": vendedor,
             "estado": "ABIERTA",
             "items": [
                 {
