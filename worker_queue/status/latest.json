@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "23bf08123cf476dc58a041d8aaae62d417ae09f2",
-  "generated_at_utc": "2026-10-01T01:17:02Z",
+  "generated_at_utc": "2026-10-01T01:18:23Z",
   "history": {
     "done_total_local": 1223,
     "pending_total_local": 0,
@@ -16,55 +16,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1729,
+      "age_seconds": 1810,
       "job_id": "EDARSAHUB-COMERCIAL-HOY-ALL-UNITS-SNAPSHOT-AUDIT-R1-CARLOS-20261001T0050Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1676,
+      "age_seconds": 1757,
       "job_id": "EDARSAHUB-COMERCIAL-HOY-INTEGRAL-ALL-UNITS-FIX-R3-CARLOS-20261001T0052Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2013,
+      "age_seconds": 2094,
       "job_id": "EDARSAHUB-COMERCIAL-HOY-MX-TZ-AND-SR-OPEN-DETAIL-FIX-R2-CARLOS-20261001T0045Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 277,
+      "age_seconds": 358,
       "job_id": "EDARSAHUB-COMERCIAL-OPEN-FOLIOS-MERGE-FIX-R2-CARLOS-20261001T0110Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 704,
+      "age_seconds": 785,
       "job_id": "EDARSAHUB-COMERCIAL-OPEN-FOLIOS-RESOLUTION-AUDIT-R1-CARLOS-20261001T0106Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1143,
+      "age_seconds": 1224,
       "job_id": "EDARSAHUB-SINCRONIZADOR-130MID-202603-HEADER-DETAIL-RECONCILE-R21-CARLOS-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 221,
+      "age_seconds": 302,
       "job_id": "EDARSAHUB-SINCRONIZADOR-130MID-202603-HEADER-DETAIL-RECONCILE-R22-CARLOS-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1866,
+      "age_seconds": 1947,
       "job_id": "EDARSAHUB-SINCRONIZADOR-DETALLE-130MID-202603-R20-CARLOS-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2462,
+      "age_seconds": 2543,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-FALLBACK-R13-CARLOS-20260930T2350Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,8 +84,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T01:16:54Z",
-    "last_receive_utc": "2026-10-01T01:16:59Z",
+    "last_cycle_utc": "2026-10-01T01:18:15Z",
+    "last_receive_utc": "2026-10-01T01:18:19Z",
     "last_terminal_utc": "2026-10-01T01:12:27Z",
     "pid": "1089318",
     "runtime_fingerprint": {
