@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-IDENTITY-READONLY-R1-20261001",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "012921ebc92508c8b76891931bc5720344a7055c",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Resolver evidencia de identidad para API_LOCAL activas sin EmpresaID. Buscar coincidencias canonicas existentes en catalogos Empresa y Unidad usando nombre/codigo/database_name solo como evidencia de referencia; no inferir ni mutar. Clasificar coincidencias para decidir posteriormente cuales pueden homologarse. No secretos, no APIs externas, no Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "orphan_api_identity",
+          "sql": "SELECT CONVERT(varchar(36),sc.id) AS ConexionID,sc.nombre,sc.system_type,sc.database_name,sc.api_url,sc.EmpresaID,sc.empresa_id,sc.visible_en_listado,sc.visible_en_operaciones FROM dbo.Servidores_Conexiones sc WHERE sc.tipo_conexion='API_LOCAL' AND sc.activo=1 AND sc.EmpresaID IS NULL ORDER BY sc.nombre"
+        },
+        {
+          "name": "orphan_api_empresa_name_matches",
+          "sql": "SELECT sc.nombre AS ConexionNombre,sc.database_name,e.EmpresaID,e.CodigoEmpresa,e.NombreComercial,e.Activo FROM dbo.Servidores_Conexiones sc CROSS JOIN dbo.Sistema_Empresas e WHERE sc.tipo_conexion='API_LOCAL' AND sc.activo=1 AND sc.EmpresaID IS NULL AND (UPPER(ISNULL(sc.database_name,'')) LIKE '%' + UPPER(ISNULL(e.CodigoEmpresa,'')) + '%' OR UPPER(ISNULL(sc.nombre,'')) LIKE '%' + UPPER(ISNULL(e.CodigoEmpresa,'')) + '%' OR UPPER(ISNULL(sc.nombre,'')) LIKE '%' + UPPER(ISNULL(e.NombreComercial,'')) + '%') ORDER BY sc.nombre,e.EmpresaID"
+        },
+        {
+          "name": "orphan_api_unit_name_matches",
+          "sql": "SELECT sc.nombre AS ConexionNombre,sc.database_name,u.id AS UnidadNegocioID,u.codigo,u.nombre AS UnidadNombre,u.server_id,u.activo FROM dbo.Servidores_Conexiones sc CROSS JOIN dbo.Unidades_Negocio u WHERE sc.tipo_conexion='API_LOCAL' AND sc.activo=1 AND sc.EmpresaID IS NULL AND (UPPER(ISNULL(sc.database_name,'')) LIKE '%' + UPPER(ISNULL(u.codigo,'')) + '%' OR UPPER(ISNULL(sc.nombre,'')) LIKE '%' + UPPER(ISNULL(u.codigo,'')) + '%' OR UPPER(ISNULL(sc.nombre,'')) LIKE '%' + UPPER(ISNULL(u.nombre,'')) + '%') ORDER BY sc.nombre,u.nombre"
+        },
+        {
+          "name": "orphan_api_system_type_company_inventory",
+          "sql": "SELECT sc.nombre AS ConexionNombre,sc.system_type,sc.database_name,e.EmpresaID,e.CodigoEmpresa,e.NombreComercial FROM dbo.Servidores_Conexiones sc LEFT JOIN dbo.Sistema_Empresas e ON e.Activo=1 WHERE sc.tipo_conexion='API_LOCAL' AND sc.activo=1 AND sc.EmpresaID IS NULL ORDER BY sc.nombre,e.EmpresaID"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS",
+    "chat": "Conexiones y Comunicaciones 2"
+  }
+}
