@@ -1,0 +1,66 @@
+{
+  "acceptance_criteria": [
+    "READ_ONLY_COMPLETE",
+    "CERTIFIED_READ_ONLY",
+    "production_touched=false",
+    "No DDL or DML detected",
+    "No remote connectivity attempted",
+    "Mapping matrix produced using EmpresaID and empresa_id"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "api_local_dual_empresa_columns",
+          "sql": "SELECT TOP 100 CONVERT(nvarchar(100), id) AS connection_id, nombre, system_type, tipo_conexion, activo, visible_en_operaciones, visible_en_listado, [empresa_id] AS empresa_id_text, [EmpresaID] AS EmpresaID_int FROM dbo.Servidores_Conexiones WHERE tipo_conexion = 'API_LOCAL' ORDER BY nombre"
+        },
+        {
+          "name": "api_local_mapping_via_sistema_empresas_servidores",
+          "sql": "SELECT CONVERT(nvarchar(100), sc.id) AS connection_id, sc.nombre, sc.system_type, sc.tipo_conexion, sc.activo AS conexion_activa, sc.visible_en_operaciones, sc.visible_en_listado, sc.[empresa_id] AS empresa_id_text, sc.[EmpresaID] AS EmpresaID_int, ses.EmpresaID AS mapped_EmpresaID, se.CodigoEmpresa, se.NombreEmpresa, se.NombreComercial, se.Activo AS empresa_activa, ses.RolConexion, ses.NombreSucursalSistema, ses.EsPrincipal, ses.Activo AS mapping_activo FROM dbo.Servidores_Conexiones sc LEFT JOIN dbo.Sistema_EmpresasServidores ses ON ses.ServidorID = sc.id LEFT JOIN dbo.Sistema_Empresas se ON se.EmpresaID = ses.EmpresaID WHERE sc.tipo_conexion = 'API_LOCAL' ORDER BY sc.nombre, ses.Activo DESC, ses.EsPrincipal DESC, ses.EmpresaID"
+        },
+        {
+          "name": "api_local_mapping_cardinality",
+          "sql": "SELECT CONVERT(nvarchar(100), sc.id) AS connection_id, sc.nombre, sc.[EmpresaID] AS current_EmpresaID_int, sc.[empresa_id] AS current_empresa_id_text, COUNT(ses.EmpresaServidorID) AS mappings_total, SUM(CASE WHEN ses.Activo = 1 THEN 1 ELSE 0 END) AS mappings_activos, SUM(CASE WHEN ses.Activo = 1 AND ses.EsPrincipal = 1 THEN 1 ELSE 0 END) AS mappings_activos_principales, MAX(CASE WHEN ses.Activo = 1 AND ses.EsPrincipal = 1 THEN ses.EmpresaID END) AS candidate_principal_EmpresaID, MAX(CASE WHEN ses.Activo = 1 THEN ses.EmpresaID END) AS candidate_any_active_EmpresaID, CASE WHEN sc.[EmpresaID] IS NOT NULL THEN 'ALREADY_HAS_EMPRESAID' WHEN COUNT(ses.EmpresaServidorID) = 0 THEN 'NO_MAPPING_FOUND' WHEN SUM(CASE WHEN ses.Activo = 1 THEN 1 ELSE 0 END) = 0 THEN 'ONLY_INACTIVE_MAPPINGS' WHEN SUM(CASE WHEN ses.Activo = 1 AND ses.EsPrincipal = 1 THEN 1 ELSE 0 END) = 1 THEN 'CANDIDATE_FROM_ACTIVE_PRIMARY_MAPPING' WHEN SUM(CASE WHEN ses.Activo = 1 THEN 1 ELSE 0 END) = 1 THEN 'CANDIDATE_FROM_SINGLE_ACTIVE_MAPPING' ELSE 'AMBIGUOUS_MULTIPLE_ACTIVE_MAPPINGS' END AS mapping_verdict FROM dbo.Servidores_Conexiones sc LEFT JOIN dbo.Sistema_EmpresasServidores ses ON ses.ServidorID = sc.id WHERE sc.tipo_conexion = 'API_LOCAL' GROUP BY sc.id, sc.nombre, sc.[EmpresaID], sc.[empresa_id] ORDER BY sc.nombre"
+        },
+        {
+          "name": "sistema_empresas_active_catalog",
+          "sql": "SELECT EmpresaID, CodigoEmpresa, NombreEmpresa, NombreComercial, RFC, Activo FROM dbo.Sistema_Empresas ORDER BY EmpresaID"
+        },
+        {
+          "name": "ricardo_scope_probe",
+          "sql": "SELECT u.UsuarioID, u.Email, u.Activo AS usuario_activo, ue.EmpresaID AS empresa_asignada, ue.Activo AS empresa_asignacion_activa, urc.EmpresaID AS empresa_contexto_rol, urc.RolID, urc.Activo AS rol_contexto_activo FROM dbo.Usuario_Catalogo u LEFT JOIN dbo.Usuario_EmpresasAsignacion ue ON ue.UsuarioID = u.UsuarioID LEFT JOIN dbo.Usuario_RolesContexto urc ON urc.UsuarioID = u.UsuarioID WHERE u.UsuarioID = 8 OR u.Email = 'ricardo@edarsa.com.mx' ORDER BY ue.EmpresaID, urc.EmpresaID, urc.RolID"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-SERVIDORES-API-EMPRESA-MAPPING-MATRIX-READONLY-SQL-R1G-20261001",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Build READ_ONLY mapping matrix for API_LOCAL connections using both dbo.Servidores_Conexiones.EmpresaID and dbo.Servidores_Conexiones.empresa_id, then compare against Sistema_EmpresasServidores and Sistema_Empresas. No DML.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "",
+    "requested_at_utc": "2026-10-01T21:00:56.626943+00:00",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
