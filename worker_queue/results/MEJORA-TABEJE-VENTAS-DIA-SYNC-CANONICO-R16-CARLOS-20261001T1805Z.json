@@ -1,0 +1,31 @@
+{
+  "base_sha": "78f3b825e692dddfa60aeab9dc8e80ddda8f9a0d",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "candidate_sha": "e77132d8d206dcaf5317173227d2f61e2e3b531e",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-01T18:24:30Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/comercial_analytics/repository_tickets.py",
+    "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+    "backend/tests/test_comercial_ejecutivo_ventas_dia_sync_path.py",
+    "frontend/src/components/comercial/KpiDrilldownDialog.jsx"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "MEJORA-TABEJE-VENTAS-DIA-SYNC-CANONICO-R16-CARLOS-20261001T1805Z",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T18:24:42Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-01T18:24:26Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
