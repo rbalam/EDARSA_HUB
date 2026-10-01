@@ -1,0 +1,163 @@
+{
+  "base_sha": "d79406e2050303b293840bb4816f5e37b1075b5d",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-01T21:56:05Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-IA-CONTEXTUAL-RBAC-AUDIT-R1-CARLOS-20261001",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T21:56:20Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "database_user"
+            ],
+            "name": "IA_RBAC_00_IDENTITY",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ModuloID",
+              "CodigoModulo",
+              "NombreModulo",
+              "Ruta",
+              "modulo_activo",
+              "AccionID",
+              "CodigoAccion",
+              "NombreAccion",
+              "accion_activa"
+            ],
+            "name": "IA_RBAC_01_MODULE_ACTION",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                136,
+                "IA_ASSISTANT",
+                "Asistente IA",
+                "/ia",
+                true,
+                1,
+                "VER",
+                "VER",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "RolID",
+              "CodigoRol",
+              "NombreRol",
+              "NivelJerarquia",
+              "rol_activo",
+              "Permitido",
+              "permiso_activo",
+              "permiso"
+            ],
+            "name": "IA_RBAC_02_ROLE_PERMISSION",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                6,
+                "SUPERADMIN",
+                "SuperAdministrador",
+                100,
+                true,
+                true,
+                true,
+                "IA_ASSISTANT_VER"
+              ],
+              [
+                1,
+                "ADMIN",
+                "Administrador",
+                90,
+                true,
+                true,
+                true,
+                "IA_ASSISTANT_VER"
+              ],
+              [
+                18,
+                "GERENTE_UNIDAD",
+                "Gerente de Unidad",
+                55,
+                true,
+                true,
+                true,
+                "IA_ASSISTANT_VER"
+              ],
+              [
+                25,
+                "PRUEBA_RBAC_SQL",
+                "PRUEBA_RBAC_SQL",
+                10,
+                true,
+                true,
+                true,
+                "IA_ASSISTANT_VER"
+              ],
+              [
+                2,
+                "GERENCIA",
+                "Gerencia",
+                0,
+                true,
+                false,
+                false,
+                "IA_ASSISTANT_VER"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "superadmin_permission_ok",
+              "admin_permission_ok"
+            ],
+            "name": "IA_RBAC_03_SUPERADMIN_ADMIN_GATE",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1,
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-01T21:56:04Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
