@@ -1,0 +1,22 @@
+{
+  "blockers": [
+    "dispatcher_exception:RuntimeError:CONCURRENT_SCOPE_CONFLICT:expected=627c9cb62e4b8b81c774faeb3051bb86e9b467c9:actual=7d15b6498d1acc18dbb04be11a58c7f86fa4886b:paths="
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-01T00:57:58Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-130MID-202603-HEADER-DETAIL-RECONCILE-R21-CARLOS-20260930",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T00:58:14Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-01T00:57:58Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
