@@ -1,0 +1,207 @@
+{
+  "base_sha": "df89bae448a9e945c04da8bebbe82b82b8ed9bf7",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-01T03:05:15Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-MAPPING-READONLY-R2-20260930",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T03:05:23Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "ConexionID",
+              "nombre",
+              "system_type",
+              "EmpresaID",
+              "LinkedServerID",
+              "LinkedEmpresaID",
+              "RolConexion"
+            ],
+            "name": "api_local_server_company",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "72F6E9A7-8EA2-4EB2-802E-4EE31753435E",
+                "130° QRO LOCAL",
+                "MPRO",
+                2,
+                "72F6E9A7-8EA2-4EB2-802E-4EE31753435E",
+                2,
+                "VENTAS_DIA_API_LOCAL"
+              ],
+              [
+                "B597D88A-AB37-4B4E-897B-EFE68C9B3732",
+                "API ManagmentPro",
+                "MPRO",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "CHAPUR BACKOFFICE",
+                "ENTERPRISE",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "31D62F39-632B-4684-B735-256BD9293A8F",
+                "CIENFUEGOS NOMINPAQ",
+                "SOFTRESTAURANT_PRO",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2BEAD18C-73C9-4D86-AF92-2355940274F7",
+                "GARIBALDI",
+                "SOFTRESTAURANT_PRO",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "817A0AA8-6170-4738-A8F6-A72AC36BA0DF",
+                "ORIGEN LOCAL",
+                "MPRO",
+                1,
+                "817A0AA8-6170-4738-A8F6-A72AC36BA0DF",
+                1,
+                "VENTAS_DIA_API_LOCAL"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "nombre",
+              "UnidadNegocioID",
+              "codigo",
+              "UnidadNombre",
+              "server_id",
+              "UnidadActiva"
+            ],
+            "name": "api_local_units",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "72F6E9A7-8EA2-4EB2-802E-4EE31753435E",
+                "130° QRO LOCAL",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "B597D88A-AB37-4B4E-897B-EFE68C9B3732",
+                "API ManagmentPro",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "CHAPUR BACKOFFICE",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "CHAPUR NORTE",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "31D62F39-632B-4684-B735-256BD9293A8F",
+                "CIENFUEGOS NOMINPAQ",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2BEAD18C-73C9-4D86-AF92-2355940274F7",
+                "GARIBALDI",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "817A0AA8-6170-4738-A8F6-A72AC36BA0DF",
+                "ORIGEN LOCAL",
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "UnidadNegocioID",
+              "EmpresaID",
+              "NombreComercial",
+              "Pais",
+              "Moneda"
+            ],
+            "name": "api_local_profiles",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-01T03:05:15Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
