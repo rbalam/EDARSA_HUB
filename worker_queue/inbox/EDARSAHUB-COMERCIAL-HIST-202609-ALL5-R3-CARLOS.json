@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-HIST-202609-ALL5-R3-CARLOS",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4d7d215bdb2530e7649b1b3f86dd7c858e65751d",
+  "production_allowed": false,
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "objective": "Reejecutar septiembre 2026 para las cinco sucursales con la correccion force_refresh ya certificada. Repoblar detalle canonico aunque los dias ya concilien y validar persistencia de NUMCHEQUE, vendedor_nombre y descuento_pct. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "units": [
+    "ESTELAR",
+    "CIENFUEGOS",
+    "130MID",
+    "ORIGEN",
+    "130QRO"
+  ],
+  "fecha_inicio": "2026-09-01",
+  "fecha_fin": "2026-09-29",
+  "dry_run": false,
+  "confirm_comercial_range_resync": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "historico_202609_enriquecimiento_all5",
+          "sql": "SELECT unidad_negocio_id, COUNT(*) AS filas, COUNT(DISTINCT numero_ticket) AS tickets, SUM(CASE WHEN NULLIF(LTRIM(RTRIM(vendedor_nombre)),'') IS NOT NULL THEN 1 ELSE 0 END) AS filas_con_vendedor, SUM(CASE WHEN descuento_pct IS NOT NULL THEN 1 ELSE 0 END) AS filas_con_descuento_pct, MIN(fecha_operacion) AS fecha_min, MAX(fecha_operacion) AS fecha_max FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE fecha_operacion >= '2026-09-01' AND fecha_operacion <= '2026-09-29' AND unidad_negocio_id IN ('ESTELAR','CIENFUEGOS','130MID','ORIGEN','130QRO') AND ISNULL(activo,1)=1 GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        },
+        {
+          "name": "historico_202609_dias_all5",
+          "sql": "SELECT unidad_negocio_id, COUNT(DISTINCT fecha_operacion) AS dias_con_detalle FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE fecha_operacion >= '2026-09-01' AND fecha_operacion <= '2026-09-29' AND unidad_negocio_id IN ('ESTELAR','CIENFUEGOS','130MID','ORIGEN','130QRO') AND ISNULL(activo,1)=1 GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        }
+      ]
+    }
+  ]
+}
