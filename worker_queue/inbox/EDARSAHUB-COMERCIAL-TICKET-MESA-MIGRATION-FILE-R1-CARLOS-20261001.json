@@ -1,0 +1,47 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-TICKET-MESA-MIGRATION-FILE-R1-CARLOS-20261001",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "715d1eaab4884fb7ec25213864228b9d22b44b95",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Agregar exclusivamente la migracion idempotente para persistir mesa/referencia del Ticket de Venta en dbo.Comercial_Inteligencia_VentasDetalleProducto. No modificar extractores ni UI aun. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/database/migrations/20261001_002_comercial_ticket_mesa.sql",
+      "content": "/*\n  EDARSAHUB V1.0\n  Comercial - mesa/referencia del Ticket de Venta.\n\n  Objetivo:\n  - Persistir la mesa/referencia del POS en EDARSAHUB.\n  - Mantener el Ticket de Venta NO-LIVE.\n  - SoftRestaurant: MESA.\n  - ManagementPro: Comanda.Co_Referencia.\n  - No recalcular KPIs ni tocar Produccion.\n*/\n\nIF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'mesa') IS NULL\nBEGIN\n    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto\n    ADD mesa nvarchar(100) NULL;\nEND\nGO\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/database/migrations/20261001_002_comercial_ticket_mesa.sql"
+        ],
+        "search_terms": [
+          "COL_LENGTH",
+          "Comercial_Inteligencia_VentasDetalleProducto",
+          "ADD mesa nvarchar(100) NULL"
+        ],
+        "include_patterns": [
+          "*.sql"
+        ],
+        "exclude_patterns": [],
+        "max_results": 20
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
