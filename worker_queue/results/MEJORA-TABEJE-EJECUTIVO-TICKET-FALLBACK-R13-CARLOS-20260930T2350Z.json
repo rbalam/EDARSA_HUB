@@ -1,0 +1,28 @@
+{
+  "base_sha": "e6cb6b40bc7fd171a54503a5b2d3f9f81b37e923",
+  "blockers": [],
+  "candidate_sha": "627c9cb62e4b8b81c774faeb3051bb86e9b467c9",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-10-01T00:36:00Z",
+  "development_sha": "627c9cb62e4b8b81c774faeb3051bb86e9b467c9",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/comercial_analytics/repository_tickets.py",
+    "backend/tests/test_comercial_analytics_tickets.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-FALLBACK-R13-CARLOS-20260930T2350Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T00:36:17Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-01T00:35:54Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
