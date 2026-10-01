@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-20260423-ZERO-TICKETS-DIAG-R28-CARLOS-20261001",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Sincronizador | LA ESTELAR | 23/04/2026 | Diagnosticar los 8 folios con encabezado 0 y detalle monetario que provocan RUNTIMEERROR_UNCLASSIFIED. Determinar si totaldescuentoycortesia u otros conceptos de detalle explican el cero para poder corregir solo este dia. Solo lectura.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ESTELAR"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "max_rows": 200,
+      "queries": [
+        {
+          "name": "estelar_20260423_zero_folios_header",
+          "sql": "\nSELECT\n    ch.folio,\n    ch.idturno,\n    ch.fecha,\n    CAST(ISNULL(ch.total,0) AS decimal(18,4)) AS total_header,\n    CAST(ISNULL(ch.totaldescuentoycortesia,0) AS decimal(18,4)) AS descuento_cortesia,\n    ISNULL(ch.nopersonas,0) AS pax,\n    ISNULL(ch.cancelado,0) AS cancelado\nFROM cheques ch WITH (NOLOCK)\nWHERE ch.folio IN ('16308','16333','16343','16344','16346','16347','16348','16352')\nORDER BY ch.folio"
+        },
+        {
+          "name": "estelar_20260423_zero_folios_detail_summary",
+          "sql": "\nSELECT\n    dc.foliodet AS folio,\n    COUNT(*) AS lineas,\n    CAST(SUM(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0)) AS decimal(18,4)) AS bruto_detalle\nFROM cheqdet dc WITH (NOLOCK)\nWHERE dc.foliodet IN ('16308','16333','16343','16344','16346','16347','16348','16352')\nGROUP BY dc.foliodet\nORDER BY dc.foliodet"
+        },
+        {
+          "name": "estelar_20260423_zero_folios_detail_lines",
+          "sql": "\nSELECT\n    dc.foliodet AS folio,\n    COALESCE(CONVERT(varchar(100),dc.idproducto),'') AS idproducto,\n    COALESCE(CONVERT(varchar(300),p.descripcion),'') AS producto,\n    CAST(ISNULL(dc.cantidad,0) AS decimal(18,4)) AS cantidad,\n    CAST(ISNULL(dc.precio,0) AS decimal(18,4)) AS precio,\n    CAST(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0) AS decimal(18,4)) AS importe_linea\nFROM cheqdet dc WITH (NOLOCK)\nLEFT JOIN productos p WITH (NOLOCK)\n  ON p.idproducto=dc.idproducto\nWHERE dc.foliodet IN ('16308','16333','16343','16344','16346','16347','16348','16352')\nORDER BY dc.foliodet, dc.idproducto"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No DDL/DML",
+    "No resync",
+    "No modificar sync_comercial_abiertas_v2",
+    "No modificar codigo"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": []
+  }
+}
