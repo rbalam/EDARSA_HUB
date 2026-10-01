@@ -53,22 +53,28 @@ def load_open_snapshot_lines(
     sucursal_id: str,
     fecha_operacion: str,
 ) -> List[Dict[str, Any]]:
+    """Carga el detalle abierto por unidad canonica y fecha operativa.
+
+    La unidad_negocio_id es la llave estable entre motores. No se filtra por
+    sucursal_id porque ese valor no es homologado entre la UI y el snapshot:
+    SoftRestaurant persiste DEFAULT y MPRO usa claves como 0021/0023. El
+    filtro adicional provocaba falsos vacios aun cuando el JSON existia.
+    """
     if not _open_detail_column_available():
         return []
 
     unidad = _safe_sql(unidad_codigo)
-    sucursal = _safe_sql(sucursal_id)
     fecha = _safe_sql(fecha_operacion)
+    _ = sucursal_id  # compatibilidad de firma; la unidad canonica delimita el snapshot.
 
     sql = f"""
     SELECT TOP 1 detalle_abiertas_json
     FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK)
-    WHERE unidad_negocio_id = '{unidad}'
+    WHERE UPPER(LTRIM(RTRIM(unidad_negocio_id))) =
+          UPPER(LTRIM(RTRIM('{unidad}')))
       AND fecha_operacion = '{fecha}'
+    ORDER BY snapshot_timestamp DESC
     """
-    if sucursal and sucursal.upper() not in {"DEFAULT", "ALL", "TODAS"}:
-        sql += f" AND CONVERT(varchar(100), sucursal_id) = '{sucursal}'"
-    sql += " ORDER BY snapshot_timestamp DESC"
 
     rows = _query_edarsahub_tablero(sql)
     if not rows:
