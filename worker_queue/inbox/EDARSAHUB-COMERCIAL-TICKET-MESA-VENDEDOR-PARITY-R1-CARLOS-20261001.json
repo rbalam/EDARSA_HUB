@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-TICKET-MESA-VENDEDOR-PARITY-R1-CARLOS-20261001",
+  "created_at_utc": "2026-10-01T23:33:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ff39018c9b5681ea42c4f60fc3688af12427d2ba",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "objective": "Completar paridad MESA+VENDEDOR en Comercial. ManagementPro ventas abiertas debe leer Comanda.Vn_Cve_Vendedor, resolver nombre por Vendedor.Vn_Cve_Vendedor -> Vn_Descripcion y conservar mesa desde Comanda.Co_Referencia. Mantener SoftRestaurant abierto con tempcheques.idmesero->meseros.nombre y tempcheques.mesa. Verificar por contrato que cerradas Soft y MPRO ya materializan vendedor_nombre+mesa. No modificar sync_comercial_abiertas_v2_job.py ni Production.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/ticket_snapshot.py",
+      "old": "QUERY_MPRO_DETALLE_ABIERTAS = \"\"\"\nSELECT\n    CONVERT(varchar(64), c.Co_Folio) AS folio,\n    MIN(c.Co_Fecha) AS fecha_hora,\n    MAX(ISNULL(c.Co_Personas, 0)) AS pax,\n    MAX(ISNULL(c.Co_Propina, 0)) AS propina,\n    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), c.Co_Referencia))), '')) AS mesa,\n    SUM(SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))))\n        OVER (PARTITION BY c.Co_Folio) AS total_ticket,\n    COALESCE(\n        NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),\n        'SIN_CODIGO'\n    ) AS producto_codigo,\n    COALESCE(\n        MAX(CONVERT(varchar(300), d.Cd_Concepto)),\n        'VENTA SIN DETALLE DE PRODUCTO'\n    ) AS producto_nombre,\n    SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4))) AS cantidad,\n    CASE\n        WHEN SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4))) <> 0\n        THEN\n            SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4)))\n            / SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4)))\n        ELSE MAX(CAST(ISNULL(d.Cd_Precio, 0) AS decimal(18,4)))\n    END AS precio_unitario,\n    SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS importe_bruto\nFROM Comanda c\nLEFT JOIN Comanda_Detalle d\n    ON d.Co_Folio = c.Co_Folio\n   AND ISNULL(d.Es_Cve_Estado, '') = 'AC'\n   AND d.Fecha_Baja IS NULL\nWHERE CAST(c.Co_Fecha AS date) = '{fecha_operacion}'\n  AND c.Sc_Cve_Sucursal = '{sucursal_id}'\n  AND c.Es_Cve_Estado IN ('AC', 'IM')\nGROUP BY\n    c.Co_Folio,\n    COALESCE(\n        NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),\n        'SIN_CODIGO'\n    )\nORDER BY c.Co_Folio, producto_codigo\n\"\"\"",
+      "new": "QUERY_MPRO_DETALLE_ABIERTAS = \"\"\"\nSELECT\n    CONVERT(varchar(64), c.Co_Folio) AS folio,\n    MIN(c.Co_Fecha) AS fecha_hora,\n    MAX(ISNULL(c.Co_Personas, 0)) AS pax,\n    MAX(ISNULL(c.Co_Propina, 0)) AS propina,\n    MAX(CONVERT(varchar(100), c.Vn_Cve_Vendedor)) AS vendedor_id,\n    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(200), vnd.Vn_Descripcion))), '')) AS vendedor_nombre,\n    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), c.Co_Referencia))), '')) AS mesa,\n    SUM(SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))))\n        OVER (PARTITION BY c.Co_Folio) AS total_ticket,\n    COALESCE(\n        NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),\n        'SIN_CODIGO'\n    ) AS producto_codigo,\n    COALESCE(\n        MAX(CONVERT(varchar(300), d.Cd_Concepto)),\n        'VENTA SIN DETALLE DE PRODUCTO'\n    ) AS producto_nombre,\n    SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4))) AS cantidad,\n    CASE\n        WHEN SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4))) <> 0\n        THEN\n            SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4)))\n            / SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4)))\n        ELSE MAX(CAST(ISNULL(d.Cd_Precio, 0) AS decimal(18,4)))\n    END AS precio_unitario,\n    SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS importe_bruto\nFROM Comanda c\nLEFT JOIN Comanda_Detalle d\n    ON d.Co_Folio = c.Co_Folio\n   AND ISNULL(d.Es_Cve_Estado, '') = 'AC'\n   AND d.Fecha_Baja IS NULL\nLEFT JOIN Vendedor vnd\n    ON vnd.Vn_Cve_Vendedor = c.Vn_Cve_Vendedor\nWHERE CAST(c.Co_Fecha AS date) = '{fecha_operacion}'\n  AND c.Sc_Cve_Sucursal = '{sucursal_id}'\n  AND c.Es_Cve_Estado IN ('AC', 'IM')\nGROUP BY\n    c.Co_Folio,\n    COALESCE(\n        NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),\n        'SIN_CODIGO'\n    )\nORDER BY c.Co_Folio, producto_codigo\n\"\"\""
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_comercial_ticket_drilldown_contract.py",
+      "old": "SERVICE = ROOT / \"modules/comercial/ticket_service.py\"\nMIGRATION = ROOT / \"database/migrations/20260930_002_comercial_ticket_open_detail_json.sql\"",
+      "new": "SERVICE = ROOT / \"modules/comercial/ticket_service.py\"\nCANONICAL = ROOT / \"scripts/poblar_ventas_detalle_producto_canonico.py\"\nMIGRATION = ROOT / \"database/migrations/20260930_002_comercial_ticket_open_detail_json.sql\""
+    },
+    {
+      "type": "append_once",
+      "path": "backend/tests/test_comercial_ticket_drilldown_contract.py",
+      "content": "\n\ndef test_mesa_vendedor_parity_open_and_closed_both_engines():\n    snapshot = SNAPSHOT.read_text(encoding=\"utf-8\")\n    service = SERVICE.read_text(encoding=\"utf-8\")\n    canonical = CANONICAL.read_text(encoding=\"utf-8\")\n\n    soft_open_start = snapshot.index(\"QUERY_SOFTRESTAURANT_DETALLE_ABIERTAS\")\n    mpro_open_start = snapshot.index(\"QUERY_MPRO_DETALLE_ABIERTAS\", soft_open_start)\n    soft_open = snapshot[soft_open_start:mpro_open_start]\n    mpro_open = snapshot[mpro_open_start:]\n\n    assert \"ch.idmesero\" in soft_open\n    assert \"m.nombre\" in soft_open\n    assert \"ch.mesa\" in soft_open\n    assert \"AS vendedor_id\" in soft_open\n    assert \"AS vendedor_nombre\" in soft_open\n    assert \"AS mesa\" in soft_open\n\n    assert \"c.Vn_Cve_Vendedor\" in mpro_open\n    assert \"LEFT JOIN Vendedor vnd\" in mpro_open\n    assert \"vnd.Vn_Cve_Vendedor = c.Vn_Cve_Vendedor\" in mpro_open\n    assert \"vnd.Vn_Descripcion\" in mpro_open\n    assert \"c.Co_Referencia\" in mpro_open\n    assert \"AS vendedor_id\" in mpro_open\n    assert \"AS vendedor_nombre\" in mpro_open\n    assert \"AS mesa\" in mpro_open\n\n    soft_closed_start = canonical.index(\"def _extract_soft\")\n    soft_closed_end = canonical.index(\"SOFT_AJUSTE_CHEQUE\", soft_closed_start)\n    soft_closed = canonical[soft_closed_start:soft_closed_end]\n    assert \"ch.idmesero\" in soft_closed\n    assert \"m.nombre\" in soft_closed\n    assert \"AS vendedor_nombre\" in soft_closed\n    assert \"AS mesa\" in soft_closed\n\n    mpro_closed_start = canonical.index(\"def _extract_mpro\")\n    mpro_closed_end = canonical.index(\"def _validate\", mpro_closed_start)\n    mpro_closed = canonical[mpro_closed_start:mpro_closed_end]\n    assert \"v.Vn_Cve_Vendedor\" in mpro_closed\n    assert \"vnd.Vn_Descripcion\" in mpro_closed\n    assert \"c.Co_Referencia\" in mpro_closed\n    assert \"AS vendedor_nombre\" in mpro_closed\n    assert \"AS mesa\" in mpro_closed\n\n    assert \"vendedor_nombre\" in service\n    assert \"mesa\" in service\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial_v2/ticket_snapshot.py",
+        "backend/tests/test_comercial_ticket_drilldown_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_ticket_drilldown_contract.py",
+        "backend/tests/test_comercial_ticket_numcheque_date_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial_v2/ticket_snapshot.py",
+          "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+          "backend/modules/comercial/ticket_service.py",
+          "backend/tests/test_comercial_ticket_drilldown_contract.py"
+        ],
+        "search_terms": [
+          "Vn_Cve_Vendedor",
+          "Vn_Descripcion",
+          "Co_Referencia",
+          "vendedor_nombre",
+          "mesa",
+          "QUERY_MPRO_DETALLE_ABIERTAS"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 120
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
