@@ -1,0 +1,83 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-URL-PROFILE-R2-20261001T1510Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3e77e4d89d97e6e7a8e995f54b9234804ed19705",
+  "production_allowed": false,
+  "objective": "Reintentar exactamente el frente P5 Runtime URL Profile bloqueado por SLOT_ALREADY_CLAIMED, con base_sha actual. Crear perfil canonico no-secreto de runtime development con base_url del preview canonico y hacer que el workflow priorice vars.TEST_BASE_URL y, si esta ausente, cargue el perfil canonico antes del precheck. Mantener secrets exclusivamente en GitHub Environment development. No tocar backend funcional, RBAC, SQL, Universal Worker core ni Produccion.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "ops/runtime/profiles/development.json",
+      "content": "{\n  \"schema\": \"edarsahub.runtime-profile.v1\",\n  \"environment\": \"development\",\n  \"base_url\": \"https://erp-crm-enterprise-1.preview.emergentagent.com\",\n  \"source_of_truth\": \"EDARSAHUB repository runtime profile\",\n  \"secret\": false\n}\n"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/centro-control-sync-monitor-p5-runtime-e2e.yml",
+      "old": "      TEST_BASE_URL: ${{ vars.TEST_BASE_URL }}\n",
+      "new": "      TEST_BASE_URL: ${{ vars.TEST_BASE_URL }}\n      P5_RUNTIME_PROFILE_FILE: ops/runtime/profiles/development.json\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/centro-control-sync-monitor-p5-runtime-e2e.yml",
+      "old": "      - name: Validate secure profile reference\n        shell: bash\n        run: |\n          set -euo pipefail\n",
+      "new": "      - name: Resolve canonical runtime URL\n        shell: bash\n        run: |\n          set -euo pipefail\n          if [ -z \"${TEST_BASE_URL:-}\" ]; then\n            RESOLVED_BASE_URL=\"$(python - <<'PY'\nimport json, os\nfrom pathlib import Path\np = Path(os.environ['P5_RUNTIME_PROFILE_FILE'])\ndata = json.loads(p.read_text(encoding='utf-8'))\nassert data.get('environment') == 'development'\nassert data.get('secret') is False\nvalue = str(data.get('base_url') or '').strip().rstrip('/')\nassert value.startswith('https://')\nprint(value)\nPY\n)\"\n            test -n \"$RESOLVED_BASE_URL\"\n            echo \"TEST_BASE_URL=$RESOLVED_BASE_URL\" >> \"$GITHUB_ENV\"\n          fi\n\n      - name: Validate secure profile reference\n        shell: bash\n        run: |\n          set -euo pipefail\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_control_sync_p5_secure_profile_contract.py",
+      "old": "REQUEST = ROOT / 'ops/e2e/requests/CENTRO-CONTROL-SYNC-MONITOR-P5-RUNTIME-SECURE-R1.execute'\n",
+      "new": "REQUEST = ROOT / 'ops/e2e/requests/CENTRO-CONTROL-SYNC-MONITOR-P5-RUNTIME-SECURE-R1.execute'\nRUNTIME_PROFILE = ROOT / 'ops/runtime/profiles/development.json'\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_control_sync_p5_secure_profile_contract.py",
+      "old": "    request = REQUEST.read_text(encoding='utf-8').strip()\n",
+      "new": "    request = REQUEST.read_text(encoding='utf-8').strip()\n    profile = RUNTIME_PROFILE.read_text(encoding='utf-8')\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_control_sync_p5_secure_profile_contract.py",
+      "old": "    assert '${{ vars.TEST_BASE_URL }}' in workflow\n",
+      "new": "    assert '${{ vars.TEST_BASE_URL }}' in workflow\n    assert 'P5_RUNTIME_PROFILE_FILE: ops/runtime/profiles/development.json' in workflow\n    assert 'Resolve canonical runtime URL' in workflow\n    assert 'https://erp-crm-enterprise-1.preview.emergentagent.com' in profile\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_control_sync_p5_secure_profile_contract.py",
+        "backend/tests/test_control_sync_p5_runtime_secure_e2e.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_control_sync_p5_secure_profile_contract.py"
+      ]
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL writes",
+    "No RBAC mutation",
+    "No secret values in repository or worker queue",
+    "GitHub Environment development remains the only source for TEST_SUPERADMIN_EMAIL and TEST_SUPERADMIN_PASSWORD",
+    "vars.TEST_BASE_URL remains highest-priority override",
+    "Public development base_url may live only in canonical ops/runtime/profiles/development.json",
+    "Do not hardcode base URL in workflow or runtime E2E test",
+    "Do not modify Universal Worker core",
+    "Do not send email or WhatsApp"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
