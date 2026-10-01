@@ -1,0 +1,89 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-ACTUAL-MODAL-FIX-R2-CARLOS-20261001",
+  "created_at_utc": "2026-10-01T22:29:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b2d9cda5ff2f8130525b73f03f0c7530b02cf0db",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "objective": "Montar el Asistente IA contextual en el modal REAL Detalle de Ventas de frontend/src/pages/Comercial.js, identificado por 'Selecciona un folio para abrir el ticket de venta.'. Reutilizar IAContextualLauncher existente, conservar IA_ASSISTANT_VER y autenticacion dual ya certificada. R2 reconstruido sobre el SHA actual despues de recuperar lock e index lock huerfanos. No tocar Production ni sincronizadores.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Comercial.js",
+      "old": "import api from '../lib/api';\nimport logger from '../services/logger';",
+      "new": "import api from '../lib/api';\nimport logger from '../services/logger';\nimport IAContextualLauncher from '../components/ia/IAContextual';"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Comercial.js",
+      "old": "  const ventasItems = data?.items || data?.movimientos || [];\n  const hayDatos = esVentas ? ventasItems.length > 0 : data?.movimientos?.length > 0;\n\n  return (",
+      "new": "  const ventasItems = data?.items || data?.movimientos || [];\n  const hayDatos = esVentas ? ventasItems.length > 0 : data?.movimientos?.length > 0;\n\n  const contextoVistaIA = {\n    modulo: 'comercial',\n    view_id: 'comercial_detalle_ventas',\n    titulo: config.titulo,\n    scope: {\n      server_id: serverId || null,\n      unidad: sucursal || null,\n      periodo: periodo || null,\n      meses: selectedMeses || [],\n      anios: selectedAnios || [],\n      metric: tipoKpi || null\n    },\n    filtros: {\n      periodo: periodo || null,\n      meses: selectedMeses || [],\n      anios: selectedAnios || []\n    },\n    periodo: {\n      label: data?.periodo\n        ? ((data.periodo.inicio || '') + ' a ' + (data.periodo.fin || ''))\n        : null,\n      fecha_inicio: data?.periodo?.inicio || null,\n      fecha_fin: data?.periodo?.fin || null\n    },\n    unidad_negocio: data?.servidor || sucursal || null,\n    seleccion: ticketSeleccionado\n      ? {\n          numero_ticket: ticketSeleccionado.folio || null,\n          fecha: ticketSeleccionado.fecha || null\n        }\n      : null,\n    columnas_visibles: esVentas\n      ? [\n          { key: 'folio', label: 'Período / Folio' },\n          { key: 'fecha', label: 'Fecha' },\n          { key: 'folios', label: 'Folios' },\n          { key: 'pax', label: 'PAX' },\n          { key: 'total_venta', label: 'Total Venta' }\n        ]\n      : [],\n    estado_vista: {\n      total_folios: Number(data?.resumen_periodo?.folios || 0),\n      total_pax: Number(data?.resumen_periodo?.pax || 0),\n      total_venta: Number(data?.resumen_periodo?.total_venta || 0)\n    }\n  };\n\n  return ("
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Comercial.js",
+      "old": "              <div className=\"flex items-center justify-between mb-3 px-1\">\n                <span className=\"text-sm text-zinc-500\">\n                  Período: {data.periodo?.inicio} a {data.periodo?.fin}\n                </span>\n                <span className=\"text-sm font-medium\">\n                  {esVentas\n                    ? (formatNumber(data.resumen_periodo?.folios || 0) + ' folio(s)')\n                    : (data.total + ' ' + (esRotacion ? 'mes(es)' : 'folio(s)'))}\n                </span>\n              </div>",
+      "new": "              <div className=\"flex items-center justify-between mb-3 px-1 gap-3\">\n                <span className=\"text-sm text-zinc-500\">\n                  Período: {data.periodo?.inicio} a {data.periodo?.fin}\n                </span>\n                <div className=\"flex items-center gap-3\">\n                  <span className=\"text-sm font-medium\">\n                    {esVentas\n                      ? (formatNumber(data.resumen_periodo?.folios || 0) + ' folio(s)')\n                      : (data.total + ' ' + (esRotacion ? 'mes(es)' : 'folio(s)'))}\n                  </span>\n                  {esVentas && (\n                    <IAContextualLauncher\n                      contextoVista={contextoVistaIA}\n                      viewData={{ tickets: ventasItems, lines: [] }}\n                    />\n                  )}\n                </div>\n              </div>"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_ia_contextual_comercial_contract.py",
+      "old": "FRONT = ROOT.parent / \"frontend/src/components/comercial/analytics/CanonicalTicketDrilldown.jsx\"\nCONTEXTUAL_FRONT = ROOT.parent / \"frontend/src/components/ia/IAContextual.jsx\"",
+      "new": "FRONT = ROOT.parent / \"frontend/src/components/comercial/analytics/CanonicalTicketDrilldown.jsx\"\nCOMERCIAL_PAGE = ROOT.parent / \"frontend/src/pages/Comercial.js\"\nCONTEXTUAL_FRONT = ROOT.parent / \"frontend/src/components/ia/IAContextual.jsx\""
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_ia_contextual_comercial_contract.py",
+      "old": "def test_frontend_reuses_existing_assistant_client_and_has_no_worker_key():\n    front = CONTEXTUAL_FRONT.read_text(encoding=\"utf-8\")\n    api = API.read_text(encoding=\"utf-8\")\n    drill = FRONT.read_text(encoding=\"utf-8\")\n    general = GENERAL.read_text(encoding=\"utf-8\")\n    assert \"iaAssistantApi\" in front\n    assert \"IAContextualLauncher\" in drill\n    assert \"contexto_vista\" in api\n    assert \"EDARSA_AI_API_KEY\" not in front\n    assert \"EDARSA_AI_API_KEY\" not in api\n    assert \"IAAsistente\" in general\n",
+      "new": "def test_frontend_reuses_existing_assistant_client_and_has_no_worker_key():\n    front = CONTEXTUAL_FRONT.read_text(encoding=\"utf-8\")\n    api = API.read_text(encoding=\"utf-8\")\n    drill = FRONT.read_text(encoding=\"utf-8\")\n    comercial = COMERCIAL_PAGE.read_text(encoding=\"utf-8\")\n    general = GENERAL.read_text(encoding=\"utf-8\")\n    assert \"iaAssistantApi\" in front\n    assert \"IAContextualLauncher\" in drill\n    assert \"IAContextualLauncher\" in comercial\n    assert \"view_id: 'comercial_detalle_ventas'\" in comercial\n    assert \"Selecciona un folio para abrir el ticket de venta.\" in comercial\n    assert \"contexto_vista\" in api\n    assert \"EDARSA_AI_API_KEY\" not in front\n    assert \"EDARSA_AI_API_KEY\" not in api\n    assert \"IAAsistente\" in general\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_ia_contextual_comercial_contract.py",
+        "backend/tests/test_ia_assistant_security.py"
+      ]
+    },
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/Comercial.js",
+          "frontend/src/components/ia/IAContextual.jsx",
+          "backend/tests/test_ia_contextual_comercial_contract.py"
+        ],
+        "search_terms": [
+          "Detalle de Ventas",
+          "Selecciona un folio para abrir el ticket de venta.",
+          "IAContextualLauncher",
+          "comercial_detalle_ventas",
+          "contextoVistaIA"
+        ],
+        "include_patterns": [
+          "*.js",
+          "*.jsx",
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
