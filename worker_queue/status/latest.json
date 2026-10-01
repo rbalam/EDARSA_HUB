@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "31e4a8c888c7223346ea3d8210593d3972d51f2e",
-  "generated_at_utc": "2026-10-01T02:28:41Z",
+  "generated_at_utc": "2026-10-01T02:30:06Z",
   "history": {
     "done_total_local": 1228,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1995,
+      "age_seconds": 2080,
       "job_id": "EDARSAHUB-COMERCIAL-SR-ZERO-DISCOUNT-TICKET-FIX-R5-CARLOS-20261001T0153Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2587,
+      "age_seconds": 2671,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-NUMCHEQUE-DATE-R4-CARLOS-20261001T0148Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2648,
+      "age_seconds": 2733,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-SELLER-DISCOUNT-AUDIT-R1-CARLOS-20261001T0144Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1383,
+      "age_seconds": 1467,
       "job_id": "EDARSAHUB-SINCRONIZADOR-130MID-202603-HEADER-DETAIL-RECONCILE-R23-CARLOS-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 227,
+      "age_seconds": 311,
       "job_id": "EDARSAHUB-SINCRONIZADOR-CIENFUEGOS-202603-HEADER-DETAIL-R24-CARLOS-20260930",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-SINCRONIZADOR-CIENFUEGOS-202603-HEADER-DETAIL-R24-CARLOS-20260930",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T02:28:35Z",
-    "last_receive_utc": "2026-10-01T02:28:40Z",
+    "last_cycle_utc": "2026-10-01T02:29:57Z",
+    "last_receive_utc": "2026-10-01T02:30:02Z",
     "last_terminal_utc": "2026-10-01T02:24:35Z",
     "pid": "1089318",
     "runtime_fingerprint": {
