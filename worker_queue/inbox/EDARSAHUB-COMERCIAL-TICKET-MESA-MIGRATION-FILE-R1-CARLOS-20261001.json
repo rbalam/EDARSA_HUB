@@ -6,7 +6,7 @@
   "base_sha": "715d1eaab4884fb7ec25213864228b9d22b44b95",
   "production_allowed": false,
   "mode": "MUTATION",
-  "objective": "Agregar exclusivamente la migracion idempotente para persistir mesa/referencia del Ticket de Venta en dbo.Comercial_Inteligencia_VentasDetalleProducto. No modificar extractores ni UI aun. No tocar Produccion.",
+  "objective": "Agregar exclusivamente la migracion idempotente para persistir mesa/referencia del Ticket de Venta en dbo.Comercial_Inteligencia_VentasDetalleProducto. No modificar extractores ni UI aun. No tocar Produccion. Re-wake del mismo R1 por falta de pickup; no duplicar trabajo funcional.",
   "requester": {
     "email": "carlosruz@edarsa.com.mx",
     "source": "chatgpt",
