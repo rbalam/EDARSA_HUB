@@ -3324,6 +3324,7 @@ async def comercial_detalle_ventas_agrupado(
                     numero_ticket,
                     MIN(COALESCE(fecha_hora, CAST(fecha_operacion AS DATETIME2))) AS fecha,
                     SUM(ISNULL(importe_neto,0)) AS total_venta,
+                    SUM(ISNULL(descuento,0)) AS descuento_total,
                     MAX(ISNULL(pax,0)) AS pax,
                     COUNT(*) AS num_productos
                 FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK)
@@ -3457,7 +3458,7 @@ async def comercial_detalle_ventas_agrupado(
             offset = (page - 1) * limit
             rows = _query_edarsahub_tablero(
                 cte_drill + f"""
-                SELECT numero_ticket, fecha, total_venta, pax, num_productos,
+                SELECT numero_ticket, fecha, total_venta, descuento_total, pax, num_productos,
                        COUNT(*) OVER() AS total_folios
                 FROM tickets
                 ORDER BY
@@ -3473,14 +3474,23 @@ async def comercial_detalle_ventas_agrupado(
                     fecha_row.strftime("%Y-%m-%d %H:%M:%S")
                     if hasattr(fecha_row, "strftime") else str(fecha_row)
                 )
+                total_venta_row = float(row.get("total_venta") or 0)
+                descuento_total_row = max(0.0, float(row.get("descuento_total") or 0))
+                tiene_descuento = descuento_total_row > 0.005
+                total_cero_por_descuento = (
+                    abs(total_venta_row) <= 0.005 and tiene_descuento
+                )
                 items.append({
                     "nivel": "detalle", "clave": None,
                     "label": str(row.get("numero_ticket") or ""),
                     "folio": str(row.get("numero_ticket") or ""),
                     "fecha": fecha_texto, "folios": 1,
                     "pax": int(row.get("pax") or 0),
-                    "total_venta": float(row.get("total_venta") or 0),
-                    "importe": float(row.get("total_venta") or 0),
+                    "total_venta": total_venta_row,
+                    "importe": total_venta_row,
+                    "descuento_total": descuento_total_row,
+                    "tiene_descuento": tiene_descuento,
+                    "total_cero_por_descuento": total_cero_por_descuento,
                     "num_productos": int(row.get("num_productos") or 0),
                     "expandible": False, "siguiente_nivel": None,
                 })
