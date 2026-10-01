@@ -1,0 +1,263 @@
+{
+  "base_sha": "e6cb6b40bc7fd171a54503a5b2d3f9f81b37e923",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-01T00:12:29Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-SR-OPEN-DETAIL-DIAG-R2-CARLOS-20261001T0006Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T00:12:31Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "core.empresa_resolver",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "core.utils.operational_window",
+              "datetime",
+              "decimal",
+              "logging",
+              "modules.comercial_v2.repository_comercial_edarsahub",
+              "modules.comercial_v2.schemas",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "modules.comercial_v2.ticket_snapshot",
+              "modules.integrations_runtime.sync_ledger",
+              "os",
+              "pytz",
+              "requests",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "detalle_abiertas_json",
+              "query_softrestaurant_detalle_abiertas"
+            ],
+            "path": "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_acquire_sync_lock_sync",
+              "_coerce_mx_datetime",
+              "_execute_query_via_api_local",
+              "_get_api_local_config",
+              "_get_existing_ventas_dia",
+              "_get_unidades_from_edarsahub",
+              "_release_sync_lock_sync",
+              "execute_sync_comercial_abiertas_v2",
+              "run_sync_comercial_abiertas_v2_manual",
+              "select_mpro_closed_sales"
+            ],
+            "tables_referenced": [
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "Servidores_Conexiones",
+              "Sync_Control_Ejecuciones",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial_v2",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "decimal",
+              "json",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "query_softrestaurant_detalle_abiertas",
+              "tempcheqdet"
+            ],
+            "path": "backend/modules/comercial_v2/ticket_snapshot.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_json_default",
+              "_number",
+              "serialize_open_detail_rows"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "json",
+              "service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "detalle_abiertas_json",
+              "merge_open_snapshot_tickets"
+            ],
+            "path": "backend/modules/comercial/ticket_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_folio_sort_key",
+              "_integer",
+              "_money",
+              "_open_detail_column_available",
+              "_real_product_row",
+              "_safe_sql",
+              "build_ticket_venta",
+              "load_open_snapshot_lines",
+              "merge_open_snapshot_tickets"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Comercial_Ventas_Dia_Abiertas_v2"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 3,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "unidad_negocio_nombre",
+              "server_id",
+              "sucursal_id",
+              "sistema_origen",
+              "fecha_operacion",
+              "snapshot_timestamp",
+              "ventas_abiertas",
+              "tickets_abiertos",
+              "pax_abiertos",
+              "ventas_cerradas_dia",
+              "tickets_cerrados_dia",
+              "pax_cerrados_dia",
+              "total_estimado_dia",
+              "detalle_json_len",
+              "detalle_json_status",
+              "detalle_json_sample"
+            ],
+            "name": "snapshots_sr_ticket_detail",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "DEFAULT",
+                "SOFTRESTAURANT",
+                "2026-09-30",
+                "2026-09-30 23:59:54.7869020",
+                "5783.20",
+                6,
+                14,
+                "0.00",
+                0,
+                0,
+                "5783.20",
+                "9780",
+                "JSON",
+                "[{\"folio\":\"342\",\"fecha_hora\":\"2026-09-30T13:05:42\",\"pax\":1,\"propina\":0.0,\"total_ticket\":199.0,\"producto_codigo\":\"A42010\",\"producto_nombre\":\"QUESADILLA AZUL DE CHICHARRON\",\"cantidad\":1.0,\"precio_unitario\":0.0,\"importe_bruto\":0.0},{\"folio\":\"342\",\"fecha_hora\":\"2026-09-30T13:05:42\",\"pax\":1,\"propina\":0.0,\"total_ticket\":199.0,\"producto_codigo\":\"B070059\",\"producto_nombre\":\"LIMONADA\",\"cantidad\":1.0,\"precio_unitario\":0.0,\"importe_bruto\":0.0},{\"folio\":\"342\",\"fecha_hora\":\"2026-09-30T13:05:42\",\"pax\":1,\"propina\":0.0,\"total_ticket\":199.0,\"producto_codigo\":\"C030042\",\"producto_nombre\":\"RESTAURANT WEEKEN\",\"cantidad\":1.0,\"precio_unitario\":199.0,\"importe_bruto\":199.0},{\"folio\":\"343\",\"fecha_hora\":\"2026-09-30T15:20:01\",\"pax\":5,\"propina\":0.0,\"total_ticket\":2345.0,\"producto_codigo\":\"A010012\",\"producto_nombre\":\"A SORBETE DE PIÑA C/CHAYA\",\"cantidad\":1.0,\"precio_unitario\":0.0,\"importe_bruto\":0.0},{\"folio\":\"343\",\"fecha_hora\":\"2026-09-30T15:20:01\",\"pax\":5,\"propina\":0.0,\"total_ticket\":2345.0,\"producto_codigo\":\"A010014\",\"producto_nombre\":\"A SOBERTE ARTESANAL\",\"cantidad\":1.0,\"precio_unitario\":40.0,\"importe_bruto\":40.0},{\"folio\":\"343\",\"fecha_hora\":\"2026-09-30T15:20:01\",\"pax\":5,\"propina\":0.0,\"total_ticket\":2345.0,\"producto_codigo\":\"A030002\",\"producto_nombre\":\"A CAMARONES ESTELARES\",\"cantidad\":1.0,\"precio_unitario\":270.0,\"importe_bruto\":270.0},{\"folio\":\"343\",\"fecha_hora\":\"2026-09-30T15:20:01\",\"pax\":5,\"propina\":0.0,\"total_ticket\":2345.0,\"producto_codigo\":\"A035004\",\"producto_nombre\":\"A ENCHILADAS VERDES\",\"canti"
+              ],
+              [
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "DEFAULT",
+                "SOFTRESTAURANT",
+                "2026-09-30",
+                "2026-09-30 23:59:52.6805150",
+                "43303.65",
+                13,
+                31,
+                "10090.00",
+                2,
+                2,
+                "53393.65",
+                "29823",
+                "JSON",
+                "[{\"folio\":\"2\",\"fecha_hora\":\"2026-09-30T13:42:06\",\"pax\":1,\"propina\":0.0,\"total_ticket\":1290.0,\"producto_codigo\":\"A060049\",\"producto_nombre\":\"COLES DE BRUSELAS C/CAMARONES ROCA\",\"cantidad\":2.0,\"precio_unitario\":175.0,\"importe_bruto\":350.0},{\"folio\":\"2\",\"fecha_hora\":\"2026-09-30T13:42:06\",\"pax\":1,\"propina\":0.0,\"total_ticket\":1290.0,\"producto_codigo\":\"A080257\",\"producto_nombre\":\"ELOTITOS BABY AL CARBON\",\"cantidad\":4.0,\"precio_unitario\":235.0,\"importe_bruto\":940.0},{\"folio\":\"3\",\"fecha_hora\":\"2026-09-30T13:58:08\",\"pax\":3,\"propina\":1008.0,\"total_ticket\":5712.0,\"producto_codigo\":\"A060036\",\"producto_nombre\":\"SERVICIO DE ENTRADA\",\"cantidad\":1.0,\"precio_unitario\":0.001,\"importe_bruto\":0.001},{\"folio\":\"3\",\"fecha_hora\":\"2026-09-30T13:58:08\",\"pax\":3,\"propina\":1008.0,\"total_ticket\":5712.0,\"producto_codigo\":\"A060114\",\"producto_nombre\":\"GUACAMOLE CIENFUEGOS\",\"cantidad\":1.0,\"precio_unitario\":250.0,\"importe_bruto\":250.0},{\"folio\":\"3\",\"fecha_hora\":\"2026-09-30T13:58:08\",\"pax\":3,\"propina\":1008.0,\"total_ticket\":5712.0,\"producto_codigo\":\"A080272\",\"producto_nombre\":\"PURE DE CAMOTE EN TEXTURAS\",\"cantidad\":1.0,\"precio_unitario\":205.0,\"importe_bruto\":205.0},{\"folio\":\"3\",\"fecha_hora\":\"2026-09-30T13:58:08\",\"pax\":3,\"propina\":1008.0,\"total_ticket\":5712.0,\"producto_codigo\":\"A080275\",\"producto_nombre\":\"TORRE DE PAPAS TRUFADAS\",\"cantidad\":1.0,\"precio_unitario\":205.0,\"importe_bruto\":205.0},{\"folio\":\"3\",\"fecha_hora\":\"2026-09-30T13:58:08\",\"pax\":3,\"propina\":1008.0,\"total_ticket\":5712.0,\"producto_codigo\":\"A090089\",\""
+              ],
+              [
+                "130MID",
+                "130° MERIDA",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "DEFAULT",
+                "SOFTRESTAURANT",
+                "2026-09-30",
+                "2026-09-30 23:59:50.4348610",
+                "20914.05",
+                8,
+                21,
+                "0.00",
+                0,
+                0,
+                "20914.05",
+                "16497",
+                "JSON",
+                "[{\"folio\":\"967\",\"fecha_hora\":\"2026-09-30T13:04:40\",\"pax\":3,\"propina\":1214.4,\"total_ticket\":6881.6,\"producto_codigo\":\"01062\",\"producto_nombre\":\"TACO EMBARAZADO DE WAGYU (1PZ)\",\"cantidad\":4.0,\"precio_unitario\":320.0,\"importe_bruto\":1280.0},{\"folio\":\"967\",\"fecha_hora\":\"2026-09-30T13:04:40\",\"pax\":3,\"propina\":1214.4,\"total_ticket\":6881.6,\"producto_codigo\":\"02008\",\"producto_nombre\":\"PAPA AL HORNO\",\"cantidad\":1.0,\"precio_unitario\":140.0,\"importe_bruto\":140.0},{\"folio\":\"967\",\"fecha_hora\":\"2026-09-30T13:04:40\",\"pax\":3,\"propina\":1214.4,\"total_ticket\":6881.6,\"producto_codigo\":\"02010\",\"producto_nombre\":\"MAC AND CHEESE\",\"cantidad\":1.0,\"precio_unitario\":160.0,\"importe_bruto\":160.0},{\"folio\":\"967\",\"fecha_hora\":\"2026-09-30T13:04:40\",\"pax\":3,\"propina\":1214.4,\"total_ticket\":6881.6,\"producto_codigo\":\"03007\",\"producto_nombre\":\"FARMER ROAST OZ\",\"cantidad\":12.0,\"precio_unitario\":128.0,\"importe_bruto\":1536.0},{\"folio\":\"967\",\"fecha_hora\":\"2026-09-30T13:04:40\",\"pax\":3,\"propina\":1214.4,\"total_ticket\":6881.6,\"producto_codigo\":\"03010\",\"producto_nombre\":\"COWBOY 130 OZ\",\"cantidad\":48.0,\"precio_unitario\":70.0,\"importe_bruto\":3360.0},{\"folio\":\"967\",\"fecha_hora\":\"2026-09-30T13:04:40\",\"pax\":3,\"propina\":1214.4,\"total_ticket\":6881.6,\"producto_codigo\":\"12004\",\"producto_nombre\":\"COWBOY 130 PZ\",\"cantidad\":1.0,\"precio_unitario\":0.001,\"importe_bruto\":0.001},{\"folio\":\"967\",\"fecha_hora\":\"2026-09-30T13:04:40\",\"pax\":3,\"propina\":1214.4,\"total_ticket\":6881.6,\"producto_codigo\":\"14024\",\"producto_nombre\":\"COC APEROL SPRITZ\","
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-01T00:12:29Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
