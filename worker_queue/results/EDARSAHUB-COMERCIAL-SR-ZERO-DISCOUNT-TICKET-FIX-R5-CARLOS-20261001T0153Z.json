@@ -1,0 +1,202 @@
+{
+  "base_sha": "433c8f5328747c8d029863bcca2fc41affb6ecaa",
+  "blockers": [],
+  "candidate_sha": "31e4a8c888c7223346ea3d8210593d3972d51f2e",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-10-01T01:55:25Z",
+  "development_sha": "31e4a8c888c7223346ea3d8210593d3972d51f2e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+    "backend/modules/comercial/ticket_service.py",
+    "backend/modules/comercial_v2/ticket_snapshot.py",
+    "backend/tests/test_comercial_softrestaurant_zero_discount_ticket_contract.py",
+    "frontend/src/pages/Comercial.js"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-SR-ZERO-DISCOUNT-TICKET-FIX-R5-CARLOS-20261001T0153Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T01:55:44Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.comercial_v2",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "decimal",
+              "json",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "d.descuento",
+              "descuento_producto",
+              "importe_neto_producto",
+              "isnull(ch.total, 0) >= 0"
+            ],
+            "path": "backend/modules/comercial_v2/ticket_snapshot.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_json_default",
+              "_number",
+              "serialize_open_detail_rows"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "core.empresa_resolver",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "core.utils.operational_window",
+              "datetime",
+              "decimal",
+              "logging",
+              "modules.comercial_v2.repository_comercial_edarsahub",
+              "modules.comercial_v2.schemas",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "modules.comercial_v2.ticket_snapshot",
+              "modules.integrations_runtime.sync_ledger",
+              "os",
+              "pytz",
+              "requests",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "isnull(total, 0) >= 0"
+            ],
+            "path": "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_acquire_sync_lock_sync",
+              "_coerce_mx_datetime",
+              "_execute_query_via_api_local",
+              "_get_api_local_config",
+              "_get_existing_ventas_dia",
+              "_get_unidades_from_edarsahub",
+              "_release_sync_lock_sync",
+              "execute_sync_comercial_abiertas_v2",
+              "run_sync_comercial_abiertas_v2_manual",
+              "select_mpro_closed_sales"
+            ],
+            "tables_referenced": [
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "Servidores_Conexiones",
+              "Sync_Control_Ejecuciones",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "json",
+              "service",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "descuento_producto",
+              "importe_neto_producto"
+            ],
+            "path": "backend/modules/comercial/ticket_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_folio_sort_key",
+              "_integer",
+              "_money",
+              "_open_detail_column_available",
+              "_real_product_row",
+              "_safe_sql",
+              "build_ticket_venta",
+              "load_open_snapshot_lines",
+              "merge_open_snapshot_tickets"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Comercial_Ventas_Dia_Abiertas_v2"
+            ]
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "desc. cuenta",
+              "desc. productos",
+              "descuento_producto",
+              "total prod."
+            ],
+            "path": "frontend/src/pages/Comercial.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 4,
+          "scanned_files": 4,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-01T01:55:20Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
