@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-TICKET-FINAL-READONLY-R1-CARLOS-20261001T0307Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Auditar el cierre real de Tablero Comercial - 2 sin modificar datos ni ejecutar sincronizadores. Verificar el snapshot actual de CIENFUEGOS 2026-09-30 para NUMCHEQUE 103658 y 103659, incluyendo total cero, descuento 100%, importe descontado, neto por producto y vendedor persistido. Verificar si 103658/103659 existen ya como ventas cerradas en el detalle canonico y determinar si el identificador cerrado sigue usando folio interno 1/2 en vez de NUMCHEQUE. Confirmar tambien que las fuentes EDARSAHUB existentes para vendedor historico siguen sin datos para LA ESTELAR 26014. No tocar Inteligencia Comercial, no ejecutar sync manual y no tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_snapshot_status_20260930",
+          "sql": "SELECT TOP 1 unidad_negocio_id,fecha_operacion,snapshot_timestamp,tickets_abiertos,ventas_abiertas,tickets_cerrados_dia,ventas_cerradas_dia,total_estimado_dia,source_status,LEN(ISNULL(detalle_abiertas_json,'')) AS detalle_json_len FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK) WHERE UPPER(LTRIM(RTRIM(unidad_negocio_id)))='CIENFUEGOS' AND fecha_operacion='2026-09-30' ORDER BY snapshot_timestamp DESC"
+        },
+        {
+          "name": "cienfuegos_snapshot_103658_103659",
+          "sql": "WITH s AS (SELECT TOP 1 detalle_abiertas_json,snapshot_timestamp FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK) WHERE UPPER(LTRIM(RTRIM(unidad_negocio_id)))='CIENFUEGOS' AND fecha_operacion='2026-09-30' ORDER BY snapshot_timestamp DESC) SELECT s.snapshot_timestamp,JSON_VALUE(j.value,'$.folio') AS folio_visible,JSON_VALUE(j.value,'$.folio_origen') AS folio_origen,JSON_VALUE(j.value,'$.fecha_hora') AS fecha_hora,JSON_VALUE(j.value,'$.vendedor_id') AS vendedor_id,JSON_VALUE(j.value,'$.vendedor_nombre') AS vendedor_nombre,TRY_CONVERT(decimal(18,4),JSON_VALUE(j.value,'$.cantidad')) AS cantidad,JSON_VALUE(j.value,'$.producto_codigo') AS producto_codigo,JSON_VALUE(j.value,'$.producto_nombre') AS producto_nombre,TRY_CONVERT(decimal(18,4),JSON_VALUE(j.value,'$.importe_bruto')) AS importe_bruto,TRY_CONVERT(decimal(18,4),JSON_VALUE(j.value,'$.descuento_pct')) AS descuento_pct,TRY_CONVERT(decimal(18,4),JSON_VALUE(j.value,'$.descuento_producto')) AS descuento_producto,TRY_CONVERT(decimal(18,4),JSON_VALUE(j.value,'$.importe_neto_producto')) AS importe_neto_producto,TRY_CONVERT(decimal(18,4),JSON_VALUE(j.value,'$.total_ticket')) AS total_ticket FROM s CROSS APPLY OPENJSON(s.detalle_abiertas_json) AS j WHERE JSON_VALUE(j.value,'$.folio') IN ('103658','103659') ORDER BY folio_visible,producto_codigo"
+        },
+        {
+          "name": "cienfuegos_canonico_identificadores_103658_103659",
+          "sql": "SELECT TOP 100 fecha_operacion,fecha_hora,numero_ticket,folio_origen,documento_origen,producto_codigo_fuente,producto_nombre,cantidad,precio_unitario,importe_bruto,importe_neto,descuento,propina,pax FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE UPPER(LTRIM(RTRIM(unidad_negocio_id)))='CIENFUEGOS' AND fecha_operacion='2026-09-30' AND CONVERT(varchar(128),numero_ticket) IN ('1','2','103658','103659') ORDER BY TRY_CONVERT(bigint,numero_ticket),producto_nombre"
+        },
+        {
+          "name": "la_estelar_seller_sources_26014",
+          "sql": "SELECT 'PAX' AS fuente,COUNT(*) AS registros,MAX(MeseroNombre) AS vendedor FROM dbo.Sync_PAX_Detalle WITH (NOLOCK) WHERE FechaOperacion='2026-09-26' AND CONVERT(varchar(100),CuentaFolio)='26014' UNION ALL SELECT 'MOVIMIENTOS',COUNT(*),MAX(MeseroNombre) FROM dbo.Sync_Movimientos_Detalle WITH (NOLOCK) WHERE FechaOperacion='2026-09-26' AND CONVERT(varchar(100),CuentaFolio)='26014'"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
