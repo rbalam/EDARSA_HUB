@@ -44,7 +44,7 @@ def test_existing_chat_contract_is_extended_not_replaced():
     service = SERVICE.read_text(encoding="utf-8")
     assert '@router.post("/chat")' in routes
     assert 'contexto_vista' in routes
-    assert "require_explicit_permission" in routes
+    assert "require_explicit_permission_dual" in routes
     assert "IA_ASSISTANT_VER" in routes
     assert "plan_system_queries" in routes
     assert "execute_planned_queries" in routes

@@ -14,7 +14,7 @@ from fastapi import (
 from pydantic import BaseModel, Field
 
 from core.rbac.middleware import (
-    require_explicit_permission,
+    require_explicit_permission_dual,
 )
 from modules.ia_assistant import contextual
 from modules.ia_assistant import query_bridge
@@ -138,7 +138,7 @@ def _translate_error(
 @router.get("/health")
 async def health(
     current_user: dict = Depends(
-        require_explicit_permission(
+        require_explicit_permission_dual(
             IA_PERMISSION
         )
     ),
@@ -150,7 +150,7 @@ async def health(
 @router.get("/sesiones")
 async def listar_sesiones(
     current_user: dict = Depends(
-        require_explicit_permission(
+        require_explicit_permission_dual(
             IA_PERMISSION
         )
     ),
@@ -175,7 +175,7 @@ async def listar_sesiones(
 async def crear_sesion(
     request: CrearSesionRequest,
     current_user: dict = Depends(
-        require_explicit_permission(
+        require_explicit_permission_dual(
             IA_PERMISSION
         )
     ),
@@ -210,7 +210,7 @@ async def crear_sesion(
 async def obtener_mensajes(
     sesion_id: UUID,
     current_user: dict = Depends(
-        require_explicit_permission(
+        require_explicit_permission_dual(
             IA_PERMISSION
         )
     ),
@@ -238,7 +238,7 @@ async def obtener_mensajes(
 async def eliminar_sesion(
     sesion_id: UUID,
     current_user: dict = Depends(
-        require_explicit_permission(
+        require_explicit_permission_dual(
             IA_PERMISSION
         )
     ),
@@ -264,7 +264,7 @@ async def chat(
     request: ChatRequest,
     http_request: Request,
     current_user: dict = Depends(
-        require_explicit_permission(
+        require_explicit_permission_dual(
             IA_PERMISSION
         )
     ),
