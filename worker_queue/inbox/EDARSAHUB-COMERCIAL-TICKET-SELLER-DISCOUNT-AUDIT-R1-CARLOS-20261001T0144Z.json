@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-TICKET-SELLER-DISCOUNT-AUDIT-R1-CARLOS-20261001T0144Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Auditar en EDARSAHUB la disponibilidad real de vendedor/mesero y descuentos por producto/encabezado para construir el Ticket de Venta sin inventar datos. Usar como muestra LA ESTELAR 2026-09-26 folio visible 26014 y revisar tablas canónicas ya sincronizadas. No modificar ni ejecutar sincronizadores ni tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "schema_pax_detalle_ticket_fields",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Sync_PAX_Detalle' AND COLUMN_NAME IN ('ServerID','SucursalID','FechaOperacion','CuentaID','CuentaFolio','MesaNumero','MeseroID','MeseroNombre','NumeroComensales','VentaCuenta') ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "schema_movimientos_ticket_fields",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Sync_Movimientos_Detalle' AND COLUMN_NAME IN ('ServerID','SucursalID','FechaOperacion','CuentaID','CuentaFolio','MesaNumero','MeseroID','MeseroNombre','ProductoID','ProductoCodigo','ProductoNombre','Cantidad','PrecioUnitario','Descuento','Impuesto','Subtotal','Total') ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "la_estelar_pax_ticket_26014",
+          "sql": "SELECT TOP 20 ServerID,SucursalID,FechaOperacion,CuentaID,CuentaFolio,MesaNumero,MeseroID,MeseroNombre,NumeroComensales,VentaCuenta FROM dbo.Sync_PAX_Detalle WITH (NOLOCK) WHERE FechaOperacion='2026-09-26' AND CONVERT(varchar(100),CuentaFolio)='26014' ORDER BY FechaHora"
+        },
+        {
+          "name": "la_estelar_mov_ticket_26014",
+          "sql": "SELECT TOP 100 ServerID,SucursalID,FechaOperacion,CuentaID,CuentaFolio,MesaNumero,MeseroID,MeseroNombre,ProductoCodigo,ProductoNombre,Cantidad,PrecioUnitario,Descuento,Impuesto,Subtotal,Total FROM dbo.Sync_Movimientos_Detalle WITH (NOLOCK) WHERE FechaOperacion='2026-09-26' AND CONVERT(varchar(100),CuentaFolio)='26014' ORDER BY FechaHora,ProductoNombre"
+        },
+        {
+          "name": "la_estelar_canonico_ticket_26014",
+          "sql": "SELECT TOP 100 server_id,sucursal_id,sistema_origen,fecha_operacion,fecha_hora,numero_ticket,producto_codigo_fuente,producto_nombre,cantidad,precio_unitario,importe_bruto,importe_neto,descuento,propina,pax FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion='2026-09-26' AND CONVERT(varchar(100),numero_ticket)='26014' ORDER BY producto_nombre"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
