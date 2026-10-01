@@ -215,6 +215,8 @@ def build_ticket_venta(
             importe_bruto,
             importe_neto,
             descuento,
+            descuento_pct,
+            vendedor_nombre,
             propina,
             pax
         FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK)
@@ -247,10 +249,15 @@ def build_ticket_venta(
             neto = _money(row.get("importe_neto"))
             descuento_linea = max(0.0, _money(row.get("descuento")))
             descuento_productos += descuento_linea
+            descuento_pct_origen = row.get("descuento_pct")
             descuento_pct = (
-                (descuento_linea / bruto) * 100.0
-                if bruto > 0 and descuento_linea > 0
-                else 0.0
+                _money(descuento_pct_origen)
+                if descuento_pct_origen is not None
+                else (
+                    (descuento_linea / bruto) * 100.0
+                    if bruto > 0 and descuento_linea > 0
+                    else 0.0
+                )
             )
             items.append({
                 "cantidad": _money(row.get("cantidad")),
@@ -274,6 +281,14 @@ def build_ticket_venta(
                 "importe_neto": total,
             }]
         descuento_cuenta = max(0.0, descuento - descuento_productos)
+        vendedor = next(
+            (
+                str(row.get("vendedor_nombre") or "").strip()
+                for row in closed_rows
+                if str(row.get("vendedor_nombre") or "").strip()
+            ),
+            None,
+        )
         return {
             "source_status": "SUCCESS",
             "source": "Comercial_Inteligencia_VentasDetalleProducto",
@@ -283,6 +298,7 @@ def build_ticket_venta(
                 "folio": folio,
                 "fecha_hora": str(closed_rows[0].get("fecha_hora") or ""),
                 "pax": pax,
+                "vendedor": vendedor,
                 "estado": "CERRADA",
                 "items": items,
                 "subtotal": subtotal,

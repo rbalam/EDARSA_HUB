@@ -739,13 +739,18 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         WITH h AS (
             SELECT
                 ch.folio,
+                ch.numcheque,
                 ch.fecha,
-                  ISNULL(ch.cancelado, 0) AS cancelado_origen,
+                CONVERT(varchar(100), ch.idmesero) AS vendedor_id,
+                NULLIF(LTRIM(RTRIM(CONVERT(varchar(200), m.nombre))), '') AS vendedor_nombre,
+                ISNULL(ch.cancelado, 0) AS cancelado_origen,
                 ISNULL(ch.nopersonas, 0) AS pax_ticket,
                 ISNULL(ch.total, 0) AS importe_neto_ticket,
                 {prop_expr} AS propina_ticket,
                 {desc_expr} AS descuento_ticket
             FROM cheques ch WITH (NOLOCK)
+            LEFT JOIN meseros m WITH (NOLOCK)
+                ON m.idmesero = ch.idmesero
             INNER JOIN turnos tr WITH (NOLOCK)
                 ON tr.idturno = ch.idturno
             WHERE tr.apertura >= %s
@@ -755,8 +760,11 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         l AS (
             SELECT
                 h.folio,
+                h.numcheque,
                 h.fecha,
-                  h.cancelado_origen,
+                h.vendedor_id,
+                h.vendedor_nombre,
+                h.cancelado_origen,
                 h.pax_ticket,
                 h.importe_neto_ticket,
                 h.propina_ticket,
@@ -766,6 +774,7 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                     ELSE COALESCE(NULLIF(CONVERT(varchar(100), dc.idproducto), ''), 'SIN_CODIGO')
                 END AS producto_codigo_fuente,
                 COALESCE(MAX(CONVERT(varchar(300), p.descripcion)), 'HEADER SIN DETALLE') AS producto_nombre,
+                CAST(ISNULL(dc.descuento, 0) AS decimal(9,4)) AS descuento_pct,
                 SUM(CAST(ISNULL(dc.cantidad, 0) AS decimal(18,4))) AS cantidad,
                 CASE
                     WHEN SUM(CAST(ISNULL(dc.cantidad, 0) AS decimal(18,4))) <> 0
@@ -773,7 +782,13 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                          / SUM(CAST(ISNULL(dc.cantidad, 0) AS decimal(18,4)))
                     ELSE MAX(CAST(ISNULL(dc.precio, 0) AS decimal(18,4)))
                 END AS precio_unitario,
-                SUM(CAST(ISNULL(dc.cantidad, 0) * ISNULL(dc.precio, 0) AS decimal(18,4))) AS importe_bruto
+                SUM(CAST(ISNULL(dc.cantidad, 0) * ISNULL(dc.precio, 0) AS decimal(18,4))) AS importe_bruto,
+                SUM(CAST(
+                    ISNULL(dc.cantidad, 0)
+                    * ISNULL(dc.precio, 0)
+                    * (1 - (ISNULL(dc.descuento, 0) / 100.0))
+                    AS decimal(18,4)
+                )) AS importe_neto
             FROM h
             LEFT JOIN cheqdet dc WITH (NOLOCK)
                 ON dc.foliodet = h.folio
@@ -781,47 +796,54 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 ON p.idproducto = dc.idproducto
             GROUP BY
                 h.folio,
+                h.numcheque,
                 h.fecha,
-                  h.cancelado_origen,
+                h.vendedor_id,
+                h.vendedor_nombre,
+                h.cancelado_origen,
                 h.pax_ticket,
                 h.importe_neto_ticket,
                 h.propina_ticket,
                 h.descuento_ticket,
-                COALESCE(NULLIF(CONVERT(varchar(100), dc.idproducto), ''), 'SIN_CODIGO')
-        ),
-        t AS (
-            SELECT folio, SUM(importe_bruto) AS bruto_ticket
-            FROM l
-            GROUP BY folio
+                COALESCE(NULLIF(CONVERT(varchar(100), dc.idproducto), ''), 'SIN_CODIGO'),
+                CAST(ISNULL(dc.descuento, 0) AS decimal(9,4))
         )
         SELECT
-            CONVERT(varchar(64), l.folio) AS numero_ticket,
+            COALESCE(
+                NULLIF(CONVERT(varchar(64), l.numcheque), ''),
+                CONVERT(varchar(64), l.folio)
+            ) AS numero_ticket,
             CONCAT('SOFT:', CONVERT(varchar(64), l.folio)) AS id_transaccion,
             l.fecha AS fecha_hora,
-              l.cancelado_origen,
-              CASE
-                  WHEN ISNULL(l.cancelado_origen, 0) = 0 THEN 'ACTIVO'
-                  ELSE 'CANCELADO'
-              END AS estado_origen,
-              CASE
-                  WHEN ISNULL(l.cancelado_origen, 0) = 0 THEN 1
-                  ELSE 0
-              END AS es_kpi_valido,
-              CONVERT(varchar(64), l.folio) AS folio_origen,
-              CONVERT(varchar(64), l.folio) AS documento_origen,
+            l.cancelado_origen,
+            CASE
+                WHEN ISNULL(l.cancelado_origen, 0) = 0 THEN 'ACTIVO'
+                ELSE 'CANCELADO'
+            END AS estado_origen,
+            CASE
+                WHEN ISNULL(l.cancelado_origen, 0) = 0 THEN 1
+                ELSE 0
+            END AS es_kpi_valido,
+            CONVERT(varchar(64), l.folio) AS folio_origen,
+            COALESCE(
+                NULLIF(CONVERT(varchar(64), l.numcheque), ''),
+                CONVERT(varchar(64), l.folio)
+            ) AS documento_origen,
+            l.vendedor_id,
+            l.vendedor_nombre,
             l.pax_ticket,
             l.importe_neto_ticket,
             l.propina_ticket,
             l.descuento_ticket,
             l.producto_codigo_fuente,
             l.producto_nombre,
+            l.descuento_pct,
             l.cantidad,
             l.precio_unitario,
             l.importe_bruto,
-            CAST(l.importe_bruto AS decimal(18,4)) AS importe_neto
+            CAST(l.importe_neto AS decimal(18,4)) AS importe_neto
         FROM l
-        INNER JOIN t ON t.folio = l.folio
-        ORDER BY l.folio, l.producto_codigo_fuente
+        ORDER BY l.folio, l.producto_codigo_fuente, l.descuento_pct
         """
         cur = conn.cursor(as_dict=True)
         cur.execute(sql, (fi, ff))
@@ -1307,6 +1329,13 @@ def _materialize_rows(cfg: Dict[str, Any], dia: date, src_rows: List[Dict[str, A
             "folio_origen": _s(r.get("folio_origen") or r.get("numero_ticket")),
             "documento_origen": _s(r.get("documento_origen") or r.get("numero_ticket")),
             "fuente_original": _s(r.get("sistema_origen")),
+            "vendedor_id": _s(r.get("vendedor_id")) or None,
+            "vendedor_nombre": _s(r.get("vendedor_nombre"))[:200] or None,
+            "descuento_pct": (
+                _d(r.get("descuento_pct"))
+                if r.get("descuento_pct") is not None
+                else None
+            ),
             "producto_codigo_fuente": _s(r.get("producto_codigo_fuente")) or "SIN_CODIGO",
             "producto_id": None,
             "producto_nombre": _s(r.get("producto_nombre"))[:300],
@@ -1459,12 +1488,15 @@ def _insert_rows(rows: List[Dict[str, Any]]) -> int:
             sync_run_id,
             hash_origen,
             fecha_sincronizacion,
-            activo
+            activo,
+            vendedor_id,
+            vendedor_nombre,
+            descuento_pct
         ) VALUES (
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
-            %s,%s
+            %s,%s,%s,%s,%s
         )
         """
 
@@ -1510,6 +1542,9 @@ def _insert_rows(rows: List[Dict[str, Any]]) -> int:
                     r["hash_origen"],
                     r["fecha_sincronizacion"],
                     1 if r["activo"] else 0,
+                    r["vendedor_id"],
+                    r["vendedor_nombre"],
+                    r["descuento_pct"],
                 ),
             )
 
