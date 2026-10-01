@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-API-CIENFUEGOS-SERVER-BRIDGE-READONLY-R1-20261001",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "012921ebc92508c8b76891931bc5720344a7055c",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Resolver exclusivamente el puente entre CIENFUEGOS NOMINPAQ, su ConexionID, el server_id de la unidad CIENFUEGOS y las relaciones Empresa/Servidor. No mutar, no secretos, no APIs externas, no CAVAS fisico, no Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "cienfuegos_api_connection",
+          "sql": "SELECT CONVERT(varchar(36),sc.id) AS ConexionID,sc.nombre,sc.system_type,sc.database_name,sc.api_url,sc.EmpresaID,sc.activo FROM dbo.Servidores_Conexiones sc WHERE sc.id='31D62F39-632B-4684-B735-256BD9293A8F'"
+        },
+        {
+          "name": "cienfuegos_unit_server",
+          "sql": "SELECT CONVERT(varchar(36),u.id) AS UnidadNegocioID,u.codigo,u.nombre,u.server_id,u.activo FROM dbo.Unidades_Negocio u WHERE u.id='B06EE652-0370-4267-B0A8-DA6FC39B590A'"
+        },
+        {
+          "name": "cienfuegos_server_registry",
+          "sql": "SELECT CONVERT(varchar(36),sc.id) AS ServerID,sc.nombre,sc.system_type,sc.tipo_conexion,sc.activo,sc.EmpresaID,sc.database_name,sc.api_url FROM dbo.Servidores_Conexiones sc WHERE sc.id='6d053c22-523e-48c0-b72b-96081e2d781b'"
+        },
+        {
+          "name": "cienfuegos_server_company_links",
+          "sql": "SELECT CONVERT(varchar(36),es.ServidorID) AS ServerID,es.EmpresaID,e.CodigoEmpresa,e.NombreComercial,es.RolConexion,es.NumeroSucursalSistema FROM dbo.Sistema_EmpresasServidores es LEFT JOIN dbo.Sistema_Empresas e ON e.EmpresaID=es.EmpresaID WHERE es.ServidorID IN ('31D62F39-632B-4684-B735-256BD9293A8F','6d053c22-523e-48c0-b72b-96081e2d781b') ORDER BY es.ServidorID,es.EmpresaID"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS",
+    "chat": "Conexiones y Comunicaciones 2"
+  }
+}
