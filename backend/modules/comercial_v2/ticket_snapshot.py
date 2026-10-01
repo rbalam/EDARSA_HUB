@@ -23,6 +23,8 @@ SELECT
     MIN(ch.fecha) AS fecha_hora,
     MAX(ISNULL(ch.nopersonas, 0)) AS pax,
     MAX(ISNULL(ch.propina, 0)) AS propina,
+    MAX(CONVERT(varchar(50), ch.idmesero)) AS vendedor_id,
+    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), m.nombre))), '')) AS vendedor_nombre,
     MAX(ISNULL(ch.total, 0)) AS total_ticket,
     MAX(ISNULL(ch.descuentoimporte, 0)) AS descuento_encabezado_reportado,
     MAX(ISNULL(ch.totaldescuentos, 0)) AS descuento_total_reportado,
@@ -73,6 +75,8 @@ SELECT
 FROM tempcheques ch
 LEFT JOIN tempcheqdet d
     ON d.foliodet = ch.folio
+LEFT JOIN meseros m
+    ON m.idmesero = ch.idmesero
 LEFT JOIN productos p
     ON p.idproducto = d.idproducto
 WHERE ISNULL(ch.cancelado, 0) = 0
@@ -173,6 +177,8 @@ def serialize_open_detail_rows(rows: List[Dict[str, Any]]) -> str:
             "fecha_hora": row.get("fecha_hora"),
             "pax": int(_number(row.get("pax"))),
             "propina": _number(row.get("propina")),
+            "vendedor_id": str(row.get("vendedor_id") or "").strip() or None,
+            "vendedor_nombre": str(row.get("vendedor_nombre") or "").strip() or None,
             "total_ticket": _number(row.get("total_ticket")),
             "producto_codigo": str(row.get("producto_codigo") or "SIN_CODIGO"),
             "producto_nombre": str(
