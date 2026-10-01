@@ -1,0 +1,226 @@
+{
+  "base_sha": "d79406e2050303b293840bb4816f5e37b1075b5d",
+  "blockers": [],
+  "candidate_sha": "a41e16f680b12d010550701d37a5b25bba68628a",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-10-01T22:00:36Z",
+  "development_sha": "a41e16f680b12d010550701d37a5b25bba68628a",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/ia_assistant/routes.py",
+    "backend/tests/test_ia_assistant_security.py",
+    "backend/tests/test_ia_contextual_comercial_contract.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-IA-CONTEXTUAL-DUAL-AUTH-FIX-R1-CARLOS-20261001",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T22:01:05Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.ia_assistant",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.rbac.middleware",
+              "fastapi",
+              "modules.ia_assistant",
+              "modules.ia_assistant.worker_routes",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "ia_assistant_ver",
+              "require_explicit_permission_dual"
+            ],
+            "path": "backend/modules/ia_assistant/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/chat",
+              "/health",
+              "/sesiones",
+              "/sesiones/{sesion_id}",
+              "/sesiones/{sesion_id}/mensajes"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ChatRequest",
+              "CrearSesionRequest",
+              "_current_email",
+              "_translate_error",
+              "chat",
+              "crear_sesion",
+              "eliminar_sesion",
+              "health",
+              "listar_sesiones",
+              "obtener_mensajes"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.rbac_helper_sql",
+              "core.security",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "fastapi",
+              "fastapi.security",
+              "functools",
+              "logging",
+              "service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "require_explicit_permission(",
+              "require_explicit_permission_dual"
+            ],
+            "path": "backend/core/rbac/middleware.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "get_current_user"
+            ],
+            "routes": [
+              "/cargos/{id}/aplicar",
+              "/endpoint"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACAllDependency",
+              "RBACAnyDependency",
+              "RBACDependency",
+              "RBACExplicitDependency",
+              "RBACExplicitDualDependency",
+              "__call__",
+              "__init__",
+              "_get_db",
+              "get_current_user_from_token",
+              "get_current_user_with_permissions",
+              "require_all_permissions",
+              "require_any_permission",
+              "require_explicit_permission",
+              "require_explicit_permission_dual",
+              "require_permission"
+            ],
+            "tables_referenced": [
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.ia_assistant.contextual",
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "ia_assistant_ver",
+              "require_explicit_permission_dual"
+            ],
+            "path": "backend/tests/test_ia_contextual_comercial_contract.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/chat"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_context_normalization_is_whitelist_and_drops_secrets",
+              "test_existing_chat_contract_is_extended_not_replaced",
+              "test_frontend_reuses_existing_assistant_client_and_has_no_worker_key",
+              "test_query_bridge_remains_get_only_and_no_generated_sql",
+              "test_ui_actions_are_fail_closed"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "ast",
+              "asyncio",
+              "fastapi",
+              "modules.ia_assistant",
+              "os",
+              "pathlib",
+              "pytest",
+              "sys"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "ia_assistant_ver",
+              "require_explicit_permission_dual"
+            ],
+            "path": "backend/tests/test_ia_assistant_security.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "answer",
+              "fail_provider",
+              "save_exchange",
+              "test_all_endpoints_require_explicit_ia_permission",
+              "test_create_session_response_matches_frontend_contract",
+              "test_enterprise_menu_knows_ia_sql_icon",
+              "test_foreign_session_is_not_disclosed",
+              "test_frontend_uses_canonical_api_client",
+              "test_ia_routes_use_dual_auth_without_legacy_admin_bypass",
+              "test_identity_fails_closed_without_email",
+              "test_identity_is_normalized",
+              "test_layout_has_no_hardcoded_ia_menu",
+              "test_llm_call_has_timeout",
+              "test_menu_permission_map_contains_ia",
+              "test_provider_failure_does_not_persist",
+              "test_repository_has_no_dynamic_sql_execute",
+              "test_success_persists_atomic_exchange"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 4,
+          "scanned_files": 4,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-01T22:00:25Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
