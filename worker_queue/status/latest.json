@@ -3,50 +3,56 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "f3e4939a21cd7e897e0eb97aff4956fe31fa7213",
-  "generated_at_utc": "2026-10-01T16:45:35Z",
+  "development_sha": "715d1eaab4884fb7ec25213864228b9d22b44b95",
+  "generated_at_utc": "2026-10-01T16:46:52Z",
   "history": {
-    "done_total_local": 1257,
+    "done_total_local": 1258,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1108,
-    "results_total_local": 2163
+    "results_total_local": 2164
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2166,
+      "age_seconds": 36,
+      "job_id": "EDARSAHUB-COMERCIAL-HISTORY-2026-RUNNER-R1-CARLOS-20261001",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2242,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-MICROPRICE-ZERO-FIX-R29-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 734,
+      "age_seconds": 810,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-MICROPRICE-ZERO-FIX-R30-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2466,
+      "age_seconds": 2542,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-PARIDAD-COMERCIAL-R14-CARLOS-20261001T1545Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1050,
+      "age_seconds": 1126,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-PARIDAD-COMERCIAL-R14B-CARLOS-20261001T1620Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 391,
+      "age_seconds": 467,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-PARIDAD-COMERCIAL-R14C-CARLOS-20261001T1640Z",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "f3e4939a21cd7e897e0eb97aff4956fe31fa7213",
+  "local_development_sha": "715d1eaab4884fb7ec25213864228b9d22b44b95",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -54,21 +60,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
-  "remote_development_sha": "f3e4939a21cd7e897e0eb97aff4956fe31fa7213",
+  "remote_development_sha": "715d1eaab4884fb7ec25213864228b9d22b44b95",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T16:45:32Z",
-    "last_receive_utc": "2026-10-01T16:45:34Z",
-    "last_terminal_utc": "2026-10-01T16:39:04Z",
+    "last_cycle_utc": "2026-10-01T16:46:48Z",
+    "last_receive_utc": "2026-10-01T16:46:51Z",
+    "last_terminal_utc": "2026-10-01T16:46:15Z",
     "pid": "588094",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "ad56901c4df1da4ab799657b8f9a43d92471b56a",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "f3e4939a21cd7e897e0eb97aff4956fe31fa7213",
+      "development_sha": "715d1eaab4884fb7ec25213864228b9d22b44b95",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
