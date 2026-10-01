@@ -1,14 +1,14 @@
 {
-  "ahead_count": 0,
+  "ahead_count": 1,
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "SYNC",
+  "convergence_status": "LOCAL_AHEAD_ONLY",
   "development_sha": "e7078e82a853a55e7a453519422ae9afd9ec1918",
-  "generated_at_utc": "2026-10-01T04:29:22Z",
+  "generated_at_utc": "2026-10-01T04:30:37Z",
   "history": {
     "done_total_local": 1239,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 1091,
     "results_total_local": 2128
   },
@@ -16,16 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3583,
-      "job_id": "EDARSAHUB-BOS-CAPABILITY-API-LOCAL-EMPRESA-HOMOLOGATION-R1-20261001",
-      "reasons": [
-        "ACTIONS_REQUIRED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 3385,
+      "age_seconds": 3460,
       "job_id": "EDARSAHUB-BOS-CAPABILITY-API-LOCAL-EMPRESA-HOMOLOGATION-R2-20261001",
       "reasons": [
         "SUMMARY_LANGUAGE_MUST_BE_ES",
@@ -38,7 +29,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3000,
+      "age_seconds": 3075,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-R8-CONTRACT-READONLY-20261001",
       "reasons": [
         "READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED"
@@ -47,83 +38,89 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3069,
+      "age_seconds": 3144,
       "job_id": "EDARSAHUB-BOS-CAPABILITY-API-LOCAL-EMPRESA-HOMOLOGATION-R3-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2792,
+      "age_seconds": 2867,
       "job_id": "EDARSAHUB-BOS-CAPABILITY-API-LOCAL-EMPRESA-HOMOLOGATION-R4-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2225,
+      "age_seconds": 2300,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-R8-CONTRACT-READONLY-RETRY1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1754,
+      "age_seconds": 1829,
       "job_id": "EDARSAHUB-BOS-WORKER-CONVERGENCE-GUARD-E2E-MIRROR-FF-FIX-R2-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2819,
+      "age_seconds": 2894,
       "job_id": "EDARSAHUB-BOS-WORKER-CONVERGENCE-GUARD-PUBLISHER-PREFLIGHT-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2506,
+      "age_seconds": 2581,
       "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-MIGRATION-R1-CARLOS-20261001T0340Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1229,
+      "age_seconds": 1304,
       "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-MIGRATION-R2-CARLOS-20261001T0350Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3268,
+      "age_seconds": 3343,
       "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-SCHEMA-R1-CARLOS-20261001T0332Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2195,
+      "age_seconds": 2270,
       "job_id": "SERVIDORES-API-UI-CONNECTIVITY-HOMOLOGATION-STATE-R1-20261001",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 6,
+      "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-MIGRATION-R3-CARLOS-20261001T0412Z",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
-  "local_development_sha": "e7078e82a853a55e7a453519422ae9afd9ec1918",
+  "local_development_sha": "e703ee850fd0170840fe90e5df6928e74de83b0e",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 3,
+  "queue_rejected_recent": 2,
   "queue_result_ready_recent": 9,
-  "queue_running": 0,
+  "queue_running": 1,
   "remote_development_sha": "e7078e82a853a55e7a453519422ae9afd9ec1918",
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-MIGRATION-R3-CARLOS-20261001T0412Z",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T04:29:18Z",
-    "last_receive_utc": "2026-10-01T04:29:21Z",
+    "last_cycle_utc": "2026-10-01T04:30:30Z",
+    "last_receive_utc": "2026-10-01T04:30:33Z",
     "last_terminal_utc": "2026-10-01T04:08:53Z",
     "pid": "773",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "d68b475192c3c688137911a09b06144faf578fa4",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "e7078e82a853a55e7a453519422ae9afd9ec1918",
+      "development_sha": "e703ee850fd0170840fe90e5df6928e74de83b0e",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
@@ -138,7 +135,7 @@
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
       "worker_code_tree_aligned": false,
-      "worker_code_tree_sha": "1d56d97b964b20bcfe57ced5a01c76d1e08dab7a"
+      "worker_code_tree_sha": "47b3cc277220d437b497831939aed642478394d6"
     }
   },
   "schema": "edarsahub.worker-health.v3",
