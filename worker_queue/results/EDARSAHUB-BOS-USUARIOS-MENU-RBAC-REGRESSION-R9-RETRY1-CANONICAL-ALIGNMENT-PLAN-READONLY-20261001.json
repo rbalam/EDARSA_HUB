@@ -1,0 +1,23 @@
+{
+  "base_sha": "e703ee850fd0170840fe90e5df6928e74de83b0e",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-01T04:39:12Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-R9-RETRY1-CANONICAL-ALIGNMENT-PLAN-READONLY-20261001",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T04:39:33Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-01T04:39:12Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
