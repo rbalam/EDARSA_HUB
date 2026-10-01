@@ -370,20 +370,579 @@ def fast_forward_refresh(repo: Path, *, expected_remote: str, job_id: str, owner
         release_writer_lock(repo,token)
 
 
-def main() -> int:
-    p=argparse.ArgumentParser(); sub=p.add_subparsers(dest="command",required=True)
-    i=sub.add_parser("inspect"); i.add_argument("--repo",default="/app"); i.add_argument("--no-fetch",action="store_true")
-    a=sub.add_parser("acquire-lock"); a.add_argument("--repo",default="/app"); a.add_argument("--job-id",required=True); a.add_argument("--owner",required=True); a.add_argument("--owner-pid",type=int,default=0)
-    r=sub.add_parser("release-lock"); r.add_argument("--repo",default="/app"); r.add_argument("--job-id",required=True); r.add_argument("--owner",required=True)
-    f=sub.add_parser("refresh"); f.add_argument("--repo",default="/app"); f.add_argument("--expected-remote",required=True); f.add_argument("--job-id",required=True); f.add_argument("--owner",required=True); f.add_argument("--owner-pid",type=int,default=0)
-    args=p.parse_args(); repo=Path(args.repo).resolve()
+
+
+def classify_submit_convergence(
+    *,
+    local: str,
+    development: str,
+    mirror: str,
+    local_merge_base: str,
+    mirror_merge_base: str,
+    worktree_dirty: bool,
+) -> dict[str, Any]:
+    evidence = {
+        "local": local,
+        "development": development,
+        "mirror": mirror,
+        "local_merge_base": local_merge_base,
+        "mirror_merge_base": mirror_merge_base,
+        "worktree_dirty": worktree_dirty,
+        "local_fast_forward_safe": False,
+        "mirror_fast_forward_safe": False,
+    }
+
+    if worktree_dirty:
+        return {
+            **evidence,
+            "status": "BLOCKED_LOCAL_DIRTY",
+            "converged": False,
+            "safe": False,
+        }
+
+    # Never move local when MIRROR is already ahead/diverged.
+    if mirror != development:
+        if mirror_merge_base == mirror:
+            evidence["mirror_fast_forward_safe"] = True
+        elif mirror_merge_base == development:
+            return {
+                **evidence,
+                "status": "BLOCKED_MIRROR_AHEAD",
+                "converged": False,
+                "safe": False,
+            }
+        else:
+            return {
+                **evidence,
+                "status": "BLOCKED_DIVERGENCE",
+                "converged": False,
+                "safe": False,
+            }
+
+    if local != development:
+        if local_merge_base == local:
+            evidence["local_fast_forward_safe"] = True
+        elif local_merge_base == development:
+            return {
+                **evidence,
+                "status": "BLOCKED_LOCAL_NOT_DEVELOPMENT",
+                "converged": False,
+                "safe": False,
+            }
+        else:
+            return {
+                **evidence,
+                "status": "BLOCKED_DIVERGENCE",
+                "converged": False,
+                "safe": False,
+            }
+
+    if (
+        local == development
+        and mirror == development
+    ):
+        return {
+            **evidence,
+            "status": "CONVERGED_PASS",
+            "converged": True,
+            "safe": True,
+        }
+
+    return {
+        **evidence,
+        "status": "SAFE_FAST_FORWARD",
+        "converged": False,
+        "safe": True,
+    }
+
+
+def ensure_submit_convergence(
+    repo: Path,
+    *,
+    job_id: str,
+    owner: str,
+    remote: str = REMOTE,
+    owner_pid: int | None = None,
+) -> dict[str, Any]:
+    if remote != REMOTE:
+        return {
+            "status": "BLOCKED_REMOTE_UNSUPPORTED",
+            "converged": False,
+            "safe": False,
+            "auto_fix_applied": False,
+            "reason": "CANONICAL_REMOTE_REQUIRED",
+        }
+
+    auto_fix_applied = False
+    local_fix = None
+    mirror_before = None
+    mirror_after = None
+    index_lock_recovery = None
+
     try:
-        if args.command=="inspect": payload=inspect_repository(repo,fetch=not args.no_fetch)
-        elif args.command=="acquire-lock": payload=acquire_writer_lock(repo,job_id=args.job_id,owner=args.owner,owner_pid=args.owner_pid or None)
-        elif args.command=="release-lock":
-            ld=_git_dir(repo)/"universal-worker-queue"/LOCK_NAME; cur=_read_json(ld/"owner.json"); token={**cur,"job_id":args.job_id,"owner":args.owner,"lock_dir":str(ld)}; release_writer_lock(repo,token); payload={"released":True}
-        else: payload=fast_forward_refresh(repo,expected_remote=args.expected_remote,job_id=args.job_id,owner=args.owner,owner_pid=args.owner_pid or None)
+        state = inspect_repository(repo, fetch=True)
+
+        if state.get("current_branch") != DEV_BRANCH:
+            return {
+                **state,
+                "status": "BLOCKED_LOCAL_NOT_DEVELOPMENT",
+                "converged": False,
+                "safe": False,
+                "auto_fix_applied": False,
+            }
+
+        _run(repo, "fetch", remote, MIRROR_BRANCH)
+
+        local = state["local_head"]
+        development = state["remote_head"]
+        mirror_before = _run(
+            repo,
+            "rev-parse",
+            f"{remote}/{MIRROR_BRANCH}",
+        ).stdout.strip()
+
+        local_merge_base = _run(
+            repo,
+            "merge-base",
+            local,
+            development,
+            check=False,
+        ).stdout.strip()
+
+        mirror_merge_base = _run(
+            repo,
+            "merge-base",
+            mirror_before,
+            development,
+            check=False,
+        ).stdout.strip()
+
+        decision = classify_submit_convergence(
+            local=local,
+            development=development,
+            mirror=mirror_before,
+            local_merge_base=local_merge_base,
+            mirror_merge_base=mirror_merge_base,
+            worktree_dirty=bool(state.get("worktree_dirty")),
+        )
+
+        if decision["status"].startswith("BLOCKED"):
+            return {
+                **decision,
+                "mirror_before": mirror_before,
+                "mirror_after": mirror_before,
+                "auto_fix_applied": False,
+            }
+
+        if decision["local_fast_forward_safe"]:
+            try:
+                local_fix = fast_forward_refresh(
+                    repo,
+                    expected_remote=development,
+                    job_id=job_id,
+                    owner=owner,
+                    owner_pid=owner_pid,
+                )
+            except GitGuardError as exc:
+                mapping = {
+                    "GIT_INDEX_LOCK_BUSY":
+                        "BLOCKED_INDEX_LOCK_ACTIVE_OR_RECENT",
+                    "GIT_WORKTREE_NOT_CLEAN":
+                        "BLOCKED_LOCAL_DIRTY",
+                    "GIT_DIVERGENCE_BLOCKED":
+                        "BLOCKED_DIVERGENCE",
+                    "REMOTE_MOVED_RETRY_REQUIRED":
+                        "BLOCKED_CONVERGENCE_MOVED",
+                }
+                return {
+                    "status": mapping.get(exc.code, "BLOCKED_DIVERGENCE"),
+                    "converged": False,
+                    "safe": False,
+                    "auto_fix_applied": False,
+                    "reason": exc.code,
+                    "evidence": exc.evidence,
+                    "mirror_before": mirror_before,
+                    "mirror_after": mirror_before,
+                }
+
+            auto_fix_applied = True
+
+        # Re-read all refs after LOCAL convergence.
+        _run(repo, "fetch", remote, DEV_BRANCH)
+        _run(repo, "fetch", remote, MIRROR_BRANCH)
+
+        state_after_local = inspect_repository(
+            repo,
+            fetch=False,
+        )
+
+        development = _run(
+            repo,
+            "rev-parse",
+            f"{remote}/{DEV_BRANCH}",
+        ).stdout.strip()
+
+        local = state_after_local["local_head"]
+
+        if (
+            state_after_local.get("worktree_dirty")
+            or local != development
+        ):
+            return {
+                "status": "BLOCKED_CONVERGENCE_MOVED",
+                "converged": False,
+                "safe": False,
+                "auto_fix_applied": auto_fix_applied,
+                "local": local,
+                "development": development,
+                "mirror_before": mirror_before,
+                "mirror_after": mirror_before,
+            }
+
+        mirror_current = _run(
+            repo,
+            "rev-parse",
+            f"{remote}/{MIRROR_BRANCH}",
+        ).stdout.strip()
+
+        if mirror_current != development:
+            mirror_merge_base = _run(
+                repo,
+                "merge-base",
+                mirror_current,
+                development,
+                check=False,
+            ).stdout.strip()
+
+            if mirror_merge_base != mirror_current:
+                if mirror_merge_base == development:
+                    return {
+                        "status": "BLOCKED_MIRROR_AHEAD",
+                        "converged": False,
+                        "safe": False,
+                        "auto_fix_applied": auto_fix_applied,
+                        "local": local,
+                        "development": development,
+                        "mirror_before": mirror_before,
+                        "mirror_after": mirror_current,
+                    }
+
+                return {
+                    "status": "BLOCKED_DIVERGENCE",
+                    "converged": False,
+                    "safe": False,
+                    "auto_fix_applied": auto_fix_applied,
+                    "local": local,
+                    "development": development,
+                    "mirror_before": mirror_before,
+                    "mirror_after": mirror_current,
+                }
+
+            token = acquire_writer_lock(
+                repo,
+                job_id=job_id,
+                owner=owner,
+                owner_pid=owner_pid,
+            )
+
+            try:
+                index_lock_recovery = recover_orphan_index_lock(
+                    repo
+                )
+
+                push = authorized_push(
+                    repo,
+                    args=[
+                        "push",
+                        remote,
+                        f"{development}:refs/heads/{MIRROR_BRANCH}",
+                    ],
+                    job_id=job_id,
+                    owner=owner,
+                )
+
+                if push.returncode != 0:
+                    return {
+                        "status": "BLOCKED_PUSH_REJECTED",
+                        "converged": False,
+                        "safe": False,
+                        "auto_fix_applied": auto_fix_applied,
+                        "local": local,
+                        "development": development,
+                        "mirror_before": mirror_before,
+                        "mirror_after": mirror_current,
+                        "index_lock_recovery": index_lock_recovery,
+                        "push_output": (
+                            push.stdout or ""
+                        )[-2000:],
+                    }
+
+                _run(
+                    repo,
+                    "fetch",
+                    remote,
+                    MIRROR_BRANCH,
+                )
+
+                mirror_after = _run(
+                    repo,
+                    "rev-parse",
+                    f"{remote}/{MIRROR_BRANCH}",
+                ).stdout.strip()
+
+                if mirror_after != development:
+                    return {
+                        "status": "BLOCKED_PUSH_REJECTED",
+                        "converged": False,
+                        "safe": False,
+                        "auto_fix_applied": auto_fix_applied,
+                        "local": local,
+                        "development": development,
+                        "mirror_before": mirror_before,
+                        "mirror_after": mirror_after,
+                        "index_lock_recovery": index_lock_recovery,
+                    }
+
+                auto_fix_applied = True
+
+            except GitGuardError as exc:
+                mapping = {
+                    "GIT_INDEX_LOCK_BUSY":
+                        "BLOCKED_INDEX_LOCK_ACTIVE_OR_RECENT",
+                    "GIT_LOCK_BUSY":
+                        "BLOCKED_WRITER_LOCK_BUSY",
+                }
+
+                return {
+                    "status": mapping.get(
+                        exc.code,
+                        "BLOCKED_PUSH_REJECTED",
+                    ),
+                    "converged": False,
+                    "safe": False,
+                    "auto_fix_applied": auto_fix_applied,
+                    "local": local,
+                    "development": development,
+                    "mirror_before": mirror_before,
+                    "mirror_after": mirror_current,
+                    "reason": exc.code,
+                    "evidence": exc.evidence,
+                }
+
+            finally:
+                release_writer_lock(
+                    repo,
+                    token,
+                )
+
+        _run(repo, "fetch", remote, DEV_BRANCH)
+        _run(repo, "fetch", remote, MIRROR_BRANCH)
+
+        final_state = inspect_repository(
+            repo,
+            fetch=False,
+        )
+
+        final_development = _run(
+            repo,
+            "rev-parse",
+            f"{remote}/{DEV_BRANCH}",
+        ).stdout.strip()
+
+        final_mirror = _run(
+            repo,
+            "rev-parse",
+            f"{remote}/{MIRROR_BRANCH}",
+        ).stdout.strip()
+
+        if (
+            final_state.get("worktree_dirty")
+            or final_state.get("local_head") != final_development
+            or final_mirror != final_development
+        ):
+            return {
+                "status": "BLOCKED_CONVERGENCE_POSTCHECK",
+                "converged": False,
+                "safe": False,
+                "auto_fix_applied": auto_fix_applied,
+                "local": final_state.get("local_head"),
+                "development": final_development,
+                "mirror_before": mirror_before,
+                "mirror_after": final_mirror,
+                "worktree_dirty": final_state.get(
+                    "worktree_dirty"
+                ),
+                "local_fix": local_fix,
+                "index_lock_recovery": index_lock_recovery,
+            }
+
+        return {
+            "status": (
+                "FAST_FORWARDED_PASS"
+                if auto_fix_applied
+                else "CONVERGED_PASS"
+            ),
+            "converged": True,
+            "safe": True,
+            "auto_fix_applied": auto_fix_applied,
+            "local": final_state["local_head"],
+            "development": final_development,
+            "mirror_before": mirror_before,
+            "mirror_after": final_mirror,
+            "worktree_dirty": False,
+            "classification": "SYNC",
+            "local_fix": local_fix,
+            "index_lock_recovery": index_lock_recovery,
+        }
+
     except GitGuardError as exc:
-        print(json.dumps({"status":exc.code,"evidence":exc.evidence},ensure_ascii=False)); return 1
-    print(json.dumps(payload,ensure_ascii=False)); return 0
-if __name__=="__main__": raise SystemExit(main())
+        mapping = {
+            "GIT_INDEX_LOCK_BUSY":
+                "BLOCKED_INDEX_LOCK_ACTIVE_OR_RECENT",
+            "GIT_LOCK_BUSY":
+                "BLOCKED_WRITER_LOCK_BUSY",
+            "GIT_WORKTREE_NOT_CLEAN":
+                "BLOCKED_LOCAL_DIRTY",
+        }
+
+        return {
+            "status": mapping.get(
+                exc.code,
+                "BLOCKED_DIVERGENCE",
+            ),
+            "converged": False,
+            "safe": False,
+            "auto_fix_applied": auto_fix_applied,
+            "reason": exc.code,
+            "evidence": exc.evidence,
+            "mirror_before": mirror_before,
+            "mirror_after": mirror_after,
+        }
+
+
+
+def main() -> int:
+    p = argparse.ArgumentParser()
+    sub = p.add_subparsers(
+        dest="command",
+        required=True,
+    )
+
+    i = sub.add_parser("inspect")
+    i.add_argument("--repo", default="/app")
+    i.add_argument("--no-fetch", action="store_true")
+
+    a = sub.add_parser("acquire-lock")
+    a.add_argument("--repo", default="/app")
+    a.add_argument("--job-id", required=True)
+    a.add_argument("--owner", required=True)
+    a.add_argument("--owner-pid", type=int, default=0)
+
+    r = sub.add_parser("release-lock")
+    r.add_argument("--repo", default="/app")
+    r.add_argument("--job-id", required=True)
+    r.add_argument("--owner", required=True)
+
+    f = sub.add_parser("refresh")
+    f.add_argument("--repo", default="/app")
+    f.add_argument("--expected-remote", required=True)
+    f.add_argument("--job-id", required=True)
+    f.add_argument("--owner", required=True)
+    f.add_argument("--owner-pid", type=int, default=0)
+
+    d = sub.add_parser("doctor")
+    d.add_argument("--repo", default="/app")
+    d.add_argument("--job-id", default="UNIVERSAL-WORKER-CONVERGENCE-DOCTOR")
+    d.add_argument("--owner", default="universal-worker-convergence-doctor")
+    d.add_argument("--owner-pid", type=int, default=0)
+    d.add_argument("--auto-fix", action="store_true")
+    d.add_argument("--json", action="store_true")
+
+    args = p.parse_args()
+    repo = Path(args.repo).resolve()
+
+    try:
+        if args.command == "inspect":
+            payload = inspect_repository(
+                repo,
+                fetch=not args.no_fetch,
+            )
+
+        elif args.command == "acquire-lock":
+            payload = acquire_writer_lock(
+                repo,
+                job_id=args.job_id,
+                owner=args.owner,
+                owner_pid=args.owner_pid or None,
+            )
+
+        elif args.command == "release-lock":
+            ld = (
+                _git_dir(repo)
+                / "universal-worker-queue"
+                / LOCK_NAME
+            )
+            cur = _read_json(ld / "owner.json")
+            token = {
+                **cur,
+                "job_id": args.job_id,
+                "owner": args.owner,
+                "lock_dir": str(ld),
+            }
+            release_writer_lock(repo, token)
+            payload = {"released": True}
+
+        elif args.command == "refresh":
+            payload = fast_forward_refresh(
+                repo,
+                expected_remote=args.expected_remote,
+                job_id=args.job_id,
+                owner=args.owner,
+                owner_pid=args.owner_pid or None,
+            )
+
+        else:
+            if not args.auto_fix:
+                payload = {
+                    "status": "AUTO_FIX_REQUIRED",
+                    "converged": False,
+                    "safe": False,
+                }
+                print(
+                    json.dumps(
+                        payload,
+                        ensure_ascii=False,
+                    )
+                )
+                return 2
+
+            payload = ensure_submit_convergence(
+                repo,
+                job_id=args.job_id,
+                owner=args.owner,
+                owner_pid=args.owner_pid or None,
+            )
+
+    except GitGuardError as exc:
+        payload = {
+            "status": exc.code,
+            "evidence": exc.evidence,
+            "converged": False,
+            "safe": False,
+        }
+
+    print(
+        json.dumps(
+            payload,
+            ensure_ascii=False,
+        )
+    )
+
+    return 0 if payload.get("status") in {
+        "CONVERGED_PASS",
+        "FAST_FORWARDED_PASS",
+    } else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

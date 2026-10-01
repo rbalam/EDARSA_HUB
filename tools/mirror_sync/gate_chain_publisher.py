@@ -30,6 +30,7 @@ if str(ROOT) not in sys.path:
 from tools.mirror_sync.gate_chain_controller import validate_chain
 from tools.mirror_sync.git_divergence_guard import (
     authorized_push,
+    ensure_submit_convergence,
     validate_commit_scope,
 )
 from tools.mirror_sync.worker_job_factory import canonicalize_job
@@ -922,55 +923,14 @@ def _submit_remote_exists(
 def _submit_convergence(
     *,
     remote: str,
+    job_id: str,
 ) -> dict[str, Any]:
-
-    for branch in (
-        "Edarsahub_Desarrollo",
-        "mirror/emergent-live",
-    ):
-        fetched = git(
-            "fetch",
-            remote,
-            branch,
-            check=False,
-        )
-
-        if fetched.returncode != 0:
-            return {
-                "converged": False,
-                "reason": "FETCH_FAILED",
-            }
-
-    local = git(
-        "rev-parse",
-        "HEAD",
-        check=False,
-    ).stdout.strip()
-
-    development = git(
-        "rev-parse",
-        f"{remote}/Edarsahub_Desarrollo",
-        check=False,
-    ).stdout.strip()
-
-    mirror = git(
-        "rev-parse",
-        f"{remote}/mirror/emergent-live",
-        check=False,
-    ).stdout.strip()
-
-    return {
-        "local": local,
-        "development": development,
-        "mirror": mirror,
-        "converged": bool(
-            local
-            and local
-            == development
-            == mirror
-        ),
-    }
-
+    return ensure_submit_convergence(
+        Path(ROOT),
+        job_id=job_id,
+        owner="edarsahub-gate-publisher",
+        remote=remote,
+    )
 
 def _submit_failure_status(
     error: Exception,
@@ -1115,18 +1075,19 @@ def submit(
         }
 
     convergence = _submit_convergence(
-        remote=remote
+        remote=remote,
+        job_id=job_id,
     )
 
-    if (
-        convergence.get("converged")
-        is not True
-    ):
+    if convergence.get("converged") is not True:
         return {
-            "status": "WAITING_FOR_CONVERGENCE",
+            "status": str(
+                convergence.get("status")
+                or "BLOCKED_CONVERGENCE"
+            ),
             "job_id": job_id,
             "draft_path": str(draft),
-            "convergence": convergence,
+            "preflight_convergence": convergence,
             "production_touched": False,
         }
 
@@ -1142,6 +1103,7 @@ def submit(
             remote=remote,
             queue_branch=queue_branch,
         )
+        publication["preflight_convergence"] = convergence
 
     except Exception as exc:
         return {
@@ -1172,6 +1134,7 @@ def submit(
         "status": final,
         "job_id": job_id,
         "draft_path": str(draft),
+        "preflight_convergence": convergence,
         "publication": publication,
         "production_touched": False,
     }
