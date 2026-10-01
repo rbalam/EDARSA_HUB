@@ -1,0 +1,69 @@
+{
+  "acceptance_criteria": [
+    "READ_ONLY_COMPLETE",
+    "CERTIFIED_READ_ONLY",
+    "production_touched=false",
+    "No DDL",
+    "No DML",
+    "No secrets exposed",
+    "API_LOCAL rows classified by EmpresaID metadata state",
+    "Canonical mappings from Sistema_EmpresasServidores identified",
+    "Name hints marked non-authoritative only"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "api_local_connection_current_state",
+          "sql": "SELECT sc.nombre, CONVERT(nvarchar(100), sc.id) AS connection_id, sc.tipo_conexion, sc.system_type, sc.activo, sc.visible_en_operaciones, sc.visible_en_listado, sc.EmpresaID AS current_EmpresaID, sc.empresa_id AS legacy_empresa_id_text, se.CodigoEmpresa AS current_CodigoEmpresa, se.NombreEmpresa AS current_NombreEmpresa, se.NombreComercial AS current_NombreComercial, se.Activo AS current_empresa_activa FROM dbo.Servidores_Conexiones AS sc LEFT JOIN dbo.Sistema_Empresas AS se ON se.EmpresaID = sc.EmpresaID WHERE sc.tipo_conexion = 'API_LOCAL' ORDER BY sc.activo DESC, sc.visible_en_operaciones DESC, sc.nombre"
+        },
+        {
+          "name": "api_local_active_canonical_mappings",
+          "sql": "SELECT sc.nombre, CONVERT(nvarchar(100), sc.id) AS connection_id, sc.EmpresaID AS current_EmpresaID, ses.EmpresaServidorID, ses.EmpresaID AS mapped_EmpresaID, se.CodigoEmpresa, se.NombreEmpresa, se.NombreComercial, se.Activo AS empresa_activa, ses.RolConexion, ses.NumeroSucursalSistema, ses.CodigoSucursalSistema, ses.NombreSucursalSistema, ses.Prioridad, ses.EsPrincipal, ses.Activo AS mapping_activo FROM dbo.Servidores_Conexiones AS sc LEFT JOIN dbo.Sistema_EmpresasServidores AS ses ON LOWER(CONVERT(nvarchar(100), ses.ServidorID)) = LOWER(CONVERT(nvarchar(100), sc.id)) AND ISNULL(ses.Activo, 1) = 1 LEFT JOIN dbo.Sistema_Empresas AS se ON se.EmpresaID = ses.EmpresaID WHERE sc.tipo_conexion = 'API_LOCAL' ORDER BY sc.nombre, ses.Prioridad, ses.EmpresaID"
+        },
+        {
+          "name": "api_local_empresaid_mapping_verdict",
+          "sql": "WITH ActiveMappings AS (SELECT sc.id AS connection_pk, COUNT(ses.EmpresaServidorID) AS active_mapping_count, COUNT(DISTINCT ses.EmpresaID) AS distinct_mapped_empresas, MIN(ses.EmpresaID) AS candidate_EmpresaID FROM dbo.Servidores_Conexiones AS sc LEFT JOIN dbo.Sistema_EmpresasServidores AS ses ON LOWER(CONVERT(nvarchar(100), ses.ServidorID)) = LOWER(CONVERT(nvarchar(100), sc.id)) AND ISNULL(ses.Activo, 1) = 1 WHERE sc.tipo_conexion = 'API_LOCAL' GROUP BY sc.id) SELECT sc.nombre, CONVERT(nvarchar(100), sc.id) AS connection_id, sc.activo, sc.visible_en_operaciones, sc.visible_en_listado, sc.EmpresaID AS current_EmpresaID, am.active_mapping_count, am.distinct_mapped_empresas, am.candidate_EmpresaID, se.CodigoEmpresa AS candidate_CodigoEmpresa, se.NombreEmpresa AS candidate_NombreEmpresa, CASE WHEN sc.EmpresaID IS NOT NULL THEN 'ALREADY_HAS_EMPRESAID' WHEN ISNULL(am.active_mapping_count, 0) = 0 THEN 'NO_CANONICAL_MAPPING_FOUND' WHEN am.active_mapping_count >= 1 AND am.distinct_mapped_empresas = 1 THEN 'READY_TO_SET_FROM_CANONICAL_MAPPING' WHEN am.distinct_mapped_empresas > 1 THEN 'AMBIGUOUS_MULTIPLE_EMPRESA_MAPPING' ELSE 'UNCLASSIFIED' END AS metadata_verdict FROM dbo.Servidores_Conexiones AS sc LEFT JOIN ActiveMappings AS am ON am.connection_pk = sc.id LEFT JOIN dbo.Sistema_Empresas AS se ON se.EmpresaID = am.candidate_EmpresaID WHERE sc.tipo_conexion = 'API_LOCAL' ORDER BY metadata_verdict, sc.nombre"
+        },
+        {
+          "name": "api_local_non_authoritative_name_hints",
+          "sql": "SELECT sc.nombre, CONVERT(nvarchar(100), sc.id) AS connection_id, sc.EmpresaID AS current_EmpresaID, se.EmpresaID AS hinted_EmpresaID, se.CodigoEmpresa, se.NombreEmpresa, se.NombreComercial, CASE WHEN UPPER(sc.nombre) LIKE '%' + UPPER(se.CodigoEmpresa) + '%' THEN 'CODE_HINT' WHEN UPPER(sc.nombre) LIKE '%' + UPPER(se.NombreEmpresa) + '%' THEN 'NAME_HINT' WHEN UPPER(sc.nombre) LIKE '%' + UPPER(se.NombreComercial) + '%' THEN 'COMMERCIAL_NAME_HINT' ELSE 'NO_HINT' END AS hint_type FROM dbo.Servidores_Conexiones AS sc INNER JOIN dbo.Sistema_Empresas AS se ON ISNULL(se.Activo, 1) = 1 AND (UPPER(sc.nombre) LIKE '%' + UPPER(se.CodigoEmpresa) + '%' OR UPPER(sc.nombre) LIKE '%' + UPPER(se.NombreEmpresa) + '%' OR UPPER(sc.nombre) LIKE '%' + UPPER(se.NombreComercial) + '%') WHERE sc.tipo_conexion = 'API_LOCAL' AND sc.EmpresaID IS NULL ORDER BY sc.nombre, hint_type, se.EmpresaID"
+        },
+        {
+          "name": "active_empresa_catalog",
+          "sql": "SELECT EmpresaID, CodigoEmpresa, NombreEmpresa, NombreComercial, RFC, Activo FROM dbo.Sistema_Empresas WHERE ISNULL(Activo, 1) = 1 ORDER BY EmpresaID"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-SERVIDORES-API-LOCAL-EMPRESAID-METADATA-AUDIT-READONLY-SQL-R1M-20261001",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Audit API_LOCAL connection metadata after RBAC SUPERADMIN fix. Identify which Servidores_Conexiones rows still have EmpresaID NULL, whether a canonical active mapping exists in Sistema_EmpresasServidores, and classify each row without DML.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "",
+    "requested_at_utc": "2026-10-01T21:24:52.125243+00:00",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
