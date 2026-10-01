@@ -732,6 +732,12 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
 
         prop_expr = f"ISNULL(ch.{prop_col}, 0)" if prop_col else "CAST(0 AS decimal(18,4))"
         desc_expr = f"ISNULL(ch.{desc_col}, 0)" if desc_col else "CAST(0 AS decimal(18,4))"
+        mesa_col = "mesa" if _table_has_col(conn, "cheques", "mesa") else None
+        mesa_expr = (
+            f"NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), ch.{mesa_col}))), '')"
+            if mesa_col
+            else "CAST(NULL AS varchar(100))"
+        )
 
         fi, ff = _soft_operational_datetime_range(cfg, dia)
 
@@ -743,6 +749,7 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 ch.fecha,
                 CONVERT(varchar(100), ch.idmesero) AS vendedor_id,
                 NULLIF(LTRIM(RTRIM(CONVERT(varchar(200), m.nombre))), '') AS vendedor_nombre,
+                {mesa_expr} AS mesa,
                 ISNULL(ch.cancelado, 0) AS cancelado_origen,
                 ISNULL(ch.nopersonas, 0) AS pax_ticket,
                 ISNULL(ch.total, 0) AS importe_neto_ticket,
@@ -764,6 +771,7 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 h.fecha,
                 h.vendedor_id,
                 h.vendedor_nombre,
+                h.mesa,
                 h.cancelado_origen,
                 h.pax_ticket,
                 h.importe_neto_ticket,
@@ -800,6 +808,7 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 h.fecha,
                 h.vendedor_id,
                 h.vendedor_nombre,
+                h.mesa,
                 h.cancelado_origen,
                 h.pax_ticket,
                 h.importe_neto_ticket,
@@ -831,6 +840,7 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             ) AS documento_origen,
             l.vendedor_id,
             l.vendedor_nombre,
+            l.mesa,
             l.pax_ticket,
             l.importe_neto_ticket,
             l.propina_ticket,
@@ -1059,6 +1069,7 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 v.Sc_Cve_Sucursal,
                 CONVERT(varchar(100), v.Vn_Cve_Vendedor) AS vendedor_id,
                 NULLIF(LTRIM(RTRIM(CONVERT(varchar(200), vnd.Vn_Descripcion))), '') AS vendedor_nombre,
+                NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), c.Co_Referencia))), '') AS mesa,
                 ISNULL(v.Es_Cve_Estado, '') AS estado_origen,
                 ISNULL(c.Co_Personas, 0) AS pax_ticket,
                 ISNULL(v.Vn_Precio_Neto_Importe, 0) AS importe_neto_ticket,
@@ -1107,6 +1118,7 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 h.Vn_Fecha,
                 h.vendedor_id,
                 h.vendedor_nombre,
+                h.mesa,
                 h.estado_origen,
                 h.pax_ticket,
                 h.importe_neto_ticket,
@@ -1140,6 +1152,7 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 h.Vn_Fecha,
                 h.vendedor_id,
                 h.vendedor_nombre,
+                h.mesa,
                 h.estado_origen,
                 h.pax_ticket,
                 h.importe_neto_ticket,
@@ -1166,6 +1179,7 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             CONVERT(varchar(64), l.Vn_Documento) AS documento_origen,
             l.vendedor_id,
             l.vendedor_nombre,
+            l.mesa,
             l.pax_ticket,
             l.importe_neto_ticket,
             l.propina_ticket,
@@ -1372,6 +1386,7 @@ def _materialize_rows(cfg: Dict[str, Any], dia: date, src_rows: List[Dict[str, A
             "fuente_original": _s(r.get("sistema_origen")),
             "vendedor_id": _s(r.get("vendedor_id")) or None,
             "vendedor_nombre": _s(r.get("vendedor_nombre"))[:200] or None,
+            "mesa": _s(r.get("mesa"))[:100] or None,
             "descuento_pct": (
                 _d(r.get("descuento_pct"))
                 if r.get("descuento_pct") is not None
@@ -1532,12 +1547,13 @@ def _insert_rows(rows: List[Dict[str, Any]]) -> int:
             activo,
             vendedor_id,
             vendedor_nombre,
-            descuento_pct
+            descuento_pct,
+            mesa
         ) VALUES (
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
-            %s,%s,%s,%s,%s
+            %s,%s,%s,%s,%s,%s
         )
         """
 
@@ -1586,6 +1602,7 @@ def _insert_rows(rows: List[Dict[str, Any]]) -> int:
                     r["vendedor_id"],
                     r["vendedor_nombre"],
                     r["descuento_pct"],
+                    r["mesa"],
                 ),
             )
 

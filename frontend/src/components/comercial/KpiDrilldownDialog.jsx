@@ -427,6 +427,12 @@ function TicketVentaModal({
                 <span>FOLIO:</span>
                 <span className="font-bold">{ticket.folio}</span>
               </div>
+              {ticket.mesa && (
+                <div className="flex justify-between gap-3">
+                  <span>MESA:</span>
+                  <span className="text-right uppercase">{ticket.mesa}</span>
+                </div>
+              )}
               <div className="flex justify-between gap-3">
                 <span>FECHA:</span>
                 <span className="text-right">{String(ticket.fecha_hora || '').replace('T', ' ').slice(0, 19)}</span>

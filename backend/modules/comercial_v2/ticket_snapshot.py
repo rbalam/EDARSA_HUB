@@ -25,6 +25,7 @@ SELECT
     MAX(ISNULL(ch.propina, 0)) AS propina,
     MAX(CONVERT(varchar(50), ch.idmesero)) AS vendedor_id,
     MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), m.nombre))), '')) AS vendedor_nombre,
+    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), ch.mesa))), '')) AS mesa,
     MAX(ISNULL(ch.total, 0)) AS total_ticket,
     MAX(ISNULL(ch.descuentoimporte, 0)) AS descuento_encabezado_reportado,
     MAX(ISNULL(ch.totaldescuentos, 0)) AS descuento_total_reportado,
@@ -112,6 +113,7 @@ SELECT
     MIN(c.Co_Fecha) AS fecha_hora,
     MAX(ISNULL(c.Co_Personas, 0)) AS pax,
     MAX(ISNULL(c.Co_Propina, 0)) AS propina,
+    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), c.Co_Referencia))), '')) AS mesa,
     SUM(SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))))
         OVER (PARTITION BY c.Co_Folio) AS total_ticket,
     COALESCE(
@@ -179,6 +181,7 @@ def serialize_open_detail_rows(rows: List[Dict[str, Any]]) -> str:
             "propina": _number(row.get("propina")),
             "vendedor_id": str(row.get("vendedor_id") or "").strip() or None,
             "vendedor_nombre": str(row.get("vendedor_nombre") or "").strip() or None,
+            "mesa": str(row.get("mesa") or "").strip() or None,
             "total_ticket": _number(row.get("total_ticket")),
             "producto_codigo": str(row.get("producto_codigo") or "SIN_CODIGO"),
             "producto_nombre": str(

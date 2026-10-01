@@ -217,6 +217,7 @@ def build_ticket_venta(
             descuento,
             descuento_pct,
             vendedor_nombre,
+            mesa,
             propina,
             pax
         FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK)
@@ -289,6 +290,14 @@ def build_ticket_venta(
             ),
             None,
         )
+        mesa = next(
+            (
+                str(row.get("mesa") or "").strip()
+                for row in closed_rows
+                if str(row.get("mesa") or "").strip()
+            ),
+            None,
+        )
         return {
             "source_status": "SUCCESS",
             "source": "Comercial_Inteligencia_VentasDetalleProducto",
@@ -299,6 +308,7 @@ def build_ticket_venta(
                 "fecha_hora": str(closed_rows[0].get("fecha_hora") or ""),
                 "pax": pax,
                 "vendedor": vendedor,
+                "mesa": mesa,
                 "estado": "CERRADA",
                 "items": items,
                 "subtotal": subtotal,
@@ -356,6 +366,14 @@ def build_ticket_venta(
         ),
         None,
     )
+    mesa = next(
+        (
+            str(row.get("mesa") or "").strip()
+            for row in open_rows
+            if str(row.get("mesa") or "").strip()
+        ),
+        None,
+    )
     return {
         "source_status": "SUCCESS",
         "source": "Comercial_Ventas_Dia_Abiertas_v2.detalle_abiertas_json",
@@ -366,6 +384,7 @@ def build_ticket_venta(
             "fecha_hora": str(open_rows[0].get("fecha_hora") or ""),
             "pax": pax,
             "vendedor": vendedor,
+            "mesa": mesa,
             "estado": "ABIERTA",
             "items": [
                 {
