@@ -4,106 +4,106 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "81819e393df1c5336669387df23ffe6c89af3e71",
-  "generated_at_utc": "2026-10-01T21:25:21Z",
+  "generated_at_utc": "2026-10-01T21:26:50Z",
   "history": {
     "done_total_local": 1273,
-    "pending_total_local": 1,
-    "processing_total_local": 1,
+    "pending_total_local": 2,
+    "processing_total_local": 0,
     "rejected_total_local": 1130,
     "results_total_local": 2199
   },
-  "intake_sla_breached": false,
+  "intake_sla_breached": true,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 8,
+      "age_seconds": 97,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-LOCAL-EMPRESAID-METADATA-AUDIT-READONLY-SQL-R1M-20261001",
       "reason": null,
       "state": "PENDING"
     },
     {
-      "age_seconds": 1559,
+      "age_seconds": 16,
+      "job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-DRILLDOWN-R6-CARLOS-20261001",
+      "reason": null,
+      "state": "PENDING"
+    },
+    {
+      "age_seconds": 1648,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-EMPRESA-MAPPING-DISCOVERY-READONLY-SQL-R1F-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1447,
+      "age_seconds": 1536,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-EMPRESA-MAPPING-MATRIX-READONLY-SQL-R1G-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1186,
+      "age_seconds": 1276,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-RBAC-AUTH-MATRIX-READONLY-SQL-R1I-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1804,
+      "age_seconds": 1893,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-RBAC-SCOPE-ACTUAL-COLUMNS-READONLY-SQL-R1E-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 790,
+      "age_seconds": 879,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-SUPERADMIN-EMPRESA-SCOPE-FIX-R1J-V2-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 665,
+      "age_seconds": 754,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-SUPERADMIN-EMPRESA-SCOPE-POSTFIX-AUDIT-R1K-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 273,
+      "age_seconds": 362,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-SUPERADMIN-EMPRESA-SCOPE-POSTFIX-AUDIT-R1K-V2-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1704,
+      "age_seconds": 1793,
       "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-RETRY-NOT-CERTIFIED-INFRASTRUCTURE-R1-RETRY1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 848,
+      "age_seconds": 937,
       "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-RETRY-NOT-CERTIFIED-INFRASTRUCTURE-R1-RETRY2-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1732,
+      "age_seconds": 1822,
       "job_id": "MEJORA-TABEJE-VENTAS-DIA-SYNC-CANONICO-R16C-CARLOS-20261001T2000Z",
       "reason": null,
       "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 62,
-      "job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-DRILLDOWN-R6-CARLOS-20261001",
-      "reason": null,
-      "state": "RUNNING"
     }
   ],
   "local_development_sha": "81819e393df1c5336669387df23ffe6c89af3e71",
-  "oldest_pending_age_seconds": 8,
+  "oldest_pending_age_seconds": 97,
   "production_touched": false,
   "queue_blocked": 0,
   "queue_depth": 2,
   "queue_done_local_recent": 0,
-  "queue_pending": 1,
+  "queue_pending": 2,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 10,
-  "queue_running": 1,
+  "queue_running": 0,
   "remote_development_sha": "81819e393df1c5336669387df23ffe6c89af3e71",
   "runtime": {
     "current_job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-DRILLDOWN-R6-CARLOS-20261001",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T21:25:20Z",
-    "last_receive_utc": "2026-10-01T21:25:15Z",
+    "last_cycle_utc": "2026-10-01T21:26:42Z",
+    "last_receive_utc": "2026-10-01T21:26:47Z",
     "last_terminal_utc": "2026-10-01T21:20:48Z",
     "pid": "109185",
     "runtime_fingerprint": {
