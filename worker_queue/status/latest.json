@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "e7078e82a853a55e7a453519422ae9afd9ec1918",
-  "generated_at_utc": "2026-10-01T04:17:57Z",
+  "generated_at_utc": "2026-10-01T04:19:15Z",
   "history": {
     "done_total_local": 1239,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2898,
+      "age_seconds": 2976,
       "job_id": "EDARSAHUB-BOS-CAPABILITY-API-LOCAL-EMPRESA-HOMOLOGATION-R1-20261001",
       "reasons": [
         "ACTIONS_REQUIRED"
@@ -25,7 +25,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2700,
+      "age_seconds": 2778,
       "job_id": "EDARSAHUB-BOS-CAPABILITY-API-LOCAL-EMPRESA-HOMOLOGATION-R2-20261001",
       "reasons": [
         "SUMMARY_LANGUAGE_MUST_BE_ES",
@@ -38,7 +38,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2315,
+      "age_seconds": 2392,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-R8-CONTRACT-READONLY-20261001",
       "reasons": [
         "READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED"
@@ -47,79 +47,79 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2384,
+      "age_seconds": 2461,
       "job_id": "EDARSAHUB-BOS-CAPABILITY-API-LOCAL-EMPRESA-HOMOLOGATION-R3-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2107,
+      "age_seconds": 2184,
       "job_id": "EDARSAHUB-BOS-CAPABILITY-API-LOCAL-EMPRESA-HOMOLOGATION-R4-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1540,
+      "age_seconds": 1617,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-R8-CONTRACT-READONLY-RETRY1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3514,
+      "age_seconds": 3591,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-SQL-READONLY-R7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3068,
+      "age_seconds": 3146,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-SQL-READONLY-R7-RETRY1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1069,
+      "age_seconds": 1147,
       "job_id": "EDARSAHUB-BOS-WORKER-CONVERGENCE-GUARD-E2E-MIRROR-FF-FIX-R2-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2134,
+      "age_seconds": 2211,
       "job_id": "EDARSAHUB-BOS-WORKER-CONVERGENCE-GUARD-PUBLISHER-PREFLIGHT-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1821,
+      "age_seconds": 1898,
       "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-MIGRATION-R1-CARLOS-20261001T0340Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 544,
+      "age_seconds": 621,
       "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-MIGRATION-R2-CARLOS-20261001T0350Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2583,
+      "age_seconds": 2660,
       "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-SCHEMA-R1-CARLOS-20261001T0332Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3421,
+      "age_seconds": 3499,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-FINAL-READONLY-R2-CARLOS-20261001T0318Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3488,
+      "age_seconds": 3565,
       "job_id": "SERVIDORES-API-CIENFUEGOS-SERVER-BRIDGE-READONLY-R1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1510,
+      "age_seconds": 1587,
       "job_id": "SERVIDORES-API-UI-CONNECTIVITY-HOMOLOGATION-STATE-R1-20261001",
       "reason": null,
       "state": "RESULT_READY"
@@ -139,8 +139,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T04:17:53Z",
-    "last_receive_utc": "2026-10-01T04:17:56Z",
+    "last_cycle_utc": "2026-10-01T04:19:12Z",
+    "last_receive_utc": "2026-10-01T04:19:14Z",
     "last_terminal_utc": "2026-10-01T04:08:53Z",
     "pid": "773",
     "runtime_fingerprint": {
