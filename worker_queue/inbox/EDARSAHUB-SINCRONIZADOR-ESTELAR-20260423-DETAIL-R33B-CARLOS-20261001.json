@@ -1,0 +1,32 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-20260423-DETAIL-R33B-CARLOS-20261001",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "7b31362ad882c4787456cdc0414ea6ffa0308a5a",
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Sincronizador | LA ESTELAR | 23/04/2026 | Completar exclusivamente el detalle canonico pendiente usando la correccion R32B ya integrada. El encabezado ya esta conciliado. No tocar ventas abiertas ni sync_comercial_abiertas_v2.",
+  "actions": [],
+  "units": [
+    "ESTELAR"
+  ],
+  "fecha_inicio": "2026-04-23",
+  "fecha_fin": "2026-04-24",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "constraints": [
+    "Solo ESTELAR",
+    "Solo 23/04/2026",
+    "No modificar encabezados",
+    "No modificar sync_comercial_abiertas_v2",
+    "No modificar codigo"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  }
+}
