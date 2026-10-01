@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "df89bae448a9e945c04da8bebbe82b82b8ed9bf7",
-  "generated_at_utc": "2026-10-01T03:00:22Z",
+  "generated_at_utc": "2026-10-01T03:01:47Z",
   "history": {
     "done_total_local": 1228,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3284,
+      "age_seconds": 3369,
       "job_id": "EDARSAHUB-SINCRONIZADOR-130MID-202603-HEADER-DETAIL-RECONCILE-R23-CARLOS-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2128,
+      "age_seconds": 2213,
       "job_id": "EDARSAHUB-SINCRONIZADOR-CIENFUEGOS-202603-HEADER-DETAIL-R24-CARLOS-20260930",
       "reason": null,
       "state": "RESULT_READY"
@@ -42,8 +42,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-SINCRONIZADOR-CIENFUEGOS-202603-HEADER-DETAIL-R24-CARLOS-20260930",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T03:00:18Z",
-    "last_receive_utc": "2026-10-01T03:00:13Z",
+    "last_cycle_utc": "2026-10-01T03:01:39Z",
+    "last_receive_utc": "2026-10-01T03:01:44Z",
     "last_terminal_utc": "2026-10-01T02:24:35Z",
     "pid": "1551643",
     "runtime_fingerprint": {
