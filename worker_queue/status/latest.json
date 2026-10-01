@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "012921ebc92508c8b76891931bc5720344a7055c",
-  "generated_at_utc": "2026-10-01T03:24:49Z",
+  "generated_at_utc": "2026-10-01T03:26:20Z",
   "history": {
     "done_total_local": 1234,
     "pending_total_local": 0,
@@ -16,55 +16,49 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 325,
+      "age_seconds": 416,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-SQL-READONLY-R7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1286,
+      "age_seconds": 1377,
       "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-CANARY-READONLY-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1114,
+      "age_seconds": 1205,
       "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-DONE-REGRESSION-GUARD-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 707,
+      "age_seconds": 798,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-FINAL-READONLY-R1-CARLOS-20261001T0307Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 232,
+      "age_seconds": 323,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-FINAL-READONLY-R2-CARLOS-20261001T0318Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3594,
-      "job_id": "EDARSAHUB-SINCRONIZADOR-CIENFUEGOS-202603-HEADER-DETAIL-R24-CARLOS-20260930",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 299,
+      "age_seconds": 390,
       "job_id": "SERVIDORES-API-CIENFUEGOS-SERVER-BRIDGE-READONLY-R1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 521,
+      "age_seconds": 612,
       "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-IDENTITY-READONLY-R1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1173,
+      "age_seconds": 1264,
       "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-MAPPING-READONLY-R2-20260930",
       "reason": null,
       "state": "RESULT_READY"
@@ -78,14 +72,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 9,
+  "queue_result_ready_recent": 8,
   "queue_running": 0,
   "remote_development_sha": "012921ebc92508c8b76891931bc5720344a7055c",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T03:24:42Z",
-    "last_receive_utc": "2026-10-01T03:24:46Z",
+    "last_cycle_utc": "2026-10-01T03:26:12Z",
+    "last_receive_utc": "2026-10-01T03:26:19Z",
     "last_terminal_utc": "2026-10-01T03:20:56Z",
     "pid": "1551643",
     "runtime_fingerprint": {
