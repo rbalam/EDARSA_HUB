@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "b2d9cda5ff2f8130525b73f03f0c7530b02cf0db",
-  "generated_at_utc": "2026-10-01T22:31:26Z",
+  "generated_at_utc": "2026-10-01T22:32:55Z",
   "history": {
     "done_total_local": 1284,
     "pending_total_local": 0,
@@ -16,139 +16,133 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3404,
+      "age_seconds": 3493,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-URL-PROFILE-R1-20260930T2350Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3401,
+      "age_seconds": 3490,
       "job_id": "EDARSA-LOGISTICS-GATE3C-MULTIMODAL-PHYSICAL-SCHEMA-DESIGN-DOSSIER-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2027,
+      "age_seconds": 2116,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-LOCAL-UNMAPPED-SEMANTIC-UX-FIX-R1P-V3-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1904,
+      "age_seconds": 1993,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-LOCAL-UNMAPPED-SEMANTIC-UX-FIX-R1P-V4-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1773,
+      "age_seconds": 1862,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-LOCAL-UNMAPPED-SEMANTIC-UX-FIX-R1P-V5-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2975,
+      "age_seconds": 3064,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-LOCAL-UNMAPPED-UX-BACKEND-AUDIT-READONLY-R1O-V3-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3423,
+      "age_seconds": 3512,
       "job_id": "EDARSAHUB-BOS-WORKER-CANONICAL-INGRESS-SAME-JOB-RETRY-BRIDGE-R1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1312,
+      "age_seconds": 1401,
       "job_id": "EDARSAHUB-BOS-WORKER-GIT-MIRROR-CONVERGENCE-CAPABILITY-R1-RETRY1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1215,
+      "age_seconds": 1304,
       "job_id": "EDARSAHUB-BOS-WORKER-GIT-MIRROR-CONVERGENCE-CAPABILITY-R1-RETRY2-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3398,
+      "age_seconds": 3487,
       "job_id": "EDARSAHUB-FORMAS-PAGO-130QRO-202412-R48-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3395,
+      "age_seconds": 3484,
       "job_id": "EDARSAHUB-FORMAS-PAGO-CIENFUEGOS-202507-R40-REAL-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3392,
+      "age_seconds": 3481,
       "job_id": "EDARSAHUB-FORMAS-PAGO-ORIGEN-202503-R36-REAL-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 744,
+      "age_seconds": 833,
       "job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-ACTUAL-MODAL-FIX-R1-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3531,
-      "job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-DRILLDOWN-R6-CARLOS-20261001",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1849,
+      "age_seconds": 1938,
       "job_id": "EDARSAHUB-IA-CONTEXTUAL-DUAL-AUTH-FIX-R1-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2120,
+      "age_seconds": 2209,
       "job_id": "EDARSAHUB-IA-CONTEXTUAL-RBAC-AUDIT-R1-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3388,
+      "age_seconds": 3477,
       "job_id": "EDARSAHUB-ISCAM-130QRO-0808-POST-CONVERGENCE-BACKFILL-R18-CARLOS-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3058,
+      "age_seconds": 3147,
       "job_id": "MEJORA-TABEJE-PREVIEW-FRONTEND-BUILD-R10B-CARLOS-20260930T1700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3044,
+      "age_seconds": 3133,
       "job_id": "MEJORA-TABEJE-VENTAS-DIA-SYNC-CANONICO-R16D-CARLOS-20261001T2135Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2608,
+      "age_seconds": 2697,
       "job_id": "SERVIDORES-API-LOCAL-METADATA-R1M-A-READONLY-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3021,
+      "age_seconds": 3110,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 68,
+      "age_seconds": 157,
       "job_id": "WORKER-REPAIR-SERVIDORES-CONEXIONES-R1-EXCLUDE-CORE-CONSUMER-FIX-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 14,
+      "age_seconds": 103,
       "job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-ACTUAL-MODAL-FIX-R2-CARLOS-20261001",
       "reason": null,
       "state": "RUNNING"
@@ -162,14 +156,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 22,
+  "queue_result_ready_recent": 21,
   "queue_running": 1,
   "remote_development_sha": "b2d9cda5ff2f8130525b73f03f0c7530b02cf0db",
   "runtime": {
     "current_job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-ACTUAL-MODAL-FIX-R2-CARLOS-20261001",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T22:31:20Z",
-    "last_receive_utc": "2026-10-01T22:31:15Z",
+    "last_cycle_utc": "2026-10-01T22:32:49Z",
+    "last_receive_utc": "2026-10-01T22:32:44Z",
     "last_terminal_utc": "2026-10-01T22:30:18Z",
     "pid": "45933",
     "runtime_fingerprint": {
