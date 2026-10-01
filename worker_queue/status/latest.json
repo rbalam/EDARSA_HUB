@@ -3,20 +3,20 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "7b31362ad882c4787456cdc0414ea6ffa0308a5a",
-  "generated_at_utc": "2026-10-01T18:18:27Z",
+  "development_sha": "78f3b825e692dddfa60aeab9dc8e80ddda8f9a0d",
+  "generated_at_utc": "2026-10-01T18:19:48Z",
   "history": {
-    "done_total_local": 1263,
+    "done_total_local": 1264,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 1117,
-    "results_total_local": 2176
+    "results_total_local": 2177
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 287,
+      "age_seconds": 369,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-20260423-DETAIL-R33B-CARLOS-20261001",
       "reasons": [
         "ISCAM_DETAIL_BACKFILL_ONLY_SQL_AUDIT_ALLOWED"
@@ -25,65 +25,65 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2715,
+      "age_seconds": 2796,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-MULTIUNIT-UI-R2-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1704,
+      "age_seconds": 67,
+      "job_id": "EDARSAHUB-COMERCIAL-TICKET-MESA-CODE-R1-CARLOS-20261001",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1786,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-MESA-MIGRATION-R3-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1708,
+      "age_seconds": 1790,
       "job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-DRILLDOWN-R2-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 358,
+      "age_seconds": 439,
       "job_id": "EDARSAHUB-WORKER-AGENT-GUARD-LONG-CHECK-COMMIT-R1-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2396,
+      "age_seconds": 2478,
       "job_id": "MEJORA-TABEJE-VENTAS-DIA-MISMO-DETALLE-COMERCIAL-R15C-CARLOS-20261001T1728Z",
       "reason": null,
       "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 113,
-      "job_id": "EDARSAHUB-COMERCIAL-TICKET-MESA-CODE-R1-CARLOS-20261001",
-      "reason": null,
-      "state": "RUNNING"
     }
   ],
-  "local_development_sha": "7b31362ad882c4787456cdc0414ea6ffa0308a5a",
+  "local_development_sha": "78f3b825e692dddfa60aeab9dc8e80ddda8f9a0d",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 5,
-  "queue_running": 1,
-  "remote_development_sha": "7b31362ad882c4787456cdc0414ea6ffa0308a5a",
+  "queue_result_ready_recent": 6,
+  "queue_running": 0,
+  "remote_development_sha": "78f3b825e692dddfa60aeab9dc8e80ddda8f9a0d",
   "runtime": {
-    "current_job_id": "EDARSAHUB-COMERCIAL-TICKET-MESA-CODE-R1-CARLOS-20261001",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T18:18:19Z",
-    "last_receive_utc": "2026-10-01T18:18:24Z",
-    "last_terminal_utc": "2026-10-01T18:12:29Z",
+    "last_cycle_utc": "2026-10-01T18:19:43Z",
+    "last_receive_utc": "2026-10-01T18:19:47Z",
+    "last_terminal_utc": "2026-10-01T18:18:41Z",
     "pid": "1073444",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "ad56901c4df1da4ab799657b8f9a43d92471b56a",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "7b31362ad882c4787456cdc0414ea6ffa0308a5a",
+      "development_sha": "78f3b825e692dddfa60aeab9dc8e80ddda8f9a0d",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
