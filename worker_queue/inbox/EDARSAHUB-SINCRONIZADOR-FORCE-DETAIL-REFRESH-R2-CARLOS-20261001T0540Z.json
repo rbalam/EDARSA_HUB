@@ -1,0 +1,92 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-FORCE-DETAIL-REFRESH-R2-CARLOS-20261001T0540Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "af5ec98d23578e29d73705059c86b5b87b0f30fd",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Sincronizador: corregir el resync comercial REAL de rango para que refresque el detalle canonico aun cuando el dia ya concilie. Mantener el comportamiento pendiente-only como default. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/backfill_detalle_producto_pendientes.py",
+      "old": "def ejecutar_backfill(\n    fecha_inicio: date,\n    fecha_fin: date,\n    unidades: Optional[List[str]] = None,\n    commit: bool = False,\n) -> Tuple[int, Dict[str, Any]]:",
+      "new": "def ejecutar_backfill(\n    fecha_inicio: date,\n    fecha_fin: date,\n    unidades: Optional[List[str]] = None,\n    commit: bool = False,\n    force_refresh: bool = False,\n) -> Tuple[int, Dict[str, Any]]:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/backfill_detalle_producto_pendientes.py",
+      "old": "        \"modo\": \"COMMIT\" if commit else \"DRY_RUN\",\n        \"fecha_inicio\": fecha_inicio.isoformat(),",
+      "new": "        \"modo\": \"COMMIT\" if commit else \"DRY_RUN\",\n        \"force_refresh\": force_refresh,\n        \"fecha_inicio\": fecha_inicio.isoformat(),",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/backfill_detalle_producto_pendientes.py",
+      "old": "            if _detalle_concilia(actual, runtime):\n                item = {",
+      "new": "            if _detalle_concilia(actual, runtime) and not force_refresh:\n                item = {",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "old": "def _ejecutar_backfill_detalle_iscam(\n    unidad_negocio_id: str, fecha_inicio: date, fecha_fin: date, commit: bool\n) -> Dict[str, Any]:",
+      "new": "def _ejecutar_backfill_detalle_iscam(\n    unidad_negocio_id: str,\n    fecha_inicio: date,\n    fecha_fin: date,\n    commit: bool,\n    force_refresh: bool = False,\n) -> Dict[str, Any]:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "old": "        unidades=[unidad_negocio_id],\n        commit=commit,\n    )",
+      "new": "        unidades=[unidad_negocio_id],\n        commit=commit,\n        force_refresh=force_refresh,\n    )",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "old": "                detalle_producto = _ejecutar_backfill_detalle_iscam(\n                    unidad_negocio_id, fecha_inicio, fecha_fin, commit=True\n                )",
+      "new": "                detalle_producto = _ejecutar_backfill_detalle_iscam(\n                    unidad_negocio_id,\n                    fecha_inicio,\n                    fecha_fin,\n                    commit=True,\n                    force_refresh=True,\n                )",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/backfill_detalle_producto_pendientes.py",
+        "backend/api/admin_scheduler_resync.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/scripts/backfill_detalle_producto_pendientes.py",
+          "backend/api/admin_scheduler_resync.py"
+        ],
+        "search_terms": [
+          "force_refresh",
+          "commit=True",
+          "_detalle_concilia"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
