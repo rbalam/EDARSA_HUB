@@ -227,6 +227,12 @@ function TicketVentaModal({ isOpen, onClose, serverId, sucursal, seleccion }) {
                 <span>FECHA:</span>
                 <span className="text-right">{String(ticket.fecha_hora || '').replace('T', ' ').slice(0, 19)}</span>
               </div>
+              {ticket.vendedor && (
+                <div className="flex justify-between gap-3">
+                  <span>VENDEDOR:</span>
+                  <span className="text-right uppercase">{ticket.vendedor}</span>
+                </div>
+              )}
               {Number(ticket.pax || 0) > 0 && (
                 <div className="flex justify-between gap-3">
                   <span>PAX:</span>
@@ -261,9 +267,12 @@ function TicketVentaModal({ isOpen, onClose, serverId, sucursal, seleccion }) {
                           <p className="text-zinc-500">
                             BRUTO {formatCurrency(item.importe)}
                           </p>
-                          <p className="text-red-600">
+                          <p className="text-zinc-500">
                             DESC. {Number(item.descuento_pct || 0).toLocaleString('es-MX', { maximumFractionDigits: 2 })}%:
-                            {' '}-{formatCurrency(item.descuento_importe)}
+                            {' '}
+                            <span className="text-red-600 font-semibold">
+                              -{formatCurrency(item.descuento_importe)}
+                            </span>
                           </p>
                           <p className="font-semibold">
                             TOTAL PROD. {formatCurrency(item.importe_neto ?? 0)}
@@ -284,13 +293,13 @@ function TicketVentaModal({ isOpen, onClose, serverId, sucursal, seleccion }) {
               {Number(ticket.descuento_productos || 0) > 0.005 && (
                 <div className="flex justify-between">
                   <span>DESC. PRODUCTOS</span>
-                  <span>-{formatCurrency(ticket.descuento_productos)}</span>
+                  <span className="text-red-600 font-semibold">-{formatCurrency(ticket.descuento_productos)}</span>
                 </div>
               )}
               {Number(ticket.descuento_cuenta || 0) > 0.005 && (
                 <div className="flex justify-between">
                   <span>DESC. CUENTA</span>
-                  <span>-{formatCurrency(ticket.descuento_cuenta)}</span>
+                  <span className="text-red-600 font-semibold">-{formatCurrency(ticket.descuento_cuenta)}</span>
                 </div>
               )}
               {Number(ticket.descuento || 0) > 0.005 &&
@@ -298,7 +307,7 @@ function TicketVentaModal({ isOpen, onClose, serverId, sucursal, seleccion }) {
                Number(ticket.descuento_cuenta || 0) <= 0.005 && (
                 <div className="flex justify-between">
                   <span>DESCUENTO</span>
-                  <span>-{formatCurrency(ticket.descuento)}</span>
+                  <span className="text-red-600 font-semibold">-{formatCurrency(ticket.descuento)}</span>
                 </div>
               )}
               {ticket.impuesto != null && (
@@ -506,6 +515,11 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
               <span className={esDetalle ? 'font-mono text-xs font-medium underline decoration-dotted underline-offset-2' : 'font-semibold'}>
                 {esDetalle ? item.folio : item.label}
               </span>
+              {esDetalle && item.total_cero_por_descuento && (
+                <span className="inline-flex items-center rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                  TOTAL $0 · DESCUENTO
+                </span>
+              )}
             </div>
           </td>
           <td className="py-2 px-3 text-zinc-600">
