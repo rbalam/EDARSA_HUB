@@ -4,46 +4,45 @@ from pathlib import Path
 from scripts.poblar_ventas_detalle_producto_canonico import _prorratear_mpro_por_ticket
 
 ROOT = Path(__file__).resolve().parents[2]
-DETAIL = ROOT / "backend" / "scripts" / "poblar_ventas_detalle_producto_canonico.py"
+DETAIL = ROOT / "backend" / "scripts/poblar_ventas_detalle_producto_canonico.py"
 
 
-def _row(product, gross, target, descuento="0"):
+def _row(product, gross, target, descuento_producto="0", pct="0"):
     return {
         "id_transaccion": "MPRO:ORIGEN:1",
         "numero_ticket": "1",
         "es_kpi_valido": 1,
         "importe_neto_ticket": Decimal(target),
-        "descuento_comanda": Decimal(descuento),
         "importe_bruto": Decimal(gross),
+        "descuento_producto_importe": Decimal(descuento_producto),
+        "descuento_global_importe": Decimal("0"),
+        "descuento_pct": Decimal(pct),
         "producto_codigo_fuente": product,
         "producto_nombre": product,
     }
 
 
-def test_mpro_uses_final_header_even_when_comanda_discount_does_not_explain_delta():
+def test_mpro_preserves_explicit_product_discount_and_separates_header_delta():
     out = _prorratear_mpro_por_ticket([
-        _row("A", "100", "180", "0"),
-        _row("B", "100", "180", "0"),
+        _row("A", "100", "180", "10", "10"),
+        _row("B", "100", "180", "0", "0"),
     ])
+    products = [x for x in out if not str(x["producto_codigo_fuente"]).startswith("__ISCAM_AJUSTE_")]
+    adjustments = [x for x in out if str(x["producto_codigo_fuente"]).startswith("__ISCAM_AJUSTE_")]
+    assert [x["importe_neto"] for x in products] == [Decimal("90.0000"), Decimal("100.0000")]
+    assert [x["descuento_producto_importe"] for x in products] == [Decimal("10"), Decimal("0")]
+    assert len(adjustments) == 1
+    assert adjustments[0]["importe_neto"] == Decimal("-10.0000")
     assert sum(x["importe_neto"] for x in out) == Decimal("180.0000")
-    assert [x["importe_neto"] for x in out] == [Decimal("90.0000"), Decimal("90.0000")]
 
 
-def test_mpro_header_total_is_preserved_with_rounding_residual():
+def test_mpro_product_discount_can_close_ticket_to_zero_without_fake_adjustment():
     out = _prorratear_mpro_por_ticket([
-        _row("A", "1", "1", "0"),
-        _row("B", "1", "1", "0"),
-        _row("C", "1", "1", "0"),
+        _row("PRODUCTO_A", "100", "0", "100", "100"),
     ])
-    assert sum(x["importe_neto"] for x in out) == Decimal("1.0000")
-
-
-def test_mpro_zero_final_header_distributes_zero_without_inventing_sales():
-    out = _prorratear_mpro_por_ticket([
-        _row("A", "80", "0", "80"),
-        _row("B", "20", "0", "80"),
-    ])
-    assert sum(x["importe_neto"] for x in out) == Decimal("0.0000")
+    assert len(out) == 1
+    assert out[0]["importe_neto"] == Decimal("0.0000")
+    assert out[0]["descuento_producto_importe"] == Decimal("100")
 
 
 def test_mpro_header_without_product_detail_becomes_technical_adjustment():
@@ -68,25 +67,21 @@ def test_mpro_zero_net_zero_gross_preserves_real_product_lines():
         Decimal("0.0000"),
         Decimal("0.0000"),
     ]
-    assert sum(x["importe_neto"] for x in out) == Decimal("0.0000")
 
 
-def test_mpro_positive_net_zero_gross_non_header_still_fails_closed():
-    import pytest
-    with pytest.raises(RuntimeError, match="sin detalle monetario distribuible"):
-        _prorratear_mpro_por_ticket([_row("PRODUCTO_REAL", "0", "125", "0")])
-
-
-def test_mpro_branch_filter_uses_header_schema_not_detail_column():
+def test_mpro_branch_filter_uses_header_and_detail_schema():
     text = DETAIL.read_text(encoding="utf-8")
     block = text.split("def _extract_mpro(", 1)[1].split("PRORRATEO_Q4", 1)[0]
     assert "v.Sc_Cve_Sucursal = %s" in block
-    assert "d.Sc_Cve_Sucursal" not in block
+    assert "d.Sc_Cve_Sucursal = h.Sc_Cve_Sucursal" in block
 
 
-def test_mpro_detail_extractor_does_not_depend_on_optional_discount_columns():
+def test_mpro_detail_uses_venta_explicit_discount_amount():
     text = DETAIL.read_text(encoding="utf-8")
     block = text.split("def _extract_mpro(", 1)[1].split("PRORRATEO_Q4", 1)[0]
-    assert "c.Co_Descuento_Importe" not in block
-    assert "v.Vn_Descuento_Global_Importe" not in block
-    assert "v.Vn_Descuento_Importe" not in block
+    assert "FROM Venta vd" in block
+    assert "vd.Vn_Precio_Lista_Importe" in block
+    assert "vd.Vn_Descuento_Importe" in block
+    assert "vd.Vn_Descuento_Global_Importe" in block
+    assert "AS descuento_pct" in block
+    assert "Comanda_Detalle" not in block

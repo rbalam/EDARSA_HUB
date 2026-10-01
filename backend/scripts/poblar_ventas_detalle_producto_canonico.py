@@ -1060,6 +1060,29 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
               AND ISNULL(v.Vn_Tabla, '') = 'Comanda'
               AND ISNULL(v.Es_Cve_Estado, '') IN ('AC', 'FA', 'CA')
         ),
+        d AS (
+            SELECT
+                vd.Vn_Folio,
+                vd.Sc_Cve_Sucursal,
+                vd.Pr_Cve_Producto,
+                vd.Vn_Concepto,
+                CAST(ISNULL(vd.Vn_Cantidad_1, 0) AS decimal(18,4)) AS cantidad,
+                CAST(ISNULL(vd.Vn_Precio_Lista, 0) AS decimal(18,4)) AS precio_lista,
+                CAST(ISNULL(vd.Vn_Precio_Lista_Importe, 0) AS decimal(18,4)) AS importe_lista,
+                CAST(ISNULL(vd.Vn_Descuento_Importe, 0) AS decimal(18,4)) AS descuento_producto_importe,
+                CAST(ISNULL(vd.Vn_Descuento_Global_Importe, 0) AS decimal(18,4)) AS descuento_global_importe,
+                CAST(ISNULL(vd.Vn_Precio_Neto_Importe, 0) AS decimal(18,4)) AS importe_neto_pos,
+                CAST(
+                    CASE
+                        WHEN ISNULL(vd.Vn_Precio_Lista_Importe, 0) <> 0
+                        THEN ISNULL(vd.Vn_Descuento_Importe, 0) * 100.0
+                             / NULLIF(vd.Vn_Precio_Lista_Importe, 0)
+                        ELSE 0
+                    END
+                    AS decimal(9,4)
+                ) AS descuento_pct
+            FROM Venta vd WITH (NOLOCK)
+        ),
         l AS (
             SELECT
                 h.Vn_Folio,
@@ -1074,22 +1097,26 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 h.descuento_comanda,
                 h.descuento_ticket,
                 CASE
-                    WHEN MAX(d.Co_Folio) IS NULL THEN 'HEADER_SIN_DETALLE'
+                    WHEN MAX(d.Vn_Folio) IS NULL THEN 'HEADER_SIN_DETALLE'
                     ELSE COALESCE(NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''), 'SIN_CODIGO')
                 END AS producto_codigo_fuente,
-                COALESCE(MAX(CONVERT(varchar(300), d.Cd_Concepto)), 'HEADER SIN DETALLE') AS producto_nombre,
-                SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4))) AS cantidad,
+                COALESCE(MAX(CONVERT(varchar(300), d.Vn_Concepto)), 'HEADER SIN DETALLE') AS producto_nombre,
+                COALESCE(d.descuento_pct, CAST(0 AS decimal(9,4))) AS descuento_pct,
+                SUM(ISNULL(d.cantidad, 0)) AS cantidad,
                 CASE
-                    WHEN SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4))) <> 0
-                    THEN SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4)))
-                         / SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4)))
-                    ELSE MAX(CAST(ISNULL(d.Cd_Precio, 0) AS decimal(18,4)))
+                    WHEN SUM(ISNULL(d.cantidad, 0)) <> 0
+                    THEN SUM(ISNULL(d.importe_lista, 0))
+                         / SUM(ISNULL(d.cantidad, 0))
+                    ELSE MAX(ISNULL(d.precio_lista, 0))
                 END AS precio_unitario,
-                SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS importe_bruto
+                SUM(ISNULL(d.importe_lista, 0)) AS importe_bruto,
+                SUM(ISNULL(d.descuento_producto_importe, 0)) AS descuento_producto_importe,
+                SUM(ISNULL(d.descuento_global_importe, 0)) AS descuento_global_importe,
+                SUM(ISNULL(d.importe_neto_pos, 0)) AS importe_neto_pos
             FROM h
-            LEFT JOIN Comanda_Detalle d WITH (NOLOCK)
-                ON d.Co_Folio = h.Vn_Documento
-               AND ISNULL(d.Es_Cve_Estado, '') IN ('AC', 'FA')
+            LEFT JOIN d
+                ON d.Vn_Folio = h.Vn_Folio
+               AND d.Sc_Cve_Sucursal = h.Sc_Cve_Sucursal
             GROUP BY
                 h.Vn_Folio,
                 h.Vn_Documento,
@@ -1102,12 +1129,8 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 h.propina_ticket,
                 h.descuento_comanda,
                 h.descuento_ticket,
-                COALESCE(NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''), 'SIN_CODIGO')
-        ),
-        t AS (
-            SELECT Vn_Folio, SUM(importe_bruto) AS bruto_ticket
-            FROM l
-            GROUP BY Vn_Folio
+                COALESCE(NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''), 'SIN_CODIGO'),
+                COALESCE(d.descuento_pct, CAST(0 AS decimal(9,4)))
         )
         SELECT
             CONVERT(varchar(64), l.Vn_Folio) AS numero_ticket,
@@ -1133,17 +1156,19 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             l.descuento_ticket,
             l.producto_codigo_fuente,
             l.producto_nombre,
+            l.descuento_pct,
             l.cantidad,
             l.precio_unitario,
             l.importe_bruto,
-            CASE
-                WHEN ISNULL(t.bruto_ticket, 0) <> 0
-                THEN CAST(l.importe_bruto * l.importe_neto_ticket / t.bruto_ticket AS decimal(18,4))
-                ELSE CAST(0 AS decimal(18,4))
-            END AS importe_neto
+            l.descuento_producto_importe,
+            l.descuento_global_importe,
+            l.importe_neto_pos,
+            CAST(
+                l.importe_bruto - l.descuento_producto_importe
+                AS decimal(18,4)
+            ) AS importe_neto
         FROM l
-        INNER JOIN t ON t.Vn_Folio = l.Vn_Folio
-        ORDER BY l.Vn_Folio, l.producto_codigo_fuente
+        ORDER BY l.Vn_Folio, l.producto_codigo_fuente, l.descuento_pct
         """
         cur = conn.cursor(as_dict=True)
         cur.execute(sql, (fi, ff, str(suc), str(suc)))
@@ -1174,15 +1199,21 @@ def _mpro_row_es_kpi_valido(row: Dict[str, Any]) -> bool:
 def _prorratear_mpro_por_ticket(
     src_rows: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
-    """Distribuye la venta final MPRO entre productos usando el header canónico.
+    """Conserva el descuento real por producto y concilia contra el header MPRO.
 
-    Venta_Encabezado.Vn_Precio_Neto_Importe es la cifra final autoritativa.
-    Comanda_Detalle solo aporta la estructura/proporción de productos; su importe
-    bruto y Co_Descuento_Importe no pueden bloquear el detalle cuando existen
-    ajustes finales que no están representados como descuento de la comanda.
+    Venta es el detalle monetario real. Cada linea conserva
+    Vn_Descuento_Importe como descuento de producto y su porcentaje derivado
+    sobre Vn_Precio_Lista_Importe. Venta_Encabezado.Vn_Precio_Neto_Importe
+    sigue siendo la cifra final autoritativa del ticket.
+
+    Si despues de aplicar los descuentos explicitos de producto queda una
+    diferencia contra el encabezado, se conserva como una linea tecnica del mismo
+    folio. Asi no se reparte artificialmente un descuento global, impuesto u otro
+    ajuste de cierre entre los productos reales.
     """
     rows = [dict(row) for row in src_rows]
     grouped: Dict[str, List[Tuple[int, Dict[str, Any]]]] = defaultdict(list)
+    technical_rows: List[Dict[str, Any]] = []
 
     for position, row in enumerate(rows):
         if not _mpro_row_es_kpi_valido(row):
@@ -1205,35 +1236,12 @@ def _prorratear_mpro_por_ticket(
         if target_net < 0:
             raise RuntimeError(f"MPRO: venta neta negativa en ticket {ticket_key}")
 
-        gross_values = [_q4(row.get("importe_bruto")) for _, row in items]
-        if any(value < 0 for value in gross_values):
-            raise RuntimeError(f"MPRO: importe bruto negativo en ticket {ticket_key}")
+        header_only = all(
+            _s(row.get("producto_codigo_fuente")).upper() == "HEADER_SIN_DETALLE"
+            for _, row in items
+        )
 
-        gross_total = _q4(sum(gross_values, Decimal("0")))
-        if gross_total <= 0:
-            # Un ticket final de importe cero no requiere una base monetaria de
-            # prorrateo. Conservamos sus líneas reales con importe neto cero para
-            # mantener ticket/PAX y estructura de producto sin inventar venta.
-            # Para cualquier encabezado positivo sin base monetaria se conserva
-            # el bloqueo fail-closed de abajo.
-            if target_net == Decimal("0.0000"):
-                for _, row in items:
-                    row["importe_neto"] = Decimal("0.0000")
-                    row["descuento_prorrateado"] = Decimal("0.0000")
-                continue
-
-            header_only = all(
-                _s(row.get("producto_codigo_fuente")).upper() == "HEADER_SIN_DETALLE"
-                for _, row in items
-            )
-            if not header_only:
-                raise RuntimeError(
-                    f"MPRO: ticket sin detalle monetario distribuible: {ticket_key}"
-                )
-
-            # El encabezado final existe pero el POS no expone líneas de producto.
-            # No se inventa producto: se conserva el ticket como ajuste técnico,
-            # excluido de vistas de productos por el prefijo __ISCAM_AJUSTE_.
+        if header_only:
             for index, (_, row) in enumerate(items):
                 line_net = target_net if index == 0 else Decimal("0")
                 row["producto_codigo_fuente"] = SOFT_AJUSTE_ENCABEZADO
@@ -1242,55 +1250,62 @@ def _prorratear_mpro_por_ticket(
                 row["precio_unitario"] = Decimal("0")
                 row["importe_bruto"] = line_net
                 row["importe_neto"] = line_net
-                row["descuento_prorrateado"] = Decimal("0")
+                row["descuento_producto_importe"] = Decimal("0")
+                row["descuento_pct"] = None
             continue
 
-        allocations: List[Decimal] = []
-        remainders: List[Decimal] = []
+        product_net_total = Decimal("0")
+        for _, row in items:
+            gross = _q4(row.get("importe_bruto"))
+            product_discount = _q4(row.get("descuento_producto_importe"))
 
-        for gross in gross_values:
-            raw = target_net * gross / gross_total
-            base = raw.quantize(PRORRATEO_Q4, rounding=ROUND_DOWN)
-            allocations.append(base)
-            remainders.append(raw - base)
+            if gross < 0:
+                raise RuntimeError(
+                    f"MPRO: importe bruto negativo en ticket {ticket_key}"
+                )
+            if product_discount < 0:
+                raise RuntimeError(
+                    f"MPRO: descuento de producto negativo en ticket {ticket_key}"
+                )
+            if product_discount > gross and gross > 0:
+                raise RuntimeError(
+                    f"MPRO: descuento de producto mayor al bruto en ticket {ticket_key}"
+                )
 
-        residual = _q4(target_net - sum(allocations, Decimal("0")))
-        residual_units = int(
-            (residual / PRORRATEO_Q4).to_integral_value(
-                rounding=ROUND_HALF_UP
-            )
-        )
-
-        if residual_units < 0 or residual_units > len(items):
-            raise RuntimeError(
-                f"MPRO: residuo de prorrateo invalido en ticket {ticket_key}"
-            )
-
-        ordered_indexes = sorted(
-            range(len(items)),
-            key=lambda index: (
-                -remainders[index],
-                _s(items[index][1].get("producto_codigo_fuente")),
-                _s(items[index][1].get("producto_nombre")),
-                items[index][0],
-            ),
-        )
-
-        for index in ordered_indexes[:residual_units]:
-            allocations[index] += PRORRATEO_Q4
-
-        allocated_total = _q4(sum(allocations, Decimal("0")))
-        if allocated_total != target_net:
-            raise RuntimeError(
-                f"MPRO: venta neta distribuida no concilia en ticket {ticket_key}"
-            )
-
-        for index, (_, row) in enumerate(items):
-            line_net = _q4(allocations[index])
-            row["descuento_prorrateado"] = _q4(gross_values[index] - line_net)
+            line_net = _q4(gross - product_discount)
             row["importe_neto"] = line_net
+            row["descuento_prorrateado"] = product_discount
+            product_net_total += line_net
 
-    return rows
+        product_net_total = _q4(product_net_total)
+        delta = _q4(target_net - product_net_total)
+
+        if delta == Decimal("0.0000"):
+            continue
+
+        adjustment = dict(items[0][1])
+        adjustment["producto_codigo_fuente"] = SOFT_AJUSTE_ENCABEZADO
+        adjustment["producto_nombre"] = (
+            "AJUSTE MPRO: DESCUENTO GLOBAL / CIERRE"
+            if delta < 0
+            else "AJUSTE MPRO: IMPUESTOS / CIERRE"
+        )
+        adjustment["cantidad"] = Decimal("0")
+        adjustment["precio_unitario"] = Decimal("0")
+        adjustment["importe_bruto"] = Decimal("0")
+        adjustment["importe_neto"] = delta
+        adjustment["descuento_producto_importe"] = Decimal("0")
+        adjustment["descuento_global_importe"] = _q4(
+            sum(
+                (_d(row.get("descuento_global_importe")) for _, row in items),
+                Decimal("0"),
+            )
+        )
+        adjustment["descuento_pct"] = None
+        adjustment["descuento_prorrateado"] = _q4(-delta) if delta < 0 else Decimal("0")
+        technical_rows.append(adjustment)
+
+    return rows + technical_rows
 
 def _materialize_rows(cfg: Dict[str, Any], dia: date, src_rows: List[Dict[str, Any]], run_id: str) -> List[Dict[str, Any]]:
     seen_ticket = set()
