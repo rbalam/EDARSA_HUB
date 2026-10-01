@@ -6,7 +6,7 @@
   "base_sha": "c6a726c4e655eb0fb6c7f0ce2984aa99174958c8",
   "production_allowed": false,
   "mode": "SQL_MIGRATION_DEVELOPMENT",
-  "objective": "Aplicar en EDARSAHUB Desarrollo/Preview la migracion idempotente que agrega dbo.Comercial_Inteligencia_VentasDetalleProducto.mesa. No tocar Produccion ni otros esquemas.",
+  "objective": "Aplicar en EDARSAHUB Desarrollo/Preview la migracion idempotente que agrega dbo.Comercial_Inteligencia_VentasDetalleProducto.mesa. No tocar Produccion ni otros esquemas. Re-wake del mismo R2 por falta de pickup; no duplicar trabajo funcional.",
   "requester": {
     "email": "carlosruz@edarsa.com.mx",
     "source": "chatgpt",
