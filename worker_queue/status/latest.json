@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "f3e4939a21cd7e897e0eb97aff4956fe31fa7213",
-  "generated_at_utc": "2026-10-01T16:44:19Z",
+  "generated_at_utc": "2026-10-01T16:45:35Z",
   "history": {
     "done_total_local": 1257,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2090,
+      "age_seconds": 2166,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-MICROPRICE-ZERO-FIX-R29-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 658,
+      "age_seconds": 734,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-MICROPRICE-ZERO-FIX-R30-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2390,
+      "age_seconds": 2466,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-PARIDAD-COMERCIAL-R14-CARLOS-20261001T1545Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 974,
+      "age_seconds": 1050,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-PARIDAD-COMERCIAL-R14B-CARLOS-20261001T1620Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 315,
+      "age_seconds": 391,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-PARIDAD-COMERCIAL-R14C-CARLOS-20261001T1640Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T16:44:17Z",
-    "last_receive_utc": "2026-10-01T16:44:18Z",
+    "last_cycle_utc": "2026-10-01T16:45:32Z",
+    "last_receive_utc": "2026-10-01T16:45:34Z",
     "last_terminal_utc": "2026-10-01T16:39:04Z",
     "pid": "588094",
     "runtime_fingerprint": {
