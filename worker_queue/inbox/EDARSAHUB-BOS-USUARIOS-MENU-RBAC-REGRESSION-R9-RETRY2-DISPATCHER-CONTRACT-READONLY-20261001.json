@@ -1,0 +1,111 @@
+{
+  "actions": [],
+  "bounded_context": "usuarios_rbac_menu",
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [
+          "__pycache__",
+          "*.pyc",
+          "node_modules",
+          "dist",
+          "build"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx"
+        ],
+        "max_results": 200,
+        "paths": [
+          "frontend/src/pages/Usuarios.js",
+          "frontend/src/pages/Layout.js",
+          "frontend/src/hooks/useMenusByContext.js",
+          "frontend/src",
+          "backend/modules/auth/routes.py",
+          "backend/modules/sistema/menu_service.py",
+          "backend/core/rbac/service.py",
+          "backend/core/rbac_sql/service.py",
+          "backend/core/user_access_context.py"
+        ],
+        "search_terms": [
+          "SISTEMA_USUARIOS_VER",
+          "USUARIOS_VER",
+          "usuarios",
+          "sistema.usuarios",
+          "/usuarios",
+          "canViewTab",
+          "effective-permissions",
+          "menu-permissions",
+          "MENU_PERMISSION_MAP",
+          "EnterpriseNavigationRegistry",
+          "Usuario_Modulos",
+          "Usuario_Acciones",
+          "Usuario_PermisosRolModulo"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-R9-RETRY2-DISPATCHER-CONTRACT-READONLY-20261001",
+  "mode": "READ_ONLY",
+  "objective": "Cerrar el plan de alineacion canonica para Usuarios/RBAC usando repository_contract_audit READ_ONLY. Identificar ruta runtime, archivos exactos, contrato USUARIOS_VER vs SISTEMA_USUARIOS_VER y parche minimo. Sin SQL DDL/DML, sin produccion, sin Mongo, sin permisos duplicados y sin mutacion.",
+  "production_allowed": false,
+  "read_only_scope": {
+    "canonical_permission": {
+      "action": "VER",
+      "expected_permission_code": "USUARIOS_VER",
+      "module": "usuarios"
+    },
+    "forbidden_deliverables": [
+      "SQL mutation",
+      "RBAC seed",
+      "new permission creation",
+      "global auth rewrite",
+      "rollback to July",
+      "frontend-only cosmetic fix"
+    ],
+    "legacy_permission_to_detect": "SISTEMA_USUARIOS_VER"
+  },
+  "requester": {
+    "chat": "",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "",
+    "reason": "Menu Usuarios RBAC canonical alignment R9 RETRY2 with executable READ_ONLY checks.",
+    "source": "chat"
+  },
+  "rules": {
+    "do_not_touch": [
+      "DEVENV-FILE-WATCHER"
+    ],
+    "no_ddl": true,
+    "no_dml": true,
+    "no_duplicate_permissions": true,
+    "no_global_rollback": true,
+    "no_manual_rbac_changes": true,
+    "no_mongo": true,
+    "no_production": true,
+    "sql_server_is_canonical": true
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "window": {
+    "from": "2026-08-30",
+    "to": "current"
+  }
+}
