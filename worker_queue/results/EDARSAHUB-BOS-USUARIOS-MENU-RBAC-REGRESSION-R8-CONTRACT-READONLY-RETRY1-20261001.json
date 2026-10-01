@@ -1,0 +1,506 @@
+{
+  "base_sha": "e7078e82a853a55e7a453519422ae9afd9ec1918",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-01T03:52:17Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-R8-CONTRACT-READONLY-RETRY1-20261001",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T03:52:21Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "effective-permissions",
+              "permissions_flat",
+              "sistema_usuarios_ver",
+              "tab_permissions",
+              "usuarios_ver"
+            ],
+            "path": "frontend/src/pages/Usuarios.js",
+            "rbac_contracts": [
+              "Sistema_RBAC"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "sistema.usuarios"
+            ],
+            "path": "frontend/src/config/enterpriseNavigationRegistry.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.corporate_filters.service",
+              "core.rbac.service",
+              "core.refresh_tokens",
+              "core.security",
+              "core.unidades_service",
+              "core.user_access_context",
+              "fastapi",
+              "logging",
+              "modules.auth",
+              "modules.auth.password_reset",
+              "modules.auth.schemas",
+              "modules.auth.service",
+              "os",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "effective-permissions",
+              "menu_permission_map",
+              "permissions_flat",
+              "sistema_usuarios_ver",
+              "usuarios_ver"
+            ],
+            "path": "backend/modules/auth/routes.py",
+            "rbac_contracts": [
+              "get_current_user",
+              "menu-permissions"
+            ],
+            "routes": [
+              "/auth/context",
+              "/auth/empresas",
+              "/auth/forgot-password",
+              "/auth/login",
+              "/auth/logout",
+              "/auth/logout-all",
+              "/auth/me",
+              "/auth/me/access-context",
+              "/auth/me/context",
+              "/auth/me/effective-permissions",
+              "/auth/me/menu-permissions",
+              "/auth/refresh",
+              "/auth/register",
+              "/auth/reset-password",
+              "/roles",
+              "/roles/modulos",
+              "/roles/{role_id}",
+              "/users",
+              "/users/{user_id}",
+              "/users/{user_id}/permissions"
+            ],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "ForgotPasswordRequest",
+              "ResetPasswordRequest",
+              "_build_effective_permissions_payload",
+              "_build_menu_permissions",
+              "_group_permissions_by_module",
+              "_normalize_permission_codes",
+              "_p5_extract_usuario_id_from_payload",
+              "change_context",
+              "create_role",
+              "create_user_admin",
+              "delete_role",
+              "delete_user",
+              "forgot_password",
+              "get_me",
+              "get_modulos_disponibles",
+              "get_my_access_context",
+              "get_my_context",
+              "get_my_effective_permissions",
+              "get_my_empresas",
+              "get_my_menu_permissions",
+              "get_roles",
+              "get_user_dual",
+              "get_users",
+              "login",
+              "logout",
+              "logout_all_sessions",
+              "refresh_tokens",
+              "register",
+              "reset_password_endpoint",
+              "update_role",
+              "update_user",
+              "update_user_permissions"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.alcance_helper",
+              "core.corporate_filters.service",
+              "core.rbac_helper",
+              "core.security",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.auth",
+              "modules.auth.password_reset",
+              "modules.auth.schemas",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sistema_usuarios_ver",
+              "usuarios_ver"
+            ],
+            "path": "backend/modules/auth/service.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_can_manage_user",
+              "_get_role_level",
+              "_p5_extract_usuario_id_from_payload",
+              "create_role",
+              "create_user_admin",
+              "delete_role",
+              "delete_user",
+              "get_roles",
+              "get_user_by_id",
+              "get_users",
+              "login_user",
+              "register_user",
+              "update_role",
+              "update_user",
+              "update_user_permissions"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.sistema",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.connection_factory",
+              "fastapi",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "_obtener_modulos_permitidos_usuario",
+              "requierepermiso"
+            ],
+            "path": "backend/modules/sistema/menu_service.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "MenuService",
+              "_es_superadmin_from_current_user",
+              "_es_superadmin_from_roles",
+              "_get_connection",
+              "_get_usuario_catalogo_columns",
+              "_leer_favoritos_usuario_resuelto",
+              "_menu_autorizado",
+              "_norm",
+              "_norm_ruta_permiso",
+              "_normalizar_rutas_favoritas",
+              "_obtener_menus_usuario_resuelto",
+              "_obtener_modulos_permitidos_usuario",
+              "_obtener_roles_usuario",
+              "_resolver_usuario_id_canonico",
+              "_rutas_menu_permitidas_usuario",
+              "_tabla_favoritos_existe",
+              "actualizar_favoritos_current_user",
+              "es_superadmin",
+              "get_menu_service",
+              "obtener_favoritos_current_user",
+              "obtener_menus_current_user",
+              "obtener_menus_usuario",
+              "obtener_permisos_usuario",
+              "obtener_permisos_usuario_por_unidad",
+              "obtener_roles_usuario",
+              "resolver_usuario_id_canonico"
+            ],
+            "tables_referenced": [
+              "Sistema_Modulos",
+              "Sistema_ModulosMenus",
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_MenuFavoritos",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion",
+              "Usuario_RolesContexto"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 5,
+          "scanned_files": 10,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "ModuloID",
+              "CodigoModulo",
+              "NombreModulo",
+              "ModuloActivo",
+              "AccionID",
+              "CodigoAccion",
+              "NombreAccion",
+              "AccionActiva",
+              "Permitido",
+              "PermisoActivo",
+              "RolID",
+              "CodigoRol",
+              "NombreRol",
+              "NivelJerarquia",
+              "RolActivo"
+            ],
+            "name": "usuarios_permission_contract",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                133,
+                "usuarios",
+                "Usuarios",
+                true,
+                1,
+                "VER",
+                "VER",
+                true,
+                true,
+                true,
+                6,
+                "SUPERADMIN",
+                "SuperAdministrador",
+                100,
+                true
+              ],
+              [
+                133,
+                "usuarios",
+                "Usuarios",
+                true,
+                1,
+                "VER",
+                "VER",
+                true,
+                true,
+                true,
+                1,
+                "ADMIN",
+                "Administrador",
+                90,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "Username",
+              "NombreCompleto",
+              "RolID",
+              "CodigoRol",
+              "NombreRol",
+              "NivelJerarquia",
+              "CodigoModulo",
+              "CodigoAccion",
+              "PermisoEfectivo"
+            ],
+            "name": "usuarios_permission_assignments",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                1,
+                "admin@edarsa.com",
+                "admin@edarsa.com",
+                "Admin Test Editado",
+                6,
+                "SUPERADMIN",
+                "SuperAdministrador",
+                100,
+                "usuarios",
+                "VER",
+                "USUARIOS_VER"
+              ],
+              [
+                3,
+                "carlosruz@edarsa.com.mx",
+                "carlosruz@edarsa.com.mx",
+                "Carlos Ruz",
+                6,
+                "SUPERADMIN",
+                "SuperAdministrador",
+                100,
+                "usuarios",
+                "VER",
+                "USUARIOS_VER"
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "ricardo@edarsa.com.mx",
+                "Ricardo Balam Garcia",
+                6,
+                "SUPERADMIN",
+                "SuperAdministrador",
+                100,
+                "usuarios",
+                "VER",
+                "USUARIOS_VER"
+              ],
+              [
+                12,
+                "eduardo@alpuntoycoma.mx",
+                "eduardo@alpuntoycoma.mx",
+                "Eduardo Jose Medina García",
+                1,
+                "ADMIN",
+                "Administrador",
+                90,
+                "usuarios",
+                "VER",
+                "USUARIOS_VER"
+              ],
+              [
+                22,
+                "qa.superadmin@edarsa.com",
+                "qa.superadmin",
+                "QA SuperAdmin",
+                6,
+                "SUPERADMIN",
+                "SuperAdministrador",
+                100,
+                "usuarios",
+                "VER",
+                "USUARIOS_VER"
+              ],
+              [
+                37,
+                "qa9882@e.mx",
+                "qa9882@e.mx",
+                "QA",
+                6,
+                "SUPERADMIN",
+                "SuperAdministrador",
+                100,
+                "usuarios",
+                "VER",
+                "USUARIOS_VER"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "MenuID",
+              "Codigo",
+              "Nombre",
+              "Ruta",
+              "RequierePermiso",
+              "SistemaModuloCodigo",
+              "SistemaModuloNombre",
+              "MenuActivo",
+              "SistemaModuloActivo"
+            ],
+            "name": "users_menu_permission_alignment",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                61,
+                "sistema.usuarios",
+                "Usuarios",
+                "/usuarios",
+                "usuarios",
+                "SISTEMA",
+                "Administración Sistema",
+                true,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "Fuente",
+              "ID",
+              "Codigo",
+              "Activo",
+              "FechaAlta",
+              "FechaModificacion"
+            ],
+            "name": "recent_rbac_changes",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-01T03:52:16Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
