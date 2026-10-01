@@ -2014,7 +2014,7 @@ async def get_servers(current_user: Dict = Depends(get_current_user), _rbac: dic
         allow_mongo_fallback=False,  # P5: Fallback MongoDB deshabilitado
         filter_active=True,
         filter_visible_listado=True,
-        exclude_core=False,
+        exclude_core=True,
         mask_secrets=True
     )
 
