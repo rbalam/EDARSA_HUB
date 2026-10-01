@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-MAPPING-READONLY-R2-20260930",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "df89bae448a9e945c04da8bebbe82b82b8ed9bf7",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar exclusivamente el mapeo canonico de las API_LOCAL activas hacia ServerID, EmpresaID y UnidadNegocioID. No mutar datos, no leer secretos, no probar APIs externas, no tocar Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "api_local_server_company",
+          "sql": "SELECT CONVERT(varchar(36),sc.id) AS ConexionID,sc.nombre,sc.system_type,sc.EmpresaID,CONVERT(varchar(36),es.ServidorID) AS LinkedServerID,es.EmpresaID AS LinkedEmpresaID,es.RolConexion FROM dbo.Servidores_Conexiones sc LEFT JOIN dbo.Sistema_EmpresasServidores es ON es.ServidorID=sc.id WHERE sc.tipo_conexion='API_LOCAL' AND sc.activo=1 ORDER BY sc.nombre"
+        },
+        {
+          "name": "api_local_units",
+          "sql": "SELECT CONVERT(varchar(36),sc.id) AS ServerID,sc.nombre,CONVERT(varchar(36),u.id) AS UnidadNegocioID,u.codigo,u.nombre AS UnidadNombre,u.server_id,u.activo AS UnidadActiva FROM dbo.Servidores_Conexiones sc LEFT JOIN dbo.Unidades_Negocio u ON CONVERT(varchar(36),u.server_id)=CONVERT(varchar(36),sc.id) WHERE sc.tipo_conexion='API_LOCAL' AND sc.activo=1 ORDER BY sc.nombre"
+        },
+        {
+          "name": "api_local_profiles",
+          "sql": "SELECT CONVERT(varchar(36),p.ServerID) AS ServerID,CONVERT(varchar(36),p.UnidadNegocioID) AS UnidadNegocioID,p.EmpresaID,p.NombreComercial,p.Pais,p.Moneda FROM dbo.Sistema_UnidadesNegocioPerfilDigital p WHERE p.ServerID IN (SELECT sc.id FROM dbo.Servidores_Conexiones sc WHERE sc.tipo_conexion='API_LOCAL' AND sc.activo=1) ORDER BY p.ServerID,p.UnidadNegocioID"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS",
+    "chat": "Conexiones y Comunicaciones 2"
+  }
+}
