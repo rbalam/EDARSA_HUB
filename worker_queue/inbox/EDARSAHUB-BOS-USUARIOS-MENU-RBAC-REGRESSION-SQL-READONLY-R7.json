@@ -1,0 +1,93 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "queries": [
+        {
+          "name": "users_menu_current",
+          "sql": "\nSELECT\n    smm.MenuID,\n    smm.ModuloID,\n    smm.Codigo AS MenuCodigo,\n    smm.Nombre AS MenuNombre,\n    smm.Ruta,\n    smm.RequierePermiso,\n    smm.Activo AS MenuActivo,\n    sm.Codigo AS ModuloCodigo,\n    sm.Nombre AS ModuloNombre,\n    sm.Activo AS ModuloActivo\nFROM dbo.Sistema_ModulosMenus smm\nLEFT JOIN dbo.Sistema_Modulos sm\n    ON sm.ModuloID = smm.ModuloID\nWHERE smm.Codigo = N'sistema.usuarios'\n   OR smm.Ruta = N'/usuarios'\nORDER BY smm.MenuID\n"
+        },
+        {
+          "name": "usuarios_rbac_module_catalog",
+          "sql": "\nSELECT\n    ModuloID,\n    ModuloPadreID,\n    CodigoModulo,\n    NombreModulo,\n    TipoModulo,\n    Ruta,\n    OrdenMenu,\n    EsVisibleMenu,\n    RequiereAutorizacion,\n    Activo,\n    FechaAlta,\n    FechaModificacion\nFROM dbo.Usuario_Modulos\nWHERE UPPER(CodigoModulo) LIKE N'%USUARIO%'\n   OR UPPER(NombreModulo) LIKE N'%USUARIO%'\nORDER BY\n    Activo DESC,\n    CodigoModulo,\n    ModuloID\n"
+        },
+        {
+          "name": "usuarios_ver_actions",
+          "sql": "\nSELECT\n    AccionID,\n    CodigoAccion,\n    NombreAccion,\n    Activo,\n    FechaAlta,\n    FechaModificacion\nFROM dbo.Usuario_Acciones\nWHERE UPPER(CodigoAccion) IN (\n    N'VER',\n    N'VISUALIZAR',\n    N'VIEW'\n)\nOR UPPER(NombreAccion) LIKE N'%VER%'\nOR UPPER(NombreAccion) LIKE N'%VISUAL%'\nORDER BY Activo DESC, AccionID\n"
+        },
+        {
+          "name": "usuarios_effective_permissions_global",
+          "sql": "\nSELECT DISTINCT\n    u.UsuarioID,\n    u.Email,\n    u.Username,\n    u.NombreCompleto,\n    r.RolID,\n    r.CodigoRol,\n    r.NombreRol,\n    r.NivelJerarquia,\n    m.ModuloID,\n    m.CodigoModulo,\n    a.AccionID,\n    a.CodigoAccion,\n    CONCAT(\n        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(m.CodigoModulo)), '-', '_'), ' ', '_')),\n        N'_',\n        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(a.CodigoAccion)), '-', '_'), ' ', '_'))\n    ) AS PermisoEfectivo\nFROM dbo.Usuario_Catalogo u\nINNER JOIN dbo.Usuario_RolesAsignacion ura\n    ON ura.UsuarioID = u.UsuarioID\n   AND ISNULL(ura.Activo, 1) = 1\nINNER JOIN dbo.Usuario_Roles r\n    ON r.RolID = ura.RolID\n   AND ISNULL(r.Activo, 1) = 1\nINNER JOIN dbo.Usuario_PermisosRolModulo prm\n    ON prm.RolID = r.RolID\n   AND ISNULL(prm.Activo, 1) = 1\n   AND ISNULL(prm.Permitido, 1) = 1\nINNER JOIN dbo.Usuario_Modulos m\n    ON m.ModuloID = prm.ModuloID\n   AND ISNULL(m.Activo, 1) = 1\nINNER JOIN dbo.Usuario_Acciones a\n    ON a.AccionID = prm.AccionID\n   AND ISNULL(a.Activo, 1) = 1\nWHERE ISNULL(u.Activo, 1) = 1\n  AND (\n        UPPER(REPLACE(REPLACE(m.CodigoModulo, '-', '_'), ' ', '_'))\n            IN (N'SISTEMA_USUARIOS', N'USUARIOS')\n        OR\n        CONCAT(\n            UPPER(REPLACE(REPLACE(m.CodigoModulo, '-', '_'), ' ', '_')),\n            N'_',\n            UPPER(REPLACE(REPLACE(a.CodigoAccion, '-', '_'), ' ', '_'))\n        ) IN (\n            N'SISTEMA_USUARIOS_VER',\n            N'USUARIOS_VER'\n        )\n      )\nORDER BY\n    u.UsuarioID,\n    r.NivelJerarquia DESC,\n    m.CodigoModulo,\n    a.CodigoAccion\n"
+        },
+        {
+          "name": "usuarios_effective_permissions_context",
+          "sql": "\nSELECT DISTINCT\n    u.UsuarioID,\n    u.Email,\n    u.Username,\n    u.NombreCompleto,\n    urc.UnidadNegocioID,\n    r.RolID,\n    r.CodigoRol,\n    r.NombreRol,\n    r.NivelJerarquia,\n    m.ModuloID,\n    m.CodigoModulo,\n    a.AccionID,\n    a.CodigoAccion,\n    CONCAT(\n        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(m.CodigoModulo)), '-', '_'), ' ', '_')),\n        N'_',\n        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(a.CodigoAccion)), '-', '_'), ' ', '_'))\n    ) AS PermisoEfectivo\nFROM dbo.Usuario_Catalogo u\nINNER JOIN dbo.Usuario_RolesContexto urc\n    ON urc.UsuarioID = u.UsuarioID\n   AND ISNULL(urc.Activo, 1) = 1\nINNER JOIN dbo.Usuario_Roles r\n    ON r.RolID = urc.RolID\n   AND ISNULL(r.Activo, 1) = 1\nINNER JOIN dbo.Usuario_PermisosRolModulo prm\n    ON prm.RolID = r.RolID\n   AND ISNULL(prm.Activo, 1) = 1\n   AND ISNULL(prm.Permitido, 1) = 1\nINNER JOIN dbo.Usuario_Modulos m\n    ON m.ModuloID = prm.ModuloID\n   AND ISNULL(m.Activo, 1) = 1\nINNER JOIN dbo.Usuario_Acciones a\n    ON a.AccionID = prm.AccionID\n   AND ISNULL(a.Activo, 1) = 1\nWHERE ISNULL(u.Activo, 1) = 1\n  AND (\n        UPPER(REPLACE(REPLACE(m.CodigoModulo, '-', '_'), ' ', '_'))\n            IN (N'SISTEMA_USUARIOS', N'USUARIOS')\n        OR\n        CONCAT(\n            UPPER(REPLACE(REPLACE(m.CodigoModulo, '-', '_'), ' ', '_')),\n            N'_',\n            UPPER(REPLACE(REPLACE(a.CodigoAccion, '-', '_'), ' ', '_'))\n        ) IN (\n            N'SISTEMA_USUARIOS_VER',\n            N'USUARIOS_VER'\n        )\n      )\nORDER BY\n    u.UsuarioID,\n    urc.UnidadNegocioID,\n    r.NivelJerarquia DESC\n"
+        },
+        {
+          "name": "users_menu_permission_alignment",
+          "sql": "\nWITH menu_candidates AS (\n    SELECT DISTINCT\n        smm.MenuID,\n        smm.Codigo,\n        smm.Nombre,\n        smm.Ruta,\n        smm.RequierePermiso,\n        UPPER(REPLACE(REPLACE(\n            LTRIM(RTRIM(CONVERT(NVARCHAR(300), smm.RequierePermiso))),\n            '-', '_'\n        ), ' ', '_')) AS permiso_requiere,\n        UPPER(REPLACE(REPLACE(\n            LTRIM(RTRIM(CONVERT(NVARCHAR(300), smm.Codigo))),\n            '-', '_'\n        ), ' ', '_')) AS permiso_codigo\n    FROM dbo.Sistema_ModulosMenus smm\n    WHERE ISNULL(smm.Activo, 1) = 1\n      AND (\n          smm.Codigo = N'sistema.usuarios'\n          OR smm.Ruta = N'/usuarios'\n      )\n)\nSELECT\n    mc.MenuID,\n    mc.Codigo,\n    mc.Nombre,\n    mc.Ruta,\n    mc.RequierePermiso,\n    mc.permiso_requiere,\n    mc.permiso_codigo,\n    CASE\n        WHEN mc.permiso_requiere IN (\n            N'USUARIOS',\n            N'USUARIOS_VER',\n            N'SISTEMA_USUARIOS',\n            N'SISTEMA_USUARIOS_VER'\n        )\n        THEN 'EXPECTED_USERS_PERMISSION'\n        ELSE 'OTHER_PERMISSION'\n    END AS diagnostico_menu\nFROM menu_candidates mc\nORDER BY mc.MenuID\n"
+        },
+        {
+          "name": "recent_usuario_modulos_changes",
+          "sql": "\nSELECT\n    ModuloID,\n    ModuloPadreID,\n    CodigoModulo,\n    NombreModulo,\n    Activo,\n    FechaAlta,\n    FechaModificacion\nFROM dbo.Usuario_Modulos\nWHERE FechaAlta >= '2026-08-30'\n   OR FechaModificacion >= '2026-08-30'\nORDER BY\n    COALESCE(FechaModificacion, FechaAlta) DESC,\n    ModuloID\n"
+        },
+        {
+          "name": "recent_usuario_roles_changes",
+          "sql": "\nSELECT\n    RolID,\n    CodigoRol,\n    NombreRol,\n    NivelJerarquia,\n    Activo,\n    FechaAlta,\n    FechaModificacion\nFROM dbo.Usuario_Roles\nWHERE FechaAlta >= '2026-08-30'\n   OR FechaModificacion >= '2026-08-30'\nORDER BY\n    COALESCE(FechaModificacion, FechaAlta) DESC,\n    RolID\n"
+        },
+        {
+          "name": "recent_usuario_permissions_changes",
+          "sql": "\nSELECT\n    PermisoRolModuloID,\n    RolID,\n    ModuloID,\n    AccionID,\n    Permitido,\n    Activo,\n    FechaAlta,\n    FechaModificacion,\n    CreatedBy,\n    ModifiedBy\nFROM dbo.Usuario_PermisosRolModulo\nWHERE FechaAlta >= '2026-08-30'\n   OR FechaModificacion >= '2026-08-30'\nORDER BY\n    COALESCE(FechaModificacion, FechaAlta) DESC,\n    PermisoRolModuloID\n"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "created_at_utc": "2026-10-01T03:19:04.726074+00:00",
+  "domain": "usuarios_rbac_menu_regression",
+  "human_summary_language": "es",
+  "human_summary_level": "detailed",
+  "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-SQL-READONLY-R7",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Determinar la regresion real del Menu Usuarios comparando el estado RBAC SQL actual contra el estado funcional reciente. La ventana de investigacion es 2026-08-30 hasta la fecha actual. NO regresar a julio. NO reparar. NO modificar archivos. NO DDL. NO DML. NO MongoDB. NO Produccion. Determinar si la perdida de visibilidad proviene de datos RBAC, asignacion de roles, contexto, relacion menu-permiso o si no existe una regresion SQL reproducible.",
+  "priority": "P0",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Usuarios Produccion",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chat"
+  },
+  "required_findings": [
+    "estado actual del menu sistema.usuarios y ruta /usuarios",
+    "ModuloID y modulo padre del menu Usuarios",
+    "CodigoModulo del modulo relacionado",
+    "modulos RBAC relacionados con Usuarios",
+    "acciones VER relacionadas con Usuarios",
+    "roles globales que otorgan el permiso",
+    "usuarios activos con el permiso",
+    "roles de contexto que otorgan el permiso",
+    "usuarios activos con permiso por contexto",
+    "coincidencia actual menu-permiso",
+    "cambios recientes en Usuario_Modulos",
+    "cambios recientes en Usuario_Roles",
+    "cambios recientes en Usuario_PermisosRolModulo",
+    "clasificacion DATA_REGRESSION o RBAC_ASSIGNMENT_REGRESSION o CONTEXT_REGRESSION o NONE",
+    "reparacion minima sugerida sin ejecutarla"
+  ],
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
