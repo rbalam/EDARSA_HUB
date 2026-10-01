@@ -15,7 +15,11 @@ from typing import Any, Dict, List
 
 QUERY_SOFTRESTAURANT_DETALLE_ABIERTAS = """
 SELECT
-    CONVERT(varchar(64), ch.folio) AS folio,
+    COALESCE(
+        NULLIF(MAX(LTRIM(RTRIM(CONVERT(varchar(64), ch.numcheque)))), ''),
+        CONVERT(varchar(64), ch.folio)
+    ) AS folio,
+    CONVERT(varchar(64), ch.folio) AS folio_origen,
     MIN(ch.fecha) AS fecha_hora,
     MAX(ISNULL(ch.nopersonas, 0)) AS pax,
     MAX(ISNULL(ch.propina, 0)) AS propina,
@@ -151,6 +155,7 @@ def serialize_open_detail_rows(rows: List[Dict[str, Any]]) -> str:
             continue
         normalized.append({
             "folio": folio,
+            "folio_origen": str(row.get("folio_origen") or "").strip() or None,
             "fecha_hora": row.get("fecha_hora"),
             "pax": int(_number(row.get("pax"))),
             "propina": _number(row.get("propina")),

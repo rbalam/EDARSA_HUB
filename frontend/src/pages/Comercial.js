@@ -225,7 +225,7 @@ function TicketVentaModal({ isOpen, onClose, serverId, sucursal, seleccion }) {
               </div>
               <div className="flex justify-between gap-3">
                 <span>FECHA:</span>
-                <span className="text-right">{ticket.fecha_hora}</span>
+                <span className="text-right">{String(ticket.fecha_hora || '').replace('T', ' ').slice(0, 19)}</span>
               </div>
               {Number(ticket.pax || 0) > 0 && (
                 <div className="flex justify-between gap-3">
