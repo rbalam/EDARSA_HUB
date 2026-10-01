@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "REMOTE_AHEAD_ONLY",
   "development_sha": "017ee1116db20783d3c5d63ff2235c061b0ecd0e",
-  "generated_at_utc": "2026-10-01T23:44:27Z",
+  "generated_at_utc": "2026-10-01T23:45:43Z",
   "history": {
     "done_total_local": 1285,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 545,
+      "age_seconds": 621,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-MESA-VENDEDOR-PARITY-R1-CARLOS-20261001",
       "reasons": [
         "ACTION_3_SOURCE_SHA256_REQUIRED_OR_INVALID",
@@ -26,7 +26,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 102,
+      "age_seconds": 178,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-MESA-VENDEDOR-PARITY-R2-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
@@ -46,8 +46,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T23:44:19Z",
-    "last_receive_utc": "2026-10-01T23:44:23Z",
+    "last_cycle_utc": "2026-10-01T23:45:37Z",
+    "last_receive_utc": "2026-10-01T23:45:43Z",
     "last_terminal_utc": "2026-10-01T23:42:45Z",
     "pid": "514",
     "runtime_fingerprint": {
