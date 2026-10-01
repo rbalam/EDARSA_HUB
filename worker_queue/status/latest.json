@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "123704558aae8c1a9832c62159a986234d5a2ba4",
-  "generated_at_utc": "2026-10-01T19:32:46Z",
+  "generated_at_utc": "2026-10-01T19:34:05Z",
   "history": {
     "done_total_local": 1264,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2700,
+      "age_seconds": 2779,
       "job_id": "EDARSAHUB-BOS-WORKER-TRANSVERSAL-HARDENING-GATE0-READONLY-R1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2696,
+      "age_seconds": 2775,
       "job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-DRILLDOWN-R3-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 666,
+      "age_seconds": 744,
       "job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-DRILLDOWN-R4-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2114,
+      "age_seconds": 2193,
       "job_id": "MEJORA-TABEJE-VENTAS-DIA-SYNC-CANONICO-R16B-CARLOS-20261001T1855Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,8 +54,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T19:32:42Z",
-    "last_receive_utc": "2026-10-01T19:32:45Z",
+    "last_cycle_utc": "2026-10-01T19:34:01Z",
+    "last_receive_utc": "2026-10-01T19:34:04Z",
     "last_terminal_utc": "2026-10-01T19:21:40Z",
     "pid": "735",
     "runtime_fingerprint": {
