@@ -1,0 +1,23 @@
+{
+  "base_sha": "e7078e82a853a55e7a453519422ae9afd9ec1918",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:SOURCE_SHA_MISMATCH"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-01T03:52:47Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES-API-UI-CONNECTIVITY-HOMOLOGATION-STATE-R1-20261001",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T03:53:16Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-01T03:52:43Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
