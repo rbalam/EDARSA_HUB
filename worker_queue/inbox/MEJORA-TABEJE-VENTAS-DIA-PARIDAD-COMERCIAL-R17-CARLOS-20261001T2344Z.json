@@ -1,0 +1,178 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "MEJORA-TABEJE-VENTAS-DIA-PARIDAD-COMERCIAL-R17-CARLOS-20261001T2344Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "[Mejora-TABEJE | R17] Sustituir el enfoque R15C/R16 para Ventas del Dia por paridad real con Tablero Comercial: el Ejecutivo debe usar RBAC por unidad, leer EDARSAHUB y reutilizar los servicios certificados merge_open_snapshot_tickets/build_ticket_venta. El frontend no debe llamar rutas /comercial/{server_id}. Mantener Comercial.js, backend/modules/comercial/routes.py y sync_comercial_abiertas_v2 intactos. En modo Ventas del Dia, conservar la misma apariencia/gesto normal del detalle Comercial (folio seleccionable, mismas columnas y ticket). No tocar Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Mejoras Tablero Ejecutivo 2"
+  },
+  "labels": [
+    "Mejora-TABEJE",
+    "Tablero Ejecutivo",
+    "Ventas del Dia",
+    "Paridad Comercial",
+    "RBAC Unidad",
+    "No Live Frontend",
+    "R17",
+    "MUTATION",
+    "CARLOS"
+  ],
+  "tracking": {
+    "supersedes": [
+      "MEJORA-TABEJE-VENTAS-DIA-MISMO-DETALLE-COMERCIAL-R15C-CARLOS-20261001T1728Z",
+      "MEJORA-TABEJE-VENTAS-DIA-SYNC-CANONICO-R16D-CARLOS-20261001T2135Z"
+    ],
+    "root_cause": "R15C reutilizo la ruta HTTP del Comercial en vez de su logica interna. Esa ruta valida RBAC por server_id, mientras Tablero Ejecutivo autoriza por unidad de negocio. R16D no ejecuto por SLOT_ALREADY_CLAIMED y ademas ampliaba el alcance al sincronizador antes de probar la paridad de lectura ya existente.",
+    "architecture": [
+      "Comercial.js permanece blindado y sin cambios.",
+      "sync_comercial_abiertas_v2 permanece intacto.",
+      "analytics/tickets mantiene RBAC por unidad.",
+      "Para una sola fecha/unidad, analytics/tickets usa el mismo merge_open_snapshot_tickets certificado del Comercial sobre cerradas canonicas + detalle_abiertas_json.",
+      "El ticket continua por ticket_pk y repository_tickets ya delega en build_ticket_venta certificado.",
+      "El frontend Ejecutivo elimina cualquier llamada directa a /comercial/{server_id}."
+    ],
+    "protected_paths": [
+      "frontend/src/pages/Comercial.js",
+      "backend/modules/comercial/routes.py",
+      "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py"
+    ]
+  },
+  "scheduling": {
+    "project_id": "Mejora-TABEJE",
+    "bounded_context": "Tablero Ejecutivo / Ventas del Dia",
+    "priority_class": "P0",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [
+      "backend/modules/comercial_analytics/repository_tickets.py",
+      "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "backend/tests/test_tabeje_comercial_parity_r17.py"
+    ],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_analytics/repository_tickets.py",
+      "old": "def list_tickets(\n",
+      "new": "def _list_current_day_with_comercial_merge(\n    *,\n    operation_date: str,\n    unit_code: str,\n    page: int,\n    page_size: int,\n) -> dict[str, Any]:\n    \"\"\"Reusa el contrato de Ventas del Dia certificado en Tablero Comercial.\n\n    Lee cerradas del detalle canonico y agrega abiertas exclusivamente mediante\n    merge_open_snapshot_tickets(). No consulta POS live y conserva RBAC por\n    unidad porque esta funcion solo se invoca despues de _ensure_unit_allowed().\n    \"\"\"\n    from core.server_registry import get_server_by_unidad_codigo\n    from modules.comercial.ticket_service import merge_open_snapshot_tickets\n\n    rows = _execute(\n        f\"\"\"\n        SELECT\n            d.unidad_negocio_id,\n            MAX(d.unidad_negocio_nombre) AS unidad,\n            MAX(d.sucursal_nombre) AS sucursal,\n            d.numero_ticket,\n            MIN(d.fecha_hora) AS fecha_hora,\n            MAX(ISNULL(d.pax, 0)) AS pax,\n            COUNT(*) AS lineas,\n            SUM(ISNULL(d.importe_neto, 0)) AS ventas,\n            SUM(ISNULL(d.propina, 0)) AS propina\n        FROM {DETAIL_TABLE} AS d\n        WHERE\n            ISNULL(d.activo, 1) = 1\n            AND ISNULL(d.es_kpi_valido, 1) = 1\n            AND ISNULL(d.cancelado_origen, 0) = 0\n            AND d.numero_ticket IS NOT NULL\n            AND d.fecha_operacion = %s\n            AND d.unidad_negocio_id = %s\n        GROUP BY\n            d.unidad_negocio_id,\n            d.numero_ticket\n        ORDER BY\n            CASE WHEN TRY_CONVERT(BIGINT, d.numero_ticket) IS NULL THEN 1 ELSE 0 END,\n            TRY_CONVERT(BIGINT, d.numero_ticket) ASC,\n            d.numero_ticket ASC\n        \"\"\",\n        (operation_date, unit_code),\n    )\n\n    unit_meta = get_server_by_unidad_codigo(unit_code) or {}\n    unit_name = (\n        (rows[0].get(\"unidad\") if rows else None)\n        or unit_meta.get(\"unidad_negocio_nombre\")\n        or unit_code\n    )\n    sucursal_id = str(\n        unit_meta.get(\"sucursal_origen_id\")\n        or (rows[0].get(\"sucursal\") if rows else \"\")\n        or \"\"\n    ).strip()\n\n    comercial_items = []\n    for row in rows:\n        comercial_items.append({\n            \"nivel\": \"detalle\",\n            \"clave\": None,\n            \"label\": str(row.get(\"numero_ticket\") or \"\"),\n            \"folio\": str(row.get(\"numero_ticket\") or \"\"),\n            \"fecha\": str(row.get(\"fecha_hora\") or operation_date),\n            \"folios\": 1,\n            \"pax\": int(row.get(\"pax\") or 0),\n            \"total_venta\": float(row.get(\"ventas\") or 0),\n            \"importe\": float(row.get(\"ventas\") or 0),\n            \"num_productos\": int(row.get(\"lineas\") or 0),\n            \"expandible\": False,\n            \"siguiente_nivel\": None,\n            \"fuente_ticket\": \"CERRADA\",\n            \"propina\": float(row.get(\"propina\") or 0),\n        })\n\n    merged = merge_open_snapshot_tickets(\n        comercial_items,\n        unit_code,\n        sucursal_id,\n        operation_date,\n    )\n\n    all_items = []\n    for item in merged:\n        ticket_number = _required(item.get(\"folio\"), \"numero_ticket\")\n        raw_datetime = item.get(\"fecha\")\n        hour = \"\"\n        if isinstance(raw_datetime, datetime):\n            hour = raw_datetime.strftime(\"%H:%M\")\n        elif raw_datetime:\n            text = str(raw_datetime)\n            hour = text[11:16] if len(text) >= 16 else \"\"\n\n        all_items.append({\n            \"ticket_pk\": create_ticket_pk(\n                unidad_negocio_id=unit_code,\n                fecha_operacion=operation_date,\n                numero_ticket=ticket_number,\n            ),\n            \"unidad_negocio_id\": unit_code,\n            \"unidad\": unit_name,\n            \"sucursal\": sucursal_id or None,\n            \"fecha_operacion\": operation_date,\n            \"fecha\": operation_date,\n            \"hora\": hour,\n            \"numero_ticket\": ticket_number,\n            \"pax\": int(item.get(\"pax\") or 0),\n            \"lineas\": int(\n                item.get(\"num_productos\")\n                or item.get(\"lineas\")\n                or 0\n            ),\n            \"ventas\": round(\n                float(item.get(\"total_venta\") or item.get(\"importe\") or 0),\n                2,\n            ),\n            \"propina\": round(float(item.get(\"propina\") or 0), 2),\n            \"fuente_ticket\": item.get(\"fuente_ticket\") or \"CERRADA\",\n        })\n\n    total = len(all_items)\n    offset = (page - 1) * page_size\n    page_items = all_items[offset:offset + page_size]\n    returned = len(page_items)\n\n    return {\n        \"items\": page_items,\n        \"page\": page,\n        \"page_size\": page_size,\n        \"total\": total,\n        \"returned\": returned,\n        \"has_more\": offset + returned < total,\n        \"traceability\": {\n            \"source\": (\n                \"Comercial_Inteligencia_VentasDetalleProducto\"\n                \" + Comercial_Ventas_Dia_Abiertas_v2.detalle_abiertas_json\"\n            ),\n            \"contract\": \"TABLERO_COMERCIAL_VENTAS_DIA_CERTIFIED_PATH\",\n            \"temporal_field\": \"fecha_operacion\",\n            \"live\": False,\n            \"paginated\": True,\n            \"rbac\": \"UNIDAD_NEGOCIO\",\n        },\n    }\n\n\ndef list_tickets(\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_analytics/repository_tickets.py",
+      "old": "    if requested_unit:\n        _ensure_unit_allowed(requested_unit, allowed)\n        effective_units = [requested_unit]\n    else:\n        effective_units = allowed\n\n    placeholders = \", \".join([\"%s\"] * len(effective_units))\n",
+      "new": "    if requested_unit:\n        _ensure_unit_allowed(requested_unit, allowed)\n        effective_units = [requested_unit]\n    else:\n        effective_units = allowed\n\n    if (\n        requested_unit\n        and start == end\n        and query_executor is None\n    ):\n        return _list_current_day_with_comercial_merge(\n            operation_date=start,\n            unit_code=requested_unit,\n            page=page,\n            page_size=page_size,\n        )\n\n    placeholders = \", \".join([\"%s\"] * len(effective_units))\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "function TicketVentaModal({\n  open,\n  onClose,\n  ticketPk,\n  serverId = null,\n  sucursal = '',\n  seleccion = null,\n}) {\n  const [loading, setLoading] = useState(false);\n  const [ticket, setTicket] = useState(null);\n  const [error, setError] = useState('');\n\n  useEffect(() => {\n    const comercialDirecto = Boolean(\n      serverId && seleccion?.folio && seleccion?.fecha\n    );\n    if (!open || (!ticketPk && !comercialDirecto)) return;\n",
+      "new": "function TicketVentaModal({\n  open,\n  onClose,\n  ticketPk,\n}) {\n  const [loading, setLoading] = useState(false);\n  const [ticket, setTicket] = useState(null);\n  const [error, setError] = useState('');\n\n  useEffect(() => {\n    if (!open || !ticketPk) return;\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "        if (comercialDirecto) {\n          const response = await api.get(\n            `/comercial/ticket-venta/${serverId}`,\n            {\n              params: {\n                sucursal,\n                folio: seleccion.folio,\n                fecha: String(seleccion.fecha).slice(0, 10),\n              },\n              timeout: 30000,\n            }\n          );\n          const ticketComercial = response.data?.ticket || null;\n\n          if (!ticketComercial) {\n            throw new Error('No se encontró información para este folio.');\n          }\n\n          if (active) setTicket(ticketComercial);\n          return;\n        }\n\n",
+      "new": "",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "  }, [\n    open,\n    ticketPk,\n    serverId,\n    sucursal,\n    seleccion,\n  ]);\n",
+      "new": "  }, [\n    open,\n    ticketPk,\n  ]);\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "        if (modoVentasDia) {\n          const serverId = unidad?.server_id;\n          const sucursal = (\n            unidad?.sucursal_id\n            || unidad?.sucursal\n            || unidadCodigo\n          );\n\n          if (!serverId) {\n            throw new Error(\n              'No se pudo resolver el servidor para el detalle de ventas del día.'\n            );\n          }\n\n          const response = await api.get(\n            `/comercial/detalle-ventas-agrupado/${serverId}`,\n            {\n              params: {\n                sucursal,\n                periodo: 'dia',\n                meses: String(\n                  new Date(`${ranges[0].start}T12:00:00`).getMonth() + 1\n                ).padStart(2, '0'),\n                anios: String(ranges[0].start).slice(0, 4),\n                nivel: 'auto',\n                page: 1,\n                limit: 5000,\n              },\n              timeout: 30000,\n            }\n          );\n\n          const payload = response.data || {};\n          if (payload.source_status === 'ERROR') {\n            throw new Error(\n              payload.source_message\n              || 'Error al consultar detalle de ventas del día.'\n            );\n          }\n\n          const pageRows = Array.isArray(payload.items)\n            ? payload.items\n            : [];\n\n          const normalized = pageRows.map((row) => ({\n            numero_ticket: String(row.folio || row.label || ''),\n            fecha_operacion: String(\n              row.fecha || ranges[0].start\n            ).slice(0, 10),\n            fecha_hora: row.fecha || ranges[0].start,\n            pax: toNumber(row.pax),\n            ventas: toNumber(row.total_venta ?? row.importe),\n            fuente_ticket: row.fuente_ticket || 'CERRADA',\n            _commercial_selection: {\n              folio: String(row.folio || row.label || ''),\n              fecha: String(row.fecha || ranges[0].start).slice(0, 10),\n            },\n          }));\n\n          if (active) setRows(normalized);\n          return;\n        }\n\n",
+      "new": "",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "                onDoubleClick={() => {\n                  if (item.ticket_pk) {\n                    setTicketSeleccionado({\n                      ticketPk: item.ticket_pk,\n                    });\n                  } else if (\n                    modoVentasDia\n                    && unidad?.server_id\n                    && item?._commercial_selection?.folio\n                  ) {\n                    setTicketSeleccionado({\n                      serverId: unidad.server_id,\n                      sucursal: (\n                        unidad?.sucursal_id\n                        || unidad?.sucursal\n                        || unidadCodigo\n                      ),\n                      seleccion: item._commercial_selection,\n                    });\n                  }\n                }}\n",
+      "new": "                onClick={() => {\n                  if (modoVentasDia && item.ticket_pk) {\n                    setTicketSeleccionado({\n                      ticketPk: item.ticket_pk,\n                    });\n                  }\n                }}\n                onDoubleClick={() => {\n                  if (!modoVentasDia && item.ticket_pk) {\n                    setTicketSeleccionado({\n                      ticketPk: item.ticket_pk,\n                    });\n                  }\n                }}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "      {ticketSeleccionado && (\n        <TicketVentaModal\n          open={true}\n          onClose={() => setTicketSeleccionado(null)}\n          ticketPk={ticketSeleccionado.ticketPk || null}\n          serverId={ticketSeleccionado.serverId || null}\n          sucursal={ticketSeleccionado.sucursal || ''}\n          seleccion={ticketSeleccionado.seleccion || null}\n        />\n      )}\n",
+      "new": "      {ticketSeleccionado && (\n        <TicketVentaModal\n          open={true}\n          onClose={() => setTicketSeleccionado(null)}\n          ticketPk={ticketSeleccionado.ticketPk || null}\n        />\n      )}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "            <p className=\"text-xs text-zinc-500 mb-2 px-1\">\n              Doble clic en un folio para abrir el ticket de venta.\n            </p>\n",
+      "new": "            <p className=\"text-xs text-zinc-500 mb-2 px-1\">\n              {modoVentasDia\n                ? 'Selecciona un folio para abrir el ticket de venta.'\n                : 'Doble clic en un folio para abrir el ticket de venta.'}\n            </p>\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "  const footerTotals = modoVentasDia\n    ? kpiTotals\n    : expectedClosed;\n",
+      "new": "  const footerTotals = modoVentasDia\n    ? totalsFor(rows)\n    : expectedClosed;\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "<ArrowUpDown className=\"h-3 w-3\" />",
+      "new": "{!modoVentasDia && <ArrowUpDown className=\"h-3 w-3\" />}",
+      "expected_count": 4
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "            <p className=\"mt-2 text-xs text-zinc-500\">\n              El detalle individual contiene únicamente cuentas cerradas. Las\n              cuentas abiertas y cualquier cerrado aún sin detalle se presentan\n              sólo como agregados de conciliación; no se consulta el POS en vivo.\n            </p>\n",
+      "new": "            {!modoVentasDia && (\n              <p className=\"mt-2 text-xs text-zinc-500\">\n                El detalle individual contiene únicamente cuentas cerradas. Las\n                cuentas abiertas y cualquier cerrado aún sin detalle se presentan\n                sólo como agregados de conciliación; no se consulta el POS en vivo.\n              </p>\n            )}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_tabeje_comercial_parity_r17.py",
+      "content": "from pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nDRILL = ROOT / \"frontend/src/components/comercial/KpiDrilldownDialog.jsx\"\nREPOSITORY = ROOT / \"backend/modules/comercial_analytics/repository_tickets.py\"\nCOMERCIAL = ROOT / \"frontend/src/pages/Comercial.js\"\nSYNC_OPEN = ROOT / \"backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py\"\n\n\ndef test_executive_does_not_cross_to_server_rbac_routes():\n    text = DRILL.read_text(encoding=\"utf-8\")\n    assert \"/comercial/detalle-ventas-agrupado/\" not in text\n    assert \"/comercial/ticket-venta/\" not in text\n    assert \"/v2/comercial/analytics/tickets\" in text\n\n\ndef test_analytics_reuses_certified_comercial_services():\n    text = REPOSITORY.read_text(encoding=\"utf-8\")\n    assert \"merge_open_snapshot_tickets\" in text\n    assert \"build_ticket_venta\" in text\n    assert \"TABLERO_COMERCIAL_VENTAS_DIA_CERTIFIED_PATH\" in text\n    assert '\"rbac\": \"UNIDAD_NEGOCIO\"' in text\n\n\ndef test_day_view_keeps_comercial_interaction_contract():\n    text = DRILL.read_text(encoding=\"utf-8\")\n    assert \"Selecciona un folio para abrir el ticket de venta.\" in text\n    assert \"modoVentasDia && item.ticket_pk\" in text\n    assert \"totalsFor(rows)\" in text\n\n\ndef test_protected_comercial_and_open_sync_contract_remain_present():\n    comercial = COMERCIAL.read_text(encoding=\"utf-8\")\n    sync_open = SYNC_OPEN.read_text(encoding=\"utf-8\")\n    assert \"MÓDULO BLINDADO - NO MODIFICAR\" in comercial\n    assert \"/comercial/detalle-ventas-agrupado/\" in comercial\n    assert \"sync_comercial_abiertas_v2\" in sync_open\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial_analytics/repository_tickets.py",
+        "backend/tests/test_tabeje_comercial_parity_r17.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_tabeje_comercial_parity_r17.py",
+        "backend/tests/test_comercial_ticket_drilldown_contract.py",
+        "backend/tests/test_comercial_open_folios_snapshot_resolution.py",
+        "backend/tests/test_comercial_operacion_en_curso_repository.py"
+      ]
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
