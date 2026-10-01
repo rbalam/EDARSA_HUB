@@ -57,6 +57,17 @@ INTERVAL = int(os.environ.get("EDARSAHUB_CONTROL_PLANE_INTERVAL", "15"))
 HEARTBEAT_STALE = int(os.environ.get("EDARSAHUB_WORKER_HEARTBEAT_STALE_SECONDS", "60"))
 CLAIM_GRACE = int(os.environ.get("EDARSAHUB_AGENT_CLAIM_GRACE_SECONDS", "90"))
 PROCESSING_GRACE = int(os.environ.get("EDARSAHUB_PROCESSING_REQUEUE_SECONDS", "120"))
+OPERATIONAL_PROCESSING_GRACE = int(
+    os.environ.get("EDARSAHUB_OPERATIONAL_PROCESSING_REQUEUE_SECONDS", "21600")
+)
+OPERATIONAL_PROCESSING_MODES = {
+    "SOFTRESTAURANT_FULL_HISTORY_RESYNC",
+    "MPRO_FULL_HISTORY_RESYNC",
+    "ISCAM_DETAIL_BACKFILL",
+    "ISCAM_PAYMENTS_ONLY_RESYNC",
+    "COMERCIAL_RANGE_RESYNC",
+    "SQL_MIGRATION_DEVELOPMENT",
+}
 WORKER_SERVICE = os.environ.get("EDARSAHUB_UNIVERSAL_WORKER_SERVICE", "edarsahub-universal-worker")
 EXPECTED_GENERATION_RE = re.compile(r'^RUNTIME_GENERATION="([^"]+)"', re.MULTILINE)
 PID_RE = re.compile(r'(?i)["\']?pid["\']?\s*[:=]\s*["\']?(\d+)')
@@ -377,13 +388,23 @@ def requeue_stale_processing() -> int:
             age = epoch() - path.stat().st_mtime
         except OSError:
             continue
-        if age < PROCESSING_GRACE:
-            continue
         try:
             envelope = json.loads(path.read_text(encoding="utf-8"))
         except Exception as exc:
             audit("STALE_PROCESSING_INVALID_ENVELOPE", job_file=path.name, error=str(exc))
             continue
+
+        job = envelope.get("job") if isinstance(envelope.get("job"), dict) else {}
+        mode = str(job.get("mode") or "").upper().strip()
+        processing_grace = (
+            OPERATIONAL_PROCESSING_GRACE
+            if mode in OPERATIONAL_PROCESSING_MODES
+            else PROCESSING_GRACE
+        )
+
+        if age < processing_grace:
+            continue
+
         retry_count = int(envelope.get("_worker_stale_requeue_count") or 0)
         if retry_count >= 1:
             job = envelope.get("job") if isinstance(envelope.get("job"), dict) else {}
