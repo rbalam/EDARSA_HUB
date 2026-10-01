@@ -5,8 +5,10 @@ import argparse, json, os, subprocess, time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+import os
 
 DEV_BRANCH = "Edarsahub_Desarrollo"
+MIRROR_BRANCH = os.getenv("EDARSAHUB_MIRROR_BRANCH", "mirror/emergent-live")
 REMOTE = "origin"
 LOCK_NAME = "git-writer.lock.d"
 DEFAULT_LOCK_TTL_SECONDS = 7200
