@@ -1,0 +1,76 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-ACTUAL-MODAL-FIX-R1-CARLOS-20261001",
+  "created_at_utc": "2026-10-01T22:10:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6e52234e098ce15b9c2f6479a6a6ca553e593174",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "objective": "Corregir el launcher del Asistente IA contextual en el modal REAL de Comercial que el usuario ve en Preview: DetalleMovimientosModal dentro de frontend/src/pages/Comercial.js, identificado por los textos 'Detalle de Ventas' y 'Selecciona un folio para abrir el ticket de venta.'. Reutilizar IAContextualLauncher existente y mantener IA_ASSISTANT_VER. No reemplazar ni eliminar el launcher de CanonicalTicketDrilldown. No tocar Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Comercial.js",
+      "old": "import logger from '../services/logger';\n// FASE AUTH-SECURITY-01 / FASE 4.1: getToken eliminado, auth viaja en cookie httpOnly",
+      "new": "import logger from '../services/logger';\nimport IAContextualLauncher from '../components/ia/IAContextual';\n// FASE AUTH-SECURITY-01 / FASE 4.1: getToken eliminado, auth viaja en cookie httpOnly"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Comercial.js",
+      "old": "  if (!isOpen) return null;\n\n  const ventasItems = data?.items || data?.movimientos || [];\n  const hayDatos = esVentas ? ventasItems.length > 0 : data?.movimientos?.length > 0;\n\n  return (\n    <>\n      <Dialog open={isOpen} onOpenChange={onClose}>\n        <DialogContent className=\"max-w-5xl max-h-[88vh] overflow-hidden flex flex-col\">\n          <DialogHeader className=\"flex-shrink-0\">\n            <DialogTitle className=\"flex items-center gap-2\">\n              <IconComponent className={'h-5 w-5 ' + config.color} />\n              {config.titulo}\n              {data?.servidor && <span className=\"text-sm font-normal text-zinc-500\">• {data.servidor}</span>}\n            </DialogTitle>\n          </DialogHeader>",
+      "new": "  if (!isOpen) return null;\n\n  const ventasItems = data?.items || data?.movimientos || [];\n  const hayDatos = esVentas ? ventasItems.length > 0 : data?.movimientos?.length > 0;\n\n  const contextoVistaIA = {\n    modulo: 'comercial',\n    view_id: 'comercial_detalle_ventas',\n    titulo: config.titulo,\n    scope: {\n      server_id: serverId || null,\n      unidad: sucursal || null,\n      periodo: periodo || null,\n      meses: selectedMeses || [],\n      anios: selectedAnios || [],\n      metric: tipoKpi || null\n    },\n    filtros: {\n      periodo: periodo || null,\n      meses: selectedMeses || [],\n      anios: selectedAnios || []\n    },\n    periodo: {\n      label: data?.periodo\n        ? ((data.periodo.inicio || '') + ' a ' + (data.periodo.fin || ''))\n        : null,\n      fecha_inicio: data?.periodo?.inicio || null,\n      fecha_fin: data?.periodo?.fin || null\n    },\n    unidad_negocio: data?.servidor || sucursal || null,\n    seleccion: ticketSeleccionado\n      ? {\n          numero_ticket: ticketSeleccionado.folio || null,\n          fecha: ticketSeleccionado.fecha || null\n        }\n      : null,\n    columnas_visibles: esVentas\n      ? [\n          { key: 'folio', label: 'Período / Folio' },\n          { key: 'fecha', label: 'Fecha' },\n          { key: 'folios', label: 'Folios' },\n          { key: 'pax', label: 'PAX' },\n          { key: 'total_venta', label: 'Total Venta' }\n        ]\n      : [],\n    estado_vista: {\n      total_folios: Number(data?.resumen_periodo?.folios || 0),\n      total_pax: Number(data?.resumen_periodo?.pax || 0),\n      total_venta: Number(data?.resumen_periodo?.total_venta || 0)\n    }\n  };\n\n  return (\n    <>\n      <Dialog open={isOpen} onOpenChange={onClose}>\n        <DialogContent className=\"max-w-5xl max-h-[88vh] overflow-hidden flex flex-col\">\n          <DialogHeader className=\"flex-shrink-0\">\n            <div className=\"flex items-center justify-between gap-3 pr-8\">\n              <DialogTitle className=\"flex items-center gap-2\">\n                <IconComponent className={'h-5 w-5 ' + config.color} />\n                {config.titulo}\n                {data?.servidor && <span className=\"text-sm font-normal text-zinc-500\">• {data.servidor}</span>}\n              </DialogTitle>\n\n              {esVentas && (\n                <IAContextualLauncher\n                  contextoVista={contextoVistaIA}\n                  viewData={{ tickets: ventasItems, lines: [] }}\n                />\n              )}\n            </div>\n          </DialogHeader>"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_ia_contextual_comercial_contract.py",
+      "old": "from pathlib import Path\n\nfrom modules.ia_assistant.contextual import normalize_view_context, validate_actions\n\nROOT = Path(__file__).resolve().parents[1]\nROUTES = ROOT / \"modules/ia_assistant/routes.py\"\nSERVICE = ROOT / \"modules/ia_assistant/service.py\"\nQUERY_BRIDGE = ROOT / \"modules/ia_assistant/query_bridge.py\"\nFRONT = ROOT.parent / \"frontend/src/components/comercial/analytics/CanonicalTicketDrilldown.jsx\"\nCONTEXTUAL_FRONT = ROOT.parent / \"frontend/src/components/ia/IAContextual.jsx\"\nAPI = ROOT.parent / \"frontend/src/services/iaAssistantApi.js\"\nGENERAL = ROOT.parent / \"frontend/src/pages/IAAsistente.jsx\"\n\n\ndef test_context_normalization_is_whitelist_and_drops_secrets():\n    result = normalize_view_context({\n        \"modulo\": \"comercial\",\n        \"view_id\": \"canonical_ticket_drilldown\",\n        \"scope\": {\"unidad\": \"X\", \"token\": \"NO\"},\n        \"password\": \"NO\",\n    })\n    assert result[\"modulo\"] == \"comercial\"\n    assert \"password\" not in result\n    assert \"token\" not in result[\"scope\"]\n\n\ndef test_ui_actions_are_fail_closed():\n    context = {\"columnas_visibles\": [{\"key\": \"ventas\"}, {\"key\": \"fecha\"}]}\n    actions = validate_actions({\n        \"actions\": [\n            {\"type\": \"APPLY_FILTERS\", \"payload\": {\"filters\": {\"ventas_min\": 5000, \"sql\": \"DROP\"}}},\n            {\"type\": \"OPEN_VIEW\", \"payload\": {\"view_type\": \"bar_chart\", \"dataset\": \"tickets\", \"x_key\": \"fecha\", \"y_key\": \"ventas\"}},\n            {\"type\": \"RUN_JAVASCRIPT\", \"payload\": {\"code\": \"alert(1)\"}},\n        ]\n    }, context)\n    assert len(actions) == 2\n    assert actions[0][\"payload\"][\"filters\"] == {\"ventas_min\": 5000.0}\n    assert actions[1][\"payload\"][\"x_key\"] == \"fecha\"\n    assert actions[1][\"payload\"][\"y_key\"] == \"ventas\"\n\n\ndef test_existing_chat_contract_is_extended_not_replaced():\n    routes = ROUTES.read_text(encoding=\"utf-8\")\n    service = SERVICE.read_text(encoding=\"utf-8\")\n    assert '@router.post(\"/chat\")' in routes\n    assert 'contexto_vista' in routes\n    assert \"require_explicit_permission_dual\" in routes\n    assert \"IA_ASSISTANT_VER\" in routes\n    assert \"plan_system_queries\" in routes\n    assert \"execute_planned_queries\" in routes\n    assert \"view_context\" in service\n\n\ndef test_query_bridge_remains_get_only_and_no_generated_sql():\n    bridge = QUERY_BRIDGE.read_text(encoding=\"utf-8\")\n    assert 'raw_path_item.get(\"get\")' in bridge\n    assert \"client.get(\" in bridge\n    assert \"client.post(\" not in bridge\n\n\ndef test_frontend_reuses_existing_assistant_client_and_has_no_worker_key():\n    front = CONTEXTUAL_FRONT.read_text(encoding=\"utf-8\")\n    api = API.read_text(encoding=\"utf-8\")\n    drill = FRONT.read_text(encoding=\"utf-8\")\n    general = GENERAL.read_text(encoding=\"utf-8\")\n    assert \"iaAssistantApi\" in front\n    assert \"IAContextualLauncher\" in drill\n    assert \"contexto_vista\" in api\n    assert \"EDARSA_AI_API_KEY\" not in front\n    assert \"EDARSA_AI_API_KEY\" not in api\n    assert \"IAAsistente\" in general\n",
+      "new": "from pathlib import Path\n\nfrom modules.ia_assistant.contextual import normalize_view_context, validate_actions\n\nROOT = Path(__file__).resolve().parents[1]\nROUTES = ROOT / \"modules/ia_assistant/routes.py\"\nSERVICE = ROOT / \"modules/ia_assistant/service.py\"\nQUERY_BRIDGE = ROOT / \"modules/ia_assistant/query_bridge.py\"\nFRONT = ROOT.parent / \"frontend/src/components/comercial/analytics/CanonicalTicketDrilldown.jsx\"\nCOMERCIAL_PAGE = ROOT.parent / \"frontend/src/pages/Comercial.js\"\nCONTEXTUAL_FRONT = ROOT.parent / \"frontend/src/components/ia/IAContextual.jsx\"\nAPI = ROOT.parent / \"frontend/src/services/iaAssistantApi.js\"\nGENERAL = ROOT.parent / \"frontend/src/pages/IAAsistente.jsx\"\n\n\ndef test_context_normalization_is_whitelist_and_drops_secrets():\n    result = normalize_view_context({\n        \"modulo\": \"comercial\",\n        \"view_id\": \"canonical_ticket_drilldown\",\n        \"scope\": {\"unidad\": \"X\", \"token\": \"NO\"},\n        \"password\": \"NO\",\n    })\n    assert result[\"modulo\"] == \"comercial\"\n    assert \"password\" not in result\n    assert \"token\" not in result[\"scope\"]\n\n\ndef test_ui_actions_are_fail_closed():\n    context = {\"columnas_visibles\": [{\"key\": \"ventas\"}, {\"key\": \"fecha\"}]}\n    actions = validate_actions({\n        \"actions\": [\n            {\"type\": \"APPLY_FILTERS\", \"payload\": {\"filters\": {\"ventas_min\": 5000, \"sql\": \"DROP\"}}},\n            {\"type\": \"OPEN_VIEW\", \"payload\": {\"view_type\": \"bar_chart\", \"dataset\": \"tickets\", \"x_key\": \"fecha\", \"y_key\": \"ventas\"}},\n            {\"type\": \"RUN_JAVASCRIPT\", \"payload\": {\"code\": \"alert(1)\"}},\n        ]\n    }, context)\n    assert len(actions) == 2\n    assert actions[0][\"payload\"][\"filters\"] == {\"ventas_min\": 5000.0}\n    assert actions[1][\"payload\"][\"x_key\"] == \"fecha\"\n    assert actions[1][\"payload\"][\"y_key\"] == \"ventas\"\n\n\ndef test_existing_chat_contract_is_extended_not_replaced():\n    routes = ROUTES.read_text(encoding=\"utf-8\")\n    service = SERVICE.read_text(encoding=\"utf-8\")\n    assert '@router.post(\"/chat\")' in routes\n    assert 'contexto_vista' in routes\n    assert \"require_explicit_permission_dual\" in routes\n    assert \"IA_ASSISTANT_VER\" in routes\n    assert \"plan_system_queries\" in routes\n    assert \"execute_planned_queries\" in routes\n    assert \"view_context\" in service\n\n\ndef test_query_bridge_remains_get_only_and_no_generated_sql():\n    bridge = QUERY_BRIDGE.read_text(encoding=\"utf-8\")\n    assert 'raw_path_item.get(\"get\")' in bridge\n    assert \"client.get(\" in bridge\n    assert \"client.post(\" not in bridge\n\n\ndef test_frontend_reuses_existing_assistant_client_and_has_no_worker_key():\n    front = CONTEXTUAL_FRONT.read_text(encoding=\"utf-8\")\n    api = API.read_text(encoding=\"utf-8\")\n    drill = FRONT.read_text(encoding=\"utf-8\")\n    comercial = COMERCIAL_PAGE.read_text(encoding=\"utf-8\")\n    general = GENERAL.read_text(encoding=\"utf-8\")\n    assert \"iaAssistantApi\" in front\n    assert \"IAContextualLauncher\" in drill\n    assert \"IAContextualLauncher\" in comercial\n    assert \"view_id: 'comercial_detalle_ventas'\" in comercial\n    assert \"Selecciona un folio para abrir el ticket de venta.\" in comercial\n    assert \"contexto_vista\" in api\n    assert \"EDARSA_AI_API_KEY\" not in front\n    assert \"EDARSA_AI_API_KEY\" not in api\n    assert \"IAAsistente\" in general\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_ia_contextual_comercial_contract.py"
+      ]
+    },
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/Comercial.js",
+          "frontend/src/components/ia/IAContextual.jsx",
+          "backend/tests/test_ia_contextual_comercial_contract.py"
+        ],
+        "search_terms": [
+          "Detalle de Ventas",
+          "Selecciona un folio para abrir el ticket de venta.",
+          "IAContextualLauncher",
+          "comercial_detalle_ventas",
+          "contextoVistaIA"
+        ],
+        "include_patterns": [
+          "*.js",
+          "*.jsx",
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
