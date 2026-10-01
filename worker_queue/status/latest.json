@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "f3e4939a21cd7e897e0eb97aff4956fe31fa7213",
-  "generated_at_utc": "2026-10-01T16:43:04Z",
+  "generated_at_utc": "2026-10-01T16:44:19Z",
   "history": {
     "done_total_local": 1257,
     "pending_total_local": 0,
@@ -16,37 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3538,
-      "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-20260423-ZERO-TICKETS-DIAG-R28-CARLOS-20261001",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2015,
+      "age_seconds": 2090,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-MICROPRICE-ZERO-FIX-R29-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 583,
+      "age_seconds": 658,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-MICROPRICE-ZERO-FIX-R30-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2315,
+      "age_seconds": 2390,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-PARIDAD-COMERCIAL-R14-CARLOS-20261001T1545Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 899,
+      "age_seconds": 974,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-PARIDAD-COMERCIAL-R14B-CARLOS-20261001T1620Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 240,
+      "age_seconds": 315,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-PARIDAD-COMERCIAL-R14C-CARLOS-20261001T1640Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,14 +54,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "remote_development_sha": "f3e4939a21cd7e897e0eb97aff4956fe31fa7213",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T16:43:02Z",
-    "last_receive_utc": "2026-10-01T16:42:57Z",
+    "last_cycle_utc": "2026-10-01T16:44:17Z",
+    "last_receive_utc": "2026-10-01T16:44:18Z",
     "last_terminal_utc": "2026-10-01T16:39:04Z",
     "pid": "588094",
     "runtime_fingerprint": {
