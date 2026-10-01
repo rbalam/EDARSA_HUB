@@ -13,7 +13,8 @@
  * - loadTickets(scope)
  * - loadTicketDetail(ticket)
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import IAContextualLauncher from '../../ia/IAContextual';
 import {
   ArrowLeft,
   Loader2,
@@ -94,6 +95,7 @@ export default function CanonicalTicketDrilldown({
   const [ticketsStatus, setTicketsStatus] = useState(STATUS.LOADING);
   const [detailStatus, setDetailStatus] = useState(STATUS.LOADING);
   const [page, setPage] = useState(1);
+  const [aiViewFilters, setAiViewFilters] = useState({});
   const [pagination, setPagination] = useState({
     page: 1,
     pageSize: 0,
@@ -105,6 +107,7 @@ export default function CanonicalTicketDrilldown({
   useEffect(() => {
     if (open) {
       setPage(1);
+      setAiViewFilters({});
     }
   }, [open, scope]);
 
@@ -193,6 +196,61 @@ export default function CanonicalTicketDrilldown({
     }
   };
 
+  const visibleTickets = useMemo(() => tickets.filter((ticket) => {
+    const ventas = Number(ticket?.ventas || 0);
+    const pax = Number(ticket?.pax || 0);
+    const folio = String(ticket?.numero_ticket || ticket?.folio || '').toLowerCase();
+    if (aiViewFilters.ventas_min != null && ventas < Number(aiViewFilters.ventas_min)) return false;
+    if (aiViewFilters.ventas_max != null && ventas > Number(aiViewFilters.ventas_max)) return false;
+    if (aiViewFilters.pax_min != null && pax < Number(aiViewFilters.pax_min)) return false;
+    if (aiViewFilters.pax_max != null && pax > Number(aiViewFilters.pax_max)) return false;
+    if (aiViewFilters.ticket_contiene && !folio.includes(String(aiViewFilters.ticket_contiene).toLowerCase())) return false;
+    return true;
+  }), [tickets, aiViewFilters]);
+
+  const contextoVista = useMemo(() => ({
+    modulo: 'comercial',
+    view_id: 'canonical_ticket_drilldown',
+    titulo: title,
+    scope: {
+      unidad: scope?.unidad || null,
+      fecha_inicio: scope?.fechaInicio || filters?.fecha_inicio || null,
+      fecha_fin: scope?.fechaFin || filters?.fecha_fin || null,
+      metric: scope?.metric || null,
+    },
+    filtros: {
+      canonicos: filters || {},
+      temporales_vista: aiViewFilters,
+    },
+    periodo: {
+      label: filters?.periodo_label || scope?.periodLabel || null,
+      fecha_inicio: scope?.fechaInicio || filters?.fecha_inicio || null,
+      fecha_fin: scope?.fechaFin || filters?.fecha_fin || null,
+    },
+    unidad_negocio: scope?.businessUnitLabel || scope?.unidad || null,
+    seleccion: selectedTicket ? {
+      ticket_pk: selectedTicket.ticket_pk || null,
+      numero_ticket: selectedTicket.numero_ticket || selectedTicket.folio || null,
+    } : null,
+    columnas_visibles: ticketColumns.map(({ key, label }) => ({ key, label })),
+    estado_vista: {
+      page,
+      page_size: pagination.pageSize,
+      total: pagination.total,
+      returned: pagination.returned,
+      selected_ticket: selectedTicket?.ticket_pk || null,
+    },
+  }), [
+    title,
+    scope,
+    filters,
+    aiViewFilters,
+    selectedTicket,
+    ticketColumns,
+    page,
+    pagination,
+  ]);
+
   if (!open) return null;
 
   const scopeLabel = (
@@ -245,9 +303,16 @@ export default function CanonicalTicketDrilldown({
           </div>
 
           <div className="flex items-center gap-3">
+            <IAContextualLauncher
+              contextoVista={contextoVista}
+              viewData={{ tickets: visibleTickets, lines }}
+              onApplyFilters={(next) => setAiViewFilters((current) => ({ ...current, ...next }))}
+              onClearFilters={() => setAiViewFilters({})}
+            />
+
             {renderExportActions?.({
               selectedTicket,
-              tickets,
+              tickets: visibleTickets,
               lines,
               metadata,
             })}
@@ -293,7 +358,7 @@ export default function CanonicalTicketDrilldown({
                 </thead>
 
                 <tbody>
-                  {tickets.map((ticket) => {
+                  {visibleTickets.map((ticket) => {
                     const ticketKey = (
                       ticket.ticket_pk
                       || ticket.id
@@ -403,6 +468,9 @@ export default function CanonicalTicketDrilldown({
         {!selectedTicket && ticketsStatus === STATUS.OK && (
           <div className="flex items-center justify-between border-t border-slate-700 bg-slate-800/60 px-5 py-3">
             <span className="text-sm text-slate-400">
+              {visibleTickets.length !== tickets.length
+                ? `${visibleTickets.length.toLocaleString('es-MX')} visibles · `
+                : ''}
               {pagination.total.toLocaleString('es-MX')} tickets
               {pagination.pageSize > 0 && (
                 <>

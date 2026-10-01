@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from fastapi import (
@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from core.rbac.middleware import (
     require_explicit_permission,
 )
+from modules.ia_assistant import contextual
 from modules.ia_assistant import query_bridge
 from modules.ia_assistant import repository
 from modules.ia_assistant import service
@@ -44,6 +45,7 @@ class ChatRequest(BaseModel):
         min_length=1,
         max_length=8000,
     )
+    contexto_vista: Optional[Dict[str, Any]] = None
 
 
 def _current_email(
@@ -279,6 +281,9 @@ async def chat(
             )
 
         session_id = str(request.sesion_id)
+        view_context = contextual.normalize_view_context(
+            request.contexto_vista
+        )
         catalog = query_bridge.build_readonly_catalog(http_request.app)
         prompt_catalog = query_bridge.catalog_for_prompt(catalog, message)
         planned = await service.plan_system_queries(
@@ -294,14 +299,23 @@ async def chat(
             cookie=http_request.headers.get("cookie"),
         )
 
-        return await service.enviar_mensaje(
+        response = await service.enviar_mensaje(
             session_id,
             _current_email(
                 current_user
             ),
             message,
             system_context=system_context,
+            view_context=view_context,
         )
+        response["acciones_ui"] = await service.plan_contextual_actions(
+            session_id,
+            message,
+            response.get("respuesta") or "",
+            view_context,
+        )
+        response["contexto_vista_aceptado"] = bool(view_context)
+        return response
 
     except Exception as exc:
         _translate_error(exc)
