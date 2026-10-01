@@ -1,0 +1,66 @@
+{
+  "acceptance_criteria": [
+    "READ_ONLY_COMPLETE",
+    "CERTIFIED_READ_ONLY",
+    "production_touched=false",
+    "No DDL or DML detected",
+    "No secrets exposed",
+    "No remote connectivity attempted",
+    "Actual Servidores_Conexiones columns used"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "queries": [
+        {
+          "name": "api_local_connections_actual_columns",
+          "sql": "SELECT TOP 100 CONVERT(nvarchar(100), id) AS connection_id, nombre, system_type, tipo_conexion, activo, visible_en_operaciones, visible_en_listado, empresa_id, TRY_CONVERT(int, NULLIF(LTRIM(RTRIM(empresa_id)), '')) AS empresa_id_int FROM dbo.Servidores_Conexiones WHERE tipo_conexion = 'API_LOCAL' ORDER BY nombre"
+        },
+        {
+          "name": "api_local_empresa_id_quality",
+          "sql": "SELECT COUNT(*) AS total_api_local, SUM(CASE WHEN empresa_id IS NULL OR LTRIM(RTRIM(empresa_id)) = '' THEN 1 ELSE 0 END) AS sin_empresa_id, SUM(CASE WHEN empresa_id IS NOT NULL AND LTRIM(RTRIM(empresa_id)) <> '' AND TRY_CONVERT(int, empresa_id) IS NULL THEN 1 ELSE 0 END) AS empresa_id_no_int, COUNT(DISTINCT NULLIF(LTRIM(RTRIM(empresa_id)), '')) AS empresas_distintas FROM dbo.Servidores_Conexiones WHERE tipo_conexion = 'API_LOCAL'"
+        },
+        {
+          "name": "rbac_specific_table_candidates",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME IN ('Usuario_Catalogo', 'Usuario_RolesAsignacion', 'Usuario_EmpresasAsignacion', 'Usuario_RolesContexto', 'Sistema_Roles', 'Sistema_Permisos', 'Sistema_RolesPermisos', 'Sistema_RolPermisos', 'Sistema_PermisosCatalogo', 'Sistema_ModulosPermisos', 'Sistema_UsuariosPermisos', 'Sistema_Usuarios') OR TABLE_NAME LIKE 'Usuario[_]%' OR TABLE_NAME LIKE 'Sistema[_]Permis%' OR TABLE_NAME LIKE 'Sistema[_]Rol%' ORDER BY TABLE_SCHEMA, TABLE_NAME"
+        },
+        {
+          "name": "rbac_specific_column_candidates",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Usuario_Catalogo', 'Usuario_RolesAsignacion', 'Usuario_EmpresasAsignacion', 'Usuario_RolesContexto', 'Sistema_Roles', 'Sistema_Permisos', 'Sistema_RolesPermisos', 'Sistema_RolPermisos', 'Sistema_PermisosCatalogo', 'Sistema_ModulosPermisos', 'Sistema_UsuariosPermisos', 'Sistema_Usuarios') OR TABLE_NAME LIKE 'Usuario[_]%' OR TABLE_NAME LIKE 'Sistema[_]Permis%' OR TABLE_NAME LIKE 'Sistema[_]Rol%' ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "servidores_assignment_schema",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Usuario_ServidoresAsignacion', 'Usuario_EmpresasAsignacion', 'Usuario_RolesAsignacion', 'Usuario_RolesContexto') ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-SERVIDORES-API-RBAC-SCOPE-ACTUAL-COLUMNS-READONLY-SQL-R1E-20261001",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Audit Servidores API connections using real columns discovered in R1D2: dbo.Servidores_Conexiones.nombre and dbo.Servidores_Conexiones.empresa_id. Do not touch secrets, hosts, ports, api keys, permissions, or production.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "",
+    "requested_at_utc": "2026-10-01T20:55:03.970095+00:00",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
