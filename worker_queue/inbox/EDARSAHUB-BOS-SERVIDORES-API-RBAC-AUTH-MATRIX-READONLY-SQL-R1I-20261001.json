@@ -1,0 +1,61 @@
+{
+  "acceptance_criteria": [
+    "READ_ONLY_COMPLETE",
+    "CERTIFIED_READ_ONLY",
+    "production_touched=false",
+    "No DDL or DML detected",
+    "Final authorization matrix produced"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "ricardo_identity_roles",
+          "sql": "SELECT u.UsuarioID, u.Email, u.Activo AS usuario_activo, ura.RolID, ura.Activo AS rol_asignacion_activa, r.CodigoRol, r.NombreRol, r.NivelJerarquia, r.Activo AS rol_activo FROM dbo.Usuario_Catalogo u LEFT JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = u.UsuarioID AND ISNULL(ura.Activo, 1) = 1 LEFT JOIN dbo.Usuario_Roles r ON r.RolID = ura.RolID WHERE u.UsuarioID = 8 OR u.Email = 'ricardo@edarsa.com.mx' ORDER BY r.NivelJerarquia DESC, r.CodigoRol"
+        },
+        {
+          "name": "ricardo_servidores_permissions",
+          "sql": "SELECT u.UsuarioID, u.Email, r.CodigoRol, m.CodigoModulo, a.CodigoAccion, CONCAT(m.CodigoModulo, '_', a.CodigoAccion) AS PermissionCode, prm.Permitido, prm.Activo AS permiso_activo, m.Activo AS modulo_activo, a.Activo AS accion_activa FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = u.UsuarioID INNER JOIN dbo.Usuario_Roles r ON r.RolID = ura.RolID INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID = r.RolID INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID = prm.ModuloID INNER JOIN dbo.Usuario_Acciones a ON a.AccionID = prm.AccionID WHERE (u.UsuarioID = 8 OR u.Email = 'ricardo@edarsa.com.mx') AND CONCAT(m.CodigoModulo, '_', a.CodigoAccion) IN ('SERVIDORES_VER', 'SISTEMA_SERVIDORES_VER') ORDER BY PermissionCode, r.CodigoRol"
+        },
+        {
+          "name": "ricardo_empresa_scope_rows",
+          "sql": "SELECT u.UsuarioID, u.Email, ue.EmpresaID, se.CodigoEmpresa, se.NombreEmpresa, se.NombreComercial, ue.EsPrincipal, ue.Activo AS asignacion_activa, ue.FechaInicio, ue.FechaFin FROM dbo.Usuario_Catalogo u LEFT JOIN dbo.Usuario_EmpresasAsignacion ue ON ue.UsuarioID = u.UsuarioID LEFT JOIN dbo.Sistema_Empresas se ON se.EmpresaID = ue.EmpresaID WHERE u.UsuarioID = 8 OR u.Email = 'ricardo@edarsa.com.mx' ORDER BY ue.Activo DESC, ue.EmpresaID"
+        },
+        {
+          "name": "api_local_final_auth_matrix_current_runtime",
+          "sql": "WITH U AS (SELECT TOP 1 UsuarioID, Email FROM dbo.Usuario_Catalogo WHERE UsuarioID = 8 OR Email = 'ricardo@edarsa.com.mx' ORDER BY CASE WHEN UsuarioID = 8 THEN 0 ELSE 1 END), RoleFlags AS (SELECT U.UsuarioID, MAX(CASE WHEN UPPER(LTRIM(RTRIM(r.CodigoRol))) = 'SUPERADMIN' THEN 1 ELSE 0 END) AS has_superadmin FROM U LEFT JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = U.UsuarioID AND ISNULL(ura.Activo, 1) = 1 LEFT JOIN dbo.Usuario_Roles r ON r.RolID = ura.RolID AND ISNULL(r.Activo, 1) = 1 GROUP BY U.UsuarioID), PermFlags AS (SELECT U.UsuarioID, MAX(CASE WHEN CONCAT(m.CodigoModulo, '_', a.CodigoAccion) = 'SERVIDORES_VER' AND ISNULL(ura.Activo, 1) = 1 AND ISNULL(r.Activo, 1) = 1 AND ISNULL(prm.Activo, 1) = 1 AND ISNULL(prm.Permitido, 0) = 1 AND ISNULL(m.Activo, 1) = 1 AND ISNULL(a.Activo, 1) = 1 THEN 1 ELSE 0 END) AS has_SERVIDORES_VER, MAX(CASE WHEN CONCAT(m.CodigoModulo, '_', a.CodigoAccion) = 'SISTEMA_SERVIDORES_VER' AND ISNULL(ura.Activo, 1) = 1 AND ISNULL(r.Activo, 1) = 1 AND ISNULL(prm.Activo, 1) = 1 AND ISNULL(prm.Permitido, 0) = 1 AND ISNULL(m.Activo, 1) = 1 AND ISNULL(a.Activo, 1) = 1 THEN 1 ELSE 0 END) AS has_SISTEMA_SERVIDORES_VER FROM U LEFT JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = U.UsuarioID LEFT JOIN dbo.Usuario_Roles r ON r.RolID = ura.RolID LEFT JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID = r.RolID LEFT JOIN dbo.Usuario_Modulos m ON m.ModuloID = prm.ModuloID LEFT JOIN dbo.Usuario_Acciones a ON a.AccionID = prm.AccionID GROUP BY U.UsuarioID) SELECT U.UsuarioID, U.Email, sc.nombre, CONVERT(nvarchar(100), sc.id) AS connection_id, sc.activo, sc.visible_en_operaciones, sc.visible_en_listado, sc.EmpresaID AS connection_EmpresaID, sc.empresa_id AS connection_empresa_id_text, ISNULL(pf.has_SERVIDORES_VER, 0) AS has_SERVIDORES_VER, ISNULL(pf.has_SISTEMA_SERVIDORES_VER, 0) AS has_SISTEMA_SERVIDORES_VER, ISNULL(rf.has_superadmin, 0) AS has_superadmin, CASE WHEN ue.EmpresaID IS NULL THEN 0 ELSE 1 END AS has_explicit_empresa_scope, CASE WHEN sc.EmpresaID IS NULL THEN 'BLOCKED_BY_CONNECTION_EMPRESAID_NULL' WHEN ISNULL(pf.has_SERVIDORES_VER, 0) = 0 THEN 'BLOCKED_BY_MISSING_SERVIDORES_VER' WHEN ue.EmpresaID IS NULL AND ISNULL(rf.has_superadmin, 0) = 1 THEN 'BLOCKED_BY_SUPERADMIN_SCOPE_BUG' WHEN ue.EmpresaID IS NULL THEN 'BLOCKED_BY_EMPRESA_SCOPE' ELSE 'PASS_CURRENT_RUNTIME' END AS authorization_verdict FROM dbo.Servidores_Conexiones sc CROSS JOIN U LEFT JOIN RoleFlags rf ON rf.UsuarioID = U.UsuarioID LEFT JOIN PermFlags pf ON pf.UsuarioID = U.UsuarioID LEFT JOIN dbo.Usuario_EmpresasAsignacion ue ON ue.UsuarioID = U.UsuarioID AND ue.EmpresaID = sc.EmpresaID AND ISNULL(ue.Activo, 1) = 1 WHERE sc.tipo_conexion = 'API_LOCAL' ORDER BY sc.nombre"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-SERVIDORES-API-RBAC-AUTH-MATRIX-READONLY-SQL-R1I-20261001",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Build final READ_ONLY authorization matrix for Servidores API_LOCAL tests for ricardo@edarsa.com.mx. Confirm SERVIDORES_VER, SUPERADMIN role, EmpresaID scope, and classify each connection without DML.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "",
+    "requested_at_utc": "2026-10-01T21:05:20.726984+00:00",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
