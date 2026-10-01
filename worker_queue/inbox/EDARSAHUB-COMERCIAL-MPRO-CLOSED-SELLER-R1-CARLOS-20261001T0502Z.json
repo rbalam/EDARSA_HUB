@@ -1,0 +1,98 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-MPRO-CLOSED-SELLER-R1-CARLOS-20261001T0502Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "bd7aa05ed908898f4e35f22d45b7b2880d7cf17a",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Completar el enriquecimiento historico MPRO dentro del backfill canonico existente: persistir vendedor_id desde Venta_Encabezado.Vn_Cve_Vendedor y vendedor_nombre desde Vendedor.Vn_Descripcion para ORIGEN y 130QRO. No crear sincronizador paralelo, no alterar calculos KPI, no tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "                v.Vn_Fecha,\n                v.Sc_Cve_Sucursal,\n                  ISNULL(v.Es_Cve_Estado, '') AS estado_origen,",
+      "new": "                v.Vn_Fecha,\n                v.Sc_Cve_Sucursal,\n                CONVERT(varchar(100), v.Vn_Cve_Vendedor) AS vendedor_id,\n                NULLIF(LTRIM(RTRIM(CONVERT(varchar(200), vnd.Vn_Descripcion))), '') AS vendedor_nombre,\n                  ISNULL(v.Es_Cve_Estado, '') AS estado_origen,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "            LEFT JOIN Comanda c WITH (NOLOCK)\n                ON c.Co_Folio = v.Vn_Documento\n               AND c.Sc_Cve_Sucursal = v.Sc_Cve_Sucursal\n            WHERE CONVERT(date, v.Vn_Fecha) >= CONVERT(date, %s)",
+      "new": "            LEFT JOIN Comanda c WITH (NOLOCK)\n                ON c.Co_Folio = v.Vn_Documento\n               AND c.Sc_Cve_Sucursal = v.Sc_Cve_Sucursal\n            LEFT JOIN Vendedor vnd WITH (NOLOCK)\n                ON vnd.Vn_Cve_Vendedor = v.Vn_Cve_Vendedor\n            WHERE CONVERT(date, v.Vn_Fecha) >= CONVERT(date, %s)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "                h.Vn_Fecha,\n                  h.estado_origen,\n                h.pax_ticket,",
+      "new": "                h.Vn_Fecha,\n                h.vendedor_id,\n                h.vendedor_nombre,\n                  h.estado_origen,\n                h.pax_ticket,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "                h.Vn_Fecha,\n                  h.estado_origen,\n                h.pax_ticket,\n                h.importe_neto_ticket,",
+      "new": "                h.Vn_Fecha,\n                h.vendedor_id,\n                h.vendedor_nombre,\n                  h.estado_origen,\n                h.pax_ticket,\n                h.importe_neto_ticket,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "              CONVERT(varchar(64), l.Vn_Folio) AS folio_origen,\n              CONVERT(varchar(64), l.Vn_Documento) AS documento_origen,\n            l.pax_ticket,",
+      "new": "              CONVERT(varchar(64), l.Vn_Folio) AS folio_origen,\n              CONVERT(varchar(64), l.Vn_Documento) AS documento_origen,\n            l.vendedor_id,\n            l.vendedor_nombre,\n            l.pax_ticket,",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_comercial_mpro_closed_seller_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[1]\nDETAIL = ROOT / \"scripts/poblar_ventas_detalle_producto_canonico.py\"\n\n\ndef test_mpro_closed_detail_persists_vendor_from_canonical_pos_tables():\n    text = DETAIL.read_text(encoding=\"utf-8\")\n    block = text.split(\"def _extract_mpro(\", 1)[1].split(\"PRORRATEO_Q4\", 1)[0]\n    assert \"v.Vn_Cve_Vendedor\" in block\n    assert \"LEFT JOIN Vendedor vnd\" in block\n    assert \"vnd.Vn_Descripcion\" in block\n    assert \"AS vendedor_id\" in block\n    assert \"AS vendedor_nombre\" in block\n    assert \"l.vendedor_id\" in block\n    assert \"l.vendedor_nombre\" in block\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/tests/test_comercial_mpro_closed_seller_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_mpro_closed_seller_contract.py",
+        "backend/tests/test_comercial_closed_ticket_enrichment_contract.py",
+        "backend/tests/test_iscam_header_folio_parent_r92.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+          "backend/tests/test_comercial_mpro_closed_seller_contract.py"
+        ],
+        "search_terms": [
+          "Vn_Cve_Vendedor",
+          "LEFT JOIN Vendedor vnd",
+          "vendedor_nombre"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 80
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
