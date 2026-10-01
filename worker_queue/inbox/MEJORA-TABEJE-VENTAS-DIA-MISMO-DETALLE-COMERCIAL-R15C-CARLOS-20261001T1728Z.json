@@ -1,0 +1,235 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "MEJORA-TABEJE-VENTAS-DIA-MISMO-DETALLE-COMERCIAL-R15C-CARLOS-20261001T1728Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "[Mejora-TABEJE | VENTAS-DIA-MISMO-DETALLE-COMERCIAL-R15C] Corregir el Tablero Ejecutivo para que Ventas del Día use EXACTAMENTE el mismo drill-down certificado que Tablero Comercial, porque Comercial sí muestra los folios actuales y Ejecutivo estaba consultando /v2/comercial/analytics/tickets, fuente que puede ir rezagada durante el día. Reutilizar /comercial/detalle-ventas-agrupado/{server_id} con periodo=dia, preservar server_id/sucursal_id desde Comercial_Ventas_Dia_Abiertas_v2 y abrir el ticket del día con /comercial/ticket-venta/{server_id}. Mostrar folios abiertos disponibles individualmente igual que Comercial y conservar sólo como agregado cualquier parte abierta/cerrada que realmente siga sin detalle, de modo que el total continúe conciliando contra el KPI. No tocar Comercial.js, ticket_service.py, sincronizadores, Scheduler, ISCAM ni Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "labels": [
+    "Mejora-TABEJE",
+    "Tablero Ejecutivo",
+    "Ventas del Dia",
+    "Mismo Detalle Comercial",
+    "ORIGEN",
+    "MPRO",
+    "SoftRestaurant",
+    "R15C",
+    "MUTATION",
+    "CARLOS"
+  ],
+  "tracking": {
+    "project_label": "Mejora-TABEJE",
+    "display_label": "Mejora-TABEJE | VENTAS-DIA-MISMO-DETALLE-COMERCIAL-R15C | MEJORA-TABEJE-VENTAS-DIA-MISMO-DETALLE-COMERCIAL-R15C-CARLOS-20261001T1728Z",
+    "observed_preview": {
+      "unidad": "ORIGEN",
+      "fecha": "2026-10-01",
+      "ejecutivo": {
+        "total_folios": 5,
+        "ventas_total": 6326,
+        "cerradas_pendientes": {
+          "folios": 2,
+          "pax": 15,
+          "ventas": 4231
+        },
+        "abiertas_agregado": {
+          "folios": 3,
+          "pax": 7,
+          "ventas": 2095
+        }
+      },
+      "comercial": {
+        "folios_visibles": 3,
+        "ventas_visibles": 2095,
+        "source": "/comercial/detalle-ventas-agrupado/{server_id}?periodo=dia"
+      }
+    },
+    "root_cause": "El Ejecutivo diario consultaba analytics/tickets para detalle, mientras Comercial diario usa detalle-ventas-agrupado y merge_open_snapshot_tickets. Por eso los mismos folios presentes en Comercial quedaban ocultos como agregado en Ejecutivo.",
+    "certified_reference": [
+      "frontend/src/pages/Comercial.js::DetalleMovimientosModal",
+      "backend/modules/comercial/routes.py::comercial_detalle_ventas_agrupado",
+      "backend/modules/comercial/ticket_service.py::merge_open_snapshot_tickets",
+      "backend/modules/comercial/ticket_service.py::build_ticket_venta"
+    ],
+    "worker_at_submit": {
+      "worker": "ONLINE",
+      "convergence_status": "SYNC",
+      "ahead_count": 0,
+      "behind_count": 0
+    },
+    "retry_of": "MEJORA-TABEJE-VENTAS-DIA-MISMO-DETALLE-COMERCIAL-R15B-CARLOS-20261001T1715Z",
+    "retry_reason": "R15 fue rechazado antes de ejecutar porque ACTION_17 append_once no cumplio el contrato determinista vigente. R15B conserva la misma logica y reemplaza esa accion por replace_text exacto sobre el archivo de pruebas actual.",
+    "root_cause_confirmed": "git diff --check fallo por blank-at-eof introducido por ACTION_17: el archivo de pruebas terminaba con dos saltos de linea en vez de uno.",
+    "proof": {
+      "action_17_path": "backend/tests/test_comercial_operacion_en_curso_repository.py",
+      "previous_trailing_newlines": 2,
+      "corrected_trailing_newlines": 1,
+      "actions_1_to_16_anchor_counts_current_branch": "all 1/1"
+    },
+    "correction_strategy": "Misma logica funcional R15B; solo se corrige el whitespace exacto que hizo fallar git diff --check."
+  },
+  "scheduling": {
+    "project_id": "Mejora-TABEJE",
+    "bounded_context": "Tablero Ejecutivo",
+    "priority_class": "P0",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [
+      "backend/modules/comercial_analytics/repository_operational.py",
+      "backend/tests/test_comercial_operacion_en_curso_repository.py",
+      "frontend/src/pages/TableroEjecutivo.js",
+      "frontend/src/components/comercial/KpiDrilldownDialog.jsx"
+    ],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_analytics/repository_operational.py",
+      "old": "        item = snapshot[\"items\"][0]\n        effective_dates.add(item[\"fecha_operacion\"])",
+      "new": "        item = snapshot[\"items\"][0]\n\n        # Metadatos de conexión necesarios para que el Ejecutivo reutilice\n        # exactamente el drill-down certificado de Tablero Comercial.\n        if source_row:\n            item[\"server_id\"] = source_row.get(\"server_id\")\n            item[\"sucursal_id\"] = source_row.get(\"sucursal_id\")\n            item[\"sucursal_nombre\"] = source_row.get(\"sucursal_nombre\")\n            item[\"sistema_origen\"] = source_row.get(\"sistema_origen\")\n\n        effective_dates.add(item[\"fecha_operacion\"])",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/TableroEjecutivo.js",
+      "old": "                    unidad_negocio_id: item.unidad_negocio_id,\n                    id: item.unidad_negocio_id,\n                    sucursal_id: item.unidad_negocio_id,\n                    sucursal_nombre: item.unidad_negocio_nombre,\n                    unidad_negocio_codigo: item.unidad_negocio_id,",
+      "new": "                    unidad_negocio_id: item.unidad_negocio_id,\n                    id: item.unidad_negocio_id,\n                    server_id: item.server_id || null,\n                    sucursal_id: item.sucursal_id || null,\n                    sucursal_nombre: (\n                      item.sucursal_nombre\n                      || item.unidad_negocio_nombre\n                    ),\n                    sistema_origen: item.sistema_origen || null,\n                    unidad_negocio_codigo: item.unidad_negocio_id,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "function TicketVentaModal({ open, onClose, ticketPk }) {",
+      "new": "function TicketVentaModal({\n  open,\n  onClose,\n  ticketPk,\n  serverId = null,\n  sucursal = '',\n  seleccion = null,\n}) {",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "    if (!open || !ticketPk) return;",
+      "new": "    const comercialDirecto = Boolean(\n      serverId && seleccion?.folio && seleccion?.fecha\n    );\n    if (!open || (!ticketPk && !comercialDirecto)) return;",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "        const response = await api.get(\n          `/v2/comercial/analytics/tickets/${encodeURIComponent(ticketPk)}`,\n          { timeout: 30000 }\n        );\n\n        const payload = response.data?.data || {};\n        const header = payload.ticket || null;\n        const lines = Array.isArray(payload.lines)\n          ? payload.lines\n          : (Array.isArray(payload.lineas) ? payload.lineas : []);\n\n        if (!header) {\n          throw new Error('No se encontró información para este folio.');\n        }\n\n        if (active) {\n          setTicket({\n            unidad: header.unidad,\n            folio: header.numero_ticket,\n            fecha_hora: (\n              header.fecha_hora\n              || header.fecha\n              || header.fecha_operacion\n            ),\n            pax: header.pax,\n            vendedor: header.vendedor || null,\n            sistema_origen: header.sistema_origen || null,\n            estado: header.estado || 'CERRADA',\n            items: lines.map((line) => ({\n              cantidad: line.cantidad,\n              descripcion: line.producto || line.descripcion,\n              precio_unitario: line.precio_unitario,\n              importe: line.importe_bruto ?? line.importe,\n              descuento_pct: line.descuento_pct ?? 0,\n              descuento_importe: (\n                line.descuento_importe\n                ?? line.descuento\n                ?? 0\n              ),\n              importe_neto: (\n                line.importe_neto\n                ?? line.importe\n                ?? line.importe_bruto\n                ?? 0\n              ),\n            })),\n            subtotal: header.subtotal ?? header.total ?? header.ventas,\n            descuento_productos: header.descuento_productos ?? 0,\n            descuento_cuenta: header.descuento_cuenta ?? 0,\n            descuento: header.descuento ?? 0,\n            impuesto: header.impuesto ?? null,\n            total: header.total ?? header.ventas,\n            propina: header.propina ?? 0,\n          });\n        }",
+      "new": "        if (comercialDirecto) {\n          const response = await api.get(\n            `/comercial/ticket-venta/${serverId}`,\n            {\n              params: {\n                sucursal,\n                folio: seleccion.folio,\n                fecha: String(seleccion.fecha).slice(0, 10),\n              },\n              timeout: 30000,\n            }\n          );\n          const ticketComercial = response.data?.ticket || null;\n\n          if (!ticketComercial) {\n            throw new Error('No se encontró información para este folio.');\n          }\n\n          if (active) setTicket(ticketComercial);\n          return;\n        }\n\n        const response = await api.get(\n          `/v2/comercial/analytics/tickets/${encodeURIComponent(ticketPk)}`,\n          { timeout: 30000 }\n        );\n\n        const payload = response.data?.data || {};\n        const header = payload.ticket || null;\n        const lines = Array.isArray(payload.lines)\n          ? payload.lines\n          : (Array.isArray(payload.lineas) ? payload.lineas : []);\n\n        if (!header) {\n          throw new Error('No se encontró información para este folio.');\n        }\n\n        if (active) {\n          setTicket({\n            unidad: header.unidad,\n            folio: header.numero_ticket,\n            fecha_hora: (\n              header.fecha_hora\n              || header.fecha\n              || header.fecha_operacion\n            ),\n            pax: header.pax,\n            vendedor: header.vendedor || null,\n            sistema_origen: header.sistema_origen || null,\n            estado: header.estado || 'CERRADA',\n            items: lines.map((line) => ({\n              cantidad: line.cantidad,\n              descripcion: line.producto || line.descripcion,\n              precio_unitario: line.precio_unitario,\n              importe: line.importe_bruto ?? line.importe,\n              descuento_pct: line.descuento_pct ?? 0,\n              descuento_importe: (\n                line.descuento_importe\n                ?? line.descuento\n                ?? 0\n              ),\n              importe_neto: (\n                line.importe_neto\n                ?? line.importe\n                ?? line.importe_bruto\n                ?? 0\n              ),\n            })),\n            subtotal: header.subtotal ?? header.total ?? header.ventas,\n            descuento_productos: header.descuento_productos ?? 0,\n            descuento_cuenta: header.descuento_cuenta ?? 0,\n            descuento: header.descuento ?? 0,\n            impuesto: header.impuesto ?? null,\n            total: header.total ?? header.ventas,\n            propina: header.propina ?? 0,\n          });\n        }",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "  }, [open, ticketPk]);",
+      "new": "  }, [\n    open,\n    ticketPk,\n    serverId,\n    sucursal,\n    seleccion,\n  ]);",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "        if (modoVentasDia && expectedClosed.cheques <= 0) {\n          return;\n        }\n\n        if (ranges.length === 0) {",
+      "new": "        if (ranges.length === 0) {",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "        const allRows = [];\n        const seen = new Set();\n\n        for (const range of ranges) {",
+      "new": "        if (modoVentasDia) {\n          const serverId = unidad?.server_id;\n          const sucursal = (\n            unidad?.sucursal_id\n            || unidad?.sucursal\n            || unidadCodigo\n          );\n\n          if (!serverId) {\n            throw new Error(\n              'No se pudo resolver el servidor para el detalle de ventas del día.'\n            );\n          }\n\n          const response = await api.get(\n            `/comercial/detalle-ventas-agrupado/${serverId}`,\n            {\n              params: {\n                sucursal,\n                periodo: 'dia',\n                meses: String(\n                  new Date(`${ranges[0].start}T12:00:00`).getMonth() + 1\n                ).padStart(2, '0'),\n                anios: String(ranges[0].start).slice(0, 4),\n                nivel: 'auto',\n                page: 1,\n                limit: 5000,\n              },\n              timeout: 30000,\n            }\n          );\n\n          const payload = response.data || {};\n          if (payload.source_status === 'ERROR') {\n            throw new Error(\n              payload.source_message\n              || 'Error al consultar detalle de ventas del día.'\n            );\n          }\n\n          const pageRows = Array.isArray(payload.items)\n            ? payload.items\n            : [];\n\n          const normalized = pageRows.map((row) => ({\n            numero_ticket: String(row.folio || row.label || ''),\n            fecha_operacion: String(\n              row.fecha || ranges[0].start\n            ).slice(0, 10),\n            fecha_hora: row.fecha || ranges[0].start,\n            pax: toNumber(row.pax),\n            ventas: toNumber(row.total_venta ?? row.importe),\n            fuente_ticket: row.fuente_ticket || 'CERRADA',\n            _commercial_selection: {\n              folio: String(row.folio || row.label || ''),\n              fecha: String(row.fecha || ranges[0].start).slice(0, 10),\n            },\n          }));\n\n          if (active) setRows(normalized);\n          return;\n        }\n\n        const allRows = [];\n        const seen = new Set();\n\n        for (const range of ranges) {",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "  const closedDetailTotals = useMemo(\n    () => totalsFor(rows),\n    [rows]\n  );",
+      "new": "  const detailedClosedRows = useMemo(\n    () => (\n      modoVentasDia\n        ? rows.filter((row) => row?.fuente_ticket !== 'ABIERTA')\n        : rows\n    ),\n    [modoVentasDia, rows]\n  );\n\n  const detailedOpenRows = useMemo(\n    () => (\n      modoVentasDia\n        ? rows.filter((row) => row?.fuente_ticket === 'ABIERTA')\n        : []\n    ),\n    [modoVentasDia, rows]\n  );\n\n  const closedDetailTotals = useMemo(\n    () => totalsFor(detailedClosedRows),\n    [detailedClosedRows]\n  );\n\n  const openDetailTotals = useMemo(\n    () => totalsFor(detailedOpenRows),\n    [detailedOpenRows]\n  );",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "  const hasMissingClosed = (\n    missingClosed.cheques > 0\n    || missingClosed.pax > 0\n    || missingClosed.ventas > 0.01\n  );",
+      "new": "  const hasMissingClosed = (\n    missingClosed.cheques > 0\n    || missingClosed.pax > 0\n    || missingClosed.ventas > 0.01\n  );\n\n  const missingOpen = useMemo(() => ({\n    cheques: Math.max(0, openTotals.cheques - openDetailTotals.cheques),\n    pax: Math.max(0, openTotals.pax - openDetailTotals.pax),\n    ventas: Math.max(0, openTotals.ventas - openDetailTotals.ventas),\n  }), [openTotals, openDetailTotals]);\n\n  const hasMissingOpen = (\n    missingOpen.cheques > 0\n    || missingOpen.pax > 0\n    || missingOpen.ventas > 0.01\n  );",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "                onDoubleClick={() => {\n                  if (item.ticket_pk) {\n                    setTicketSeleccionado(item.ticket_pk);\n                  }\n                }}",
+      "new": "                onDoubleClick={() => {\n                  if (item.ticket_pk) {\n                    setTicketSeleccionado({\n                      ticketPk: item.ticket_pk,\n                    });\n                  } else if (\n                    modoVentasDia\n                    && unidad?.server_id\n                    && item?._commercial_selection?.folio\n                  ) {\n                    setTicketSeleccionado({\n                      serverId: unidad.server_id,\n                      sucursal: (\n                        unidad?.sucursal_id\n                        || unidad?.sucursal\n                        || unidadCodigo\n                      ),\n                      seleccion: item._commercial_selection,\n                    });\n                  }\n                }}",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "  const onlyOpen = (\n    modoVentasDia\n    && expectedClosed.cheques <= 0\n    && openTotals.cheques > 0\n  );",
+      "new": "  const onlyOpen = (\n    modoVentasDia\n    && expectedClosed.cheques <= 0\n    && openTotals.cheques > 0\n    && detailedOpenRows.length === 0\n  );",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "            {!onlyOpen && modoVentasDia && expectedClosed.cheques > 0 && rows.length === 0 && (",
+      "new": "            {!onlyOpen\n              && modoVentasDia\n              && expectedClosed.cheques > 0\n              && detailedClosedRows.length === 0\n              && (",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "                  {modoVentasDia && openTotals.cheques > 0 && (",
+      "new": "                  {modoVentasDia && hasMissingOpen && (",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "                        {number(openTotals.cheques)}\n                      </td>\n                      <td className=\"py-2 px-3 text-center\">\n                        {number(openTotals.pax)}\n                      </td>\n                      <td className=\"py-2 px-3 text-right font-semibold text-green-600\">\n                        {money(openTotals.ventas)}",
+      "new": "                        {number(missingOpen.cheques)}\n                      </td>\n                      <td className=\"py-2 px-3 text-center\">\n                        {number(missingOpen.pax)}\n                      </td>\n                      <td className=\"py-2 px-3 text-right font-semibold text-green-600\">\n                        {money(missingOpen.ventas)}",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "      {ticketSeleccionado && (\n        <TicketVentaModal\n          open={true}\n          onClose={() => setTicketSeleccionado(null)}\n          ticketPk={ticketSeleccionado}\n        />\n      )}",
+      "new": "      {ticketSeleccionado && (\n        <TicketVentaModal\n          open={true}\n          onClose={() => setTicketSeleccionado(null)}\n          ticketPk={ticketSeleccionado.ticketPk || null}\n          serverId={ticketSeleccionado.serverId || null}\n          sucursal={ticketSeleccionado.sucursal || ''}\n          seleccion={ticketSeleccionado.seleccion || null}\n        />\n      )}",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_comercial_operacion_en_curso_repository.py",
+      "old": "from datetime import date\n\nfrom modules.comercial_analytics.repository_operational import (\n    build_current_operation,\n)\n\n\ndef test_common_date_prevents_mixed_operational_days():\n    requested = []\n\n    def resolver(unit_code):\n        return {\n            \"A\": date(2026, 8, 2),\n            \"B\": date(2026, 8, 1),\n        }[unit_code]\n\n    def reader(operation_date, units):\n        requested.append(\n            (operation_date.isoformat(), tuple(units))\n        )\n\n        if units == [\"A\"]:\n            return [{\n                \"unidad_negocio_id\": \"A\",\n                \"unidad_negocio_nombre\": \"Unidad A\",\n                \"fecha_operacion\": \"2026-08-02\",\n                \"ventas_abiertas\": 50,\n                \"propinas_abiertas\": 5,\n                \"tickets_abiertos\": 1,\n                \"pax_abiertos\": 2,\n                \"ventas_cerradas_dia\": 100,\n                \"propinas_cerradas_dia\": 10,\n                \"tickets_cerrados_dia\": 2,\n                \"pax_cerrados_dia\": 4,\n            }]\n\n        return [{\n            \"unidad_negocio_id\": \"B\",\n            \"unidad_negocio_nombre\": \"Unidad B\",\n            \"fecha_operacion\": \"2026-08-01\",\n            \"ventas_abiertas\": 10,\n            \"propinas_abiertas\": 1,\n            \"tickets_abiertos\": 1,\n            \"pax_abiertos\": 1,\n            \"ventas_cerradas_dia\": 20,\n            \"propinas_cerradas_dia\": 2,\n            \"tickets_cerrados_dia\": 1,\n            \"pax_cerrados_dia\": 1,\n        }]\n\n    result = build_current_operation(\n        allowed_unit_codes=[\"A\", \"B\"],\n        date_resolver=resolver,\n        sales_reader=reader,\n    )\n\n    assert requested == [\n        (\"2026-08-02\", (\"A\",)),\n        (\"2026-08-01\", (\"B\",)),\n    ]\n\n    assert result[\"fecha_operacion\"] == \"2026-08-02\"\n    assert result[\"fechas_operacion\"] == [\"2026-08-02\"]\n    assert result[\"fecha_operacion_multiple\"] is False\n\n    by_unit = {\n        item[\"unidad_negocio_id\"]: item\n        for item in result[\"items\"]\n    }\n\n    assert by_unit[\"A\"][\"cerradas\"][\"ventas\"] == 100\n    assert by_unit[\"A\"][\"abiertas\"][\"ventas\"] == 50\n    assert by_unit[\"A\"][\"operacion_estimada\"][\"ventas\"] == 150\n\n    assert by_unit[\"B\"][\"cerradas\"][\"ventas\"] == 0\n    assert by_unit[\"B\"][\"abiertas\"][\"ventas\"] == 0\n    assert by_unit[\"B\"][\"operacion_estimada\"][\"ventas\"] == 0\n    assert by_unit[\"B\"][\"operacion_estimada\"][\"propinas\"] == 0\n    assert by_unit[\"B\"][\"operacion_estimada\"][\"cheques\"] == 0\n    assert by_unit[\"B\"][\"operacion_estimada\"][\"pax\"] == 0\n\n    assert result[\"totales\"][\"cerradas\"] == {\n        \"ventas\": 100.0,\n        \"propinas\": 10.0,\n        \"cheques\": 2.0,\n        \"pax\": 4.0,\n    }\n    assert result[\"totales\"][\"abiertas\"] == {\n        \"ventas\": 50.0,\n        \"propinas\": 5.0,\n        \"cheques\": 1.0,\n        \"pax\": 2.0,\n    }\n    assert result[\"totales\"][\"operacion_estimada\"] == {\n        \"ventas\": 150.0,\n        \"propinas\": 15.0,\n        \"cheques\": 3.0,\n        \"pax\": 6.0,\n    }\n\n\ndef test_missing_current_snapshot_returns_zero():\n    result = build_current_operation(\n        allowed_unit_codes=[\"A\"],\n        date_resolver=lambda unit: date(2026, 8, 2),\n        sales_reader=lambda operation_date, units: [],\n    )\n\n    item = result[\"items\"][0]\n\n    assert item[\"fecha_operacion\"] == \"2026-08-02\"\n    assert item[\"cerradas\"][\"ventas\"] == 0\n    assert item[\"abiertas\"][\"ventas\"] == 0\n    assert item[\"operacion_estimada\"][\"ventas\"] == 0\n\n\ndef test_rows_from_other_dates_are_not_used():\n    result = build_current_operation(\n        allowed_unit_codes=[\"A\"],\n        date_resolver=lambda unit: date(2026, 8, 2),\n        sales_reader=lambda operation_date, units: [{\n            \"unidad_negocio_id\": \"A\",\n            \"fecha_operacion\": \"2026-07-31\",\n            \"ventas_abiertas\": 900,\n            \"ventas_cerradas_dia\": 100,\n        }],\n    )\n\n    assert result[\"totales\"][\"operacion_estimada\"][\n        \"ventas\"\n    ] == 0\n\n\ndef test_unresolved_unit_does_not_fallback():\n    def resolver(unit_code):\n        if unit_code == \"A\":\n            raise RuntimeError(\"sin configuración\")\n        return date(2026, 8, 2)\n\n    result = build_current_operation(\n        allowed_unit_codes=[\"A\", \"B\"],\n        date_resolver=resolver,\n        sales_reader=lambda operation_date, units: [],\n    )\n\n    assert [item[\"unidad_negocio_id\"] for item in result[\n        \"items\"\n    ]] == [\"B\"]\n    assert result[\"unidades_sin_fecha_operativa\"][0][\n        \"unidad_negocio_id\"\n    ] == \"A\"\n    assert result[\"traceability\"][\n        \"fallback_to_last_data_date\"\n    ] is False\n    assert result[\"traceability\"][\n        \"fallback_to_civil_date\"\n    ] is False\n\n\ndef test_closed_and_open_values_remain_separate():\n    result = build_current_operation(\n        allowed_unit_codes=[\"A\"],\n        date_resolver=lambda unit: date(2026, 8, 2),\n        sales_reader=lambda operation_date, units: [{\n            \"unidad_negocio_id\": \"A\",\n            \"fecha_operacion\": \"2026-08-02\",\n            \"ventas_abiertas\": 75,\n            \"propinas_abiertas\": 5,\n            \"tickets_abiertos\": 2,\n            \"pax_abiertos\": 3,\n            \"ventas_cerradas_dia\": 125,\n            \"propinas_cerradas_dia\": 10,\n            \"tickets_cerrados_dia\": 4,\n            \"pax_cerrados_dia\": 8,\n        }],\n    )\n\n    item = result[\"items\"][0]\n\n    assert item[\"cerradas\"][\"ventas\"] == 125\n    assert item[\"abiertas\"][\"ventas\"] == 75\n    assert item[\"operacion_estimada\"][\"ventas\"] == 200\n    assert item[\"operacion_estimada\"][\"cheques\"] == 6\n    assert item[\"operacion_estimada\"][\"pax\"] == 11\n",
+      "new": "from datetime import date\n\nfrom modules.comercial_analytics.repository_operational import (\n    build_current_operation,\n)\n\n\ndef test_common_date_prevents_mixed_operational_days():\n    requested = []\n\n    def resolver(unit_code):\n        return {\n            \"A\": date(2026, 8, 2),\n            \"B\": date(2026, 8, 1),\n        }[unit_code]\n\n    def reader(operation_date, units):\n        requested.append(\n            (operation_date.isoformat(), tuple(units))\n        )\n\n        if units == [\"A\"]:\n            return [{\n                \"unidad_negocio_id\": \"A\",\n                \"unidad_negocio_nombre\": \"Unidad A\",\n                \"fecha_operacion\": \"2026-08-02\",\n                \"ventas_abiertas\": 50,\n                \"propinas_abiertas\": 5,\n                \"tickets_abiertos\": 1,\n                \"pax_abiertos\": 2,\n                \"ventas_cerradas_dia\": 100,\n                \"propinas_cerradas_dia\": 10,\n                \"tickets_cerrados_dia\": 2,\n                \"pax_cerrados_dia\": 4,\n            }]\n\n        return [{\n            \"unidad_negocio_id\": \"B\",\n            \"unidad_negocio_nombre\": \"Unidad B\",\n            \"fecha_operacion\": \"2026-08-01\",\n            \"ventas_abiertas\": 10,\n            \"propinas_abiertas\": 1,\n            \"tickets_abiertos\": 1,\n            \"pax_abiertos\": 1,\n            \"ventas_cerradas_dia\": 20,\n            \"propinas_cerradas_dia\": 2,\n            \"tickets_cerrados_dia\": 1,\n            \"pax_cerrados_dia\": 1,\n        }]\n\n    result = build_current_operation(\n        allowed_unit_codes=[\"A\", \"B\"],\n        date_resolver=resolver,\n        sales_reader=reader,\n    )\n\n    assert requested == [\n        (\"2026-08-02\", (\"A\",)),\n        (\"2026-08-01\", (\"B\",)),\n    ]\n\n    assert result[\"fecha_operacion\"] == \"2026-08-02\"\n    assert result[\"fechas_operacion\"] == [\"2026-08-02\"]\n    assert result[\"fecha_operacion_multiple\"] is False\n\n    by_unit = {\n        item[\"unidad_negocio_id\"]: item\n        for item in result[\"items\"]\n    }\n\n    assert by_unit[\"A\"][\"cerradas\"][\"ventas\"] == 100\n    assert by_unit[\"A\"][\"abiertas\"][\"ventas\"] == 50\n    assert by_unit[\"A\"][\"operacion_estimada\"][\"ventas\"] == 150\n\n    assert by_unit[\"B\"][\"cerradas\"][\"ventas\"] == 0\n    assert by_unit[\"B\"][\"abiertas\"][\"ventas\"] == 0\n    assert by_unit[\"B\"][\"operacion_estimada\"][\"ventas\"] == 0\n    assert by_unit[\"B\"][\"operacion_estimada\"][\"propinas\"] == 0\n    assert by_unit[\"B\"][\"operacion_estimada\"][\"cheques\"] == 0\n    assert by_unit[\"B\"][\"operacion_estimada\"][\"pax\"] == 0\n\n    assert result[\"totales\"][\"cerradas\"] == {\n        \"ventas\": 100.0,\n        \"propinas\": 10.0,\n        \"cheques\": 2.0,\n        \"pax\": 4.0,\n    }\n    assert result[\"totales\"][\"abiertas\"] == {\n        \"ventas\": 50.0,\n        \"propinas\": 5.0,\n        \"cheques\": 1.0,\n        \"pax\": 2.0,\n    }\n    assert result[\"totales\"][\"operacion_estimada\"] == {\n        \"ventas\": 150.0,\n        \"propinas\": 15.0,\n        \"cheques\": 3.0,\n        \"pax\": 6.0,\n    }\n\n\ndef test_missing_current_snapshot_returns_zero():\n    result = build_current_operation(\n        allowed_unit_codes=[\"A\"],\n        date_resolver=lambda unit: date(2026, 8, 2),\n        sales_reader=lambda operation_date, units: [],\n    )\n\n    item = result[\"items\"][0]\n\n    assert item[\"fecha_operacion\"] == \"2026-08-02\"\n    assert item[\"cerradas\"][\"ventas\"] == 0\n    assert item[\"abiertas\"][\"ventas\"] == 0\n    assert item[\"operacion_estimada\"][\"ventas\"] == 0\n\n\ndef test_rows_from_other_dates_are_not_used():\n    result = build_current_operation(\n        allowed_unit_codes=[\"A\"],\n        date_resolver=lambda unit: date(2026, 8, 2),\n        sales_reader=lambda operation_date, units: [{\n            \"unidad_negocio_id\": \"A\",\n            \"fecha_operacion\": \"2026-07-31\",\n            \"ventas_abiertas\": 900,\n            \"ventas_cerradas_dia\": 100,\n        }],\n    )\n\n    assert result[\"totales\"][\"operacion_estimada\"][\n        \"ventas\"\n    ] == 0\n\n\ndef test_unresolved_unit_does_not_fallback():\n    def resolver(unit_code):\n        if unit_code == \"A\":\n            raise RuntimeError(\"sin configuración\")\n        return date(2026, 8, 2)\n\n    result = build_current_operation(\n        allowed_unit_codes=[\"A\", \"B\"],\n        date_resolver=resolver,\n        sales_reader=lambda operation_date, units: [],\n    )\n\n    assert [item[\"unidad_negocio_id\"] for item in result[\n        \"items\"\n    ]] == [\"B\"]\n    assert result[\"unidades_sin_fecha_operativa\"][0][\n        \"unidad_negocio_id\"\n    ] == \"A\"\n    assert result[\"traceability\"][\n        \"fallback_to_last_data_date\"\n    ] is False\n    assert result[\"traceability\"][\n        \"fallback_to_civil_date\"\n    ] is False\n\n\ndef test_closed_and_open_values_remain_separate():\n    result = build_current_operation(\n        allowed_unit_codes=[\"A\"],\n        date_resolver=lambda unit: date(2026, 8, 2),\n        sales_reader=lambda operation_date, units: [{\n            \"unidad_negocio_id\": \"A\",\n            \"fecha_operacion\": \"2026-08-02\",\n            \"ventas_abiertas\": 75,\n            \"propinas_abiertas\": 5,\n            \"tickets_abiertos\": 2,\n            \"pax_abiertos\": 3,\n            \"ventas_cerradas_dia\": 125,\n            \"propinas_cerradas_dia\": 10,\n            \"tickets_cerrados_dia\": 4,\n            \"pax_cerrados_dia\": 8,\n        }],\n    )\n\n    item = result[\"items\"][0]\n\n    assert item[\"cerradas\"][\"ventas\"] == 125\n    assert item[\"abiertas\"][\"ventas\"] == 75\n    assert item[\"operacion_estimada\"][\"ventas\"] == 200\n    assert item[\"operacion_estimada\"][\"cheques\"] == 6\n    assert item[\"operacion_estimada\"][\"pax\"] == 11\ndef test_current_operation_preserves_comercial_drilldown_metadata():\n    result = build_current_operation(\n        allowed_unit_codes=[\"ORIGEN\"],\n        date_resolver=lambda unit: date(2026, 10, 1),\n        sales_reader=lambda operation_date, units: [{\n            \"unidad_negocio_id\": \"ORIGEN\",\n            \"unidad_negocio_nombre\": \"ORIGEN\",\n            \"server_id\": \"SERVER-MPRO\",\n            \"sucursal_id\": \"0023\",\n            \"sucursal_nombre\": \"ORIGEN\",\n            \"sistema_origen\": \"MPRO\",\n            \"fecha_operacion\": \"2026-10-01\",\n            \"ventas_abiertas\": 2095,\n            \"tickets_abiertos\": 3,\n            \"pax_abiertos\": 7,\n            \"ventas_cerradas_dia\": 4231,\n            \"tickets_cerrados_dia\": 2,\n            \"pax_cerrados_dia\": 15,\n        }],\n    )\n\n    item = result[\"items\"][0]\n\n    assert item[\"server_id\"] == \"SERVER-MPRO\"\n    assert item[\"sucursal_id\"] == \"0023\"\n    assert item[\"sucursal_nombre\"] == \"ORIGEN\"\n    assert item[\"sistema_origen\"] == \"MPRO\"\n\n\ndef test_executive_current_day_uses_certified_comercial_sales_detail():\n    from pathlib import Path\n\n    root = Path(__file__).resolve().parents[2]\n    tablero = (\n        root / \"frontend/src/pages/TableroEjecutivo.js\"\n    ).read_text(encoding=\"utf-8\")\n    drill = (\n        root\n        / \"frontend/src/components/comercial/KpiDrilldownDialog.jsx\"\n    ).read_text(encoding=\"utf-8\")\n\n    assert \"server_id: item.server_id || null\" in tablero\n    assert \"sucursal_id: item.sucursal_id || null\" in tablero\n    assert \"/comercial/detalle-ventas-agrupado/\" in drill\n    assert \"periodo: 'dia'\" in drill\n    assert \"row.fuente_ticket || 'CERRADA'\" in drill\n    assert \"/comercial/ticket-venta/\" in drill\n    assert \"hasMissingOpen\" in drill\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial_analytics/repository_operational.py",
+        "backend/tests/test_comercial_operacion_en_curso_repository.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_operacion_en_curso_repository.py",
+        "backend/tests/test_comercial_hoy_integral_all_units_contract.py",
+        "backend/tests/test_comercial_ticket_drilldown_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
