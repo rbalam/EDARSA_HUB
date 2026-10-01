@@ -1,0 +1,65 @@
+{
+  "actions": [
+    {
+      "anchor": "DEV_BRANCH = \"Edarsahub_Desarrollo\"\nREMOTE = \"origin\"\n",
+      "expected_occurrences": 1,
+      "path": "tools/mirror_sync/git_divergence_guard.py",
+      "replacement": "DEV_BRANCH = \"Edarsahub_Desarrollo\"\nREMOTE = \"origin\"\nMIRROR_BRANCH = \"mirror/emergent-live\"\n",
+      "source_sha256": "6ec42ee6729f36e1be931fcd16759f235e50ce9f34a1839f0f97191b74658356",
+      "type": "insert_before"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_three_properties_contract.py",
+      "replacement": "\n\ndef test_submit_convergence_mirror_ancestor_e2e_fast_forwards(tmp_path):\n    import subprocess\n\n    def run(cwd, *args):\n        return subprocess.check_output(\n            [\"git\", *args],\n            cwd=cwd,\n            text=True,\n        ).strip()\n\n    remote = tmp_path / \"remote.git\"\n    repo = tmp_path / \"repo\"\n\n    subprocess.check_call(\n        [\"git\", \"init\", \"--bare\", \"-q\", str(remote)]\n    )\n\n    subprocess.check_call(\n        [\"git\", \"clone\", \"-q\", str(remote), str(repo)]\n    )\n\n    run(\n        repo,\n        \"config\",\n        \"user.email\",\n        \"worker@edarsahub.local\",\n    )\n\n    run(\n        repo,\n        \"config\",\n        \"user.name\",\n        \"EDARSAHUB Worker\",\n    )\n\n    (repo / \"README.md\").write_text(\n        \"A\\n\",\n        encoding=\"utf-8\",\n    )\n\n    run(repo, \"add\", \"README.md\")\n    run(repo, \"commit\", \"-qm\", \"A\")\n    run(repo, \"branch\", \"-M\", \"Edarsahub_Desarrollo\")\n\n    run(\n        repo,\n        \"push\",\n        \"-q\",\n        \"origin\",\n        \"HEAD:refs/heads/Edarsahub_Desarrollo\",\n    )\n\n    run(\n        repo,\n        \"push\",\n        \"-q\",\n        \"origin\",\n        \"HEAD:refs/heads/mirror/emergent-live\",\n    )\n\n    # DEV advances to B; MIRROR remains at A.\n    (repo / \"README.md\").write_text(\n        \"B\\n\",\n        encoding=\"utf-8\",\n    )\n\n    run(repo, \"commit\", \"-qam\", \"B\")\n\n    development = run(\n        repo,\n        \"rev-parse\",\n        \"HEAD\",\n    )\n\n    run(\n        repo,\n        \"push\",\n        \"-q\",\n        \"origin\",\n        \"HEAD:refs/heads/Edarsahub_Desarrollo\",\n    )\n\n    # LOCAL == DEV == B\n    # MIRROR == A, which is an ancestor of B.\n    from tools.mirror_sync.git_divergence_guard import (\n        ensure_submit_convergence,\n    )\n\n    result = ensure_submit_convergence(\n        repo,\n        job_id=\"CONVERGENCE-E2E-CANARY\",\n        owner=\"test\",\n    )\n\n    assert result[\"status\"] == \"FAST_FORWARDED_PASS\"\n    assert result[\"classification\"] == \"SYNC\"\n    assert result[\"converged\"] is True\n    assert result[\"safe\"] is True\n    assert result[\"auto_fix_applied\"] is True\n\n    assert result[\"local\"] == development\n    assert result[\"development\"] == development\n    assert result[\"mirror_after\"] == development\n    assert result[\"worktree_dirty\"] is False\n\n    mirror_after = run(\n        repo,\n        \"rev-parse\",\n        \"refs/remotes/origin/mirror/emergent-live\",\n    )\n\n    assert mirror_after == development\n\n\ndef test_submit_convergence_mirror_ahead_e2e_blocks(tmp_path):\n    import subprocess\n\n    def run(cwd, *args):\n        return subprocess.check_output(\n            [\"git\", *args],\n            cwd=cwd,\n            text=True,\n        ).strip()\n\n    remote = tmp_path / \"remote.git\"\n    repo = tmp_path / \"repo\"\n\n    subprocess.check_call(\n        [\"git\", \"init\", \"--bare\", \"-q\", str(remote)]\n    )\n\n    subprocess.check_call(\n        [\"git\", \"clone\", \"-q\", str(remote), str(repo)]\n    )\n\n    run(repo, \"config\", \"user.email\", \"worker@edarsahub.local\")\n    run(repo, \"config\", \"user.name\", \"EDARSAHUB Worker\")\n\n    (repo / \"README.md\").write_text(\n        \"A\\n\",\n        encoding=\"utf-8\",\n    )\n\n    run(repo, \"add\", \"README.md\")\n    run(repo, \"commit\", \"-qm\", \"A\")\n    run(repo, \"branch\", \"-M\", \"Edarsahub_Desarrollo\")\n\n    run(\n        repo,\n        \"push\",\n        \"-q\",\n        \"origin\",\n        \"HEAD:refs/heads/Edarsahub_Desarrollo\",\n    )\n\n    run(\n        repo,\n        \"push\",\n        \"-q\",\n        \"origin\",\n        \"HEAD:refs/heads/mirror/emergent-live\",\n    )\n\n    # Development B.\n    (repo / \"README.md\").write_text(\n        \"B\\n\",\n        encoding=\"utf-8\",\n    )\n\n    run(repo, \"commit\", \"-qam\", \"B\")\n    dev = run(repo, \"rev-parse\", \"HEAD\")\n\n    run(\n        repo,\n        \"push\",\n        \"-q\",\n        \"origin\",\n        \"HEAD:refs/heads/Edarsahub_Desarrollo\",\n    )\n\n    # Create independent mirror C from A.\n    mirror_clone = tmp_path / \"mirror\"\n    subprocess.check_call(\n        [\"git\", \"clone\", \"-q\", str(remote), str(mirror_clone)]\n    )\n\n    run(\n        mirror_clone,\n        \"config\",\n        \"user.email\",\n        \"worker@edarsahub.local\",\n    )\n\n    run(\n        mirror_clone,\n        \"config\",\n        \"user.name\",\n        \"EDARSAHUB Worker\",\n    )\n\n    run(\n        mirror_clone,\n        \"fetch\",\n        \"-q\",\n        \"origin\",\n        \"mirror/emergent-live\",\n    )\n\n    run(\n        mirror_clone,\n        \"checkout\",\n        \"-q\",\n        \"-B\",\n        \"mirror-test\",\n        \"origin/mirror/emergent-live\",\n    )\n\n    (mirror_clone / \"README.md\").write_text(\n        \"C\\n\",\n        encoding=\"utf-8\",\n    )\n\n    run(mirror_clone, \"commit\", \"-qam\", \"C\")\n\n    run(\n        mirror_clone,\n        \"push\",\n        \"-q\",\n        \"origin\",\n        \"HEAD:refs/heads/mirror/emergent-live\",\n    )\n\n    from tools.mirror_sync.git_divergence_guard import (\n        ensure_submit_convergence,\n    )\n\n    result = ensure_submit_convergence(\n        repo,\n        job_id=\"CONVERGENCE-E2E-MIRROR-AHEAD\",\n        owner=\"test\",\n    )\n\n    assert result[\"status\"] == \"BLOCKED_MIRROR_AHEAD\"\n    assert result[\"converged\"] is False\n    assert result[\"safe\"] is False\n    assert result[\"auto_fix_applied\"] is False\n",
+      "source_sha256": "519f422129f67a0f8b9cdad1f65d9299867aa54ecf76b15e5022e535a1335005",
+      "type": "append_once"
+    }
+  ],
+  "base_sha": "e7078e82a853a55e7a453519422ae9afd9ec1918",
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "paths": [
+        "tools/mirror_sync/git_divergence_guard.py",
+        "backend/tests/test_worker_three_properties_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_worker_orphan_index_lock_selfheal.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-CONVERGENCE-GUARD-E2E-MIRROR-FF-FIX-R2-20260930",
+  "mode": "MUTATION",
+  "objective": "Cerrar el ultimo gap E2E del hardening universal de convergencia Git. Declarar MIRROR_BRANCH en el guard canonico y agregar pruebas E2E deterministas que ejecuten realmente ensure_submit_convergence cuando LOCAL=DEV y MIRROR es ancestro de DEV, verificando FAST_FORWARDED_PASS, LOCAL=DEV=MIRROR y SYNC. Agregar tambien escenario E2E MIRROR_AHEAD bloqueado. No crear infraestructura paralela.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Universal Worker Git Self-Healing Hardening",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
