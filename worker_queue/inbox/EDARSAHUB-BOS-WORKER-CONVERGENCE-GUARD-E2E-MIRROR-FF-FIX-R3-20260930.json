@@ -1,0 +1,57 @@
+{
+  "actions": [
+    {
+      "type": "append_once",
+      "path": "backend/tests/test_worker_three_properties_contract.py",
+      "replacement": "\n\ndef test_submit_convergence_mirror_ancestor_e2e_fast_forwards(tmp_path):\n    import subprocess\n\n    def run(cwd, *args):\n        return subprocess.check_output(\n            [\"git\", *args],\n            cwd=cwd,\n            text=True,\n        ).strip()\n\n    remote = tmp_path / \"remote.git\"\n    repo = tmp_path / \"repo\"\n\n    subprocess.check_call([\"git\", \"init\", \"--bare\", \"-q\", str(remote)])\n    subprocess.check_call([\"git\", \"clone\", \"-q\", str(remote), str(repo)])\n\n    run(repo, \"config\", \"user.email\", \"worker@edarsahub.local\")\n    run(repo, \"config\", \"user.name\", \"EDARSAHUB Worker\")\n\n    (repo / \"README.md\").write_text(\"A\\n\", encoding=\"utf-8\")\n    run(repo, \"add\", \"README.md\")\n    run(repo, \"commit\", \"-qm\", \"A\")\n    run(repo, \"branch\", \"-M\", \"Edarsahub_Desarrollo\")\n\n    run(repo, \"push\", \"-q\", \"origin\",\n        \"HEAD:refs/heads/Edarsahub_Desarrollo\")\n    run(repo, \"push\", \"-q\", \"origin\",\n        \"HEAD:refs/heads/mirror/emergent-live\")\n\n    (repo / \"README.md\").write_text(\"B\\n\", encoding=\"utf-8\")\n    run(repo, \"commit\", \"-qam\", \"B\")\n\n    development = run(repo, \"rev-parse\", \"HEAD\")\n\n    run(repo, \"push\", \"-q\", \"origin\",\n        \"HEAD:refs/heads/Edarsahub_Desarrollo\")\n\n    from tools.mirror_sync.git_divergence_guard import (\n        ensure_submit_convergence,\n    )\n\n    result = ensure_submit_convergence(\n        repo,\n        job_id=\"CONVERGENCE-E2E-CANARY\",\n        owner=\"test\",\n    )\n\n    assert result[\"status\"] == \"FAST_FORWARDED_PASS\"\n    assert result[\"classification\"] == \"SYNC\"\n    assert result[\"converged\"] is True\n    assert result[\"safe\"] is True\n    assert result[\"auto_fix_applied\"] is True\n    assert result[\"local\"] == development\n    assert result[\"development\"] == development\n    assert result[\"mirror_after\"] == development\n    assert result[\"worktree_dirty\"] is False\n\n\ndef test_submit_convergence_mirror_ahead_e2e_blocks(tmp_path):\n    import subprocess\n\n    def run(cwd, *args):\n        return subprocess.check_output(\n            [\"git\", *args],\n            cwd=cwd,\n            text=True,\n        ).strip()\n\n    remote = tmp_path / \"remote.git\"\n    repo = tmp_path / \"repo\"\n\n    subprocess.check_call([\"git\", \"init\", \"--bare\", \"-q\", str(remote)])\n    subprocess.check_call([\"git\", \"clone\", \"-q\", str(remote), str(repo)])\n\n    run(repo, \"config\", \"user.email\", \"worker@edarsahub.local\")\n    run(repo, \"config\", \"user.name\", \"EDARSAHUB Worker\")\n\n    (repo / \"README.md\").write_text(\"A\\n\", encoding=\"utf-8\")\n    run(repo, \"add\", \"README.md\")\n    run(repo, \"commit\", \"-qm\", \"A\")\n    run(repo, \"branch\", \"-M\", \"Edarsahub_Desarrollo\")\n\n    run(repo, \"push\", \"-q\", \"origin\",\n        \"HEAD:refs/heads/Edarsahub_Desarrollo\")\n    run(repo, \"push\", \"-q\", \"origin\",\n        \"HEAD:refs/heads/mirror/emergent-live\")\n\n    (repo / \"README.md\").write_text(\"B\\n\", encoding=\"utf-8\")\n    run(repo, \"commit\", \"-qam\", \"B\")\n    dev = run(repo, \"rev-parse\", \"HEAD\")\n\n    run(repo, \"push\", \"-q\", \"origin\",\n        \"HEAD:refs/heads/Edarsahub_Desarrollo\")\n\n    mirror_repo = tmp_path / \"mirror\"\n    subprocess.check_call(\n        [\"git\", \"clone\", \"-q\", str(remote), str(mirror_repo)]\n    )\n\n    run(mirror_repo, \"config\", \"user.email\", \"worker@edarsahub.local\")\n    run(mirror_repo, \"config\", \"user.name\", \"EDARSAHUB Worker\")\n    run(mirror_repo, \"fetch\", \"-q\", \"origin\", \"mirror/emergent-live\")\n    run(mirror_repo, \"checkout\", \"-q\", \"-B\",\n        \"mirror-test\", \"origin/mirror/emergent-live\")\n\n    (mirror_repo / \"README.md\").write_text(\"C\\n\", encoding=\"utf-8\")\n    run(mirror_repo, \"commit\", \"-qam\", \"C\")\n\n    run(mirror_repo, \"push\", \"-q\", \"origin\",\n        \"HEAD:refs/heads/mirror/emergent-live\")\n\n    run(repo, \"fetch\", \"-q\", \"origin\",\n        \"Edarsahub_Desarrollo\", \"mirror/emergent-live\")\n\n    from tools.mirror_sync.git_divergence_guard import (\n        ensure_submit_convergence,\n    )\n\n    result = ensure_submit_convergence(\n        repo,\n        job_id=\"CONVERGENCE-E2E-MIRROR-AHEAD\",\n        owner=\"test\",\n    )\n\n    assert result[\"status\"] == \"BLOCKED_MIRROR_AHEAD\"\n    assert result[\"converged\"] is False\n    assert result[\"safe\"] is False\n    assert result[\"auto_fix_applied\"] is False\n",
+      "source_sha256": "519f422129f67a0f8b9cdad1f65d9299867aa54ecf76b15e5022e535a1335005",
+      "expected_occurrences": 1
+    }
+  ],
+  "base_sha": "b625ba37f0c25712a5746393da0cdf8c6ea4578f",
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "paths": [
+        "tools/mirror_sync/git_divergence_guard.py",
+        "backend/tests/test_worker_three_properties_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_worker_orphan_index_lock_selfheal.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-CONVERGENCE-GUARD-E2E-MIRROR-FF-FIX-R3-20260930",
+  "mode": "MUTATION",
+  "objective": "Completar el E2E real del hardening universal de convergencia Git: verificar fast-forward seguro cuando MIRROR es ancestro de DEV y bloqueo cuando MIRROR esta por delante de DEV. No crear infraestructura paralela.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Universal Worker Git Self-Healing Hardening",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
