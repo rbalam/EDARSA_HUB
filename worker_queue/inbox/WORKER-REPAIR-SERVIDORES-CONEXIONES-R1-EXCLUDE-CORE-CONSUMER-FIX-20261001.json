@@ -1,0 +1,80 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "new": "exclude_core=True",
+      "old": "exclude_core=False",
+      "path": "backend/server.py",
+      "type": "replace_text"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/server.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_server_sucursales_rbac_canonical.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "NO crear R2 funcional de Servidores",
+    "NO cambiar job_id funcional original",
+    "NO reconstruir objetivo de Servidores",
+    "NO tocar Worker Lifecycle",
+    "NO tocar Same-Job Retry Bridge",
+    "NO tocar R1M",
+    "NO tocar SQL",
+    "NO tocar RBAC",
+    "NO tocar CAVAS",
+    "NO tocar Produccion",
+    "NO modificar backend/tests/test_server_sucursales_rbac_canonical.py",
+    "NO introducir hardcode",
+    "NO introducir Mongo fallback",
+    "NO crear otra fuente de verdad",
+    "NO mover archivos de worker_queue manualmente",
+    "NO borrar resultados historicos"
+  ],
+  "expected_result": {
+    "files_changed": [
+      "backend/server.py"
+    ],
+    "production_touched": false,
+    "pytest": "7 passed",
+    "quality_gate": "PASS",
+    "tests": "PASS"
+  },
+  "human_summary_language": "es",
+  "job_id": "WORKER-REPAIR-SERVIDORES-CONEXIONES-R1-EXCLUDE-CORE-CONSUMER-FIX-20261001",
+  "mode": "MUTATION",
+  "objective": "Aplicar mediante Worker Repair la correccion funcional exacta que falta para certificar el job existente SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927. Modificar exclusivamente backend/server.py para que la llamada canonica a registry_list_servers() dentro de get_servers use exclude_core=True. Mantener prefer_sql=True, allow_mongo_fallback=False, filter_active=True, filter_visible_listado=True y mask_secrets=True. No modificar tests, no tocar SQL, RBAC, CAVAS, Produccion, Worker Lifecycle, Same-Job Retry Bridge ni R1M.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Worker Hardening 2",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
