@@ -1,0 +1,56 @@
+{
+  "base_sha": "770b5a166e73399cd77e1cf7bfbc3aa8039f8bb4",
+  "blockers": [
+    "comercial_range_resync_failed_units:ESTELAR"
+  ],
+  "canonical_sql_mutation": true,
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-01T15:19:37Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-202604-HEADER-DETAIL-R25-CARLOS-20261001",
+  "operation": "COMERCIAL_RANGE_RESYNC",
+  "operation_summary": {
+    "fecha_fin": "2026-04-30",
+    "fecha_inicio": "2026-04-01",
+    "unidades": [
+      {
+        "detail_success": false,
+        "header_success": true,
+        "records_errored": 0,
+        "records_inserted": 0,
+        "records_processed": 30,
+        "records_skipped": 30,
+        "records_updated": 0,
+        "returncode": 5,
+        "stage": "HEADER_KPI",
+        "success": true,
+        "unidad": "ESTELAR",
+        "warning": "El detalle ISCAM tiene días bloqueados que no conciliaron contra Runtime V2."
+      }
+    ],
+    "unidades_fallidas": [
+      "ESTELAR"
+    ],
+    "unidades_ok": 0,
+    "unidades_total": 1
+  },
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T15:19:42Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-01T15:10:49Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "units": [
+    "ESTELAR"
+  ],
+  "work_completion": "NOT_CERTIFIED"
+}
