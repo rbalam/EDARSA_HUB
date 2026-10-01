@@ -4,11 +4,11 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "d8b839a8722c807a8f15e7b2deb15000e66b3469",
-  "generated_at_utc": "2026-10-01T21:09:09Z",
+  "generated_at_utc": "2026-10-01T21:11:09Z",
   "history": {
     "done_total_local": 1270,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 1129,
     "results_total_local": 2195
   },
@@ -16,58 +16,64 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 587,
+      "age_seconds": 708,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-EMPRESA-MAPPING-DISCOVERY-READONLY-SQL-R1F-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 475,
+      "age_seconds": 596,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-EMPRESA-MAPPING-MATRIX-READONLY-SQL-R1G-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 214,
+      "age_seconds": 335,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-RBAC-AUTH-MATRIX-READONLY-SQL-R1I-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 832,
+      "age_seconds": 953,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-RBAC-SCOPE-ACTUAL-COLUMNS-READONLY-SQL-R1E-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 732,
+      "age_seconds": 852,
       "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-RETRY-NOT-CERTIFIED-INFRASTRUCTURE-R1-RETRY1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 760,
+      "age_seconds": 881,
       "job_id": "MEJORA-TABEJE-VENTAS-DIA-SYNC-CANONICO-R16C-CARLOS-20261001T2000Z",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 5,
+      "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-RETRY-NOT-CERTIFIED-INFRASTRUCTURE-R1-RETRY2-20261001",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "local_development_sha": "d8b839a8722c807a8f15e7b2deb15000e66b3469",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 6,
-  "queue_running": 0,
+  "queue_running": 1,
   "remote_development_sha": "d8b839a8722c807a8f15e7b2deb15000e66b3469",
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-RETRY-NOT-CERTIFIED-INFRASTRUCTURE-R1-RETRY2-20261001",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T21:09:06Z",
-    "last_receive_utc": "2026-10-01T21:09:08Z",
+    "last_cycle_utc": "2026-10-01T21:11:01Z",
+    "last_receive_utc": "2026-10-01T21:11:07Z",
     "last_terminal_utc": "2026-10-01T21:05:34Z",
     "pid": "614",
     "runtime_fingerprint": {
