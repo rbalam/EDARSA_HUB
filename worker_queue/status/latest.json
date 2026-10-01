@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "bd7aa05ed908898f4e35f22d45b7b2880d7cf17a",
-  "generated_at_utc": "2026-10-01T04:56:36Z",
+  "generated_at_utc": "2026-10-01T04:58:00Z",
   "history": {
     "done_total_local": 1242,
     "pending_total_local": 0,
@@ -16,55 +16,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1043,
+      "age_seconds": 1127,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-R9-RETRY1-CANONICAL-ALIGNMENT-PLAN-READONLY-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 658,
+      "age_seconds": 741,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-R9-RETRY2-DISPATCHER-CONTRACT-READONLY-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3388,
+      "age_seconds": 3472,
       "job_id": "EDARSAHUB-BOS-WORKER-CONVERGENCE-GUARD-E2E-MIRROR-FF-FIX-R2-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 227,
+      "age_seconds": 311,
       "job_id": "EDARSAHUB-BOS-WORKER-CONVERGENCE-GUARD-E2E-MIRROR-FF-FIX-R3-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1342,
+      "age_seconds": 1425,
       "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-CODE-R1-CARLOS-20261001T0436Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 498,
+      "age_seconds": 582,
       "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-CODE-R2-CARLOS-20261001T0454Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2863,
+      "age_seconds": 2946,
       "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-MIGRATION-R2-CARLOS-20261001T0350Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1545,
+      "age_seconds": 1629,
       "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-MIGRATION-R3-CARLOS-20261001T0412Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 12,
+      "age_seconds": 95,
       "job_id": "EDARSAHUB-COMERCIAL-MPRO-CLOSED-SELLER-R1-CARLOS-20261001T0502Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,8 +84,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T04:56:36Z",
-    "last_receive_utc": "2026-10-01T04:56:31Z",
+    "last_cycle_utc": "2026-10-01T04:57:56Z",
+    "last_receive_utc": "2026-10-01T04:57:59Z",
     "last_terminal_utc": "2026-10-01T04:56:24Z",
     "pid": "201258",
     "runtime_fingerprint": {
