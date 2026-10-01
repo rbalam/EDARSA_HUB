@@ -1,0 +1,175 @@
+{
+  "base_sha": "7d15b6498d1acc18dbb04be11a58c7f86fa4886b",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-01T01:05:17Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-OPEN-FOLIOS-RESOLUTION-AUDIT-R1-CARLOS-20261001T0106Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T01:05:20Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_codigo",
+              "unidad_nombre",
+              "server_id",
+              "sucursal_origen_id",
+              "snapshot_unidad_id",
+              "snapshot_sucursal",
+              "fecha_operacion",
+              "tickets_abiertos",
+              "tickets_cerrados_dia",
+              "json_len"
+            ],
+            "name": "unit_mapping_vs_daily_snapshot",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                "130° MERIDA",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                null,
+                "130MID",
+                "DEFAULT",
+                "2026-09-30",
+                8,
+                0,
+                "16715"
+              ],
+              [
+                "130QRO",
+                "130° QUERETARO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0021",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                null,
+                "CIENFUEGOS",
+                "DEFAULT",
+                "2026-09-30",
+                17,
+                2,
+                "34150"
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                null,
+                "ESTELAR",
+                "DEFAULT",
+                "2026-09-30",
+                6,
+                0,
+                "9802"
+              ],
+              [
+                "ORIGEN",
+                "ORIGEN",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0023",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "server_id",
+              "sucursal_id",
+              "fecha_operacion",
+              "tickets_abiertos",
+              "json_folios",
+              "json_lines"
+            ],
+            "name": "open_json_folio_counts_by_server",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "DEFAULT",
+                "2026-09-30",
+                8,
+                8,
+                75
+              ],
+              [
+                "130QRO",
+                "72f6e9a7-8ea2-4eb2-802e-4ee31753435e",
+                "0021",
+                "2026-09-30",
+                5,
+                5,
+                46
+              ],
+              [
+                "CIENFUEGOS",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "DEFAULT",
+                "2026-09-30",
+                17,
+                17,
+                152
+              ],
+              [
+                "ESTELAR",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "DEFAULT",
+                "2026-09-30",
+                6,
+                6,
+                44
+              ],
+              [
+                "ORIGEN",
+                "817a0aa8-6170-4738-a8f6-a72ac36ba0df",
+                "0023",
+                "2026-09-30",
+                9,
+                9,
+                87
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-01T01:05:17Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
