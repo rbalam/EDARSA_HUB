@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-BOS-CAPABILITY-API-LOCAL-EMPRESA-HOMOLOGATION-R4-20261001",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "94f308c89cec979f708bd210a12919cae5b9bb82",
+  "production_allowed": false,
+  "objective": "Mismo desarrollo de capability que R3. Corregir exclusivamente los source_sha256 encadenados de acciones que modifican el mismo archivo; no cambiar logica ni ejecutar homologacion real.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS",
+    "chat": "Conexiones y Comunicaciones 2"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old_text": "SERVER_REGISTRY_METADATA_UPDATE_MODE = \"SERVER_REGISTRY_METADATA_UPDATE\"\n",
+      "replacement": "SERVER_REGISTRY_METADATA_UPDATE_MODE = \"SERVER_REGISTRY_METADATA_UPDATE\"\nAPI_LOCAL_EMPRESA_HOMOLOGATION_MODE = \"API_LOCAL_EMPRESA_HOMOLOGATION\"\n",
+      "source_sha256": "f454c73e6ee7c6eceddd2190025d701dbd5562aae3f7512dc690c02cde74ba12",
+      "expected_occurrences": 1
+    },
+    {
+      "type": "insert_before",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "anchor": "    elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:\n",
+      "replacement": "    elif mode == API_LOCAL_EMPRESA_HOMOLOGATION_MODE:\n        if actions not in (None, []):\n            errors.append(\"API_LOCAL_EMPRESA_HOMOLOGATION_ACTIONS_FORBIDDEN\")\n        for forbidden_field in (\"sql\", \"command\", \"shell\", \"script\", \"path\", \"password\", \"secret\", \"username\", \"api_key\", \"api_url\", \"database_name\", \"server_id\", \"unidad_negocio_id\"):\n            if job.get(forbidden_field) is not None:\n                errors.append(f\"API_LOCAL_EMPRESA_HOMOLOGATION_FORBIDDEN_FIELD:{forbidden_field}\")\n        connection_id = str(job.get(\"connection_id\") or \"\").strip()\n        empresa_id = job.get(\"empresa_id\")\n        if not re.fullmatch(r\"[0-9a-fA-F-]{36}\", connection_id):\n            errors.append(\"API_LOCAL_EMPRESA_HOMOLOGATION_CONNECTION_ID_INVALID\")\n        if not isinstance(empresa_id, int) or empresa_id <= 0:\n            errors.append(\"API_LOCAL_EMPRESA_HOMOLOGATION_EMPRESA_ID_INVALID\")\n        if job.get(\"confirm_api_local_empresa_homologation\") is not True:\n            errors.append(\"API_LOCAL_EMPRESA_HOMOLOGATION_CONFIRMATION_REQUIRED\")\n        preflight_checks = job.get(\"preflight_checks\")\n        if not isinstance(preflight_checks, list) or not preflight_checks:\n            errors.append(\"API_LOCAL_EMPRESA_HOMOLOGATION_PREFLIGHT_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in preflight_checks):\n            errors.append(\"API_LOCAL_EMPRESA_HOMOLOGATION_PREFLIGHT_ONLY_SQL_AUDIT_ALLOWED\")\n        else:\n            for index, check in enumerate(preflight_checks, 1):\n                errors.extend(validate_check(check, index))\n",
+      "source_sha256": "bf54cbc57dd2a2c8b8c584de2792f831d275c8690bc53e2bd81545ed6501b30e",
+      "expected_occurrences": 1
+    },
+    {
+      "type": "insert_before",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "anchor": "    elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:\n",
+      "replacement": "    elif mode == API_LOCAL_EMPRESA_HOMOLOGATION_MODE:\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"API_LOCAL_EMPRESA_HOMOLOGATION_POST_AUDIT_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in checks):\n            errors.append(\"API_LOCAL_EMPRESA_HOMOLOGATION_POST_ONLY_SQL_AUDIT_ALLOWED\")\n",
+      "source_sha256": "05f5014ddf857c45d3a099d01e950ff56532c8af7b8ce784827fd68dc457fb04",
+      "expected_occurrences": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old_text": "SERVER_REGISTRY_METADATA_UPDATE_MODE = \"SERVER_REGISTRY_METADATA_UPDATE\"\n",
+      "replacement": "SERVER_REGISTRY_METADATA_UPDATE_MODE = \"SERVER_REGISTRY_METADATA_UPDATE\"\nAPI_LOCAL_EMPRESA_HOMOLOGATION_MODE = \"API_LOCAL_EMPRESA_HOMOLOGATION\"\n",
+      "source_sha256": "378a6e777b17b24d5352e3576e9c5daa991cab756220cab132df66df4118297f",
+      "expected_occurrences": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/scripts/update_api_local_empresa.py",
+      "content": "#!/usr/bin/env python3\nfrom __future__ import annotations\nimport argparse, asyncio, json, re, sys\nfrom pathlib import Path\nBACKEND=Path(__file__).resolve().parents[1]\nif str(BACKEND) not in sys.path: sys.path.insert(0,str(BACKEND))\nfrom core.server_registry import _get_server_by_id_from_sql, update_server\nUUID_RE=re.compile(r\"^[0-9a-fA-F-]{36}$\")\ndef main()->int:\n p=argparse.ArgumentParser();p.add_argument(\"--connection-id\",required=True);p.add_argument(\"--empresa-id\",required=True,type=int);p.add_argument(\"--confirm\",action=\"store_true\");a=p.parse_args()\n if not UUID_RE.fullmatch(a.connection_id): print(json.dumps({\"status\":\"FAIL\",\"error\":\"CONNECTION_ID_INVALID\"}));return 2\n if a.empresa_id<=0: print(json.dumps({\"status\":\"FAIL\",\"error\":\"EMPRESA_ID_INVALID\"}));return 2\n if not a.confirm: print(json.dumps({\"status\":\"FAIL\",\"error\":\"CONFIRMATION_REQUIRED\"}));return 2\n before=_get_server_by_id_from_sql(a.connection_id,include_inactive=True)\n if not before: print(json.dumps({\"status\":\"FAIL\",\"error\":\"CONNECTION_NOT_FOUND\"}));return 3\n if before.get(\"tipo_conexion\")!=\"API_LOCAL\": print(json.dumps({\"status\":\"FAIL\",\"error\":\"NOT_API_LOCAL\"}));return 4\n if not bool(before.get(\"activo\")): print(json.dumps({\"status\":\"FAIL\",\"error\":\"CONNECTION_INACTIVE\"}));return 5\n if before.get(\"EmpresaID\") is not None: print(json.dumps({\"status\":\"FAIL\",\"error\":\"EMPRESA_ID_NOT_NULL\"}));return 6\n result=asyncio.run(update_server(a.connection_id,{\"empresa_id\":a.empresa_id}))\n if not result.get(\"success\"): print(json.dumps({\"status\":\"FAIL\",\"error\":str(result.get(\"error\") or \"UPDATE_FAILED\")}));return 7\n after=_get_server_by_id_from_sql(a.connection_id,include_inactive=True)\n if not after: print(json.dumps({\"status\":\"FAIL\",\"error\":\"POST_UPDATE_NOT_FOUND\"}));return 8\n if after.get(\"EmpresaID\")!=a.empresa_id: print(json.dumps({\"status\":\"FAIL\",\"error\":\"POST_UPDATE_EMPRESA_MISMATCH\"}));return 9\n if after.get(\"tipo_conexion\")!=\"API_LOCAL\" or not bool(after.get(\"activo\")): print(json.dumps({\"status\":\"FAIL\",\"error\":\"POST_UPDATE_IDENTITY_CHANGED\"}));return 10\n print(json.dumps({\"status\":\"PASS\",\"connection_id\":a.connection_id,\"empresa_id_after\":after.get(\"EmpresaID\"),\"active_preserved\":True,\"type_preserved\":True,\"secrets_exposed\":False}));return 0\nif __name__==\"__main__\": raise SystemExit(main())\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_api_local_empresa_homologation_capability.py",
+      "content": "from pathlib import Path\nROOT=Path(__file__).resolve().parents[2]\nBRIDGE=ROOT/\"tools/mirror_sync/universal_job_bridge.py\"\nDISPATCHER=ROOT/\"tools/mirror_sync/universal_job_dispatcher.py\"\nSCRIPT=ROOT/\"backend/scripts/update_api_local_empresa.py\"\ndef test_capability_is_declared_and_closed():\n b=BRIDGE.read_text(encoding=\"utf-8\");d=DISPATCHER.read_text(encoding=\"utf-8\")\n assert \"API_LOCAL_EMPRESA_HOMOLOGATION_MODE\" in b\n assert \"API_LOCAL_EMPRESA_HOMOLOGATION_MODE\" in d\n for forbidden in (\"api_key\",\"password\",\"secret\",\"api_url\",\"database_name\",\"server_id\",\"unidad_negocio_id\"): assert forbidden in b\ndef test_helper_is_atomic_and_api_local_only():\n s=SCRIPT.read_text(encoding=\"utf-8\")\n assert 'before.get(\"tipo_conexion\")!=\"API_LOCAL\"' in s\n assert 'before.get(\"EmpresaID\") is not None' in s\n assert 'update_server(a.connection_id,{\"empresa_id\":a.empresa_id})' in s\n assert \"api_key\" not in s.lower()\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "backend/scripts/update_api_local_empresa.py",
+        "backend/tests/test_worker_api_local_empresa_homologation_capability.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_api_local_empresa_homologation_capability.py"
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
