@@ -4,55 +4,61 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "c6a726c4e655eb0fb6c7f0ce2984aa99174958c8",
-  "generated_at_utc": "2026-10-01T17:06:13Z",
+  "generated_at_utc": "2026-10-01T17:07:31Z",
   "history": {
     "done_total_local": 1259,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1109,
-    "results_total_local": 2166
+    "rejected_total_local": 1110,
+    "results_total_local": 2167
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1197,
+      "age_seconds": 1276,
       "job_id": "EDARSAHUB-COMERCIAL-HISTORY-2026-RUNNER-R1-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 308,
+      "age_seconds": 387,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-MESA-MIGRATION-FILE-R1-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 67,
+      "age_seconds": 75,
+      "job_id": "EDARSAHUB-COMERCIAL-TICKET-MESA-MIGRATION-R2-CARLOS-20261001",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 146,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-MICROPRICE-BASELINE-R31-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3403,
+      "age_seconds": 3482,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-MICROPRICE-ZERO-FIX-R29-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1971,
+      "age_seconds": 2050,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-MICROPRICE-ZERO-FIX-R30-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2287,
+      "age_seconds": 2366,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-PARIDAD-COMERCIAL-R14B-CARLOS-20261001T1620Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1628,
+      "age_seconds": 1707,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-PARIDAD-COMERCIAL-R14C-CARLOS-20261001T1640Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,15 +72,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 7,
+  "queue_result_ready_recent": 8,
   "queue_running": 0,
   "remote_development_sha": "c6a726c4e655eb0fb6c7f0ce2984aa99174958c8",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T17:06:04Z",
-    "last_receive_utc": "2026-10-01T17:06:09Z",
-    "last_terminal_utc": "2026-10-01T17:05:05Z",
+    "last_cycle_utc": "2026-10-01T17:07:28Z",
+    "last_receive_utc": "2026-10-01T17:07:30Z",
+    "last_terminal_utc": "2026-10-01T17:06:16Z",
     "pid": "588094",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "ad56901c4df1da4ab799657b8f9a43d92471b56a",
