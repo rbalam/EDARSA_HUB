@@ -3,56 +3,62 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "e6cb6b40bc7fd171a54503a5b2d3f9f81b37e923",
-  "generated_at_utc": "2026-10-01T00:35:49Z",
+  "development_sha": "627c9cb62e4b8b81c774faeb3051bb86e9b467c9",
+  "generated_at_utc": "2026-10-01T00:37:13Z",
   "history": {
-    "done_total_local": 1219,
+    "done_total_local": 1220,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1075,
-    "results_total_local": 2095
+    "results_total_local": 2096
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2977,
+      "age_seconds": 3061,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-CONTRACT-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2991,
+      "age_seconds": 3075,
       "job_id": "EDARSA-LOGISTICS-GATE4A0-PREDDL-EXACT-CONTRACT-AUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2980,
+      "age_seconds": 3063,
       "job_id": "EDARSAHUB-BOS-EVOLUTION-H1-MASTER-ARCHITECTURE-CONTRACT-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1990,
+      "age_seconds": 2074,
       "job_id": "EDARSAHUB-COMERCIAL-HOY-RANGE-FIX-R1-CARLOS-20260930T2350Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1399,
+      "age_seconds": 1483,
       "job_id": "EDARSAHUB-COMERCIAL-SR-OPEN-DETAIL-DIAG-R2-CARLOS-20261001T0006Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3416,
+      "age_seconds": 3500,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-DRILLDOWN-R12-CARLOS-20260930T2315Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 72,
+      "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-FALLBACK-R13-CARLOS-20260930T2350Z",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "e6cb6b40bc7fd171a54503a5b2d3f9f81b37e923",
+  "local_development_sha": "627c9cb62e4b8b81c774faeb3051bb86e9b467c9",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -60,21 +66,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 7,
   "queue_running": 0,
-  "remote_development_sha": "e6cb6b40bc7fd171a54503a5b2d3f9f81b37e923",
+  "remote_development_sha": "627c9cb62e4b8b81c774faeb3051bb86e9b467c9",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T00:35:40Z",
-    "last_receive_utc": "2026-10-01T00:35:46Z",
-    "last_terminal_utc": "2026-10-01T00:12:29Z",
+    "last_cycle_utc": "2026-10-01T00:37:09Z",
+    "last_receive_utc": "2026-10-01T00:37:04Z",
+    "last_terminal_utc": "2026-10-01T00:36:00Z",
     "pid": "610203",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "d68b475192c3c688137911a09b06144faf578fa4",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "e6cb6b40bc7fd171a54503a5b2d3f9f81b37e923",
+      "development_sha": "627c9cb62e4b8b81c774faeb3051bb86e9b467c9",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
