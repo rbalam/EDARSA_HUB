@@ -2,8 +2,11 @@
   "base_sha": "a3ee49f54c84c814de69ac587b21967af860a914",
   "blockers": [],
   "candidate_sha": "f3e4939a21cd7e897e0eb97aff4956fe31fa7213",
-  "certification": "PENDING_AUDIT_EVIDENCE",
+  "certification": "CERTIFIED",
+  "certification_basis": "SHA_BOUND_ATTESTATION_PLUS_DESCENDANT_CONVERGENCE",
+  "certified_source_sha": "f3e4939a21cd7e897e0eb97aff4956fe31fa7213",
   "completed_at_utc": "2026-10-01T16:39:04Z",
+  "converged_head": "f3e4939a21cd7e897e0eb97aff4956fe31fa7213",
   "development_sha": "f3e4939a21cd7e897e0eb97aff4956fe31fa7213",
   "executor": "chatgpt-deterministic",
   "files_changed": [
@@ -14,9 +17,9 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-PARIDAD-COMERCIAL-R14C-CARLOS-20261001T1640Z",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-10-01T16:39:54Z",
+  "published_at_utc": "2026-10-01T16:40:48Z",
   "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
@@ -25,5 +28,5 @@
   "status": "INTEGRATED",
   "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
   "tests": "PASS",
-  "work_completion": "PENDING_CERTIFICATION"
+  "work_completion": "COMPLETE"
 }
