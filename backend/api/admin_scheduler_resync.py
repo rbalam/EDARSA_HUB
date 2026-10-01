@@ -1792,7 +1792,11 @@ async def resolver_dependencias_sync(
 # =============================================================================
 
 def _ejecutar_backfill_detalle_iscam(
-    unidad_negocio_id: str, fecha_inicio: date, fecha_fin: date, commit: bool
+    unidad_negocio_id: str,
+    fecha_inicio: date,
+    fecha_fin: date,
+    commit: bool,
+    force_refresh: bool = False,
 ) -> Dict[str, Any]:
     """Replica en el resync manual la fase de detalle del scheduler canónico."""
     from scripts.backfill_detalle_producto_pendientes import ejecutar_backfill
@@ -1802,6 +1806,7 @@ def _ejecutar_backfill_detalle_iscam(
         fecha_fin=fecha_fin + timedelta(days=1),
         unidades=[unidad_negocio_id],
         commit=commit,
+        force_refresh=force_refresh,
     )
     return {
         'success': code == 0,
@@ -2100,7 +2105,11 @@ async def _ejecutar_sync_real(
         if resultado.success:
             try:
                 detalle_producto = _ejecutar_backfill_detalle_iscam(
-                    unidad_negocio_id, fecha_inicio, fecha_fin, commit=True
+                    unidad_negocio_id,
+                    fecha_inicio,
+                    fecha_fin,
+                    commit=True,
+                    force_refresh=True,
                 )
             except Exception as detalle_exc:
                 detalle_producto = {

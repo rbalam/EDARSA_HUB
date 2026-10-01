@@ -134,6 +134,7 @@ def ejecutar_backfill(
     fecha_fin: date,
     unidades: Optional[List[str]] = None,
     commit: bool = False,
+    force_refresh: bool = False,
 ) -> Tuple[int, Dict[str, Any]]:
     if fecha_fin <= fecha_inicio:
         raise ValueError("fecha_fin debe ser mayor que fecha_inicio")
@@ -149,6 +150,7 @@ def ejecutar_backfill(
     resumen: Dict[str, Any] = {
         "run_id": run_id,
         "modo": "COMMIT" if commit else "DRY_RUN",
+        "force_refresh": force_refresh,
         "fecha_inicio": fecha_inicio.isoformat(),
         "fecha_fin_exclusivo": fecha_fin.isoformat(),
         "unidades": [],
@@ -200,7 +202,7 @@ def ejecutar_backfill(
             runtime = _runtime_metrics(rt_row)
             actual = detalle_actual.get(dia)
 
-            if _detalle_concilia(actual, runtime):
+            if _detalle_concilia(actual, runtime) and not force_refresh:
                 item = {
                     "fecha_operacion": dia.isoformat(),
                     "status": "YA_CONCILIADO",
