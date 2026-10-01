@@ -1,0 +1,350 @@
+{
+  "base_sha": "559d72e25f4f1fc7cb75627c25b15e70342c32e0",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-01T01:44:33Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-TICKET-SELLER-DISCOUNT-AUDIT-R1-CARLOS-20261001T0144Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T01:44:54Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "COLUMN_NAME",
+              "DATA_TYPE"
+            ],
+            "name": "schema_pax_detalle_ticket_fields",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                "ServerID",
+                "nvarchar"
+              ],
+              [
+                "SucursalID",
+                "nvarchar"
+              ],
+              [
+                "FechaOperacion",
+                "date"
+              ],
+              [
+                "CuentaID",
+                "nvarchar"
+              ],
+              [
+                "CuentaFolio",
+                "nvarchar"
+              ],
+              [
+                "MesaNumero",
+                "nvarchar"
+              ],
+              [
+                "MeseroID",
+                "nvarchar"
+              ],
+              [
+                "MeseroNombre",
+                "nvarchar"
+              ],
+              [
+                "NumeroComensales",
+                "int"
+              ],
+              [
+                "VentaCuenta",
+                "decimal"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "COLUMN_NAME",
+              "DATA_TYPE"
+            ],
+            "name": "schema_movimientos_ticket_fields",
+            "row_count_returned": 17,
+            "rows": [
+              [
+                "ServerID",
+                "nvarchar"
+              ],
+              [
+                "SucursalID",
+                "nvarchar"
+              ],
+              [
+                "FechaOperacion",
+                "date"
+              ],
+              [
+                "CuentaID",
+                "nvarchar"
+              ],
+              [
+                "CuentaFolio",
+                "nvarchar"
+              ],
+              [
+                "MesaNumero",
+                "nvarchar"
+              ],
+              [
+                "MeseroID",
+                "nvarchar"
+              ],
+              [
+                "MeseroNombre",
+                "nvarchar"
+              ],
+              [
+                "ProductoID",
+                "nvarchar"
+              ],
+              [
+                "ProductoCodigo",
+                "nvarchar"
+              ],
+              [
+                "ProductoNombre",
+                "nvarchar"
+              ],
+              [
+                "Cantidad",
+                "decimal"
+              ],
+              [
+                "PrecioUnitario",
+                "decimal"
+              ],
+              [
+                "Descuento",
+                "decimal"
+              ],
+              [
+                "Impuesto",
+                "decimal"
+              ],
+              [
+                "Subtotal",
+                "decimal"
+              ],
+              [
+                "Total",
+                "decimal"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "SucursalID",
+              "FechaOperacion",
+              "CuentaID",
+              "CuentaFolio",
+              "MesaNumero",
+              "MeseroID",
+              "MeseroNombre",
+              "NumeroComensales",
+              "VentaCuenta"
+            ],
+            "name": "la_estelar_pax_ticket_26014",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "SucursalID",
+              "FechaOperacion",
+              "CuentaID",
+              "CuentaFolio",
+              "MesaNumero",
+              "MeseroID",
+              "MeseroNombre",
+              "ProductoCodigo",
+              "ProductoNombre",
+              "Cantidad",
+              "PrecioUnitario",
+              "Descuento",
+              "Impuesto",
+              "Subtotal",
+              "Total"
+            ],
+            "name": "la_estelar_mov_ticket_26014",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "server_id",
+              "sucursal_id",
+              "sistema_origen",
+              "fecha_operacion",
+              "fecha_hora",
+              "numero_ticket",
+              "producto_codigo_fuente",
+              "producto_nombre",
+              "cantidad",
+              "precio_unitario",
+              "importe_bruto",
+              "importe_neto",
+              "descuento",
+              "propina",
+              "pax"
+            ],
+            "name": "la_estelar_canonico_ticket_26014",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "",
+                "SOFTRESTAURANT",
+                "2026-09-26",
+                "2026-09-26 12:58:47.0000000",
+                "26014",
+                "A080018",
+                "A SERVICIO DE ENTRADA",
+                "1.0000",
+                "0.0000",
+                "0.0000",
+                "0.0000",
+                "0.0000",
+                "0.0000",
+                null
+              ],
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "",
+                "SOFTRESTAURANT",
+                "2026-09-26",
+                "2026-09-26 12:58:47.0000000",
+                "26014",
+                "B070001",
+                "CERVEZA BOMBA LA ESTELAR 355 ML",
+                "1.0000",
+                "110.0000",
+                "110.0000",
+                "110.0000",
+                "0.0000",
+                "0.0000",
+                null
+              ],
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "",
+                "SOFTRESTAURANT",
+                "2026-09-26",
+                "2026-09-26 12:58:47.0000000",
+                "26014",
+                "B070021",
+                "CERVEZA MICHELOB ULTRA 355 ML",
+                "1.0000",
+                "70.0000",
+                "70.0000",
+                "70.0000",
+                "0.0000",
+                "0.0000",
+                null
+              ],
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "",
+                "SOFTRESTAURANT",
+                "2026-09-26",
+                "2026-09-26 12:58:47.0000000",
+                "26014",
+                "A060023",
+                "FUNDIDO DE RANCHO",
+                "1.0000",
+                "185.0000",
+                "185.0000",
+                "185.0000",
+                "0.0000",
+                "84.0000",
+                2
+              ],
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "",
+                "SOFTRESTAURANT",
+                "2026-09-26",
+                "2026-09-26 12:58:47.0000000",
+                "26014",
+                "A42010",
+                "QUESADILLA AZUL DE CHICHARRON",
+                "1.0000",
+                "65.0000",
+                "65.0000",
+                "65.0000",
+                "0.0000",
+                "0.0000",
+                null
+              ],
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "",
+                "SOFTRESTAURANT",
+                "2026-09-26",
+                "2026-09-26 12:58:47.0000000",
+                "26014",
+                "A42009",
+                "QUESADILLA DE CAMPO",
+                "1.0000",
+                "65.0000",
+                "65.0000",
+                "65.0000",
+                "0.0000",
+                "0.0000",
+                null
+              ],
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "",
+                "SOFTRESTAURANT",
+                "2026-09-26",
+                "2026-09-26 12:58:47.0000000",
+                "26014",
+                "A42008",
+                "QUESADILLA DE HUITLACOCHE GURMET",
+                "1.0000",
+                "65.0000",
+                "65.0000",
+                "65.0000",
+                "0.0000",
+                "0.0000",
+                null
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-01T01:44:32Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
