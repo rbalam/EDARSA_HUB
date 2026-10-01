@@ -229,14 +229,14 @@ async def test_validate_access_fails_closed_on_exception(
     assert result is False
 
 
-def test_validate_access_has_no_runtime_role_bypass():
+def test_access_result_has_no_runtime_role_bypass():
     import ast
     import inspect
     import textwrap
 
     source = textwrap.dedent(
         inspect.getsource(
-            module.validate_api_connection_access
+            module.get_api_connection_access_result
         )
     )
 
@@ -264,3 +264,49 @@ def test_validate_access_has_no_runtime_role_bypass():
     assert "allowed_servers" not in runtime_names
 
     assert "SERVIDORES_VER" in runtime_strings
+
+@pytest.mark.asyncio
+async def test_access_result_reports_missing_empresaid_as_metadata_error(
+    monkeypatch,
+):
+    monkeypatch.setattr(module, "resolve_sql_usuario_id", lambda user: 101)
+    monkeypatch.setattr(module, "can_access_permission_sql", lambda usuario_id, permission: True)
+
+    empresa_called = False
+
+    def empresa(*args, **kwargs):
+        nonlocal empresa_called
+        empresa_called = True
+        return True
+
+    monkeypatch.setattr(module, "can_access_empresa_sql", empresa)
+
+    result = await module.get_api_connection_access_result(
+        {"email": "test@example.com"},
+        {"id": "connection-without-empresa", "EmpresaID": None},
+    )
+
+    assert result["allowed"] is False
+    assert result["status_code"] == 409
+    assert result["detail"] == module.API_CONNECTION_MISSING_EMPRESAID_DETAIL
+    assert result["reason"] == "MISSING_EMPRESAID"
+    assert empresa_called is False
+
+
+@pytest.mark.asyncio
+async def test_access_result_keeps_empresa_scope_denial_as_permission_error(
+    monkeypatch,
+):
+    monkeypatch.setattr(module, "resolve_sql_usuario_id", lambda user: 101)
+    monkeypatch.setattr(module, "can_access_permission_sql", lambda usuario_id, permission: True)
+    monkeypatch.setattr(module, "can_access_empresa_sql", lambda usuario_id, empresa_id: False)
+
+    result = await module.get_api_connection_access_result(
+        {"email": "test@example.com"},
+        {"id": "connection-with-denied-empresa", "EmpresaID": 7},
+    )
+
+    assert result["allowed"] is False
+    assert result["status_code"] == 403
+    assert result["detail"] == module.API_CONNECTION_ACCESS_DENIED_DETAIL
+    assert result["reason"] == "EMPRESA_SCOPE_DENIED"
