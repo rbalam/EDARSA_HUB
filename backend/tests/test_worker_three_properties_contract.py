@@ -23,3 +23,18 @@ def test_property_3_terminal_result_pipeline_is_mandatory():
 def test_remote_health_exposes_runtime_and_blocking_state():
     health = text(HEALTH)
     for marker in ("last_cycle_utc","last_receive_utc",'"BLOCKED"','"REJECTED"','"RESULT_READY"'): assert marker in health
+
+
+def test_property_3b_terminal_success_moves_processing_to_done():
+    dispatcher = text(DISPATCHER)
+
+    assert 'DONE = STATE / "done"' in dispatcher
+    assert 'RESULTS = STATE / "results"' in dispatcher
+    assert 'result["completed_at_utc"] = now()' in dispatcher
+    assert 'write_json(RESULTS / path.name, result)' in dispatcher
+    assert (
+        'target = DONE / path.name if result["status"] in '
+        '{"INTEGRATED", "READ_ONLY_COMPLETE", "OPERATIONAL_COMPLETE"} '
+        'else REJECTED / path.name'
+    ) in dispatcher
+    assert 'os.replace(processing, target)' in dispatcher
