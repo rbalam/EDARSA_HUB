@@ -1,0 +1,369 @@
+{
+  "base_sha": "627c9cb62e4b8b81c774faeb3051bb86e9b467c9",
+  "blockers": [
+    "iscam_detail_backfill_failed:rc=1"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-01T00:45:55Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-DETALLE-130MID-202603-R20-CARLOS-20260930",
+  "operation": "ISCAM_DETAIL_BACKFILL",
+  "operation_summary": {
+    "dias_bloqueados": 19,
+    "dias_candidatos": 19,
+    "dias_evaluados": 31,
+    "dias_reparables": 0,
+    "dias_sin_runtime": 0,
+    "dias_ya_ok": 12,
+    "fecha_fin_exclusivo": "2026-04-01",
+    "fecha_inicio": "2026-03-01",
+    "filas_insertadas": 0,
+    "modo": "COMMIT",
+    "unidades": [
+      {
+        "bloqueados": 19,
+        "candidatos": 19,
+        "dias": [
+          {
+            "fecha_operacion": "2026-03-01",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-03-02",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "delta_pax": -3,
+            "delta_tickets": -3,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-03-03",
+            "filas_insertadas": 0,
+            "pax_pos": 56,
+            "pax_runtime": 59,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 21,
+            "tickets_runtime": 24,
+            "ventas_pos": "89513.0000",
+            "ventas_runtime": "89513.00"
+          },
+          {
+            "delta_pax": 1,
+            "delta_tickets": 1,
+            "delta_ventas": "-620.0000",
+            "fecha_operacion": "2026-03-04",
+            "filas_insertadas": 0,
+            "pax_pos": 53,
+            "pax_runtime": 52,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 26,
+            "tickets_runtime": 25,
+            "ventas_pos": "93909.0000",
+            "ventas_runtime": "94529.00"
+          },
+          {
+            "delta_pax": 1,
+            "delta_tickets": 1,
+            "delta_ventas": "620.0000",
+            "fecha_operacion": "2026-03-05",
+            "filas_insertadas": 0,
+            "pax_pos": 72,
+            "pax_runtime": 71,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 27,
+            "tickets_runtime": 26,
+            "ventas_pos": "149015.0000",
+            "ventas_runtime": "148395.00"
+          },
+          {
+            "delta_pax": -1,
+            "delta_tickets": -1,
+            "delta_ventas": "-418.0000",
+            "fecha_operacion": "2026-03-06",
+            "filas_insertadas": 0,
+            "pax_pos": 117,
+            "pax_runtime": 118,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 48,
+            "tickets_runtime": 49,
+            "ventas_pos": "192828.0000",
+            "ventas_runtime": "193246.00"
+          },
+          {
+            "delta_pax": 2,
+            "delta_tickets": 2,
+            "delta_ventas": "418.0000",
+            "fecha_operacion": "2026-03-07",
+            "filas_insertadas": 0,
+            "pax_pos": 163,
+            "pax_runtime": 161,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 58,
+            "tickets_runtime": 56,
+            "ventas_pos": "235791.0000",
+            "ventas_runtime": "235373.00"
+          },
+          {
+            "fecha_operacion": "2026-03-08",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-03-09",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-03-10",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "delta_pax": -1,
+            "delta_tickets": -1,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-03-11",
+            "filas_insertadas": 0,
+            "pax_pos": 48,
+            "pax_runtime": 49,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 22,
+            "tickets_runtime": 23,
+            "ventas_pos": "72853.0000",
+            "ventas_runtime": "72853.00"
+          },
+          {
+            "delta_pax": 1,
+            "delta_tickets": 1,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-03-12",
+            "filas_insertadas": 0,
+            "pax_pos": 89,
+            "pax_runtime": 88,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 35,
+            "tickets_runtime": 34,
+            "ventas_pos": "157438.0000",
+            "ventas_runtime": "157438.00"
+          },
+          {
+            "delta_pax": -1,
+            "delta_tickets": -1,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-03-13",
+            "filas_insertadas": 0,
+            "pax_pos": 153,
+            "pax_runtime": 154,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 52,
+            "tickets_runtime": 53,
+            "ventas_pos": "230206.0000",
+            "ventas_runtime": "230206.00"
+          },
+          {
+            "delta_pax": 1,
+            "delta_tickets": 1,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-03-14",
+            "filas_insertadas": 0,
+            "pax_pos": 159,
+            "pax_runtime": 158,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 54,
+            "tickets_runtime": 53,
+            "ventas_pos": "236370.0000",
+            "ventas_runtime": "236370.00"
+          },
+          {
+            "fecha_operacion": "2026-03-15",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "delta_pax": -1,
+            "delta_tickets": -1,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-03-16",
+            "filas_insertadas": 0,
+            "pax_pos": 108,
+            "pax_runtime": 109,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 36,
+            "tickets_runtime": 37,
+            "ventas_pos": "172013.0000",
+            "ventas_runtime": "172013.00"
+          },
+          {
+            "fecha_operacion": "2026-03-17",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "delta_pax": 1,
+            "delta_tickets": 1,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-03-18",
+            "filas_insertadas": 0,
+            "pax_pos": 91,
+            "pax_runtime": 90,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 35,
+            "tickets_runtime": 34,
+            "ventas_pos": "153640.0000",
+            "ventas_runtime": "153640.00"
+          },
+          {
+            "delta_pax": -1,
+            "delta_tickets": -1,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-03-19",
+            "filas_insertadas": 0,
+            "pax_pos": 85,
+            "pax_runtime": 86,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 35,
+            "tickets_runtime": 36,
+            "ventas_pos": "133373.0000",
+            "ventas_runtime": "133373.00"
+          },
+          {
+            "fecha_operacion": "2026-03-20",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-03-21",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-03-22",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "delta_pax": 1,
+            "delta_tickets": 1,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-03-23",
+            "filas_insertadas": 0,
+            "pax_pos": 73,
+            "pax_runtime": 72,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 29,
+            "tickets_runtime": 28,
+            "ventas_pos": "110998.0000",
+            "ventas_runtime": "110998.00"
+          },
+          {
+            "fecha_operacion": "2026-03-24",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-03-25",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "delta_pax": -2,
+            "delta_tickets": -1,
+            "delta_ventas": "-200.0000",
+            "fecha_operacion": "2026-03-26",
+            "filas_insertadas": 0,
+            "pax_pos": 105,
+            "pax_runtime": 107,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 38,
+            "tickets_runtime": 39,
+            "ventas_pos": "166496.0000",
+            "ventas_runtime": "166696.00"
+          },
+          {
+            "delta_pax": -1,
+            "delta_tickets": -1,
+            "delta_ventas": "-600.0000",
+            "fecha_operacion": "2026-03-27",
+            "filas_insertadas": 0,
+            "pax_pos": 116,
+            "pax_runtime": 117,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 40,
+            "tickets_runtime": 41,
+            "ventas_pos": "181556.0000",
+            "ventas_runtime": "182156.00"
+          },
+          {
+            "delta_pax": 1,
+            "delta_tickets": 1,
+            "delta_ventas": "600.0000",
+            "fecha_operacion": "2026-03-28",
+            "filas_insertadas": 0,
+            "pax_pos": 125,
+            "pax_runtime": 124,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 40,
+            "tickets_runtime": 39,
+            "ventas_pos": "172432.0000",
+            "ventas_runtime": "171832.00"
+          },
+          {
+            "delta_pax": 2,
+            "delta_tickets": 1,
+            "delta_ventas": "200.0000",
+            "fecha_operacion": "2026-03-29",
+            "filas_insertadas": 0,
+            "pax_pos": 107,
+            "pax_runtime": 105,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 37,
+            "tickets_runtime": 36,
+            "ventas_pos": "138779.0000",
+            "ventas_runtime": "138579.00"
+          },
+          {
+            "delta_pax": -2,
+            "delta_tickets": -2,
+            "delta_ventas": "-200.0000",
+            "fecha_operacion": "2026-03-30",
+            "filas_insertadas": 0,
+            "pax_pos": 94,
+            "pax_runtime": 96,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 33,
+            "tickets_runtime": 35,
+            "ventas_pos": "145277.0000",
+            "ventas_runtime": "145477.00"
+          },
+          {
+            "delta_pax": 0,
+            "delta_tickets": 0,
+            "delta_ventas": "170.0000",
+            "fecha_operacion": "2026-03-31",
+            "filas_insertadas": 0,
+            "pax_pos": 97,
+            "pax_runtime": 97,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 34,
+            "tickets_runtime": 34,
+            "ventas_pos": "129144.0000",
+            "ventas_runtime": "128974.00"
+          }
+        ],
+        "filas_insertadas": 0,
+        "reparables": 0,
+        "sin_runtime": 0,
+        "unidad": "130MID",
+        "ya_ok": 12
+      }
+    ]
+  },
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T00:46:14Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-01T00:45:33Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "units": [
+    "130MID"
+  ],
+  "work_completion": "NOT_CERTIFIED"
+}
