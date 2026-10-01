@@ -4,61 +4,67 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "012921ebc92508c8b76891931bc5720344a7055c",
-  "generated_at_utc": "2026-10-01T03:26:20Z",
+  "generated_at_utc": "2026-10-01T03:27:45Z",
   "history": {
-    "done_total_local": 1234,
+    "done_total_local": 1235,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1083,
-    "results_total_local": 2118
+    "results_total_local": 2119
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 416,
+      "age_seconds": 501,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-SQL-READONLY-R7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1377,
+      "age_seconds": 56,
+      "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-SQL-READONLY-R7-RETRY1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1462,
       "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-CANARY-READONLY-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1205,
+      "age_seconds": 1290,
       "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-DONE-REGRESSION-GUARD-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 798,
+      "age_seconds": 883,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-FINAL-READONLY-R1-CARLOS-20261001T0307Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 323,
+      "age_seconds": 408,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-FINAL-READONLY-R2-CARLOS-20261001T0318Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 390,
+      "age_seconds": 475,
       "job_id": "SERVIDORES-API-CIENFUEGOS-SERVER-BRIDGE-READONLY-R1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 612,
+      "age_seconds": 697,
       "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-IDENTITY-READONLY-R1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1264,
+      "age_seconds": 1349,
       "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-MAPPING-READONLY-R2-20260930",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,15 +78,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 8,
+  "queue_result_ready_recent": 9,
   "queue_running": 0,
   "remote_development_sha": "012921ebc92508c8b76891931bc5720344a7055c",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T03:26:12Z",
-    "last_receive_utc": "2026-10-01T03:26:19Z",
-    "last_terminal_utc": "2026-10-01T03:20:56Z",
+    "last_cycle_utc": "2026-10-01T03:27:44Z",
+    "last_receive_utc": "2026-10-01T03:27:39Z",
+    "last_terminal_utc": "2026-10-01T03:26:48Z",
     "pid": "1551643",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "d68b475192c3c688137911a09b06144faf578fa4",
