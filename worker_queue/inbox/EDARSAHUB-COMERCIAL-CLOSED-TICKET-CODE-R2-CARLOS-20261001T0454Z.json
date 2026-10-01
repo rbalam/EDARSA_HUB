@@ -1,0 +1,130 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-CODE-R2-CARLOS-20261001T0454Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e703ee850fd0170840fe90e5df6928e74de83b0e",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir R1 bloqueado por WRITE_EXISTING_REQUIRES_EXPECTED_SHA256 usando mutaciones exactas sobre archivos existentes. Integrar el flujo cerrado existente para persistir NUMCHEQUE visible, folio interno trazable, vendedor/mesero y descuento original por linea, y consumirlos en Ticket de Venta cerrado. No crear sincronizador paralelo, no consultar POS desde el endpoint y no tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:\n    conn = get_pos_connection(cfg)\n    if not conn:\n        raise RuntimeError(f\"sin conexión POS para {cfg.get('unidad_codigo')}\")\n\n    try:\n        prop_col = \"propina\" if _table_has_col(conn, \"cheques\", \"propina\") else None\n        desc_col = None\n        for candidate in [\"totaldescuentoycortesia\", \"descuento\"]:\n            if _table_has_col(conn, \"cheques\", candidate):\n                desc_col = candidate\n                break\n\n        prop_expr = f\"ISNULL(ch.{prop_col}, 0)\" if prop_col else \"CAST(0 AS decimal(18,4))\"\n        desc_expr = f\"ISNULL(ch.{desc_col}, 0)\" if desc_col else \"CAST(0 AS decimal(18,4))\"\n\n        fi, ff = _soft_operational_datetime_range(cfg, dia)\n\n        sql = f\"\"\"\n        WITH h AS (\n            SELECT\n                ch.folio,\n                ch.fecha,\n                  ISNULL(ch.cancelado, 0) AS cancelado_origen,\n                ISNULL(ch.nopersonas, 0) AS pax_ticket,\n                ISNULL(ch.total, 0) AS importe_neto_ticket,\n                {prop_expr} AS propina_ticket,\n                {desc_expr} AS descuento_ticket\n            FROM cheques ch WITH (NOLOCK)\n            INNER JOIN turnos tr WITH (NOLOCK)\n                ON tr.idturno = ch.idturno\n            WHERE tr.apertura >= %s\n              AND tr.apertura < %s\n              AND ISNULL(ch.cancelado, 0) = 0\n        ),\n        l AS (\n            SELECT\n                h.folio,\n                h.fecha,\n                  h.cancelado_origen,\n                h.pax_ticket,\n                h.importe_neto_ticket,\n                h.propina_ticket,\n                h.descuento_ticket,\n                CASE\n                    WHEN MAX(dc.foliodet) IS NULL THEN 'HEADER_SIN_DETALLE'\n                    ELSE COALESCE(NULLIF(CONVERT(varchar(100), dc.idproducto), ''), 'SIN_CODIGO')\n                END AS producto_codigo_fuente,\n                COALESCE(MAX(CONVERT(varchar(300), p.descripcion)), 'HEADER SIN DETALLE') AS producto_nombre,\n                SUM(CAST(ISNULL(dc.cantidad, 0) AS decimal(18,4))) AS cantidad,\n                CASE\n                    WHEN SUM(CAST(ISNULL(dc.cantidad, 0) AS decimal(18,4))) <> 0\n                    THEN SUM(CAST(ISNULL(dc.cantidad, 0) * ISNULL(dc.precio, 0) AS decimal(18,4)))\n                         / SUM(CAST(ISNULL(dc.cantidad, 0) AS decimal(18,4)))\n                    ELSE MAX(CAST(ISNULL(dc.precio, 0) AS decimal(18,4)))\n                END AS precio_unitario,\n                SUM(CAST(ISNULL(dc.cantidad, 0) * ISNULL(dc.precio, 0) AS decimal(18,4))) AS importe_bruto\n            FROM h\n            LEFT JOIN cheqdet dc WITH (NOLOCK)\n                ON dc.foliodet = h.folio\n            LEFT JOIN productos p WITH (NOLOCK)\n                ON p.idproducto = dc.idproducto\n            GROUP BY\n                h.folio,\n                h.fecha,\n                  h.cancelado_origen,\n                h.pax_ticket,\n                h.importe_neto_ticket,\n                h.propina_ticket,\n                h.descuento_ticket,\n                COALESCE(NULLIF(CONVERT(varchar(100), dc.idproducto), ''), 'SIN_CODIGO')\n        ),\n        t AS (\n            SELECT folio, SUM(importe_bruto) AS bruto_ticket\n            FROM l\n            GROUP BY folio\n        )\n        SELECT\n            CONVERT(varchar(64), l.folio) AS numero_ticket,\n            CONCAT('SOFT:', CONVERT(varchar(64), l.folio)) AS id_transaccion,\n            l.fecha AS fecha_hora,\n              l.cancelado_origen,\n              CASE\n                  WHEN ISNULL(l.cancelado_origen, 0) = 0 THEN 'ACTIVO'\n                  ELSE 'CANCELADO'\n              END AS estado_origen,\n              CASE\n                  WHEN ISNULL(l.cancelado_origen, 0) = 0 THEN 1\n                  ELSE 0\n              END AS es_kpi_valido,\n              CONVERT(varchar(64), l.folio) AS folio_origen,\n              CONVERT(varchar(64), l.folio) AS documento_origen,\n            l.pax_ticket,\n            l.importe_neto_ticket,\n            l.propina_ticket,\n            l.descuento_ticket,\n            l.producto_codigo_fuente,\n            l.producto_nombre,\n            l.cantidad,\n            l.precio_unitario,\n            l.importe_bruto,\n            CAST(l.importe_bruto AS decimal(18,4)) AS importe_neto\n        FROM l\n        INNER JOIN t ON t.folio = l.folio\n        ORDER BY l.folio, l.producto_codigo_fuente\n        \"\"\"\n        cur = conn.cursor(as_dict=True)\n        cur.execute(sql, (fi, ff))\n        rows = cur.fetchall() or []\n        for r in rows:\n            r[\"sistema_origen\"] = \"SOFTRESTAURANT\"\n        return _soft_add_ticket_adjustments(rows)\n    finally:\n        conn.close()\n",
+      "new": "def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:\n    conn = get_pos_connection(cfg)\n    if not conn:\n        raise RuntimeError(f\"sin conexión POS para {cfg.get('unidad_codigo')}\")\n\n    try:\n        prop_col = \"propina\" if _table_has_col(conn, \"cheques\", \"propina\") else None\n        desc_col = None\n        for candidate in [\"totaldescuentoycortesia\", \"descuento\"]:\n            if _table_has_col(conn, \"cheques\", candidate):\n                desc_col = candidate\n                break\n\n        prop_expr = f\"ISNULL(ch.{prop_col}, 0)\" if prop_col else \"CAST(0 AS decimal(18,4))\"\n        desc_expr = f\"ISNULL(ch.{desc_col}, 0)\" if desc_col else \"CAST(0 AS decimal(18,4))\"\n\n        fi, ff = _soft_operational_datetime_range(cfg, dia)\n\n        sql = f\"\"\"\n        WITH h AS (\n            SELECT\n                ch.folio,\n                ch.numcheque,\n                ch.fecha,\n                CONVERT(varchar(100), ch.idmesero) AS vendedor_id,\n                NULLIF(LTRIM(RTRIM(CONVERT(varchar(200), m.nombre))), '') AS vendedor_nombre,\n                ISNULL(ch.cancelado, 0) AS cancelado_origen,\n                ISNULL(ch.nopersonas, 0) AS pax_ticket,\n                ISNULL(ch.total, 0) AS importe_neto_ticket,\n                {prop_expr} AS propina_ticket,\n                {desc_expr} AS descuento_ticket\n            FROM cheques ch WITH (NOLOCK)\n            LEFT JOIN meseros m WITH (NOLOCK)\n                ON m.idmesero = ch.idmesero\n            INNER JOIN turnos tr WITH (NOLOCK)\n                ON tr.idturno = ch.idturno\n            WHERE tr.apertura >= %s\n              AND tr.apertura < %s\n              AND ISNULL(ch.cancelado, 0) = 0\n        ),\n        l AS (\n            SELECT\n                h.folio,\n                h.numcheque,\n                h.fecha,\n                h.vendedor_id,\n                h.vendedor_nombre,\n                h.cancelado_origen,\n                h.pax_ticket,\n                h.importe_neto_ticket,\n                h.propina_ticket,\n                h.descuento_ticket,\n                CASE\n                    WHEN MAX(dc.foliodet) IS NULL THEN 'HEADER_SIN_DETALLE'\n                    ELSE COALESCE(NULLIF(CONVERT(varchar(100), dc.idproducto), ''), 'SIN_CODIGO')\n                END AS producto_codigo_fuente,\n                COALESCE(MAX(CONVERT(varchar(300), p.descripcion)), 'HEADER SIN DETALLE') AS producto_nombre,\n                CAST(ISNULL(dc.descuento, 0) AS decimal(9,4)) AS descuento_pct,\n                SUM(CAST(ISNULL(dc.cantidad, 0) AS decimal(18,4))) AS cantidad,\n                CASE\n                    WHEN SUM(CAST(ISNULL(dc.cantidad, 0) AS decimal(18,4))) <> 0\n                    THEN SUM(CAST(ISNULL(dc.cantidad, 0) * ISNULL(dc.precio, 0) AS decimal(18,4)))\n                         / SUM(CAST(ISNULL(dc.cantidad, 0) AS decimal(18,4)))\n                    ELSE MAX(CAST(ISNULL(dc.precio, 0) AS decimal(18,4)))\n                END AS precio_unitario,\n                SUM(CAST(ISNULL(dc.cantidad, 0) * ISNULL(dc.precio, 0) AS decimal(18,4))) AS importe_bruto,\n                SUM(CAST(\n                    ISNULL(dc.cantidad, 0)\n                    * ISNULL(dc.precio, 0)\n                    * (1 - (ISNULL(dc.descuento, 0) / 100.0))\n                    AS decimal(18,4)\n                )) AS importe_neto\n            FROM h\n            LEFT JOIN cheqdet dc WITH (NOLOCK)\n                ON dc.foliodet = h.folio\n            LEFT JOIN productos p WITH (NOLOCK)\n                ON p.idproducto = dc.idproducto\n            GROUP BY\n                h.folio,\n                h.numcheque,\n                h.fecha,\n                h.vendedor_id,\n                h.vendedor_nombre,\n                h.cancelado_origen,\n                h.pax_ticket,\n                h.importe_neto_ticket,\n                h.propina_ticket,\n                h.descuento_ticket,\n                COALESCE(NULLIF(CONVERT(varchar(100), dc.idproducto), ''), 'SIN_CODIGO'),\n                CAST(ISNULL(dc.descuento, 0) AS decimal(9,4))\n        )\n        SELECT\n            COALESCE(\n                NULLIF(CONVERT(varchar(64), l.numcheque), ''),\n                CONVERT(varchar(64), l.folio)\n            ) AS numero_ticket,\n            CONCAT('SOFT:', CONVERT(varchar(64), l.folio)) AS id_transaccion,\n            l.fecha AS fecha_hora,\n            l.cancelado_origen,\n            CASE\n                WHEN ISNULL(l.cancelado_origen, 0) = 0 THEN 'ACTIVO'\n                ELSE 'CANCELADO'\n            END AS estado_origen,\n            CASE\n                WHEN ISNULL(l.cancelado_origen, 0) = 0 THEN 1\n                ELSE 0\n            END AS es_kpi_valido,\n            CONVERT(varchar(64), l.folio) AS folio_origen,\n            COALESCE(\n                NULLIF(CONVERT(varchar(64), l.numcheque), ''),\n                CONVERT(varchar(64), l.folio)\n            ) AS documento_origen,\n            l.vendedor_id,\n            l.vendedor_nombre,\n            l.pax_ticket,\n            l.importe_neto_ticket,\n            l.propina_ticket,\n            l.descuento_ticket,\n            l.producto_codigo_fuente,\n            l.producto_nombre,\n            l.descuento_pct,\n            l.cantidad,\n            l.precio_unitario,\n            l.importe_bruto,\n            CAST(l.importe_neto AS decimal(18,4)) AS importe_neto\n        FROM l\n        ORDER BY l.folio, l.producto_codigo_fuente, l.descuento_pct\n        \"\"\"\n        cur = conn.cursor(as_dict=True)\n        cur.execute(sql, (fi, ff))\n        rows = cur.fetchall() or []\n        for r in rows:\n            r[\"sistema_origen\"] = \"SOFTRESTAURANT\"\n        return _soft_add_ticket_adjustments(rows)\n    finally:\n        conn.close()\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "            \"fuente_original\": _s(r.get(\"sistema_origen\")),\n            \"producto_codigo_fuente\": _s(r.get(\"producto_codigo_fuente\")) or \"SIN_CODIGO\",",
+      "new": "            \"fuente_original\": _s(r.get(\"sistema_origen\")),\n            \"vendedor_id\": _s(r.get(\"vendedor_id\")) or None,\n            \"vendedor_nombre\": _s(r.get(\"vendedor_nombre\"))[:200] or None,\n            \"descuento_pct\": (\n                _d(r.get(\"descuento_pct\"))\n                if r.get(\"descuento_pct\") is not None\n                else None\n            ),\n            \"producto_codigo_fuente\": _s(r.get(\"producto_codigo_fuente\")) or \"SIN_CODIGO\",",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "            fecha_sincronizacion,\n            activo\n        ) VALUES (",
+      "new": "            fecha_sincronizacion,\n            activo,\n            vendedor_id,\n            vendedor_nombre,\n            descuento_pct\n        ) VALUES (",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\n            %s,%s\n        )",
+      "new": "            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\n            %s,%s,%s,%s,%s\n        )",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "                    r[\"fecha_sincronizacion\"],\n                    1 if r[\"activo\"] else 0,\n                ),",
+      "new": "                    r[\"fecha_sincronizacion\"],\n                    1 if r[\"activo\"] else 0,\n                    r[\"vendedor_id\"],\n                    r[\"vendedor_nombre\"],\n                    r[\"descuento_pct\"],\n                ),",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/ticket_service.py",
+      "old": "            importe_neto,\n            descuento,\n            propina,\n            pax",
+      "new": "            importe_neto,\n            descuento,\n            descuento_pct,\n            vendedor_nombre,\n            propina,\n            pax",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/ticket_service.py",
+      "old": "            descuento_pct = (\n                (descuento_linea / bruto) * 100.0\n                if bruto > 0 and descuento_linea > 0\n                else 0.0\n            )",
+      "new": "            descuento_pct_origen = row.get(\"descuento_pct\")\n            descuento_pct = (\n                _money(descuento_pct_origen)\n                if descuento_pct_origen is not None\n                else (\n                    (descuento_linea / bruto) * 100.0\n                    if bruto > 0 and descuento_linea > 0\n                    else 0.0\n                )\n            )",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/ticket_service.py",
+      "old": "        descuento_cuenta = max(0.0, descuento - descuento_productos)\n        return {",
+      "new": "        descuento_cuenta = max(0.0, descuento - descuento_productos)\n        vendedor = next(\n            (\n                str(row.get(\"vendedor_nombre\") or \"\").strip()\n                for row in closed_rows\n                if str(row.get(\"vendedor_nombre\") or \"\").strip()\n            ),\n            None,\n        )\n        return {",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/ticket_service.py",
+      "old": "                \"pax\": pax,\n                \"estado\": \"CERRADA\",",
+      "new": "                \"pax\": pax,\n                \"vendedor\": vendedor,\n                \"estado\": \"CERRADA\",",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_comercial_closed_ticket_enrichment_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[1]\nDETAIL = ROOT / \"scripts/poblar_ventas_detalle_producto_canonico.py\"\nSERVICE = ROOT / \"modules/comercial/ticket_service.py\"\n\n\ndef test_soft_closed_detail_uses_numcheque_seller_and_line_discount():\n    text = DETAIL.read_text(encoding=\"utf-8\")\n    block = text.split(\"def _extract_soft(\", 1)[1].split(\"SOFT_AJUSTE_CHEQUE\", 1)[0]\n    assert \"ch.numcheque\" in block\n    assert \"LEFT JOIN meseros m\" in block\n    assert \"AS vendedor_nombre\" in block\n    assert \"dc.descuento\" in block\n    assert \"AS descuento_pct\" in block\n    assert \"AS numero_ticket\" in block\n    assert \"l.numcheque\" in block\n\n\ndef test_closed_detail_materializes_new_canonical_fields():\n    text = DETAIL.read_text(encoding=\"utf-8\")\n    assert '\"vendedor_id\": _s(r.get(\"vendedor_id\")) or None' in text\n    assert '\"vendedor_nombre\": _s(r.get(\"vendedor_nombre\"))[:200] or None' in text\n    assert '\"descuento_pct\": (' in text\n    assert \"vendedor_id,\" in text\n    assert \"vendedor_nombre,\" in text\n    assert \"descuento_pct\" in text\n\n\ndef test_ticket_service_consumes_closed_seller_and_source_discount_pct():\n    text = SERVICE.read_text(encoding=\"utf-8\")\n    closed = text.split(\"if closed_rows:\", 1)[1].split(\"open_rows =\", 1)[0]\n    assert \"descuento_pct_origen\" in closed\n    assert 'row.get(\"vendedor_nombre\")' in closed\n    assert '\"vendedor\": vendedor' in closed\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/modules/comercial/ticket_service.py",
+        "backend/tests/test_comercial_closed_ticket_enrichment_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_closed_ticket_enrichment_contract.py",
+        "backend/tests/test_iscam_header_folio_parent_r92.py",
+        "backend/tests/test_iscam_no_prorate_adjustments_r49.py",
+        "backend/tests/test_comercial_softrestaurant_zero_discount_ticket_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+          "backend/modules/comercial/ticket_service.py",
+          "backend/tests/test_comercial_closed_ticket_enrichment_contract.py"
+        ],
+        "search_terms": [
+          "numcheque",
+          "vendedor_nombre",
+          "descuento_pct",
+          "LEFT JOIN meseros m"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
