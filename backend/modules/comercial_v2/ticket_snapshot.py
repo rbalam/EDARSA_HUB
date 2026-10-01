@@ -23,13 +23,9 @@ SELECT
     MIN(ch.fecha) AS fecha_hora,
     MAX(ISNULL(ch.nopersonas, 0)) AS pax,
     MAX(ISNULL(ch.propina, 0)) AS propina,
-    MAX(
-        CASE
-            WHEN ISNULL(ch.total, 0) >= ISNULL(ch.propina, 0)
-            THEN ISNULL(ch.total, 0) - ISNULL(ch.propina, 0)
-            ELSE ISNULL(ch.total, 0)
-        END
-    ) AS total_ticket,
+    MAX(ISNULL(ch.total, 0)) AS total_ticket,
+    MAX(ISNULL(ch.descuentoimporte, 0)) AS descuento_encabezado_reportado,
+    MAX(ISNULL(ch.totaldescuentos, 0)) AS descuento_total_reportado,
     COALESCE(
         NULLIF(CONVERT(varchar(100), d.idproducto), ''),
         'SIN_CODIGO'
@@ -56,14 +52,31 @@ SELECT
             ISNULL(d.cantidad, 0) * ISNULL(d.precio, 0)
             AS decimal(18,4)
         )
-    ) AS importe_bruto
+    ) AS importe_bruto,
+    MAX(CAST(ISNULL(d.descuento, 0) AS decimal(18,4))) AS descuento_pct,
+    SUM(
+        CAST(
+            ISNULL(d.cantidad, 0)
+            * ISNULL(d.precio, 0)
+            * (ISNULL(d.descuento, 0) / 100.0)
+            AS decimal(18,4)
+        )
+    ) AS descuento_producto,
+    SUM(
+        CAST(
+            ISNULL(d.cantidad, 0)
+            * ISNULL(d.precio, 0)
+            * (1 - (ISNULL(d.descuento, 0) / 100.0))
+            AS decimal(18,4)
+        )
+    ) AS importe_neto_producto
 FROM tempcheques ch
 LEFT JOIN tempcheqdet d
     ON d.foliodet = ch.folio
 LEFT JOIN productos p
     ON p.idproducto = d.idproducto
 WHERE ISNULL(ch.cancelado, 0) = 0
-  AND ISNULL(ch.total, 0) > 0
+  AND ISNULL(ch.total, 0) >= 0
   AND ch.fecha >= CONVERT(
         DATETIME,
         REPLACE('{fecha_operacion}', '-', ''),
@@ -83,7 +96,8 @@ GROUP BY
     COALESCE(
         NULLIF(CONVERT(varchar(100), d.idproducto), ''),
         'SIN_CODIGO'
-    )
+    ),
+    CAST(ISNULL(d.descuento, 0) AS decimal(18,4))
 ORDER BY ch.folio, producto_codigo
 """
 
@@ -167,6 +181,15 @@ def serialize_open_detail_rows(rows: List[Dict[str, Any]]) -> str:
             "cantidad": _number(row.get("cantidad")),
             "precio_unitario": _number(row.get("precio_unitario")),
             "importe_bruto": _number(row.get("importe_bruto")),
+            "descuento_pct": _number(row.get("descuento_pct")),
+            "descuento_producto": _number(row.get("descuento_producto")),
+            "importe_neto_producto": _number(row.get("importe_neto_producto")),
+            "descuento_encabezado_reportado": _number(
+                row.get("descuento_encabezado_reportado")
+            ),
+            "descuento_total_reportado": _number(
+                row.get("descuento_total_reportado")
+            ),
         })
     return json.dumps(
         normalized,

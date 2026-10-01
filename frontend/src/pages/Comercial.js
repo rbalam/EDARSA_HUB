@@ -254,7 +254,23 @@ function TicketVentaModal({ isOpen, onClose, serverId, sucursal, seleccion }) {
                         </p>
                       )}
                     </div>
-                    <span className="text-right">{formatCurrency(item.importe)}</span>
+                    <div className="text-right">
+                      <span>{formatCurrency(item.importe_neto ?? item.importe)}</span>
+                      {Number(item.descuento_importe || 0) > 0.005 && (
+                        <div className="text-[11px] mt-1">
+                          <p className="text-zinc-500">
+                            BRUTO {formatCurrency(item.importe)}
+                          </p>
+                          <p className="text-red-600">
+                            DESC. {Number(item.descuento_pct || 0).toLocaleString('es-MX', { maximumFractionDigits: 2 })}%:
+                            {' '}-{formatCurrency(item.descuento_importe)}
+                          </p>
+                          <p className="font-semibold">
+                            TOTAL PROD. {formatCurrency(item.importe_neto ?? 0)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -265,7 +281,21 @@ function TicketVentaModal({ isOpen, onClose, serverId, sucursal, seleccion }) {
                 <span>SUBTOTAL</span>
                 <span>{formatCurrency(ticket.subtotal)}</span>
               </div>
-              {Number(ticket.descuento || 0) > 0.005 && (
+              {Number(ticket.descuento_productos || 0) > 0.005 && (
+                <div className="flex justify-between">
+                  <span>DESC. PRODUCTOS</span>
+                  <span>-{formatCurrency(ticket.descuento_productos)}</span>
+                </div>
+              )}
+              {Number(ticket.descuento_cuenta || 0) > 0.005 && (
+                <div className="flex justify-between">
+                  <span>DESC. CUENTA</span>
+                  <span>-{formatCurrency(ticket.descuento_cuenta)}</span>
+                </div>
+              )}
+              {Number(ticket.descuento || 0) > 0.005 &&
+               Number(ticket.descuento_productos || 0) <= 0.005 &&
+               Number(ticket.descuento_cuenta || 0) <= 0.005 && (
                 <div className="flex justify-between">
                   <span>DESCUENTO</span>
                   <span>-{formatCurrency(ticket.descuento)}</span>

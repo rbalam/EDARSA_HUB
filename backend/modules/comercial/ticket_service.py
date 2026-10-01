@@ -190,21 +190,38 @@ def build_ticket_venta(
 
     if closed_rows:
         total = sum(_money(row.get("importe_neto")) for row in closed_rows)
-        subtotal = sum(_money(row.get("importe_bruto")) for row in closed_rows)
+        subtotal = sum(
+            _money(row.get("importe_bruto"))
+            for row in closed_rows
+            if _real_product_row(row)
+        )
         descuento = sum(_money(row.get("descuento")) for row in closed_rows)
         propina = sum(_money(row.get("propina")) for row in closed_rows)
         pax = max((_integer(row.get("pax")) for row in closed_rows), default=0)
         items = []
+        descuento_productos = 0.0
         for row in closed_rows:
             if not _real_product_row(row):
                 continue
+            bruto = _money(row.get("importe_bruto"))
+            neto = _money(row.get("importe_neto"))
+            descuento_linea = max(0.0, _money(row.get("descuento")))
+            descuento_productos += descuento_linea
+            descuento_pct = (
+                (descuento_linea / bruto) * 100.0
+                if bruto > 0 and descuento_linea > 0
+                else 0.0
+            )
             items.append({
                 "cantidad": _money(row.get("cantidad")),
                 "descripcion": str(
                     row.get("producto_nombre") or "VENTA SIN DETALLE DE PRODUCTO"
                 ),
                 "precio_unitario": _money(row.get("precio_unitario")),
-                "importe": _money(row.get("importe_bruto")),
+                "importe": bruto,
+                "descuento_pct": descuento_pct,
+                "descuento_importe": descuento_linea,
+                "importe_neto": neto,
             })
         if not items:
             items = [{
@@ -212,7 +229,11 @@ def build_ticket_venta(
                 "descripcion": "VENTA SIN DETALLE DE PRODUCTO",
                 "precio_unitario": total,
                 "importe": total,
+                "descuento_pct": 0.0,
+                "descuento_importe": 0.0,
+                "importe_neto": total,
             }]
+        descuento_cuenta = max(0.0, descuento - descuento_productos)
         return {
             "source_status": "SUCCESS",
             "source": "Comercial_Inteligencia_VentasDetalleProducto",
@@ -225,6 +246,8 @@ def build_ticket_venta(
                 "estado": "CERRADA",
                 "items": items,
                 "subtotal": subtotal,
+                "descuento_productos": descuento_productos,
+                "descuento_cuenta": descuento_cuenta,
                 "descuento": descuento,
                 "impuesto": None,
                 "total": total,
@@ -245,10 +268,30 @@ def build_ticket_venta(
         return None
 
     subtotal = sum(_money(row.get("importe_bruto")) for row in open_rows)
+    descuento_productos = sum(
+        max(0.0, _money(row.get("descuento_producto")))
+        for row in open_rows
+    )
+    neto_productos = sum(
+        _money(
+            row.get("importe_neto_producto")
+            if row.get("importe_neto_producto") is not None
+            else (
+                _money(row.get("importe_bruto"))
+                - _money(row.get("descuento_producto"))
+            )
+        )
+        for row in open_rows
+    )
     total = max((_money(row.get("total_ticket")) for row in open_rows), default=0)
     propina = max((_money(row.get("propina")) for row in open_rows), default=0)
     pax = max((_integer(row.get("pax")) for row in open_rows), default=0)
-    descuento = max(0.0, subtotal - total)
+
+    # El encabezado final es autoritativo. Cualquier reducción adicional
+    # después de aplicar descuentos de producto se presenta como descuento
+    # de cuenta/encabezado para que el ticket concilie exactamente.
+    descuento_cuenta = max(0.0, neto_productos - total)
+    descuento = descuento_productos + descuento_cuenta
     return {
         "source_status": "SUCCESS",
         "source": "Comercial_Ventas_Dia_Abiertas_v2.detalle_abiertas_json",
@@ -268,10 +311,25 @@ def build_ticket_venta(
                     ),
                     "precio_unitario": _money(row.get("precio_unitario")),
                     "importe": _money(row.get("importe_bruto")),
+                    "descuento_pct": _money(row.get("descuento_pct")),
+                    "descuento_importe": max(
+                        0.0,
+                        _money(row.get("descuento_producto")),
+                    ),
+                    "importe_neto": _money(
+                        row.get("importe_neto_producto")
+                        if row.get("importe_neto_producto") is not None
+                        else (
+                            _money(row.get("importe_bruto"))
+                            - _money(row.get("descuento_producto"))
+                        )
+                    ),
                 }
                 for row in open_rows
             ],
             "subtotal": subtotal,
+            "descuento_productos": descuento_productos,
+            "descuento_cuenta": descuento_cuenta,
             "descuento": descuento,
             "impuesto": None,
             "total": total,

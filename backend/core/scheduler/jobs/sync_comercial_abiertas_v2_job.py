@@ -762,7 +762,7 @@ SELECT
 FROM tempcheques
 
 WHERE ISNULL(cancelado, 0) = 0
-  AND ISNULL(total, 0) > 0
+  AND ISNULL(total, 0) >= 0
   AND fecha >= CONVERT(
         DATETIME,
         REPLACE('{fecha_operacion}', '-', ''),
