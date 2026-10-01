@@ -113,6 +113,8 @@ SELECT
     MIN(c.Co_Fecha) AS fecha_hora,
     MAX(ISNULL(c.Co_Personas, 0)) AS pax,
     MAX(ISNULL(c.Co_Propina, 0)) AS propina,
+    MAX(CONVERT(varchar(100), c.Vn_Cve_Vendedor)) AS vendedor_id,
+    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(200), vnd.Vn_Descripcion))), '')) AS vendedor_nombre,
     MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), c.Co_Referencia))), '')) AS mesa,
     SUM(SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))))
         OVER (PARTITION BY c.Co_Folio) AS total_ticket,
@@ -138,6 +140,8 @@ LEFT JOIN Comanda_Detalle d
     ON d.Co_Folio = c.Co_Folio
    AND ISNULL(d.Es_Cve_Estado, '') = 'AC'
    AND d.Fecha_Baja IS NULL
+LEFT JOIN Vendedor vnd
+    ON vnd.Vn_Cve_Vendedor = c.Vn_Cve_Vendedor
 WHERE CAST(c.Co_Fecha AS date) = '{fecha_operacion}'
   AND c.Sc_Cve_Sucursal = '{sucursal_id}'
   AND c.Es_Cve_Estado IN ('AC', 'IM')
