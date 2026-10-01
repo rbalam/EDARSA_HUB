@@ -3,80 +3,80 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "54c22d98aae42b5163127b356d616229df199c8c",
-  "generated_at_utc": "2026-10-01T00:01:35Z",
+  "development_sha": "e6cb6b40bc7fd171a54503a5b2d3f9f81b37e923",
+  "generated_at_utc": "2026-10-01T00:03:02Z",
   "history": {
-    "done_total_local": 1217,
+    "done_total_local": 1218,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1075,
-    "results_total_local": 2093
+    "results_total_local": 2094
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 923,
+      "age_seconds": 1010,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-CONTRACT-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 937,
+      "age_seconds": 1024,
       "job_id": "EDARSA-LOGISTICS-GATE4A0-PREDDL-EXACT-CONTRACT-AUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 925,
+      "age_seconds": 1013,
       "job_id": "EDARSAHUB-BOS-EVOLUTION-H1-MASTER-ARCHITECTURE-CONTRACT-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1590,
+      "age_seconds": 23,
+      "job_id": "EDARSAHUB-COMERCIAL-HOY-RANGE-FIX-R1-CARLOS-20260930T2350Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1677,
       "job_id": "EDARSAHUB-COMERCIAL-HOY-SR-OPEN-DETAIL-DIAG-R1-CARLOS-20260930T2334Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3374,
+      "age_seconds": 3461,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-FRONTEND-BUILD-CERT-R1-CARLOS-20260930T2306Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3356,
+      "age_seconds": 3443,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-OPEN-DETAIL-DDL-FIX-R2-CARLOS-20260930T2310Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3488,
+      "age_seconds": 3575,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-OPEN-DETAIL-DDL-R1-CARLOS-20260930T2304Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2599,
+      "age_seconds": 2687,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-OPEN-DETAIL-DDL-R3-CARLOS-20260930T2316Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1362,
+      "age_seconds": 1449,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-DRILLDOWN-R12-CARLOS-20260930T2315Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3570,
-      "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-READONLY-R3-20260930",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "54c22d98aae42b5163127b356d616229df199c8c",
+  "local_development_sha": "e6cb6b40bc7fd171a54503a5b2d3f9f81b37e923",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -86,19 +86,19 @@
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 10,
   "queue_running": 0,
-  "remote_development_sha": "54c22d98aae42b5163127b356d616229df199c8c",
+  "remote_development_sha": "e6cb6b40bc7fd171a54503a5b2d3f9f81b37e923",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T00:01:27Z",
-    "last_receive_utc": "2026-10-01T00:01:31Z",
-    "last_terminal_utc": "2026-09-30T23:46:11Z",
+    "last_cycle_utc": "2026-10-01T00:02:51Z",
+    "last_receive_utc": "2026-10-01T00:02:57Z",
+    "last_terminal_utc": "2026-10-01T00:02:38Z",
     "pid": "610203",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "d68b475192c3c688137911a09b06144faf578fa4",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "54c22d98aae42b5163127b356d616229df199c8c",
+      "development_sha": "e6cb6b40bc7fd171a54503a5b2d3f9f81b37e923",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
