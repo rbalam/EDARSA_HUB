@@ -3,68 +3,74 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "7a9fdf35599df8c9638cbad68973914295a2cd0e",
-  "generated_at_utc": "2026-10-01T18:11:31Z",
+  "development_sha": "7b31362ad882c4787456cdc0414ea6ffa0308a5a",
+  "generated_at_utc": "2026-10-01T18:12:46Z",
   "history": {
-    "done_total_local": 1262,
+    "done_total_local": 1263,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1116,
-    "results_total_local": 2175
+    "results_total_local": 2176
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3447,
+      "age_seconds": 3523,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-MULTIUNIT-UI-R1-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2299,
+      "age_seconds": 2374,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-MULTIUNIT-UI-R2-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1289,
+      "age_seconds": 1364,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-MESA-MIGRATION-R3-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3473,
+      "age_seconds": 3549,
       "job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-DRILLDOWN-R1-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1293,
+      "age_seconds": 1368,
       "job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-DRILLDOWN-R2-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3467,
+      "age_seconds": 3542,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-MICROPRICE-ZERO-FIX-R32B-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3461,
+      "age_seconds": 17,
+      "job_id": "EDARSAHUB-WORKER-AGENT-GUARD-LONG-CHECK-COMMIT-R1-CARLOS-20261001",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3537,
       "job_id": "MEJORA-TABEJE-VENTAS-DIA-MISMO-DETALLE-COMERCIAL-R15B-CARLOS-20261001T1715Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1981,
+      "age_seconds": 2056,
       "job_id": "MEJORA-TABEJE-VENTAS-DIA-MISMO-DETALLE-COMERCIAL-R15C-CARLOS-20261001T1728Z",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "7a9fdf35599df8c9638cbad68973914295a2cd0e",
+  "local_development_sha": "7b31362ad882c4787456cdc0414ea6ffa0308a5a",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -72,21 +78,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 8,
+  "queue_result_ready_recent": 9,
   "queue_running": 0,
-  "remote_development_sha": "7a9fdf35599df8c9638cbad68973914295a2cd0e",
+  "remote_development_sha": "7b31362ad882c4787456cdc0414ea6ffa0308a5a",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T18:11:24Z",
-    "last_receive_utc": "2026-10-01T18:11:29Z",
-    "last_terminal_utc": "2026-10-01T17:50:02Z",
-    "pid": "772833",
+    "last_cycle_utc": "2026-10-01T18:12:40Z",
+    "last_receive_utc": "2026-10-01T18:12:43Z",
+    "last_terminal_utc": "2026-10-01T18:12:29Z",
+    "pid": "1073444",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "ad56901c4df1da4ab799657b8f9a43d92471b56a",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "7a9fdf35599df8c9638cbad68973914295a2cd0e",
+      "development_sha": "7b31362ad882c4787456cdc0414ea6ffa0308a5a",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
@@ -100,8 +106,8 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": true,
-      "worker_code_tree_sha": "ad56901c4df1da4ab799657b8f9a43d92471b56a"
+      "worker_code_tree_aligned": false,
+      "worker_code_tree_sha": "a48c037fd5627c1fdf9b60bbde7ce5f9eb76b462"
     }
   },
   "schema": "edarsahub.worker-health.v3",
