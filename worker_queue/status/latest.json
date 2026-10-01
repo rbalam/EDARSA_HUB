@@ -3,114 +3,114 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "770b5a166e73399cd77e1cf7bfbc3aa8039f8bb4",
-  "generated_at_utc": "2026-10-01T15:19:11Z",
+  "development_sha": "a3ee49f54c84c814de69ac587b21967af860a914",
+  "generated_at_utc": "2026-10-01T15:20:29Z",
   "history": {
-    "done_total_local": 1253,
-    "pending_total_local": 1,
-    "processing_total_local": 1,
-    "rejected_total_local": 1102,
-    "results_total_local": 2153
+    "done_total_local": 1254,
+    "pending_total_local": 0,
+    "processing_total_local": 0,
+    "rejected_total_local": 1103,
+    "results_total_local": 2155
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 483,
-      "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-URL-PROFILE-R2-20261001T1510Z",
-      "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
-      "state": "BLOCKED"
-    },
-    {
-      "age_seconds": 1926,
+      "age_seconds": 2004,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-CONTRACT-R5",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 510,
+      "age_seconds": 588,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-POST-INTEGRATION-CERT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1943,
+      "age_seconds": 2021,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-URL-PROFILE-R1-20260930T2350Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1940,
+      "age_seconds": 46,
+      "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-URL-PROFILE-R2-20261001T1510Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2018,
       "job_id": "EDARSA-LOGISTICS-GATE4A1-PHYSICAL-FOUNDATION-SCRIPTS-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 504,
+      "age_seconds": 582,
       "job_id": "EDARSA-LOGISTICS-GATE4A1-PHYSICAL-FOUNDATION-SCRIPTS-DESIGN-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1025,
+      "age_seconds": 1103,
       "job_id": "EDARSAHUB-COMERCIAL-HIST-202609-D01-05-MPRO2-R6-CARLOS",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 512,
+      "age_seconds": 590,
       "job_id": "EDARSAHUB-COMERCIAL-HIST-202609-D06-10-ALL5-R7-CARLOS",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1928,
+      "age_seconds": 2006,
       "job_id": "EDARSAHUB-EDARSA-AI-FINOPS-GATE1-CAPABILITY-DISCOVERY-READONLY-R1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1922,
+      "age_seconds": 52,
+      "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-202604-HEADER-DETAIL-R25-CARLOS-20261001",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2000,
       "job_id": "EDARSAHUB-SINCRONIZADOR-MPRO-DESCUENTO-IMPORTE-R1-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1591,
+      "age_seconds": 1669,
       "job_id": "EDARSAHUB-SINCRONIZADOR-MPRO-DESCUENTO-IMPORTE-R2-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 515,
-      "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-202604-HEADER-DETAIL-R25-CARLOS-20261001",
-      "reason": null,
-      "state": "RUNNING"
     }
   ],
-  "local_development_sha": "770b5a166e73399cd77e1cf7bfbc3aa8039f8bb4",
+  "local_development_sha": "a3ee49f54c84c814de69ac587b21967af860a914",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
-  "queue_blocked": 1,
-  "queue_depth": 2,
+  "queue_blocked": 0,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 10,
-  "queue_running": 1,
-  "remote_development_sha": "770b5a166e73399cd77e1cf7bfbc3aa8039f8bb4",
+  "queue_result_ready_recent": 12,
+  "queue_running": 0,
+  "remote_development_sha": "a3ee49f54c84c814de69ac587b21967af860a914",
   "runtime": {
-    "current_job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-202604-HEADER-DETAIL-R25-CARLOS-20261001",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T15:19:07Z",
-    "last_receive_utc": "2026-10-01T15:19:11Z",
-    "last_terminal_utc": "2026-10-01T15:10:47Z",
+    "last_cycle_utc": "2026-10-01T15:20:25Z",
+    "last_receive_utc": "2026-10-01T15:20:20Z",
+    "last_terminal_utc": "2026-10-01T15:19:43Z",
     "pid": "2867",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "47b3cc277220d437b497831939aed642478394d6",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "770b5a166e73399cd77e1cf7bfbc3aa8039f8bb4",
+      "development_sha": "a3ee49f54c84c814de69ac587b21967af860a914",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
