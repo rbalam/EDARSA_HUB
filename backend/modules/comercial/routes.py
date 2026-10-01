@@ -4202,7 +4202,7 @@ async def comercial_dashboard(
         mes_min = hoy.month
         mes_max = hoy.month
         lista_meses = [str(hoy.month)]  # Default para logging
-        if meses and lista_anios:
+        if periodo == "mes" and meses and lista_anios:
             lista_meses = [m.strip() for m in meses.split(',') if m.strip()]
             
             # Usar el año más reciente para la consulta principal
