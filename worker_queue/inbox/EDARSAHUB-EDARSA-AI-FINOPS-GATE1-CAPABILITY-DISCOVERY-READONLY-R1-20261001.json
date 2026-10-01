@@ -1,0 +1,82 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-EDARSA-AI-FINOPS-GATE1-CAPABILITY-DISCOVERY-READONLY-R1-20261001",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "READ_ONLY discovery for EDARSA AI FinOps and transparent token/cost governance. Audit existing Sync_Token_Ledger and any AI usage/cost telemetry, AI Gateway provider/model cost metadata, token estimation vs actual usage, Control Plane budgets, RBAC/user/company/unit/area/department canonical ownership, alerting/reporting/account-balance capabilities, and frontend chat surfaces. Determine how to implement per-query token and cost disclosure, balances/statement, alerts, and budgets by Empresa, Area/Departamento and Usuario without creating duplicate ledgers, routers, registries or new backend/core growth. Classify REUSE, EXTEND, ALIGN, CONSOLIDATE, CREATE_CANDIDATE, DO_NOT_TOUCH. No SQL mutation, no backend/frontend mutation, no Production.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSA AI",
+    "chat": "EDARSA AI / FinOps Token Cost Transparency"
+  },
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "frontend/src",
+          "docs/BOS",
+          "docs/ARCHITECTURE",
+          "docs/EKS",
+          "backend/database",
+          "backend/scripts"
+        ],
+        "search_terms": [
+          "Sync_Token_Ledger",
+          "token ledger",
+          "tokens_input",
+          "tokens_output",
+          "prompt_tokens",
+          "completion_tokens",
+          "usage",
+          "cost",
+          "currency",
+          "budget",
+          "BudgetEnvelope",
+          "ModelCandidate",
+          "ModelRouteRequest",
+          "PreparedModelRoute",
+          "AI Gateway",
+          "provider/model registry",
+          "UsuarioID",
+          "EmpresaID",
+          "UnidadNegocioID",
+          "Departamento",
+          "Area",
+          "alerta",
+          "saldo",
+          "estado de cuenta",
+          "billing",
+          "chat",
+          "ia_assistant"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.md",
+          "*.json",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql"
+        ],
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          ".vendor/*"
+        ],
+        "max_results": 700
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
