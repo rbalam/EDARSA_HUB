@@ -1,0 +1,84 @@
+{
+  "acceptance_criteria": [
+    "READ_ONLY_COMPLETE",
+    "CERTIFIED_READ_ONLY",
+    "production_touched=false",
+    "No actions executed",
+    "No SQL mutation",
+    "Backend source of generic permission error identified",
+    "Frontend listing and test button behavior identified",
+    "Unmapped EmpresaID UX remediation points identified"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [
+          "**/__pycache__/**",
+          "**/node_modules/**",
+          "**/dist/**",
+          "**/build/**"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.ts",
+          "*.tsx",
+          "*.js",
+          "*.jsx"
+        ],
+        "max_results": 250,
+        "paths": [
+          "backend/modules/api_connections",
+          "frontend/src",
+          "backend/tests",
+          "backend/tests_guardrails"
+        ],
+        "search_terms": [
+          "test-connectivity",
+          "api-connections",
+          "visible_en_listado",
+          "visible_en_operaciones",
+          "EmpresaID",
+          "empresa_id",
+          "Sin permiso para acceder a esta conexión API",
+          "validate_api_connection_access",
+          "can_access_empresa_sql",
+          "connection_EmpresaID"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "backend/modules/api_connections/universal_test_routes.py"
+      ],
+      "type": "py_compile"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-SERVIDORES-API-LOCAL-UNMAPPED-UX-BACKEND-AUDIT-READONLY-R1O-V3-20261001",
+  "mode": "READ_ONLY",
+  "objective": "Audit frontend and backend behavior for API_LOCAL connections with EmpresaID NULL. Find where unmapped connections are listed, where the connectivity button is enabled, and where the generic permission error is produced. No code mutation.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "",
+    "requested_at_utc": "2026-10-01T21:41:21.654551+00:00",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
