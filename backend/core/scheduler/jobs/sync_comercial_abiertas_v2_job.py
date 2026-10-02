@@ -40,6 +40,8 @@ import pytz
 from modules.comercial_v2.ticket_snapshot import (
     QUERY_SOFTRESTAURANT_DETALLE_ABIERTAS,
     QUERY_MPRO_DETALLE_ABIERTAS,
+    QUERY_MPRO_DETALLE_CERRADAS_CANONICAS,
+    QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES,
     serialize_open_detail_rows,
 )
 from datetime import datetime, date, timezone, timedelta
@@ -1686,11 +1688,19 @@ async def execute_sync_comercial_abiertas_v2(
 
                 total_estimado_dia = ventas_abiertas + ventas_cerradas_dia
 
+                # El encabezado MPRO se calcula con abiertas + cerradas desde
+                # la API local. El detalle del día debe usar exactamente el
+                # mismo origen y la misma decisión canónico/provisional para
+                # que el drill-down concilie con total_estimado_dia.
+                #
+                # La columna se llama detalle_abiertas_json por compatibilidad,
+                # pero para MPRO almacena el detalle operativo COMPLETO del día.
                 detalle_abiertas_json = None
                 detalle_abiertas_filas = 0
-                if tickets_abiertos == 0:
-                    detalle_abiertas_json = "[]"
-                else:
+                detalle_rows_dia = []
+                detalle_completo = True
+
+                if tickets_abiertos > 0:
                     try:
                         query_detalle_abiertas = (
                             QUERY_MPRO_DETALLE_ABIERTAS.format(
@@ -1698,27 +1708,105 @@ async def execute_sync_comercial_abiertas_v2(
                                 fecha_operacion=fecha_operacion_str,
                             )
                         )
-                        detalle_rows, detalle_status = _execute_query_via_api_local(
-                            api_config,
-                            query_detalle_abiertas,
+                        detalle_rows_abiertas, detalle_status = (
+                            _execute_query_via_api_local(
+                                api_config,
+                                query_detalle_abiertas,
+                            )
                         )
                         if detalle_status == "API_LOCAL_OK":
-                            detalle_abiertas_json = serialize_open_detail_rows(
-                                detalle_rows or []
+                            detalle_rows_dia.extend(
+                                detalle_rows_abiertas or []
                             )
-                            detalle_abiertas_filas = len(detalle_rows or [])
                         else:
+                            detalle_completo = False
                             logger.warning(
-                                "[SYNC_ABIERTAS_V2] %s: detalle abierto no disponible: %s",
+                                "[SYNC_ABIERTAS_V2] %s: "
+                                "detalle MPRO abierto no disponible: %s",
                                 nombre,
                                 detalle_status,
                             )
                     except Exception as detalle_exc:
+                        detalle_completo = False
                         logger.warning(
-                            "[SYNC_ABIERTAS_V2] %s: detalle abierto no fatal: %s",
+                            "[SYNC_ABIERTAS_V2] %s: "
+                            "detalle MPRO abierto no fatal: %s",
                             nombre,
                             detalle_exc,
                         )
+
+                if tickets_cerrados_dia > 0:
+                    try:
+                        if (
+                            closed_sales_source
+                            == "CANONICAL_VENTA_ENCABEZADO"
+                        ):
+                            query_detalle_cerradas = (
+                                QUERY_MPRO_DETALLE_CERRADAS_CANONICAS.format(
+                                    sucursal_id=sucursal_id,
+                                    fecha_operacion=fecha_operacion_str,
+                                )
+                            )
+                        else:
+                            query_detalle_cerradas = (
+                                QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES.format(
+                                    sucursal_id=sucursal_id,
+                                    fecha_operacion=fecha_operacion_str,
+                                )
+                            )
+
+                        detalle_rows_cerradas, detalle_cerradas_status = (
+                            _execute_query_via_api_local(
+                                api_config,
+                                query_detalle_cerradas,
+                            )
+                        )
+                        if detalle_cerradas_status == "API_LOCAL_OK":
+                            detalle_rows_dia.extend(
+                                detalle_rows_cerradas or []
+                            )
+                        else:
+                            detalle_completo = False
+                            logger.warning(
+                                "[SYNC_ABIERTAS_V2] %s: "
+                                "detalle MPRO cerrado no disponible: %s",
+                                nombre,
+                                detalle_cerradas_status,
+                            )
+                    except Exception as detalle_exc:
+                        detalle_completo = False
+                        logger.warning(
+                            "[SYNC_ABIERTAS_V2] %s: "
+                            "detalle MPRO cerrado no fatal: %s",
+                            nombre,
+                            detalle_exc,
+                        )
+
+                if detalle_completo:
+                    detalle_abiertas_json = serialize_open_detail_rows(
+                        detalle_rows_dia
+                    )
+                    detalle_abiertas_filas = len(detalle_rows_dia)
+                    logger.info(
+                        "[SYNC_ABIERTAS_V2] %s: "
+                        "detalle MPRO día API_LOCAL=%s filas "
+                        "(abiertos=%s, cerrados=%s, fuente_cerradas=%s)",
+                        nombre,
+                        detalle_abiertas_filas,
+                        tickets_abiertos,
+                        tickets_cerrados_dia,
+                        closed_sales_source,
+                    )
+                else:
+                    # No persistir un snapshot parcial: el upsert conservará
+                    # el último detalle válido mientras el encabezado sí puede
+                    # seguir actualizándose.
+                    logger.warning(
+                        "[SYNC_ABIERTAS_V2] %s: "
+                        "snapshot de detalle MPRO incompleto; "
+                        "se conserva el último detalle válido",
+                        nombre,
+                    )
             
                 # FIX 2026-05-15: Log detallado para QRO (diagnóstico de bug $0)
                 if unidad_id == '130QRO':

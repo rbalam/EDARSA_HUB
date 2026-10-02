@@ -1,8 +1,14 @@
-"""Snapshot de detalle de ventas abiertas para Comercial.
+"""Snapshot de detalle operativo de Ventas del Dia para Comercial.
 
 Este modulo solo define consultas del sincronizador autorizado de Ventas del Dia
 y serializa su resultado para persistirlo dentro del snapshot EDARSAHUB.
 Los endpoints de Comercial nunca consultan el POS directamente.
+
+Compatibilidad:
+- La columna persistida conserva el nombre legacy ``detalle_abiertas_json``.
+- Para MPRO el payload contiene abiertas y cerradas del dia, porque el encabezado
+  tambien combina ambos grupos desde la API local. Asi el drill-down puede
+  conciliar con el total del encabezado sin leer CENTRAL2020 ni otro POS.
 """
 
 from __future__ import annotations
@@ -20,6 +26,8 @@ SELECT
         CONVERT(varchar(64), ch.folio)
     ) AS folio,
     CONVERT(varchar(64), ch.folio) AS folio_origen,
+    'ABIERTA' AS estado_ticket,
+    'SOFTRESTAURANT' AS sistema_origen,
     MIN(ch.fecha) AS fecha_hora,
     MAX(ISNULL(ch.nopersonas, 0)) AS pax,
     MAX(ISNULL(ch.propina, 0)) AS propina,
@@ -110,6 +118,9 @@ ORDER BY ch.folio, producto_codigo
 QUERY_MPRO_DETALLE_ABIERTAS = """
 SELECT
     CONVERT(varchar(64), c.Co_Folio) AS folio,
+    CONVERT(varchar(64), c.Co_Folio) AS folio_origen,
+    'ABIERTA' AS estado_ticket,
+    'MPRO' AS sistema_origen,
     MIN(c.Co_Fecha) AS fecha_hora,
     MAX(ISNULL(c.Co_Personas, 0)) AS pax,
     MAX(ISNULL(c.Co_Propina, 0)) AS propina,
@@ -155,6 +166,200 @@ ORDER BY c.Co_Folio, producto_codigo
 """
 
 
+# MPRO: detalle de tickets cerrados desde la MISMA API local del encabezado.
+#
+# La selección de cuál consulta usar se hace en sync_comercial_abiertas_v2_job.py
+# con el mismo closed_sales_source que decide el total del encabezado:
+# - CANONICAL_VENTA_ENCABEZADO -> esta consulta.
+# - PROVISIONAL_COMANDA -> QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES.
+QUERY_MPRO_DETALLE_CERRADAS_CANONICAS = """
+WITH h AS (
+    SELECT
+        ve.Vn_Folio,
+        ve.Vn_Documento,
+        ve.Vn_Fecha,
+        ve.Sc_Cve_Sucursal,
+        ve.Vn_Cve_Vendedor,
+        CAST(
+            ISNULL(ve.Vn_Precio_Neto_Importe, 0)
+            AS decimal(18,4)
+        ) AS total_header,
+        ISNULL(c.Co_Personas, 0) AS pax,
+        ISNULL(c.Co_Propina, 0) AS propina,
+        NULLIF(
+            LTRIM(RTRIM(CONVERT(varchar(100), c.Co_Referencia))),
+            ''
+        ) AS mesa,
+        NULLIF(
+            LTRIM(RTRIM(CONVERT(varchar(200), vnd.Vn_Descripcion))),
+            ''
+        ) AS vendedor_nombre
+    FROM Venta_Encabezado ve
+    LEFT JOIN Comanda c
+        ON c.Co_Folio = ve.Vn_Documento
+       AND c.Sc_Cve_Sucursal = ve.Sc_Cve_Sucursal
+    LEFT JOIN Vendedor vnd
+        ON vnd.Vn_Cve_Vendedor = ve.Vn_Cve_Vendedor
+    WHERE CAST(ve.Vn_Fecha AS date) = '{fecha_operacion}'
+      AND ve.Sc_Cve_Sucursal = '{sucursal_id}'
+      AND ve.Es_Cve_Estado IN ('AC', 'FA')
+      AND ve.Fecha_Baja IS NULL
+),
+t AS (
+    SELECT
+        Vn_Documento,
+        MIN(Vn_Fecha) AS fecha_hora,
+        MAX(pax) AS pax,
+        MAX(propina) AS propina,
+        MAX(CONVERT(varchar(100), Vn_Cve_Vendedor)) AS vendedor_id,
+        MAX(vendedor_nombre) AS vendedor_nombre,
+        MAX(mesa) AS mesa,
+        SUM(total_header) AS total_ticket
+    FROM h
+    GROUP BY Vn_Documento
+),
+l AS (
+    SELECT
+        h.Vn_Documento,
+        MAX(CONVERT(varchar(64), h.Vn_Folio)) AS folio_origen,
+        COALESCE(
+            NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),
+            'SIN_CODIGO'
+        ) AS producto_codigo,
+        COALESCE(
+            MAX(CONVERT(varchar(300), d.Vn_Concepto)),
+            'VENTA SIN DETALLE DE PRODUCTO'
+        ) AS producto_nombre,
+        MAX(CASE WHEN d.Vn_Folio IS NULL THEN 0 ELSE 1 END) AS tiene_detalle,
+        SUM(
+            CAST(ISNULL(d.Vn_Cantidad_1, 0) AS decimal(18,4))
+        ) AS cantidad,
+        SUM(
+            CAST(ISNULL(d.Vn_Precio_Lista_Importe, 0) AS decimal(18,4))
+        ) AS importe_bruto,
+        SUM(
+            CAST(ISNULL(d.Vn_Descuento_Importe, 0) AS decimal(18,4))
+        ) AS descuento_producto
+    FROM h
+    LEFT JOIN Venta d
+        ON d.Vn_Folio = h.Vn_Folio
+       AND d.Sc_Cve_Sucursal = h.Sc_Cve_Sucursal
+    GROUP BY
+        h.Vn_Documento,
+        COALESCE(
+            NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),
+            'SIN_CODIGO'
+        )
+)
+SELECT
+    CONVERT(varchar(64), t.Vn_Documento) AS folio,
+    l.folio_origen,
+    'CERRADA' AS estado_ticket,
+    'MPRO' AS sistema_origen,
+    t.fecha_hora,
+    t.pax,
+    t.propina,
+    t.vendedor_id,
+    t.vendedor_nombre,
+    t.mesa,
+    t.total_ticket,
+    l.producto_codigo,
+    l.producto_nombre,
+    CASE
+        WHEN l.tiene_detalle = 0
+        THEN CAST(1 AS decimal(18,4))
+        ELSE l.cantidad
+    END AS cantidad,
+    CASE
+        WHEN l.tiene_detalle = 0
+        THEN t.total_ticket
+        WHEN l.cantidad <> 0
+        THEN l.importe_bruto / l.cantidad
+        ELSE CAST(0 AS decimal(18,4))
+    END AS precio_unitario,
+    CASE
+        WHEN l.tiene_detalle = 0
+        THEN t.total_ticket
+        ELSE l.importe_bruto
+    END AS importe_bruto,
+    CASE
+        WHEN l.importe_bruto > 0
+        THEN CAST(
+            (l.descuento_producto * 100.0) / l.importe_bruto
+            AS decimal(9,4)
+        )
+        ELSE CAST(0 AS decimal(9,4))
+    END AS descuento_pct,
+    CASE
+        WHEN l.tiene_detalle = 0
+        THEN CAST(0 AS decimal(18,4))
+        ELSE l.descuento_producto
+    END AS descuento_producto,
+    CASE
+        WHEN l.tiene_detalle = 0
+        THEN t.total_ticket
+        ELSE l.importe_bruto - l.descuento_producto
+    END AS importe_neto_producto,
+    CAST(0 AS decimal(18,4)) AS descuento_encabezado_reportado,
+    CAST(0 AS decimal(18,4)) AS descuento_total_reportado
+FROM t
+INNER JOIN l
+    ON l.Vn_Documento = t.Vn_Documento
+ORDER BY t.Vn_Documento, l.producto_codigo
+"""
+
+
+QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES = """
+SELECT
+    CONVERT(varchar(64), c.Co_Folio) AS folio,
+    CONVERT(varchar(64), c.Co_Folio) AS folio_origen,
+    'CERRADA' AS estado_ticket,
+    'MPRO' AS sistema_origen,
+    MIN(c.Co_Fecha) AS fecha_hora,
+    MAX(ISNULL(c.Co_Personas, 0)) AS pax,
+    MAX(ISNULL(c.Co_Propina, 0)) AS propina,
+    MAX(CONVERT(varchar(100), c.Vn_Cve_Vendedor)) AS vendedor_id,
+    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(200), vnd.Vn_Descripcion))), '')) AS vendedor_nombre,
+    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), c.Co_Referencia))), '')) AS mesa,
+    SUM(SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))))
+        OVER (PARTITION BY c.Co_Folio) AS total_ticket,
+    COALESCE(
+        NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),
+        'SIN_CODIGO'
+    ) AS producto_codigo,
+    COALESCE(
+        MAX(CONVERT(varchar(300), d.Cd_Concepto)),
+        'VENTA SIN DETALLE DE PRODUCTO'
+    ) AS producto_nombre,
+    SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4))) AS cantidad,
+    CASE
+        WHEN SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4))) <> 0
+        THEN
+            SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4)))
+            / SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4)))
+        ELSE MAX(CAST(ISNULL(d.Cd_Precio, 0) AS decimal(18,4)))
+    END AS precio_unitario,
+    SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS importe_bruto
+FROM Comanda c
+LEFT JOIN Comanda_Detalle d
+    ON d.Co_Folio = c.Co_Folio
+   AND ISNULL(d.Es_Cve_Estado, '') = 'AC'
+   AND d.Fecha_Baja IS NULL
+LEFT JOIN Vendedor vnd
+    ON vnd.Vn_Cve_Vendedor = c.Vn_Cve_Vendedor
+WHERE CAST(c.Co_Fecha AS date) = '{fecha_operacion}'
+  AND c.Sc_Cve_Sucursal = '{sucursal_id}'
+  AND c.Es_Cve_Estado = 'PA'
+GROUP BY
+    c.Co_Folio,
+    COALESCE(
+        NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),
+        'SIN_CODIGO'
+    )
+ORDER BY c.Co_Folio, producto_codigo
+"""
+
+
 def _number(value: Any) -> float:
     try:
         return float(value or 0)
@@ -180,6 +385,8 @@ def serialize_open_detail_rows(rows: List[Dict[str, Any]]) -> str:
         normalized.append({
             "folio": folio,
             "folio_origen": str(row.get("folio_origen") or "").strip() or None,
+            "estado_ticket": str(row.get("estado_ticket") or "ABIERTA").strip().upper(),
+            "sistema_origen": str(row.get("sistema_origen") or "").strip() or None,
             "fecha_hora": row.get("fecha_hora"),
             "pax": int(_number(row.get("pax"))),
             "propina": _number(row.get("propina")),

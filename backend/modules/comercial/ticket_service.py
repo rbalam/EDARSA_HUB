@@ -97,7 +97,12 @@ def merge_open_snapshot_tickets(
     sucursal_id: str,
     fecha_operacion: str,
 ) -> List[Dict[str, Any]]:
-    """Agrega folios abiertos del snapshot sin duplicar tickets ya cerrados."""
+    """Agrega folios del snapshot del día sin duplicar detalle canónico.
+
+    El nombre se conserva por compatibilidad. Para MPRO el snapshot puede
+    contener tanto ABIERTA como CERRADA porque ambos grupos provienen de la
+    misma API local que alimenta el encabezado de Ventas del Día.
+    """
     result = list(items or [])
     existentes = {str(item.get("folio") or "") for item in result}
     grouped: Dict[str, Dict[str, Any]] = {}
@@ -123,6 +128,10 @@ def merge_open_snapshot_tickets(
                 "descuento_total_reportado": 0.0,
                 "descuento_pct_max": 0.0,
                 "vendedor": None,
+                "estado_ticket": str(
+                    row.get("estado_ticket") or "ABIERTA"
+                ).strip().upper(),
+                "sistema_origen": row.get("sistema_origen"),
             },
         )
         ticket["num_productos"] += 1
@@ -148,6 +157,10 @@ def merge_open_snapshot_tickets(
                 ticket["vendedor"] = vendedor
         if not ticket.get("fecha") and row.get("fecha_hora"):
             ticket["fecha"] = row.get("fecha_hora")
+        if str(row.get("estado_ticket") or "").strip().upper() == "CERRADA":
+            ticket["estado_ticket"] = "CERRADA"
+        if not ticket.get("sistema_origen") and row.get("sistema_origen"):
+            ticket["sistema_origen"] = row.get("sistema_origen")
 
     for folio, ticket in grouped.items():
         descuento_total = max(
@@ -178,7 +191,12 @@ def merge_open_snapshot_tickets(
             "vendedor": ticket["vendedor"],
             "expandible": False,
             "siguiente_nivel": None,
-            "fuente_ticket": "ABIERTA",
+            "fuente_ticket": (
+                "CERRADA_API_LOCAL"
+                if ticket.get("estado_ticket") == "CERRADA"
+                else "ABIERTA"
+            ),
+            "sistema_origen": ticket.get("sistema_origen"),
         })
 
     result.sort(key=lambda item: _folio_sort_key(item.get("folio")))
@@ -197,7 +215,7 @@ def build_ticket_venta(
     folio: str,
     fecha_operacion: str,
 ) -> Optional[Dict[str, Any]]:
-    """Reconstruye ticket cerrado; si no existe, busca snapshot abierto."""
+    """Reconstruye ticket canónico; si no existe, usa snapshot del día."""
     unidad = _safe_sql(unidad_codigo)
     ticket = _safe_sql(folio)
     fecha = _safe_sql(fecha_operacion)
@@ -321,7 +339,7 @@ def build_ticket_venta(
             },
         }
 
-    open_rows = [
+    snapshot_rows = [
         row
         for row in load_open_snapshot_lines(
             unidad_codigo,
@@ -330,13 +348,30 @@ def build_ticket_venta(
         )
         if str(row.get("folio") or "") == str(folio)
     ]
-    if not open_rows:
+    if not snapshot_rows:
         return None
 
-    subtotal = sum(_money(row.get("importe_bruto")) for row in open_rows)
+    estado_snapshot = (
+        "CERRADA"
+        if any(
+            str(row.get("estado_ticket") or "").strip().upper() == "CERRADA"
+            for row in snapshot_rows
+        )
+        else "ABIERTA"
+    )
+    sistema_snapshot = next(
+        (
+            str(row.get("sistema_origen") or "").strip()
+            for row in snapshot_rows
+            if str(row.get("sistema_origen") or "").strip()
+        ),
+        None,
+    )
+
+    subtotal = sum(_money(row.get("importe_bruto")) for row in snapshot_rows)
     descuento_productos = sum(
         max(0.0, _money(row.get("descuento_producto")))
-        for row in open_rows
+        for row in snapshot_rows
     )
     neto_productos = sum(
         _money(
@@ -347,11 +382,20 @@ def build_ticket_venta(
                 - _money(row.get("descuento_producto"))
             )
         )
-        for row in open_rows
+        for row in snapshot_rows
     )
-    total = max((_money(row.get("total_ticket")) for row in open_rows), default=0)
-    propina = max((_money(row.get("propina")) for row in open_rows), default=0)
-    pax = max((_integer(row.get("pax")) for row in open_rows), default=0)
+    total = max(
+        (_money(row.get("total_ticket")) for row in snapshot_rows),
+        default=0,
+    )
+    propina = max(
+        (_money(row.get("propina")) for row in snapshot_rows),
+        default=0,
+    )
+    pax = max(
+        (_integer(row.get("pax")) for row in snapshot_rows),
+        default=0,
+    )
 
     # El encabezado final es autoritativo. Cualquier reducción adicional
     # después de aplicar descuentos de producto se presenta como descuento
@@ -361,7 +405,7 @@ def build_ticket_venta(
     vendedor = next(
         (
             str(row.get("vendedor_nombre") or "").strip()
-            for row in open_rows
+            for row in snapshot_rows
             if str(row.get("vendedor_nombre") or "").strip()
         ),
         None,
@@ -369,23 +413,23 @@ def build_ticket_venta(
     mesa = next(
         (
             str(row.get("mesa") or "").strip()
-            for row in open_rows
+            for row in snapshot_rows
             if str(row.get("mesa") or "").strip()
         ),
         None,
     )
     return {
         "source_status": "SUCCESS",
-        "source": "Comercial_Ventas_Dia_Abiertas_v2.detalle_abiertas_json",
+        "source": "Comercial_Ventas_Dia_Abiertas_v2.detalle_abiertas_json:API_LOCAL_DIA",
         "ticket": {
             "unidad": unidad_nombre,
-            "sistema_origen": None,
+            "sistema_origen": sistema_snapshot,
             "folio": folio,
-            "fecha_hora": str(open_rows[0].get("fecha_hora") or ""),
+            "fecha_hora": str(snapshot_rows[0].get("fecha_hora") or ""),
             "pax": pax,
             "vendedor": vendedor,
             "mesa": mesa,
-            "estado": "ABIERTA",
+            "estado": estado_snapshot,
             "items": [
                 {
                     "cantidad": _money(row.get("cantidad")),
@@ -409,7 +453,7 @@ def build_ticket_venta(
                         )
                     ),
                 }
-                for row in open_rows
+                for row in snapshot_rows
             ],
             "subtotal": subtotal,
             "descuento_productos": descuento_productos,
