@@ -1,0 +1,154 @@
+{
+  "base_sha": "b3197b1049745380d987ac7f4c88afc6d89e9366",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-02T18:34:07Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-RANGE-DIAG-R9-CARLOS-20261002",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-02T18:34:25Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "ResyncLogID",
+              "Estado",
+              "Mensaje",
+              "UnidadCodigo",
+              "RegistrosAfectados",
+              "SolicitadoPor",
+              "FechaEjecucion",
+              "payload_status",
+              "fecha_inicio",
+              "fecha_fin",
+              "current_unit",
+              "current_block",
+              "current_phase",
+              "percent_complete",
+              "updated_at_utc",
+              "successful_steps",
+              "failed_steps",
+              "completed_steps",
+              "total_steps"
+            ],
+            "name": "latest_range_jobs",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "485",
+                "JOB_RUNNING",
+                "130MID: re-sincronizando 2026-09-01 a 2026-09-05.",
+                "130MID,130QRO,CIENFUEGOS,ESTELAR,ORIGEN",
+                0,
+                "ricardo@edarsa.com.mx",
+                "2026-10-02 18:05:14.6847330",
+                "JOB_RUNNING",
+                "2026-09-01",
+                "2026-09-30",
+                "130MID",
+                "2026-09-01 a 2026-09-05",
+                "REAL",
+                "0.0",
+                "2026-10-02T18:05:19.549707+00:00",
+                "0",
+                "0",
+                "0",
+                "30"
+              ],
+              [
+                "484",
+                "JOB_SUCCESS",
+                "Proceso terminado: 1/1 bloques.",
+                "ESTELAR",
+                1,
+                "ricardo@edarsa.com.mx",
+                "2026-10-02 17:53:53.3922432",
+                "JOB_SUCCESS",
+                "2026-01-01",
+                "2026-01-01",
+                null,
+                null,
+                "DONE",
+                "100.0",
+                "2026-10-02T17:54:37.060915+00:00",
+                "1",
+                "0",
+                "1",
+                "1"
+              ],
+              [
+                "483",
+                "JOB_CANCEL_REQUESTED",
+                "Detención segura solicitada. Se detendrá al finalizar la operación atómica actual.",
+                "130MID,130QRO,CIENFUEGOS,ESTELAR,ORIGEN",
+                3,
+                "ricardo@edarsa.com.mx",
+                "2026-10-02 16:51:03.7722805",
+                "JOB_CANCEL_REQUESTED",
+                "2026-01-01",
+                "2026-01-01",
+                "ESTELAR",
+                "2026-01-01 a 2026-01-01",
+                "STOP_REQUESTED",
+                "60.0",
+                "2026-10-02T17:41:25.301938+00:00",
+                "3",
+                "0",
+                "3",
+                "5"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "JobName",
+              "OwnerID",
+              "AcquiredAt",
+              "HeartbeatAt",
+              "LockUntil",
+              "heartbeat_age_seconds",
+              "seconds_until_expiry"
+            ],
+            "name": "canonical_sync_lock",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "server_utc_now"
+            ],
+            "name": "server_utc_now",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-10-02 18:34:07.3034401"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-02T18:34:06Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
