@@ -1,0 +1,273 @@
+{
+  "base_sha": "b3197b1049745380d987ac7f4c88afc6d89e9366",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-10-02T18:15:04Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-RESTORE-DETAIL-VERIFY-R38-CARLOS-20261002",
+  "operation": "COMERCIAL_OPEN_DAY_SYNC",
+  "operation_summary": {
+    "detalles_unidades": [
+      {
+        "closed_sales_is_provisional": null,
+        "closed_sales_source": null,
+        "detalle_abiertas_filas": 0,
+        "estatus": "OK",
+        "fecha_operacion": "2026-10-02",
+        "fuente": null,
+        "mensaje_error": "",
+        "sistema": "SoftRestaurant",
+        "source_status": "NO_DATA_CONFIRMED",
+        "total_estimado_dia": 0.0,
+        "unidad": "130° MERIDA",
+        "unidad_negocio_id": "130MID",
+        "ventas_abiertas": 0.0
+      },
+      {
+        "closed_sales_is_provisional": null,
+        "closed_sales_source": null,
+        "detalle_abiertas_filas": 4,
+        "estatus": "OK",
+        "fecha_operacion": "2026-10-02",
+        "fuente": null,
+        "mensaje_error": "",
+        "sistema": "SoftRestaurant",
+        "source_status": "DATA_OK",
+        "total_estimado_dia": 315.0,
+        "unidad": "CIENFUEGOS",
+        "unidad_negocio_id": "CIENFUEGOS",
+        "ventas_abiertas": 315.0
+      },
+      {
+        "closed_sales_is_provisional": null,
+        "closed_sales_source": null,
+        "detalle_abiertas_filas": 1,
+        "estatus": "OK",
+        "fecha_operacion": "2026-10-02",
+        "fuente": null,
+        "mensaje_error": "",
+        "sistema": "SoftRestaurant",
+        "source_status": "DATA_OK",
+        "total_estimado_dia": 2461.5,
+        "unidad": "LA ESTELAR",
+        "unidad_negocio_id": "ESTELAR",
+        "ventas_abiertas": 0.0
+      },
+      {
+        "closed_sales_is_provisional": true,
+        "closed_sales_source": "PROVISIONAL_COMANDA",
+        "detalle_abiertas_filas": 0,
+        "estatus": "OK",
+        "fecha_operacion": "2026-10-02",
+        "fuente": "API_LOCAL",
+        "mensaje_error": "",
+        "sistema": "MPRO",
+        "source_status": "NO_DATA_CONFIRMED",
+        "total_estimado_dia": 0.0,
+        "unidad": "130° QUERETARO",
+        "unidad_negocio_id": "130QRO",
+        "ventas_abiertas": 0.0
+      },
+      {
+        "closed_sales_is_provisional": false,
+        "closed_sales_source": "CANONICAL_VENTA_ENCABEZADO",
+        "detalle_abiertas_filas": 41,
+        "estatus": "OK",
+        "fecha_operacion": "2026-10-02",
+        "fuente": "API_LOCAL",
+        "mensaje_error": "",
+        "sistema": "MPRO",
+        "source_status": "DATA_OK",
+        "total_estimado_dia": 4950.01,
+        "unidad": "ORIGEN",
+        "unidad_negocio_id": "ORIGEN",
+        "ventas_abiertas": 625.0
+      }
+    ],
+    "duracion_segundos": 17.683315,
+    "errores": [],
+    "event": "comercial_open_day_summary",
+    "fecha_operacion": "2026-10-02",
+    "total_estimado_dia": 7726.51,
+    "total_ventas_abiertas": 940.0,
+    "unidades_exitosas": 5,
+    "unidades_fallidas": 0,
+    "unidades_procesadas": 5
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-02T18:16:03Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "snapshot_timestamp",
+              "total_header",
+              "total_detalle",
+              "diferencia_total",
+              "tickets_header",
+              "tickets_detalle",
+              "diferencia_tickets",
+              "filas_detalle_resumido",
+              "filas_sin_detalle_producto",
+              "filas_sb_0055352",
+              "productos_sb_0055352"
+            ],
+            "name": "origen_r38_header_detail_integrity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-10-02 18:15:02.3631700",
+                "4950.01",
+                "35180.0500",
+                "-30230.0400",
+                7,
+                7,
+                0,
+                0,
+                0,
+                11,
+                11
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "folio",
+              "producto_codigo",
+              "producto_nombre",
+              "cantidad",
+              "precio_unitario",
+              "importe_bruto",
+              "total_ticket"
+            ],
+            "name": "origen_r38_sb0055352_products",
+            "row_count_returned": 11,
+            "rows": [
+              [
+                "SB-0055352",
+                "0000000503",
+                "CAFE AMERICANO",
+                "7.0000",
+                "45.0000",
+                "315.0000",
+                "1640.0000"
+              ],
+              [
+                "SB-0055352",
+                "0000000841",
+                "BRIOCHE DULCE ORIGEN",
+                "1.0000",
+                "140.0000",
+                "140.0000",
+                "1640.0000"
+              ],
+              [
+                "SB-0055352",
+                "0000001042",
+                "MIGAS TRADICIONALES VALLADOLID",
+                "2.0000",
+                "140.0000",
+                "280.0000",
+                "1640.0000"
+              ],
+              [
+                "SB-0055352",
+                "0000009011",
+                "MONTADO DE AGUACATE",
+                "1.0000",
+                "160.0000",
+                "160.0000",
+                "1640.0000"
+              ],
+              [
+                "SB-0055352",
+                "0000009020",
+                "OMELETE DE CLARA",
+                "2.0000",
+                "160.0000",
+                "320.0000",
+                "1640.0000"
+              ],
+              [
+                "SB-0055352",
+                "0000009040",
+                "JUGO VERDE",
+                "1.0000",
+                "70.0000",
+                "70.0000",
+                "1640.0000"
+              ],
+              [
+                "SB-0055352",
+                "0000009058",
+                "PLATO DE FRUTAS DE TEMPORADA",
+                "1.0000",
+                "140.0000",
+                "140.0000",
+                "1640.0000"
+              ],
+              [
+                "SB-0055352",
+                "0000009064",
+                "CONCHA CHOCOLATE C. NATA",
+                "1.0000",
+                "70.0000",
+                "70.0000",
+                "1640.0000"
+              ],
+              [
+                "SB-0055352",
+                "0000009065",
+                "ROL DE CANELA",
+                "1.0000",
+                "65.0000",
+                "65.0000",
+                "1640.0000"
+              ],
+              [
+                "SB-0055352",
+                "0000009087",
+                ">>D EXTRA CHAMPIÑONES P/DESAYUNOS",
+                "2.0000",
+                "20.0000",
+                "40.0000",
+                "1640.0000"
+              ],
+              [
+                "SB-0055352",
+                "0000009090",
+                ">>D EXTRA QUESO OAXACA P/DESAYUNOS",
+                "2.0000",
+                "20.0000",
+                "40.0000",
+                "1640.0000"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-02T18:14:43Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker forzo el sincronizador canonico sync_comercial_abiertas_v2 para la fecha autorizada, proceso las unidades activas, certifico el snapshot con SQL de solo lectura y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
