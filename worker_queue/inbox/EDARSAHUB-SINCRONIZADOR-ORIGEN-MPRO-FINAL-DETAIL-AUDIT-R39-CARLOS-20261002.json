@@ -1,0 +1,34 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-FINAL-DETAIL-AUDIT-R39-CARLOS-20261002",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b3197b1049745380d987ac7f4c88afc6d89e9366",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Sincronizador: certificacion final de solo lectura del snapshot ORIGEN MPRO 2026-10-02 despues de R37/R38. Corregir la consulta de validacion R38 que multiplico total_ticket por cada linea de producto. Validar por folio unico que total encabezado=total detalle, tickets encabezado=tickets detalle, y que no existan filas DETALLE RESUMIDO ni VENTA SIN DETALLE DE PRODUCTO. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "origen_r39_final_unique_folio_reconciliation",
+          "sql": "WITH s AS (SELECT TOP 1 snapshot_timestamp,total_estimado_dia,tickets_abiertos,tickets_cerrados_dia,detalle_abiertas_json FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK) WHERE UPPER(LTRIM(RTRIM(unidad_negocio_id)))='ORIGEN' AND fecha_operacion='2026-10-02' ORDER BY snapshot_timestamp DESC), j AS (SELECT x.folio,UPPER(ISNULL(x.estado_ticket,'ABIERTA')) AS estado_ticket,x.producto_codigo,x.producto_nombre,ISNULL(x.total_ticket,0) AS total_ticket FROM s CROSS APPLY OPENJSON(ISNULL(s.detalle_abiertas_json,'[]')) WITH (folio varchar(128) '$.folio',estado_ticket varchar(32) '$.estado_ticket',producto_codigo varchar(128) '$.producto_codigo',producto_nombre varchar(400) '$.producto_nombre',total_ticket decimal(18,4) '$.total_ticket') x WHERE NULLIF(LTRIM(RTRIM(x.folio)),'') IS NOT NULL), f AS (SELECT folio,MAX(total_ticket) AS total_ticket FROM j GROUP BY folio), m AS (SELECT COUNT(DISTINCT folio) AS tickets_detalle,SUM(CASE WHEN UPPER(ISNULL(producto_nombre,'')) LIKE '%DETALLE RESUMIDO%' THEN 1 ELSE 0 END) AS filas_detalle_resumido,SUM(CASE WHEN UPPER(ISNULL(producto_nombre,'')) LIKE '%VENTA SIN DETALLE DE PRODUCTO%' THEN 1 ELSE 0 END) AS filas_sin_detalle_producto,COUNT(*) AS lineas_producto FROM j), t AS (SELECT COUNT(*) AS tickets_unicos,CAST(ISNULL(SUM(total_ticket),0) AS decimal(18,4)) AS total_detalle FROM f) SELECT s.snapshot_timestamp,s.total_estimado_dia AS total_header,t.total_detalle,CAST(s.total_estimado_dia-t.total_detalle AS decimal(18,4)) AS diferencia_total,s.tickets_abiertos+s.tickets_cerrados_dia AS tickets_header,t.tickets_unicos AS tickets_detalle,(s.tickets_abiertos+s.tickets_cerrados_dia)-t.tickets_unicos AS diferencia_tickets,m.filas_detalle_resumido,m.filas_sin_detalle_producto,m.lineas_producto FROM s CROSS JOIN t CROSS JOIN m"
+        },
+        {
+          "name": "origen_r39_ticket_line_counts",
+          "sql": "WITH s AS (SELECT TOP 1 detalle_abiertas_json FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK) WHERE UPPER(LTRIM(RTRIM(unidad_negocio_id)))='ORIGEN' AND fecha_operacion='2026-10-02' ORDER BY snapshot_timestamp DESC), j AS (SELECT x.folio,x.producto_codigo,x.producto_nombre,ISNULL(x.total_ticket,0) AS total_ticket FROM s CROSS APPLY OPENJSON(ISNULL(s.detalle_abiertas_json,'[]')) WITH (folio varchar(128) '$.folio',producto_codigo varchar(128) '$.producto_codigo',producto_nombre varchar(400) '$.producto_nombre',total_ticket decimal(18,4) '$.total_ticket') x) SELECT folio,COUNT(*) AS lineas_producto,COUNT(DISTINCT producto_codigo) AS productos,MAX(total_ticket) AS total_ticket,SUM(CASE WHEN UPPER(ISNULL(producto_nombre,'')) LIKE '%DETALLE RESUMIDO%' OR UPPER(ISNULL(producto_nombre,'')) LIKE '%VENTA SIN DETALLE DE PRODUCTO%' THEN 1 ELSE 0 END) AS lineas_fallback FROM j GROUP BY folio ORDER BY folio"
+        }
+      ]
+    }
+  ]
+}
