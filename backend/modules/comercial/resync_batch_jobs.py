@@ -11,8 +11,8 @@ from core.sql_first.db import get_sql_connection
 
 JOB_TYPE = "comercial_range_batch"
 LOCK_NAME = "sync_comercial_v2"
-ACTIVE = ("JOB_QUEUED", "JOB_RUNNING", "JOB_WAITING_LOCK")
-RESUMABLE = ("JOB_PARTIAL", "JOB_FAILED", "JOB_STALE")
+ACTIVE = ("JOB_QUEUED", "JOB_RUNNING", "JOB_WAITING_LOCK", "JOB_CANCEL_REQUESTED")
+RESUMABLE = ("JOB_PARTIAL", "JOB_FAILED", "JOB_STALE", "JOB_CANCELLED")
 BLOCK_DAYS = 5
 MAX_ATTEMPTS = 3
 STALE_SECONDS = 7200
@@ -187,19 +187,73 @@ def queue_resume(job_id: int):
     if payload.get("status") == "JOB_SUCCESS": return payload
     if payload.get("status") not in RESUMABLE:
         raise ValueError(f"No se puede reanudar desde {payload.get('status')}")
+    payload["cancel_requested"] = False
+    payload["cancel_requested_at_utc"] = None
+    payload["cancelled_by"] = None
     payload["current_phase"] = "QUEUED_RESUME"
     _write(job_id, payload, "JOB_QUEUED", "Trabajo reanudado desde checkpoint.")
     return _read(job_id)
+
+
+def request_cancel(job_id: int, requested_by: str):
+    payload = get_job(job_id)
+    if not payload:
+        raise ValueError("Trabajo Comercial no encontrado")
+    if payload.get("status") in ("JOB_SUCCESS", "JOB_CANCELLED"):
+        return payload
+    if payload.get("status") not in ACTIVE:
+        raise ValueError(f"No se puede detener desde {payload.get('status')}")
+    payload["cancel_requested"] = True
+    payload["cancel_requested_at_utc"] = _now()
+    payload["cancelled_by"] = requested_by
+    payload["current_phase"] = "STOP_REQUESTED"
+    _write(
+        job_id,
+        payload,
+        "JOB_CANCEL_REQUESTED",
+        "Detención segura solicitada. Se detendrá al finalizar la operación atómica actual.",
+    )
+    return _read(job_id)
+
+
+def _cancel_requested(job_id: int) -> bool:
+    current = _read(job_id)
+    return bool(current and (
+        current.get("cancel_requested")
+        or current.get("status") == "JOB_CANCEL_REQUESTED"
+    ))
+
+
+def _finish_cancelled(job_id: int, payload: Dict[str, Any]):
+    latest = _read(job_id) or payload
+    latest["cancel_requested"] = True
+    latest["current_unit"] = None
+    latest["current_block"] = None
+    latest["current_phase"] = "STOPPED_SAFE"
+    _write(
+        job_id,
+        latest,
+        "JOB_CANCELLED",
+        "Proceso detenido de forma segura. El checkpoint fue conservado y puede reanudarse.",
+    )
+    return _read(job_id)
+
 
 async def run_job(job_id: int):
     payload = get_job(job_id)
     if not payload or payload.get("status") == "JOB_SUCCESS": return
     from api.admin_scheduler_resync import _ejecutar_dry_run, _ejecutar_sync_real, _get_unidad_config
     try:
+        if _cancel_requested(job_id):
+            _finish_cancelled(job_id, payload)
+            return
         _write(job_id, payload, "JOB_RUNNING", "Re-sincronización Comercial por rango iniciada.")
         payload = _read(job_id) or payload
         for start, end in _blocks(date.fromisoformat(payload["fecha_inicio"]), date.fromisoformat(payload["fecha_fin"])):
             for unit in payload.get("units") or []:
+                if _cancel_requested(job_id):
+                    _finish_cancelled(job_id, payload)
+                    return
                 key = _key(unit, start, end)
                 step = payload["steps"][key]
                 if step.get("status") == "PASS":
@@ -218,10 +272,16 @@ async def run_job(job_id: int):
                         step["attempts"] = attempt
                         dry = await _ejecutar_dry_run(unit, config, start, end)
                         final_dry = _compact(dry)
+                        if _cancel_requested(job_id):
+                            _finish_cancelled(job_id, payload)
+                            return
                         if not dry.get("success"):
                             if attempt < MAX_ATTEMPTS and _transient(dry):
                                 await asyncio.sleep(30); continue
                             break
+                        if _cancel_requested(job_id):
+                            _finish_cancelled(job_id, payload)
+                            return
                         lock = get_lock_manager().get_lock(LOCK_NAME)
                         if not await lock.acquire(timeout_seconds=600):
                             final_real = {"success": False, "error_message": "LOCK_BUSY"}
@@ -243,6 +303,14 @@ async def run_job(job_id: int):
                             if heartbeat: await lock.stop_heartbeat_loop()
                             await lock.release()
                         passed = bool(final_real.get("success")) and bool(final_real.get("header_success")) and bool(final_real.get("detail_success"))
+                        if _cancel_requested(job_id):
+                            step["status"] = "PASS" if passed else "PENDING_RECOVERY"
+                            step["dry_run"] = final_dry
+                            step["real"] = final_real
+                            step["completed_at_utc"] = _now()
+                            payload["steps"][key] = step
+                            _finish_cancelled(job_id, payload)
+                            return
                         if passed: break
                         if attempt < MAX_ATTEMPTS and _transient(final_real):
                             await asyncio.sleep(30); continue

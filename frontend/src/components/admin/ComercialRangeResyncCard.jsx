@@ -8,10 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle2, Clock3, Loader2, Play, RefreshCw, RotateCcw, Server } from 'lucide-react';
+import { CheckCircle2, Clock3, Loader2, Play, RefreshCw, RotateCcw, Server, Square } from 'lucide-react';
 
-const ACTIVE = new Set(['JOB_QUEUED','JOB_RUNNING','JOB_WAITING_LOCK']);
-const RESUMABLE = new Set(['JOB_PARTIAL','JOB_FAILED','JOB_STALE']);
+const ACTIVE = new Set(['JOB_QUEUED','JOB_RUNNING','JOB_WAITING_LOCK','JOB_CANCEL_REQUESTED']);
+const RESUMABLE = new Set(['JOB_PARTIAL','JOB_FAILED','JOB_STALE','JOB_CANCELLED']);
 
 export default function ComercialRangeResyncCard({ options, onFinished }) {
   const [units,setUnits]=useState([]);
@@ -65,7 +65,20 @@ export default function ComercialRangeResyncCard({ options, onFinished }) {
     finally{setLoading(false);}
   };
 
+  const stopSafely=async()=>{
+    if(!job?.job_id) return;
+    if(!window.confirm('¿Solicitar detención segura? La operación atómica actual terminará antes de detener el proceso y se conservará el checkpoint.')) return;
+    setLoading(true);
+    try{
+      const r=await api.post(`/admin/scheduler/resync/comercial-range/jobs/${job.job_id}/cancel`);
+      setJob(r.data);
+    }catch(e){alert(e.response?.data?.detail||e.message);}
+    finally{setLoading(false);}
+  };
+
   const pct=Number(job?.percent_complete||0);
+  const lastUpdateMs=job?.updated_at_utc?Date.now()-new Date(job.updated_at_utc).getTime():0;
+  const stalled=ACTIVE.has(job?.status)&&lastUpdateMs>10*60*1000;
   return <Card data-testid="comercial-range-resync-card" className="border-sky-200">
     <CardHeader>
       <CardTitle className="flex items-center gap-2"><RefreshCw className="w-5 h-5"/> Re-sincronización Comercial por rango</CardTitle>
@@ -117,13 +130,28 @@ export default function ComercialRangeResyncCard({ options, onFinished }) {
           <div><strong>Sucursal actual:</strong> {job.current_unit||'-'}</div>
         </div>
         <p className="text-sm text-zinc-600">{job.message}</p>
+        {stalled&&job.status!=='JOB_CANCEL_REQUESTED'&&<Alert className="border-amber-300 bg-amber-50">
+          <Clock3 className="w-4 h-4"/><AlertTitle>Sin avance reciente</AlertTitle>
+          <AlertDescription>
+            Este bloque lleva más de 10 minutos sin actualizar su checkpoint. Puedes solicitar una detención segura sin detener el Scheduler ni otros sincronizadores.
+          </AlertDescription>
+        </Alert>}
+        {job.status==='JOB_CANCEL_REQUESTED'&&<Alert className="border-amber-300 bg-amber-50">
+          <Clock3 className="w-4 h-4"/><AlertTitle>Detención solicitada</AlertTitle>
+          <AlertDescription>
+            Esperando que termine la operación atómica actual para liberar el lock y conservar el checkpoint.
+          </AlertDescription>
+        </Alert>}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {(job.units||[]).map(unit=>{const p=job.unit_progress?.[unit]||{};return <div key={unit} className="flex justify-between rounded-md border px-3 py-2 text-sm">
             <span className="font-medium">{unit}</span><span>{p.pass||0}/{p.total||0} OK{(p.pending_recovery||0)>0?` · ${p.pending_recovery} pendiente(s)`:''}</span>
           </div>})}
         </div>
         {job.status==='JOB_SUCCESS'&&<div className="flex items-center gap-2 text-emerald-700 text-sm"><CheckCircle2 className="w-4 h-4"/>Rango completado.</div>}
-        {RESUMABLE.has(job.status)&&<Button variant="outline" onClick={resume} disabled={loading}><RotateCcw className="w-4 h-4 mr-2"/>Reanudar pendientes</Button>}
+        {ACTIVE.has(job.status)&&job.status!=='JOB_CANCEL_REQUESTED'&&<Button variant="destructive" onClick={stopSafely} disabled={loading}>
+          <Square className="w-4 h-4 mr-2"/>Detener de manera segura
+        </Button>}
+        {RESUMABLE.has(job.status)&&<Button variant="outline" onClick={resume} disabled={loading}><RotateCcw className="w-4 h-4 mr-2"/>Reanudar desde checkpoint</Button>}
       </div>}
     </CardContent>
   </Card>;

@@ -1049,6 +1049,22 @@ def reanudar_comercial_range_job(
     return {"success": True, **payload}
 
 
+@router.post("/resync/comercial-range/jobs/{job_id}/cancel", status_code=202)
+def detener_comercial_range_job(
+    job_id: int,
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN")),
+):
+    from modules.comercial.resync_batch_jobs import request_cancel
+    try:
+        payload = request_cancel(
+            job_id,
+            current_user.get("email", "unknown"),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    return {"success": True, **payload}
+
+
 @router.post("/resync/execute", response_model=ResyncResponse)
 async def ejecutar_resync(
     request: ResyncExecuteRequest,
