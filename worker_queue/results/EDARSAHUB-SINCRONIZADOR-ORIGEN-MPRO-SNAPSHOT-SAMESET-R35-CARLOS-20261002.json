@@ -1,0 +1,203 @@
+{
+  "base_sha": "a071b2d63e4afa19dcb08f591db51a861a7e8513",
+  "blockers": [],
+  "candidate_sha": "7ac96234634a9c8b6e92affa4036a16753a59ed5",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-10-02T17:42:27Z",
+  "development_sha": "7ac96234634a9c8b6e92affa4036a16753a59ed5",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+    "backend/tests/test_comercial_mpro_daily_detail_api_local_r18.py",
+    "backend/tests/test_comercial_mpro_header_detail_atomic_r29.py",
+    "backend/tests/test_comercial_mpro_same_snapshot_r33.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-SNAPSHOT-SAMESET-R35-CARLOS-20261002",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-10-02T17:42:39Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "core.empresa_resolver",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "core.utils.operational_window",
+              "datetime",
+              "decimal",
+              "logging",
+              "modules.comercial_v2.repository_comercial_edarsahub",
+              "modules.comercial_v2.schemas",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "modules.comercial_v2.ticket_snapshot",
+              "modules.integrations_runtime.sync_ledger",
+              "os",
+              "pytz",
+              "requests",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "_merge_mpro_summary_detail_rows",
+              "_summarize_mpro_ticket_rows",
+              "metricas_snapshot",
+              "rows_resumen_abiertas",
+              "rows_resumen_canonico"
+            ],
+            "path": "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_acquire_sync_lock_sync",
+              "_coerce_mx_datetime",
+              "_execute_query_via_api_local",
+              "_get_api_local_config",
+              "_get_existing_ventas_dia",
+              "_get_unidades_from_edarsahub",
+              "_merge_mpro_summary_detail_rows",
+              "_release_sync_lock_sync",
+              "_summarize_mpro_ticket_rows",
+              "execute_sync_comercial_abiertas_v2",
+              "run_sync_comercial_abiertas_v2_manual",
+              "select_mpro_closed_sales",
+              "totals"
+            ],
+            "tables_referenced": [
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "Servidores_Conexiones",
+              "Sync_Control_Ejecuciones",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "_merge_mpro_summary_detail_rows",
+              "_summarize_mpro_ticket_rows",
+              "metricas_snapshot",
+              "rows_resumen_abiertas",
+              "rows_resumen_canonico"
+            ],
+            "path": "backend/tests/test_comercial_mpro_same_snapshot_r33.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "test_closed_tickets_override_open_same_folio",
+              "test_mpro_header_is_derived_from_same_serialized_rows",
+              "test_mpro_snapshot_uses_summary_set_as_authority"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "_merge_mpro_summary_detail_rows",
+              "_summarize_mpro_ticket_rows",
+              "metricas_snapshot",
+              "rows_resumen_abiertas",
+              "rows_resumen_canonico"
+            ],
+            "path": "backend/tests/test_comercial_mpro_header_detail_atomic_r29.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "test_header_and_detail_are_atomic_from_same_snapshot_set",
+              "test_mpro_summary_fallback_queries_exist"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "_merge_mpro_summary_detail_rows",
+              "_summarize_mpro_ticket_rows",
+              "metricas_snapshot"
+            ],
+            "path": "backend/tests/test_comercial_mpro_daily_detail_api_local_r18.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "test_comercial_endpoints_remain_no_live",
+              "test_mpro_daily_detail_has_open_and_closed_contracts",
+              "test_mpro_detail_and_header_share_authoritative_snapshot_set"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 4,
+          "scanned_files": 4,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-02T17:42:21Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
