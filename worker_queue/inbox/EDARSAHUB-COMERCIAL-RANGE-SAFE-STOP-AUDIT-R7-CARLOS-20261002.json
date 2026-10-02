@@ -1,0 +1,54 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-RANGE-SAFE-STOP-AUDIT-R7-CARLOS-20261002",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a071b2d63e4afa19dcb08f591db51a861a7e8513",
+  "production_allowed": false,
+  "mode": "FRONTEND_BUILD_CERTIFICATION",
+  "objective": "Sincronizador: certificación final no mutante del cambio SAFE STOP R6 ya aplicado en a071b2d. Validar build frontend y contrato de cancelación segura: JOB_CANCEL_REQUESTED/JOB_CANCELLED, endpoint /cancel, alerta Sin avance reciente, botón Detener de manera segura y Reanudar desde checkpoint. No cambiar archivos, no tocar Producción ni sync_comercial_abiertas_v2.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial/resync_batch_jobs.py",
+          "backend/api/admin_scheduler_resync.py",
+          "frontend/src/components/admin/ComercialRangeResyncCard.jsx"
+        ],
+        "search_terms": [
+          "JOB_CANCEL_REQUESTED",
+          "JOB_CANCELLED",
+          "request_cancel",
+          "STOP_REQUESTED",
+          "STOPPED_SAFE",
+          "/resync/comercial-range/jobs/{job_id}/cancel",
+          "Detener de manera segura",
+          "Sin avance reciente",
+          "Reanudar desde checkpoint"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.jsx"
+        ],
+        "exclude_patterns": [],
+        "max_results": 160
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
