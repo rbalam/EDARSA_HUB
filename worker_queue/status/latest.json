@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "2447897975b6812c693c1bb340d6550c5931b5fb",
-  "generated_at_utc": "2026-10-02T16:40:00Z",
+  "generated_at_utc": "2026-10-02T16:41:14Z",
   "history": {
     "done_total_local": 1292,
     "pending_total_local": 0,
@@ -16,43 +16,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3544,
-      "job_id": "EDARSAHUB-COMERCIAL-OPEN-DAY-ORIGEN-TODAY-R22-CARLOS-20261002",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 933,
+      "age_seconds": 1007,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-TODAY-HUB-VERIFY-R24-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 695,
+      "age_seconds": 769,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-TODAY-HUB-VERIFY-R26-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 922,
+      "age_seconds": 996,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-TODAY-POS-VERIFY-R25-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2244,
+      "age_seconds": 2318,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-TODAY-VERIFY-R23-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 385,
+      "age_seconds": 459,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-MULTIUNIT-UI-AUDIT-R4-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 795,
+      "age_seconds": 869,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-MULTIUNIT-UI-R3-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,14 +60,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 7,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
   "remote_development_sha": "2447897975b6812c693c1bb340d6550c5931b5fb",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-02T16:39:56Z",
-    "last_receive_utc": "2026-10-02T16:39:51Z",
+    "last_cycle_utc": "2026-10-02T16:41:13Z",
+    "last_receive_utc": "2026-10-02T16:41:08Z",
     "last_terminal_utc": "2026-10-02T16:33:34Z",
     "pid": "13143",
     "runtime_fingerprint": {
