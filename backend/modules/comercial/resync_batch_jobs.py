@@ -3,7 +3,10 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import sys
 from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from core.scheduler.locks import get_lock_manager
@@ -16,6 +19,10 @@ RESUMABLE = ("JOB_PARTIAL", "JOB_FAILED", "JOB_STALE", "JOB_CANCELLED")
 BLOCK_DAYS = 5
 MAX_ATTEMPTS = 3
 STALE_SECONDS = 7200
+DRY_TIMEOUT_SECONDS = int(os.environ.get("COMERCIAL_RANGE_DRY_TIMEOUT_SECONDS", "300"))
+REAL_TIMEOUT_SECONDS = int(os.environ.get("COMERCIAL_RANGE_REAL_TIMEOUT_SECONDS", "900"))
+POLL_SECONDS = 5
+ENTRYPOINT = Path(__file__).resolve().parents[2] / "scripts" / "resync_comercial_range_worker.py"
 TRANSIENT_MARKERS = ("TIMEOUT", "TIMED OUT", "DEADLOCK", "CONNECTION", "API_LOCAL_ERROR", "POS_")
 
 def _now():
@@ -102,6 +109,82 @@ def _compact(result: Dict[str, Any]) -> Dict[str, Any]:
 def _transient(result: Dict[str, Any]) -> bool:
     text = json.dumps(result, default=str, ensure_ascii=False).upper()
     return any(x in text for x in TRANSIENT_MARKERS)
+
+
+def _summary_from_stdout(stdout: str) -> Dict[str, Any]:
+    for line in reversed((stdout or "").splitlines()):
+        try:
+            item = json.loads(line.strip())
+        except Exception:
+            continue
+        if item.get("event") == "comercial_range_summary":
+            return item
+    return {}
+
+
+async def _terminate_process(proc):
+    if proc.returncode is not None:
+        return
+    proc.terminate()
+    try:
+        await asyncio.wait_for(proc.wait(), timeout=10)
+    except asyncio.TimeoutError:
+        proc.kill()
+        await proc.wait()
+
+
+async def _run_entrypoint(job_id: int, payload: Dict[str, Any], unit: str, start: date, end: date, commit: bool) -> Dict[str, Any]:
+    timeout_seconds = REAL_TIMEOUT_SECONDS if commit else DRY_TIMEOUT_SECONDS
+    args = [
+        sys.executable, str(ENTRYPOINT),
+        "--unidad", unit,
+        "--fecha-inicio", start.isoformat(),
+        "--fecha-fin", end.isoformat(),
+    ]
+    if commit:
+        args.append("--commit")
+    backend_dir = str(ENTRYPOINT.parents[1])
+    current_pythonpath = os.environ.get("PYTHONPATH", "")
+    pythonpath = backend_dir if not current_pythonpath else backend_dir + os.pathsep + current_pythonpath
+    proc = await asyncio.create_subprocess_exec(
+        *args,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.STDOUT,
+        cwd=backend_dir,
+        env={**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONPATH": pythonpath},
+    )
+    communicate_task = asyncio.create_task(proc.communicate())
+    started = datetime.now(timezone.utc)
+    while not communicate_task.done():
+        if _cancel_requested(job_id):
+            await _terminate_process(proc)
+            output, _ = await communicate_task
+            return {"success": False, "cancelled": True, "error_message": "CANCELLED_BY_USER"}
+        elapsed = int((datetime.now(timezone.utc) - started).total_seconds())
+        if elapsed >= timeout_seconds:
+            await _terminate_process(proc)
+            output, _ = await communicate_task
+            return {"success": False, "timeout": True, "error_message": f"TIMEOUT_{timeout_seconds}_SECONDS"}
+        latest = _read(job_id) or payload
+        latest["current_phase"] = "REAL" if commit else "DRY_RUN"
+        latest["phase_elapsed_seconds"] = elapsed
+        latest["phase_timeout_seconds"] = timeout_seconds
+        _write(
+            job_id,
+            latest,
+            "JOB_RUNNING",
+            f"{unit}: {'re-sincronizando' if commit else 'validando'} {start} a {end} - {elapsed}s.",
+        )
+        await asyncio.wait({communicate_task}, timeout=POLL_SECONDS)
+    output, _ = await communicate_task
+    text = output.decode("utf-8", errors="replace")
+    summary = _summary_from_stdout(text)
+    summary["returncode"] = proc.returncode
+    summary["output_tail"] = text[-1200:]
+    if proc.returncode != 0 and not summary.get("error_message"):
+        summary["error_message"] = summary.get("error") or f"ENTRYPOINT_RC_{proc.returncode}"
+    return summary
+
 
 def create_job(units: List[str], fecha_inicio: date, fecha_fin: date, motivo: str, requested_by: str):
     normalized = []
@@ -270,7 +353,7 @@ async def run_job(job_id: int):
                 else:
                     for attempt in range(1, MAX_ATTEMPTS + 1):
                         step["attempts"] = attempt
-                        dry = await _ejecutar_dry_run(unit, config, start, end)
+                        dry = await _run_entrypoint(job_id, payload, unit, start, end, commit=False)
                         final_dry = _compact(dry)
                         if _cancel_requested(job_id):
                             _finish_cancelled(job_id, payload)
@@ -294,10 +377,7 @@ async def run_job(job_id: int):
                             heartbeat = True
                             payload["current_phase"] = "REAL"
                             _write(job_id, payload, "JOB_RUNNING", f"{unit}: re-sincronizando {start} a {end}.")
-                            real = await _ejecutar_sync_real(
-                                unit, config, start, end,
-                                f"RANGEJOB-{job_id}-{unit}-{start:%Y%m%d}-{end:%Y%m%d}-A{attempt}"
-                            )
+                            real = await _run_entrypoint(job_id, payload, unit, start, end, commit=True)
                             final_real = _compact(real)
                         finally:
                             if heartbeat: await lock.stop_heartbeat_loop()
