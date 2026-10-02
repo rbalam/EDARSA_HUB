@@ -1,0 +1,42 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-OPEN-DAY-R19-RUNTIME-ADOPT-CARLOS-20261001",
+  "objective": "Forzar la adopcion en Preview del SHA de Desarrollo que contiene la prioridad del snapshot MPRO de Ventas del Dia y la capacidad cerrada COMERCIAL_OPEN_DAY_SYNC. Solo certificar codigo/runtime; no modificar datos SQL ni Produccion.",
+  "mode": "READ_ONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "0f50a8d8a4e85462c6ddc5fbff7ecb0cc395e2e0",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial/ticket_service.py",
+          "backend/scripts/run_comercial_open_day_sync_worker.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py"
+        ],
+        "search_terms": [
+          "preferir_snapshot_mpro",
+          "COMERCIAL_OPEN_DAY_SYNC",
+          "run_comercial_open_day_sync_worker.py",
+          "run_sync_comercial_abiertas_v2_manual"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    }
+  ]
+}
