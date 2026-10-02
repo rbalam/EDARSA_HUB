@@ -3,20 +3,20 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "c54b546cf0f6937c739dc3c62b6be90bb60609b7",
-  "generated_at_utc": "2026-10-02T17:26:42Z",
+  "development_sha": "a071b2d63e4afa19dcb08f591db51a861a7e8513",
+  "generated_at_utc": "2026-10-02T17:28:10Z",
   "history": {
     "done_total_local": 1296,
     "pending_total_local": 0,
-    "processing_total_local": 1,
-    "rejected_total_local": 1148,
-    "results_total_local": 2235
+    "processing_total_local": 0,
+    "rejected_total_local": 1149,
+    "results_total_local": 2236
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 56,
+      "age_seconds": 144,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-SNAPSHOT-SAMESET-R32-CARLOS-20261002",
       "reasons": [
         "ACTION_1_SOURCE_SHA256_REQUIRED_OR_INVALID",
@@ -28,83 +28,77 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2180,
+      "age_seconds": 2267,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-CLOSED-FOLIOS-DIAG-R28-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3498,
+      "age_seconds": 3585,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-TODAY-HUB-VERIFY-R26-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 179,
+      "age_seconds": 267,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-ACTIVE-DIAG-R5-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3188,
+      "age_seconds": 3275,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-MULTIUNIT-UI-AUDIT-R4-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3597,
-      "job_id": "EDARSAHUB-COMERCIAL-RANGE-MULTIUNIT-UI-R3-CARLOS-20261001",
+      "age_seconds": 32,
+      "job_id": "EDARSAHUB-COMERCIAL-RANGE-SAFE-STOP-R6-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 578,
+      "age_seconds": 666,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-ATOMIC-DIAG-R31-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1291,
+      "age_seconds": 1379,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-HEADER-DETAIL-ATOMIC-R29-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 897,
+      "age_seconds": 984,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-HEADER-DETAIL-VERIFY-R30-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 84,
-      "job_id": "EDARSAHUB-COMERCIAL-RANGE-SAFE-STOP-R6-CARLOS-20261002",
-      "reason": null,
-      "state": "RUNNING"
     }
   ],
-  "local_development_sha": "c54b546cf0f6937c739dc3c62b6be90bb60609b7",
+  "local_development_sha": "a071b2d63e4afa19dcb08f591db51a861a7e8513",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
   "queue_result_ready_recent": 8,
-  "queue_running": 1,
-  "remote_development_sha": "c54b546cf0f6937c739dc3c62b6be90bb60609b7",
+  "queue_running": 0,
+  "remote_development_sha": "a071b2d63e4afa19dcb08f591db51a861a7e8513",
   "runtime": {
-    "current_job_id": "EDARSAHUB-COMERCIAL-RANGE-SAFE-STOP-R6-CARLOS-20261002",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-02T17:26:00Z",
-    "last_receive_utc": "2026-10-02T17:25:55Z",
-    "last_terminal_utc": "2026-10-02T17:23:43Z",
-    "pid": "13143",
+    "last_cycle_utc": "2026-10-02T17:28:02Z",
+    "last_receive_utc": "2026-10-02T17:28:06Z",
+    "last_terminal_utc": "2026-10-02T17:27:22Z",
+    "pid": "268946",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "4aff06e7ceeb552f43b52ea95b57ff522cd36adf",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "c54b546cf0f6937c739dc3c62b6be90bb60609b7",
+      "development_sha": "a071b2d63e4afa19dcb08f591db51a861a7e8513",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
