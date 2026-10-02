@@ -1,0 +1,23 @@
+{
+  "base_sha": "a071b2d63e4afa19dcb08f591db51a861a7e8513",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:WRITE_EXISTING_REQUIRES_EXPECTED_SHA256:backend/tests/test_comercial_mpro_header_detail_atomic_r29.py"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-02T17:38:30Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-SNAPSHOT-SAMESET-R34-CARLOS-20261002",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-02T17:38:41Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-02T17:38:29Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
