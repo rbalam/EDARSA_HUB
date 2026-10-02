@@ -9,6 +9,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / 'backend'
@@ -47,47 +48,179 @@ def _json_value(value: Any) -> Any:
         return str(value)
     if isinstance(value, bytes):
         return value.hex()
+    if isinstance(value, UUID):
+        return str(value)
     return value
 
-def execute_queries(queries: list[dict[str, Any]], max_rows: int = 200) -> dict[str, Any]:
-    from core.sql_first.db import readonly_sql_connection
+ALLOWED_POS_SYSTEM_TYPES = {'MPRO', 'SOFTRESTAURANT'}
+UNIT_CODE_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$')
+SERVER_ID_RE = re.compile(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
+
+def _query_evidence(conn, queries: list[dict[str, Any]], max_rows: int, *, target: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     evidence = []
-    with readonly_sql_connection('default') as conn:
-        for item in queries:
-            name = str(item.get('name') or '').strip()
-            sql = validate_readonly_sql(str(item.get('sql') or ''))
-            cur = conn.cursor()
-            cur.execute(sql)
-            columns = [d[0] for d in (cur.description or [])]
-            rows = cur.fetchmany(max_rows + 1) if cur.description else []
-            truncated = len(rows) > max_rows
-            rows = rows[:max_rows]
-            evidence.append({
-                'name': name,
-                'columns': columns,
-                'rows': [[_json_value(v) for v in row] for row in rows],
-                'row_count_returned': len(rows),
-                'truncated': truncated,
-            })
+    for item in queries:
+        name = str(item.get('name') or '').strip()
+        sql = validate_readonly_sql(str(item.get('sql') or ''))
+        cur = conn.cursor()
+        cur.execute(sql)
+        columns = [d[0] for d in (cur.description or [])]
+        rows = cur.fetchmany(max_rows + 1) if cur.description else []
+        truncated = len(rows) > max_rows
+        rows = rows[:max_rows]
+        row = {
+            'name': name,
+            'columns': columns,
+            'rows': [[_json_value(v) for v in result_row] for result_row in rows],
+            'row_count_returned': len(rows),
+            'truncated': truncated,
+        }
+        if target:
+            row['target'] = target
+        evidence.append(row)
+    return evidence
+
+def execute_queries(queries: list[dict[str, Any]], max_rows: int = 200, *, source: str = 'EDARSAHUB', units: list[str] | None = None, system_types: list[str] | None = None, server_id: str | None = None, include_inactive: bool = False) -> dict[str, Any]:
+    source_name = str(source or 'EDARSAHUB').strip().upper()
+    unit_codes = [str(value).strip().upper() for value in (units or [])]
+    requested_types = [str(value).strip().upper() for value in (system_types or [])]
+
+    if source_name == 'EDARSAHUB':
+        if unit_codes or requested_types or server_id or include_inactive:
+            raise ValueError('EDARSAHUB_SOURCE_DOES_NOT_ACCEPT_EXTERNAL_SELECTORS')
+        from core.sql_first.db import readonly_sql_connection
+        with readonly_sql_connection('default') as conn:
+            evidence = _query_evidence(conn, queries, max_rows)
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        return {'status': 'PASS', 'mode': 'READ_ONLY_SQL', 'connection': 'readonly_sql_connection:default', 'evidence': evidence}
+
+    if source_name == 'SERVER':
+        if unit_codes or requested_types:
+            raise ValueError('SERVER_SOURCE_DOES_NOT_ACCEPT_POS_SELECTORS')
+        server_id_value = str(server_id or '').strip()
+        if not SERVER_ID_RE.fullmatch(server_id_value):
+            raise ValueError('SERVER_ID_REQUIRED_OR_INVALID')
+        from core.server_registry import get_server_connection_info_with_secrets
+        from core.secret_manager import decrypt_secret, is_encrypted_secret
+        from core.sql_first.connection_factory import get_external_sql_connection
+        server = get_server_connection_info_with_secrets(server_id_value, include_inactive=bool(include_inactive))
+        if not server:
+            raise ValueError('SERVER_NOT_RESOLVED')
+        password = server.get('password')
+        if not password:
+            raise ValueError('SERVER_PASSWORD_NOT_CONFIGURED')
+        if is_encrypted_secret(password):
+            password = decrypt_secret(password)
+        config = {
+            'host': server.get('host'),
+            'port': server.get('port', 1433),
+            'database': server.get('database'),
+            'username': server.get('username'),
+            'password_decrypted': password,
+            'timeout': 30,
+            'login_timeout': 10,
+        }
+        target = {
+            'server_id': str(server.get('id') or server_id_value),
+            'name': str(server.get('name') or ''),
+            'system_type': str(server.get('system_type') or ''),
+            'database': str(server.get('database') or ''),
+            'active': bool(server.get('active', False)),
+        }
+        conn = get_external_sql_connection(config)
         try:
-            conn.rollback()
-        except Exception:
-            pass
-    return {'status': 'PASS', 'mode': 'READ_ONLY_SQL', 'connection': 'readonly_sql_connection:default', 'evidence': evidence}
+            evidence = _query_evidence(conn, queries, max_rows, target=target)
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        finally:
+            conn.close()
+        return {
+            'status': 'PASS',
+            'mode': 'READ_ONLY_SQL',
+            'connection': 'server_registry+get_external_sql_connection',
+            'targets': [target],
+            'evidence': evidence,
+        }
+
+    if source_name != 'POS':
+        raise ValueError('INVALID_READONLY_SOURCE')
+    if server_id or include_inactive:
+        raise ValueError('POS_SOURCE_DOES_NOT_ACCEPT_SERVER_SELECTORS')
+    if not unit_codes or any(not UNIT_CODE_RE.fullmatch(code) for code in unit_codes):
+        raise ValueError('POS_UNITS_REQUIRED_OR_INVALID')
+    if not requested_types or any(value not in ALLOWED_POS_SYSTEM_TYPES for value in requested_types):
+        raise ValueError('POS_SYSTEM_TYPES_REQUIRED_OR_INVALID')
+
+    from core.connections.pos_runtime_resolver import list_pos_runtime_contexts
+    from core.sql_first.connection_factory import get_external_sql_connection
+
+    contexts = list_pos_runtime_contexts(system_types=requested_types)
+    evidence = []
+    targets = []
+    for code in unit_codes:
+        matches = [context for context in contexts if context.unidad_codigo.upper() == code]
+        if len(matches) != 1:
+            raise ValueError(f'POS_UNIT_NOT_UNIQUELY_RESOLVED:{code}')
+        context = matches[0]
+        target = {
+            'unidad_codigo': context.unidad_codigo,
+            'system_type': context.system_type,
+            'server_id': context.server_id,
+            'database': context.database,
+        }
+        conn = get_external_sql_connection(context.external_connection_config(as_dict=False))
+        try:
+            evidence.extend(_query_evidence(conn, queries, max_rows, target=target))
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        finally:
+            conn.close()
+        targets.append(target)
+
+    return {
+        'status': 'PASS',
+        'mode': 'READ_ONLY_SQL',
+        'connection': 'PosRuntimeResolver+get_external_sql_connection',
+        'targets': targets,
+        'evidence': evidence,
+    }
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument('--queries-json', required=True)
     parser.add_argument('--max-rows', type=int, default=200)
+    parser.add_argument('--source', choices=['EDARSAHUB', 'POS', 'SERVER'], default='EDARSAHUB')
+    parser.add_argument('--units-json', default='[]')
+    parser.add_argument('--system-types-json', default='[]')
+    parser.add_argument('--server-id')
+    parser.add_argument('--include-inactive', action='store_true')
     args = parser.parse_args()
     try:
         queries = json.loads(args.queries_json)
+        units = json.loads(args.units_json)
+        system_types = json.loads(args.system_types_json)
         if not isinstance(queries, list) or not queries:
             raise ValueError('QUERIES_REQUIRED')
+        if not isinstance(units, list) or not isinstance(system_types, list):
+            raise ValueError('POS_SELECTORS_MUST_BE_LISTS')
         for item in queries:
             if not isinstance(item, dict) or not str(item.get('name') or '').strip():
                 raise ValueError('QUERY_NAME_REQUIRED')
-        result = execute_queries(queries, max_rows=max(1, min(args.max_rows, 500)))
+        result = execute_queries(
+            queries,
+            max_rows=max(1, min(args.max_rows, 500)),
+            source=args.source,
+            units=units,
+            system_types=system_types,
+            server_id=args.server_id,
+            include_inactive=args.include_inactive,
+        )
         print(json.dumps(result, ensure_ascii=False, sort_keys=True))
         return 0
     except Exception as exc:

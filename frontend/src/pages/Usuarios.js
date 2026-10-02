@@ -772,7 +772,7 @@ const Usuarios = () => {
   // Fuente primaria: /auth/me/effective-permissions.
   // No usar sec_permisos/sec_roles/role legacy como fuente primaria para tabs.
   const TAB_PERMISSIONS = {
-    usuarios: 'SISTEMA_USUARIOS_VER',
+    usuarios: ['USUARIOS_VER', 'SISTEMA_USUARIOS_VER'],
     roles: 'SISTEMA_ROLES_VER',
     permisosCatalogos: 'SISTEMA_PERMISOS_CATALOGOS_VER',
     estructura: 'SISTEMA_ESTRUCTURA_VER',
@@ -832,8 +832,9 @@ const Usuarios = () => {
 
   const canViewTab = (tabKey) => {
     const permissionCode = TAB_PERMISSIONS[tabKey];
-    if (!permissionCode || effectivePermissionsLoading) {
-      return false;
+
+    if (Array.isArray(permissionCode)) {
+      return permissionCode.some((code) => hasPermission(code)) || isEffectiveSuperAdmin();
     }
 
     return hasPermission(permissionCode) || isEffectiveSuperAdmin();

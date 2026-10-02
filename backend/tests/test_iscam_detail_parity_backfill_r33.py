@@ -33,15 +33,17 @@ def test_days_without_runtime_do_not_block_detail_only_backfill():
     assert 'dias_bloqueados"] or resumen["dias_sin_runtime"]' not in text
 
 
-def test_softrestaurant_detail_remains_net_to_cheques_total_and_not_srx():
+def test_softrestaurant_detail_keeps_product_amounts_and_reconciles_with_adjustment():
     text = EXTRACTOR.read_text(encoding='utf-8')
     block = text.split('def _extract_soft(', 1)[1].split('def _mpro_operational_datetime_range', 1)[0]
     assert 'ISNULL(ch.total, 0) AS importe_neto_ticket' in block
-    assert 'l.importe_bruto * l.importe_neto_ticket / t.bruto_ticket' in block
+    assert 'l.importe_bruto * l.importe_neto_ticket / t.bruto_ticket' not in block
+    assert 'CAST(l.importe_bruto AS decimal(18,4)) AS importe_neto' in block
+    assert 'SOFT_AJUSTE_CHEQUE' in block
     assert 'totalsrx' not in block
     assert 'subtotalsrx' not in block
     assert 'tr.apertura >=' in block
-    assert 'tr.cierre IS NOT NULL' in block
+    assert 'tr.cierre IS NOT NULL' not in block
 
 
 def test_frontend_warns_and_syncs_detail_gap():

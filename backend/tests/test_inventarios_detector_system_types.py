@@ -22,7 +22,7 @@ def _load_detector_module(monkeypatch):
     jobs_pkg.__path__ = []
 
     job_logger = types.ModuleType("core.scheduler.job_logger")
-    job_logger.get_job_logger = lambda db: _DummyJobLogger()
+    job_logger.get_job_logger = lambda *args, **kwargs: _DummyJobLogger()
 
     sql_repository = types.ModuleType("core.scheduler.sql_repository")
 
@@ -36,6 +36,7 @@ def _load_detector_module(monkeypatch):
     sql_repository.actualizar_inventario_completado = _noop
     sql_repository.actualizar_inventario_error = _noop
     sql_repository.get_inventarios_pendientes_reintento = _noop
+    sql_repository.get_inventario_error_by_id = _noop
     sql_repository.registrar_bitacora_job = _noop
 
     system_type_utils = types.ModuleType("core.system_type_utils")
@@ -170,3 +171,106 @@ async def test_detectar_softrestaurant_usa_sync_edarsahub(monkeypatch):
     assert inv.clave.folio_inventario == "200"
     assert inv.folio_inicial == "100"
     assert inv.metadata["source"] == "EDARSAHUB_SYNC"
+
+
+@pytest.mark.asyncio
+async def test_reintento_rehidrata_contexto_persistido(monkeypatch):
+    detector_module = _load_detector_module(monkeypatch)
+
+    async def fake_get_pendientes(max_intentos=3, limit=5):
+        assert max_intentos == detector_module.MAX_INTENTOS
+        assert limit == 5
+        return [{
+            "SistemaOrigen": "MPRO",
+            "ServerID": "server-mpro",
+            "SucursalID": "0021",
+            "AlmacenID": "0001",
+            "FolioInventario": "QR-0001041",
+            "Intentos": 2,
+            "DetallesJSON": (
+                '{"server_name":"ManagementPro",'
+                '"almacen_nombre":"ALMACEN GENERAL",'
+                '"folio_inicial":"QR-0001038",'
+                '"fecha_inicial":"2026-08-01",'
+                '"fecha_inventario":"2026-09-01",'
+                '"metadata":{"source":"EDARSAHUB_SYNC"}}'
+            ),
+        }]
+
+    monkeypatch.setattr(
+        detector_module,
+        "get_inventarios_pendientes_reintento",
+        fake_get_pendientes,
+    )
+
+    capturado = {}
+
+    async def fake_procesar(registro):
+        capturado.update(registro)
+
+    job = detector_module.InventariosDetectorJob(db={})
+    monkeypatch.setattr(job, "_procesar_inventario_desde_registro", fake_procesar)
+
+    await job._procesar_reintentos()
+
+    assert capturado["clave"] == {
+        "sistema_origen": "MPRO",
+        "server_id": "server-mpro",
+        "sucursal_id": "0021",
+        "almacen_id": "0001",
+        "folio_inventario": "QR-0001041",
+    }
+    assert capturado["server_name"] == "ManagementPro"
+    assert capturado["almacen_nombre"] == "ALMACEN GENERAL"
+    assert capturado["folio_inicial"] == "QR-0001038"
+    assert capturado["fecha_inicial"] == "2026-08-01"
+    assert capturado["fecha_inventario"] == "2026-09-01"
+    assert capturado["metadata"] == {"source": "EDARSAHUB_SYNC"}
+    assert capturado["intentos"] == 2
+    assert job.stats["inventarios_reintentados"] == 1
+
+
+@pytest.mark.asyncio
+async def test_retry_error_by_id_reintenta_solo_el_registro_objetivo(monkeypatch):
+    detector_module = _load_detector_module(monkeypatch)
+
+    async def fake_get_by_id(record_id):
+        assert record_id == 373
+        return {
+            "ID": 373,
+            "SistemaOrigen": "SOFTRESTAURANT",
+            "ServerID": "server-130mid",
+            "SucursalID": "130MID",
+            "AlmacenID": "3",
+            "FolioInventario": "3913",
+            "Estado": "ERROR",
+            "Intentos": 3,
+            "DetallesJSON": (
+                '{"server_name":"130 MERIDA",'
+                '"almacen_nombre":"PRODUCCION",'
+                '"folio_inicial":"3905",'
+                '"fecha_inicial":"2026-09-01T18:21:47",'
+                '"fecha_inventario":"2026-09-08T13:49:35"}'
+            ),
+        }
+
+    monkeypatch.setattr(detector_module, "get_inventario_error_by_id", fake_get_by_id)
+    procesados = []
+
+    async def fake_procesar(registro):
+        procesados.append(registro)
+
+    job = detector_module.InventariosDetectorJob(db={})
+    monkeypatch.setattr(job, "_procesar_inventario_desde_registro", fake_procesar)
+
+    result = await job.retry_error_by_id(373)
+
+    assert result["status"] == "EXECUTED"
+    assert result["record_id"] == 373
+    assert len(procesados) == 1
+    assert procesados[0]["clave"]["folio_inventario"] == "3913"
+    assert procesados[0]["folio_inicial"] == "3905"
+    assert procesados[0]["fecha_inicial"] == "2026-09-01T18:21:47"
+    assert procesados[0]["fecha_inventario"] == "2026-09-08T13:49:35"
+    assert procesados[0]["intentos"] == 3
+    assert job.stats["inventarios_reintentados"] == 1

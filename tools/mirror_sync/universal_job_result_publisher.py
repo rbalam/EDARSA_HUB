@@ -9,6 +9,12 @@ queue results branch as NOT_CERTIFIED/BLOCKED evidence.
 
 from __future__ import annotations
 
+# WORKER_DELIVERABLE_IMPORT_COMPAT_V1
+try:
+    from tools.mirror_sync.worker_deliverable_contract import evaluate_deliverables
+except ModuleNotFoundError:
+    from worker_deliverable_contract import evaluate_deliverables
+
 import fcntl
 import json
 import os
@@ -19,9 +25,28 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+# WORKER_RESULT_INTEGRITY_IMPORT_COMPAT_V1
+try:
+    from tools.mirror_sync.worker_result_integrity import (
+        ResultState,
+        inspect_result_file,
+        is_terminal_result_path,
+        validate_terminal_result_file,
+        validate_terminal_result_payload,
+    )
+except ModuleNotFoundError:
+    from worker_result_integrity import (
+        ResultState,
+        inspect_result_file,
+        is_terminal_result_path,
+        validate_terminal_result_file,
+        validate_terminal_result_payload,
+    )
+
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 STATE = ROOT / ".git" / "universal-worker-queue"
 RESULTS = STATE / "results"
+REJECTED = STATE / "rejected"
 PUBLISHED = STATE / "published"
 QUEUE_BRANCH = os.environ.get("EDARSAHUB_QUEUE_BRANCH", "worker/requests")
 RESULT_BRANCH = os.environ.get(
@@ -95,13 +120,84 @@ def load(path: Path) -> dict[str, Any]:
     return value
 
 
+def invalid_result_artifact_payload(
+    path: Path,
+    inspection: Any,
+) -> dict[str, Any]:
+    """Build a terminal fail-closed result for corrupt local artifacts.
+
+    This prevents zero-byte or non-JSON artifacts from being preserved as if
+    they were valid worker results. The artifact remains auditable, but it is
+    explicitly NOT_CERTIFIED and cannot open a downstream gate.
+    """
+    raw_job_id = path.stem.strip()
+    allowed = (
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "0123456789._-"
+    )
+    job_id = (
+        raw_job_id
+        if raw_job_id and all(ch in allowed for ch in raw_job_id)
+        else "INVALID-RESULT-ARTIFACT"
+    )
+    state = getattr(inspection, "state", "RESULT_INVALID_JSON")
+    state_value = getattr(state, "value", str(state))
+    reason = str(getattr(inspection, "reason", "") or state_value)
+    stamp = now()
+
+    return {
+        "schema": "edarsahub.worker-result.v2",
+        "job_id": job_id,
+        "started_at_utc": stamp,
+        "completed_at_utc": stamp,
+        "status": "INVALID_RESULT_ARTIFACT",
+        "executor": "universal-result-publisher",
+        "tests": "FAIL",
+        "quality_gate": "FAIL",
+        "files_changed": [],
+        "summary_es": (
+            "El publicador detecto un artifact terminal vacio, corrupto o no "
+            "procesable en worker/results y lo convirtio en evidencia "
+            "NOT_CERTIFIED para fallar cerrado."
+        ),
+        "blockers": [
+            f"invalid_result_artifact:{state_value}:{reason}",
+        ],
+        "percent_complete": 0,
+        "certification": "NOT_CERTIFIED",
+        "production_touched": False,
+        "invalid_result_artifact": True,
+        "source_result_path": path.as_posix(),
+        "result_integrity_state": state_value,
+        "result_integrity_reason": reason,
+        "result_size_bytes": int(getattr(inspection, "size_bytes", 0) or 0),
+        "result_sha256": str(getattr(inspection, "sha256", "") or ""),
+    }
+
+
+def load_publishable_result(path: Path) -> dict[str, Any]:
+    """Load a local result or synthesize a fail-closed invalid artifact result."""
+    if path.parent.name == "results":
+        inspection = inspect_result_file(path)
+        if inspection.state != ResultState.RESULT_TERMINAL_VALID:
+            return invalid_result_artifact_payload(path, inspection)
+
+    return load(path)
+
+
 def atomic_json(path: Path, payload: dict[str, Any]) -> None:
+    if is_terminal_result_path(path):
+        validate_terminal_result_payload(payload)
+
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
         json.dump(payload, handle, ensure_ascii=False, indent=2, sort_keys=True)
         handle.write("\n")
         temp = handle.name
     os.replace(temp, path)
+    if is_terminal_result_path(path):
+        validate_terminal_result_file(path)
 
 
 def valid_sha(value: Any) -> bool:
@@ -171,6 +267,128 @@ def sanitize_readonly_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
     return {"checks": sanitized_checks} if sanitized_checks else None
 
 
+def sanitize_repository_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
+    sanitized_checks = []
+    allowed_entry_keys = ("path", "matched_terms", "candidate_ownership", "symbols", "imports", "routes", "tables_referenced", "helpers", "connections", "rbac_contracts", "scheduler_contracts", "integrations")
+    for check in result.get("checks") or []:
+        if not isinstance(check, dict) or check.get("type") != "repository_contract_audit":
+            continue
+        payload = check.get("repository_evidence")
+        if not isinstance(payload, dict):
+            continue
+        if payload.get("status") != "PASS":
+            continue
+        entries = []
+        for entry in payload.get("evidence") or []:
+            if not isinstance(entry, dict):
+                continue
+            entries.append({key: entry.get(key) for key in allowed_entry_keys if key in entry})
+        sanitized_checks.append({
+            "status": "PASS",
+            "mode": "READ_ONLY_REPOSITORY",
+            "summary": payload.get("summary"),
+            "truncated": bool(payload.get("truncated")),
+            "evidence": entries,
+        })
+    return {"checks": sanitized_checks} if sanitized_checks else None
+
+
+
+def sanitize_semantic_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
+    allowed_payload_keys = (
+        "status", "mode", "bridge_verdict", "runtime_gap_confirmed",
+        "source_result_reader_capability_current_state",
+        "can_read_worker_results_by_branch_path",
+        "can_read_worker_results_by_blob_sha",
+        "can_emit_semantic_fields_from_source_result",
+        "semantic_fields_complete", "missing_semantic_fields",
+        "semantic_fields", "gate3_allowed",
+        "source_result_read_status", "source_result_path",
+        "source_result_branch", "source_result_commit",
+        "source_result_blob_sha", "source_result_size_bytes",
+        "source_result_sha256", "source_result_loader",
+        "source_status", "source_quality_gate", "source_certification",
+        "source_work_completion", "source_percent_complete",
+        "source_production_touched", "source_files_changed",
+        "source_blockers", "required_runtime_change",
+        "next_allowed_step",
+    )
+    checks = []
+    promoted: dict[str, Any] = {}
+    for check in result.get("checks") or []:
+        if not isinstance(check, dict) or check.get("type") != "worker_result_semantic_extract":
+            continue
+        payload = check.get("semantic_evidence")
+        if not isinstance(payload, dict):
+            raw = check.get("output")
+            if isinstance(raw, str):
+                try:
+                    candidate = json.loads(raw.strip())
+                except (json.JSONDecodeError, TypeError):
+                    candidate = None
+                if isinstance(candidate, dict):
+                    payload = candidate
+        if not isinstance(payload, dict):
+            continue
+        safe_payload = {key: payload.get(key) for key in allowed_payload_keys if key in payload}
+        checks.append({"status": check.get("status"), "returncode": check.get("returncode"), "payload": safe_payload})
+        for key, value in safe_payload.items():
+            promoted.setdefault(key, value)
+    if not checks:
+        return None
+    return {"checks": checks, **promoted}
+
+
+def sanitize_frontend_build_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
+    """Expose only the tail needed to diagnose frontend build failures.
+
+    Never publishes environment variables or raw executor metadata.
+    Potentially sensitive lines are replaced before publication.
+    """
+    evidence = []
+    sensitive_tokens = ("secret", "token", "password", "authorization", "cookie", "apikey", "api_key")
+    for check in result.get("checks") or []:
+        if not isinstance(check, dict) or check.get("type") != "frontend_build":
+            continue
+        raw = str(check.get("output") or "")
+        safe_lines = []
+        for line in raw.splitlines():
+            lowered = line.lower()
+            if any(token in lowered for token in sensitive_tokens):
+                safe_lines.append("[REDACTED_SENSITIVE_LINE]")
+            else:
+                safe_lines.append(line)
+        tail = "\n".join(safe_lines)[-4000:]
+        evidence.append({
+            "status": check.get("status"),
+            "returncode": check.get("returncode"),
+            "started_at_utc": check.get("started_at_utc"),
+            "completed_at_utc": check.get("completed_at_utc"),
+            "output_tail": tail,
+        })
+    return {"checks": evidence} if evidence else None
+
+
+GENERIC_READ_ONLY_CHECKS = frozenset({"py_compile", "pytest", "git_diff_check"})
+
+
+def generic_readonly_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
+    checks = result.get("checks") or []
+    if not isinstance(checks, list) or not checks:
+        return None
+    sanitized = []
+    for check in checks:
+        if not isinstance(check, dict):
+            return None
+        kind = str(check.get("type") or "")
+        if kind not in GENERIC_READ_ONLY_CHECKS:
+            return None
+        if str(check.get("status") or "").upper() != "PASS":
+            return None
+        sanitized.append({"type": kind, "status": "PASS"})
+    return {"checks": sanitized}
+
+
 def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
     source_sha = result.get("development_sha")
 
@@ -181,21 +399,91 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
         "percent_complete": 95,
     }
 
+    if result.get("status") == "INVALID_RESULT_ARTIFACT":
+        return {
+            "certified": False,
+            "certification": "NOT_CERTIFIED",
+            "work_completion": "INVALID_RESULT_ARTIFACT",
+            "percent_complete": 0,
+            "certification_basis": "INVALID_RESULT_ARTIFACT_FAIL_CLOSED",
+        }
+
     if result.get("status") == "READ_ONLY_COMPLETE":
         readonly_evidence = sanitize_readonly_evidence(result)
-        if (
+        repository_evidence = sanitize_repository_evidence(result)
+        semantic_evidence = sanitize_semantic_evidence(result)
+        generic_evidence = generic_readonly_evidence(result)
+        base_pass = (
             str(result.get("tests", "")).upper() == "PASS"
             and str(result.get("quality_gate", "")).upper() == "PASS"
             and result.get("production_touched") is False
             and not (result.get("blockers") or [])
-            and readonly_evidence is not None
+        )
+
+        required_deliverables = result.get(
+            "required_deliverables"
+        )
+
+        if required_deliverables is not None:
+            deliverable_evaluation = evaluate_deliverables(
+                required_deliverables,
+                result.get("deliverables"),
+            )
+
+            if (
+                base_pass
+                and not deliverable_evaluation.complete
+            ):
+                return {
+                    "certified": False,
+                    "certification": "PENDING_DELIVERABLES",
+                    "work_completion": "PENDING_DELIVERABLES",
+                    "percent_complete": min(
+                        int(
+                            result.get(
+                                "percent_complete"
+                            )
+                            or 0
+                        ),
+                        95,
+                    ),
+                    "required_deliverables": list(
+                        deliverable_evaluation.required
+                    ),
+                    "completed_deliverables": list(
+                        deliverable_evaluation.completed
+                    ),
+                    "missing_deliverables": list(
+                        deliverable_evaluation.missing
+                    ),
+                    "certification_basis":
+                        "CHECKS_PASS_BUT_REQUIRED_DELIVERABLES_MISSING",
+                }
+        if base_pass and (
+            readonly_evidence is not None
+            or repository_evidence is not None
+            or semantic_evidence is not None
         ):
+            if readonly_evidence is not None:
+                basis = "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE"
+            elif semantic_evidence is not None:
+                basis = "READ_ONLY_SEMANTIC_EXTRACT_PASS_PLUS_SANITIZED_EVIDENCE"
+            else:
+                basis = "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE"
             return {
                 "certified": True,
                 "certification": "CERTIFIED_READ_ONLY",
                 "work_completion": "COMPLETE",
                 "percent_complete": 100,
-                "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+                "certification_basis": basis,
+            }
+        if base_pass and generic_evidence is not None and (result.get("files_changed") or []) == []:
+            return {
+                "certified": True,
+                "certification": "CERTIFIED_READ_ONLY",
+                "work_completion": "COMPLETE",
+                "percent_complete": 100,
+                "certification_basis": "GENERIC_READ_ONLY_NON_MUTATING_CHECKS_PASS",
             }
         return {
             **pending,
@@ -225,6 +513,33 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
             "certification": "NOT_CERTIFIED",
             "work_completion": "NOT_CERTIFIED",
             "percent_complete": min(int(result.get("percent_complete") or 0), 95),
+        }
+
+    if result.get("status") == "FRONTEND_BUILD_CERTIFIED":
+        frontend_certified = (
+            str(result.get("certification") or "").upper() == "CERTIFIED_FRONTEND_BUILD"
+            and str(result.get("tests", "")).upper() == "PASS"
+            and str(result.get("quality_gate", "")).upper() == "PASS"
+            and not (result.get("blockers") or [])
+            and result.get("production_touched") is False
+            and (result.get("files_changed") or []) == []
+        )
+        if frontend_certified:
+            return {
+                "certified": True,
+                "certification": "CERTIFIED_FRONTEND_BUILD",
+                "work_completion": "COMPLETE",
+                "percent_complete": 100,
+                "certification_basis": "FRONTEND_BUILD_CERTIFICATION_PASS_PLUS_NON_MUTATING_RESULT",
+            }
+        return {
+            **pending,
+            "certification": "NOT_CERTIFIED",
+            "work_completion": "NOT_CERTIFIED",
+            "percent_complete": min(
+                int(result.get("percent_complete") or 0),
+                95,
+            ),
         }
 
     if result.get("status") != "INTEGRATED":
@@ -341,7 +656,11 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
         "quality_gate", "files_changed", "summary_es", "blockers",
         "percent_complete", "certification", "production_touched",
         "operation", "dry_run", "units", "canonical_sql_mutation",
-        "operation_summary",
+        "operation_summary", "reasons", "received_at_utc", "source",
+        "required_deliverables", "deliverables", "missing_deliverables",
+        "invalid_result_artifact", "source_result_path",
+        "result_integrity_state", "result_integrity_reason",
+        "result_size_bytes", "result_sha256",
     )
     public = {key: result.get(key) for key in allowed if key in result}
     public["published_at_utc"] = now()
@@ -352,6 +671,47 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
     readonly_evidence = sanitize_readonly_evidence(result)
     if readonly_evidence is not None:
         public["sql_readonly_evidence"] = readonly_evidence
+    repository_evidence = sanitize_repository_evidence(result)
+    if repository_evidence is not None:
+        public["repository_contract_evidence"] = repository_evidence
+    semantic_evidence = sanitize_semantic_evidence(result)
+    if semantic_evidence is not None:
+        public["worker_result_semantic_evidence"] = semantic_evidence
+        for key in (
+            "bridge_verdict",
+            "runtime_gap_confirmed",
+            "source_result_reader_capability_current_state",
+            "can_read_worker_results_by_branch_path",
+            "can_read_worker_results_by_blob_sha",
+            "can_emit_semantic_fields_from_source_result",
+            "semantic_fields_complete",
+            "missing_semantic_fields",
+            "semantic_fields",
+            "gate3_allowed",
+            "source_result_read_status",
+            "source_result_path",
+            "source_result_branch",
+            "source_result_commit",
+            "source_result_blob_sha",
+            "source_result_size_bytes",
+            "source_result_sha256",
+            "source_result_loader",
+            "source_status",
+            "source_quality_gate",
+            "source_certification",
+            "source_work_completion",
+            "source_percent_complete",
+            "source_production_touched",
+            "source_files_changed",
+            "source_blockers",
+            "required_runtime_change",
+            "next_allowed_step",
+        ):
+            if key in semantic_evidence:
+                public[key] = semantic_evidence[key]
+    frontend_build_evidence = sanitize_frontend_build_evidence(result)
+    if frontend_build_evidence is not None:
+        public["frontend_build_evidence"] = frontend_build_evidence
 
     evidence = certification_evidence(result)
 
@@ -363,6 +723,9 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
         "certified_source_sha",
         "converged_head",
         "certification_basis",
+        "required_deliverables",
+        "completed_deliverables",
+        "missing_deliverables",
     ):
         if key in evidence:
             public[key] = evidence[key]
@@ -532,7 +895,7 @@ def marker_satisfied(marker: Path, public: dict[str, Any]) -> bool:
     # Todo resultado ya publicado es terminal para el publisher, salvo
     # promociones desde evidencia previa no certificada a una certificacion
     # terminal valida del mismo contrato.
-    if desired not in {"CERTIFIED", "CERTIFIED_OPERATIONAL"}:
+    if desired not in {"CERTIFIED", "CERTIFIED_OPERATIONAL", "CERTIFIED_READ_ONLY"}:
         return True
 
     return f"certification={desired}" in marker_text
@@ -572,7 +935,7 @@ def publish_one(path: Path) -> bool:
     PUBLISHED.mkdir(parents=True, exist_ok=True)
     marker = PUBLISHED / path.name
 
-    result = load(path)
+    result = load_publishable_result(path)
     public = sanitize(result)
 
     if marker_satisfied(marker, public):
@@ -784,8 +1147,20 @@ def publish_one(path: Path) -> bool:
         f"{last_error or 'UNKNOWN'}"
     )
 
+def publishable_paths() -> list[Path]:
+    """Return terminal artifacts with recent dispatcher results taking precedence."""
+    by_name = {path.name: path for path in REJECTED.glob("*.json")}
+    by_name.update({path.name: path for path in RESULTS.glob("*.json")})
+    return sorted(
+        by_name.values(),
+        key=lambda path: (path.stat().st_mtime_ns, path.name),
+        reverse=True,
+    )
+
+
 def main() -> int:
     RESULTS.mkdir(parents=True, exist_ok=True)
+    REJECTED.mkdir(parents=True, exist_ok=True)
     PUBLISH_LOCK.parent.mkdir(parents=True, exist_ok=True)
 
     with PUBLISH_LOCK.open("a+", encoding="utf-8") as lock_handle:
@@ -805,7 +1180,7 @@ def main() -> int:
                 f"{RESULT_BATCH_SIZE}"
             )
 
-        for path in sorted(RESULTS.glob("*.json")):
+        for path in publishable_paths():
             marker = PUBLISHED / path.name
 
             # Un resultado ya certificado es terminal.

@@ -220,5 +220,8 @@ class NotificationRepository:
         return row is not None
 
 
-def get_notification_repository(db=None) -> NotificationRepository:
+def get_notification_repository_legacy(db=None) -> NotificationRepository:
     return NotificationRepository(db)
+
+# Gate 5D: compatibilidad de imports; runtime canonico SQL-first.
+from .repository_sql import NotificationRepository, get_notification_repository

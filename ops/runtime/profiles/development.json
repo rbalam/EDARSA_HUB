@@ -1,0 +1,7 @@
+{
+  "schema": "edarsahub.runtime-profile.v1",
+  "environment": "development",
+  "base_url": "https://erp-crm-enterprise-1.preview.emergentagent.com",
+  "source_of_truth": "EDARSAHUB repository runtime profile",
+  "secret": false
+}

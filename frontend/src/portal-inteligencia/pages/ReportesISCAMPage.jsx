@@ -15,6 +15,7 @@ import { apiGet, apiPost, ESTADO } from '../api/client';
 import { exportToExcel, exportToPDF } from '../utils/exportUtils';
 
 const money = (n) => (n ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
+const money2 = (n) => (n ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const num = (n) => (n ?? 0).toLocaleString('es-MX', { maximumFractionDigits: 2 });
 
 const MESES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -252,6 +253,10 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
   const [freshnessLoading, setFreshnessLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState(null);
+  const [canSynchronize, setCanSynchronize] = useState(false);
+  const [syncPermissionLoading, setSyncPermissionLoading] = useState(true);
+  const [syncProgress, setSyncProgress] = useState({ completed: 0, total: 0 });
+  const [syncJobId, setSyncJobId] = useState(null);
 
   const unidad = unidadSeleccionada;
   const sinUnidad = !unidad || unidad === 'todas';
@@ -291,10 +296,146 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
     setFreshnessLoading(false);
   }, [sinUnidad, unidad, desdeStr, hastaStr]);
 
+  const fetchSyncPermission = useCallback(async () => {
+    setSyncPermissionLoading(true);
+    const res = await apiGet('/auth/me/effective-permissions');
+    const flat = Array.isArray(res.data?.permissions_flat) ? res.data.permissions_flat : [];
+    setCanSynchronize(
+      res.estado === ESTADO.OK &&
+      flat.some((code) => String(code || '').trim().toUpperCase() === 'SCHEDULER_ADMIN')
+    );
+    setSyncPermissionLoading(false);
+  }, []);
+
   useEffect(() => {
     fetchReport();
     fetchFreshness();
   }, [fetchReport, fetchFreshness]);
+
+  useEffect(() => {
+    fetchSyncPermission();
+  }, [fetchSyncPermission]);
+
+  useEffect(() => {
+    if (!canSynchronize || sinUnidad || syncJobId || syncing) return undefined;
+    let cancelled = false;
+
+    const recoverActiveJob = async () => {
+      const res = await apiGet('/admin/scheduler/resync/iscam-detail/active', {
+        unidad_negocio_id: unidad,
+      });
+      if (cancelled || res.estado !== ESTADO.OK || !res.data?.success || !res.data?.active || !res.data?.job_id) return;
+
+      setSyncProgress({
+        completed: Number(res.data.successful || 0),
+        total: Number(res.data.total || 0),
+        processed: Number(res.data.processed || 0),
+        failed: Number(res.data.failed || 0),
+        currentDate: res.data.current_date || null,
+      });
+      setSyncing(true);
+      setSyncMessage({
+        tipo: 'warning',
+        texto: 'Se recuperó una sincronización ISCAM que ya estaba en curso. Continuando seguimiento sin crear otro trabajo.',
+      });
+      setSyncJobId(String(res.data.job_id));
+    };
+
+    recoverActiveJob();
+    return () => { cancelled = true; };
+  }, [canSynchronize, sinUnidad, syncJobId, syncing, unidad]);
+
+  useEffect(() => {
+    if (!syncJobId) return undefined;
+    let cancelled = false;
+    let timer = null;
+    let pollFailureStartedAt = null;
+
+    const finishJob = async (job) => {
+      if (cancelled) return;
+      setSyncJobId(null);
+      setSyncing(false);
+      await Promise.all([fetchReport(), fetchFreshness()]);
+      if (job.status === 'JOB_SUCCESS') {
+        setSyncMessage({ tipo: 'ok', texto: 'Detalle ISCAM sincronizado y validado.' });
+        return;
+      }
+      const failedDates = Array.isArray(job.failed_dates) ? job.failed_dates : [];
+      const sample = failedDates.slice(0, 3).map((item) => {
+        const code = item?.error_code ? ` (${item.error_code})` : '';
+        return `${item?.fecha || 'fecha'}${code}`;
+      }).join(', ');
+      const extra = failedDates.length > 3 ? ` y ${failedDates.length - 3} más` : '';
+      setSyncMessage({
+        tipo: 'error',
+        texto: `Proceso terminado sin bucle: ${job.successful || 0} día(s) sincronizado(s) y ${job.failed || 0} pendiente(s)${sample ? `: ${sample}${extra}` : ''}.`,
+      });
+    };
+
+    const scheduleRetry = (elapsedMs) => {
+      if (elapsedMs < 10000) return 2500;
+      if (elapsedMs < 30000) return 5000;
+      if (elapsedMs < 90000) return 10000;
+      return 15000;
+    };
+
+    const poll = async () => {
+      const res = await apiGet(`/admin/scheduler/resync/iscam-detail/jobs/${syncJobId}`);
+      if (cancelled) return;
+
+      if (res.estado === ESTADO.SIN_SESION || res.estado === ESTADO.SESION_EXPIRADA || res.estado === ESTADO.SIN_PERMISO) {
+        setSyncJobId(null);
+        setSyncing(false);
+        setSyncMessage({
+          tipo: 'error',
+          texto: res.mensaje || 'La sesión ya no permite consultar el avance de la sincronización.',
+        });
+        return;
+      }
+
+      if (res.estado !== ESTADO.OK || !res.data?.success) {
+        if (pollFailureStartedAt === null) pollFailureStartedAt = Date.now();
+        const elapsedMs = Date.now() - pollFailureStartedAt;
+        const diagnostic = [
+          res.status ? `HTTP ${res.status}` : null,
+          res.error_code || null,
+          res.mensaje || null,
+        ].filter(Boolean).join(' · ');
+        const longReconnect = elapsedMs >= 90000;
+        setSyncMessage({
+          tipo: 'warning',
+          texto: longReconnect
+            ? `No se ha podido leer el avance durante 90 segundos. El trabajo del servidor sigue intacto y continuaré reconectando cada 15 s${diagnostic ? ` · ${diagnostic}` : ''}.`
+            : `Sincronización en curso · reconectando al seguimiento${diagnostic ? ` · ${diagnostic}` : ''}.`,
+        });
+        timer = setTimeout(poll, scheduleRetry(elapsedMs));
+        return;
+      }
+
+      pollFailureStartedAt = null;
+      setSyncMessage((prev) => prev?.tipo === 'warning' ? null : prev);
+      const job = res.data;
+      setSyncProgress({
+        completed: Number(job.successful || 0),
+        total: Number(job.total || 0),
+        processed: Number(job.processed || 0),
+        failed: Number(job.failed || 0),
+        currentDate: job.current_date || null,
+      });
+
+      if (['JOB_SUCCESS', 'JOB_PARTIAL', 'JOB_FAILED', 'JOB_STALE'].includes(job.status)) {
+        await finishJob(job);
+        return;
+      }
+      timer = setTimeout(poll, 2500);
+    };
+
+    poll();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [syncJobId, fetchReport, fetchFreshness]);
 
   const syncMissingClosedDays = async () => {
     const headerGap = Boolean(freshness?.stale);
@@ -306,11 +447,49 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
     const syncTo = detailOnly
       ? freshness?.detail_missing_to
       : (freshness?.missing_to || freshness?.detail_missing_to);
-    if (!(headerGap || detailGap) || !syncFrom || !syncTo || syncing) return;
+    if (!canSynchronize || !(headerGap || detailGap) || !syncFrom || !syncTo || syncing) return;
+
+    const candidateDates = detailOnly
+      ? (freshness?.detail_problem_dates || [])
+      : (freshness?.missing_closed_dates || []);
+    const syncDates = [...new Set(candidateDates.filter(Boolean))].sort();
+    const chunks = syncDates.length
+      ? syncDates.map((fecha) => [fecha, fecha])
+      : splitDateChunks(syncFrom, syncTo, 1);
+
+    setSyncProgress({ completed: 0, total: chunks.length });
     setSyncing(true);
     setSyncMessage(null);
+
+    if (detailOnly) {
+      const fechas = syncDates.length ? syncDates : chunks.map(([fechaInicio]) => fechaInicio);
+      const start = await apiPost('/admin/scheduler/resync/iscam-detail/jobs', {
+        unidad_negocio_id: unidad,
+        fechas,
+        motivo: 'ISCAM reparar detalle faltante de forma asincrona y secuencial',
+      }, { timeout: 15000 });
+
+      if (start.estado !== ESTADO.OK || start.data?.success !== true || !start.data?.job_id) {
+        setSyncing(false);
+        setSyncMessage({
+          tipo: 'error',
+          texto: 'No se pudo iniciar el trabajo asíncrono de sincronización. No se realizaron reintentos automáticos.',
+        });
+        return;
+      }
+
+      setSyncProgress({
+        completed: Number(start.data.successful || 0),
+        total: Number(start.data.total || fechas.length),
+        processed: Number(start.data.processed || 0),
+        failed: Number(start.data.failed || 0),
+        currentDate: start.data.current_date || null,
+      });
+      setSyncJobId(String(start.data.job_id));
+      return;
+    }
+
     try {
-      const chunks = splitDateChunks(syncFrom, syncTo, detailOnly ? 1 : 30);
       for (const [fechaInicio, fechaFin] of chunks) {
         const basePayload = {
           tipo_sync: 'comercial_ventas_cerradas',
@@ -330,11 +509,12 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
           const realError = real.data?.error_message || real.data?.resultado?.error_message || real.data?.detail || real.mensaje;
           throw new Error(realError || `No se pudo completar la sincronización para ${fechaInicio} a ${fechaFin}`);
         }
+        setSyncProgress((prev) => ({ ...prev, completed: prev.completed + 1 }));
       }
       await Promise.all([fetchReport(), fetchFreshness()]);
       setSyncMessage({
         tipo: 'ok',
-        texto: detailOnly ? 'Detalle ISCAM sincronizado y validado.' : 'Sincronización de faltantes completada.',
+        texto: 'Sincronización de faltantes completada.',
       });
     } catch (error) {
       setSyncMessage({ tipo: 'error', texto: error?.message || 'No se pudo sincronizar el rango faltante.' });
@@ -347,7 +527,7 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
   const drillProductos = async (periodo) => {
     setDrill({ tipo: 'productos', titulo: `Productos vendidos — ${periodo}`, items: [], loading: true, periodo });
     const res = await apiGet('/inteligencia/iscam/ventas-periodos/productos', { unidad, periodo, group_by: groupBy });
-    setDrill((d) => ({ ...d, items: res.data?.productos || [], loading: false }));
+    setDrill((d) => ({ ...d, items: res.data?.productos || [], resumen: res.data?.resumen_conciliacion || null, loading: false }));
   };
   const drillTickets = async (periodo, producto, nombre) => {
     setDrill({ tipo: 'tickets', titulo: `Tickets con "${nombre}" — ${periodo}`, items: [], loading: true });
@@ -357,7 +537,7 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
   const drillCuenta = async (folio) => {
     setDrill({ tipo: 'cuenta', titulo: `Detalle de cuenta — Folio ${folio}`, items: [], loading: true });
     const res = await apiGet('/inteligencia/iscam/cuentas/detalle', { unidad, folio });
-    setDrill((d) => ({ ...d, items: res.data?.productos || [], loading: false }));
+    setDrill((d) => ({ ...d, items: res.data?.productos || [], ajustes: res.data?.ajustes || [], resumen: res.data?.resumen_conciliacion || null, loading: false }));
   };
   const drillTiposServicio = async (periodo) => {
     setDrill({ tipo: 'tipos-servicio', titulo: `Tipo de servicio — ${periodo}`, items: [], loading: true });
@@ -367,7 +547,7 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
 
   const DRILL_COLS = {
     productos: [{ key: 'producto', label: 'Producto' }, { key: 'cantidad', label: 'Cantidad' }, { key: 'importe', label: 'Venta Total' }, { key: 'tickets', label: 'Tickets' }],
-    tickets: [{ key: 'folio', label: 'Folio' }, { key: 'fecha', label: 'Fecha' }, { key: 'cantidad', label: 'Cantidad' }, { key: 'importe_producto', label: 'Importe Producto' }, { key: 'importe_ticket', label: 'Importe Ticket' }],
+    tickets: [{ key: 'folio', label: 'Folio' }, { key: 'fecha', label: 'Fecha' }, { key: 'cantidad', label: 'Cantidad' }, { key: 'importe_producto', label: 'Importe Producto' }, { key: 'ajustes_cheque', label: 'Ajustes Cheque' }, { key: 'importe_ticket', label: 'Importe Ticket' }],
     'tipos-servicio': [{ key: 'tipo', label: 'Tipo de Servicio' }, { key: 'venta_total', label: 'Venta Total' }, { key: 'cheques', label: 'Cheques' }, { key: 'clientes', label: 'Clientes' }, { key: 'cheque_promedio', label: 'Cheque Prom.' }],
     cuenta: [{ key: 'producto', label: 'Producto' }, { key: 'cantidad', label: 'Cantidad' }, { key: 'precio', label: 'Precio' }, { key: 'importe', label: 'Importe' }],
   };
@@ -508,15 +688,17 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
 
         <div className="ml-auto flex items-end gap-2">
           <div className="self-center text-xs text-slate-400" data-testid="iscam-freshness-status">
-            {freshnessLoading
-              ? 'Verificando actualización...'
-              : freshness?.detail_stale
-                ? `Detalle incompleto: ${freshness.detail_problem_dates?.length || 0} día(s) · KPI hasta ${formatDateMx(freshness.latest_canonical_date)}`
-                : freshness?.latest_canonical_date
-                  ? `Actualizado hasta ${formatDateMx(freshness.latest_canonical_date)}`
-                  : 'Sin fecha canónica disponible'}
+            {syncing
+              ? `Días procesados ${syncProgress.processed ?? syncProgress.completed} de ${syncProgress.total} · Sincronizados ${syncProgress.completed} · Fallidos ${syncProgress.failed || 0}${syncProgress.currentDate ? ` · Procesando ${formatDateMx(syncProgress.currentDate)}` : ''}`
+              : freshnessLoading
+                ? 'Verificando actualización...'
+                : freshness?.detail_stale
+                  ? `Detalle incompleto: ${freshness.detail_problem_dates?.length || 0} día(s) · KPI hasta ${formatDateMx(freshness.latest_canonical_date)}`
+                  : freshness?.latest_canonical_date
+                    ? `Actualizado hasta ${formatDateMx(freshness.latest_canonical_date)}`
+                    : 'Sin fecha canónica disponible'}
           </div>
-          {(freshness?.stale || freshness?.detail_stale) && (
+          {!syncPermissionLoading && canSynchronize && (freshness?.stale || freshness?.detail_stale) && (
             <button onClick={syncMissingClosedDays} disabled={syncing} data-testid="iscam-sync-missing"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-sky-600 text-white hover:bg-sky-500 disabled:opacity-40 disabled:cursor-not-allowed">
               <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
@@ -544,7 +726,9 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
         <div data-testid="iscam-sync-message"
           className={`text-sm rounded-lg px-4 py-3 border ${syncMessage.tipo === 'ok'
             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-            : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>
+            : syncMessage.tipo === 'warning'
+              ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+              : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>
           {syncMessage.texto}
         </div>
       )}
@@ -600,23 +784,35 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
           {drill.loading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-emerald-400" /></div>
           ) : drill.tipo === 'productos' ? (
-            <table className="w-full">
-              <thead><tr><TH>Producto</TH><TH right>Cantidad</TH><TH right>Importe</TH><TH right>Tickets</TH></tr></thead>
-              <tbody className="divide-y divide-slate-700">
-                {drill.items.map((p, i) => (
-                  <tr key={i} className="hover:bg-slate-700/40 cursor-pointer" onDoubleClick={() => drillTickets(drill.periodo, p.codigo, p.producto)} title="Doble clic: ver tickets" data-testid={`drill-prod-${p.codigo}`}>
-                    <TD><span className="inline-flex items-center gap-1">{p.producto}<ChevronRight className="h-3 w-3 text-slate-500" /></span></TD>
-                    <TD right>{num(p.cantidad)}</TD><TD right>{money(p.importe)}</TD><TD right>{p.tickets}</TD>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="space-y-4">
+              <table className="w-full">
+                <thead><tr><TH>Producto</TH><TH right>Cantidad</TH><TH right>Importe</TH><TH right>Tickets</TH></tr></thead>
+                <tbody className="divide-y divide-slate-700">
+                  {drill.items.map((p, i) => (
+                    <tr key={i} className="hover:bg-slate-700/40 cursor-pointer" onDoubleClick={() => drillTickets(drill.periodo, p.codigo, p.producto)} title="Doble clic: ver tickets" data-testid={`drill-prod-${p.codigo}`}>
+                      <TD><span className="inline-flex items-center gap-1">{p.producto}<ChevronRight className="h-3 w-3 text-slate-500" /></span></TD>
+                      <TD right>{num(p.cantidad)}</TD><TD right>{money2(p.importe)}</TD><TD right>{p.tickets}</TD>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {drill.resumen && (
+                <div className="border border-slate-600 rounded-lg p-3 bg-slate-900/40" data-testid="iscam-productos-conciliacion">
+                  <div className="text-xs uppercase font-semibold text-slate-400 mb-2">Resumen de conciliación</div>
+                  <div className="grid grid-cols-3 gap-3 text-sm">
+                    <div><div className="text-slate-400">Venta productos</div><div className="text-white font-semibold">{money2(drill.resumen.venta_productos)}</div></div>
+                    <div><div className="text-slate-400">Ajustes del cheque</div><div className="text-amber-300 font-semibold">{money2(drill.resumen.ajustes_cheque)}</div></div>
+                    <div><div className="text-slate-400">Venta neta conciliada</div><div className="text-emerald-300 font-semibold">{money2(drill.resumen.venta_neta)}</div></div>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : drill.tipo === 'tickets' ? (
             <table className="w-full">
-              <thead><tr><TH>Folio</TH><TH>Fecha</TH><TH right>Cant.</TH><TH right>Importe prod.</TH><TH right>Importe ticket</TH></tr></thead>
+              <thead><tr><TH>Folio</TH><TH>Fecha</TH><TH right>Cant.</TH><TH right>Importe prod.</TH><TH right>Ajustes cheque</TH><TH right>Total ticket</TH></tr></thead>
               <tbody className="divide-y divide-slate-700">
                 {drill.items.map((t, i) => (
-                  <tr key={i}><TD mono>{t.folio}</TD><TD>{(t.fecha || '').replace('T', ' ').slice(0, 16)}</TD><TD right>{num(t.cantidad)}</TD><TD right>{money(t.importe_producto)}</TD><TD right>{money(t.importe_ticket)}</TD></tr>
+                  <tr key={i}><TD mono>{t.folio}</TD><TD>{(t.fecha || '').replace('T', ' ').slice(0, 16)}</TD><TD right>{num(t.cantidad)}</TD><TD right>{money2(t.importe_producto)}</TD><TD right>{money2(t.ajustes_cheque)}</TD><TD right>{money2(t.importe_ticket)}</TD></tr>
                 ))}
               </tbody>
             </table>
@@ -630,14 +826,35 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
               </tbody>
             </table>
           ) : (
-            <table className="w-full">
-              <thead><tr><TH>Producto</TH><TH right>Cantidad</TH><TH right>Precio</TH><TH right>Importe</TH></tr></thead>
-              <tbody className="divide-y divide-slate-700">
-                {drill.items.map((p, i) => (
-                  <tr key={i}><TD>{p.producto}</TD><TD right>{num(p.cantidad)}</TD><TD right>{money(p.precio)}</TD><TD right>{money(p.importe)}</TD></tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="space-y-4">
+              <table className="w-full">
+                <thead><tr><TH>Producto</TH><TH right>Cantidad</TH><TH right>Precio</TH><TH right>Importe</TH></tr></thead>
+                <tbody className="divide-y divide-slate-700">
+                  {drill.items.map((p, i) => (
+                    <tr key={i}><TD>{p.producto}</TD><TD right>{num(p.cantidad)}</TD><TD right>{money2(p.precio)}</TD><TD right>{money2(p.importe)}</TD></tr>
+                  ))}
+                </tbody>
+              </table>
+              {!!drill.ajustes?.length && (
+                <div>
+                  <div className="px-3 py-2 text-xs font-semibold text-amber-300 uppercase">Ajustes del cheque</div>
+                  <table className="w-full"><tbody className="divide-y divide-slate-700">
+                    {drill.ajustes.map((a, i) => (<tr key={i}><TD>{a.concepto}</TD><TD right>{money2(a.importe)}</TD></tr>))}
+                  </tbody></table>
+                </div>
+              )}
+              {drill.resumen && (
+                <div className="border border-slate-600 rounded-lg p-3 bg-slate-900/40" data-testid="iscam-ticket-conciliacion">
+                  <div className="text-xs uppercase font-semibold text-slate-400 mb-2">Conciliación del ticket</div>
+                  <div className="grid grid-cols-4 gap-3 text-sm">
+                    <div><div className="text-slate-400">Productos</div><div className="text-white font-semibold">{money2(drill.resumen.venta_productos)}</div></div>
+                    <div><div className="text-slate-400">Ajustes</div><div className="text-amber-300 font-semibold">{money2(drill.resumen.ajustes_cheque)}</div></div>
+                    <div><div className="text-slate-400">Total ticket</div><div className="text-emerald-300 font-semibold">{money2(drill.resumen.total_ticket)}</div></div>
+                    <div><div className="text-slate-400">Diferencias encontradas</div><div className={Math.abs(drill.resumen.diferencia || 0) <= 0.05 ? "text-emerald-300 font-semibold" : "text-rose-300 font-semibold"}>{money2(drill.resumen.diferencia)}</div></div>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </Modal>
       )}

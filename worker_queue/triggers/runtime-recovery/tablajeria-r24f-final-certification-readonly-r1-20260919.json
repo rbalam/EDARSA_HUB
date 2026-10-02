@@ -1,0 +1,16 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "created_at_utc": "2026-09-19T07:32:30Z",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-FINAL-CERTIFICATION-READONLY-R1-20260919",
+  "reason": "Wake final READ_ONLY certification for Tablajerias R24F after frontend-build and backend-tests succeeded.",
+  "target_runtime_url": "https://erp-crm-enterprise-1.preview.emergentagent.com",
+  "guards": {
+    "production_allowed": false,
+    "sql_allowed": false,
+    "scheduler_allowed": false,
+    "netpay_allowed": false,
+    "rbac_allowed": false,
+    "menu_allowed": false,
+    "product_mutation_allowed": false
+  }
+}

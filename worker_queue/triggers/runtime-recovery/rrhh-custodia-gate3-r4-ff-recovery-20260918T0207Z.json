@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Recover canonical Universal Worker runtime convergence after repeated RRHH-CUSTODIA Gate3 mutation jobs were blocked with NEEDS_FAST_FORWARD_REFRESH. Converge /app to current Edarsahub_Desarrollo using authoritative wake/runtime recovery flow, fast-forward only, preserve local work, fail closed on wrong branch, non-fast-forward or unsafe local state. After runtime is healthy, consume existing job RRHH-CUSTODIA-GATE3-MINIMAL-DDL-DESIGN-R4 without modifying or cloning it. Do not touch Production.",
+  "existing_job_id": "RRHH-CUSTODIA-GATE3-MINIMAL-DDL-DESIGN-R4",
+  "production_touched": false
+}

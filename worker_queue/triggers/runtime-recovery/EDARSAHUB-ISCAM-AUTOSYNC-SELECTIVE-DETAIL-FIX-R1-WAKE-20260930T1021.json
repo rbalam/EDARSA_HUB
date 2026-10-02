@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-ISCAM-AUTOSYNC-SELECTIVE-DETAIL-FIX-R1-CARLOS-20260930T1020",
+  "reason": "Wake canonical Universal Worker and prefer the ISCAM automatic selective-detail fix just published. Apply only to Edarsahub_Desarrollo/Preview, preserve other queued jobs, no Production.",
+  "production_touched": false
+}

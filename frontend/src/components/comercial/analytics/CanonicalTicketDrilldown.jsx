@@ -13,7 +13,8 @@
  * - loadTickets(scope)
  * - loadTicketDetail(ticket)
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import IAContextualLauncher from '../../ia/IAContextual';
 import {
   ArrowLeft,
   Loader2,
@@ -39,6 +40,32 @@ const formatMoney = (value) => (
   moneyFormatter.format(Number(value || 0))
 );
 
+const DEFAULT_TICKET_COLUMNS = [
+  { key: 'fecha', label: 'FECHA' },
+  { key: 'hora', label: 'HORA' },
+  { key: 'unidad', label: 'UNIDAD' },
+  { key: 'numero_ticket', label: 'TICKET', mono: true },
+  { key: 'pax', label: 'PAX', align: 'center', format: 'number' },
+  { key: 'lineas', label: 'LÍNEAS', align: 'center', format: 'number' },
+  { key: 'ventas', label: 'VENTAS', align: 'right', format: 'money', emphasis: true },
+];
+
+const formatTicketValue = (ticket, column) => {
+  const value = ticket?.[column.key];
+
+  if (column.format === 'money') return formatMoney(value);
+  if (column.format === 'number') {
+    return Number(value || 0).toLocaleString('es-MX');
+  }
+  if (column.format === 'percent') {
+    return `${Number(value || 0).toFixed(2)}%`;
+  }
+
+  return value === null || value === undefined || value === ''
+    ? '—'
+    : value;
+};
+
 function EmptyState({ status }) {
   const message = status === STATUS.ERROR
     ? 'No fue posible consultar la información.'
@@ -56,6 +83,7 @@ export default function CanonicalTicketDrilldown({
   onClose,
   scope,
   title = 'Reconstrucción de tickets',
+  ticketColumns = DEFAULT_TICKET_COLUMNS,
   loadTickets,
   loadTicketDetail,
   renderExportActions,
@@ -67,6 +95,7 @@ export default function CanonicalTicketDrilldown({
   const [ticketsStatus, setTicketsStatus] = useState(STATUS.LOADING);
   const [detailStatus, setDetailStatus] = useState(STATUS.LOADING);
   const [page, setPage] = useState(1);
+  const [aiViewFilters, setAiViewFilters] = useState({});
   const [pagination, setPagination] = useState({
     page: 1,
     pageSize: 0,
@@ -78,6 +107,7 @@ export default function CanonicalTicketDrilldown({
   useEffect(() => {
     if (open) {
       setPage(1);
+      setAiViewFilters({});
     }
   }, [open, scope]);
 
@@ -166,6 +196,61 @@ export default function CanonicalTicketDrilldown({
     }
   };
 
+  const visibleTickets = useMemo(() => tickets.filter((ticket) => {
+    const ventas = Number(ticket?.ventas || 0);
+    const pax = Number(ticket?.pax || 0);
+    const folio = String(ticket?.numero_ticket || ticket?.folio || '').toLowerCase();
+    if (aiViewFilters.ventas_min != null && ventas < Number(aiViewFilters.ventas_min)) return false;
+    if (aiViewFilters.ventas_max != null && ventas > Number(aiViewFilters.ventas_max)) return false;
+    if (aiViewFilters.pax_min != null && pax < Number(aiViewFilters.pax_min)) return false;
+    if (aiViewFilters.pax_max != null && pax > Number(aiViewFilters.pax_max)) return false;
+    if (aiViewFilters.ticket_contiene && !folio.includes(String(aiViewFilters.ticket_contiene).toLowerCase())) return false;
+    return true;
+  }), [tickets, aiViewFilters]);
+
+  const contextoVista = useMemo(() => ({
+    modulo: 'comercial',
+    view_id: 'canonical_ticket_drilldown',
+    titulo: title,
+    scope: {
+      unidad: scope?.unidad || null,
+      fecha_inicio: scope?.fechaInicio || filters?.fecha_inicio || null,
+      fecha_fin: scope?.fechaFin || filters?.fecha_fin || null,
+      metric: scope?.metric || null,
+    },
+    filtros: {
+      canonicos: filters || {},
+      temporales_vista: aiViewFilters,
+    },
+    periodo: {
+      label: filters?.periodo_label || scope?.periodLabel || null,
+      fecha_inicio: scope?.fechaInicio || filters?.fecha_inicio || null,
+      fecha_fin: scope?.fechaFin || filters?.fecha_fin || null,
+    },
+    unidad_negocio: scope?.businessUnitLabel || scope?.unidad || null,
+    seleccion: selectedTicket ? {
+      ticket_pk: selectedTicket.ticket_pk || null,
+      numero_ticket: selectedTicket.numero_ticket || selectedTicket.folio || null,
+    } : null,
+    columnas_visibles: ticketColumns.map(({ key, label }) => ({ key, label })),
+    estado_vista: {
+      page,
+      page_size: pagination.pageSize,
+      total: pagination.total,
+      returned: pagination.returned,
+      selected_ticket: selectedTicket?.ticket_pk || null,
+    },
+  }), [
+    title,
+    scope,
+    filters,
+    aiViewFilters,
+    selectedTicket,
+    ticketColumns,
+    page,
+    pagination,
+  ]);
+
   if (!open) return null;
 
   const scopeLabel = (
@@ -218,9 +303,16 @@ export default function CanonicalTicketDrilldown({
           </div>
 
           <div className="flex items-center gap-3">
+            <IAContextualLauncher
+              contextoVista={contextoVista}
+              viewData={{ tickets: visibleTickets, lines }}
+              onApplyFilters={(next) => setAiViewFilters((current) => ({ ...current, ...next }))}
+              onClearFilters={() => setAiViewFilters({})}
+            />
+
             {renderExportActions?.({
               selectedTicket,
-              tickets,
+              tickets: visibleTickets,
               lines,
               metadata,
             })}
@@ -248,18 +340,25 @@ export default function CanonicalTicketDrilldown({
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-slate-800">
                   <tr className="text-left text-xs text-slate-400">
-                    <th className="px-4 py-2">FECHA</th>
-                    <th className="px-4 py-2">HORA</th>
-                    <th className="px-4 py-2">UNIDAD</th>
-                    <th className="px-4 py-2">TICKET</th>
-                    <th className="px-4 py-2 text-center">PAX</th>
-                    <th className="px-4 py-2 text-center">LÍNEAS</th>
-                    <th className="px-4 py-2 text-right">VENTAS</th>
+                    {ticketColumns.map((column) => (
+                      <th
+                        key={column.key}
+                        className={`px-4 py-2 ${
+                          column.align === 'right'
+                            ? 'text-right'
+                            : column.align === 'center'
+                              ? 'text-center'
+                              : 'text-left'
+                        }`}
+                      >
+                        {column.label}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
 
                 <tbody>
-                  {tickets.map((ticket) => {
+                  {visibleTickets.map((ticket) => {
                     const ticketKey = (
                       ticket.ticket_pk
                       || ticket.id
@@ -276,27 +375,27 @@ export default function CanonicalTicketDrilldown({
                         onClick={() => openTicket(ticket)}
                         className="cursor-pointer border-t border-slate-700/40 hover:bg-slate-700/40"
                       >
-                        <td className="px-4 py-2 text-slate-300">
-                          {ticket.fecha}
-                        </td>
-                        <td className="px-4 py-2 text-slate-400">
-                          {ticket.hora}
-                        </td>
-                        <td className="px-4 py-2 text-slate-300">
-                          {ticket.unidad}
-                        </td>
-                        <td className="px-4 py-2 font-mono text-emerald-400">
-                          {ticket.numero_ticket || ticket.folio}
-                        </td>
-                        <td className="px-4 py-2 text-center text-slate-300">
-                          {ticket.pax || 0}
-                        </td>
-                        <td className="px-4 py-2 text-center text-slate-400">
-                          {ticket.lineas || 0}
-                        </td>
-                        <td className="px-4 py-2 text-right font-semibold text-white">
-                          {formatMoney(ticket.ventas)}
-                        </td>
+                        {ticketColumns.map((column) => {
+                          const alignClass = column.align === 'right'
+                            ? 'text-right'
+                            : column.align === 'center'
+                              ? 'text-center'
+                              : 'text-left';
+                          const valueClass = column.emphasis
+                            ? 'font-semibold text-emerald-400'
+                            : column.mono
+                              ? 'font-mono text-emerald-400'
+                              : 'text-slate-300';
+
+                          return (
+                            <td
+                              key={column.key}
+                              className={`px-4 py-2 ${alignClass} ${valueClass}`}
+                            >
+                              {formatTicketValue(ticket, column)}
+                            </td>
+                          );
+                        })}
                       </tr>
                     );
                   })}
@@ -369,6 +468,9 @@ export default function CanonicalTicketDrilldown({
         {!selectedTicket && ticketsStatus === STATUS.OK && (
           <div className="flex items-center justify-between border-t border-slate-700 bg-slate-800/60 px-5 py-3">
             <span className="text-sm text-slate-400">
+              {visibleTickets.length !== tickets.length
+                ? `${visibleTickets.length.toLocaleString('es-MX')} visibles · `
+                : ''}
               {pagination.total.toLocaleString('es-MX')} tickets
               {pagination.pageSize > 0 && (
                 <>

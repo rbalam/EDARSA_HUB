@@ -1,0 +1,52 @@
+name: Catalogo Ampliado Gate6 E2E Development
+on:
+  push:
+    branches: [Edarsahub_Desarrollo]
+    paths:
+      - ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R5-20260908.execute
+permissions:
+  contents: read
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    environment: development
+    timeout-minutes: 30
+    env:
+      EDARSAHUB_SQL_HOST: 54.39.104.176
+      EDARSAHUB_SQL_PORT: 1433
+      EDARSAHUB_SQL_DATABASE: EDARSAHUB
+      EDARSAHUB_SQL_USER: HRLectura
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+      JWT_SECRET: gate6-${{ github.run_id }}-${{ github.sha }}
+      ENV: development
+      CATALOGO_GATE6_REAL: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install backend runtime
+        run: python -m pip install -r backend/requirements.txt
+      - name: Navigation and frontend build
+        run: npm ci --prefix frontend && npm run build --prefix frontend && grep -q 'path="catalogo-ampliado"' frontend/src/App.js && grep -q 'CatalogoAmpliadoDashboard' frontend/src/App.js
+      - name: Real API SQL E2E
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+          GATE6_EVIDENCE_FILE: ${{ runner.temp }}/gate6/evidence.json
+        run: mkdir -p $RUNNER_TEMP/gate6 && python -m pytest -q backend/tests/test_catalogo_ampliado_gate6_e2e_real.py
+      - name: Evidence summary
+        if: always()
+        run: test -f $RUNNER_TEMP/gate6/evidence.json && cat $RUNNER_TEMP/gate6/evidence.json || true
+      - name: Manifest
+        if: always()
+        run: mkdir -p $RUNNER_TEMP/gate6 && printf '%s\n' run=$GITHUB_RUN_ID commit=$GITHUB_SHA production_touched=false > $RUNNER_TEMP/gate6/manifest.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: catalogo-ampliado-gate6-${{ github.run_id }}
+          path: ${{ runner.temp }}/gate6
+          if-no-files-found: error
+          retention-days: 30

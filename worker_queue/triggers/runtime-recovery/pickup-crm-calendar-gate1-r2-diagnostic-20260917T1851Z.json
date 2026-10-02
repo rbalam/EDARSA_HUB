@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Retry canonical Universal Worker wake for existing READ_ONLY job EDARSAHUB-CRM-CALENDAR-CANONICAL-EVENTS-GATE1-R2 after adding sanitized queue-head diagnostics. Do not clone or re-emit the job. Do not touch Production. Do not modify SQL data, formulas, RBAC, dispatcher, supervisor, or watchdog.",
+  "existing_job_id": "EDARSAHUB-CRM-CALENDAR-CANONICAL-EVENTS-GATE1-R2",
+  "production_touched": false
+}

@@ -12,7 +12,11 @@ def text(path):
 
 def test_universal_worker_is_dedicated_and_fast_polling():
     body = text(UNIVERSAL)
-    assert 'UNIVERSAL_WORKER_LOOP_SECONDS:-10' in body
+    assert 'UNIVERSAL_WORKER_INTAKE_SECONDS:-10' in body
+    assert 'UNIVERSAL_WORKER_RESULT_SECONDS:-10' in body
+    assert 'UNIVERSAL_WORKER_HEALTH_SECONDS:-30' in body
+    assert 'UNIVERSAL_WORKER_RECONCILE_SECONDS:-30' in body
+    assert 'UNIVERSAL_WORKER_DISPATCH_IDLE_SECONDS:-2' in body
     assert '"$PYTHON_BIN" "$BRIDGE" receive' in body
     assert '"$PYTHON_BIN" "$DISPATCHER"' in body
     assert '"$PYTHON_BIN" "$RESULT_PUBLISHER"' in body

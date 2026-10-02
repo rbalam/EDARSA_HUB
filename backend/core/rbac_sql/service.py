@@ -187,7 +187,39 @@ class RBACSQLService:
         }
 
     @staticmethod
+    def _has_superadmin_role(usuario_id):
+        if not usuario_id:
+            return False
+
+        return bool(fetch_one_dict("""
+            SELECT TOP 1 1 AS permitido
+            FROM dbo.Usuario_RolesAsignacion AS ura
+            INNER JOIN dbo.Usuario_Roles AS r
+                ON r.RolID = ura.RolID
+            WHERE ura.UsuarioID = %s
+              AND UPPER(LTRIM(RTRIM(r.CodigoRol))) = 'SUPERADMIN'
+              AND ISNULL(ura.Activo, 1) = 1
+              AND ISNULL(r.Activo, 1) = 1
+        """, [usuario_id]))
+
+    @staticmethod
     def can_access_empresa(usuario_id, empresa_id):
+        if not usuario_id or empresa_id is None:
+            return False
+
+        empresa_id_text = str(empresa_id).strip()
+        if not empresa_id_text:
+            return False
+
+        try:
+            if int(empresa_id_text) <= 0:
+                return False
+        except (TypeError, ValueError):
+            return False
+
+        if RBACSQLService._has_superadmin_role(usuario_id):
+            return True
+
         return bool(fetch_one_dict("""
             SELECT TOP 1 1 AS permitido
             FROM dbo.Usuario_EmpresasAsignacion

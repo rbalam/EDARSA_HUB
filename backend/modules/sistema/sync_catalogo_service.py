@@ -21,6 +21,8 @@ from core.sql_first.db import get_sql_connection
 
 logger = logging.getLogger(__name__)
 
+_RUNTIME_IMPLEMENTED_HANDLERS = {'inventarios_fisicos': 'sync_inventarios_fisicos'}
+
 _CAMPOS = (
     "Codigo, Nombre, Grupo, Descripcion, Orden, NivelRiesgo, PermiteResync, "
     "PermiteDryRun, RequiereUnidad, RequiereRangoFechas, RangoMaxDias, Handler, "
@@ -47,7 +49,7 @@ def _row_to_dict(r: Dict[str, Any]) -> Dict[str, Any]:
         'requiere_rango_fechas': bool(r.get('RequiereRangoFechas')),
         'rango_max_dias': int(r.get('RangoMaxDias') or 30),
         'handler': r.get('Handler'),
-        'handler_implementado': bool(r.get('HandlerImplementado')),
+        'handler_implementado': bool(r.get('HandlerImplementado')) or _RUNTIME_IMPLEMENTED_HANDLERS.get(r['Codigo']) == r.get('Handler'),
         'tabla_destino': r.get('TablaDestino'),
         'dependencias': deps,
         'activo': bool(r.get('Activo')),

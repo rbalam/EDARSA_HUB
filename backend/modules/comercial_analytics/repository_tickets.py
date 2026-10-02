@@ -3,9 +3,8 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any, Callable, Iterable
 
-from modules.comercial_v2.periodos_routes import (
-    _execute_readonly_query,
-)
+from core.db import execute_sql_query_params
+from core.server_registry import EDARSAHUB_CONFIG
 
 from .ticket_identity import (
     TicketIdentity,
@@ -20,6 +19,22 @@ ENRICHMENT_TABLE = "Comercial_ProductosEnriquecimiento"
 
 
 QueryExecutor = Callable[[str, tuple[Any, ...]], list[dict[str, Any]]]
+
+
+def _execute_readonly_query_params(
+    sql: str,
+    params: tuple[Any, ...],
+) -> list[dict[str, Any]]:
+    cfg = EDARSAHUB_CONFIG
+    return list(execute_sql_query_params(
+        cfg['host'],
+        cfg['port'],
+        cfg['database'],
+        cfg['username'],
+        cfg['password'],
+        sql,
+        params,
+    ) or [])
 
 
 def _date_string(value: Any, field: str) -> str:
@@ -77,8 +92,313 @@ def _execute(
     *,
     query_executor: QueryExecutor | None = None,
 ) -> list[dict[str, Any]]:
-    executor = query_executor or _execute_readonly_query
+    executor = query_executor or _execute_readonly_query_params
     return list(executor(sql, params) or [])
+
+
+def _fallback_ticket_from_comercial(
+    identity: TicketIdentity,
+) -> dict[str, Any] | None:
+    """Reusa la reconstrucción certificada de Comercial cuando el lookup
+    analytics no encuentra el folio con su predicado tipado.
+    """
+    from core.server_registry import get_server_by_unidad_codigo
+    from modules.comercial.ticket_service import build_ticket_venta
+
+    unidad = (
+        get_server_by_unidad_codigo(identity.unidad_negocio_id)
+        or {}
+    )
+    unidad_nombre = (
+        unidad.get("unidad_negocio_nombre")
+        or identity.unidad_negocio_id
+    )
+    sucursal_id = str(
+        unidad.get("sucursal_origen_id")
+        or ""
+    ).strip()
+
+    payload = build_ticket_venta(
+        identity.unidad_negocio_id,
+        unidad_nombre,
+        sucursal_id,
+        identity.numero_ticket,
+        identity.fecha_operacion,
+    )
+
+    source_ticket = (payload or {}).get("ticket")
+    if not source_ticket:
+        return None
+
+    source_items = list(source_ticket.get("items") or [])
+    lines = []
+
+    for index, item in enumerate(source_items, start=1):
+        importe = round(float(item.get("importe") or 0), 2)
+        descuento_importe = round(
+            float(item.get("descuento_importe") or 0),
+            2,
+        )
+        importe_neto = round(
+            float(
+                item.get("importe_neto")
+                if item.get("importe_neto") is not None
+                else importe - descuento_importe
+            ),
+            2,
+        )
+        lines.append({
+            "linea_pk": (
+                f"{identity.numero_ticket}:fallback:{index}"
+            ),
+            "codigo": "",
+            "producto": str(
+                item.get("descripcion")
+                or "VENTA SIN DETALLE DE PRODUCTO"
+            ),
+            "familia": "",
+            "subfamilia": "",
+            "clasificacion": "",
+            "casa": "",
+            "marca": "",
+            "grado_alcohol": None,
+            "es_alcoholico": False,
+            "cantidad": round(
+                float(item.get("cantidad") or 0),
+                2,
+            ),
+            "precio_unitario": round(
+                float(item.get("precio_unitario") or 0),
+                2,
+            ),
+            "importe_bruto": importe,
+            "importe": importe_neto,
+            "descuento": descuento_importe,
+            "descuento_importe": descuento_importe,
+            "descuento_pct": round(
+                float(item.get("descuento_pct") or 0),
+                2,
+            ),
+            "importe_neto": importe_neto,
+            "propina": 0.0,
+            "pax": int(source_ticket.get("pax") or 0),
+        })
+
+    total = round(float(source_ticket.get("total") or 0), 2)
+    subtotal = round(
+        float(source_ticket.get("subtotal") or total),
+        2,
+    )
+    descuento = round(
+        float(source_ticket.get("descuento") or 0),
+        2,
+    )
+    propina = round(
+        float(source_ticket.get("propina") or 0),
+        2,
+    )
+
+    return {
+        "ticket": {
+            "unidad_negocio_id": identity.unidad_negocio_id,
+            "unidad": (
+                source_ticket.get("unidad")
+                or unidad_nombre
+            ),
+            "sucursal": sucursal_id or None,
+            "fecha_operacion": identity.fecha_operacion,
+            "fecha": identity.fecha_operacion,
+            "fecha_hora": str(
+                source_ticket.get("fecha_hora")
+                or identity.fecha_operacion
+            ),
+            "numero_ticket": str(
+                source_ticket.get("folio")
+                or identity.numero_ticket
+            ),
+            "estado": (
+                source_ticket.get("estado")
+                or "CERRADA"
+            ),
+            "pax": int(source_ticket.get("pax") or 0),
+            "vendedor": source_ticket.get("vendedor"),
+            "sistema_origen": source_ticket.get("sistema_origen"),
+            "lineas": len(lines),
+            "subtotal": subtotal,
+            "descuento_productos": round(
+                float(source_ticket.get("descuento_productos") or 0),
+                2,
+            ),
+            "descuento_cuenta": round(
+                float(source_ticket.get("descuento_cuenta") or 0),
+                2,
+            ),
+            "descuento": descuento,
+            "impuesto": source_ticket.get("impuesto"),
+            "ventas": total,
+            "total": total,
+            "propina": propina,
+        },
+        "lines": lines,
+        "lineas": lines,
+        "traceability": {
+            "source": (payload or {}).get("source")
+            or "modules.comercial.ticket_service",
+            "temporal_field": "fecha_operacion",
+            "live": False,
+            "identity_version": identity.version,
+            "fallback": "COMERCIAL_TICKET_CERTIFIED_PATH",
+        },
+    }
+
+
+def _list_current_day_with_comercial_merge(
+    *,
+    operation_date: str,
+    unit_code: str,
+    page: int,
+    page_size: int,
+) -> dict[str, Any]:
+    """Reusa el contrato de Ventas del Dia certificado en Tablero Comercial.
+
+    Lee cerradas del detalle canonico y agrega abiertas exclusivamente mediante
+    merge_open_snapshot_tickets(). No consulta POS live y conserva RBAC por
+    unidad porque esta funcion solo se invoca despues de _ensure_unit_allowed().
+    """
+    from core.server_registry import get_server_by_unidad_codigo
+    from modules.comercial.ticket_service import merge_open_snapshot_tickets
+
+    rows = _execute(
+        f"""
+        SELECT
+            d.unidad_negocio_id,
+            MAX(d.unidad_negocio_nombre) AS unidad,
+            MAX(d.sucursal_nombre) AS sucursal,
+            d.numero_ticket,
+            MIN(d.fecha_hora) AS fecha_hora,
+            MAX(ISNULL(d.pax, 0)) AS pax,
+            COUNT(*) AS lineas,
+            SUM(ISNULL(d.importe_neto, 0)) AS ventas,
+            SUM(ISNULL(d.propina, 0)) AS propina
+        FROM {DETAIL_TABLE} AS d
+        WHERE
+            ISNULL(d.activo, 1) = 1
+            AND ISNULL(d.es_kpi_valido, 1) = 1
+            AND ISNULL(d.cancelado_origen, 0) = 0
+            AND d.numero_ticket IS NOT NULL
+            AND d.fecha_operacion = %s
+            AND d.unidad_negocio_id = %s
+        GROUP BY
+            d.unidad_negocio_id,
+            d.numero_ticket
+        ORDER BY
+            CASE WHEN TRY_CONVERT(BIGINT, d.numero_ticket) IS NULL THEN 1 ELSE 0 END,
+            TRY_CONVERT(BIGINT, d.numero_ticket) ASC,
+            d.numero_ticket ASC
+        """,
+        (operation_date, unit_code),
+    )
+
+    unit_meta = get_server_by_unidad_codigo(unit_code) or {}
+    unit_name = (
+        (rows[0].get("unidad") if rows else None)
+        or unit_meta.get("unidad_negocio_nombre")
+        or unit_code
+    )
+    sucursal_id = str(
+        unit_meta.get("sucursal_origen_id")
+        or (rows[0].get("sucursal") if rows else "")
+        or ""
+    ).strip()
+
+    comercial_items = []
+    for row in rows:
+        comercial_items.append({
+            "nivel": "detalle",
+            "clave": None,
+            "label": str(row.get("numero_ticket") or ""),
+            "folio": str(row.get("numero_ticket") or ""),
+            "fecha": str(row.get("fecha_hora") or operation_date),
+            "folios": 1,
+            "pax": int(row.get("pax") or 0),
+            "total_venta": float(row.get("ventas") or 0),
+            "importe": float(row.get("ventas") or 0),
+            "num_productos": int(row.get("lineas") or 0),
+            "expandible": False,
+            "siguiente_nivel": None,
+            "fuente_ticket": "CERRADA",
+            "propina": float(row.get("propina") or 0),
+        })
+
+    merged = merge_open_snapshot_tickets(
+        comercial_items,
+        unit_code,
+        sucursal_id,
+        operation_date,
+    )
+
+    all_items = []
+    for item in merged:
+        ticket_number = _required(item.get("folio"), "numero_ticket")
+        raw_datetime = item.get("fecha")
+        hour = ""
+        if isinstance(raw_datetime, datetime):
+            hour = raw_datetime.strftime("%H:%M")
+        elif raw_datetime:
+            text = str(raw_datetime)
+            hour = text[11:16] if len(text) >= 16 else ""
+
+        all_items.append({
+            "ticket_pk": create_ticket_pk(
+                unidad_negocio_id=unit_code,
+                fecha_operacion=operation_date,
+                numero_ticket=ticket_number,
+            ),
+            "unidad_negocio_id": unit_code,
+            "unidad": unit_name,
+            "sucursal": sucursal_id or None,
+            "fecha_operacion": operation_date,
+            "fecha": operation_date,
+            "hora": hour,
+            "numero_ticket": ticket_number,
+            "pax": int(item.get("pax") or 0),
+            "lineas": int(
+                item.get("num_productos")
+                or item.get("lineas")
+                or 0
+            ),
+            "ventas": round(
+                float(item.get("total_venta") or item.get("importe") or 0),
+                2,
+            ),
+            "propina": round(float(item.get("propina") or 0), 2),
+            "fuente_ticket": item.get("fuente_ticket") or "CERRADA",
+        })
+
+    total = len(all_items)
+    offset = (page - 1) * page_size
+    page_items = all_items[offset:offset + page_size]
+    returned = len(page_items)
+
+    return {
+        "items": page_items,
+        "page": page,
+        "page_size": page_size,
+        "total": total,
+        "returned": returned,
+        "has_more": offset + returned < total,
+        "traceability": {
+            "source": (
+                "Comercial_Inteligencia_VentasDetalleProducto"
+                " + Comercial_Ventas_Dia_Abiertas_v2.detalle_abiertas_json"
+            ),
+            "contract": "TABLERO_COMERCIAL_VENTAS_DIA_CERTIFIED_PATH",
+            "temporal_field": "fecha_operacion",
+            "live": False,
+            "paginated": True,
+            "rbac": "UNIDAD_NEGOCIO",
+        },
+    }
 
 
 def list_tickets(
@@ -129,10 +449,24 @@ def list_tickets(
     else:
         effective_units = allowed
 
+    if (
+        requested_unit
+        and start == end
+        and query_executor is None
+    ):
+        return _list_current_day_with_comercial_merge(
+            operation_date=start,
+            unit_code=requested_unit,
+            page=page,
+            page_size=page_size,
+        )
+
     placeholders = ", ".join(["%s"] * len(effective_units))
 
     where_sql = f"""
         ISNULL(d.activo, 1) = 1
+        AND ISNULL(d.es_kpi_valido, 1) = 1
+        AND ISNULL(d.cancelado_origen, 0) = 0
         AND d.numero_ticket IS NOT NULL
         AND d.fecha_operacion BETWEEN %s AND %s
         AND d.unidad_negocio_id IN ({placeholders})
@@ -283,6 +617,17 @@ def get_ticket_detail(
         allowed_unit_codes,
     )
 
+    if query_executor is None:
+        comercial_ticket = _fallback_ticket_from_comercial(identity)
+        if comercial_ticket:
+            comercial_ticket.setdefault(
+                "traceability",
+                {},
+            )["contract"] = (
+                "TABLERO_COMERCIAL_TICKET_CERTIFIED_PATH"
+            )
+            return comercial_ticket
+
     sql = f"""
         SELECT
             d.unidad_negocio_id,
@@ -305,7 +650,9 @@ def get_ticket_detail(
             e.es_alcoholico,
             d.cantidad,
             d.precio_unitario,
+            d.importe_bruto AS importe_bruto,
             d.importe_neto AS importe,
+            d.descuento AS descuento,
             d.propina,
             d.pax
         FROM {DETAIL_TABLE} AS d
@@ -318,9 +665,11 @@ def get_ticket_detail(
             ON e.producto_id = d.producto_id
         WHERE
             ISNULL(d.activo, 1) = 1
+            AND ISNULL(d.es_kpi_valido, 1) = 1
+            AND ISNULL(d.cancelado_origen, 0) = 0
             AND d.unidad_negocio_id = %s
             AND d.fecha_operacion = %s
-            AND d.numero_ticket = %s
+            AND CONVERT(varchar(128), d.numero_ticket) = %s
         ORDER BY
             d.importe_neto DESC,
             d.producto_nombre
@@ -337,6 +686,10 @@ def get_ticket_detail(
     )
 
     if not rows:
+        if query_executor is None:
+            fallback = _fallback_ticket_from_comercial(identity)
+            if fallback:
+                return fallback
         raise LookupError("Ticket no encontrado")
 
     lines = []
@@ -377,8 +730,21 @@ def get_ticket_detail(
                 float(row.get("precio_unitario") or 0),
                 2,
             ),
+            "importe_bruto": round(
+                float(
+                    row.get("importe_bruto")
+                    if row.get("importe_bruto") is not None
+                    else row.get("importe")
+                    or 0
+                ),
+                2,
+            ),
             "importe": round(
                 float(row.get("importe") or 0),
+                2,
+            ),
+            "descuento": round(
+                float(row.get("descuento") or 0),
                 2,
             ),
             "propina": round(
@@ -389,6 +755,14 @@ def get_ticket_detail(
         })
 
     first = rows[0]
+    subtotal = round(
+        sum(line["importe_bruto"] for line in lines),
+        2,
+    )
+    descuento = round(
+        sum(line["descuento"] for line in lines),
+        2,
+    )
     total = round(
         sum(line["importe"] for line in lines),
         2,
@@ -412,9 +786,17 @@ def get_ticket_detail(
             "sucursal": first.get("sucursal"),
             "fecha_operacion": identity.fecha_operacion,
             "fecha": identity.fecha_operacion,
+            "fecha_hora": str(
+                first.get("primera_fecha_hora")
+                or identity.fecha_operacion
+            ),
             "numero_ticket": identity.numero_ticket,
+            "estado": "CERRADA",
             "pax": pax,
             "lineas": len(lines),
+            "subtotal": subtotal,
+            "descuento": descuento,
+            "impuesto": None,
             "ventas": total,
             "total": total,
             "propina": propina,

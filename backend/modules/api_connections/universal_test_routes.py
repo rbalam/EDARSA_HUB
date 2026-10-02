@@ -232,21 +232,21 @@ def get_api_connection_with_secret(connection_id: str) -> Optional[Dict]:
 # VALIDACIÓN DE AUTORIZACIÓN
 # ============================================================================
 
-async def validate_api_connection_access(
+API_CONNECTION_ACCESS_DENIED_DETAIL = "Sin permiso para acceder a esta conexión API"
+API_CONNECTION_MISSING_EMPRESAID_DETAIL = (
+    "Falta EmpresaID canónico para esta conexión API"
+)
+
+
+async def get_api_connection_access_result(
     current_user: Dict,
     connection_raw: Dict,
-) -> bool:
+) -> Dict:
     """
     Valida acceso a una conexión API mediante RBAC SQL canónico.
 
-    Requisitos:
-    - identidad UsuarioID SQL resoluble;
-    - permiso funcional SERVIDORES_VER;
-    - conexión asociada a una EmpresaID;
-    - alcance efectivo sobre esa empresa.
-
-    No autoriza por nombre de rol, JWT ni allowed_servers.
-    Fail-closed ante identidad, permiso, alcance o datos inválidos.
+    Devuelve resultado semántico para distinguir metadata incompleta
+    de una denegación RBAC real.
     """
     user_email = current_user.get("email", "unknown")
     connection_id = connection_raw.get("id")
@@ -255,57 +255,83 @@ async def validate_api_connection_access(
         usuario_id = resolve_sql_usuario_id(current_user)
 
         if not usuario_id:
-            logger.warning(
-                "[API-UQT] Identidad SQL no resoluble para %s",
-                user_email,
-            )
-            return False
+            logger.warning("[API-UQT] Identidad SQL no resoluble para %s", user_email)
+            return {
+                "allowed": False,
+                "status_code": 403,
+                "detail": API_CONNECTION_ACCESS_DENIED_DETAIL,
+                "reason": "SQL_IDENTITY_NOT_RESOLVED",
+            }
 
-        if not can_access_permission_sql(
-            usuario_id,
-            "SERVIDORES_VER",
-        ):
-            logger.warning(
-                "[API-UQT] Usuario SQL %s sin SERVIDORES_VER",
-                usuario_id,
-            )
-            return False
+        if not can_access_permission_sql(usuario_id, "SERVIDORES_VER"):
+            logger.warning("[API-UQT] Usuario SQL %s sin SERVIDORES_VER", usuario_id)
+            return {
+                "allowed": False,
+                "status_code": 403,
+                "detail": API_CONNECTION_ACCESS_DENIED_DETAIL,
+                "reason": "MISSING_SERVIDORES_VER",
+            }
 
         connection_empresa_id = connection_raw.get("EmpresaID")
 
         if connection_empresa_id is None:
-            logger.warning(
-                "[API-UQT] Conexión %s sin EmpresaID",
-                connection_id,
-            )
-            return False
+            logger.warning("[API-UQT] Conexión %s sin EmpresaID", connection_id)
+            return {
+                "allowed": False,
+                "status_code": 409,
+                "detail": API_CONNECTION_MISSING_EMPRESAID_DETAIL,
+                "reason": "MISSING_EMPRESAID",
+            }
 
-        if not can_access_empresa_sql(
-            usuario_id,
-            connection_empresa_id,
-        ):
+        if not can_access_empresa_sql(usuario_id, connection_empresa_id):
             logger.warning(
                 "[API-UQT] Usuario SQL %s sin acceso a empresa %s",
                 usuario_id,
                 connection_empresa_id,
             )
-            return False
+            return {
+                "allowed": False,
+                "status_code": 403,
+                "detail": API_CONNECTION_ACCESS_DENIED_DETAIL,
+                "reason": "EMPRESA_SCOPE_DENIED",
+            }
 
         logger.info(
-            "[API-UQT] Acceso autorizado usuario SQL %s "
-            "a conexión %s",
+            "[API-UQT] Acceso autorizado usuario SQL %s a conexión %s",
             usuario_id,
             connection_id,
         )
-        return True
+        return {
+            "allowed": True,
+            "status_code": 200,
+            "detail": "Acceso autorizado",
+            "reason": "AUTHORIZED",
+        }
 
-    except Exception as exc:
-        logger.error(
-            "[API-UQT] Error validando RBAC SQL para conexión %s: %s",
+    except Exception:
+        logger.exception(
+            "[API-UQT] Error validando acceso usuario %s conexión %s",
+            user_email,
             connection_id,
-            exc,
         )
-        return False
+        return {
+            "allowed": False,
+            "status_code": 403,
+            "detail": API_CONNECTION_ACCESS_DENIED_DETAIL,
+            "reason": "ACCESS_VALIDATION_EXCEPTION",
+        }
+
+
+async def validate_api_connection_access(
+    current_user: Dict,
+    connection_raw: Dict,
+) -> bool:
+    """
+    Compatibilidad booleana para pruebas y consumidores existentes.
+    Para rutas HTTP usar get_api_connection_access_result().
+    """
+    access_result = await get_api_connection_access_result(current_user, connection_raw)
+    return bool(access_result.get("allowed"))
 
 # ============================================================================
 # FUNCIONES DE SEGURIDAD - ENMASCARAMIENTO
@@ -526,8 +552,12 @@ async def execute_api_connection_test(
         raise HTTPException(status_code=404, detail="Conexión API no encontrada")
     
     # 3. AUTORIZACIÓN OBLIGATORIA
-    if not await validate_api_connection_access(current_user, connection_raw):
-        raise HTTPException(status_code=403, detail="Sin permiso para acceder a esta conexión API")
+    access_result = await get_api_connection_access_result(current_user, connection_raw)
+    if not access_result.get("allowed"):
+        raise HTTPException(
+            status_code=access_result.get("status_code", 403),
+            detail=access_result.get("detail", API_CONNECTION_ACCESS_DENIED_DETAIL),
+        )
     
     # 4. Validar que esté activa
     if not connection_raw.get('activo'):
@@ -737,8 +767,12 @@ async def test_api_connection_secure(
         raise HTTPException(status_code=404, detail="Conexión API no encontrada")
     
     # 3. AUTORIZACIÓN OBLIGATORIA
-    if not await validate_api_connection_access(current_user, connection_raw):
-        raise HTTPException(status_code=403, detail="Sin permiso para acceder a esta conexión API")
+    access_result = await get_api_connection_access_result(current_user, connection_raw)
+    if not access_result.get("allowed"):
+        raise HTTPException(
+            status_code=access_result.get("status_code", 403),
+            detail=access_result.get("detail", API_CONNECTION_ACCESS_DENIED_DETAIL),
+        )
     
     # 4. Validar que esté activa
     if not connection_raw.get('activo'):
@@ -949,8 +983,12 @@ async def test_api_connectivity_simple(
         raise HTTPException(status_code=404, detail="Conexión API no encontrada")
     
     # 3. AUTORIZACIÓN OBLIGATORIA
-    if not await validate_api_connection_access(current_user, connection_raw):
-        raise HTTPException(status_code=403, detail="Sin permiso para acceder a esta conexión API")
+    access_result = await get_api_connection_access_result(current_user, connection_raw)
+    if not access_result.get("allowed"):
+        raise HTTPException(
+            status_code=access_result.get("status_code", 403),
+            detail=access_result.get("detail", API_CONNECTION_ACCESS_DENIED_DETAIL),
+        )
 
     # 4. Validar que esté activa
     if not connection_raw.get('activo'):

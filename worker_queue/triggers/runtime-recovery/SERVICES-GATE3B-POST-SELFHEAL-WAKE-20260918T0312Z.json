@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker for existing EDARSAHUB-SERVICES-GATE3B-PHYSICAL-SCHEMA-DDL-DOSSIER-R1 after certified worker self-heal EDARSAHUB-WORKER-SELFHEAL-WORKTREE-CLAIM-R1-20260917. Reuse the existing Gate3B R1 request already present on worker/requests; do not clone or create a new functional Gate3B. Require safe runtime convergence, preserve local work, fail closed on unsafe Git state, and do not touch Production.",
+  "existing_job_id": "EDARSAHUB-SERVICES-GATE3B-PHYSICAL-SCHEMA-DDL-DOSSIER-R1",
+  "production_touched": false
+}

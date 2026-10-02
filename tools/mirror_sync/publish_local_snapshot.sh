@@ -317,12 +317,7 @@ test "$REMOTE_MIRROR_2" = "$LOCAL_HEAD" || {
 echo
 echo "===== 11. PUBLISH MIRROR ONLY ====="
 
-export EDARSA_ALLOW_PUSH=1
-
-git push "$REMOTE" \
-    "$SNAPSHOT:refs/heads/$MIRROR_BRANCH"
-
-unset EDARSA_ALLOW_PUSH
+EDARSA_ALLOW_PUSH=1 EDARSA_PUSH_JOB_ID="mirror-snapshot-$$" EDARSA_PUSH_OWNER="mirror-snapshot" git push "$REMOTE" "$SNAPSHOT:refs/heads/$MIRROR_BRANCH"
 
 echo
 echo "===== 12. FINAL VALIDATION ====="

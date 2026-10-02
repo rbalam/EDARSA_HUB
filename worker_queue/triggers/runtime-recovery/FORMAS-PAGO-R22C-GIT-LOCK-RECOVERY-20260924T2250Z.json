@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Formas de pago - recuperar el runtime canónico del Universal Worker para el Job existente EDARSAHUB-FORMAS-PAGO-RETRY-DIARIO-R22C-CARLOS-20260924 después de GIT_LOCK_BUSY. No crear otro Job funcional ni duplicar alcance. Reutilizar la solicitud existente en worker/requests, liberar únicamente contención stale/runtime del writer lock mediante el flujo canónico, preservar propietarios activos, fallar cerrado ante estado Git inseguro y no tocar Producción.",
+  "existing_job_id": "EDARSAHUB-FORMAS-PAGO-RETRY-DIARIO-R22C-CARLOS-20260924",
+  "production_touched": false
+}

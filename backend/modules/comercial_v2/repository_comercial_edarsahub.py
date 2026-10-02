@@ -371,6 +371,26 @@ def get_kpis_diarios_v2(
 # OPERACIONES EN Comercial_Ventas_Dia_Abiertas_v2
 # =============================================================================
 
+def _ventas_dia_supports_detalle_json() -> bool:
+    rows = _execute_query(
+        """
+        SELECT CASE
+            WHEN COL_LENGTH(
+                'dbo.Comercial_Ventas_Dia_Abiertas_v2',
+                'detalle_abiertas_json'
+            ) IS NULL THEN 0 ELSE 1
+        END AS disponible
+        """
+    )
+    return bool(rows and int(rows[0].get("disponible") or 0) == 1)
+
+
+def _nvarchar_literal(value: Optional[str]) -> str:
+    if value is None:
+        return "NULL"
+    return "N'" + str(value).replace("'", "''") + "'"
+
+
 def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
     """
     Upsert de snapshot de ventas abiertas.
@@ -515,6 +535,25 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
             'unidad': ventas.unidad_negocio_pk
         }
 
+    detalle_json_supported = _ventas_dia_supports_detalle_json()
+    detalle_json_sql = _nvarchar_literal(ventas.detalle_abiertas_json)
+    detalle_update_fragment = ""
+    if detalle_json_supported and ventas.detalle_abiertas_json is not None:
+        detalle_update_fragment = (
+            ",\n            detalle_abiertas_json = "
+            + detalle_json_sql
+        )
+    detalle_insert_column = (
+        ", detalle_abiertas_json"
+        if detalle_json_supported
+        else ""
+    )
+    detalle_insert_value = (
+        ", " + detalle_json_sql
+        if detalle_json_supported
+        else ""
+    )
+
     # Verificar si existe y obtener valores actuales
     check_query = f"""
     SELECT id, total_estimado_dia, fecha_operacion, sync_run_id
@@ -574,7 +613,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
             total_estimado_dia = {ventas.total_estimado_dia},
             propinas_total = {ventas.propinas_total},
             fuente_original = '{ventas.fuente_original}',
-            sync_run_id = '{ventas.sync_run_id}',
+            sync_run_id = '{ventas.sync_run_id}'{detalle_update_fragment},
             fecha_ultima_actualizacion = SYSUTCDATETIME()
         WHERE id = '{record_id}'
         """
@@ -592,7 +631,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
             ventas_cerradas_dia, tickets_cerrados_dia, pax_cerrados_dia,
             propinas_cerradas_dia,
             total_estimado_dia, propinas_total,
-            fuente_original, sync_run_id, fecha_ultima_actualizacion
+            fuente_original, sync_run_id{detalle_insert_column}, fecha_ultima_actualizacion
         ) VALUES (
             '{new_id}',
             '{unidad_codigo}',
@@ -609,7 +648,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
             {ventas.propinas_cerradas_dia},
             {ventas.total_estimado_dia}, {ventas.propinas_total},
             '{ventas.fuente_original}',
-            '{ventas.sync_run_id}',
+            '{ventas.sync_run_id}'{detalle_insert_value},
             SYSUTCDATETIME()
         )
         """

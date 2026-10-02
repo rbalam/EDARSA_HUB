@@ -20,6 +20,14 @@ def test_readonly_validator_accepts_select_and_with():
     assert m.validate_readonly_sql('SELECT TOP 1 name FROM sys.tables')
     assert m.validate_readonly_sql('WITH x AS (SELECT 1 AS n) SELECT n FROM x;')
 
+def test_json_value_serializes_uuid_to_string():
+    from uuid import UUID
+
+    m = load_helper()
+    value = UUID('12345678-1234-5678-1234-567812345678')
+    assert m._json_value(value) == '12345678-1234-5678-1234-567812345678'
+
+
 def test_readonly_validator_rejects_mutation_and_multistatement():
     m = load_helper()
     blocked = [
