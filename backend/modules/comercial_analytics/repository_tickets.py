@@ -252,6 +252,155 @@ def _fallback_ticket_from_comercial(
     }
 
 
+def _list_current_day_with_comercial_merge(
+    *,
+    operation_date: str,
+    unit_code: str,
+    page: int,
+    page_size: int,
+) -> dict[str, Any]:
+    """Reusa el contrato de Ventas del Dia certificado en Tablero Comercial.
+
+    Lee cerradas del detalle canonico y agrega abiertas exclusivamente mediante
+    merge_open_snapshot_tickets(). No consulta POS live y conserva RBAC por
+    unidad porque esta funcion solo se invoca despues de _ensure_unit_allowed().
+    """
+    from core.server_registry import get_server_by_unidad_codigo
+    from modules.comercial.ticket_service import merge_open_snapshot_tickets
+
+    rows = _execute(
+        f"""
+        SELECT
+            d.unidad_negocio_id,
+            MAX(d.unidad_negocio_nombre) AS unidad,
+            MAX(d.sucursal_nombre) AS sucursal,
+            d.numero_ticket,
+            MIN(d.fecha_hora) AS fecha_hora,
+            MAX(ISNULL(d.pax, 0)) AS pax,
+            COUNT(*) AS lineas,
+            SUM(ISNULL(d.importe_neto, 0)) AS ventas,
+            SUM(ISNULL(d.propina, 0)) AS propina
+        FROM {DETAIL_TABLE} AS d
+        WHERE
+            ISNULL(d.activo, 1) = 1
+            AND ISNULL(d.es_kpi_valido, 1) = 1
+            AND ISNULL(d.cancelado_origen, 0) = 0
+            AND d.numero_ticket IS NOT NULL
+            AND d.fecha_operacion = %s
+            AND d.unidad_negocio_id = %s
+        GROUP BY
+            d.unidad_negocio_id,
+            d.numero_ticket
+        ORDER BY
+            CASE WHEN TRY_CONVERT(BIGINT, d.numero_ticket) IS NULL THEN 1 ELSE 0 END,
+            TRY_CONVERT(BIGINT, d.numero_ticket) ASC,
+            d.numero_ticket ASC
+        """,
+        (operation_date, unit_code),
+    )
+
+    unit_meta = get_server_by_unidad_codigo(unit_code) or {}
+    unit_name = (
+        (rows[0].get("unidad") if rows else None)
+        or unit_meta.get("unidad_negocio_nombre")
+        or unit_code
+    )
+    sucursal_id = str(
+        unit_meta.get("sucursal_origen_id")
+        or (rows[0].get("sucursal") if rows else "")
+        or ""
+    ).strip()
+
+    comercial_items = []
+    for row in rows:
+        comercial_items.append({
+            "nivel": "detalle",
+            "clave": None,
+            "label": str(row.get("numero_ticket") or ""),
+            "folio": str(row.get("numero_ticket") or ""),
+            "fecha": str(row.get("fecha_hora") or operation_date),
+            "folios": 1,
+            "pax": int(row.get("pax") or 0),
+            "total_venta": float(row.get("ventas") or 0),
+            "importe": float(row.get("ventas") or 0),
+            "num_productos": int(row.get("lineas") or 0),
+            "expandible": False,
+            "siguiente_nivel": None,
+            "fuente_ticket": "CERRADA",
+            "propina": float(row.get("propina") or 0),
+        })
+
+    merged = merge_open_snapshot_tickets(
+        comercial_items,
+        unit_code,
+        sucursal_id,
+        operation_date,
+    )
+
+    all_items = []
+    for item in merged:
+        ticket_number = _required(item.get("folio"), "numero_ticket")
+        raw_datetime = item.get("fecha")
+        hour = ""
+        if isinstance(raw_datetime, datetime):
+            hour = raw_datetime.strftime("%H:%M")
+        elif raw_datetime:
+            text = str(raw_datetime)
+            hour = text[11:16] if len(text) >= 16 else ""
+
+        all_items.append({
+            "ticket_pk": create_ticket_pk(
+                unidad_negocio_id=unit_code,
+                fecha_operacion=operation_date,
+                numero_ticket=ticket_number,
+            ),
+            "unidad_negocio_id": unit_code,
+            "unidad": unit_name,
+            "sucursal": sucursal_id or None,
+            "fecha_operacion": operation_date,
+            "fecha": operation_date,
+            "hora": hour,
+            "numero_ticket": ticket_number,
+            "pax": int(item.get("pax") or 0),
+            "lineas": int(
+                item.get("num_productos")
+                or item.get("lineas")
+                or 0
+            ),
+            "ventas": round(
+                float(item.get("total_venta") or item.get("importe") or 0),
+                2,
+            ),
+            "propina": round(float(item.get("propina") or 0), 2),
+            "fuente_ticket": item.get("fuente_ticket") or "CERRADA",
+        })
+
+    total = len(all_items)
+    offset = (page - 1) * page_size
+    page_items = all_items[offset:offset + page_size]
+    returned = len(page_items)
+
+    return {
+        "items": page_items,
+        "page": page,
+        "page_size": page_size,
+        "total": total,
+        "returned": returned,
+        "has_more": offset + returned < total,
+        "traceability": {
+            "source": (
+                "Comercial_Inteligencia_VentasDetalleProducto"
+                " + Comercial_Ventas_Dia_Abiertas_v2.detalle_abiertas_json"
+            ),
+            "contract": "TABLERO_COMERCIAL_VENTAS_DIA_CERTIFIED_PATH",
+            "temporal_field": "fecha_operacion",
+            "live": False,
+            "paginated": True,
+            "rbac": "UNIDAD_NEGOCIO",
+        },
+    }
+
+
 def list_tickets(
     *,
     fecha_inicio: Any,
@@ -299,6 +448,18 @@ def list_tickets(
         effective_units = [requested_unit]
     else:
         effective_units = allowed
+
+    if (
+        requested_unit
+        and start == end
+        and query_executor is None
+    ):
+        return _list_current_day_with_comercial_merge(
+            operation_date=start,
+            unit_code=requested_unit,
+            page=page,
+            page_size=page_size,
+        )
 
     placeholders = ", ".join(["%s"] * len(effective_units))
 

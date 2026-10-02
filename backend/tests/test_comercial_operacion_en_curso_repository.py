@@ -225,8 +225,15 @@ def test_executive_current_day_uses_certified_comercial_sales_detail():
 
     assert "server_id: item.server_id || null" in tablero
     assert "sucursal_id: item.sucursal_id || null" in tablero
-    assert "/comercial/detalle-ventas-agrupado/" in drill
-    assert "periodo: 'dia'" in drill
-    assert "row.fuente_ticket || 'CERRADA'" in drill
-    assert "/comercial/ticket-venta/" in drill
+
+    # Tablero Ejecutivo conserva RBAC por unidad y no cruza
+    # directamente a las rutas Comercial protegidas por server_id.
+    assert "/comercial/detalle-ventas-agrupado/" not in drill
+    assert "/comercial/ticket-venta/" not in drill
+
+    # Ventas del Dia utiliza el endpoint analytics del Ejecutivo.
+    assert "/v2/comercial/analytics/tickets" in drill
+    assert "ticketPk: item.ticket_pk" in drill
+
+    # Se conserva la conciliacion de cuentas abiertas.
     assert "hasMissingOpen" in drill
