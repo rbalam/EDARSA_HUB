@@ -309,6 +309,70 @@ ORDER BY t.Vn_Documento, l.producto_codigo
 """
 
 
+QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_COMANDA = """
+SELECT
+    CONVERT(varchar(64), c.Co_Folio) AS folio,
+    CONVERT(varchar(64), c.Co_Folio) AS folio_origen,
+    'CERRADA' AS estado_ticket,
+    'MPRO' AS sistema_origen,
+    MIN(c.Co_Fecha) AS fecha_hora,
+    MAX(ISNULL(c.Co_Personas, 0)) AS pax,
+    MAX(ISNULL(c.Co_Propina, 0)) AS propina,
+    MAX(CONVERT(varchar(100), c.Vn_Cve_Vendedor)) AS vendedor_id,
+    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(200), vnd.Vn_Descripcion))), '')) AS vendedor_nombre,
+    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), c.Co_Referencia))), '')) AS mesa,
+    SUM(SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))))
+        OVER (PARTITION BY c.Co_Folio) AS total_ticket,
+    COALESCE(
+        NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),
+        'SIN_CODIGO'
+    ) AS producto_codigo,
+    COALESCE(
+        MAX(CONVERT(varchar(300), d.Cd_Concepto)),
+        'VENTA SIN DETALLE DE PRODUCTO'
+    ) AS producto_nombre,
+    SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4))) AS cantidad,
+    CASE
+        WHEN SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4))) <> 0
+        THEN
+            SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4)))
+            / SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4)))
+        ELSE MAX(CAST(ISNULL(d.Cd_Precio, 0) AS decimal(18,4)))
+    END AS precio_unitario,
+    SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS importe_bruto,
+    CAST(0 AS decimal(9,4)) AS descuento_pct,
+    CAST(0 AS decimal(18,4)) AS descuento_producto,
+    SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS importe_neto_producto,
+    CAST(0 AS decimal(18,4)) AS descuento_encabezado_reportado,
+    CAST(0 AS decimal(18,4)) AS descuento_total_reportado
+FROM Comanda c
+INNER JOIN Comanda_Detalle d
+    ON d.Co_Folio = c.Co_Folio
+   AND d.Es_Cve_Estado = 'AC'
+   AND d.Fecha_Baja IS NULL
+LEFT JOIN Vendedor vnd
+    ON vnd.Vn_Cve_Vendedor = c.Vn_Cve_Vendedor
+WHERE CAST(c.Co_Fecha AS date) = '{fecha_operacion}'
+  AND c.Sc_Cve_Sucursal = '{sucursal_id}'
+  AND EXISTS (
+      SELECT 1
+      FROM Venta_Encabezado ve
+      WHERE ve.Vn_Documento = c.Co_Folio
+        AND ve.Sc_Cve_Sucursal = c.Sc_Cve_Sucursal
+        AND CAST(ve.Vn_Fecha AS date) = '{fecha_operacion}'
+        AND ve.Es_Cve_Estado IN ('AC', 'FA')
+        AND ve.Fecha_Baja IS NULL
+  )
+GROUP BY
+    c.Co_Folio,
+    COALESCE(
+        NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),
+        'SIN_CODIGO'
+    )
+ORDER BY c.Co_Folio, producto_codigo
+"""
+
+
 QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES = """
 SELECT
     CONVERT(varchar(64), c.Co_Folio) AS folio,

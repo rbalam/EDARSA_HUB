@@ -42,6 +42,7 @@ from modules.comercial_v2.ticket_snapshot import (
     QUERY_MPRO_DETALLE_ABIERTAS,
     QUERY_MPRO_DETALLE_ABIERTAS_RESUMEN,
     QUERY_MPRO_DETALLE_CERRADAS_CANONICAS,
+    QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_COMANDA,
     QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_RESUMEN,
     QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES,
     QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES_RESUMEN,
@@ -714,6 +715,42 @@ def _merge_mpro_summary_detail_rows(
                     enriched[field] = summary.get(field)
             merged.append(enriched)
     return merged
+
+
+def _prefer_real_mpro_detail_rows(
+    primary_rows,
+    fallback_rows,
+):
+    """Prefiere detalle real por producto y usa Comanda para folios sin detalle Venta."""
+    def is_real(row):
+        code = str(row.get("producto_codigo") or "").strip().upper()
+        name = str(row.get("producto_nombre") or "").strip().upper()
+        return (
+            code not in {"", "SIN_CODIGO"}
+            and "DETALLE RESUMIDO" not in name
+            and "VENTA SIN DETALLE DE PRODUCTO" not in name
+        )
+
+    primary_real_folios = {
+        str(row.get("folio") or "").strip()
+        for row in (primary_rows or [])
+        if str(row.get("folio") or "").strip() and is_real(row)
+    }
+
+    result = [
+        dict(row)
+        for row in (primary_rows or [])
+        if str(row.get("folio") or "").strip() in primary_real_folios
+    ]
+
+    for row in fallback_rows or []:
+        folio = str(row.get("folio") or "").strip()
+        if not folio or folio in primary_real_folios:
+            continue
+        if is_real(row):
+            result.append(dict(row))
+
+    return result
 
 
 def _summarize_mpro_ticket_rows(rows):
@@ -1939,12 +1976,47 @@ async def execute_sync_comercial_abiertas_v2(
                     if detalle_cerradas_status != "API_LOCAL_OK":
                         logger.warning(
                             "[SYNC_ABIERTAS_V2] %s: "
-                            "detalle MPRO cerrado no disponible (%s); "
-                            "se usa resumen por folio",
+                            "detalle MPRO cerrado no disponible (%s)",
                             nombre,
                             detalle_cerradas_status,
                         )
                         detalle_rows_cerradas = []
+
+                    # Venta puede publicar el encabezado antes que sus lineas.
+                    # En ese lapso NO degradar el ticket a "DETALLE RESUMIDO":
+                    # recuperar las lineas de producto desde Comanda_Detalle y
+                    # conservar del resumen canónico solo total/PAX/propina.
+                    if (
+                        closed_sales_source
+                        == "CANONICAL_VENTA_ENCABEZADO"
+                        and rows_resumen_cerradas
+                    ):
+                        query_detalle_comanda = (
+                            QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_COMANDA.format(
+                                sucursal_id=sucursal_id,
+                                fecha_operacion=fecha_operacion_str,
+                            )
+                        )
+                        rows_detalle_comanda, status_detalle_comanda = (
+                            _execute_query_via_api_local(
+                                api_config,
+                                query_detalle_comanda,
+                            )
+                        )
+                        if status_detalle_comanda == "API_LOCAL_OK":
+                            detalle_rows_cerradas = (
+                                _prefer_real_mpro_detail_rows(
+                                    detalle_rows_cerradas,
+                                    rows_detalle_comanda,
+                                )
+                            )
+                        else:
+                            logger.warning(
+                                "[SYNC_ABIERTAS_V2] %s: "
+                                "fallback Comanda detalle cerrado no disponible (%s)",
+                                nombre,
+                                status_detalle_comanda,
+                            )
 
                     folios_cerrados = {
                         str(row.get("folio") or "").strip()
