@@ -122,6 +122,14 @@ class IscamDetailBatchRequest(BaseModel):
     motivo: str = Field(..., min_length=10, description="Motivo auditable del trabajo")
 
 
+class ComercialRangeBatchRequest(BaseModel):
+    """Re-sincronización persistente Comercial por rango y unidades."""
+    unidades: List[str] = Field(..., description="Una o varias unidades canónicas")
+    fecha_inicio: date = Field(..., description="Fecha inicial inclusiva")
+    fecha_fin: date = Field(..., description="Fecha final inclusiva")
+    motivo: str = Field(..., min_length=10, description="Motivo auditable")
+
+
 class ResyncResponse(BaseModel):
     """Response de re-sync."""
     success: bool
@@ -973,6 +981,72 @@ def obtener_iscam_detail_batch_job(
     if not row:
         raise HTTPException(status_code=404, detail='Trabajo ISCAM no encontrado')
     return {'success': True, **_iscam_batch_payload_from_row(row)}
+
+
+@router.post("/resync/comercial-range/jobs", status_code=202)
+def crear_comercial_range_job(
+    body: ComercialRangeBatchRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN")),
+):
+    from modules.comercial.resync_batch_jobs import create_job, find_active, run_job
+    unidades = []
+    for raw in body.unidades or []:
+        codigo = str(raw or "").strip().upper()
+        if codigo and codigo not in unidades:
+            unidades.append(codigo)
+    if not unidades:
+        raise HTTPException(status_code=400, detail="Debe seleccionar al menos una sucursal")
+    if body.fecha_fin < body.fecha_inicio:
+        raise HTTPException(status_code=400, detail="La fecha fin no puede ser anterior a la fecha inicio")
+    if (body.fecha_fin - body.fecha_inicio).days + 1 > 1096:
+        raise HTTPException(status_code=400, detail="El rango máximo por trabajo es de 1096 días")
+    for codigo in unidades:
+        if not _get_unidad_config(codigo):
+            raise HTTPException(status_code=400, detail=f"Unidad '{codigo}' no encontrada")
+    active = find_active()
+    if active:
+        return {"success": True, "reused_existing_job": True, **active}
+    payload = create_job(unidades, body.fecha_inicio, body.fecha_fin, body.motivo, current_user.get("email","unknown"))
+    background_tasks.add_task(run_job, int(payload["job_id"]))
+    return {"success": True, "reused_existing_job": False, **payload}
+
+
+@router.get("/resync/comercial-range/active")
+def obtener_comercial_range_activo(
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN")),
+):
+    from modules.comercial.resync_batch_jobs import find_active
+    active = find_active()
+    return {"success": True, "active": bool(active), **(active or {})}
+
+
+@router.get("/resync/comercial-range/jobs/{job_id}")
+def obtener_comercial_range_job(
+    job_id: int,
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN")),
+):
+    from modules.comercial.resync_batch_jobs import get_job
+    payload = get_job(job_id)
+    if not payload:
+        raise HTTPException(status_code=404, detail="Trabajo Comercial no encontrado")
+    return {"success": True, **payload}
+
+
+@router.post("/resync/comercial-range/jobs/{job_id}/resume", status_code=202)
+def reanudar_comercial_range_job(
+    job_id: int,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN")),
+):
+    from modules.comercial.resync_batch_jobs import queue_resume, run_job
+    try:
+        payload = queue_resume(job_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    if payload.get("status") != "JOB_SUCCESS":
+        background_tasks.add_task(run_job, int(job_id))
+    return {"success": True, **payload}
 
 
 @router.post("/resync/execute", response_model=ResyncResponse)
