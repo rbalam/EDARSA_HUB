@@ -1,0 +1,33 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-SEP01-09-5U-COVERAGE-R1-CARLOS-20261001",
+  "objective": "Auditar exclusivamente en EDARSAHUB la cobertura de vendedor_nombre y mesa en tickets historicos del 1 al 9 de septiembre de 2026 para 130MID, 130QRO, CIENFUEGOS, ESTELAR y ORIGEN. Solo lectura. No consultar POS. No modificar codigo ni datos. No tocar Produccion.",
+  "mode": "READ_ONLY_SQL",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Tablero Comercial 3"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "coverage_sep01_09_5u",
+          "sql": "WITH T AS (\nSELECT\n UPPER(LTRIM(RTRIM(unidad_negocio_id))) unidad,\n CONVERT(varchar(128),numero_ticket) ticket,\n fecha_operacion,\n MAX(CASE WHEN NULLIF(LTRIM(RTRIM(vendedor_nombre)),'') IS NULL THEN 0 ELSE 1 END) tiene_vendedor,\n MAX(CASE WHEN NULLIF(LTRIM(RTRIM(mesa)),'') IS NULL THEN 0 ELSE 1 END) tiene_mesa\nFROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK)\nWHERE UPPER(LTRIM(RTRIM(unidad_negocio_id))) IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN')\nAND fecha_operacion BETWEEN '2026-09-01' AND '2026-09-09'\nAND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0\nGROUP BY UPPER(LTRIM(RTRIM(unidad_negocio_id))), CONVERT(varchar(128),numero_ticket), fecha_operacion\n)\nSELECT unidad, COUNT(*) tickets_total,\nSUM(tiene_vendedor) tickets_con_vendedor,\nSUM(tiene_mesa) tickets_con_mesa\nFROM T\nGROUP BY unidad\nORDER BY unidad"
+        },
+        {
+          "name": "coverage_sep01_09_by_day",
+          "sql": "WITH T AS (\nSELECT\n UPPER(LTRIM(RTRIM(unidad_negocio_id))) unidad,\n CONVERT(varchar(128),numero_ticket) ticket,\n fecha_operacion,\n MAX(CASE WHEN NULLIF(LTRIM(RTRIM(vendedor_nombre)),'') IS NULL THEN 0 ELSE 1 END) tiene_vendedor,\n MAX(CASE WHEN NULLIF(LTRIM(RTRIM(mesa)),'') IS NULL THEN 0 ELSE 1 END) tiene_mesa\nFROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK)\nWHERE UPPER(LTRIM(RTRIM(unidad_negocio_id))) IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN')\nAND fecha_operacion BETWEEN '2026-09-01' AND '2026-09-09'\nAND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0\nGROUP BY UPPER(LTRIM(RTRIM(unidad_negocio_id))), CONVERT(varchar(128),numero_ticket), fecha_operacion\n)\nSELECT unidad, CONVERT(varchar(10),fecha_operacion,120) fecha_operacion,\nCOUNT(*) tickets_total, SUM(tiene_vendedor) tickets_con_vendedor,\nSUM(tiene_mesa) tickets_con_mesa\nFROM T\nGROUP BY unidad, fecha_operacion\nORDER BY fecha_operacion, unidad"
+        }
+      ]
+    }
+  ]
+}
