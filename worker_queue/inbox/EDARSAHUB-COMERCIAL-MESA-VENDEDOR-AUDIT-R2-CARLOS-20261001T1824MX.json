@@ -1,0 +1,42 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-MESA-VENDEDOR-AUDIT-R2-CARLOS-20261001T1824MX",
+  "objective": "Auditar en modo solo lectura el estado real de MESA y VENDEDOR en EDARSAHUB para ventas abiertas MPRO y para los dos canarios historicos definidos en la continuidad del Tablero Comercial 3. No consultar POS, no modificar codigo ni datos y no tocar Produccion.",
+  "mode": "READ_ONLY_SQL",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Tablero Comercial 3"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 100,
+      "queries": [
+        {
+          "name": "open_mpro_latest_coverage",
+          "sql": "WITH latest AS (\n  SELECT\n    unidad_negocio_id,\n    fecha_operacion,\n    snapshot_timestamp,\n    detalle_abiertas_json,\n    ROW_NUMBER() OVER (\n      PARTITION BY UPPER(LTRIM(RTRIM(unidad_negocio_id)))\n      ORDER BY snapshot_timestamp DESC\n    ) AS rn\n  FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK)\n  WHERE UPPER(LTRIM(RTRIM(unidad_negocio_id))) IN ('ORIGEN','130QRO')\n)\nSELECT\n  l.unidad_negocio_id,\n  CONVERT(varchar(10), l.fecha_operacion, 120) AS fecha_operacion,\n  l.snapshot_timestamp,\n  COUNT(j.folio) AS detalle_filas,\n  SUM(CASE WHEN NULLIF(LTRIM(RTRIM(j.mesa)),'') IS NOT NULL THEN 1 ELSE 0 END) AS filas_con_mesa,\n  SUM(CASE WHEN NULLIF(LTRIM(RTRIM(j.vendedor_nombre)),'') IS NOT NULL THEN 1 ELSE 0 END) AS filas_con_vendedor\nFROM latest l\nOUTER APPLY OPENJSON(COALESCE(l.detalle_abiertas_json,'[]'))\nWITH (\n  folio nvarchar(128) '$.folio',\n  mesa nvarchar(100) '$.mesa',\n  vendedor_nombre nvarchar(255) '$.vendedor_nombre'\n) j\nWHERE l.rn = 1\nGROUP BY l.unidad_negocio_id, l.fecha_operacion, l.snapshot_timestamp"
+        },
+        {
+          "name": "open_mpro_latest_samples",
+          "sql": "WITH latest AS (\n  SELECT\n    unidad_negocio_id,\n    fecha_operacion,\n    snapshot_timestamp,\n    detalle_abiertas_json,\n    ROW_NUMBER() OVER (\n      PARTITION BY UPPER(LTRIM(RTRIM(unidad_negocio_id)))\n      ORDER BY snapshot_timestamp DESC\n    ) AS rn\n  FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK)\n  WHERE UPPER(LTRIM(RTRIM(unidad_negocio_id))) IN ('ORIGEN','130QRO')\n)\nSELECT TOP 30\n  l.unidad_negocio_id,\n  CONVERT(varchar(10), l.fecha_operacion, 120) AS fecha_operacion,\n  j.folio,\n  j.mesa,\n  j.vendedor_nombre\nFROM latest l\nCROSS APPLY OPENJSON(COALESCE(l.detalle_abiertas_json,'[]'))\nWITH (\n  folio nvarchar(128) '$.folio',\n  mesa nvarchar(100) '$.mesa',\n  vendedor_nombre nvarchar(255) '$.vendedor_nombre'\n) j\nWHERE l.rn = 1\nORDER BY l.unidad_negocio_id, j.folio"
+        },
+        {
+          "name": "canary_cienfuegos_20260801_104029",
+          "sql": "SELECT\n  unidad_negocio_id,\n  CONVERT(varchar(10), fecha_operacion, 120) AS fecha_operacion,\n  CONVERT(varchar(128), numero_ticket) AS numero_ticket,\n  COUNT(*) AS lineas,\n  MAX(NULLIF(LTRIM(RTRIM(vendedor_nombre)),'')) AS vendedor_nombre,\n  MAX(NULLIF(LTRIM(RTRIM(mesa)),'')) AS mesa\nFROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK)\nWHERE UPPER(LTRIM(RTRIM(unidad_negocio_id))) = 'CIENFUEGOS'\n  AND fecha_operacion = '2026-08-01'\n  AND CONVERT(varchar(128), numero_ticket) = '104029'\n  AND ISNULL(activo,1) = 1\nGROUP BY unidad_negocio_id, fecha_operacion, CONVERT(varchar(128), numero_ticket)"
+        },
+        {
+          "name": "canary_130qro_20260902_210044603",
+          "sql": "SELECT\n  unidad_negocio_id,\n  CONVERT(varchar(10), fecha_operacion, 120) AS fecha_operacion,\n  CONVERT(varchar(128), numero_ticket) AS numero_ticket,\n  COUNT(*) AS lineas,\n  MAX(NULLIF(LTRIM(RTRIM(vendedor_nombre)),'')) AS vendedor_nombre,\n  MAX(NULLIF(LTRIM(RTRIM(mesa)),'')) AS mesa\nFROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK)\nWHERE UPPER(LTRIM(RTRIM(unidad_negocio_id))) = '130QRO'\n  AND fecha_operacion = '2026-09-02'\n  AND CONVERT(varchar(128), numero_ticket) = '21-0044603'\n  AND ISNULL(activo,1) = 1\nGROUP BY unidad_negocio_id, fecha_operacion, CONVERT(varchar(128), numero_ticket)"
+        }
+      ]
+    }
+  ]
+}
