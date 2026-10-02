@@ -1,0 +1,111 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-RESTORE-TICKET-DETAIL-R37-CARLOS-20261002",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "7ac96234634a9c8b6e92affa4036a16753a59ed5",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Sincronizador: restaurar inmediatamente el detalle real por producto de tickets cerrados MPRO sin perder la conciliacion encabezado-detalle lograda en R35/R36. R36 demostro 6 tickets conciliados pero el JSON quedo con 6 filas resumen porque Venta_Encabezado aparece antes que las lineas de Venta. Para folios canonicos sin detalle real en Venta, recuperar las lineas desde Comanda_Detalle de la misma API local, conservando total/PAX/propina del resumen canonico. El texto DETALLE RESUMIDO debe quedar solo como ultimo recurso si tampoco existe Comanda_Detalle. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+      "old": "    QUERY_MPRO_DETALLE_CERRADAS_CANONICAS,\n    QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_RESUMEN,\n    QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES,",
+      "new": "    QUERY_MPRO_DETALLE_CERRADAS_CANONICAS,\n    QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_COMANDA,\n    QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_RESUMEN,\n    QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/ticket_snapshot.py",
+      "old": "QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES = \"\"\"",
+      "new": "QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_COMANDA = \"\"\"\nSELECT\n    CONVERT(varchar(64), c.Co_Folio) AS folio,\n    CONVERT(varchar(64), c.Co_Folio) AS folio_origen,\n    'CERRADA' AS estado_ticket,\n    'MPRO' AS sistema_origen,\n    MIN(c.Co_Fecha) AS fecha_hora,\n    MAX(ISNULL(c.Co_Personas, 0)) AS pax,\n    MAX(ISNULL(c.Co_Propina, 0)) AS propina,\n    MAX(CONVERT(varchar(100), c.Vn_Cve_Vendedor)) AS vendedor_id,\n    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(200), vnd.Vn_Descripcion))), '')) AS vendedor_nombre,\n    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), c.Co_Referencia))), '')) AS mesa,\n    SUM(SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))))\n        OVER (PARTITION BY c.Co_Folio) AS total_ticket,\n    COALESCE(\n        NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),\n        'SIN_CODIGO'\n    ) AS producto_codigo,\n    COALESCE(\n        MAX(CONVERT(varchar(300), d.Cd_Concepto)),\n        'VENTA SIN DETALLE DE PRODUCTO'\n    ) AS producto_nombre,\n    SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4))) AS cantidad,\n    CASE\n        WHEN SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4))) <> 0\n        THEN\n            SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4)))\n            / SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4)))\n        ELSE MAX(CAST(ISNULL(d.Cd_Precio, 0) AS decimal(18,4)))\n    END AS precio_unitario,\n    SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS importe_bruto,\n    CAST(0 AS decimal(9,4)) AS descuento_pct,\n    CAST(0 AS decimal(18,4)) AS descuento_producto,\n    SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS importe_neto_producto,\n    CAST(0 AS decimal(18,4)) AS descuento_encabezado_reportado,\n    CAST(0 AS decimal(18,4)) AS descuento_total_reportado\nFROM Comanda c\nINNER JOIN Comanda_Detalle d\n    ON d.Co_Folio = c.Co_Folio\n   AND d.Es_Cve_Estado = 'AC'\n   AND d.Fecha_Baja IS NULL\nLEFT JOIN Vendedor vnd\n    ON vnd.Vn_Cve_Vendedor = c.Vn_Cve_Vendedor\nWHERE CAST(c.Co_Fecha AS date) = '{fecha_operacion}'\n  AND c.Sc_Cve_Sucursal = '{sucursal_id}'\n  AND EXISTS (\n      SELECT 1\n      FROM Venta_Encabezado ve\n      WHERE ve.Vn_Documento = c.Co_Folio\n        AND ve.Sc_Cve_Sucursal = c.Sc_Cve_Sucursal\n        AND CAST(ve.Vn_Fecha AS date) = '{fecha_operacion}'\n        AND ve.Es_Cve_Estado IN ('AC', 'FA')\n        AND ve.Fecha_Baja IS NULL\n  )\nGROUP BY\n    c.Co_Folio,\n    COALESCE(\n        NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),\n        'SIN_CODIGO'\n    )\nORDER BY c.Co_Folio, producto_codigo\n\"\"\"\n\n\nQUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES = \"\"\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+      "old": "def _summarize_mpro_ticket_rows(rows):",
+      "new": "def _prefer_real_mpro_detail_rows(\n    primary_rows,\n    fallback_rows,\n):\n    \"\"\"Prefiere detalle real por producto y usa Comanda para folios sin detalle Venta.\"\"\"\n    def is_real(row):\n        code = str(row.get(\"producto_codigo\") or \"\").strip().upper()\n        name = str(row.get(\"producto_nombre\") or \"\").strip().upper()\n        return (\n            code not in {\"\", \"SIN_CODIGO\"}\n            and \"DETALLE RESUMIDO\" not in name\n            and \"VENTA SIN DETALLE DE PRODUCTO\" not in name\n        )\n\n    primary_real_folios = {\n        str(row.get(\"folio\") or \"\").strip()\n        for row in (primary_rows or [])\n        if str(row.get(\"folio\") or \"\").strip() and is_real(row)\n    }\n\n    result = [\n        dict(row)\n        for row in (primary_rows or [])\n        if str(row.get(\"folio\") or \"\").strip() in primary_real_folios\n    ]\n\n    for row in fallback_rows or []:\n        folio = str(row.get(\"folio\") or \"\").strip()\n        if not folio or folio in primary_real_folios:\n            continue\n        if is_real(row):\n            result.append(dict(row))\n\n    return result\n\n\ndef _summarize_mpro_ticket_rows(rows):",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+      "old": "                    if rows_resumen_canonico:\n                        closed_sales_source = \"CANONICAL_VENTA_ENCABEZADO\"\n                        closed_sales_is_provisional = False\n                        rows_resumen_cerradas = rows_resumen_canonico\n                        query_detalle_cerradas = (\n                            QUERY_MPRO_DETALLE_CERRADAS_CANONICAS.format(\n                                sucursal_id=sucursal_id,\n                                fecha_operacion=fecha_operacion_str,\n                            )\n                        )\n                    else:\n                        query_resumen_provisional = (\n                            QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES_RESUMEN.format(\n                                sucursal_id=sucursal_id,\n                                fecha_operacion=fecha_operacion_str,\n                            )\n                        )\n                        rows_resumen_provisional, status_resumen_provisional = (\n                            _execute_query_via_api_local(\n                                api_config,\n                                query_resumen_provisional,\n                            )\n                        )\n                        if status_resumen_provisional != \"API_LOCAL_OK\":\n                            raise Exception(\n                                \"SOURCE_ERROR: resumen MPRO cerrado provisional \"\n                                f\"{status_resumen_provisional}\"\n                            )\n                        closed_sales_source = \"PROVISIONAL_COMANDA\"\n                        closed_sales_is_provisional = True\n                        rows_resumen_cerradas = rows_resumen_provisional\n                        query_detalle_cerradas = (\n                            QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES.format(\n                                sucursal_id=sucursal_id,\n                                fecha_operacion=fecha_operacion_str,\n                            )\n                        )\n\n                    detalle_rows_cerradas, detalle_cerradas_status = (\n                        _execute_query_via_api_local(\n                            api_config,\n                            query_detalle_cerradas,\n                        )\n                    )\n                    if detalle_cerradas_status != \"API_LOCAL_OK\":\n                        logger.warning(\n                            \"[SYNC_ABIERTAS_V2] %s: \"\n                            \"detalle MPRO cerrado no disponible (%s); \"\n                            \"se usa resumen por folio\",\n                            nombre,\n                            detalle_cerradas_status,\n                        )\n                        detalle_rows_cerradas = []\n\n",
+      "new": "                    if rows_resumen_canonico:\n                        closed_sales_source = \"CANONICAL_VENTA_ENCABEZADO\"\n                        closed_sales_is_provisional = False\n                        rows_resumen_cerradas = rows_resumen_canonico\n                        query_detalle_cerradas = (\n                            QUERY_MPRO_DETALLE_CERRADAS_CANONICAS.format(\n                                sucursal_id=sucursal_id,\n                                fecha_operacion=fecha_operacion_str,\n                            )\n                        )\n                    else:\n                        query_resumen_provisional = (\n                            QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES_RESUMEN.format(\n                                sucursal_id=sucursal_id,\n                                fecha_operacion=fecha_operacion_str,\n                            )\n                        )\n                        rows_resumen_provisional, status_resumen_provisional = (\n                            _execute_query_via_api_local(\n                                api_config,\n                                query_resumen_provisional,\n                            )\n                        )\n                        if status_resumen_provisional != \"API_LOCAL_OK\":\n                            raise Exception(\n                                \"SOURCE_ERROR: resumen MPRO cerrado provisional \"\n                                f\"{status_resumen_provisional}\"\n                            )\n                        closed_sales_source = \"PROVISIONAL_COMANDA\"\n                        closed_sales_is_provisional = True\n                        rows_resumen_cerradas = rows_resumen_provisional\n                        query_detalle_cerradas = (\n                            QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES.format(\n                                sucursal_id=sucursal_id,\n                                fecha_operacion=fecha_operacion_str,\n                            )\n                        )\n\n                    detalle_rows_cerradas, detalle_cerradas_status = (\n                        _execute_query_via_api_local(\n                            api_config,\n                            query_detalle_cerradas,\n                        )\n                    )\n                    if detalle_cerradas_status != \"API_LOCAL_OK\":\n                        logger.warning(\n                            \"[SYNC_ABIERTAS_V2] %s: \"\n                            \"detalle MPRO cerrado no disponible (%s)\",\n                            nombre,\n                            detalle_cerradas_status,\n                        )\n                        detalle_rows_cerradas = []\n\n                    # Venta puede publicar el encabezado antes que sus lineas.\n                    # En ese lapso NO degradar el ticket a \"DETALLE RESUMIDO\":\n                    # recuperar las lineas de producto desde Comanda_Detalle y\n                    # conservar del resumen canónico solo total/PAX/propina.\n                    if (\n                        closed_sales_source\n                        == \"CANONICAL_VENTA_ENCABEZADO\"\n                        and rows_resumen_cerradas\n                    ):\n                        query_detalle_comanda = (\n                            QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_COMANDA.format(\n                                sucursal_id=sucursal_id,\n                                fecha_operacion=fecha_operacion_str,\n                            )\n                        )\n                        rows_detalle_comanda, status_detalle_comanda = (\n                            _execute_query_via_api_local(\n                                api_config,\n                                query_detalle_comanda,\n                            )\n                        )\n                        if status_detalle_comanda == \"API_LOCAL_OK\":\n                            detalle_rows_cerradas = (\n                                _prefer_real_mpro_detail_rows(\n                                    detalle_rows_cerradas,\n                                    rows_detalle_comanda,\n                                )\n                            )\n                        else:\n                            logger.warning(\n                                \"[SYNC_ABIERTAS_V2] %s: \"\n                                \"fallback Comanda detalle cerrado no disponible (%s)\",\n                                nombre,\n                                status_detalle_comanda,\n                            )\n\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_comercial_mpro_restore_closed_detail_r37.py",
+      "content": "from pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nSNAPSHOT = ROOT / \"backend/modules/comercial_v2/ticket_snapshot.py\"\nSYNC = ROOT / \"backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py\"\n\n\ndef test_closed_canonical_has_comanda_product_fallback():\n    snapshot = SNAPSHOT.read_text(encoding=\"utf-8\")\n    sync = SYNC.read_text(encoding=\"utf-8\")\n    assert \"QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_COMANDA\" in snapshot\n    fallback = snapshot.split(\n        \"QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_COMANDA\", 1\n    )[1].split(\n        \"QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES\", 1\n    )[0]\n    assert \"Comanda_Detalle d\" in fallback\n    assert \"EXISTS (\" in fallback\n    assert \"Venta_Encabezado ve\" in fallback\n    assert \"d.Cd_Concepto\" in fallback\n    assert \"d.Pr_Cve_Producto\" in fallback\n\n    assert \"def _prefer_real_mpro_detail_rows(\" in sync\n    assert \"QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_COMANDA.format\" in sync\n    assert \"_prefer_real_mpro_detail_rows(\" in sync\n\n\ndef test_summary_is_only_last_resort_not_preferred_detail():\n    sync = SYNC.read_text(encoding=\"utf-8\")\n    helper = sync.split(\n        \"def _prefer_real_mpro_detail_rows(\", 1\n    )[1].split(\n        \"def _summarize_mpro_ticket_rows\", 1\n    )[0]\n    assert '\"DETALLE RESUMIDO\" not in name' in helper\n    assert '\"VENTA SIN DETALLE DE PRODUCTO\" not in name' in helper\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+        "backend/modules/comercial_v2/ticket_snapshot.py",
+        "backend/tests/test_comercial_mpro_restore_closed_detail_r37.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_mpro_restore_closed_detail_r37.py",
+        "backend/tests/test_comercial_mpro_same_snapshot_r33.py",
+        "backend/tests/test_comercial_mpro_header_detail_atomic_r29.py",
+        "backend/tests/test_comercial_mpro_daily_detail_api_local_r18.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "max_rows": 50,
+      "queries": [
+        {
+          "name": "origen_closed_comanda_detail_available_r37",
+          "sql": "SELECT c.Co_Folio AS folio, COUNT(*) AS lineas_detalle, COUNT(DISTINCT d.Pr_Cve_Producto) AS productos, SUM(ISNULL(d.Cd_Importe,0)) AS importe_comanda FROM Comanda c INNER JOIN Comanda_Detalle d ON d.Co_Folio=c.Co_Folio AND d.Es_Cve_Estado='AC' AND d.Fecha_Baja IS NULL WHERE CAST(c.Co_Fecha AS date)='2026-10-02' AND c.Sc_Cve_Sucursal='0023' AND EXISTS (SELECT 1 FROM Venta_Encabezado ve WHERE ve.Vn_Documento=c.Co_Folio AND ve.Sc_Cve_Sucursal=c.Sc_Cve_Sucursal AND CAST(ve.Vn_Fecha AS date)='2026-10-02' AND ve.Es_Cve_Estado IN ('AC','FA') AND ve.Fecha_Baja IS NULL) GROUP BY c.Co_Folio ORDER BY c.Co_Folio"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+          "backend/modules/comercial_v2/ticket_snapshot.py"
+        ],
+        "search_terms": [
+          "QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_COMANDA",
+          "_prefer_real_mpro_detail_rows",
+          "Comanda_Detalle",
+          "Venta_Encabezado"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
