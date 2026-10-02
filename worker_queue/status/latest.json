@@ -4,37 +4,43 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "d9b6de1edd86c4fd8e6413f21612c2e70cdd2d0a",
-  "generated_at_utc": "2026-10-02T16:24:29Z",
+  "generated_at_utc": "2026-10-02T16:26:19Z",
   "history": {
-    "done_total_local": 1289,
+    "done_total_local": 1290,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1145,
-    "results_total_local": 2226
+    "results_total_local": 2227
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2613,
+      "age_seconds": 2723,
       "job_id": "EDARSAHUB-COMERCIAL-OPEN-DAY-ORIGEN-TODAY-R22-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3232,
+      "age_seconds": 3342,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-MPRO-DETAIL-DIAG-R21-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2,
+      "age_seconds": 112,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-TODAY-HUB-VERIFY-R24-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1314,
+      "age_seconds": 101,
+      "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-TODAY-POS-VERIFY-R25-CARLOS-20261002",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1423,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-TODAY-VERIFY-R23-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,15 +54,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "remote_development_sha": "d9b6de1edd86c4fd8e6413f21612c2e70cdd2d0a",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-02T16:24:22Z",
-    "last_receive_utc": "2026-10-02T16:24:27Z",
-    "last_terminal_utc": "2026-10-02T16:24:26Z",
+    "last_cycle_utc": "2026-10-02T16:25:39Z",
+    "last_receive_utc": "2026-10-02T16:25:34Z",
+    "last_terminal_utc": "2026-10-02T16:24:37Z",
     "pid": "13143",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "4aff06e7ceeb552f43b52ea95b57ff522cd36adf",
