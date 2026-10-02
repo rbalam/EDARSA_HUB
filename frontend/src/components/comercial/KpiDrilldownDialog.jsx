@@ -271,19 +271,13 @@ function TicketVentaModal({
   open,
   onClose,
   ticketPk,
-  serverId = null,
-  sucursal = '',
-  seleccion = null,
 }) {
   const [loading, setLoading] = useState(false);
   const [ticket, setTicket] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const comercialDirecto = Boolean(
-      serverId && seleccion?.folio && seleccion?.fecha
-    );
-    if (!open || (!ticketPk && !comercialDirecto)) return;
+    if (!open || !ticketPk) return;
 
     let active = true;
 
@@ -293,28 +287,6 @@ function TicketVentaModal({
       setError('');
 
       try {
-        if (comercialDirecto) {
-          const response = await api.get(
-            `/comercial/ticket-venta/${serverId}`,
-            {
-              params: {
-                sucursal,
-                folio: seleccion.folio,
-                fecha: String(seleccion.fecha).slice(0, 10),
-              },
-              timeout: 30000,
-            }
-          );
-          const ticketComercial = response.data?.ticket || null;
-
-          if (!ticketComercial) {
-            throw new Error('No se encontró información para este folio.');
-          }
-
-          if (active) setTicket(ticketComercial);
-          return;
-        }
-
         const response = await api.get(
           `/v2/comercial/analytics/tickets/${encodeURIComponent(ticketPk)}`,
           { timeout: 30000 }
@@ -391,9 +363,6 @@ function TicketVentaModal({
   }, [
     open,
     ticketPk,
-    serverId,
-    sucursal,
-    seleccion,
   ]);
 
   if (!open) return null;
@@ -657,69 +626,6 @@ export default function KpiDrilldownDialog({
           throw new Error('No se pudo resolver el período del detalle.');
         }
 
-        if (modoVentasDia) {
-          const serverId = unidad?.server_id;
-          const sucursal = (
-            unidad?.sucursal_id
-            || unidad?.sucursal
-            || unidadCodigo
-          );
-
-          if (!serverId) {
-            throw new Error(
-              'No se pudo resolver el servidor para el detalle de ventas del día.'
-            );
-          }
-
-          const response = await api.get(
-            `/comercial/detalle-ventas-agrupado/${serverId}`,
-            {
-              params: {
-                sucursal,
-                periodo: 'dia',
-                meses: String(
-                  new Date(`${ranges[0].start}T12:00:00`).getMonth() + 1
-                ).padStart(2, '0'),
-                anios: String(ranges[0].start).slice(0, 4),
-                nivel: 'auto',
-                page: 1,
-                limit: 5000,
-              },
-              timeout: 30000,
-            }
-          );
-
-          const payload = response.data || {};
-          if (payload.source_status === 'ERROR') {
-            throw new Error(
-              payload.source_message
-              || 'Error al consultar detalle de ventas del día.'
-            );
-          }
-
-          const pageRows = Array.isArray(payload.items)
-            ? payload.items
-            : [];
-
-          const normalized = pageRows.map((row) => ({
-            numero_ticket: String(row.folio || row.label || ''),
-            fecha_operacion: String(
-              row.fecha || ranges[0].start
-            ).slice(0, 10),
-            fecha_hora: row.fecha || ranges[0].start,
-            pax: toNumber(row.pax),
-            ventas: toNumber(row.total_venta ?? row.importe),
-            fuente_ticket: row.fuente_ticket || 'CERRADA',
-            _commercial_selection: {
-              folio: String(row.folio || row.label || ''),
-              fecha: String(row.fecha || ranges[0].start).slice(0, 10),
-            },
-          }));
-
-          if (active) setRows(normalized);
-          return;
-        }
-
         const allRows = [];
         const seen = new Set();
 
@@ -896,24 +802,17 @@ export default function KpiDrilldownDialog({
               <Receipt className="h-4 w-4 text-zinc-400 flex-shrink-0" />
               <span
                 className="font-mono text-xs font-medium underline decoration-dotted underline-offset-2 cursor-pointer"
-                onDoubleClick={() => {
-                  if (item.ticket_pk) {
+                onClick={() => {
+                  if (modoVentasDia && item.ticket_pk) {
                     setTicketSeleccionado({
                       ticketPk: item.ticket_pk,
                     });
-                  } else if (
-                    modoVentasDia
-                    && unidad?.server_id
-                    && item?._commercial_selection?.folio
-                  ) {
+                  }
+                }}
+                onDoubleClick={() => {
+                  if (!modoVentasDia && item.ticket_pk) {
                     setTicketSeleccionado({
-                      serverId: unidad.server_id,
-                      sucursal: (
-                        unidad?.sucursal_id
-                        || unidad?.sucursal
-                        || unidadCodigo
-                      ),
-                      seleccion: item._commercial_selection,
+                      ticketPk: item.ticket_pk,
                     });
                   }
                 }}
@@ -1010,7 +909,7 @@ export default function KpiDrilldownDialog({
   );
 
   const footerTotals = modoVentasDia
-    ? kpiTotals
+    ? totalsFor(rows)
     : expectedClosed;
 
   return (
@@ -1073,7 +972,9 @@ export default function KpiDrilldownDialog({
             )}
 
             <p className="text-xs text-zinc-500 mb-2 px-1">
-              Doble clic en un folio para abrir el ticket de venta.
+              {modoVentasDia
+                ? 'Selecciona un folio para abrir el ticket de venta.'
+                : 'Doble clic en un folio para abrir el ticket de venta.'}
             </p>
 
             <div className="flex-1 overflow-auto border rounded-lg">
@@ -1085,7 +986,7 @@ export default function KpiDrilldownDialog({
                       onClick={() => toggleSort('folio')}
                     >
                       <span className="inline-flex items-center gap-1">
-                        Período / Folio <ArrowUpDown className="h-3 w-3" />
+                        Período / Folio {!modoVentasDia && <ArrowUpDown className="h-3 w-3" />}
                       </span>
                     </th>
                     <th
@@ -1093,7 +994,7 @@ export default function KpiDrilldownDialog({
                       onClick={() => toggleSort('fecha')}
                     >
                       <span className="inline-flex items-center gap-1">
-                        Fecha <ArrowUpDown className="h-3 w-3" />
+                        Fecha {!modoVentasDia && <ArrowUpDown className="h-3 w-3" />}
                       </span>
                     </th>
                     <th className="py-2 px-3 text-right">Folios</th>
@@ -1102,7 +1003,7 @@ export default function KpiDrilldownDialog({
                       onClick={() => toggleSort('pax')}
                     >
                       <span className="inline-flex items-center gap-1">
-                        PAX <ArrowUpDown className="h-3 w-3" />
+                        PAX {!modoVentasDia && <ArrowUpDown className="h-3 w-3" />}
                       </span>
                     </th>
                     <th
@@ -1110,7 +1011,7 @@ export default function KpiDrilldownDialog({
                       onClick={() => toggleSort('importe')}
                     >
                       <span className="inline-flex items-center gap-1 justify-end w-full">
-                        Total Venta <ArrowUpDown className="h-3 w-3" />
+                        Total Venta {!modoVentasDia && <ArrowUpDown className="h-3 w-3" />}
                       </span>
                     </th>
                   </tr>
@@ -1183,11 +1084,13 @@ export default function KpiDrilldownDialog({
               </p>
             </div>
 
-            <p className="mt-2 text-xs text-zinc-500">
-              El detalle individual contiene únicamente cuentas cerradas. Las
-              cuentas abiertas y cualquier cerrado aún sin detalle se presentan
-              sólo como agregados de conciliación; no se consulta el POS en vivo.
-            </p>
+            {!modoVentasDia && (
+              <p className="mt-2 text-xs text-zinc-500">
+                El detalle individual contiene únicamente cuentas cerradas. Las
+                cuentas abiertas y cualquier cerrado aún sin detalle se presentan
+                sólo como agregados de conciliación; no se consulta el POS en vivo.
+              </p>
+            )}
           </div>
         )}
       </DialogContent>
@@ -1198,9 +1101,6 @@ export default function KpiDrilldownDialog({
           open={true}
           onClose={() => setTicketSeleccionado(null)}
           ticketPk={ticketSeleccionado.ticketPk || null}
-          serverId={ticketSeleccionado.serverId || null}
-          sucursal={ticketSeleccionado.sucursal || ''}
-          seleccion={ticketSeleccionado.seleccion || null}
         />
       )}
     </>
