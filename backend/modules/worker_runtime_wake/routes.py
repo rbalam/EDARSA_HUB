@@ -14,6 +14,7 @@ import fcntl
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -65,6 +66,22 @@ WAKE_ROUTE_VERSION = "r34-startup-selfheal"
 _SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
+def _git_binary() -> str:
+    """Resolve Git without depending exclusively on Supervisor PATH."""
+    resolved = shutil.which("git")
+    if resolved:
+        return resolved
+
+    for candidate in ("/usr/bin/git", "/usr/local/bin/git"):
+        if Path(candidate).is_file() and os.access(candidate, os.X_OK):
+            return candidate
+
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="worker runtime git executable unavailable",
+    )
+
+
 def _github_api_queue_sha() -> str:
     request = urllib.request.Request(
         "https://api.github.com/repos/rbalam/EDARSA_HUB/git/ref/heads/worker/requests",
@@ -102,7 +119,7 @@ def _remote_queue_sha() -> str:
     for label, remote in (("origin", "origin"), ("canonical", CANONICAL_QUEUE_REMOTE)):
         try:
             completed = subprocess.run(
-                ["git", "ls-remote", remote, QUEUE_REF],
+                [_git_binary(), "ls-remote", remote, QUEUE_REF],
                 cwd=str(REPO_ROOT),
                 check=False,
                 capture_output=True,
@@ -143,7 +160,7 @@ def _remote_queue_sha() -> str:
 def _runtime_git(*args: str, timeout: int = 30) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
-            ["git", *args],
+            [_git_binary(), *args],
             cwd=str(REPO_ROOT),
             check=False,
             capture_output=True,
@@ -232,7 +249,7 @@ def _converge_development_if_safe() -> dict[str, str]:
 def _current_worker_code_tree() -> str:
     try:
         completed = subprocess.run(
-            ["git", "rev-parse", WORKER_CODE_TREE_SPEC],
+            [_git_binary(), "rev-parse", WORKER_CODE_TREE_SPEC],
             cwd=str(REPO_ROOT),
             check=False,
             capture_output=True,

@@ -44,3 +44,18 @@ def test_wake_git_calls_preserve_process_environment():
     text = ROUTE.read_text(encoding='utf-8')
     assert 'import os' in text
     assert text.count('env={**os.environ, "GIT_TERMINAL_PROMPT": "0"}') >= 3
+
+
+
+def test_wake_resolves_git_when_supervisor_path_is_reduced():
+    text = ROUTE.read_text(encoding='utf-8')
+    assert 'import shutil' in text
+    assert 'def _git_binary() -> str:' in text
+    assert 'shutil.which("git")' in text
+    assert '"/usr/bin/git"' in text
+    assert '"/usr/local/bin/git"' in text
+    assert 'worker runtime git executable unavailable' in text
+    assert '[_git_binary(), "ls-remote", remote, QUEUE_REF]' in text
+    assert '[_git_binary(), *args]' in text
+    assert '[_git_binary(), "rev-parse", WORKER_CODE_TREE_SPEC]' in text
+    assert '["git",' not in text
