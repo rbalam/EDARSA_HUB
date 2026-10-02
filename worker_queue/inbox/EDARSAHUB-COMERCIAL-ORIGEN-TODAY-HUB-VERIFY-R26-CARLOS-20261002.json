@@ -1,0 +1,31 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-TODAY-HUB-VERIFY-R26-CARLOS-20261002",
+  "objective": "Verificar en solo lectura el snapshot persistido real de ORIGEN para 2026-10-02 usando las columnas existentes de dbo.Comercial_Ventas_Dia_Abiertas_v2. Confirmar ventas, tickets, PAX y si detalle_abiertas_json esta presente y poblado. No tocar Produccion.",
+  "mode": "READ_ONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d9b6de1edd86c4fd8e6413f21612c2e70cdd2d0a",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 1,
+      "queries": [
+        {
+          "name": "origen_today_hub_snapshot_actual_columns",
+          "sql": "SELECT TOP 1 * FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK) WHERE UPPER(LTRIM(RTRIM(unidad_negocio_id)))='ORIGEN' AND fecha_operacion='2026-10-02' ORDER BY snapshot_timestamp DESC"
+        }
+      ]
+    }
+  ]
+}
