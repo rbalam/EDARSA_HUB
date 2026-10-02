@@ -1,0 +1,143 @@
+{
+  "base_sha": "2447897975b6812c693c1bb340d6550c5931b5fb",
+  "blockers": [],
+  "candidate_sha": "c54b546cf0f6937c739dc3c62b6be90bb60609b7",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-10-02T17:05:11Z",
+  "development_sha": "c54b546cf0f6937c739dc3c62b6be90bb60609b7",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+    "backend/modules/comercial_v2/ticket_snapshot.py",
+    "backend/tests/test_comercial_mpro_header_detail_atomic_r29.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-HEADER-DETAIL-ATOMIC-R29-CARLOS-20261002",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-10-02T17:05:29Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.comercial_v2",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "decimal",
+              "json",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "query_mpro_detalle_abiertas_resumen",
+              "query_mpro_detalle_cerradas_canonicas_resumen",
+              "query_mpro_detalle_cerradas_provisionales_resumen"
+            ],
+            "path": "backend/modules/comercial_v2/ticket_snapshot.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_json_default",
+              "_number",
+              "serialize_open_detail_rows"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "core.empresa_resolver",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "core.utils.operational_window",
+              "datetime",
+              "decimal",
+              "logging",
+              "modules.comercial_v2.repository_comercial_edarsahub",
+              "modules.comercial_v2.schemas",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "modules.comercial_v2.ticket_snapshot",
+              "modules.integrations_runtime.sync_ledger",
+              "os",
+              "pytz",
+              "requests",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "necesita_resumen_cerradas",
+              "query_mpro_detalle_abiertas_resumen",
+              "query_mpro_detalle_cerradas_canonicas_resumen",
+              "query_mpro_detalle_cerradas_provisionales_resumen",
+              "source_error: snapshot mpro incompleto"
+            ],
+            "path": "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_acquire_sync_lock_sync",
+              "_coerce_mx_datetime",
+              "_execute_query_via_api_local",
+              "_get_api_local_config",
+              "_get_existing_ventas_dia",
+              "_get_unidades_from_edarsahub",
+              "_release_sync_lock_sync",
+              "execute_sync_comercial_abiertas_v2",
+              "run_sync_comercial_abiertas_v2_manual",
+              "select_mpro_closed_sales"
+            ],
+            "tables_referenced": [
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "Servidores_Conexiones",
+              "Sync_Control_Ejecuciones",
+              "Unidades_Negocio"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 2,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-02T17:05:05Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
