@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-RANGE-ACTIVE-DIAG-R5-CARLOS-20261002",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2447897975b6812c693c1bb340d6550c5931b5fb",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Sincronizador: diagnosticar el trabajo activo de re-sincronización Comercial por rango que lleva aproximadamente 30 minutos en ESTELAR para un solo día. Solo lectura; identificar estado, bloque, fase, último heartbeat/progreso y mensajes. No modificar datos ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "latest_comercial_range_jobs",
+          "sql": "SELECT TOP 5 ResyncLogID, Estado, Mensaje, UnidadCodigo, RegistrosAfectados, SolicitadoPor, FechaEjecucion, JSON_VALUE(Payload,'$.status') AS payload_status, JSON_VALUE(Payload,'$.current_unit') AS current_unit, JSON_VALUE(Payload,'$.current_block') AS current_block, JSON_VALUE(Payload,'$.current_phase') AS current_phase, JSON_VALUE(Payload,'$.percent_complete') AS percent_complete, JSON_VALUE(Payload,'$.updated_at_utc') AS updated_at_utc, JSON_VALUE(Payload,'$.created_at_utc') AS created_at_utc, JSON_VALUE(Payload,'$.successful_steps') AS successful_steps, JSON_VALUE(Payload,'$.failed_steps') AS failed_steps, JSON_VALUE(Payload,'$.completed_steps') AS completed_steps, JSON_VALUE(Payload,'$.total_steps') AS total_steps FROM dbo.Sistema_Sync_ResyncLog WHERE TipoSync='comercial_range_batch' ORDER BY ResyncLogID DESC"
+        }
+      ]
+    }
+  ]
+}
