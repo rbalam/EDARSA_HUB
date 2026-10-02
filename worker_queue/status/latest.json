@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "c54b546cf0f6937c739dc3c62b6be90bb60609b7",
-  "generated_at_utc": "2026-10-02T17:21:29Z",
+  "generated_at_utc": "2026-10-02T17:22:45Z",
   "history": {
     "done_total_local": 1295,
     "pending_total_local": 0,
@@ -16,55 +16,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1867,
+      "age_seconds": 1943,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-CLOSED-FOLIOS-DIAG-R28-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3423,
+      "age_seconds": 3499,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-TODAY-HUB-VERIFY-R24-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3185,
+      "age_seconds": 3261,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-TODAY-HUB-VERIFY-R26-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3412,
+      "age_seconds": 3488,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-TODAY-POS-VERIFY-R25-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2875,
+      "age_seconds": 2951,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-MULTIUNIT-UI-AUDIT-R4-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3284,
+      "age_seconds": 3360,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-MULTIUNIT-UI-R3-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 265,
+      "age_seconds": 341,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-ATOMIC-DIAG-R31-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 978,
+      "age_seconds": 1054,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-HEADER-DETAIL-ATOMIC-R29-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 584,
+      "age_seconds": 660,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-HEADER-DETAIL-VERIFY-R30-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,8 +84,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-02T17:21:28Z",
-    "last_receive_utc": "2026-10-02T17:21:23Z",
+    "last_cycle_utc": "2026-10-02T17:22:36Z",
+    "last_receive_utc": "2026-10-02T17:22:41Z",
     "last_terminal_utc": "2026-10-02T17:17:03Z",
     "pid": "13143",
     "runtime_fingerprint": {
