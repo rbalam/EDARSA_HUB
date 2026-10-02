@@ -1,0 +1,53 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-RANGE-ISOLATED-RUNNER-AUDIT-R13-CARLOS-20261002",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "87664002e4f1eba0c31c5155c0274916da1b669e",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Sincronizador: certificación final de solo lectura del R12 ya integrado. Validar que resync_batch_jobs.py compila y que usa el entrypoint certificado resync_comercial_range_worker.py en subproceso aislado, con timeout DRY/REAL, checkpoint de fase, cancelación y mismo lock sync_comercial_v2. No cambiar archivos ni tocar Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial/resync_batch_jobs.py",
+        "backend/scripts/resync_comercial_range_worker.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial/resync_batch_jobs.py",
+          "backend/scripts/resync_comercial_range_worker.py"
+        ],
+        "search_terms": [
+          "asyncio.create_subprocess_exec",
+          "resync_comercial_range_worker.py",
+          "DRY_TIMEOUT_SECONDS",
+          "REAL_TIMEOUT_SECONDS",
+          "phase_elapsed_seconds",
+          "CANCELLED_BY_USER",
+          "sync_comercial_v2"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 120
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
