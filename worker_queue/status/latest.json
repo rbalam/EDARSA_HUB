@@ -4,19 +4,19 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "d9b6de1edd86c4fd8e6413f21612c2e70cdd2d0a",
-  "generated_at_utc": "2026-10-02T15:40:21Z",
+  "generated_at_utc": "2026-10-02T15:41:39Z",
   "history": {
     "done_total_local": 1289,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1142,
-    "results_total_local": 2223
+    "rejected_total_local": 1143,
+    "results_total_local": 2224
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2914,
+      "age_seconds": 2992,
       "job_id": "EDARSAHUB-INVENTARIOS-AUDIT-HUB-R10-CARLOS-20261002",
       "reasons": [
         "INVALID_SCHEMA",
@@ -32,13 +32,19 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1394,
+      "age_seconds": 1472,
       "job_id": "EDARSAHUB-COMERCIAL-OPEN-DAY-ORIGEN-FORCE-R20-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 584,
+      "age_seconds": 43,
+      "job_id": "EDARSAHUB-COMERCIAL-OPEN-DAY-ORIGEN-TODAY-R22-CARLOS-20261002",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 662,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-MPRO-DETAIL-DIAG-R21-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
@@ -52,15 +58,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "remote_development_sha": "d9b6de1edd86c4fd8e6413f21612c2e70cdd2d0a",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-02T15:40:16Z",
-    "last_receive_utc": "2026-10-02T15:40:20Z",
-    "last_terminal_utc": "2026-10-02T15:30:36Z",
+    "last_cycle_utc": "2026-10-02T15:41:35Z",
+    "last_receive_utc": "2026-10-02T15:41:30Z",
+    "last_terminal_utc": "2026-10-02T15:40:55Z",
     "pid": "89181",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "4aff06e7ceeb552f43b52ea95b57ff522cd36adf",
