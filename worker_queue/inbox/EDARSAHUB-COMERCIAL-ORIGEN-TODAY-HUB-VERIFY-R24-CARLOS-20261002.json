@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d9b6de1edd86c4fd8e6413f21612c2e70cdd2d0a",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "mode": "READ_ONLY",
+  "actions": [],
+  "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-TODAY-HUB-VERIFY-R24-CARLOS-20261002",
+  "objective": "Verificar en solo lectura que el snapshot de ORIGEN para 2026-10-02 quedo persistido en EDARSAHUB con ventas abiertas, tickets, PAX y detalle presente. No tocar Produccion.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "origen_today_hub_snapshot_simple",
+          "sql": "SELECT TOP 1 unidad_negocio_id, fecha_operacion, snapshot_timestamp, sistema_origen, fuente_original, source_status, ventas_abiertas, ventas_cerradas_dia, total_estimado_dia, tickets_abiertos, tickets_cerrados_dia, pax_abiertos, CASE WHEN detalle_abiertas_json IS NULL OR LEN(detalle_abiertas_json)=0 THEN 0 ELSE 1 END AS detalle_presente, LEN(ISNULL(detalle_abiertas_json,'')) AS detalle_json_len FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK) WHERE UPPER(LTRIM(RTRIM(unidad_negocio_id)))='ORIGEN' AND fecha_operacion='2026-10-02' ORDER BY snapshot_timestamp DESC"
+        }
+      ]
+    }
+  ]
+}
