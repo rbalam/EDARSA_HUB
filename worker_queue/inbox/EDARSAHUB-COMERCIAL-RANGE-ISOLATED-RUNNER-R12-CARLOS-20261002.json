@@ -1,0 +1,88 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-RANGE-ISOLATED-RUNNER-R12-CARLOS-20261002",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b3197b1049745380d987ac7f4c88afc6d89e9366",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Sincronizador: corregir el histórico Comercial que puede quedar bloqueado en llamadas directas. Ejecutar DRY y REAL mediante el entrypoint certificado resync_comercial_range_worker.py en subproceso aislado, con checkpoint cada 5 segundos, timeout DRY 5 minutos y REAL 15 minutos, y cancelación efectiva del subproceso. Mantener el lock sync_comercial_v2 y la lógica de negocio existente. No tocar Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "import asyncio\nimport json\nfrom datetime import date, datetime, timedelta, timezone\nfrom typing import Any, Dict, List, Optional, Tuple",
+      "new": "import asyncio\nimport json\nimport os\nimport sys\nfrom datetime import date, datetime, timedelta, timezone\nfrom pathlib import Path\nfrom typing import Any, Dict, List, Optional, Tuple",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "BLOCK_DAYS = 5\nMAX_ATTEMPTS = 3\nSTALE_SECONDS = 7200\nTRANSIENT_MARKERS = (\"TIMEOUT\", \"TIMED OUT\", \"DEADLOCK\", \"CONNECTION\", \"API_LOCAL_ERROR\", \"POS_\")",
+      "new": "BLOCK_DAYS = 5\nMAX_ATTEMPTS = 3\nSTALE_SECONDS = 7200\nDRY_TIMEOUT_SECONDS = int(os.environ.get(\"COMERCIAL_RANGE_DRY_TIMEOUT_SECONDS\", \"300\"))\nREAL_TIMEOUT_SECONDS = int(os.environ.get(\"COMERCIAL_RANGE_REAL_TIMEOUT_SECONDS\", \"900\"))\nPOLL_SECONDS = 5\nENTRYPOINT = Path(__file__).resolve().parents[2] / \"scripts\" / \"resync_comercial_range_worker.py\"\nTRANSIENT_MARKERS = (\"TIMEOUT\", \"TIMED OUT\", \"DEADLOCK\", \"CONNECTION\", \"API_LOCAL_ERROR\", \"POS_\")",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "def _transient(result: Dict[str, Any]) -> bool:\n    text = json.dumps(result, default=str, ensure_ascii=False).upper()\n    return any(x in text for x in TRANSIENT_MARKERS)\n\ndef create_job",
+      "new": "def _transient(result: Dict[str, Any]) -> bool:\n    text = json.dumps(result, default=str, ensure_ascii=False).upper()\n    return any(x in text for x in TRANSIENT_MARKERS)\n\n\ndef _summary_from_stdout(stdout: str) -> Dict[str, Any]:\n    for line in reversed((stdout or \"\").splitlines()):\n        try:\n            item = json.loads(line.strip())\n        except Exception:\n            continue\n        if item.get(\"event\") == \"comercial_range_summary\":\n            return item\n    return {}\n\n\nasync def _terminate_process(proc):\n    if proc.returncode is not None:\n        return\n    proc.terminate()\n    try:\n        await asyncio.wait_for(proc.wait(), timeout=10)\n    except asyncio.TimeoutError:\n        proc.kill()\n        await proc.wait()\n\n\nasync def _run_entrypoint(job_id: int, payload: Dict[str, Any], unit: str, start: date, end: date, commit: bool) -> Dict[str, Any]:\n    timeout_seconds = REAL_TIMEOUT_SECONDS if commit else DRY_TIMEOUT_SECONDS\n    args = [\n        sys.executable, str(ENTRYPOINT),\n        \"--unidad\", unit,\n        \"--fecha-inicio\", start.isoformat(),\n        \"--fecha-fin\", end.isoformat(),\n    ]\n    if commit:\n        args.append(\"--commit\")\n    backend_dir = str(ENTRYPOINT.parents[1])\n    current_pythonpath = os.environ.get(\"PYTHONPATH\", \"\")\n    pythonpath = backend_dir if not current_pythonpath else backend_dir + os.pathsep + current_pythonpath\n    proc = await asyncio.create_subprocess_exec(\n        *args,\n        stdout=asyncio.subprocess.PIPE,\n        stderr=asyncio.subprocess.STDOUT,\n        cwd=backend_dir,\n        env={**os.environ, \"PYTHONUNBUFFERED\": \"1\", \"PYTHONPATH\": pythonpath},\n    )\n    communicate_task = asyncio.create_task(proc.communicate())\n    started = datetime.now(timezone.utc)\n    while not communicate_task.done():\n        if _cancel_requested(job_id):\n            await _terminate_process(proc)\n            output, _ = await communicate_task\n            return {\"success\": False, \"cancelled\": True, \"error_message\": \"CANCELLED_BY_USER\"}\n        elapsed = int((datetime.now(timezone.utc) - started).total_seconds())\n        if elapsed >= timeout_seconds:\n            await _terminate_process(proc)\n            output, _ = await communicate_task\n            return {\"success\": False, \"timeout\": True, \"error_message\": f\"TIMEOUT_{timeout_seconds}_SECONDS\"}\n        latest = _read(job_id) or payload\n        latest[\"current_phase\"] = \"REAL\" if commit else \"DRY_RUN\"\n        latest[\"phase_elapsed_seconds\"] = elapsed\n        latest[\"phase_timeout_seconds\"] = timeout_seconds\n        _write(\n            job_id,\n            latest,\n            \"JOB_RUNNING\",\n            f\"{unit}: {'re-sincronizando' if commit else 'validando'} {start} a {end} - {elapsed}s.\",\n        )\n        await asyncio.wait({communicate_task}, timeout=POLL_SECONDS)\n    output, _ = await communicate_task\n    text = output.decode(\"utf-8\", errors=\"replace\")\n    summary = _summary_from_stdout(text)\n    summary[\"returncode\"] = proc.returncode\n    summary[\"output_tail\"] = text[-1200:]\n    if proc.returncode != 0 and not summary.get(\"error_message\"):\n        summary[\"error_message\"] = summary.get(\"error\") or f\"ENTRYPOINT_RC_{proc.returncode}\"\n    return summary\n\n\ndef create_job",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "                        dry = await _ejecutar_dry_run(unit, config, start, end)\n                        final_dry = _compact(dry)",
+      "new": "                        dry = await _run_entrypoint(job_id, payload, unit, start, end, commit=False)\n                        final_dry = _compact(dry)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "                            real = await _ejecutar_sync_real(\n                                unit, config, start, end,\n                                f\"RANGEJOB-{job_id}-{unit}-{start:%Y%m%d}-{end:%Y%m%d}-A{attempt}\"\n                            )\n                            final_real = _compact(real)",
+      "new": "                            real = await _run_entrypoint(job_id, payload, unit, start, end, commit=True)\n                            final_real = _compact(real)",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial/resync_batch_jobs.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial/resync_batch_jobs.py",
+          "backend/scripts/resync_comercial_range_worker.py"
+        ],
+        "search_terms": [
+          "resync_comercial_range_worker.py",
+          "asyncio.create_subprocess_exec",
+          "DRY_TIMEOUT_SECONDS",
+          "REAL_TIMEOUT_SECONDS",
+          "phase_elapsed_seconds",
+          "CANCELLED_BY_USER",
+          "sync_comercial_v2"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
