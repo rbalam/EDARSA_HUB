@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-RANGE-DIAG-R9-CARLOS-20261002",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b3197b1049745380d987ac7f4c88afc6d89e9366",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Sincronizador: diagnosticar por qué el nuevo histórico Comercial Sep 2026 queda en 0% en 130MID. Consultar últimos trabajos comercial_range_batch y el lock sync_comercial_v2, incluyendo antigüedad del heartbeat. Solo lectura, sin modificar datos ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "latest_range_jobs",
+          "sql": "SELECT TOP 5 ResyncLogID, Estado, Mensaje, UnidadCodigo, RegistrosAfectados, SolicitadoPor, FechaEjecucion, JSON_VALUE(Payload,'$.status') AS payload_status, JSON_VALUE(Payload,'$.fecha_inicio') AS fecha_inicio, JSON_VALUE(Payload,'$.fecha_fin') AS fecha_fin, JSON_VALUE(Payload,'$.current_unit') AS current_unit, JSON_VALUE(Payload,'$.current_block') AS current_block, JSON_VALUE(Payload,'$.current_phase') AS current_phase, JSON_VALUE(Payload,'$.percent_complete') AS percent_complete, JSON_VALUE(Payload,'$.updated_at_utc') AS updated_at_utc, JSON_VALUE(Payload,'$.successful_steps') AS successful_steps, JSON_VALUE(Payload,'$.failed_steps') AS failed_steps, JSON_VALUE(Payload,'$.completed_steps') AS completed_steps, JSON_VALUE(Payload,'$.total_steps') AS total_steps FROM dbo.Sistema_Sync_ResyncLog WHERE TipoSync='comercial_range_batch' ORDER BY ResyncLogID DESC"
+        },
+        {
+          "name": "canonical_sync_lock",
+          "sql": "SELECT JobName, OwnerID, AcquiredAt, HeartbeatAt, LockUntil, DATEDIFF(SECOND, HeartbeatAt, SYSUTCDATETIME()) AS heartbeat_age_seconds, DATEDIFF(SECOND, SYSUTCDATETIME(), LockUntil) AS seconds_until_expiry FROM dbo.Scheduler_DistributedLocks WHERE JobName='sync_comercial_v2'"
+        },
+        {
+          "name": "server_utc_now",
+          "sql": "SELECT SYSUTCDATETIME() AS server_utc_now"
+        }
+      ]
+    }
+  ]
+}
