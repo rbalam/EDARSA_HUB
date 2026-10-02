@@ -1,0 +1,57 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-ATOMIC-DIAG-R31-CARLOS-20261002",
+  "objective": "Diagnosticar en solo lectura por que R30 no pudo materializar un snapshot atomico de ORIGEN MPRO 2026-10-02. Comparar exactamente los conteos/totales del encabezado contra los fallbacks resumidos abiertos, cerrados canonicos y cerrados provisionales de la misma API local. No tocar Produccion.",
+  "mode": "READ_ONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c54b546cf0f6937c739dc3c62b6be90bb60609b7",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "max_rows": 100,
+      "queries": [
+        {
+          "name": "origen_header_open_exact",
+          "sql": "SELECT ISNULL(SUM(ticket.ventas),0) AS ventas_abiertas, COUNT(*) AS tickets_abiertos, ISNULL(SUM(ticket.pax),0) AS pax_abiertos FROM (SELECT c.Co_Folio, SUM(ISNULL(cd.Cd_Importe,0)) AS ventas, MAX(ISNULL(c.Co_Personas,0)) AS pax FROM Comanda c INNER JOIN Comanda_Detalle cd ON cd.Co_Folio=c.Co_Folio WHERE CAST(c.Co_Fecha AS date)='2026-10-02' AND c.Sc_Cve_Sucursal='0023' AND c.Es_Cve_Estado IN ('AC','IM') AND cd.Es_Cve_Estado='AC' AND cd.Fecha_Baja IS NULL GROUP BY c.Co_Folio) ticket"
+        },
+        {
+          "name": "origen_fallback_open_folios",
+          "sql": "SELECT c.Co_Folio AS folio, MAX(c.Es_Cve_Estado) AS estado, MAX(ISNULL(c.Co_Personas,0)) AS pax, SUM(ISNULL(d.Cd_Importe,0)) AS total_ticket FROM Comanda c INNER JOIN Comanda_Detalle d ON d.Co_Folio=c.Co_Folio AND d.Es_Cve_Estado='AC' AND d.Fecha_Baja IS NULL WHERE CAST(c.Co_Fecha AS date)='2026-10-02' AND c.Sc_Cve_Sucursal='0023' AND c.Es_Cve_Estado IN ('AC','IM') GROUP BY c.Co_Folio ORDER BY c.Co_Folio"
+        },
+        {
+          "name": "origen_header_closed_canonical_exact",
+          "sql": "SELECT ISNULL(SUM(vc.venta_neta),0) AS ventas_cerradas_dia, COUNT(DISTINCT vc.Vn_Documento) AS tickets_cerrados_dia FROM (SELECT ve.Vn_Documento, SUM(ISNULL(ve.Vn_Precio_Neto_Importe,0)) AS venta_neta FROM Venta_Encabezado ve WHERE ve.Sc_Cve_Sucursal='0023' AND CAST(ve.Vn_Fecha AS date)='2026-10-02' AND ve.Es_Cve_Estado IN ('AC','FA') AND ve.Fecha_Baja IS NULL GROUP BY ve.Vn_Documento) vc"
+        },
+        {
+          "name": "origen_fallback_closed_canonical_folios",
+          "sql": "SELECT ve.Vn_Documento AS folio, SUM(ISNULL(ve.Vn_Precio_Neto_Importe,0)) AS total_ticket, COUNT(*) AS headers FROM Venta_Encabezado ve WHERE CAST(ve.Vn_Fecha AS date)='2026-10-02' AND ve.Sc_Cve_Sucursal='0023' AND ve.Es_Cve_Estado IN ('AC','FA') AND ve.Fecha_Baja IS NULL GROUP BY ve.Vn_Documento ORDER BY ve.Vn_Documento"
+        },
+        {
+          "name": "origen_header_closed_provisional_exact",
+          "sql": "SELECT ISNULL(SUM(ticket.ventas),0) AS ventas_cerradas_dia, COUNT(*) AS tickets_cerrados_dia, ISNULL(SUM(ticket.pax),0) AS pax_cerrados_dia FROM (SELECT c.Co_Folio, SUM(ISNULL(cd.Cd_Importe,0)) AS ventas, MAX(ISNULL(c.Co_Personas,0)) AS pax FROM Comanda c INNER JOIN Comanda_Detalle cd ON cd.Co_Folio=c.Co_Folio WHERE CAST(c.Co_Fecha AS date)='2026-10-02' AND c.Sc_Cve_Sucursal='0023' AND c.Es_Cve_Estado='PA' AND cd.Es_Cve_Estado='AC' AND cd.Fecha_Baja IS NULL GROUP BY c.Co_Folio) ticket"
+        },
+        {
+          "name": "origen_fallback_closed_provisional_folios",
+          "sql": "SELECT c.Co_Folio AS folio, MAX(ISNULL(c.Co_Personas,0)) AS pax, SUM(ISNULL(d.Cd_Importe,0)) AS total_ticket FROM Comanda c INNER JOIN Comanda_Detalle d ON d.Co_Folio=c.Co_Folio AND d.Es_Cve_Estado='AC' AND d.Fecha_Baja IS NULL WHERE CAST(c.Co_Fecha AS date)='2026-10-02' AND c.Sc_Cve_Sucursal='0023' AND c.Es_Cve_Estado='PA' GROUP BY c.Co_Folio ORDER BY c.Co_Folio"
+        }
+      ]
+    }
+  ]
+}
