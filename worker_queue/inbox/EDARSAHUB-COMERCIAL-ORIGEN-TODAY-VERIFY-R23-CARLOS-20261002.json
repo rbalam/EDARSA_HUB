@@ -1,0 +1,46 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-TODAY-VERIFY-R23-CARLOS-20261002",
+  "objective": "Verificar en solo lectura la sincronizacion de ORIGEN para 2026-10-02 comparando el snapshot persistido en EDARSAHUB contra las cuentas abiertas actuales de MPRO. Confirmar ventas abiertas, tickets, PAX y existencia del detalle JSON. No tocar Produccion.",
+  "mode": "READ_ONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d9b6de1edd86c4fd8e6413f21612c2e70cdd2d0a",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "origen_today_hub_snapshot",
+          "sql": "SELECT TOP 1 unidad_negocio_id, fecha_operacion, snapshot_timestamp, sistema_origen, fuente_original, source_status, ventas_abiertas, ventas_cerradas_dia, total_estimado_dia, tickets_abiertos, tickets_cerrados_dia, pax_abiertos, CASE WHEN detalle_abiertas_json IS NULL THEN 0 ELSE 1 END AS detalle_presente, LEN(ISNULL(detalle_abiertas_json,'')) AS detalle_json_len, LEFT(ISNULL(detalle_abiertas_json,''), 12000) AS detalle_json_muestra FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK) WHERE UPPER(LTRIM(RTRIM(unidad_negocio_id)))='ORIGEN' AND fecha_operacion='2026-10-02' ORDER BY snapshot_timestamp DESC"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "origen_today_pos_open_accounts",
+          "sql": "SELECT ISNULL(SUM(ticket.ventas),0) AS ventas_abiertas, COUNT(*) AS tickets_abiertos, ISNULL(SUM(ticket.pax),0) AS pax_abiertos FROM (SELECT c.Co_Folio, SUM(ISNULL(cd.Cd_Importe,0)) AS ventas, MAX(ISNULL(c.Co_Personas,0)) AS pax FROM Comanda c INNER JOIN Comanda_Detalle cd ON cd.Co_Folio=c.Co_Folio WHERE CAST(c.Co_Fecha AS date)='2026-10-02' AND c.Sc_Cve_Sucursal='0023' AND c.Es_Cve_Estado IN ('AC','IM') AND cd.Es_Cve_Estado='AC' AND cd.Fecha_Baja IS NULL GROUP BY c.Co_Folio) AS ticket"
+        }
+      ]
+    }
+  ]
+}
