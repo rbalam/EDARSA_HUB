@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "6e0bba5e91241d12c9e00e3f121555b5cccdef92",
-  "generated_at_utc": "2026-10-02T00:30:54Z",
+  "generated_at_utc": "2026-10-02T00:32:15Z",
   "history": {
     "done_total_local": 1286,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3332,
+      "age_seconds": 3413,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-MESA-VENDEDOR-PARITY-R1-CARLOS-20261001",
       "reasons": [
         "ACTION_3_SOURCE_SHA256_REQUIRED_OR_INVALID",
@@ -26,19 +26,19 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 237,
+      "age_seconds": 318,
       "job_id": "EDARSAHUB-COMERCIAL-MESA-VENDEDOR-AUDIT-R2-CARLOS-20261001T1824MX",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2889,
+      "age_seconds": 2970,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-MESA-VENDEDOR-PARITY-R2-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1992,
+      "age_seconds": 2073,
       "job_id": "MEJORA-TABEJE-VENTAS-DIA-PARIDAD-COMERCIAL-R17-CARLOS-20261001T2344Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -58,8 +58,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-02T00:30:45Z",
-    "last_receive_utc": "2026-10-02T00:30:52Z",
+    "last_cycle_utc": "2026-10-02T00:32:08Z",
+    "last_receive_utc": "2026-10-02T00:32:15Z",
     "last_terminal_utc": "2026-10-02T00:26:56Z",
     "pid": "514",
     "runtime_fingerprint": {
