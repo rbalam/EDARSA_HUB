@@ -1,0 +1,201 @@
+{
+  "base_sha": "7ac96234634a9c8b6e92affa4036a16753a59ed5",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-10-02T17:59:41Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-FINAL-VERIFY-R36-CARLOS-20261002",
+  "operation": "COMERCIAL_OPEN_DAY_SYNC",
+  "operation_summary": {
+    "detalles_unidades": [
+      {
+        "closed_sales_is_provisional": null,
+        "closed_sales_source": null,
+        "detalle_abiertas_filas": 0,
+        "estatus": "OK",
+        "fecha_operacion": "2026-10-02",
+        "fuente": null,
+        "mensaje_error": "",
+        "sistema": "SoftRestaurant",
+        "source_status": "NO_DATA_CONFIRMED",
+        "total_estimado_dia": 0.0,
+        "unidad": "130° MERIDA",
+        "unidad_negocio_id": "130MID",
+        "ventas_abiertas": 0.0
+      },
+      {
+        "closed_sales_is_provisional": null,
+        "closed_sales_source": null,
+        "detalle_abiertas_filas": 4,
+        "estatus": "OK",
+        "fecha_operacion": "2026-10-02",
+        "fuente": null,
+        "mensaje_error": "",
+        "sistema": "SoftRestaurant",
+        "source_status": "DATA_OK",
+        "total_estimado_dia": 315.0,
+        "unidad": "CIENFUEGOS",
+        "unidad_negocio_id": "CIENFUEGOS",
+        "ventas_abiertas": 315.0
+      },
+      {
+        "closed_sales_is_provisional": null,
+        "closed_sales_source": null,
+        "detalle_abiertas_filas": 1,
+        "estatus": "OK",
+        "fecha_operacion": "2026-10-02",
+        "fuente": null,
+        "mensaje_error": "",
+        "sistema": "SoftRestaurant",
+        "source_status": "DATA_OK",
+        "total_estimado_dia": 2461.5,
+        "unidad": "LA ESTELAR",
+        "unidad_negocio_id": "ESTELAR",
+        "ventas_abiertas": 0.0
+      },
+      {
+        "closed_sales_is_provisional": true,
+        "closed_sales_source": "PROVISIONAL_COMANDA",
+        "detalle_abiertas_filas": 0,
+        "estatus": "OK",
+        "fecha_operacion": "2026-10-02",
+        "fuente": "API_LOCAL",
+        "mensaje_error": "",
+        "sistema": "MPRO",
+        "source_status": "NO_DATA_CONFIRMED",
+        "total_estimado_dia": 0.0,
+        "unidad": "130° QUERETARO",
+        "unidad_negocio_id": "130QRO",
+        "ventas_abiertas": 0.0
+      },
+      {
+        "closed_sales_is_provisional": false,
+        "closed_sales_source": "CANONICAL_VENTA_ENCABEZADO",
+        "detalle_abiertas_filas": 6,
+        "estatus": "OK",
+        "fecha_operacion": "2026-10-02",
+        "fuente": "API_LOCAL",
+        "mensaje_error": "",
+        "sistema": "MPRO",
+        "source_status": "DATA_OK",
+        "total_estimado_dia": 4325.01,
+        "unidad": "ORIGEN",
+        "unidad_negocio_id": "ORIGEN",
+        "ventas_abiertas": 0.0
+      }
+    ],
+    "duracion_segundos": 15.300624,
+    "errores": [],
+    "event": "comercial_open_day_summary",
+    "fecha_operacion": "2026-10-02",
+    "total_estimado_dia": 7101.51,
+    "total_ventas_abiertas": 315.0,
+    "unidades_exitosas": 5,
+    "unidades_fallidas": 0,
+    "unidades_procesadas": 5
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-02T17:59:42Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "snapshot_timestamp",
+              "fecha_operacion",
+              "ventas_abiertas",
+              "tickets_abiertos",
+              "pax_abiertos",
+              "ventas_cerradas_dia",
+              "tickets_cerrados_dia",
+              "pax_cerrados_dia",
+              "total_estimado_dia",
+              "fuente_original",
+              "sync_run_id",
+              "detalle_json_len"
+            ],
+            "name": "origen_latest_snapshot_r36",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "ORIGEN",
+                "2026-10-02 17:59:40.2553470",
+                "2026-10-02",
+                "0.00",
+                0,
+                0,
+                "4325.01",
+                6,
+                19,
+                "4325.01",
+                "API_LOCAL",
+                "ABIERTA-20261002-175925-1683",
+                "3376"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "snapshot_timestamp",
+              "ventas_abiertas_header",
+              "ventas_abiertas_detalle",
+              "tickets_abiertos_header",
+              "tickets_abiertos_detalle",
+              "ventas_cerradas_header",
+              "ventas_cerradas_detalle",
+              "tickets_cerrados_header",
+              "tickets_cerrados_detalle",
+              "total_header",
+              "total_detalle",
+              "diferencia_total",
+              "diferencia_tickets_abiertos",
+              "diferencia_tickets_cerrados"
+            ],
+            "name": "origen_header_detail_reconciliation_r36",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-10-02 17:59:40.2553470",
+                "0.00",
+                "0.0000",
+                0,
+                0,
+                "4325.01",
+                "4325.0100",
+                6,
+                6,
+                "4325.01",
+                "4325.0100",
+                "0.0000",
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-02T17:59:24Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker forzo el sincronizador canonico sync_comercial_abiertas_v2 para la fecha autorizada, proceso las unidades activas, certifico el snapshot con SQL de solo lectura y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
