@@ -1,0 +1,92 @@
+{
+  "base_sha": "11a5231fc216f972685c36c25453a8dfdf076c90",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-02T16:28:24Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-TODAY-HUB-VERIFY-R26-CARLOS-20261002",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-02T16:28:24Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "id",
+              "unidad_negocio_id",
+              "unidad_negocio_nombre",
+              "server_id",
+              "sucursal_id",
+              "sucursal_nombre",
+              "sistema_origen",
+              "snapshot_timestamp",
+              "fecha_operacion",
+              "ventas_abiertas",
+              "tickets_abiertos",
+              "pax_abiertos",
+              "ventas_cerradas_dia",
+              "tickets_cerrados_dia",
+              "pax_cerrados_dia",
+              "total_estimado_dia",
+              "fuente_original",
+              "sync_run_id",
+              "fecha_ultima_actualizacion",
+              "propinas_abiertas",
+              "propinas_cerradas_dia",
+              "propinas_total",
+              "detalle_abiertas_json"
+            ],
+            "name": "origen_today_hub_snapshot_actual_columns",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "79338700-6f14-4ae7-b3cb-b73c4c011504",
+                "ORIGEN",
+                "ORIGEN",
+                "817a0aa8-6170-4738-a8f6-a72ac36ba0df",
+                "0023",
+                "ORIGEN",
+                "MPRO",
+                "2026-10-02 16:26:25.3213640",
+                "2026-10-02",
+                "2345.01",
+                4,
+                11,
+                "2650.00",
+                2,
+                10,
+                "4995.01",
+                "API_LOCAL",
+                "ABIERTA-20261002-162611-0ad4",
+                "2026-10-02 16:26:25.4059769",
+                "0.00",
+                "397.50",
+                "397.50",
+                "[{\"folio\":\"SB-0055352\",\"folio_origen\":\"SB-0055352\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":5,\"propina\":0.0,\"vendedor_id\":\"0000000372\",\"vendedor_nombre\":\"WILLIAM IUIT QUIJANO (SB)\",\"mesa\":\"m-14\",\"total_ticket\":1640.0,\"producto_codigo\":\"0000000503\",\"producto_nombre\":\"CAFE AMERICANO\",\"cantidad\":7.0,\"precio_unitario\":45.0,\"importe_bruto\":315.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055352\",\"folio_origen\":\"SB-0055352\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":5,\"propina\":0.0,\"vendedor_id\":\"0000000372\",\"vendedor_nombre\":\"WILLIAM IUIT QUIJANO (SB)\",\"mesa\":\"m-14\",\"total_ticket\":1640.0,\"producto_codigo\":\"0000000841\",\"producto_nombre\":\"BRIOCHE DULCE ORIGEN\",\"cantidad\":1.0,\"precio_unitario\":140.0,\"importe_bruto\":140.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055352\",\"folio_origen\":\"SB-0055352\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":5,\"propina\":0.0,\"vendedor_id\":\"0000000372\",\"vendedor_nombre\":\"WILLIAM IUIT QUIJANO (SB)\",\"mesa\":\"m-14\",\"total_ticket\":1640.0,\"producto_codigo\":\"0000001042\",\"producto_nombre\":\"MIGAS TRADICIONALES VALLADOLID\",\"cantidad\":2.0,\"precio_unitario\":140.0,\"importe_bruto\":280.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055352\",\"folio_origen\":\"SB-0055352\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":5,\"propina\":0.0,\"vendedor_id\":\"0000000372\",\"vendedor_nombre\":\"WILLIAM IUIT QUIJANO (SB)\",\"mesa\":\"m-14\",\"total_ticket\":1640.0,\"producto_codigo\":\"0000009011\",\"producto_nombre\":\"MONTADO DE AGUACATE\",\"cantidad\":1.0,\"precio_unitario\":160.0,\"importe_bruto\":160.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055352\",\"folio_origen\":\"SB-0055352\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":5,\"propina\":0.0,\"vendedor_id\":\"0000000372\",\"vendedor_nombre\":\"WILLIAM IUIT QUIJANO (SB)\",\"mesa\":\"m-14\",\"total_ticket\":1640.0,\"producto_codigo\":\"0000009020\",\"producto_nombre\":\"OMELETE DE CLARA\",\"cantidad\":2.0,\"precio_unitario\":160.0,\"importe_bruto\":320.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055352\",\"folio_origen\":\"SB-0055352\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":5,\"propina\":0.0,\"vendedor_id\":\"0000000372\",\"vendedor_nombre\":\"WILLIAM IUIT QUIJANO (SB)\",\"mesa\":\"m-14\",\"total_ticket\":1640.0,\"producto_codigo\":\"0000009040\",\"producto_nombre\":\"JUGO VERDE\",\"cantidad\":1.0,\"precio_unitario\":70.0,\"importe_bruto\":70.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055352\",\"folio_origen\":\"SB-0055352\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":5,\"propina\":0.0,\"vendedor_id\":\"0000000372\",\"vendedor_nombre\":\"WILLIAM IUIT QUIJANO (SB)\",\"mesa\":\"m-14\",\"total_ticket\":1640.0,\"producto_codigo\":\"0000009058\",\"producto_nombre\":\"PLATO DE FRUTAS DE TEMPORADA\",\"cantidad\":1.0,\"precio_unitario\":140.0,\"importe_bruto\":140.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055352\",\"folio_origen\":\"SB-0055352\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":5,\"propina\":0.0,\"vendedor_id\":\"0000000372\",\"vendedor_nombre\":\"WILLIAM IUIT QUIJANO (SB)\",\"mesa\":\"m-14\",\"total_ticket\":1640.0,\"producto_codigo\":\"0000009064\",\"producto_nombre\":\"CONCHA CHOCOLATE C. NATA\",\"cantidad\":1.0,\"precio_unitario\":70.0,\"importe_bruto\":70.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055352\",\"folio_origen\":\"SB-0055352\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":5,\"propina\":0.0,\"vendedor_id\":\"0000000372\",\"vendedor_nombre\":\"WILLIAM IUIT QUIJANO (SB)\",\"mesa\":\"m-14\",\"total_ticket\":1640.0,\"producto_codigo\":\"0000009065\",\"producto_nombre\":\"ROL DE CANELA\",\"cantidad\":1.0,\"precio_unitario\":65.0,\"importe_bruto\":65.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055352\",\"folio_origen\":\"SB-0055352\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":5,\"propina\":0.0,\"vendedor_id\":\"0000000372\",\"vendedor_nombre\":\"WILLIAM IUIT QUIJANO (SB)\",\"mesa\":\"m-14\",\"total_ticket\":1640.0,\"producto_codigo\":\"0000009087\",\"producto_nombre\":\">>D EXTRA CHAMPIÑONES P/DESAYUNOS\",\"cantidad\":2.0,\"precio_unitario\":20.0,\"importe_bruto\":40.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055352\",\"folio_origen\":\"SB-0055352\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":5,\"propina\":0.0,\"vendedor_id\":\"0000000372\",\"vendedor_nombre\":\"WILLIAM IUIT QUIJANO (SB)\",\"mesa\":\"m-14\",\"total_ticket\":1640.0,\"producto_codigo\":\"0000009090\",\"producto_nombre\":\">>D EXTRA QUESO OAXACA P/DESAYUNOS\",\"cantidad\":2.0,\"precio_unitario\":20.0,\"importe_bruto\":40.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055353\",\"folio_origen\":\"SB-0055353\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":2,\"propina\":0.0,\"vendedor_id\":\"0000000374\",\"vendedor_nombre\":\"JUAN CARLOS CEN (SB)\",\"mesa\":\"M-3A\",\"total_ticket\":460.0,\"producto_codigo\":\"0000000503\",\"producto_nombre\":\"CAFE AMERICANO\",\"cantidad\":2.0,\"precio_unitario\":45.0,\"importe_bruto\":90.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055353\",\"folio_origen\":\"SB-0055353\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":2,\"propina\":0.0,\"vendedor_id\":\"0000000374\",\"vendedor_nombre\":\"JUAN CARLOS CEN (SB)\",\"mesa\":\"M-3A\",\"total_ticket\":460.0,\"producto_codigo\":\"0000009007\",\"producto_nombre\":\"HUEVOS CRUNCHY\",\"cantidad\":2.0,\"precio_unitario\":150.0,\"importe_bruto\":300.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055353\",\"folio_origen\":\"SB-0055353\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":2,\"propina\":0.0,\"vendedor_id\":\"0000000374\",\"vendedor_nombre\":\"JUAN CARLOS CEN (SB)\",\"mesa\":\"M-3A\",\"total_ticket\":460.0,\"producto_codigo\":\"0000009064\",\"producto_nombre\":\"CONCHA CHOCOLATE C. NATA\",\"cantidad\":1.0,\"precio_unitario\":70.0,\"importe_bruto\":70.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055354\",\"folio_origen\":\"SB-0055354\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":5,\"propina\":0.0,\"vendedor_id\":\"0000000374\",\"vendedor_nombre\":\"JUAN CARLOS CEN (SB)\",\"mesa\":\"M-5\",\"total_ticket\":920.0,\"producto_codigo\":\"0000000159\",\"producto_nombre\":\"COCA COLA LIGHT 355 ML\",\"cantidad\":2.0,\"precio_unitario\":45.0,\"importe_bruto\":90.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055354\",\"folio_origen\":\"SB-0055354\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":5,\"propina\":0.0,\"vendedor_id\":\"0000000374\",\"vendedor_nombre\":\"JUAN CARLOS CEN (SB)\",\"mesa\":\"M-5\",\"total_ticket\":920.0,\"producto_codigo\":\"0000000503\",\"producto_nombre\":\"CAFE AMERICANO\",\"cantidad\":5.0,\"precio_unitario\":45.0,\"importe_bruto\":225.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055354\",\"folio_origen\":\"SB-0055354\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":5,\"propina\":0.0,\"vendedor_id\":\"0000000374\",\"vendedor_nombre\":\"JUAN CARLOS CEN (SB)\",\"mesa\":\"M-5\",\"total_ticket\":920.0,\"producto_codigo\":\"0000009007\",\"producto_nombre\":\"HUEVOS CRUNCHY\",\"cantidad\":1.0,\"precio_unitario\":150.0,\"importe_bruto\":150.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055354\",\"folio_origen\":\"SB-0055354\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":5,\"propina\":0.0,\"vendedor_id\":\"0000000374\",\"vendedor_nombre\":\"JUAN CARLOS CEN (SB)\",\"mesa\":\"M-5\",\"total_ticket\":920.0,\"producto_codigo\":\"0000009008\",\"producto_nombre\":\"HUEVOS M. NORTEÑOS S.R.\",\"cantidad\":1.0,\"precio_unitario\":140.0,\"importe_bruto\":140.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055354\",\"folio_origen\":\"SB-0055354\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":5,\"propina\":0.0,\"vendedor_id\":\"0000000374\",\"vendedor_nombre\":\"JUAN CARLOS CEN (SB)\",\"mesa\":\"M-5\",\"total_ticket\":920.0,\"producto_codigo\":\"0000009037\",\"producto_nombre\":\"TACO DE BARBACOA\",\"cantidad\":1.0,\"precio_unitario\":180.0,\"importe_bruto\":180.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055354\",\"folio_origen\":\"SB-0055354\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":5,\"propina\":0.0,\"vendedor_id\":\"0000000374\",\"vendedor_nombre\":\"JUAN CARLOS CEN (SB)\",\"mesa\":\"M-5\",\"total_ticket\":920.0,\"producto_codigo\":\"0000009051\",\"producto_nombre\":\"TACO CHICHARRON P. S. VERDE\",\"cantidad\":1.0,\"precio_unitario\":135.0,\"importe_bruto\":135.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055355\",\"folio_origen\":\"SB-0055355\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":2,\"propina\":0.0,\"vendedor_id\":\"0000000372\",\"vendedor_nombre\":\"WILLIAM IUIT QUIJANO (SB)\",\"mesa\":\"M-6ZUEMI\",\"total_ticket\":360.01,\"producto_codigo\":\"0000009011\",\"producto_nombre\":\"MONTADO DE AGUACATE\",\"cantidad\":1.0,\"precio_unitario\":160.0,\"importe_bruto\":160.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055355\",\"folio_origen\":\"SB-0055355\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":2,\"propina\":0.0,\"vendedor_id\":\"0000000372\",\"vendedor_nombre\":\"WILLIAM IUIT QUIJANO (SB)\",\"mesa\":\"M-6ZUEMI\",\"total_ticket\":360.01,\"producto_codigo\":\"0000009014\",\"producto_nombre\":\"HUEVOS AL GUSTO\",\"cantidad\":1.0,\"precio_unitario\":140.0,\"importe_bruto\":140.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055355\",\"folio_origen\":\"SB-0055355\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":2,\"propina\":0.0,\"vendedor_id\":\"0000000372\",\"vendedor_nombre\":\"WILLIAM IUIT QUIJANO (SB)\",\"mesa\":\"M-6ZUEMI\",\"total_ticket\":360.01,\"producto_codigo\":\"0000009038\",\"producto_nombre\":\">>LIMONADA DE PEPINO\",\"cantidad\":1.0,\"precio_unitario\":0.01,\"importe_bruto\":0.01,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055355\",\"folio_origen\":\"SB-0055355\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":2,\"propina\":0.0,\"vendedor_id\":\"0000000372\",\"vendedor_nombre\":\"WILLIAM IUIT QUIJANO (SB)\",\"mesa\":\"M-6ZUEMI\",\"total_ticket\":360.01,\"producto_codigo\":\"0000009078\",\"producto_nombre\":\"LIMONADA DESAYUNOS\",\"cantidad\":1.0,\"precio_unitario\":50.0,\"importe_bruto\":50.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0},{\"folio\":\"SB-0055355\",\"folio_origen\":\"SB-0055355\",\"estado_ticket\":\"ABIERTA\",\"sistema_origen\":\"MPRO\",\"fecha_hora\":\"2026-10-02T00:00:00\",\"pax\":2,\"propina\":0.0,\"vendedor_id\":\"0000000372\",\"vendedor_nombre\":\"WILLIAM IUIT QUIJANO (SB)\",\"mesa\":\"M-6ZUEMI\",\"total_ticket\":360.01,\"producto_codigo\":\"0000009089\",\"producto_nombre\":\">>D EXTRA QUESO PANELA P/DESAYUNOS\",\"cantidad\":1.0,\"precio_unitario\":10.0,\"importe_bruto\":10.0,\"descuento_pct\":0.0,\"descuento_producto\":0.0,\"importe_neto_producto\":0.0,\"descuento_encabezado_reportado\":0.0,\"descuento_total_reportado\":0.0}]"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-02T16:28:24Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
