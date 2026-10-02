@@ -31,7 +31,7 @@ def test_mpro_daily_detail_has_open_and_closed_contracts():
     assert "c.Es_Cve_Estado = 'PA'" in provisional
 
 
-def test_mpro_detail_uses_same_closed_source_decision_as_header():
+def test_mpro_detail_and_header_share_authoritative_snapshot_set():
     text = SYNC.read_text(encoding="utf-8")
     block = text.split(
         "# El encabezado MPRO se calcula con abiertas + cerradas", 1
@@ -39,12 +39,14 @@ def test_mpro_detail_uses_same_closed_source_decision_as_header():
         "# FIX 2026-05-15: Log detallado para QRO", 1
     )[0]
 
-    assert "tickets_abiertos > 0" in block
-    assert "tickets_cerrados_dia > 0" in block
-    assert 'closed_sales_source' in block
-    assert '"CANONICAL_VENTA_ENCABEZADO"' in block
-    assert "QUERY_MPRO_DETALLE_CERRADAS_CANONICAS" in block
-    assert "QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES" in block
+    assert "QUERY_MPRO_DETALLE_ABIERTAS_RESUMEN" in block
+    assert "QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_RESUMEN" in block
+    assert "QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES_RESUMEN" in block
+    assert "_merge_mpro_summary_detail_rows" in block
+    assert "_summarize_mpro_ticket_rows" in block
+    assert "metricas_snapshot" in block
+    assert 'closed_sales_source = "CANONICAL_VENTA_ENCABEZADO"' in block
+    assert 'closed_sales_source = "PROVISIONAL_COMANDA"' in block
     assert "_execute_query_via_api_local" in block
     assert "detalle_completo" in block
 
