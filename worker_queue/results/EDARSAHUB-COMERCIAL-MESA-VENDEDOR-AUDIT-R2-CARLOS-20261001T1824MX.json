@@ -1,0 +1,336 @@
+{
+  "base_sha": "6e0bba5e91241d12c9e00e3f121555b5cccdef92",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-02T00:26:56Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-MESA-VENDEDOR-AUDIT-R2-CARLOS-20261001T1824MX",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-02T00:27:24Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "snapshot_timestamp",
+              "detalle_filas",
+              "filas_con_mesa",
+              "filas_con_vendedor"
+            ],
+            "name": "open_mpro_latest_coverage",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "130QRO",
+                "2026-10-01",
+                "2026-10-02 00:22:10.7232520",
+                26,
+                26,
+                26
+              ],
+              [
+                "ORIGEN",
+                "2026-10-01",
+                "2026-10-02 00:22:13.3607910",
+                20,
+                20,
+                20
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "folio",
+              "mesa",
+              "vendedor_nombre"
+            ],
+            "name": "open_mpro_latest_samples",
+            "row_count_returned": 30,
+            "rows": [
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053447",
+                "52",
+                "RAUL ALEJANDRO PEREZ PEREZ"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053452",
+                "42",
+                "VICTOR JESUS GUZMAN VILLEDA (QR)"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053452",
+                "42",
+                "VICTOR JESUS GUZMAN VILLEDA (QR)"
+              ],
+              [
+                "130QRO",
+                "2026-10-01",
+                "21-0053452",
+                "42",
+                "VICTOR JESUS GUZMAN VILLEDA (QR)"
+              ],
+              [
+                "ORIGEN",
+                "2026-10-01",
+                "SB-0055334",
+                "T-32",
+                "ISRAEL SERRANO CHAVEZ (SB)"
+              ],
+              [
+                "ORIGEN",
+                "2026-10-01",
+                "SB-0055334",
+                "T-32",
+                "ISRAEL SERRANO CHAVEZ (SB)"
+              ],
+              [
+                "ORIGEN",
+                "2026-10-01",
+                "SB-0055334",
+                "T-32",
+                "ISRAEL SERRANO CHAVEZ (SB)"
+              ],
+              [
+                "ORIGEN",
+                "2026-10-01",
+                "SB-0055334",
+                "T-32",
+                "ISRAEL SERRANO CHAVEZ (SB)"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "numero_ticket",
+              "lineas",
+              "vendedor_nombre",
+              "mesa"
+            ],
+            "name": "canary_cienfuegos_20260801_104029",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "CIENFUEGOS",
+                "2026-08-01",
+                "104029",
+                20,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "numero_ticket",
+              "lineas",
+              "vendedor_nombre",
+              "mesa"
+            ],
+            "name": "canary_130qro_20260902_210044603",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "130QRO",
+                "2026-09-02",
+                "21-0044603",
+                14,
+                "JOSUE EMMANUEL SANCHEZ NIETO",
+                null
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-02T00:26:55Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
