@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "7ac96234634a9c8b6e92affa4036a16753a59ed5",
-  "generated_at_utc": "2026-10-02T17:57:49Z",
+  "generated_at_utc": "2026-10-02T17:59:03Z",
   "history": {
     "done_total_local": 1298,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1923,
+      "age_seconds": 1997,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-SNAPSHOT-SAMESET-R32-CARLOS-20261002",
       "reasons": [
         "ACTION_1_SOURCE_SHA256_REQUIRED_OR_INVALID",
@@ -28,61 +28,61 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2046,
+      "age_seconds": 2120,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-ACTIVE-DIAG-R5-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1205,
+      "age_seconds": 1279,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-ACTIVE-DIAG-R8-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1524,
+      "age_seconds": 1598,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-SAFE-STOP-AUDIT-R7-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1811,
+      "age_seconds": 1885,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-SAFE-STOP-R6-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2445,
+      "age_seconds": 2519,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-ATOMIC-DIAG-R31-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3158,
+      "age_seconds": 3232,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-HEADER-DETAIL-ATOMIC-R29-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2764,
+      "age_seconds": 2838,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-HEADER-DETAIL-VERIFY-R30-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1475,
+      "age_seconds": 1549,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-SNAPSHOT-SAMESET-R33-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1159,
+      "age_seconds": 1233,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-SNAPSHOT-SAMESET-R34-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 922,
+      "age_seconds": 996,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-SNAPSHOT-SAMESET-R35-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
@@ -102,8 +102,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-02T17:57:41Z",
-    "last_receive_utc": "2026-10-02T17:57:46Z",
+    "last_cycle_utc": "2026-10-02T17:58:44Z",
+    "last_receive_utc": "2026-10-02T17:58:39Z",
     "last_terminal_utc": "2026-10-02T17:42:27Z",
     "pid": "268946",
     "runtime_fingerprint": {
