@@ -61,6 +61,7 @@ READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "sql_readonly_audi
 SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
 MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
 COMERCIAL_RANGE_RESYNC_MODE = "COMERCIAL_RANGE_RESYNC"
+COMERCIAL_OPEN_DAY_SYNC_MODE = "COMERCIAL_OPEN_DAY_SYNC"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
 ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
 SERVER_REGISTRY_METADATA_UPDATE_MODE = "SERVER_REGISTRY_METADATA_UPDATE"
@@ -1147,6 +1148,182 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                 result["summary_es"] = "El Worker universal ejecuto frontend_build como certificacion no mutante de frontend, sin acciones de producto, sin cambios tracked/untracked del repositorio y sin tocar Produccion."
             else:
                 result["status"] = "FRONTEND_BUILD_FAILED"
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
+
+
+        if mode == COMERCIAL_OPEN_DAY_SYNC_MODE:
+            if expected_base and expected_base != current_head:
+                raise RuntimeError(
+                    f"BASE_SHA_MISMATCH_OPERATIONAL_MODE:"
+                    f"expected={expected_base}:actual={current_head}"
+                )
+            if job.get("actions") not in (None, []):
+                raise RuntimeError(
+                    "COMERCIAL_OPEN_DAY_SYNC_ACTIONS_FORBIDDEN"
+                )
+            for forbidden_field in (
+                "sql",
+                "command",
+                "shell",
+                "script",
+                "path",
+            ):
+                if job.get(forbidden_field) is not None:
+                    raise RuntimeError(
+                        "COMERCIAL_OPEN_DAY_SYNC_FORBIDDEN_FIELD:"
+                        + forbidden_field
+                    )
+
+            fecha_operacion = str(
+                job.get("fecha_operacion") or ""
+            )
+            if not DATE_RE.fullmatch(fecha_operacion):
+                raise RuntimeError(
+                    "COMERCIAL_OPEN_DAY_SYNC_FECHA_INVALID"
+                )
+            if (
+                job.get("confirm_comercial_open_day_sync")
+                is not True
+            ):
+                raise RuntimeError(
+                    "COMERCIAL_OPEN_DAY_SYNC_CONFIRMATION_REQUIRED"
+                )
+
+            checks = job.get("checks") or []
+            if (
+                not checks
+                or any(
+                    not isinstance(c, dict)
+                    or c.get("type") != "sql_readonly_audit"
+                    for c in checks
+                )
+            ):
+                raise RuntimeError(
+                    "COMERCIAL_OPEN_DAY_SYNC_SQL_AUDIT_REQUIRED"
+                )
+
+            script = (
+                ROOT
+                / "backend"
+                / "scripts"
+                / "run_comercial_open_day_sync_worker.py"
+            )
+            if not script.is_file():
+                raise RuntimeError(
+                    "COMERCIAL_OPEN_DAY_SYNC_SCRIPT_NOT_FOUND"
+                )
+
+            backend = ROOT / "backend"
+            execution = run(
+                [
+                    PYTHON_BIN,
+                    str(script),
+                    "--fecha",
+                    fecha_operacion,
+                ],
+                cwd=ROOT,
+                timeout=MAX_SECONDS,
+                env_extra={
+                    **load_backend_runtime_env(),
+                    "PYTHONPATH": str(backend),
+                },
+            )
+
+            summary = {}
+            for raw_line in reversed(
+                (execution.stdout or "").splitlines()
+            ):
+                try:
+                    candidate = json.loads(raw_line)
+                except Exception:
+                    continue
+                if (
+                    isinstance(candidate, dict)
+                    and candidate.get("event")
+                    == "comercial_open_day_summary"
+                ):
+                    summary = candidate
+                    break
+
+            result["operation"] = (
+                COMERCIAL_OPEN_DAY_SYNC_MODE
+            )
+            result["fecha_operacion"] = fecha_operacion
+            result["canonical_sql_mutation"] = True
+            result["operation_output"] = (
+                execution.stdout or ""
+            )[-20000:]
+            result["operation_summary"] = summary
+            result["files_changed"] = []
+
+            failed_units = int(
+                summary.get("unidades_fallidas") or 0
+            )
+            processed_units = int(
+                summary.get("unidades_procesadas") or 0
+            )
+            if (
+                execution.returncode != 0
+                or processed_units <= 0
+                or failed_units > 0
+            ):
+                result["blockers"].append(
+                    "comercial_open_day_sync_failed:"
+                    f"rc={execution.returncode}:"
+                    f"processed={processed_units}:"
+                    f"failed={failed_units}"
+                )
+
+            check_results = []
+            if not result["blockers"]:
+                for check in checks:
+                    check_result = run_check(
+                        ROOT,
+                        check,
+                    )
+                    check_results.append(check_result)
+                    if check_result["status"] != "PASS":
+                        result["blockers"].append(
+                            "check_failed:sql_readonly_audit"
+                        )
+                        break
+
+            result["checks"] = check_results
+            result["tests"] = (
+                "PASS"
+                if (
+                    not result["blockers"]
+                    and check_results
+                    and all(
+                        item["status"] == "PASS"
+                        for item in check_results
+                    )
+                )
+                else "FAIL"
+            )
+            result["quality_gate"] = (
+                "PASS"
+                if not result["blockers"]
+                else "FAIL"
+            )
+
+            if not result["blockers"]:
+                result["status"] = "OPERATIONAL_COMPLETE"
+                result["percent_complete"] = 100
+                result["certification"] = (
+                    "CERTIFIED_OPERATIONAL"
+                )
+                result["summary_es"] = (
+                    "El Worker forzo el sincronizador canonico "
+                    "sync_comercial_abiertas_v2 para la fecha "
+                    "autorizada, proceso las unidades activas, "
+                    "certifico el snapshot con SQL de solo lectura "
+                    "y no toco Produccion."
+                )
+            else:
+                result["status"] = "BLOCKED"
                 result["percent_complete"] = 0
                 result["certification"] = "NOT_CERTIFIED"
             return 0

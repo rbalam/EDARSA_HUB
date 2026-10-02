@@ -55,6 +55,7 @@ READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "sql_readonly_audi
 SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
 MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
 COMERCIAL_RANGE_RESYNC_MODE = "COMERCIAL_RANGE_RESYNC"
+COMERCIAL_OPEN_DAY_SYNC_MODE = "COMERCIAL_OPEN_DAY_SYNC"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
 ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
 SERVER_REGISTRY_METADATA_UPDATE_MODE = "SERVER_REGISTRY_METADATA_UPDATE"
@@ -363,6 +364,21 @@ def validate(job: Any) -> list[str]:
             errors.append("COMERCIAL_RANGE_RESYNC_DRY_RUN_INVALID")
         if dry_run is False and job.get("confirm_comercial_range_resync") is not True:
             errors.append("COMERCIAL_RANGE_RESYNC_CONFIRMATION_REQUIRED")
+    elif mode == COMERCIAL_OPEN_DAY_SYNC_MODE:
+        if actions not in (None, []):
+            errors.append("COMERCIAL_OPEN_DAY_SYNC_ACTIONS_FORBIDDEN")
+        for forbidden_field in ("sql", "command", "shell", "script", "path"):
+            if job.get(forbidden_field) is not None:
+                errors.append(
+                    f"COMERCIAL_OPEN_DAY_SYNC_FORBIDDEN_FIELD:{forbidden_field}"
+                )
+        if (
+            not isinstance(job.get("fecha_operacion"), str)
+            or not DATE_RE.fullmatch(job.get("fecha_operacion", ""))
+        ):
+            errors.append("COMERCIAL_OPEN_DAY_SYNC_FECHA_INVALID")
+        if job.get("confirm_comercial_open_day_sync") is not True:
+            errors.append("COMERCIAL_OPEN_DAY_SYNC_CONFIRMATION_REQUIRED")
     elif mode == ISCAM_DETAIL_BACKFILL_MODE:
         if actions not in (None, []):
             errors.append("ISCAM_DETAIL_BACKFILL_ACTIONS_FORBIDDEN")
@@ -494,6 +510,15 @@ def validate(job: Any) -> list[str]:
             errors.append("COMERCIAL_RANGE_RESYNC_AUDIT_REQUIRED")
         elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
             errors.append("COMERCIAL_RANGE_RESYNC_ONLY_SQL_AUDIT_ALLOWED")
+    elif mode == COMERCIAL_OPEN_DAY_SYNC_MODE:
+        if not isinstance(checks, list) or not checks:
+            errors.append("COMERCIAL_OPEN_DAY_SYNC_AUDIT_REQUIRED")
+        elif any(
+            not isinstance(c, dict)
+            or c.get("type") != "sql_readonly_audit"
+            for c in checks
+        ):
+            errors.append("COMERCIAL_OPEN_DAY_SYNC_ONLY_SQL_AUDIT_ALLOWED")
     elif mode == ISCAM_DETAIL_BACKFILL_MODE:
         if not isinstance(checks, list) or not checks:
             errors.append("ISCAM_DETAIL_BACKFILL_AUDIT_REQUIRED")

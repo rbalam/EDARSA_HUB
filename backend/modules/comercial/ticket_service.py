@@ -104,14 +104,34 @@ def merge_open_snapshot_tickets(
     misma API local que alimenta el encabezado de Ventas del Día.
     """
     result = list(items or [])
-    existentes = {str(item.get("folio") or "") for item in result}
-    grouped: Dict[str, Dict[str, Any]] = {}
-
-    for row in load_open_snapshot_lines(
+    snapshot_rows = load_open_snapshot_lines(
         unidad_codigo,
         sucursal_id,
         fecha_operacion,
-    ):
+    )
+
+    # Para MPRO del dia, el snapshot API_LOCAL es la misma fuente que el
+    # encabezado. Sus tickets cerrados deben REEMPLAZAR cualquier fila
+    # canonica/historica ya presente (por ejemplo, una carga Central2020).
+    preferidos_api_local_mpro = {
+        str(row.get("folio") or "").strip()
+        for row in snapshot_rows
+        if str(row.get("folio") or "").strip()
+        and str(row.get("estado_ticket") or "").strip().upper() == "CERRADA"
+        and str(row.get("sistema_origen") or "").strip().upper() == "MPRO"
+    }
+    if preferidos_api_local_mpro:
+        result = [
+            item
+            for item in result
+            if str(item.get("folio") or "").strip()
+            not in preferidos_api_local_mpro
+        ]
+
+    existentes = {str(item.get("folio") or "") for item in result}
+    grouped: Dict[str, Dict[str, Any]] = {}
+
+    for row in snapshot_rows:
         folio = str(row.get("folio") or "").strip()
         if not folio or folio in existentes:
             continue
@@ -220,7 +240,25 @@ def build_ticket_venta(
     ticket = _safe_sql(folio)
     fecha = _safe_sql(fecha_operacion)
 
-    closed_rows = _query_edarsahub_tablero(
+    snapshot_rows = [
+        row
+        for row in load_open_snapshot_lines(
+            unidad_codigo,
+            sucursal_id,
+            fecha_operacion,
+        )
+        if str(row.get("folio") or "") == str(folio)
+    ]
+    preferir_snapshot_mpro = any(
+        str(row.get("estado_ticket") or "").strip().upper() == "CERRADA"
+        and str(row.get("sistema_origen") or "").strip().upper() == "MPRO"
+        for row in snapshot_rows
+    )
+
+    # Si existe ticket MPRO cerrado en el snapshot del dia, NO consultar ni
+    # priorizar la tabla historica/canonica: el snapshot proviene de la API
+    # local real y es la misma fuente usada por el encabezado de Ventas del Dia.
+    closed_rows = [] if preferir_snapshot_mpro else _query_edarsahub_tablero(
         f"""
         SELECT
             sistema_origen,
@@ -339,15 +377,6 @@ def build_ticket_venta(
             },
         }
 
-    snapshot_rows = [
-        row
-        for row in load_open_snapshot_lines(
-            unidad_codigo,
-            sucursal_id,
-            fecha_operacion,
-        )
-        if str(row.get("folio") or "") == str(folio)
-    ]
     if not snapshot_rows:
         return None
 
