@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-RESTORE-DETAIL-VERIFY-R38-CARLOS-20261002",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b3197b1049745380d987ac7f4c88afc6d89e9366",
+  "production_allowed": false,
+  "mode": "COMERCIAL_OPEN_DAY_SYNC",
+  "objective": "Sincronizador: ejecutar la sincronizacion de 2026-10-02 con la correccion R37 ya integrada y certificar en ORIGEN MPRO que se conservan todos los folios, el total encabezado-detalle sigue conciliando y el ticket SB-0055352 vuelve a mostrar lineas reales de producto en vez de VENTA CERRADA MPRO - DETALLE RESUMIDO. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "fecha_operacion": "2026-10-02",
+  "confirm_comercial_open_day_sync": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "origen_r38_header_detail_integrity",
+          "sql": "WITH s AS (SELECT TOP 1 snapshot_timestamp, total_estimado_dia, tickets_abiertos, tickets_cerrados_dia, detalle_abiertas_json FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK) WHERE UPPER(LTRIM(RTRIM(unidad_negocio_id)))='ORIGEN' AND fecha_operacion='2026-10-02' ORDER BY snapshot_timestamp DESC), j AS (SELECT x.folio, UPPER(ISNULL(x.estado_ticket,'ABIERTA')) AS estado_ticket, x.producto_codigo, x.producto_nombre, ISNULL(x.total_ticket,0) AS total_ticket FROM s CROSS APPLY OPENJSON(ISNULL(s.detalle_abiertas_json,'[]')) WITH (folio varchar(128) '$.folio', estado_ticket varchar(32) '$.estado_ticket', producto_codigo varchar(128) '$.producto_codigo', producto_nombre varchar(400) '$.producto_nombre', total_ticket decimal(18,4) '$.total_ticket') x), f AS (SELECT folio, MAX(total_ticket) AS total_ticket FROM j GROUP BY folio) SELECT MAX(s.snapshot_timestamp) AS snapshot_timestamp, MAX(s.total_estimado_dia) AS total_header, CAST(ISNULL(SUM(f.total_ticket),0) AS decimal(18,4)) AS total_detalle, CAST(MAX(s.total_estimado_dia)-ISNULL(SUM(f.total_ticket),0) AS decimal(18,4)) AS diferencia_total, MAX(s.tickets_abiertos)+MAX(s.tickets_cerrados_dia) AS tickets_header, COUNT(DISTINCT f.folio) AS tickets_detalle, (MAX(s.tickets_abiertos)+MAX(s.tickets_cerrados_dia))-COUNT(DISTINCT f.folio) AS diferencia_tickets, SUM(CASE WHEN UPPER(ISNULL(j.producto_nombre,'')) LIKE '%DETALLE RESUMIDO%' THEN 1 ELSE 0 END) AS filas_detalle_resumido, SUM(CASE WHEN UPPER(ISNULL(j.producto_nombre,'')) LIKE '%VENTA SIN DETALLE DE PRODUCTO%' THEN 1 ELSE 0 END) AS filas_sin_detalle_producto, SUM(CASE WHEN j.folio='SB-0055352' THEN 1 ELSE 0 END) AS filas_sb_0055352, COUNT(DISTINCT CASE WHEN j.folio='SB-0055352' THEN j.producto_codigo END) AS productos_sb_0055352 FROM s LEFT JOIN f ON 1=1 LEFT JOIN j ON j.folio=f.folio"
+        },
+        {
+          "name": "origen_r38_sb0055352_products",
+          "sql": "WITH s AS (SELECT TOP 1 detalle_abiertas_json FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK) WHERE UPPER(LTRIM(RTRIM(unidad_negocio_id)))='ORIGEN' AND fecha_operacion='2026-10-02' ORDER BY snapshot_timestamp DESC) SELECT x.folio, x.producto_codigo, x.producto_nombre, x.cantidad, x.precio_unitario, x.importe_bruto, x.total_ticket FROM s CROSS APPLY OPENJSON(ISNULL(s.detalle_abiertas_json,'[]')) WITH (folio varchar(128) '$.folio', producto_codigo varchar(128) '$.producto_codigo', producto_nombre varchar(400) '$.producto_nombre', cantidad decimal(18,4) '$.cantidad', precio_unitario decimal(18,4) '$.precio_unitario', importe_bruto decimal(18,4) '$.importe_bruto', total_ticket decimal(18,4) '$.total_ticket') x WHERE x.folio='SB-0055352' ORDER BY x.producto_codigo"
+        }
+      ]
+    }
+  ]
+}
