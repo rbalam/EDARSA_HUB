@@ -1,0 +1,407 @@
+{
+  "base_sha": "c715bee4fc72bd91c966c7f14c2d4b819c83c83e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-02T00:39:36Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-SEP01-09-5U-COVERAGE-R1-CARLOS-20261001",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-02T00:39:49Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad",
+              "tickets_total",
+              "tickets_con_vendedor",
+              "tickets_con_mesa"
+            ],
+            "name": "coverage_sep01_09_5u",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                228,
+                228,
+                0
+              ],
+              [
+                "130QRO",
+                231,
+                231,
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                321,
+                321,
+                0
+              ],
+              [
+                "ESTELAR",
+                413,
+                413,
+                0
+              ],
+              [
+                "ORIGEN",
+                271,
+                271,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad",
+              "fecha_operacion",
+              "tickets_total",
+              "tickets_con_vendedor",
+              "tickets_con_mesa"
+            ],
+            "name": "coverage_sep01_09_by_day",
+            "row_count_returned": 45,
+            "rows": [
+              [
+                "130MID",
+                "2026-09-01",
+                17,
+                17,
+                0
+              ],
+              [
+                "130QRO",
+                "2026-09-01",
+                24,
+                24,
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-01",
+                26,
+                26,
+                0
+              ],
+              [
+                "ESTELAR",
+                "2026-09-01",
+                29,
+                29,
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-09-01",
+                21,
+                21,
+                0
+              ],
+              [
+                "130MID",
+                "2026-09-02",
+                24,
+                24,
+                0
+              ],
+              [
+                "130QRO",
+                "2026-09-02",
+                29,
+                29,
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-02",
+                34,
+                34,
+                0
+              ],
+              [
+                "ESTELAR",
+                "2026-09-02",
+                16,
+                16,
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-09-02",
+                22,
+                22,
+                0
+              ],
+              [
+                "130MID",
+                "2026-09-03",
+                19,
+                19,
+                0
+              ],
+              [
+                "130QRO",
+                "2026-09-03",
+                26,
+                26,
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-03",
+                47,
+                47,
+                0
+              ],
+              [
+                "ESTELAR",
+                "2026-09-03",
+                32,
+                32,
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-09-03",
+                28,
+                28,
+                0
+              ],
+              [
+                "130MID",
+                "2026-09-04",
+                50,
+                50,
+                0
+              ],
+              [
+                "130QRO",
+                "2026-09-04",
+                31,
+                31,
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-04",
+                58,
+                58,
+                0
+              ],
+              [
+                "ESTELAR",
+                "2026-09-04",
+                81,
+                81,
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-09-04",
+                52,
+                52,
+                0
+              ],
+              [
+                "130MID",
+                "2026-09-05",
+                43,
+                43,
+                0
+              ],
+              [
+                "130QRO",
+                "2026-09-05",
+                51,
+                51,
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-05",
+                55,
+                55,
+                0
+              ],
+              [
+                "ESTELAR",
+                "2026-09-05",
+                167,
+                167,
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-09-05",
+                60,
+                60,
+                0
+              ],
+              [
+                "130MID",
+                "2026-09-06",
+                19,
+                19,
+                0
+              ],
+              [
+                "130QRO",
+                "2026-09-06",
+                14,
+                14,
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-06",
+                17,
+                17,
+                0
+              ],
+              [
+                "ESTELAR",
+                "2026-09-06",
+                21,
+                21,
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-09-06",
+                31,
+                31,
+                0
+              ],
+              [
+                "130MID",
+                "2026-09-07",
+                16,
+                16,
+                0
+              ],
+              [
+                "130QRO",
+                "2026-09-07",
+                12,
+                12,
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-07",
+                18,
+                18,
+                0
+              ],
+              [
+                "ESTELAR",
+                "2026-09-07",
+                17,
+                17,
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-09-07",
+                19,
+                19,
+                0
+              ],
+              [
+                "130MID",
+                "2026-09-08",
+                18,
+                18,
+                0
+              ],
+              [
+                "130QRO",
+                "2026-09-08",
+                16,
+                16,
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-08",
+                31,
+                31,
+                0
+              ],
+              [
+                "ESTELAR",
+                "2026-09-08",
+                21,
+                21,
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-09-08",
+                17,
+                17,
+                0
+              ],
+              [
+                "130MID",
+                "2026-09-09",
+                22,
+                22,
+                0
+              ],
+              [
+                "130QRO",
+                "2026-09-09",
+                28,
+                28,
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-09",
+                35,
+                35,
+                0
+              ],
+              [
+                "ESTELAR",
+                "2026-09-09",
+                29,
+                29,
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-09-09",
+                21,
+                21,
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-02T00:39:35Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
