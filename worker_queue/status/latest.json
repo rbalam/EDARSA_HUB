@@ -4,19 +4,19 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "7ac96234634a9c8b6e92affa4036a16753a59ed5",
-  "generated_at_utc": "2026-10-02T17:59:03Z",
+  "generated_at_utc": "2026-10-02T18:00:18Z",
   "history": {
-    "done_total_local": 1298,
+    "done_total_local": 1299,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1152,
-    "results_total_local": 2241
+    "results_total_local": 2242
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1997,
+      "age_seconds": 2072,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-SNAPSHOT-SAMESET-R32-CARLOS-20261002",
       "reasons": [
         "ACTION_1_SOURCE_SHA256_REQUIRED_OR_INVALID",
@@ -28,61 +28,67 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2120,
+      "age_seconds": 2194,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-ACTIVE-DIAG-R5-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1279,
+      "age_seconds": 1353,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-ACTIVE-DIAG-R8-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1598,
+      "age_seconds": 1673,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-SAFE-STOP-AUDIT-R7-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1885,
+      "age_seconds": 1960,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-SAFE-STOP-R6-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2519,
+      "age_seconds": 2594,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-ATOMIC-DIAG-R31-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3232,
+      "age_seconds": 36,
+      "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-FINAL-VERIFY-R36-CARLOS-20261002",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3307,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-HEADER-DETAIL-ATOMIC-R29-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2838,
+      "age_seconds": 2912,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-HEADER-DETAIL-VERIFY-R30-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1549,
+      "age_seconds": 1624,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-SNAPSHOT-SAMESET-R33-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1233,
+      "age_seconds": 1307,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-SNAPSHOT-SAMESET-R34-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 996,
+      "age_seconds": 1071,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-SNAPSHOT-SAMESET-R35-CARLOS-20261002",
       "reason": null,
       "state": "RESULT_READY"
@@ -96,15 +102,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 10,
+  "queue_result_ready_recent": 11,
   "queue_running": 0,
   "remote_development_sha": "7ac96234634a9c8b6e92affa4036a16753a59ed5",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-02T17:58:44Z",
-    "last_receive_utc": "2026-10-02T17:58:39Z",
-    "last_terminal_utc": "2026-10-02T17:42:27Z",
+    "last_cycle_utc": "2026-10-02T18:00:18Z",
+    "last_receive_utc": "2026-10-02T18:00:13Z",
+    "last_terminal_utc": "2026-10-02T17:59:41Z",
     "pid": "268946",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "4aff06e7ceeb552f43b52ea95b57ff522cd36adf",
