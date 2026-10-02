@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-MPRO-DETAIL-DIAG-R21-CARLOS-20261002",
+  "objective": "Diagnosticar en solo lectura el detalle MPRO canonico de ORIGEN para 2026-10-01 usando exactamente la estructura SQL del snapshot actual. No modificar datos ni tocar Produccion.",
+  "mode": "READ_ONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d9b6de1edd86c4fd8e6413f21612c2e70cdd2d0a",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "origen_exact_closed_detail_query_probe",
+          "sql": "WITH h AS (\n    SELECT\n        ve.Vn_Folio,\n        ve.Vn_Documento,\n        ve.Vn_Fecha,\n        ve.Sc_Cve_Sucursal,\n        ve.Vn_Cve_Vendedor,\n        CAST(ISNULL(ve.Vn_Precio_Neto_Importe, 0) AS decimal(18,4)) AS total_header,\n        ISNULL(c.Co_Personas, 0) AS pax,\n        ISNULL(c.Co_Propina, 0) AS propina,\n        NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), c.Co_Referencia))), '') AS mesa,\n        NULLIF(LTRIM(RTRIM(CONVERT(varchar(200), vnd.Vn_Descripcion))), '') AS vendedor_nombre\n    FROM Venta_Encabezado ve\n    LEFT JOIN Comanda c\n        ON c.Co_Folio = ve.Vn_Documento\n       AND c.Sc_Cve_Sucursal = ve.Sc_Cve_Sucursal\n    LEFT JOIN Vendedor vnd\n        ON vnd.Vn_Cve_Vendedor = ve.Vn_Cve_Vendedor\n    WHERE CAST(ve.Vn_Fecha AS date) = '2026-10-01'\n      AND ve.Sc_Cve_Sucursal = '0023'\n      AND ve.Es_Cve_Estado IN ('AC', 'FA')\n      AND ve.Fecha_Baja IS NULL\n),\nt AS (\n    SELECT\n        Vn_Documento,\n        MIN(Vn_Fecha) AS fecha_hora,\n        MAX(pax) AS pax,\n        MAX(propina) AS propina,\n        MAX(CONVERT(varchar(100), Vn_Cve_Vendedor)) AS vendedor_id,\n        MAX(vendedor_nombre) AS vendedor_nombre,\n        MAX(mesa) AS mesa,\n        SUM(total_header) AS total_ticket\n    FROM h\n    GROUP BY Vn_Documento\n),\nl AS (\n    SELECT\n        h.Vn_Documento,\n        MAX(CONVERT(varchar(64), h.Vn_Folio)) AS folio_origen,\n        COALESCE(NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''), 'SIN_CODIGO') AS producto_codigo,\n        COALESCE(MAX(CONVERT(varchar(300), d.Vn_Concepto)), 'VENTA SIN DETALLE DE PRODUCTO') AS producto_nombre,\n        MAX(CASE WHEN d.Vn_Folio IS NULL THEN 0 ELSE 1 END) AS tiene_detalle,\n        SUM(CAST(ISNULL(d.Vn_Cantidad_1, 0) AS decimal(18,4))) AS cantidad,\n        SUM(CAST(ISNULL(d.Vn_Precio_Lista_Importe, 0) AS decimal(18,4))) AS importe_bruto,\n        SUM(CAST(ISNULL(d.Vn_Descuento_Importe, 0) AS decimal(18,4))) AS descuento_producto\n    FROM h\n    LEFT JOIN Venta d\n        ON d.Vn_Folio = h.Vn_Folio\n       AND d.Sc_Cve_Sucursal = h.Sc_Cve_Sucursal\n    GROUP BY\n        h.Vn_Documento,\n        COALESCE(NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''), 'SIN_CODIGO')\n)\nSELECT TOP 50\n    CONVERT(varchar(64), t.Vn_Documento) AS folio,\n    l.folio_origen,\n    t.fecha_hora,\n    t.total_ticket,\n    l.producto_codigo,\n    l.producto_nombre,\n    l.tiene_detalle,\n    l.cantidad,\n    l.importe_bruto,\n    l.descuento_producto\nFROM t\nINNER JOIN l ON l.Vn_Documento = t.Vn_Documento\nORDER BY t.Vn_Documento, l.producto_codigo"
+        }
+      ]
+    }
+  ]
+}
