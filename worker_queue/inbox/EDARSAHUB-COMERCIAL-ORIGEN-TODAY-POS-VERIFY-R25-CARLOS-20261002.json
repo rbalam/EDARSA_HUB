@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d9b6de1edd86c4fd8e6413f21612c2e70cdd2d0a",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "mode": "READ_ONLY",
+  "actions": [],
+  "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-TODAY-POS-VERIFY-R25-CARLOS-20261002",
+  "objective": "Verificar en solo lectura las cuentas abiertas actuales de ORIGEN MPRO para 2026-10-02 y comparar ventas, tickets y PAX con el snapshot de EDARSAHUB. No tocar Produccion.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "origen_today_pos_open_accounts",
+          "sql": "SELECT ISNULL(SUM(ticket.ventas),0) AS ventas_abiertas, COUNT(*) AS tickets_abiertos, ISNULL(SUM(ticket.pax),0) AS pax_abiertos FROM (SELECT c.Co_Folio, SUM(ISNULL(cd.Cd_Importe,0)) AS ventas, MAX(ISNULL(c.Co_Personas,0)) AS pax FROM Comanda c INNER JOIN Comanda_Detalle cd ON cd.Co_Folio=c.Co_Folio WHERE CAST(c.Co_Fecha AS date)='2026-10-02' AND c.Sc_Cve_Sucursal='0023' AND c.Es_Cve_Estado IN ('AC','IM') AND cd.Es_Cve_Estado='AC' AND cd.Fecha_Baja IS NULL GROUP BY c.Co_Folio) AS ticket"
+        }
+      ]
+    }
+  ]
+}
