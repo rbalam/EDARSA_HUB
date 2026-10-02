@@ -1,0 +1,55 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-RANGE-MULTIUNIT-UI-AUDIT-R4-CARLOS-20261002",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "11a5231fc216f972685c36c25453a8dfdf076c90",
+  "production_allowed": false,
+  "mode": "FRONTEND_BUILD_CERTIFICATION",
+  "objective": "Sincronizador: certificación final de solo lectura del panel de re-sincronización Comercial por rango y múltiples sucursales ya integrado en 11a5231. Validar build del frontend, contrato de rutas/UI y que el repositorio no quede mutado. No cambiar archivos, no tocar Producción y no tocar sync_comercial_abiertas_v2.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial/resync_batch_jobs.py",
+          "backend/api/admin_scheduler_resync.py",
+          "frontend/src/components/admin/ComercialRangeResyncCard.jsx",
+          "frontend/src/components/admin/ResyncPanel.jsx"
+        ],
+        "search_terms": [
+          "comercial_range_batch",
+          "sync_comercial_v2",
+          "_ejecutar_sync_real",
+          "force_refresh_existing",
+          "Sistema_Sync_ResyncLog",
+          "comercial-range/jobs",
+          "Seleccionar todas",
+          "Actualiza existentes",
+          "JOB_PARTIAL"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.jsx"
+        ],
+        "exclude_patterns": [],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
