@@ -40,8 +40,11 @@ import pytz
 from modules.comercial_v2.ticket_snapshot import (
     QUERY_SOFTRESTAURANT_DETALLE_ABIERTAS,
     QUERY_MPRO_DETALLE_ABIERTAS,
+    QUERY_MPRO_DETALLE_ABIERTAS_RESUMEN,
     QUERY_MPRO_DETALLE_CERRADAS_CANONICAS,
+    QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_RESUMEN,
     QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES,
+    QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES_RESUMEN,
     serialize_open_detail_rows,
 )
 from datetime import datetime, date, timezone, timedelta
@@ -1714,18 +1717,66 @@ async def execute_sync_comercial_abiertas_v2(
                                 query_detalle_abiertas,
                             )
                         )
-                        if detalle_status == "API_LOCAL_OK":
+                        folios_abiertos_detalle = {
+                            str(row.get("folio") or "").strip()
+                            for row in (detalle_rows_abiertas or [])
+                            if str(row.get("folio") or "").strip()
+                        }
+                        necesita_resumen_abiertas = (
+                            detalle_status != "API_LOCAL_OK"
+                            or len(folios_abiertos_detalle) < tickets_abiertos
+                        )
+
+                        if not necesita_resumen_abiertas:
                             detalle_rows_dia.extend(
                                 detalle_rows_abiertas or []
                             )
                         else:
-                            detalle_completo = False
                             logger.warning(
                                 "[SYNC_ABIERTAS_V2] %s: "
-                                "detalle MPRO abierto no disponible: %s",
+                                "detalle MPRO abierto incompleto "
+                                "(status=%s, folios=%s/%s); usando resumen",
                                 nombre,
                                 detalle_status,
+                                len(folios_abiertos_detalle),
+                                tickets_abiertos,
                             )
+                            query_resumen_abiertas = (
+                                QUERY_MPRO_DETALLE_ABIERTAS_RESUMEN.format(
+                                    sucursal_id=sucursal_id,
+                                    fecha_operacion=fecha_operacion_str,
+                                )
+                            )
+                            rows_resumen_abiertas, status_resumen_abiertas = (
+                                _execute_query_via_api_local(
+                                    api_config,
+                                    query_resumen_abiertas,
+                                )
+                            )
+                            folios_resumen_abiertas = {
+                                str(row.get("folio") or "").strip()
+                                for row in (rows_resumen_abiertas or [])
+                                if str(row.get("folio") or "").strip()
+                            }
+                            if (
+                                status_resumen_abiertas == "API_LOCAL_OK"
+                                and len(folios_resumen_abiertas)
+                                >= tickets_abiertos
+                            ):
+                                detalle_rows_dia.extend(
+                                    rows_resumen_abiertas or []
+                                )
+                            else:
+                                detalle_completo = False
+                                logger.warning(
+                                    "[SYNC_ABIERTAS_V2] %s: "
+                                    "resumen MPRO abierto incompleto "
+                                    "(status=%s, folios=%s/%s)",
+                                    nombre,
+                                    status_resumen_abiertas,
+                                    len(folios_resumen_abiertas),
+                                    tickets_abiertos,
+                                )
                     except Exception as detalle_exc:
                         detalle_completo = False
                         logger.warning(
@@ -1761,18 +1812,82 @@ async def execute_sync_comercial_abiertas_v2(
                                 query_detalle_cerradas,
                             )
                         )
-                        if detalle_cerradas_status == "API_LOCAL_OK":
+                        folios_cerrados_detalle = {
+                            str(row.get("folio") or "").strip()
+                            for row in (detalle_rows_cerradas or [])
+                            if str(row.get("folio") or "").strip()
+                        }
+                        necesita_resumen_cerradas = (
+                            detalle_cerradas_status != "API_LOCAL_OK"
+                            or len(folios_cerrados_detalle)
+                            < tickets_cerrados_dia
+                        )
+
+                        if not necesita_resumen_cerradas:
                             detalle_rows_dia.extend(
                                 detalle_rows_cerradas or []
                             )
                         else:
-                            detalle_completo = False
                             logger.warning(
                                 "[SYNC_ABIERTAS_V2] %s: "
-                                "detalle MPRO cerrado no disponible: %s",
+                                "detalle MPRO cerrado incompleto "
+                                "(status=%s, folios=%s/%s, fuente=%s); "
+                                "usando resumen",
                                 nombre,
                                 detalle_cerradas_status,
+                                len(folios_cerrados_detalle),
+                                tickets_cerrados_dia,
+                                closed_sales_source,
                             )
+                            if (
+                                closed_sales_source
+                                == "CANONICAL_VENTA_ENCABEZADO"
+                            ):
+                                query_resumen_cerradas = (
+                                    QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_RESUMEN.format(
+                                        sucursal_id=sucursal_id,
+                                        fecha_operacion=fecha_operacion_str,
+                                    )
+                                )
+                            else:
+                                query_resumen_cerradas = (
+                                    QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES_RESUMEN.format(
+                                        sucursal_id=sucursal_id,
+                                        fecha_operacion=fecha_operacion_str,
+                                    )
+                                )
+
+                            rows_resumen_cerradas, status_resumen_cerradas = (
+                                _execute_query_via_api_local(
+                                    api_config,
+                                    query_resumen_cerradas,
+                                )
+                            )
+                            folios_resumen_cerradas = {
+                                str(row.get("folio") or "").strip()
+                                for row in (rows_resumen_cerradas or [])
+                                if str(row.get("folio") or "").strip()
+                            }
+                            if (
+                                status_resumen_cerradas == "API_LOCAL_OK"
+                                and len(folios_resumen_cerradas)
+                                >= tickets_cerrados_dia
+                            ):
+                                detalle_rows_dia.extend(
+                                    rows_resumen_cerradas or []
+                                )
+                            else:
+                                detalle_completo = False
+                                logger.warning(
+                                    "[SYNC_ABIERTAS_V2] %s: "
+                                    "resumen MPRO cerrado incompleto "
+                                    "(status=%s, folios=%s/%s, fuente=%s)",
+                                    nombre,
+                                    status_resumen_cerradas,
+                                    len(folios_resumen_cerradas),
+                                    tickets_cerrados_dia,
+                                    closed_sales_source,
+                                )
                     except Exception as detalle_exc:
                         detalle_completo = False
                         logger.warning(
@@ -1798,14 +1913,13 @@ async def execute_sync_comercial_abiertas_v2(
                         closed_sales_source,
                     )
                 else:
-                    # No persistir un snapshot parcial: el upsert conservará
-                    # el último detalle válido mientras el encabezado sí puede
-                    # seguir actualizándose.
-                    logger.warning(
-                        "[SYNC_ABIERTAS_V2] %s: "
-                        "snapshot de detalle MPRO incompleto; "
-                        "se conserva el último detalle válido",
-                        nombre,
+                    # Atomicidad encabezado/detalle: no avanzar el encabezado
+                    # si no fue posible materializar todos los folios del mismo
+                    # ciclo. Así la UI nunca combina un encabezado nuevo con
+                    # detalle_abiertas_json de un ciclo anterior.
+                    raise Exception(
+                        "SOURCE_ERROR: snapshot MPRO incompleto; "
+                        "se conserva encabezado y detalle del último ciclo válido"
                     )
             
                 # FIX 2026-05-15: Log detallado para QRO (diagnóstico de bug $0)

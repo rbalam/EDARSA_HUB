@@ -360,6 +360,126 @@ ORDER BY c.Co_Folio, producto_codigo
 """
 
 
+# Fallbacks resumidos MPRO.
+#
+# Se usan cuando la consulta de detalle por producto no puede materializar
+# todos los folios que ya fueron contados por el encabezado del mismo ciclo.
+# Mantienen exactamente la identidad, total, PAX y vendedor del ticket y
+# evitan conservar un detalle viejo mientras el encabezado avanza.
+QUERY_MPRO_DETALLE_ABIERTAS_RESUMEN = """
+SELECT
+    CONVERT(varchar(64), c.Co_Folio) AS folio,
+    CONVERT(varchar(64), c.Co_Folio) AS folio_origen,
+    'ABIERTA' AS estado_ticket,
+    'MPRO' AS sistema_origen,
+    MIN(c.Co_Fecha) AS fecha_hora,
+    MAX(ISNULL(c.Co_Personas, 0)) AS pax,
+    MAX(ISNULL(c.Co_Propina, 0)) AS propina,
+    MAX(CONVERT(varchar(100), c.Vn_Cve_Vendedor)) AS vendedor_id,
+    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(200), vnd.Vn_Descripcion))), '')) AS vendedor_nombre,
+    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), c.Co_Referencia))), '')) AS mesa,
+    SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS total_ticket,
+    'SIN_CODIGO' AS producto_codigo,
+    'CUENTA ABIERTA MPRO - DETALLE RESUMIDO' AS producto_nombre,
+    CAST(1 AS decimal(18,4)) AS cantidad,
+    SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS precio_unitario,
+    SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS importe_bruto,
+    CAST(0 AS decimal(9,4)) AS descuento_pct,
+    CAST(0 AS decimal(18,4)) AS descuento_producto,
+    SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS importe_neto_producto,
+    CAST(0 AS decimal(18,4)) AS descuento_encabezado_reportado,
+    CAST(0 AS decimal(18,4)) AS descuento_total_reportado
+FROM Comanda c
+INNER JOIN Comanda_Detalle d
+    ON d.Co_Folio = c.Co_Folio
+   AND d.Es_Cve_Estado = 'AC'
+   AND d.Fecha_Baja IS NULL
+LEFT JOIN Vendedor vnd
+    ON vnd.Vn_Cve_Vendedor = c.Vn_Cve_Vendedor
+WHERE CAST(c.Co_Fecha AS date) = '{fecha_operacion}'
+  AND c.Sc_Cve_Sucursal = '{sucursal_id}'
+  AND c.Es_Cve_Estado IN ('AC', 'IM')
+GROUP BY c.Co_Folio
+ORDER BY c.Co_Folio
+"""
+
+
+QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_RESUMEN = """
+SELECT
+    CONVERT(varchar(64), ve.Vn_Documento) AS folio,
+    MAX(CONVERT(varchar(64), ve.Vn_Folio)) AS folio_origen,
+    'CERRADA' AS estado_ticket,
+    'MPRO' AS sistema_origen,
+    MIN(ve.Vn_Fecha) AS fecha_hora,
+    MAX(ISNULL(c.Co_Personas, 0)) AS pax,
+    MAX(ISNULL(c.Co_Propina, 0)) AS propina,
+    MAX(CONVERT(varchar(100), ve.Vn_Cve_Vendedor)) AS vendedor_id,
+    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(200), vnd.Vn_Descripcion))), '')) AS vendedor_nombre,
+    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), c.Co_Referencia))), '')) AS mesa,
+    SUM(CAST(ISNULL(ve.Vn_Precio_Neto_Importe, 0) AS decimal(18,4))) AS total_ticket,
+    'SIN_CODIGO' AS producto_codigo,
+    'VENTA CERRADA MPRO - DETALLE RESUMIDO' AS producto_nombre,
+    CAST(1 AS decimal(18,4)) AS cantidad,
+    SUM(CAST(ISNULL(ve.Vn_Precio_Neto_Importe, 0) AS decimal(18,4))) AS precio_unitario,
+    SUM(CAST(ISNULL(ve.Vn_Precio_Neto_Importe, 0) AS decimal(18,4))) AS importe_bruto,
+    CAST(0 AS decimal(9,4)) AS descuento_pct,
+    CAST(0 AS decimal(18,4)) AS descuento_producto,
+    SUM(CAST(ISNULL(ve.Vn_Precio_Neto_Importe, 0) AS decimal(18,4))) AS importe_neto_producto,
+    CAST(0 AS decimal(18,4)) AS descuento_encabezado_reportado,
+    CAST(0 AS decimal(18,4)) AS descuento_total_reportado
+FROM Venta_Encabezado ve
+LEFT JOIN Comanda c
+    ON c.Co_Folio = ve.Vn_Documento
+   AND c.Sc_Cve_Sucursal = ve.Sc_Cve_Sucursal
+LEFT JOIN Vendedor vnd
+    ON vnd.Vn_Cve_Vendedor = ve.Vn_Cve_Vendedor
+WHERE CAST(ve.Vn_Fecha AS date) = '{fecha_operacion}'
+  AND ve.Sc_Cve_Sucursal = '{sucursal_id}'
+  AND ve.Es_Cve_Estado IN ('AC', 'FA')
+  AND ve.Fecha_Baja IS NULL
+GROUP BY ve.Vn_Documento
+ORDER BY ve.Vn_Documento
+"""
+
+
+QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES_RESUMEN = """
+SELECT
+    CONVERT(varchar(64), c.Co_Folio) AS folio,
+    CONVERT(varchar(64), c.Co_Folio) AS folio_origen,
+    'CERRADA' AS estado_ticket,
+    'MPRO' AS sistema_origen,
+    MIN(c.Co_Fecha) AS fecha_hora,
+    MAX(ISNULL(c.Co_Personas, 0)) AS pax,
+    MAX(ISNULL(c.Co_Propina, 0)) AS propina,
+    MAX(CONVERT(varchar(100), c.Vn_Cve_Vendedor)) AS vendedor_id,
+    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(200), vnd.Vn_Descripcion))), '')) AS vendedor_nombre,
+    MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), c.Co_Referencia))), '')) AS mesa,
+    SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS total_ticket,
+    'SIN_CODIGO' AS producto_codigo,
+    'VENTA CERRADA MPRO - DETALLE RESUMIDO' AS producto_nombre,
+    CAST(1 AS decimal(18,4)) AS cantidad,
+    SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS precio_unitario,
+    SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS importe_bruto,
+    CAST(0 AS decimal(9,4)) AS descuento_pct,
+    CAST(0 AS decimal(18,4)) AS descuento_producto,
+    SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS importe_neto_producto,
+    CAST(0 AS decimal(18,4)) AS descuento_encabezado_reportado,
+    CAST(0 AS decimal(18,4)) AS descuento_total_reportado
+FROM Comanda c
+INNER JOIN Comanda_Detalle d
+    ON d.Co_Folio = c.Co_Folio
+   AND d.Es_Cve_Estado = 'AC'
+   AND d.Fecha_Baja IS NULL
+LEFT JOIN Vendedor vnd
+    ON vnd.Vn_Cve_Vendedor = c.Vn_Cve_Vendedor
+WHERE CAST(c.Co_Fecha AS date) = '{fecha_operacion}'
+  AND c.Sc_Cve_Sucursal = '{sucursal_id}'
+  AND c.Es_Cve_Estado = 'PA'
+GROUP BY c.Co_Folio
+ORDER BY c.Co_Folio
+"""
+
+
 def _number(value: Any) -> float:
     try:
         return float(value or 0)
