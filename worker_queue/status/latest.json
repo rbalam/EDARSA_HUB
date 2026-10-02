@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "LOCAL_AHEAD_ONLY",
   "development_sha": "6e0bba5e91241d12c9e00e3f121555b5cccdef92",
-  "generated_at_utc": "2026-10-02T00:36:26Z",
+  "generated_at_utc": "2026-10-02T00:37:42Z",
   "history": {
     "done_total_local": 1286,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 569,
+      "age_seconds": 645,
       "job_id": "EDARSAHUB-COMERCIAL-MESA-VENDEDOR-AUDIT-R2-CARLOS-20261001T1824MX",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3220,
+      "age_seconds": 3297,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-MESA-VENDEDOR-PARITY-R2-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2323,
+      "age_seconds": 2400,
       "job_id": "MEJORA-TABEJE-VENTAS-DIA-PARIDAD-COMERCIAL-R17-CARLOS-20261001T2344Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-02T00:36:19Z",
-    "last_receive_utc": "2026-10-02T00:36:14Z",
+    "last_cycle_utc": "2026-10-02T00:37:41Z",
+    "last_receive_utc": "2026-10-02T00:37:36Z",
     "last_terminal_utc": "2026-10-02T00:26:56Z",
     "pid": "514",
     "runtime_fingerprint": {
