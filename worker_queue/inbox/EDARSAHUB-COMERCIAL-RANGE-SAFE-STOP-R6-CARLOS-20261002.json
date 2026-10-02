@@ -1,0 +1,140 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-RANGE-SAFE-STOP-R6-CARLOS-20261002",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c54b546cf0f6937c739dc3c62b6be90bb60609b7",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Sincronizador: agregar detención segura cooperativa al panel Comercial por rango. El botón debe solicitar cancelación, conservar checkpoint, no matar Scheduler/backend/worker, no forzar liberar el lock y detenerse sólo al finalizar la operación atómica actual. Mostrar alerta visual si un job activo lleva >10 minutos sin actualizarse y permitir reanudar un JOB_CANCELLED desde checkpoint. No tocar sync_comercial_abiertas_v2 ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "ACTIVE = (\"JOB_QUEUED\", \"JOB_RUNNING\", \"JOB_WAITING_LOCK\")\nRESUMABLE = (\"JOB_PARTIAL\", \"JOB_FAILED\", \"JOB_STALE\")",
+      "new": "ACTIVE = (\"JOB_QUEUED\", \"JOB_RUNNING\", \"JOB_WAITING_LOCK\", \"JOB_CANCEL_REQUESTED\")\nRESUMABLE = (\"JOB_PARTIAL\", \"JOB_FAILED\", \"JOB_STALE\", \"JOB_CANCELLED\")",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "def queue_resume(job_id: int):\n    payload = get_job(job_id)\n    if not payload: raise ValueError(\"Trabajo Comercial no encontrado\")\n    if payload.get(\"status\") == \"JOB_SUCCESS\": return payload\n    if payload.get(\"status\") not in RESUMABLE:\n        raise ValueError(f\"No se puede reanudar desde {payload.get('status')}\")\n    payload[\"current_phase\"] = \"QUEUED_RESUME\"\n    _write(job_id, payload, \"JOB_QUEUED\", \"Trabajo reanudado desde checkpoint.\")\n    return _read(job_id)\n\nasync def run_job(job_id: int):",
+      "new": "def queue_resume(job_id: int):\n    payload = get_job(job_id)\n    if not payload: raise ValueError(\"Trabajo Comercial no encontrado\")\n    if payload.get(\"status\") == \"JOB_SUCCESS\": return payload\n    if payload.get(\"status\") not in RESUMABLE:\n        raise ValueError(f\"No se puede reanudar desde {payload.get('status')}\")\n    payload[\"cancel_requested\"] = False\n    payload[\"cancel_requested_at_utc\"] = None\n    payload[\"cancelled_by\"] = None\n    payload[\"current_phase\"] = \"QUEUED_RESUME\"\n    _write(job_id, payload, \"JOB_QUEUED\", \"Trabajo reanudado desde checkpoint.\")\n    return _read(job_id)\n\n\ndef request_cancel(job_id: int, requested_by: str):\n    payload = get_job(job_id)\n    if not payload:\n        raise ValueError(\"Trabajo Comercial no encontrado\")\n    if payload.get(\"status\") in (\"JOB_SUCCESS\", \"JOB_CANCELLED\"):\n        return payload\n    if payload.get(\"status\") not in ACTIVE:\n        raise ValueError(f\"No se puede detener desde {payload.get('status')}\")\n    payload[\"cancel_requested\"] = True\n    payload[\"cancel_requested_at_utc\"] = _now()\n    payload[\"cancelled_by\"] = requested_by\n    payload[\"current_phase\"] = \"STOP_REQUESTED\"\n    _write(\n        job_id,\n        payload,\n        \"JOB_CANCEL_REQUESTED\",\n        \"Detención segura solicitada. Se detendrá al finalizar la operación atómica actual.\",\n    )\n    return _read(job_id)\n\n\ndef _cancel_requested(job_id: int) -> bool:\n    current = _read(job_id)\n    return bool(current and (\n        current.get(\"cancel_requested\")\n        or current.get(\"status\") == \"JOB_CANCEL_REQUESTED\"\n    ))\n\n\ndef _finish_cancelled(job_id: int, payload: Dict[str, Any]):\n    latest = _read(job_id) or payload\n    latest[\"cancel_requested\"] = True\n    latest[\"current_unit\"] = None\n    latest[\"current_block\"] = None\n    latest[\"current_phase\"] = \"STOPPED_SAFE\"\n    _write(\n        job_id,\n        latest,\n        \"JOB_CANCELLED\",\n        \"Proceso detenido de forma segura. El checkpoint fue conservado y puede reanudarse.\",\n    )\n    return _read(job_id)\n\n\nasync def run_job(job_id: int):",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "    try:\n        _write(job_id, payload, \"JOB_RUNNING\", \"Re-sincronización Comercial por rango iniciada.\")\n        payload = _read(job_id) or payload\n        for start, end in _blocks(date.fromisoformat(payload[\"fecha_inicio\"]), date.fromisoformat(payload[\"fecha_fin\"])):\n            for unit in payload.get(\"units\") or []:\n                key = _key(unit, start, end)",
+      "new": "    try:\n        if _cancel_requested(job_id):\n            _finish_cancelled(job_id, payload)\n            return\n        _write(job_id, payload, \"JOB_RUNNING\", \"Re-sincronización Comercial por rango iniciada.\")\n        payload = _read(job_id) or payload\n        for start, end in _blocks(date.fromisoformat(payload[\"fecha_inicio\"]), date.fromisoformat(payload[\"fecha_fin\"])):\n            for unit in payload.get(\"units\") or []:\n                if _cancel_requested(job_id):\n                    _finish_cancelled(job_id, payload)\n                    return\n                key = _key(unit, start, end)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "                        dry = await _ejecutar_dry_run(unit, config, start, end)\n                        final_dry = _compact(dry)\n                        if not dry.get(\"success\"):",
+      "new": "                        dry = await _ejecutar_dry_run(unit, config, start, end)\n                        final_dry = _compact(dry)\n                        if _cancel_requested(job_id):\n                            _finish_cancelled(job_id, payload)\n                            return\n                        if not dry.get(\"success\"):",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "                        lock = get_lock_manager().get_lock(LOCK_NAME)\n                        if not await lock.acquire(timeout_seconds=600):",
+      "new": "                        if _cancel_requested(job_id):\n                            _finish_cancelled(job_id, payload)\n                            return\n                        lock = get_lock_manager().get_lock(LOCK_NAME)\n                        if not await lock.acquire(timeout_seconds=600):",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "                        passed = bool(final_real.get(\"success\")) and bool(final_real.get(\"header_success\")) and bool(final_real.get(\"detail_success\"))\n                        if passed: break",
+      "new": "                        passed = bool(final_real.get(\"success\")) and bool(final_real.get(\"header_success\")) and bool(final_real.get(\"detail_success\"))\n                        if _cancel_requested(job_id):\n                            step[\"status\"] = \"PASS\" if passed else \"PENDING_RECOVERY\"\n                            step[\"dry_run\"] = final_dry\n                            step[\"real\"] = final_real\n                            step[\"completed_at_utc\"] = _now()\n                            payload[\"steps\"][key] = step\n                            _finish_cancelled(job_id, payload)\n                            return\n                        if passed: break",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "old": "@router.post(\"/resync/comercial-range/jobs/{job_id}/resume\", status_code=202)\ndef reanudar_comercial_range_job(\n    job_id: int,\n    background_tasks: BackgroundTasks,\n    current_user: dict = Depends(require_explicit_permission(\"SCHEDULER_ADMIN\")),\n):\n    from modules.comercial.resync_batch_jobs import queue_resume, run_job\n    try:\n        payload = queue_resume(job_id)\n    except ValueError as exc:\n        raise HTTPException(status_code=409, detail=str(exc))\n    if payload.get(\"status\") != \"JOB_SUCCESS\":\n        background_tasks.add_task(run_job, int(job_id))\n    return {\"success\": True, **payload}\n\n\n@router.post(\"/resync/execute\", response_model=ResyncResponse)",
+      "new": "@router.post(\"/resync/comercial-range/jobs/{job_id}/resume\", status_code=202)\ndef reanudar_comercial_range_job(\n    job_id: int,\n    background_tasks: BackgroundTasks,\n    current_user: dict = Depends(require_explicit_permission(\"SCHEDULER_ADMIN\")),\n):\n    from modules.comercial.resync_batch_jobs import queue_resume, run_job\n    try:\n        payload = queue_resume(job_id)\n    except ValueError as exc:\n        raise HTTPException(status_code=409, detail=str(exc))\n    if payload.get(\"status\") != \"JOB_SUCCESS\":\n        background_tasks.add_task(run_job, int(job_id))\n    return {\"success\": True, **payload}\n\n\n@router.post(\"/resync/comercial-range/jobs/{job_id}/cancel\", status_code=202)\ndef detener_comercial_range_job(\n    job_id: int,\n    current_user: dict = Depends(require_explicit_permission(\"SCHEDULER_ADMIN\")),\n):\n    from modules.comercial.resync_batch_jobs import request_cancel\n    try:\n        payload = request_cancel(\n            job_id,\n            current_user.get(\"email\", \"unknown\"),\n        )\n    except ValueError as exc:\n        raise HTTPException(status_code=409, detail=str(exc))\n    return {\"success\": True, **payload}\n\n\n@router.post(\"/resync/execute\", response_model=ResyncResponse)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/admin/ComercialRangeResyncCard.jsx",
+      "old": "import { CheckCircle2, Clock3, Loader2, Play, RefreshCw, RotateCcw, Server } from 'lucide-react';\n\nconst ACTIVE = new Set(['JOB_QUEUED','JOB_RUNNING','JOB_WAITING_LOCK']);\nconst RESUMABLE = new Set(['JOB_PARTIAL','JOB_FAILED','JOB_STALE']);",
+      "new": "import { CheckCircle2, Clock3, Loader2, Play, RefreshCw, RotateCcw, Server, Square } from 'lucide-react';\n\nconst ACTIVE = new Set(['JOB_QUEUED','JOB_RUNNING','JOB_WAITING_LOCK','JOB_CANCEL_REQUESTED']);\nconst RESUMABLE = new Set(['JOB_PARTIAL','JOB_FAILED','JOB_STALE','JOB_CANCELLED']);",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/admin/ComercialRangeResyncCard.jsx",
+      "old": "  const resume=async()=>{\n    setLoading(true);\n    try{\n      const r=await api.post(`/admin/scheduler/resync/comercial-range/jobs/${job.job_id}/resume`);\n      setJob(r.data);\n    }catch(e){alert(e.response?.data?.detail||e.message);}\n    finally{setLoading(false);}\n  };\n\n  const pct=Number(job?.percent_complete||0);",
+      "new": "  const resume=async()=>{\n    setLoading(true);\n    try{\n      const r=await api.post(`/admin/scheduler/resync/comercial-range/jobs/${job.job_id}/resume`);\n      setJob(r.data);\n    }catch(e){alert(e.response?.data?.detail||e.message);}\n    finally{setLoading(false);}\n  };\n\n  const stopSafely=async()=>{\n    if(!job?.job_id) return;\n    if(!window.confirm('¿Solicitar detención segura? La operación atómica actual terminará antes de detener el proceso y se conservará el checkpoint.')) return;\n    setLoading(true);\n    try{\n      const r=await api.post(`/admin/scheduler/resync/comercial-range/jobs/${job.job_id}/cancel`);\n      setJob(r.data);\n    }catch(e){alert(e.response?.data?.detail||e.message);}\n    finally{setLoading(false);}\n  };\n\n  const pct=Number(job?.percent_complete||0);\n  const lastUpdateMs=job?.updated_at_utc?Date.now()-new Date(job.updated_at_utc).getTime():0;\n  const stalled=ACTIVE.has(job?.status)&&lastUpdateMs>10*60*1000;",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/admin/ComercialRangeResyncCard.jsx",
+      "old": "        <p className=\"text-sm text-zinc-600\">{job.message}</p>\n        <div className=\"grid grid-cols-1 md:grid-cols-2 gap-2\">",
+      "new": "        <p className=\"text-sm text-zinc-600\">{job.message}</p>\n        {stalled&&job.status!=='JOB_CANCEL_REQUESTED'&&<Alert className=\"border-amber-300 bg-amber-50\">\n          <Clock3 className=\"w-4 h-4\"/><AlertTitle>Sin avance reciente</AlertTitle>\n          <AlertDescription>\n            Este bloque lleva más de 10 minutos sin actualizar su checkpoint. Puedes solicitar una detención segura sin detener el Scheduler ni otros sincronizadores.\n          </AlertDescription>\n        </Alert>}\n        {job.status==='JOB_CANCEL_REQUESTED'&&<Alert className=\"border-amber-300 bg-amber-50\">\n          <Clock3 className=\"w-4 h-4\"/><AlertTitle>Detención solicitada</AlertTitle>\n          <AlertDescription>\n            Esperando que termine la operación atómica actual para liberar el lock y conservar el checkpoint.\n          </AlertDescription>\n        </Alert>}\n        <div className=\"grid grid-cols-1 md:grid-cols-2 gap-2\">",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/admin/ComercialRangeResyncCard.jsx",
+      "old": "        {job.status==='JOB_SUCCESS'&&<div className=\"flex items-center gap-2 text-emerald-700 text-sm\"><CheckCircle2 className=\"w-4 h-4\"/>Rango completado.</div>}\n        {RESUMABLE.has(job.status)&&<Button variant=\"outline\" onClick={resume} disabled={loading}><RotateCcw className=\"w-4 h-4 mr-2\"/>Reanudar pendientes</Button>}\n      </div>}",
+      "new": "        {job.status==='JOB_SUCCESS'&&<div className=\"flex items-center gap-2 text-emerald-700 text-sm\"><CheckCircle2 className=\"w-4 h-4\"/>Rango completado.</div>}\n        {ACTIVE.has(job.status)&&job.status!=='JOB_CANCEL_REQUESTED'&&<Button variant=\"destructive\" onClick={stopSafely} disabled={loading}>\n          <Square className=\"w-4 h-4 mr-2\"/>Detener de manera segura\n        </Button>}\n        {RESUMABLE.has(job.status)&&<Button variant=\"outline\" onClick={resume} disabled={loading}><RotateCcw className=\"w-4 h-4 mr-2\"/>Reanudar desde checkpoint</Button>}\n      </div>}",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial/resync_batch_jobs.py",
+        "backend/api/admin_scheduler_resync.py"
+      ]
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial/resync_batch_jobs.py",
+          "backend/api/admin_scheduler_resync.py",
+          "frontend/src/components/admin/ComercialRangeResyncCard.jsx"
+        ],
+        "search_terms": [
+          "JOB_CANCEL_REQUESTED",
+          "JOB_CANCELLED",
+          "request_cancel",
+          "STOP_REQUESTED",
+          "STOPPED_SAFE",
+          "/cancel",
+          "Detener de manera segura",
+          "Sin avance reciente",
+          "Reanudar desde checkpoint",
+          "sync_comercial_v2"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.jsx"
+        ],
+        "exclude_patterns": [],
+        "max_results": 160
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
