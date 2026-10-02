@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-ORIGEN-MPRO-HEADER-DETAIL-VERIFY-R30-CARLOS-20261002",
+  "objective": "Aplicar en Preview la correccion R29 del sincronizador de Ventas del Dia para 2026-10-02 y certificar especificamente ORIGEN MPRO: el encabezado y detalle_abiertas_json deben provenir del mismo ciclo y conciliar en numero de folios y montos. No tocar Produccion.",
+  "mode": "COMERCIAL_OPEN_DAY_SYNC",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c54b546cf0f6937c739dc3c62b6be90bb60609b7",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "actions": [],
+  "fecha_operacion": "2026-10-02",
+  "confirm_comercial_open_day_sync": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "origen_today_header_snapshot",
+          "sql": "SELECT TOP 1 unidad_negocio_id, fecha_operacion, snapshot_timestamp, ventas_abiertas, tickets_abiertos, pax_abiertos, ventas_cerradas_dia, tickets_cerrados_dia, pax_cerrados_dia, total_estimado_dia, fuente_original, LEN(ISNULL(detalle_abiertas_json,'')) AS detalle_json_len FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK) WHERE UPPER(LTRIM(RTRIM(unidad_negocio_id)))='ORIGEN' AND fecha_operacion='2026-10-02' ORDER BY snapshot_timestamp DESC"
+        },
+        {
+          "name": "origen_today_header_detail_reconciliation",
+          "sql": "WITH s AS (SELECT TOP 1 snapshot_timestamp, ventas_abiertas, tickets_abiertos, pax_abiertos, ventas_cerradas_dia, tickets_cerrados_dia, pax_cerrados_dia, total_estimado_dia, detalle_abiertas_json FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK) WHERE UPPER(LTRIM(RTRIM(unidad_negocio_id)))='ORIGEN' AND fecha_operacion='2026-10-02' ORDER BY snapshot_timestamp DESC), f AS (SELECT j.folio, MAX(j.total_ticket) AS total_ticket, MAX(j.pax) AS pax, MAX(j.estado_ticket) AS estado_ticket FROM s CROSS APPLY OPENJSON(ISNULL(s.detalle_abiertas_json,'[]')) WITH (folio varchar(128) '$.folio', total_ticket decimal(18,4) '$.total_ticket', pax int '$.pax', estado_ticket varchar(32) '$.estado_ticket') j GROUP BY j.folio) SELECT MAX(s.snapshot_timestamp) snapshot_timestamp, MAX(s.ventas_abiertas) ventas_abiertas_header, MAX(s.tickets_abiertos) tickets_abiertos_header, MAX(s.ventas_cerradas_dia) ventas_cerradas_header, MAX(s.tickets_cerrados_dia) tickets_cerrados_header, MAX(s.total_estimado_dia) total_header, COUNT(DISTINCT CASE WHEN f.estado_ticket='ABIERTA' THEN f.folio END) tickets_abiertos_detalle, COUNT(DISTINCT CASE WHEN f.estado_ticket='CERRADA' THEN f.folio END) tickets_cerrados_detalle, CAST(ISNULL(SUM(CASE WHEN f.estado_ticket='ABIERTA' THEN f.total_ticket ELSE 0 END),0) AS decimal(18,4)) ventas_abiertas_detalle, CAST(ISNULL(SUM(CASE WHEN f.estado_ticket='CERRADA' THEN f.total_ticket ELSE 0 END),0) AS decimal(18,4)) ventas_cerradas_detalle, CAST(ISNULL(SUM(f.total_ticket),0) AS decimal(18,4)) total_detalle, CAST(MAX(s.total_estimado_dia)-ISNULL(SUM(f.total_ticket),0) AS decimal(18,4)) diferencia_total FROM s LEFT JOIN f ON 1=1"
+        }
+      ]
+    }
+  ]
+}
