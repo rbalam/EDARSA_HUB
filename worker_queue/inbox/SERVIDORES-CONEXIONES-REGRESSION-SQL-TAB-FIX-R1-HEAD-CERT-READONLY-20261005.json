@@ -1,0 +1,45 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "paths": [
+        "backend/server.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_server_sucursales_rbac_canonical.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-HEAD-CERT-READONLY-20261005",
+  "mode": "READ_ONLY",
+  "objective": "Certificar READ_ONLY el contrato actual de Servidores get_servers contra el HEAD actual. No realizar mutaciones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Conexiones y Comunicaciones",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
