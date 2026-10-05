@@ -65,6 +65,29 @@ def submit_worker_job(
     return result
 
 
+@router.post("/objectives", status_code=status.HTTP_202_ACCEPTED)
+def submit_worker_objective(
+    request: WorkerObjectiveRequest,
+    current_user: dict = Depends(WORKER_ADMIN_DEPENDENCY),
+):
+    try:
+        result = submit_objective(
+            request.model_dump(exclude_none=True),
+            current_user=current_user,
+        )
+    except WorkerIngressError as exc:
+        message = str(exc)
+        code = (
+            status.HTTP_422_UNPROCESSABLE_ENTITY
+            if message.startswith("SEMANTIC_")
+            else status.HTTP_400_BAD_REQUEST
+        )
+        raise HTTPException(status_code=code, detail=message) from exc
+
+    _raise_for_submit_status(result)
+    return result
+
+
 @router.get("/jobs/{job_id}")
 def read_worker_job_status(
     job_id: str,
