@@ -1,0 +1,32 @@
+{
+  "base_sha": "bc38e4f732e96c5b70436ea87b7d98337eba60d4",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "candidate_sha": "fefaccc24b5cd095ace23d4a3bf028eda60b3585",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-05T22:22:02Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/core/agent_execution_gate.py",
+    "backend/modules/agent_harness/coa_communications_adapter.py",
+    "backend/modules/agent_harness/finance_reconciliation_adapter.py",
+    "backend/modules/agent_harness/transversal_capability_registry.py",
+    "backend/tests/test_bos_transversal_agent_capabilities.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-AGENTS-IA-TRANSVERSAL-IMPLEMENTATION-GATE1-FINANCE-COA-R1-20261005",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-10-05T22:22:51Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-05T22:21:41Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
