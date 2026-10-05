@@ -1,0 +1,92 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "new": "BACKEND_SERVICE=\"backend\"\nBACKEND_PYTHONPATH=\"${EDARSAHUB_BACKEND_PYTHONPATH:-/app:/app/backend}\"\nSUPERVISOR_MAIN_CONF=\"${EDARSAHUB_SUPERVISOR_MAIN_CONF:-/etc/supervisor/conf.d/supervisord.conf}\"\n\nensure_backend_pythonpath_supervisor_env() {\n  if [ \"${ENVIRONMENT:-preview}\" = \"production\" ] || [ \"${APP_ENV:-preview}\" = \"production\" ]; then\n    echo \"BACKEND_PYTHONPATH_REPAIR_BLOCKED=PRODUCTION\"\n    exit 40\n  fi\n\n  if [ ! -f \"$SUPERVISOR_MAIN_CONF\" ]; then\n    echo \"BACKEND_PYTHONPATH_REPAIR_FAILED=SUPERVISOR_CONF_NOT_FOUND\"\n    echo \"SUPERVISOR_MAIN_CONF=$SUPERVISOR_MAIN_CONF\"\n    exit 41\n  fi\n\n  /root/.venv/bin/python - \"$SUPERVISOR_MAIN_CONF\" \"$BACKEND_PYTHONPATH\" <<'PY2'\nfrom pathlib import Path\nimport shutil\nimport sys\nimport time\n\nconf = Path(sys.argv[1])\npythonpath = sys.argv[2]\n\ntext = conf.read_text()\nlines = text.splitlines()\n\nout = []\nin_backend = False\nbackend_seen = False\nenv_seen = False\nchanged = False\n\nfor line in lines:\n    if line.startswith(\"[program:\"):\n        if in_backend and not env_seen:\n            out.append(f'environment=PYTHONPATH=\"{pythonpath}\"')\n            changed = True\n        in_backend = line.strip() == \"[program:backend]\"\n        backend_seen = backend_seen or in_backend\n        env_seen = False\n\n    if in_backend and line.startswith(\"environment=\"):\n        raw = line[len(\"environment=\"):]\n        parts = [p for p in raw.split(\",\") if p and not p.startswith(\"PYTHONPATH=\")]\n        parts.append(f'PYTHONPATH=\"{pythonpath}\"')\n        new_line = \"environment=\" + \",\".join(parts)\n        out.append(new_line)\n        changed = changed or (new_line != line)\n        env_seen = True\n        continue\n\n    out.append(line)\n\nif in_backend and not env_seen:\n    out.append(f'environment=PYTHONPATH=\"{pythonpath}\"')\n    changed = True\n\nif not backend_seen:\n    raise SystemExit(\"BACKEND_PROGRAM_NOT_FOUND\")\n\nif changed:\n    backup = conf.with_name(conf.name + f\".backup_pythonpath_{int(time.time())}\")\n    shutil.copy2(conf, backup)\n    conf.write_text(\"\\n\".join(out) + \"\\n\")\n    print(f\"PYTHONPATH_CANONICAL=APPLIED\")\n    print(f\"SUPERVISOR_BACKUP={backup}\")\nelse:\n    print(\"PYTHONPATH_CANONICAL=ALREADY_PRESENT\")\nPY2\n}\n",
+      "old": "BACKEND_SERVICE=\"backend\"\n",
+      "path": "tools/bootstrap/recover_preview_runtime.sh",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "ensure_backend_pythonpath_supervisor_env\nsupervisorctl reread || true\nsupervisorctl update || true\nsupervisorctl restart \"$BACKEND_SERVICE\"\n",
+      "old": "supervisorctl restart \"$BACKEND_SERVICE\"\n",
+      "path": "tools/bootstrap/recover_preview_runtime.sh",
+      "type": "replace_text"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "paths": [
+        "tools/bootstrap/edarsahub_bootstrap_watchdog.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_bootstrap_watchdog_safety_contract.py",
+        "backend/tests/test_universal_worker_external_owner_contract.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "constraints": [
+    "NO modificar backend/server.py",
+    "NO modificar Servidores.js",
+    "NO modificar SQL",
+    "NO modificar RBAC",
+    "NO modificar CAVAS",
+    "NO tocar Produccion",
+    "NO modificar Worker Lifecycle",
+    "NO modificar Same-Job Retry Bridge",
+    "NO crear RETRY del job SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927",
+    "NO editar /etc/supervisor/conf.d/supervisord.conf manualmente",
+    "NO introducir sys.path.insert en server.py",
+    "NO duplicar helpers",
+    "NO crear mecanismo paralelo de import",
+    "La reparacion runtime debe quedar en tools/bootstrap/recover_preview_runtime.sh"
+  ],
+  "expected_result": {
+    "files_changed": [
+      "tools/bootstrap/recover_preview_runtime.sh"
+    ],
+    "must_not_change": [
+      "backend/server.py",
+      "frontend/src/pages/Servidores.js",
+      "SQL",
+      "RBAC",
+      "CAVAS",
+      "Worker Lifecycle",
+      "Same-Job Retry Bridge"
+    ],
+    "production_touched": false
+  },
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-PREVIEW-BACKEND-RUNTIME-PYTHONPATH-REPAIR-R1-20261005",
+  "mode": "MUTATION",
+  "objective": "Reparar la capa canonica de runtime Preview para que el backend Supervisor/Uvicorn tenga PYTHONPATH=/app:/app/backend antes de reiniciar backend. La correccion debe vivir en tools/bootstrap/recover_preview_runtime.sh, no en backend/server.py ni en /etc/supervisor/conf.d/supervisord.conf editado manualmente. No tocar Servidores funcional, SQL, RBAC, CAVAS, Produccion, Worker Lifecycle ni Same-Job Retry Bridge.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Worker Hardening 2",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
