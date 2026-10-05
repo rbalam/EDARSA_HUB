@@ -138,6 +138,115 @@ def submit_job(
     return safe
 
 
+def _semantic_job_id(
+    request_payload: Mapping[str, Any],
+    *,
+    requester_email: str,
+) -> str:
+    bounded_context = _clean(request_payload.get("bounded_context")).upper()
+    capability = _clean(request_payload.get("capability")).upper()
+    request_key = _clean(request_payload.get("request_key"))
+    stable_payload = {
+        "requester": requester_email.lower(),
+        "objective": _clean(request_payload.get("objective")),
+        "bounded_context": bounded_context,
+        "mode": _clean(request_payload.get("mode")).upper(),
+        "capability": capability,
+        "request_key": request_key,
+        "constraints": request_payload.get("constraints") or {},
+    }
+    digest = hashlib.sha256(
+        json.dumps(
+            stable_payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()[:20].upper()
+    prefix = re.sub(r"[^A-Z0-9._-]+", "-", bounded_context)[:32] or "EDARSAHUB"
+    cap = re.sub(r"[^A-Z0-9._-]+", "-", capability)[:32] or "CAPABILITY"
+    return f"SEM-{prefix}-{cap}-{digest}"[:121]
+
+
+def build_semantic_job(
+    request_payload: Mapping[str, Any],
+    *,
+    current_user: Mapping[str, Any],
+) -> dict[str, Any]:
+    payload = dict(request_payload)
+    _assert_no_sensitive_keys(payload)
+
+    objective = _clean(payload.get("objective"))
+    bounded_context = _clean(payload.get("bounded_context")).upper()
+    requested_mode = _clean(payload.get("mode")).upper()
+    capability_code = _clean(payload.get("capability")).upper()
+
+    if not objective:
+        raise WorkerIngressError("OBJECTIVE_REQUIRED")
+    if not bounded_context:
+        raise WorkerIngressError("BOUNDED_CONTEXT_REQUIRED")
+
+    try:
+        capability = resolve_capability(capability_code)
+    except SemanticCapabilityError as exc:
+        raise WorkerIngressError(str(exc)) from exc
+
+    allowed_modes = tuple(str(mode).upper() for mode in capability.modes)
+    if requested_mode not in allowed_modes:
+        raise WorkerIngressError("SEMANTIC_CAPABILITY_MODE_MISMATCH")
+
+    try:
+        expansion = capability.builder(payload)
+    except SemanticCapabilityError as exc:
+        raise WorkerIngressError(str(exc)) from exc
+
+    if not isinstance(expansion, dict):
+        raise WorkerIngressError("SEMANTIC_CAPABILITY_INVALID_EXPANSION")
+
+    requester = _requester_from_authenticated_user(
+        current_user,
+        project="EDARSAHUB",
+    )
+
+    job_id = _semantic_job_id(
+        payload,
+        requester_email=requester["email"],
+    )
+
+    raw_job = {
+        "job_id": job_id,
+        "objective": objective,
+        "mode": requested_mode,
+        "actions": list(expansion.get("actions") or []),
+        "checks": list(expansion.get("checks") or []),
+        "scheduling": dict(expansion.get("scheduling") or {}),
+        "requester": requester,
+    }
+    return canonicalize_job(raw_job)
+
+
+def submit_objective(
+    request_payload: Mapping[str, Any],
+    *,
+    current_user: Mapping[str, Any],
+) -> dict[str, Any]:
+    canonical_job = build_semantic_job(
+        request_payload,
+        current_user=current_user,
+    )
+    result = gate_chain_publisher.submit(canonical_job)
+    if not isinstance(result, dict):
+        raise WorkerIngressError("CANONICAL_PUBLISHER_INVALID_RESPONSE")
+
+    safe = dict(result)
+    safe["job_id"] = _clean(result.get("job_id")) or canonical_job["job_id"]
+    safe["production_touched"] = bool(result.get("production_touched", False))
+    safe["capability"] = _clean(request_payload.get("capability")).upper()
+    safe["bounded_context"] = _clean(request_payload.get("bounded_context")).upper()
+    safe.pop("template", None)
+    return safe
+
+
 def _read_json_if_object(path: Path) -> dict[str, Any]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
