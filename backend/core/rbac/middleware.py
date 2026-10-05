@@ -238,6 +238,52 @@ class RBACAllDependency:
         
         return user
 
+
+
+
+def has_explicit_permission_by_email(email: str, permiso: str) -> bool:
+    """Return whether an active SQL user has an explicit active permission."""
+    email = str(email or "").strip()
+    permiso = str(permiso or "").strip()
+    if not email or not permiso:
+        return False
+
+    from core.sql_first.db import get_sql_connection
+
+    conn = get_sql_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT TOP 1 1
+            FROM dbo.Usuario_Catalogo u
+            INNER JOIN dbo.Usuario_RolesAsignacion ura
+                ON ura.UsuarioID = u.UsuarioID
+                AND ura.Activo = 1
+            INNER JOIN dbo.Usuario_Roles r
+                ON r.RolID = ura.RolID
+                AND r.Activo = 1
+            INNER JOIN dbo.Usuario_PermisosRolModulo prm
+                ON prm.RolID = r.RolID
+                AND prm.Activo = 1
+                AND prm.Permitido = 1
+            INNER JOIN dbo.Usuario_Modulos m
+                ON m.ModuloID = prm.ModuloID
+                AND m.Activo = 1
+            INNER JOIN dbo.Usuario_Acciones a
+                ON a.AccionID = prm.AccionID
+                AND a.Activo = 1
+            WHERE u.Activo = 1
+              AND LOWER(u.Email) = LOWER(%s)
+              AND (
+                    UPPER(CONCAT(m.CodigoModulo, '_', a.CodigoAccion)) = UPPER(%s)
+                 OR LOWER(CONCAT(m.CodigoModulo, '.', a.CodigoAccion)) = LOWER(%s)
+              )
+        """, (email, permiso, permiso))
+        return cur.fetchone() is not None
+    finally:
+        conn.close()
+
+
 class RBACExplicitDependency:
     """
     Dependency estricta: exige permiso efectivo SQL explicito.
@@ -291,42 +337,7 @@ class RBACExplicitDependency:
                 }
             )
 
-        from core.sql_first.db import get_sql_connection
-
-        conn = get_sql_connection()
-        try:
-            cur = conn.cursor()
-            cur.execute("""
-                SELECT TOP 1 1
-                FROM dbo.Usuario_Catalogo u
-                INNER JOIN dbo.Usuario_RolesAsignacion ura
-                    ON ura.UsuarioID = u.UsuarioID
-                    AND ura.Activo = 1
-                INNER JOIN dbo.Usuario_Roles r
-                    ON r.RolID = ura.RolID
-                    AND r.Activo = 1
-                INNER JOIN dbo.Usuario_PermisosRolModulo prm
-                    ON prm.RolID = r.RolID
-                    AND prm.Activo = 1
-                    AND prm.Permitido = 1
-                INNER JOIN dbo.Usuario_Modulos m
-                    ON m.ModuloID = prm.ModuloID
-                    AND m.Activo = 1
-                INNER JOIN dbo.Usuario_Acciones a
-                    ON a.AccionID = prm.AccionID
-                    AND a.Activo = 1
-                WHERE u.Activo = 1
-                  AND LOWER(u.Email) = LOWER(%s)
-                  AND (
-                        UPPER(CONCAT(m.CodigoModulo, '_', a.CodigoAccion)) = UPPER(%s)
-                     OR LOWER(CONCAT(m.CodigoModulo, '.', a.CodigoAccion)) = LOWER(%s)
-                  )
-            """, (email, self.permiso, self.permiso))
-            row = cur.fetchone()
-        finally:
-            conn.close()
-
-        if not row:
+        if not has_explicit_permission_by_email(email, self.permiso):
             logger.warning(
                 "RBAC EXPLICITO DENEGADO: %s -> %s en %s %s",
                 email,
