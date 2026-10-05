@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "87664002e4f1eba0c31c5155c0274916da1b669e",
-  "generated_at_utc": "2026-10-05T15:25:37Z",
+  "generated_at_utc": "2026-10-05T15:26:58Z",
   "history": {
     "done_total_local": 1306,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 132,
+      "age_seconds": 213,
       "job_id": "BOS-AGENTS-IA-TRANSVERSAL-CAPABILITY-REGISTRY-DOMAIN-ADAPTER-DISCOVERY-R1-20261005",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,8 +36,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-05T15:25:32Z",
-    "last_receive_utc": "2026-10-05T15:25:27Z",
+    "last_cycle_utc": "2026-10-05T15:26:54Z",
+    "last_receive_utc": "2026-10-05T15:26:49Z",
     "last_terminal_utc": "2026-10-05T15:23:24Z",
     "pid": "361",
     "runtime_fingerprint": {
