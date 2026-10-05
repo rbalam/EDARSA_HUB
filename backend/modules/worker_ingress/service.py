@@ -6,6 +6,7 @@ delegated to the existing canonical job factory and gate-chain publisher.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -15,6 +16,11 @@ from tools.mirror_sync import gate_chain_publisher
 from tools.mirror_sync.worker_job_factory import canonicalize_job
 from tools.mirror_sync.worker_result_reader import read_canonical_result
 from tools.mirror_sync.worker_result_status import build_job_status
+
+from .semantic_capabilities import (
+    SemanticCapabilityError,
+    resolve_capability,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
