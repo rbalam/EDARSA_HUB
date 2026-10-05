@@ -1,0 +1,69 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "paths": [
+        "tools/bootstrap/edarsahub_bootstrap_watchdog.py",
+        "backend/modules/worker_ingress/routes.py",
+        "backend/modules/worker_ingress/service.py"
+      ],
+      "type": "py_compile"
+    }
+  ],
+  "constraints": [
+    "NO modificar backend/server.py",
+    "NO modificar Servidores.js",
+    "NO modificar SQL",
+    "NO modificar RBAC",
+    "NO modificar CAVAS",
+    "NO tocar Produccion",
+    "NO modificar Worker Lifecycle",
+    "NO modificar Same-Job Retry Bridge",
+    "NO crear RETRY del job SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927",
+    "NO editar /etc/supervisor/conf.d/supervisord.conf manualmente",
+    "NO introducir sys.path.insert en server.py",
+    "NO duplicar helpers",
+    "NO crear mecanismo paralelo de import",
+    "NO hardcodear rutas en codigo de aplicacion",
+    "Identificar fuente canonica antes de reparar"
+  ],
+  "expected_result": {
+    "files_changed": [],
+    "mode": "READ_ONLY",
+    "must_identify": [
+      "canonical_supervisor_source_artifact",
+      "backend_runtime_environment_owner",
+      "minimal_mutation_target",
+      "required_pythonpath"
+    ],
+    "production_touched": false
+  },
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-PREVIEW-BACKEND-RUNTIME-PYTHONPATH-AUDIT-READONLY-R1-20261005",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY el runtime de arranque del backend Preview. Confirmar causa raiz: Supervisor ejecuta uvicorn server:app desde /app/backend sin PYTHONPATH=/app:/app/backend, provocando ModuleNotFoundError para tools.mirror_sync durante import de modules.worker_ingress.service. Determinar el artefacto fuente canonico que debe definir el entorno PYTHONPATH del backend. Auditar especialmente tools/bootstrap/install_bootstrap_watchdog.sh, tools/bootstrap/recover_preview_runtime.sh, tools/bootstrap/edarsahub_bootstrap_watchdog.py y cualquier plantilla/configuracion canonica de Supervisor/backend. No mutar archivos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Worker Hardening 2",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
