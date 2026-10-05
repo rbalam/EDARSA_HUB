@@ -63,6 +63,7 @@ litellm==1.80.0
 lxml==6.1.1
 markdown-it-py==4.0.0
 MarkupSafe==3.0.3
+mcp==2.3.0
 mccabe==0.7.0
 mdurl==0.1.2
 multidict==6.7.1
