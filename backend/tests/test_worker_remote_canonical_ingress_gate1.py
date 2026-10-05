@@ -108,6 +108,7 @@ def test_status_reads_canonical_terminal_result(tmp_path, monkeypatch):
         "percent_complete": 100,
         "blockers": [],
         "production_touched": False,
+        "completed_at_utc": "2026-10-05T15:45:00Z",
     }
     (results / "REMOTE-INGRESS-G1-RESULT.json").write_text(
         json.dumps(payload),
