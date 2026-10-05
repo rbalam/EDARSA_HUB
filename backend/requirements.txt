@@ -63,7 +63,6 @@ litellm==1.80.0
 lxml==6.1.1
 markdown-it-py==4.0.0
 MarkupSafe==3.0.3
-mcp==2.3.0
 mccabe==0.7.0
 mdurl==0.1.2
 multidict==6.7.1
@@ -137,7 +136,7 @@ tzdata==2025.3
 tzlocal==5.3.1
 uritemplate==4.2.0
 urllib3==2.6.3
-uvicorn==0.31.1
+uvicorn==0.25.0
 watchfiles==1.1.1
 websockets==16.0
 Werkzeug==3.1.6
