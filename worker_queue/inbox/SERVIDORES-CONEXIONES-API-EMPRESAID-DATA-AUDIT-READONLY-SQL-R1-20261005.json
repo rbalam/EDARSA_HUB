@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "queries": [
+        {
+          "name": "api_connections_target_rows",
+          "sql": "\nSELECT\n    sc.id,\n    sc.nombre,\n    sc.tipo_conexion,\n    sc.EmpresaID,\n    sc.UnidadNegocioID,\n    sc.SucursalID,\n    sc.ServerID,\n    sc.api_url,\n    sc.activo\nFROM dbo.Servidores_Conexiones sc\nWHERE sc.id IN (\n    'b597d88a-ab37-4b4e-897b-efe68c9b3732',\n    '8cbdcc89-6495-49c3-be9c-a965db82c77f',\n    'd8b2d1eb-2e1f-4e43-b7d9-822bf671e315',\n    '31d62f39-632b-4684-b735-256bd9293a8f',\n    '2bead18c-73c9-4d86-af92-2355940274f7'\n)\nORDER BY sc.nombre\n"
+        },
+        {
+          "name": "canonical_empresa_columns",
+          "sql": "\nSELECT\n    TABLE_SCHEMA,\n    TABLE_NAME,\n    COLUMN_NAME,\n    DATA_TYPE\nFROM INFORMATION_SCHEMA.COLUMNS\nWHERE COLUMN_NAME IN (\n    'EmpresaID',\n    'EmpresaId',\n    'Empresa',\n    'EmpresaNombre',\n    'UnidadNegocioID',\n    'UnidadNegocioId',\n    'SucursalID',\n    'ServerID'\n)\nORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION\n"
+        },
+        {
+          "name": "canonical_empresa_tables",
+          "sql": "\nSELECT\n    TABLE_SCHEMA,\n    TABLE_NAME\nFROM INFORMATION_SCHEMA.TABLES\nWHERE TABLE_TYPE = 'BASE TABLE'\n  AND (\n       TABLE_NAME LIKE '%Empresa%'\n       OR TABLE_NAME LIKE '%Unidad%'\n       OR TABLE_NAME LIKE '%Sucursal%'\n       OR TABLE_NAME LIKE '%Negocio%'\n       OR TABLE_NAME LIKE '%Conexion%'\n       OR TABLE_NAME LIKE '%Servidor%'\n  )\nORDER BY TABLE_SCHEMA, TABLE_NAME\n"
+        },
+        {
+          "name": "target_connection_names",
+          "sql": "\nSELECT\n    sc.id,\n    sc.nombre,\n    sc.tipo_conexion,\n    sc.EmpresaID,\n    sc.UnidadNegocioID,\n    sc.SucursalID,\n    sc.ServerID\nFROM dbo.Servidores_Conexiones sc\nWHERE sc.tipo_conexion = 'API_LOCAL'\n  AND sc.nombre IN (\n      'API ManagmentPro',\n      'CHAPUR BACKOFFICE',\n      'CHAPUR NORTE',\n      'CIENFUEGOS NOMINPAQ',\n      'GARIBALDI'\n  )\nORDER BY sc.nombre\n"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SERVIDORES-CONEXIONES-API-EMPRESAID-DATA-AUDIT-READONLY-SQL-R1-20261005",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar exclusivamente en EDARSAHUB SQL las cinco conexiones API_LOCAL que responden HTTP 409 por falta de EmpresaID canonico. Determinar mediante evidencia SQL si existe una relacion canonica con EmpresaID, empresa, unidad de negocio u otra clave canonica. No inferir, no asignar y no modificar ningun dato.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Conexiones y Comunicaciones",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
