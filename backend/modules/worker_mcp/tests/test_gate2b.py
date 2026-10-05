@@ -6,8 +6,8 @@ import pytest
 from mcp import Client
 from mcp.server.auth.provider import AccessToken
 
-from modules.worker_mcp import auth, client, server
-from modules.worker_mcp.config import (
+from worker_mcp import auth, client, server
+from worker_mcp.config import (
     WorkerMcpConfig,
     WorkerMcpConfigError,
 )
