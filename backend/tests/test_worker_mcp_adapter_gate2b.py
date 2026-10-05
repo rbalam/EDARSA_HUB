@@ -66,6 +66,11 @@ async def test_token_verifier_uses_existing_edarsahub_auth_and_sql_authority(
     )
     monkeypatch.setattr(
         auth,
+        "has_explicit_permission_by_email",
+        lambda email, permiso: email == "admin@example.com" and permiso == "RBAC_ADMIN",
+    )
+    monkeypatch.setattr(
+        auth,
         "authorize_requester",
         lambda requester: {
             "allowed": requester.get("email") == "admin@example.com",
@@ -99,6 +104,11 @@ async def test_token_verifier_rejects_denied_requester(
             "email": "denied@example.com",
             "role": "Usuario",
         },
+    )
+    monkeypatch.setattr(
+        auth,
+        "has_explicit_permission_by_email",
+        lambda email, permiso: True,
     )
     monkeypatch.setattr(
         auth,
