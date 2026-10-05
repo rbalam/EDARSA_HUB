@@ -1,0 +1,82 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "new": "def _sql_upsert_servidor_status(server_id: str, is_online: bool, response_time_ms: Optional[int] = None) -> None:\n    from modules.compras.sync_service import get_edarsahub_connection  # noqa: F811\n    conn = get_edarsahub_connection()\n    try:\n        cur = conn.cursor(as_dict=True)\n        cur.execute(\"SELECT StatusID FROM dbo.Servidores_Status WHERE ServerID = %s\", (server_id,))\n        row = cur.fetchone()\n        if row:\n            cur.execute(\"\"\"\n                UPDATE dbo.Servidores_Status\n                SET IsOnline=%s, ResponseTimeMs=%s, LastCheck=GETDATE()\n                WHERE ServerID=%s\n            \"\"\", (1 if is_online else 0, response_time_ms, server_id))\n        else:\n            cur.execute(\"\"\"\n                INSERT INTO dbo.Servidores_Status (ServerID, IsOnline, ResponseTimeMs, LastCheck)\n                VALUES (%s, %s, %s, GETDATE())\n            \"\"\", (server_id, 1 if is_online else 0, response_time_ms))\n        conn.commit()\n    finally:\n        conn.close()\n",
+      "old": "def _sql_upsert_servidor_status(server_id: str, is_online: bool, response_time_ms: Optional[int] = None) -> None:\n    from modules.compras.sync_service import get_edarsahub_connection  # noqa: F811\n    conn = get_edarsahub_connection()\n    try:\n        cur = conn.cursor(as_dict=True)\n        cur.execute(\"SELECT StatusID FROM dbo.Servidores_Status WHERE ServerID = %s\", (server_id,))\n        row = cur.fetchone()\n        if row:\n            cur.execute(\"\"\"\n                UPDATE dbo.Servidores_Status\n                SET IsOnline=%s, ResponseTimeMs=%s, LastCheck=GETDATE()\n                WHERE ServerID=%s\n            \"\"\", (1 if is_online else 0, response_time_ms, server_id))\n        else:\n            cur.execute(\"\"\"\n                INSERT INTO dbo.Servidores_Status (StatusID,ServerID, IsOnline, ResponseTimeMs, LastCheck)\n                VALUES (%s, %s, %s, %s, GETDATE())\n            \"\"\", (_sql_next_id(cur, \"Servidores_Status\", \"StatusID\"), server_id, 1 if is_online else 0, response_time_ms))\n        conn.commit()\n    finally:\n        conn.close()\n",
+      "path": "backend/server.py",
+      "type": "replace_text"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "paths": [
+        "backend/server.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_server_sucursales_rbac_canonical.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "constraints": [
+    "NO modificar frontend/src/pages/Servidores.js",
+    "NO modificar SQL",
+    "NO modificar RBAC",
+    "NO modificar CAVAS",
+    "NO tocar Produccion",
+    "NO modificar Worker Lifecycle",
+    "NO modificar Same-Job Retry Bridge",
+    "NO crear RETRY del job SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927",
+    "NO crear R2 runtime",
+    "NO modificar tools/bootstrap/recover_preview_runtime.sh",
+    "Modificar exclusivamente backend/server.py en la funcion _sql_upsert_servidor_status"
+  ],
+  "expected_result": {
+    "files_changed": [
+      "backend/server.py"
+    ],
+    "must_not_change": [
+      "frontend/src/pages/Servidores.js",
+      "SQL",
+      "RBAC",
+      "CAVAS",
+      "Produccion",
+      "Worker Lifecycle",
+      "Same-Job Retry Bridge",
+      "tools/bootstrap/recover_preview_runtime.sh"
+    ],
+    "production_touched": false
+  },
+  "human_summary_language": "es",
+  "job_id": "SERVIDORES-PING-STATUS-IDENTITY-INSERT-REPAIR-R1-20261005",
+  "mode": "MUTATION",
+  "objective": "Reparar bug de ping/status en Servidores. La funcion _sql_upsert_servidor_status inserta explicitamente StatusID en dbo.Servidores_Status, pero StatusID es IDENTITY y SQL Server rechaza el INSERT. Corregir solo el INSERT para que SQL Server asigne StatusID automaticamente. No tocar SQL, RBAC, CAVAS, Produccion, frontend, runtime, Worker Lifecycle ni Same-Job Retry Bridge.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Worker Hardening 2",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
