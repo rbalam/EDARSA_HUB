@@ -1,15 +1,7 @@
-"""Minimal MCP server for the EDARSAHUB Universal Worker.
-
-Public MCP surface:
-- submit_objective
-- get_job_status
-
-The MCP adapter never constructs worker-job.v2 and never exposes the low-level
-/jobs endpoint. It delegates to the certified semantic ingress services.
-"""
+"""Minimal MCP transport for the certified EDARSAHUB semantic ingress."""
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Any
 
 from mcp.server import MCPServer
 from mcp.server.auth.middleware.auth_context import get_access_token
@@ -19,58 +11,28 @@ from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
 from pydantic import AnyHttpUrl
 
-from tools.mirror_sync.worker_requester_rbac import authorize_requester
-
-from modules.worker_ingress.service import (
-    get_job_status as _get_job_status,
-    submit_objective as _submit_objective,
-)
-
 from .auth import EdarsahubTokenVerifier
+from .client import (
+    get_job_status as backend_get_job_status,
+    submit_objective as backend_submit_objective,
+)
 from .config import WorkerMcpConfig
 
 
-def _clean(value: Any) -> str:
-    return str(value or "").strip()
+_BACKEND_URL: str | None = None
 
 
-def _authenticated_user() -> dict[str, str]:
+def _bearer_token() -> str:
     access_token = get_access_token()
-    if access_token is None:
+    if access_token is None or not access_token.token:
         raise PermissionError("MCP_AUTH_REQUIRED")
+    return str(access_token.token)
 
-    claims = (
-        access_token.claims
-        if isinstance(access_token.claims, Mapping)
-        else {}
-    )
-    email = _clean(
-        claims.get("email")
-        or access_token.subject
-    ).lower()
 
-    if not email or "@" not in email:
-        raise PermissionError("MCP_AUTH_IDENTITY_INVALID")
-
-    authorization = authorize_requester(
-        {
-            "email": email,
-            "source": "edarsahub-worker-mcp-tool",
-            "project": "EDARSAHUB",
-            "chat": "mcp",
-        }
-    )
-    if authorization.get("allowed") is not True:
-        raise PermissionError("MCP_AUTH_FORBIDDEN")
-
-    return {
-        "id": _clean(
-            claims.get("user_id")
-            or access_token.client_id
-        ),
-        "email": email,
-        "role": _clean(claims.get("role")),
-    }
+def _backend_url() -> str:
+    if not _BACKEND_URL:
+        raise RuntimeError("MCP_BACKEND_NOT_CONFIGURED")
+    return _BACKEND_URL
 
 
 def submit_objective_tool(
@@ -82,8 +44,6 @@ def submit_objective_tool(
     constraints: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Submit one approved semantic objective to the EDARSAHUB Universal Worker."""
-    current_user = _authenticated_user()
-
     payload: dict[str, Any] = {
         "objective": objective,
         "bounded_context": bounded_context,
@@ -94,9 +54,10 @@ def submit_objective_tool(
     if request_key:
         payload["request_key"] = request_key
 
-    result = _submit_objective(
-        payload,
-        current_user=current_user,
+    result = backend_submit_objective(
+        backend_url=_backend_url(),
+        token=_bearer_token(),
+        payload=payload,
     )
 
     return {
@@ -114,9 +75,11 @@ def get_job_status_tool(
     job_id: str,
 ) -> dict[str, Any]:
     """Read the canonical status of one Universal Worker job."""
-    _authenticated_user()
-
-    result = _get_job_status(job_id)
+    result = backend_get_job_status(
+        backend_url=_backend_url(),
+        token=_bearer_token(),
+        job_id=job_id,
+    )
     return {
         "job_id": result.get("job_id"),
         "lifecycle": result.get("lifecycle"),
@@ -142,7 +105,11 @@ def build_mcp_server(
     *,
     token_verifier: TokenVerifier | None = None,
 ) -> MCPServer:
+    global _BACKEND_URL
+    _BACKEND_URL = config.backend_url.rstrip("/")
+
     verifier = token_verifier or EdarsahubTokenVerifier(
+        backend_url=config.backend_url,
         resource_url=config.resource_url,
     )
 
