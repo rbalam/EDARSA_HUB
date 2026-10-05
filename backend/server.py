@@ -2181,9 +2181,9 @@ def _sql_upsert_servidor_status(server_id: str, is_online: bool, response_time_m
             """, (1 if is_online else 0, response_time_ms, server_id))
         else:
             cur.execute("""
-                INSERT INTO dbo.Servidores_Status (StatusID, ServerID, IsOnline, ResponseTimeMs, LastCheck)
-                VALUES (%s, %s, %s, %s, GETDATE())
-            """, (_sql_next_id(cur, "Servidores_Status", "StatusID"), server_id, 1 if is_online else 0, response_time_ms))
+                INSERT INTO dbo.Servidores_Status (ServerID, IsOnline, ResponseTimeMs, LastCheck)
+                VALUES (%s, %s, %s, GETDATE())
+            """, (server_id, 1 if is_online else 0, response_time_ms))
         conn.commit()
     finally:
         conn.close()
