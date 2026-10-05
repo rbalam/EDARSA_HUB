@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SERVIDORES-CONEXIONES-API-EMPRESAID-AUDIT-READONLY-R1-20261005",
+  "mode": "READ_ONLY",
+  "objective": "Auditar las cinco conexiones API_LOCAL con HTTP 409 por falta de EmpresaID canonico. Usar EDARSAHUB SQL como unica fuente de verdad. Determinar si existe relacion canonica EmpresaID. No inferir ni asignar EmpresaID.",
+  "production_allowed": false,
+  "production_touched": false,
+  "requester": {
+    "chat": "Conexiones y Comunicaciones",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "requirements": [
+    "Auditar API ManagmentPro ID b597d88a-ab37-4b4e-897b-efe68c9b3732",
+    "Auditar CHAPUR BACKOFFICE ID 8cbdcc89-6495-49c3-be9c-a965db82c77f",
+    "Auditar CHAPUR NORTE ID d8b2d1eb-2e1f-4e43-b7d9-822bf671e315",
+    "Auditar CIENFUEGOS NOMINPAQ ID 31d62f39-632b-4684-b735-256bd9293a8f",
+    "Auditar GARIBALDI ID 2bead18c-73c9-4d86-af92-2355940274f7",
+    "Revisar EmpresaID, empresa, unidad de negocio y claves canonicas disponibles",
+    "No inferir EmpresaID",
+    "No asignar EmpresaID",
+    "No modificar conexiones",
+    "No modificar SQL",
+    "No modificar RBAC",
+    "No tocar Produccion",
+    "No tocar CAVAS",
+    "No modificar frontend",
+    "Entregar matriz conexion, ID, EmpresaID actual, candidato canonico, evidencia y estado",
+    "Marcar NO_RESUELTO cuando no exista relacion canonica",
+    "Certificar exclusivamente READ_ONLY"
+  ],
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
