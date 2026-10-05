@@ -32,6 +32,7 @@ def _csv(name: str, *, required: bool = False) -> tuple[str, ...]:
 class WorkerMcpConfig:
     issuer_url: str
     resource_url: str
+    backend_url: str
     allowed_hosts: tuple[str, ...]
     allowed_origins: tuple[str, ...] = ()
     bind_host: str = "127.0.0.1"
@@ -41,6 +42,7 @@ class WorkerMcpConfig:
         return cls(
             issuer_url=_required("EDARSAHUB_MCP_ISSUER_URL"),
             resource_url=_required("EDARSAHUB_MCP_RESOURCE_URL"),
+            backend_url=_required("EDARSAHUB_MCP_BACKEND_URL").rstrip("/"),
             allowed_hosts=_csv(
                 "EDARSAHUB_MCP_ALLOWED_HOSTS",
                 required=True,
