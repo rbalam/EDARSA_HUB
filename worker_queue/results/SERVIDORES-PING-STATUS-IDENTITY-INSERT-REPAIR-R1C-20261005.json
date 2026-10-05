@@ -2,8 +2,11 @@
   "base_sha": "597c18c13ad8afa958fe21fde03b7b80cc866e69",
   "blockers": [],
   "candidate_sha": "bc38e4f732e96c5b70436ea87b7d98337eba60d4",
-  "certification": "PENDING_AUDIT_EVIDENCE",
+  "certification": "CERTIFIED",
+  "certification_basis": "SHA_BOUND_ATTESTATION_PLUS_DESCENDANT_CONVERGENCE",
+  "certified_source_sha": "bc38e4f732e96c5b70436ea87b7d98337eba60d4",
   "completed_at_utc": "2026-10-05T21:36:31Z",
+  "converged_head": "bc38e4f732e96c5b70436ea87b7d98337eba60d4",
   "development_sha": "bc38e4f732e96c5b70436ea87b7d98337eba60d4",
   "executor": "chatgpt-deterministic",
   "files_changed": [
@@ -12,9 +15,9 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "SERVIDORES-PING-STATUS-IDENTITY-INSERT-REPAIR-R1C-20261005",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-10-05T21:36:49Z",
+  "published_at_utc": "2026-10-05T22:26:06Z",
   "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
@@ -23,5 +26,5 @@
   "status": "INTEGRATED",
   "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
   "tests": "PASS",
-  "work_completion": "PENDING_CERTIFICATION"
+  "work_completion": "COMPLETE"
 }
