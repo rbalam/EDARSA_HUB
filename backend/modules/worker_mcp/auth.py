@@ -6,6 +6,7 @@ from typing import Any, Mapping
 from mcp.server.auth.provider import AccessToken, TokenVerifier
 
 from core.security import verify_token
+from core.rbac.middleware import has_explicit_permission_by_email
 from tools.mirror_sync.worker_requester_rbac import authorize_requester
 
 
@@ -39,6 +40,9 @@ class EdarsahubTokenVerifier(TokenVerifier):
 
         email = _clean(payload.get("email")).lower()
         if not email or "@" not in email:
+            return None
+
+        if not has_explicit_permission_by_email(email, "RBAC_ADMIN"):
             return None
 
         authorization = authorize_requester(
