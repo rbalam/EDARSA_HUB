@@ -30,6 +30,6 @@ jobs:
 
       - name: Run Gate2B MCP tests
         env:
-          PYTHONPATH: ${{ github.workspace }}/backend
+          PYTHONPATH: ${{ github.workspace }}/backend/modules
         run: |
           python -m pytest             backend/modules/worker_mcp/tests/test_gate2b.py             -q --tb=short
