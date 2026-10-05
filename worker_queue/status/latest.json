@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "43919390523b32347c0b871911e93eea53efc98d",
-  "generated_at_utc": "2026-10-05T16:22:28Z",
+  "generated_at_utc": "2026-10-05T16:23:53Z",
   "history": {
     "done_total_local": 1309,
     "pending_total_local": 0,
@@ -16,25 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3543,
-      "job_id": "BOS-AGENTS-IA-TRANSVERSAL-CAPABILITY-REGISTRY-DOMAIN-ADAPTER-DISCOVERY-R1-20261005",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1781,
+      "age_seconds": 1865,
       "job_id": "EDARSAHUB-BOS-WORKER-REMOTE-INGRESS-GATE1B-CANARY-20261005T155222Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 581,
+      "age_seconds": 665,
       "job_id": "SEM-WORKER_INGRESS-READ_ONLY_CANARY-D0C8A93916C0BED63435",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2610,
+      "age_seconds": 2694,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-HEAD-CERT-READONLY-20261005",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,14 +42,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "remote_development_sha": "43919390523b32347c0b871911e93eea53efc98d",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-05T16:22:24Z",
-    "last_receive_utc": "2026-10-05T16:22:19Z",
+    "last_cycle_utc": "2026-10-05T16:23:41Z",
+    "last_receive_utc": "2026-10-05T16:23:49Z",
     "last_terminal_utc": "2026-10-05T16:12:47Z",
     "pid": "361",
     "runtime_fingerprint": {
