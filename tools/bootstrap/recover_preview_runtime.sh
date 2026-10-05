@@ -4,6 +4,77 @@ set -euo pipefail
 APP="${EDARSAHUB_APP:-/app}"
 DEV_BRANCH="${EDARSAHUB_DEV_BRANCH:-Edarsahub_Desarrollo}"
 BACKEND_SERVICE="backend"
+BACKEND_PYTHONPATH="${EDARSAHUB_BACKEND_PYTHONPATH:-/app:/app/backend}"
+SUPERVISOR_MAIN_CONF="${EDARSAHUB_SUPERVISOR_MAIN_CONF:-/etc/supervisor/conf.d/supervisord.conf}"
+
+ensure_backend_pythonpath_supervisor_env() {
+  if [ "${ENVIRONMENT:-preview}" = "production" ] || [ "${APP_ENV:-preview}" = "production" ]; then
+    echo "BACKEND_PYTHONPATH_REPAIR_BLOCKED=PRODUCTION"
+    exit 40
+  fi
+
+  if [ ! -f "$SUPERVISOR_MAIN_CONF" ]; then
+    echo "BACKEND_PYTHONPATH_REPAIR_FAILED=SUPERVISOR_CONF_NOT_FOUND"
+    echo "SUPERVISOR_MAIN_CONF=$SUPERVISOR_MAIN_CONF"
+    exit 41
+  fi
+
+  /root/.venv/bin/python - "$SUPERVISOR_MAIN_CONF" "$BACKEND_PYTHONPATH" <<'PY2'
+from pathlib import Path
+import shutil
+import sys
+import time
+
+conf = Path(sys.argv[1])
+pythonpath = sys.argv[2]
+
+text = conf.read_text()
+lines = text.splitlines()
+
+out = []
+in_backend = False
+backend_seen = False
+env_seen = False
+changed = False
+
+for line in lines:
+    if line.startswith("[program:"):
+        if in_backend and not env_seen:
+            out.append(f'environment=PYTHONPATH="{pythonpath}"')
+            changed = True
+        in_backend = line.strip() == "[program:backend]"
+        backend_seen = backend_seen or in_backend
+        env_seen = False
+
+    if in_backend and line.startswith("environment="):
+        raw = line[len("environment="):]
+        parts = [p for p in raw.split(",") if p and not p.startswith("PYTHONPATH=")]
+        parts.append(f'PYTHONPATH="{pythonpath}"')
+        new_line = "environment=" + ",".join(parts)
+        out.append(new_line)
+        changed = changed or (new_line != line)
+        env_seen = True
+        continue
+
+    out.append(line)
+
+if in_backend and not env_seen:
+    out.append(f'environment=PYTHONPATH="{pythonpath}"')
+    changed = True
+
+if not backend_seen:
+    raise SystemExit("BACKEND_PROGRAM_NOT_FOUND")
+
+if changed:
+    backup = conf.with_name(conf.name + f".backup_pythonpath_{int(time.time())}")
+    shutil.copy2(conf, backup)
+    conf.write_text("\n".join(out) + "\n")
+    print(f"PYTHONPATH_CANONICAL=APPLIED")
+    print(f"SUPERVISOR_BACKUP={backup}")
+else:
+    print("PYTHONPATH_CANONICAL=ALREADY_PRESENT")
+PY2
+}
 WORKER_SERVICE="edarsahub-universal-worker"
 INSTALLER="$APP/tools/bootstrap/install_bootstrap_watchdog.sh"
 PREFERRED_JOB_ID="${1:-}"
@@ -67,6 +138,9 @@ test -x "$INSTALLER" || chmod 0755 "$INSTALLER"
 "$INSTALLER"
 
 RECOVERY_STARTED_EPOCH="$(date +%s)"
+ensure_backend_pythonpath_supervisor_env
+supervisorctl reread || true
+supervisorctl update || true
 supervisorctl restart "$BACKEND_SERVICE"
 
 BACKEND_READY=0
