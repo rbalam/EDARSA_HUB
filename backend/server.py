@@ -16351,6 +16351,10 @@ from modules.worker_runtime_wake.routes import (
 )
 app.include_router(worker_runtime_wake_router, prefix="/api")
 
+# Universal Worker Remote Canonical Ingress (global)
+from modules.worker_ingress.routes import router as worker_ingress_router
+app.include_router(worker_ingress_router, prefix="/api")
+
 # EDARSAHUB Universal Worker Console (Fase 1, solo lectura)
 from modules.worker_console.routes import router as worker_console_router
 app.include_router(worker_console_router, prefix="/api")
