@@ -1,0 +1,88 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "new": "INSERT INTO dbo.Servidores_Status (ServerID, IsOnline, ResponseTimeMs, LastCheck)\n                VALUES (%s, %s, %s, GETDATE())",
+      "old": "INSERT INTO dbo.Servidores_Status (StatusID, ServerID, IsOnline, ResponseTimeMs, LastCheck)\n                VALUES (%s, %s, %s, %s, GETDATE())",
+      "path": "backend/server.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "\"\"\", (server_id, 1 if is_online else 0, response_time_ms))",
+      "old": "\"\"\", (_sql_next_id(cur, \"Servidores_Status\", \"StatusID\"), server_id, 1 if is_online else 0, response_time_ms))",
+      "path": "backend/server.py",
+      "type": "replace_text"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "paths": [
+        "backend/server.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_server_sucursales_rbac_canonical.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "constraints": [
+    "Modificar exclusivamente backend/server.py",
+    "Modificar exclusivamente la funcion _sql_upsert_servidor_status",
+    "NO modificar frontend/src/pages/Servidores.js",
+    "NO modificar SQL",
+    "NO modificar RBAC",
+    "NO modificar CAVAS",
+    "NO tocar Produccion",
+    "NO modificar Worker Lifecycle",
+    "NO modificar Same-Job Retry Bridge",
+    "NO modificar tools/bootstrap/recover_preview_runtime.sh"
+  ],
+  "expected_result": {
+    "files_changed": [
+      "backend/server.py"
+    ],
+    "must_not_change": [
+      "frontend/src/pages/Servidores.js",
+      "SQL",
+      "RBAC",
+      "CAVAS",
+      "Produccion",
+      "Worker Lifecycle",
+      "Same-Job Retry Bridge",
+      "tools/bootstrap/recover_preview_runtime.sh"
+    ],
+    "production_touched": false
+  },
+  "human_summary_language": "es",
+  "job_id": "SERVIDORES-PING-STATUS-IDENTITY-INSERT-REPAIR-R1C-20261005",
+  "mode": "MUTATION",
+  "objective": "Reparar exclusivamente _sql_upsert_servidor_status en backend/server.py. Omitir StatusID del INSERT a dbo.Servidores_Status porque StatusID es IDENTITY. No tocar SQL, RBAC, frontend, CAVAS, Produccion, runtime ni Worker Lifecycle.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Worker Hardening 2",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
