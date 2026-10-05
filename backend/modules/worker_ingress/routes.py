@@ -7,8 +7,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.rbac.middleware import require_explicit_permission
 
-from .schemas import WorkerSubmitRequest
-from .service import WorkerIngressError, get_job_status, submit_job
+from .schemas import WorkerObjectiveRequest, WorkerSubmitRequest
+from .service import (
+    WorkerIngressError,
+    get_job_status,
+    submit_job,
+    submit_objective,
+)
 
 
 router = APIRouter(
