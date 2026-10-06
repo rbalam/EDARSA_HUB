@@ -1,0 +1,33 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-CHAPUR58-STATUS-AUDIT-R2-CARLOS-20261006T192500Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "chapur58-status"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Verificar estado actual de CHAPUR58 puerto 8016 en EDARSAHUB y confirmar si esta registrado y activo para dejar la API operativa.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "chapur58_actual",
+          "sql": "SELECT id,nombre,system_type,tipo_conexion,api_url,activo,visible_en_operaciones,visible_en_listado,created_at,updated_at,created_by,updated_by FROM Servidores_Conexiones WHERE UPPER(nombre) LIKE '%CHAPUR58%' OR api_url LIKE '%:8016/%' OR api_url LIKE '%:8016' ORDER BY updated_at DESC"
+        },
+        {
+          "name": "chapur_actual",
+          "sql": "SELECT id,nombre,system_type,tipo_conexion,api_url,activo,visible_en_operaciones,visible_en_listado FROM Servidores_Conexiones WHERE UPPER(nombre) LIKE '%CHAPUR%' ORDER BY nombre"
+        }
+      ]
+    }
+  ]
+}
