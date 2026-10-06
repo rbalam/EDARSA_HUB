@@ -1,0 +1,91 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "queries": [
+        {
+          "name": "columns_usuario_empresas_y_empresas",
+          "sql": "SELECT c.TABLE_SCHEMA, c.TABLE_NAME, c.ORDINAL_POSITION, c.COLUMN_NAME, c.DATA_TYPE, c.IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS c WHERE c.TABLE_SCHEMA = 'dbo' AND c.TABLE_NAME IN ('Usuario_EmpresasAsignacion', 'Usuario_Catalogo', 'Usuario_RolesAsignacion', 'Usuario_Roles', 'Sistema_Empresas', 'Sistema_EmpresasMongoMap') ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION"
+        },
+        {
+          "name": "usuario_empresas_raw",
+          "sql": "SELECT TOP 200 * FROM dbo.Usuario_EmpresasAsignacion ORDER BY UsuarioID, EmpresaID"
+        },
+        {
+          "name": "sistema_empresas_raw",
+          "sql": "SELECT TOP 50 * FROM dbo.Sistema_Empresas ORDER BY EmpresaID"
+        },
+        {
+          "name": "usuario_empresas_distribution",
+          "sql": "SELECT ISNULL(CAST(Activo AS INT), -1) AS ActivoFlag, ISNULL(CAST(EsPrincipal AS INT), -1) AS EsPrincipalFlag, COUNT(*) AS total FROM dbo.Usuario_EmpresasAsignacion GROUP BY ISNULL(CAST(Activo AS INT), -1), ISNULL(CAST(EsPrincipal AS INT), -1) ORDER BY ActivoFlag, EsPrincipalFlag"
+        },
+        {
+          "name": "usuario_empresas_integridad_join",
+          "sql": "SELECT TOP 200 ea.UsuarioID, u.Email, u.Username, u.NombreCompleto, u.Activo AS UsuarioActivo, ea.EmpresaID, e.EmpresaID AS EmpresaExisteID, ea.EsPrincipal, ea.Activo AS AsignacionActiva, CASE   WHEN u.UsuarioID IS NULL THEN 'ORPHAN_USUARIOID'   WHEN e.EmpresaID IS NULL THEN 'ORPHAN_EMPRESAID'   WHEN ISNULL(ea.Activo,0)=0 THEN 'ASSIGNMENT_INACTIVE'   WHEN ISNULL(u.Activo,0)=0 THEN 'USER_INACTIVE_WITH_ASSIGNMENT'   ELSE 'ASSIGNMENT_OK' END AS IntegrityDiagnosis FROM dbo.Usuario_EmpresasAsignacion ea LEFT JOIN dbo.Usuario_Catalogo u ON u.UsuarioID = ea.UsuarioID LEFT JOIN dbo.Sistema_Empresas e ON e.EmpresaID = ea.EmpresaID ORDER BY ea.UsuarioID, ea.EmpresaID"
+        },
+        {
+          "name": "empresaid_inexistentes_en_asignacion",
+          "sql": "SELECT TOP 100 ea.EmpresaID, COUNT(*) AS Asignaciones, SUM(CASE WHEN ISNULL(ea.Activo,0)=1 THEN 1 ELSE 0 END) AS AsignacionesActivas FROM dbo.Usuario_EmpresasAsignacion ea LEFT JOIN dbo.Sistema_Empresas e ON e.EmpresaID = ea.EmpresaID WHERE e.EmpresaID IS NULL GROUP BY ea.EmpresaID ORDER BY ea.EmpresaID"
+        },
+        {
+          "name": "usuarioid_huerfanos_en_asignacion",
+          "sql": "SELECT TOP 100 ea.UsuarioID, COUNT(*) AS Asignaciones, SUM(CASE WHEN ISNULL(ea.Activo,0)=1 THEN 1 ELSE 0 END) AS AsignacionesActivas FROM dbo.Usuario_EmpresasAsignacion ea LEFT JOIN dbo.Usuario_Catalogo u ON u.UsuarioID = ea.UsuarioID WHERE u.UsuarioID IS NULL GROUP BY ea.UsuarioID ORDER BY ea.UsuarioID"
+        },
+        {
+          "name": "usuarios_activos_sin_empresa_activa",
+          "sql": "SELECT TOP 100 u.UsuarioID, u.Email, u.Username, u.NombreCompleto, u.Activo AS UsuarioActivo, (SELECT COUNT(*) FROM dbo.Usuario_EmpresasAsignacion ea  WHERE ea.UsuarioID = u.UsuarioID) AS EmpresasTotal, (SELECT COUNT(*) FROM dbo.Usuario_EmpresasAsignacion ea  WHERE ea.UsuarioID = u.UsuarioID AND ISNULL(ea.Activo,1)=1) AS EmpresasActivas, (SELECT COUNT(*) FROM dbo.Usuario_SucursalesAsignacion sa  WHERE sa.UsuarioID = u.UsuarioID AND ISNULL(sa.Activo,1)=1) AS SucursalesActivas, (SELECT COUNT(*) FROM dbo.Usuario_ServidoresAsignacion sva  WHERE sva.UsuarioID = u.UsuarioID AND ISNULL(sva.Activo,1)=1) AS ServidoresActivos FROM dbo.Usuario_Catalogo u WHERE ISNULL(u.Activo,0)=1 AND NOT EXISTS (  SELECT 1 FROM dbo.Usuario_EmpresasAsignacion ea   WHERE ea.UsuarioID = u.UsuarioID AND ISNULL(ea.Activo,1)=1) ORDER BY u.UsuarioID"
+        },
+        {
+          "name": "superadmin_admin_sin_empresa_activa",
+          "sql": "SELECT DISTINCT TOP 100 u.UsuarioID, u.Email, u.Username, u.NombreCompleto, u.Activo AS UsuarioActivo, r.RolID, r.CodigoRol, r.NombreRol, r.NivelJerarquia, ura.EsPrincipal, ura.Activo AS RolAsignacionActiva, (SELECT COUNT(*) FROM dbo.Usuario_EmpresasAsignacion ea  WHERE ea.UsuarioID = u.UsuarioID AND ISNULL(ea.Activo,1)=1) AS EmpresasActivas FROM dbo.Usuario_Catalogo u JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = u.UsuarioID JOIN dbo.Usuario_Roles r ON r.RolID = ura.RolID WHERE ISNULL(u.Activo,0)=1 AND ISNULL(ura.Activo,1)=1 AND ISNULL(r.Activo,1)=1 AND (  UPPER(ISNULL(r.CodigoRol,'')) IN ('SUPERADMIN','SUPERADMINISTRADOR','SUPER_ADMIN','ADMIN')   OR ISNULL(r.NivelJerarquia,0) >= 90) AND NOT EXISTS (  SELECT 1 FROM dbo.Usuario_EmpresasAsignacion ea   WHERE ea.UsuarioID = u.UsuarioID AND ISNULL(ea.Activo,1)=1) ORDER BY r.NivelJerarquia DESC, u.UsuarioID"
+        },
+        {
+          "name": "fix_candidate_matrix_readonly",
+          "sql": "SELECT TOP 100 u.UsuarioID, u.Email, u.Username, u.NombreCompleto, u.Activo AS UsuarioActivo, MAX(CASE WHEN ISNULL(ura.Activo,1)=1 AND ISNULL(r.Activo,1)=1 THEN ISNULL(r.NivelJerarquia,0) ELSE 0 END) AS MaxRolNivelActivo, MAX(CASE WHEN ISNULL(ura.Activo,1)=1 AND ISNULL(r.Activo,1)=1 AND UPPER(ISNULL(r.CodigoRol,'')) IN ('SUPERADMIN','SUPERADMINISTRADOR','SUPER_ADMIN','ADMIN') THEN 1 ELSE 0 END) AS EsAdminOSuperAdmin, (SELECT COUNT(*) FROM dbo.Usuario_EmpresasAsignacion ea WHERE ea.UsuarioID = u.UsuarioID) AS EmpresasTotal, (SELECT COUNT(*) FROM dbo.Usuario_EmpresasAsignacion ea WHERE ea.UsuarioID = u.UsuarioID AND ISNULL(ea.Activo,1)=1) AS EmpresasActivas, CASE   WHEN ISNULL(u.Activo,0)=0 THEN 'NO_FIX_USER_INACTIVE'   WHEN (SELECT COUNT(*) FROM dbo.Usuario_EmpresasAsignacion ea WHERE ea.UsuarioID = u.UsuarioID AND ISNULL(ea.Activo,1)=1) > 0 THEN 'NO_FIX_EMPRESA_OK'   WHEN MAX(CASE WHEN ISNULL(ura.Activo,1)=1 AND ISNULL(r.Activo,1)=1 AND (UPPER(ISNULL(r.CodigoRol,'')) IN ('SUPERADMIN','SUPERADMINISTRADOR','SUPER_ADMIN','ADMIN') OR ISNULL(r.NivelJerarquia,0) >= 90) THEN 1 ELSE 0 END) = 1 THEN 'CANDIDATE_ASSIGN_EMPRESA_FOR_ADMIN_SCOPE'   ELSE 'CANDIDATE_ASSIGN_EMPRESA_BY_BUSINESS_SCOPE_REQUIRED' END AS ProposedReadOnlyAction FROM dbo.Usuario_Catalogo u LEFT JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = u.UsuarioID LEFT JOIN dbo.Usuario_Roles r ON r.RolID = ura.RolID GROUP BY u.UsuarioID, u.Email, u.Username, u.NombreCompleto, u.Activo ORDER BY ProposedReadOnlyAction, u.UsuarioID"
+        }
+      ],
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "expected_output": {
+    "must_report": [
+      "filas_reales_usuario_empresas_asignacion",
+      "activo_inactivo_por_asignacion",
+      "usuarioid_huerfanos",
+      "empresaid_inexistentes",
+      "usuarios_activos_sin_empresa",
+      "superadmin_admin_sin_empresa",
+      "propuesta_fix_reversible_sin_dml",
+      "decision_dml_controlado_vs_deploy_audit"
+    ],
+    "no_ddl": true,
+    "no_deploy": true,
+    "no_dml": true,
+    "production_touched": false
+  },
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-USUARIOS-PRODUCCION-ACCESS-MENU-GATE0D-EMPRESA-RBAC-DATA-READONLY-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar por que todos los usuarios activos tienen EmpresasActivas=0 aunque existe dbo.Usuario_EmpresasAsignacion. Revisar filas reales, activo/inactivo, usuarios huerfanos, EmpresaID inexistentes, usuarios activos sin empresa, SUPERADMIN/ADMIN sin empresa, y preparar propuesta de correccion reversible sin ejecutar DML, DDL ni deploy.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Usuarios Produccion Gate0D",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
