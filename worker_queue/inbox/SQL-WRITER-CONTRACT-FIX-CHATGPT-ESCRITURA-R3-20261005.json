@@ -1,0 +1,124 @@
+{
+  "actions": [
+    {
+      "expected_count": 17,
+      "new": "ChatGPT_Escritura",
+      "old": "HUB_Escritura",
+      "path": "backend/database/migrations/20260917_001_sql_principals_least_privilege.sql",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "CHATGPT_ESCRITURA",
+      "old": "HUB_ESCRITURA",
+      "path": "backend/database/migrations/20260917_001_sql_principals_least_privilege.sql",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 11,
+      "new": "ChatGPT_Escritura",
+      "old": "HUB_Escritura",
+      "path": "backend/database/migrations/20260917_001_sql_principals_least_privilege_rollback.sql",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "CHATGPT_ESCRITURA",
+      "old": "HUB_ESCRITURA",
+      "path": "backend/database/migrations/20260917_001_sql_principals_least_privilege_rollback.sql",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 4,
+      "new": "ChatGPT_Escritura",
+      "old": "GptEscritura",
+      "path": "backend/tests/test_worker_sql_migration_development_capability.py",
+      "type": "replace_text"
+    }
+  ],
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [],
+        "max_results": 500,
+        "paths": [
+          "backend/database/migrations/20260917_001_sql_principals_least_privilege.sql",
+          "backend/database/migrations/20260917_001_sql_principals_least_privilege_rollback.sql",
+          "tools/mirror_sync/sql_migration_development.py",
+          "backend/tests/test_worker_sql_migration_development_capability.py"
+        ],
+        "search_terms": [
+          "HUB_Escritura",
+          "HUB_ESCRITURA",
+          "ChatGPT_Escritura",
+          "CHATGPT_ESCRITURA",
+          "HRLECTURA_CANNOT_BE_MIGRATION_WRITER",
+          "MIGRATION_WRITER_IDENTITY_MISMATCH"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_sql_migration_development_capability.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "paths": [
+        "tools/mirror_sync/sql_migration_development.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "NO_PRODUCTION",
+    "NO_DML",
+    "NO_DDL_REAL",
+    "NO_HRLECTURA_AS_WRITER",
+    "NO_BLIND_GLOBAL_REPLACE",
+    "SURGICAL_REVERSIBLE_CHANGES",
+    "TESTS_REQUIRED"
+  ],
+  "deliverables": [
+    "DIFF_EXACTO",
+    "TEST_RESULTS",
+    "FILES_MODIFIED",
+    "NO_DML_DDL_PRODUCTION_CONFIRMATION"
+  ],
+  "human_summary_language": "es",
+  "instructions": "\nEDARSAHUB BOS - SQL WRITER CONTRACT FIX - CHATGPT_ESCRITURA\n\nObjetivo:\nCorregir contrato canonico de SQL writer. HUB_Escritura no esta montada ni funcional; reemplazarla por ChatGPT_Escritura donde sea usada como usuario SQL writer esperado.\n\nRestricciones:\n- NO tocar Produccion.\n- NO ejecutar DML.\n- NO ejecutar DDL real.\n- NO usar HRLectura como writer.\n- NO reemplazo ciego global.\n- Cambios quirurgicos, reversibles y con tests.\n\nContrato final:\n- EDARSAHUB_MIGRATION_USER=ChatGPT_Escritura\n- EDARSAHUB_MIGRATION_EXPECTED_USER=ChatGPT_Escritura\n- EDARSAHUB_MIGRATION_PASSWORD desde GitHub Actions secret correspondiente\n- HRLectura sigue prohibida como writer\n\nEntregar:\n- diff exacto\n- pruebas ejecutadas\n- archivos modificados\n- confirmacion de que no hubo DML/DDL ni cambios en Produccion\n",
+  "job_id": "SQL-WRITER-CONTRACT-FIX-CHATGPT-ESCRITURA-R3-20261005",
+  "mode": "DEVELOPMENT_REPO_CHANGE",
+  "objective": "Corregir contrato canonico SQL writer: reemplazar HUB_Escritura por ChatGPT_Escritura donde aplique, sin tocar Produccion ni ejecutar DML/DDL.",
+  "production_allowed": false,
+  "quality_gate": "TESTS_REQUIRED",
+  "requester": {
+    "chat": "Cavas Personales 9",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "SQL_WRITER_CONTRACT",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "HIGH",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "scope": {
+    "branch": "Edarsahub_Desarrollo",
+    "repo": "rbalam/EDARSA_HUB"
+  },
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
