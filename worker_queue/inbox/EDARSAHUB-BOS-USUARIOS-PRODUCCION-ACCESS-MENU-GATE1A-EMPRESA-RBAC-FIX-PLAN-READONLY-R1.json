@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "name": "gate1a_empresa_rbac_fix_plan_readonly",
+      "queries": [
+        {
+          "name": "gate1a_empresas_canonicas_activas",
+          "sql": "\nSELECT\n    e.EmpresaID,\n    CONCAT('EmpresaID=', CAST(e.EmpresaID AS VARCHAR(20))) AS EmpresaNombre,\n    e.Activo\nFROM dbo.Sistema_Empresas e\nWHERE ISNULL(e.Activo, 0) = 1\nORDER BY e.EmpresaID\n"
+        },
+        {
+          "name": "gate1a_reactivate_existing_candidates",
+          "sql": "\nWITH active_users AS (\n    SELECT\n        u.UsuarioID,\n        u.Email,\n        u.Username,\n        u.NombreCompleto,\n        MAX(ISNULL(r.NivelJerarquia, 0)) AS MaxRolNivelActivo,\n        MAX(CASE WHEN r.CodigoRol IN ('SUPERADMIN','ADMIN') OR ISNULL(r.NivelJerarquia,0) >= 90 THEN 1 ELSE 0 END) AS EsAdminOSuperAdmin\n    FROM dbo.Usuario_Catalogo u\n    LEFT JOIN dbo.Usuario_RolesAsignacion ra\n      ON ra.UsuarioID = u.UsuarioID\n     AND ISNULL(ra.Activo, 0) = 1\n    LEFT JOIN dbo.Usuario_Roles r\n      ON r.RolID = ra.RolID\n     AND ISNULL(r.Activo, 0) = 1\n    WHERE ISNULL(u.Activo, 0) = 1\n    GROUP BY\n        u.UsuarioID,\n        u.Email,\n        u.Username,\n        u.NombreCompleto\n)\nSELECT\n    au.UsuarioID,\n    au.Email,\n    au.Username,\n    au.NombreCompleto,\n    au.MaxRolNivelActivo,\n    au.EsAdminOSuperAdmin,\n    ea.EmpresaID,\n    CONCAT('EmpresaID=', CAST(ea.EmpresaID AS VARCHAR(20))) AS EmpresaNombre,\n    ea.EsPrincipal,\n    ea.Activo AS AsignacionActivaActual,\n    CASE\n        WHEN au.EsAdminOSuperAdmin = 1 THEN 'REACTIVATE_EXISTING_ADMIN_SCOPE'\n        ELSE 'REACTIVATE_EXISTING_BUSINESS_SCOPE'\n    END AS AccionPropuesta,\n    'EXISTING_ROW_INACTIVE_VALID_EMPRESA' AS Motivo,\n    CONCAT('BACKUP UsuarioID=', au.UsuarioID, ' EmpresaID=', ea.EmpresaID) AS BackupRequerido,\n    CONCAT('ROLLBACK deactivate UsuarioID=', au.UsuarioID, ' EmpresaID=', ea.EmpresaID) AS RollbackTexto\nFROM active_users au\nJOIN dbo.Usuario_EmpresasAsignacion ea\n  ON ea.UsuarioID = au.UsuarioID\nJOIN dbo.Sistema_Empresas e\n  ON e.EmpresaID = ea.EmpresaID\nWHERE ISNULL(ea.Activo, 0) = 0\n  AND ISNULL(e.Activo, 0) = 1\n  AND NOT EXISTS (\n      SELECT 1\n      FROM dbo.Usuario_EmpresasAsignacion ea2\n      WHERE ea2.UsuarioID = au.UsuarioID\n        AND ISNULL(ea2.Activo, 0) = 1\n  )\nORDER BY au.EsAdminOSuperAdmin DESC, au.UsuarioID, ea.EmpresaID\n"
+        },
+        {
+          "name": "gate1a_add_missing_admin_scope_candidates",
+          "sql": "\nWITH admin_users AS (\n    SELECT DISTINCT\n        u.UsuarioID,\n        u.Email,\n        u.Username,\n        u.NombreCompleto,\n        r.CodigoRol,\n        r.NivelJerarquia\n    FROM dbo.Usuario_Catalogo u\n    JOIN dbo.Usuario_RolesAsignacion ra\n      ON ra.UsuarioID = u.UsuarioID\n     AND ISNULL(ra.Activo, 0) = 1\n    JOIN dbo.Usuario_Roles r\n      ON r.RolID = ra.RolID\n     AND ISNULL(r.Activo, 0) = 1\n    WHERE ISNULL(u.Activo, 0) = 1\n      AND (\n            r.CodigoRol IN ('SUPERADMIN', 'ADMIN')\n            OR ISNULL(r.NivelJerarquia, 0) >= 90\n          )\n),\nmissing_admin AS (\n    SELECT au.*\n    FROM admin_users au\n    WHERE NOT EXISTS (\n        SELECT 1\n        FROM dbo.Usuario_EmpresasAsignacion ea\n        WHERE ea.UsuarioID = au.UsuarioID\n    )\n),\nactive_empresas AS (\n    SELECT\n        e.EmpresaID,\n        ROW_NUMBER() OVER (ORDER BY e.EmpresaID) AS rn\n    FROM dbo.Sistema_Empresas e\n    WHERE ISNULL(e.Activo, 0) = 1\n)\nSELECT\n    ma.UsuarioID,\n    ma.Email,\n    ma.Username,\n    ma.NombreCompleto,\n    ma.CodigoRol,\n    ma.NivelJerarquia,\n    ae.EmpresaID,\n    CONCAT('EmpresaID=', CAST(ae.EmpresaID AS VARCHAR(20))) AS EmpresaNombre,\n    CASE WHEN ae.rn = 1 THEN 1 ELSE 0 END AS EsPrincipalPropuesto,\n    'ADD_MISSING_ADMIN_SCOPE' AS AccionPropuesta,\n    'ADMIN_OR_SUPERADMIN_WITH_ZERO_EMPRESA_ROWS' AS Motivo,\n    CONCAT('BACKUP missing row UsuarioID=', ma.UsuarioID, ' EmpresaID=', ae.EmpresaID) AS BackupRequerido,\n    CONCAT('ROLLBACK deactivate created row UsuarioID=', ma.UsuarioID, ' EmpresaID=', ae.EmpresaID) AS RollbackTexto\nFROM missing_admin ma\nCROSS JOIN active_empresas ae\nORDER BY ma.UsuarioID, ae.EmpresaID\n"
+        },
+        {
+          "name": "gate1a_business_scope_derivation_candidates",
+          "sql": "\nWITH active_users AS (\n    SELECT\n        u.UsuarioID,\n        u.Email,\n        u.Username,\n        u.NombreCompleto,\n        MAX(ISNULL(r.NivelJerarquia, 0)) AS MaxRolNivelActivo\n    FROM dbo.Usuario_Catalogo u\n    LEFT JOIN dbo.Usuario_RolesAsignacion ra\n      ON ra.UsuarioID = u.UsuarioID\n     AND ISNULL(ra.Activo, 0) = 1\n    LEFT JOIN dbo.Usuario_Roles r\n      ON r.RolID = ra.RolID\n     AND ISNULL(r.Activo, 0) = 1\n    WHERE ISNULL(u.Activo, 0) = 1\n    GROUP BY\n        u.UsuarioID,\n        u.Email,\n        u.Username,\n        u.NombreCompleto\n),\nbusiness_users AS (\n    SELECT au.*\n    FROM active_users au\n    WHERE ISNULL(au.MaxRolNivelActivo, 0) < 90\n      AND NOT EXISTS (\n          SELECT 1\n          FROM dbo.Usuario_EmpresasAsignacion ea\n          WHERE ea.UsuarioID = au.UsuarioID\n            AND ISNULL(ea.Activo, 0) = 1\n      )\n),\nscope_raw AS (\n    SELECT DISTINCT\n        usa.UsuarioID,\n        s.EmpresaID,\n        'SERVIDOR_MAP' AS FuenteDecision\n    FROM dbo.Usuario_ServidoresAsignacion usa\n    JOIN dbo.Sistema_SucursalServidorMapeo m\n      ON CAST(m.ServidorID AS VARCHAR(50)) = CAST(usa.ServidorID AS VARCHAR(50))\n     AND ISNULL(m.Activo, 0) = 1\n    JOIN dbo.Sistema_Sucursales s\n      ON s.SucursalID = m.SucursalID\n     AND ISNULL(s.Activo, 0) = 1\n    JOIN dbo.Sistema_Empresas e\n      ON e.EmpresaID = s.EmpresaID\n     AND ISNULL(e.Activo, 0) = 1\n    WHERE ISNULL(usa.Activo, 0) = 1\n\n    UNION\n\n    SELECT DISTINCT\n        us.UsuarioID,\n        s.EmpresaID,\n        'SUCURSAL_SERVER_MAP' AS FuenteDecision\n    FROM dbo.Usuario_SucursalesAsignacion us\n    JOIN dbo.Sistema_SucursalServidorMapeo m\n      ON CAST(m.ServidorID AS VARCHAR(50)) = CAST(us.ServidorID AS VARCHAR(50))\n     AND ISNULL(m.Activo, 0) = 1\n    JOIN dbo.Sistema_Sucursales s\n      ON s.SucursalID = m.SucursalID\n     AND ISNULL(s.Activo, 0) = 1\n    JOIN dbo.Sistema_Empresas e\n      ON e.EmpresaID = s.EmpresaID\n     AND ISNULL(e.Activo, 0) = 1\n    WHERE ISNULL(us.Activo, 0) = 1\n),\nscope_counts AS (\n    SELECT\n        UsuarioID,\n        COUNT(DISTINCT EmpresaID) AS EmpresasDerivadas\n    FROM scope_raw\n    GROUP BY UsuarioID\n)\nSELECT\n    bu.UsuarioID,\n    bu.Email,\n    bu.Username,\n    bu.NombreCompleto,\n    bu.MaxRolNivelActivo,\n    sr.EmpresaID,\n    CASE\n        WHEN sr.EmpresaID IS NULL THEN NULL\n        ELSE CONCAT('EmpresaID=', CAST(sr.EmpresaID AS VARCHAR(20)))\n    END AS EmpresaNombre,\n    sr.FuenteDecision,\n    ISNULL(sc.EmpresasDerivadas, 0) AS EmpresasDerivadas,\n    CASE\n        WHEN sc.EmpresasDerivadas IS NULL THEN 'MANUAL_SCOPE_REQUIRED'\n        WHEN sc.EmpresasDerivadas > 1 THEN 'MANUAL_SCOPE_REQUIRED_AMBIGUOUS'\n        WHEN EXISTS (\n            SELECT 1\n            FROM dbo.Usuario_EmpresasAsignacion ea\n            WHERE ea.UsuarioID = bu.UsuarioID\n              AND ea.EmpresaID = sr.EmpresaID\n              AND ISNULL(ea.Activo, 0) = 0\n        ) THEN 'REACTIVATE_EXISTING_DERIVED_SCOPE'\n        ELSE 'ADD_MISSING_DERIVED_SCOPE'\n    END AS AccionPropuesta,\n    CASE\n        WHEN sc.EmpresasDerivadas IS NULL THEN 'NO_CANONICAL_SCOPE_FROM_SERVER_OR_SUCURSAL'\n        WHEN sc.EmpresasDerivadas > 1 THEN 'MULTIPLE_EMPRESAS_DERIVED_REQUIRES_HUMAN_DECISION'\n        ELSE 'SINGLE_EMPRESA_DERIVED_FROM_OPERATIONAL_SCOPE'\n    END AS Motivo,\n    CASE\n        WHEN sr.EmpresaID IS NULL THEN NULL\n        ELSE CONCAT('BACKUP UsuarioID=', bu.UsuarioID, ' EmpresaID=', sr.EmpresaID)\n    END AS BackupRequerido,\n    CASE\n        WHEN sr.EmpresaID IS NULL OR sc.EmpresasDerivadas <> 1 THEN NULL\n        ELSE CONCAT('ROLLBACK deactivate UsuarioID=', bu.UsuarioID, ' EmpresaID=', sr.EmpresaID)\n    END AS RollbackTexto\nFROM business_users bu\nLEFT JOIN scope_counts sc\n  ON sc.UsuarioID = bu.UsuarioID\nLEFT JOIN scope_raw sr\n  ON sr.UsuarioID = bu.UsuarioID\nORDER BY bu.UsuarioID, sr.EmpresaID\n"
+        },
+        {
+          "name": "gate1a_final_decision_readonly",
+          "sql": "\nSELECT\n    'GATE1A_PLAN_ONLY' AS Decision,\n    'NO_DML_EXECUTED' AS DmlStatus,\n    'AUTHORIZE_GATE1B_ONLY_IF_EXACT_USUARIOID_EMPRESAID_BACKUP_ROLLBACK' AS Gate1BRule,\n    'DO_NOT_REDEPLOY_BEFORE_DATA_RBAC_FIX' AS DeployRule\n"
+        }
+      ],
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-USUARIOS-PRODUCCION-ACCESS-MENU-GATE1A-EMPRESA-RBAC-FIX-PLAN-READONLY-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Generar plan exacto de corrección para dbo.Usuario_EmpresasAsignacion sin ejecutar DML, DDL ni deploy. Debe producir matriz UsuarioID, Email, AccionPropuesta, EmpresaID, motivo, backup y rollback para decidir si procede Gate1B controlado.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Usuarios Produccion Gate1A",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
