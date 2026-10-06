@@ -1,0 +1,247 @@
+{
+  "base_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-06T16:14:23Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-GLOBAL-RESYNC-DIAG-R34-CARLOS-20261006",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-06T16:14:31Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "mesa_column_length",
+              "descuento_pct_column_length"
+            ],
+            "name": "detalle_schema_mesa",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                200,
+                5
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "COLUMN_NAME",
+              "DATA_TYPE",
+              "CHARACTER_MAXIMUM_LENGTH"
+            ],
+            "name": "detalle_columns",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "descuento_pct",
+                "decimal",
+                null
+              ],
+              [
+                "mesa",
+                "nvarchar",
+                100
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ResyncLogID",
+              "TipoSync",
+              "UnidadCodigo",
+              "Estado",
+              "Mensaje",
+              "RegistrosAfectados"
+            ],
+            "name": "recent_resync_logs",
+            "row_count_returned": 20,
+            "rows": [
+              [
+                "495",
+                "iscam_detail_batch",
+                "CIENFUEGOS",
+                "JOB_FAILED",
+                "1/1 procesados; 0 sincronizados; 1 pendientes.",
+                0
+              ],
+              [
+                "494",
+                "iscam_detail_batch",
+                "CIENFUEGOS",
+                "JOB_FAILED",
+                "1/1 procesados; 0 sincronizados; 1 pendientes.",
+                0
+              ],
+              [
+                "493",
+                "iscam_detail_batch",
+                "ESTELAR",
+                "JOB_FAILED",
+                "1/1 procesados; 0 sincronizados; 1 pendientes.",
+                0
+              ],
+              [
+                "492",
+                "comercial_ventas_detalle",
+                "ESTELAR",
+                "SUCCESS",
+                "OK",
+                2
+              ],
+              [
+                "491",
+                "comercial_ventas_cerradas",
+                "ESTELAR",
+                "SUCCESS",
+                "OK",
+                1
+              ],
+              [
+                "490",
+                "comercial_ventas_cerradas",
+                "ESTELAR",
+                "SUCCESS",
+                "OK",
+                1
+              ],
+              [
+                "489",
+                "comercial_range_batch",
+                "ESTELAR",
+                "JOB_PARTIAL",
+                "Proceso terminado con 1 bloque(s) pendiente(s).",
+                0
+              ],
+              [
+                "488",
+                "iscam_detail_batch",
+                "ESTELAR",
+                "JOB_FAILED",
+                "1/1 procesados; 0 sincronizados; 1 pendientes.",
+                0
+              ],
+              [
+                "487",
+                "iscam_detail_batch",
+                "ESTELAR",
+                "JOB_FAILED",
+                "1/1 procesados; 0 sincronizados; 1 pendientes.",
+                0
+              ],
+              [
+                "486",
+                "iscam_detail_batch",
+                "ESTELAR",
+                "JOB_FAILED",
+                "1/1 procesados; 0 sincronizados; 1 pendientes.",
+                0
+              ],
+              [
+                "485",
+                "comercial_range_batch",
+                "130MID,130QRO,CIENFUEGOS,ESTELAR,ORIGEN",
+                "JOB_CANCEL_REQUESTED",
+                "Detención segura solicitada. Se detendrá al finalizar la operación atómica actual.",
+                0
+              ],
+              [
+                "484",
+                "comercial_range_batch",
+                "ESTELAR",
+                "JOB_SUCCESS",
+                "Proceso terminado: 1/1 bloques.",
+                1
+              ],
+              [
+                "483",
+                "comercial_range_batch",
+                "130MID,130QRO,CIENFUEGOS,ESTELAR,ORIGEN",
+                "JOB_CANCEL_REQUESTED",
+                "Detención segura solicitada. Se detendrá al finalizar la operación atómica actual.",
+                3
+              ],
+              [
+                "482",
+                "comercial_ventas_detalle",
+                "ORIGEN",
+                "SUCCESS",
+                "OK",
+                1
+              ],
+              [
+                "481",
+                "iscam_detail_batch",
+                "CIENFUEGOS",
+                "JOB_PARTIAL",
+                "3/3 procesados; 2 sincronizados; 1 pendientes.",
+                2
+              ],
+              [
+                "480",
+                "iscam_detail_batch",
+                "ESTELAR",
+                "JOB_FAILED",
+                "1/1 procesados; 0 sincronizados; 1 pendientes.",
+                0
+              ],
+              [
+                "479",
+                "iscam_detail_batch",
+                "ESTELAR",
+                "JOB_SUCCESS",
+                "1/1 procesados; 1 sincronizados; 0 pendientes.",
+                1
+              ],
+              [
+                "478",
+                "iscam_detail_batch",
+                "CIENFUEGOS",
+                "JOB_STALE",
+                "Trabajo anterior sin avance reciente; puede iniciarse uno nuevo.",
+                23
+              ],
+              [
+                "477",
+                "iscam_detail_batch",
+                "CIENFUEGOS",
+                "JOB_STALE",
+                "Trabajo anterior sin avance reciente; puede iniciarse uno nuevo.",
+                2
+              ],
+              [
+                "476",
+                "iscam_detail_batch",
+                "ESTELAR",
+                "JOB_SUCCESS",
+                "9/9 procesados; 9 sincronizados; 0 pendientes.",
+                9
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-06T16:14:22Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
