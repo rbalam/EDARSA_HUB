@@ -1,0 +1,623 @@
+{
+  "base_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-06T04:32:36Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SQL-WRITER-GITHUB-ACTIONS-MOUNT-AUDIT-R1-20261006",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-06T04:32:49Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/catalogo-ampliado-development-migration.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/catalogo-ampliado-gate6-e2e-cert-r8.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/catalogo-ampliado-gate6-e2e.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/catalogo-ampliado-gate8f-development-migration.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Sistema_NotificacionesConfig"
+            ]
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/cavas-corporativas-development-migration.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/cavas-corporativas-menu-development-migration.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Sistema_Modulos",
+              "Sistema_ModulosMenus"
+            ]
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/cavas-gate12i-persona-link-development-migration.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Gobierno_Persona"
+            ]
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/coa-core-development-migration.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "COA_ExpedienteReferencias",
+              "Fiscal_DocumentosEmitidos",
+              "Fiscal_DocumentosEmitidosEstatus"
+            ]
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/comercial-backfill-dryrun.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/comercial-reconciliacion-global-audit.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VW_KPIsEjecutivos",
+              "Comercial_Inteligencia_VentasDetalleProducto"
+            ]
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/communications-gate5d-development-migration.yml",
+            "rbac_contracts": [
+              "RBAC_Permisos",
+              "Sistema_RBAC"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Operativo_Notificaciones_Log",
+              "Operativo_Notificaciones_Queue",
+              "Sistema_NotificacionesConfig",
+              "Sistema_RBAC_Permisos",
+              "Sistema_RBAC_Roles",
+              "Sistema_RBAC_RolesPermisos"
+            ]
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/edarsahub-audit.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": [
+              "Sistema_Sync_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/edarsahub-menu-surface-audit.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Sistema_Roles",
+              "Sistema_Sync_Catalogo",
+              "Sistema_UnidadesNegocio",
+              "Sistema_Usuarios",
+              "Sistema_UsuariosRoles"
+            ]
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_sql_user"
+            ],
+            "path": ".github/workflows/edarsahub-safety-gate.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/edarsahub-scheduler-audit.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [],
+            "tables_referenced": [
+              "Sistema_Scheduler_Executions",
+              "Sistema_Scheduler_Jobs",
+              "Sistema_Scheduler_Logs",
+              "Sistema_Sync_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/edarsahub-sql-canonical-audit.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": [
+              "Finanzas_AdquirenteDepositos",
+              "Finanzas_AdquirenteImportacionDetalle",
+              "Finanzas_AdquirenteImportaciones",
+              "Finanzas_AdquirenteTransacciones",
+              "Servidores_Conexiones",
+              "Sistema_Scheduler_Executions",
+              "Sistema_Scheduler_Jobs",
+              "Sistema_Scheduler_Logs",
+              "Sistema_Sync_Catalogo",
+              "Sistema_UnidadesNegocio"
+            ]
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/edarsahub-system-audit.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": [
+              "Sistema_Sync_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "edarsahub_sql_user"
+            ],
+            "path": ".github/workflows/estelar-official-aggregate-bootstrap.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/rrr-gate3-development-migration.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/rrr-gate4-customer360-v2-development.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/rrr-gate4-customer360-views-development.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Cliente_Catalogo",
+              "vw_RRR_Customer360"
+            ]
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/servers-integrations-gate5a-readonly-audit.yml",
+            "rbac_contracts": [
+              "RBAC_Permisos",
+              "Sistema_RBAC"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Operativo_Notificaciones_Log",
+              "Servidores_ConexionEstado",
+              "Servidores_Conexiones",
+              "Sistema_Capacidades",
+              "Sistema_IdentificadoresExternos",
+              "Sistema_RBAC_Permisos",
+              "Sistema_Sync_Capacidades",
+              "Sistema_Sync_Catalogo",
+              "Sync_Control_Ejecuciones",
+              "Sync_Control_Evidencias",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_sql_user",
+              "hrlectura"
+            ],
+            "path": ".github/workflows/servers-integrations-universal-development-migration.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "argparse",
+              "hashlib",
+              "json",
+              "os",
+              "pathlib",
+              "subprocess",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_migration_expected_user",
+              "edarsahub_migration_password",
+              "edarsahub_migration_user",
+              "edarsahub_sql_user",
+              "hrlectura",
+              "hrlectura_cannot_be_migration_writer",
+              "migration_writer_identity_mismatch"
+            ],
+            "path": "tools/mirror_sync/sql_migration_development.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "MigrationContractError",
+              "build_child_env",
+              "execute_migration",
+              "main",
+              "resolve_migration_path",
+              "sha256_file",
+              "validate_request"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "hashlib",
+              "pathlib",
+              "pytest",
+              "sys",
+              "tools.mirror_sync.sql_migration_development"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "chatgpt_escritura",
+              "edarsahub_migration_expected_user",
+              "edarsahub_migration_password",
+              "edarsahub_migration_user",
+              "edarsahub_sql_user",
+              "hrlectura",
+              "hrlectura_cannot_be_migration_writer",
+              "migration_writer_identity_mismatch"
+            ],
+            "path": "backend/tests/test_worker_sql_migration_development_capability.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "R",
+              "digest",
+              "env",
+              "fake_run",
+              "make_sql",
+              "test_child_env_reuses_host_db_and_overrides_only_credentials",
+              "test_confirmation_required",
+              "test_dedicated_credentials_required",
+              "test_execute_uses_argv_no_shell",
+              "test_existing_canonical_writer_requires_explicit_opt_in",
+              "test_expected_dedicated_writer_identity_matches",
+              "test_expected_dedicated_writer_identity_mismatch_fails_closed",
+              "test_explicit_canonical_writer_reuses_existing_sql_credentials",
+              "test_hash_must_match",
+              "test_hrlectura_forbidden_as_dedicated_writer",
+              "test_path_must_be_under_canonical_migrations",
+              "test_production_forbidden"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 25,
+          "scanned_files": 38,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-06T04:32:34Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
