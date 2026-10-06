@@ -1,0 +1,33 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-CHAPUR58-REGISTRO-HISTORICO-AUDIT-R1-CARLOS-20261006T191000Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "chapur58-registro-historico"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Determinar si CHAPUR58 o la API del puerto 8016 fue creada, actualizada o eliminada previamente en EDARSAHUB, y explicar por que actualmente no existe en Servidores_Conexiones, sin exponer secretos.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "registro_actual_chapur58",
+          "sql": "SELECT id,nombre,system_type,tipo_conexion,api_url,activo,visible_en_operaciones,visible_en_listado,created_at,updated_at,created_by,updated_by FROM Servidores_Conexiones WHERE UPPER(nombre) LIKE '%CHAPUR%' OR api_url LIKE '%:8016/%' OR api_url LIKE '%:8016' ORDER BY nombre"
+        },
+        {
+          "name": "historial_chapur58",
+          "sql": "SELECT TOP 100 servidor_id,accion,datos_anteriores,datos_nuevos,usuario,fecha,ip_origen FROM Servidores_Conexiones_Log WHERE UPPER(ISNULL(datos_nuevos,'')) LIKE '%CHAPUR%' OR UPPER(ISNULL(datos_anteriores,'')) LIKE '%CHAPUR%' OR ISNULL(datos_nuevos,'') LIKE '%8016%' OR ISNULL(datos_anteriores,'') LIKE '%8016%' ORDER BY fecha DESC"
+        }
+      ]
+    }
+  ]
+}
