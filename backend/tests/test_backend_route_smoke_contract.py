@@ -17,3 +17,9 @@ def test_login_is_required():
 def test_health_is_required():
     text = SMOKE.read_text(encoding="utf-8")
     assert "/api/health" in text
+
+
+def test_smoke_exposes_repository_root_for_worker_tooling():
+    text = SMOKE.read_text(encoding="utf-8")
+    assert "str(ROOT)" in text
+    assert "str(BACKEND)" in text
