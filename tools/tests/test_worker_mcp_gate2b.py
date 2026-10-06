@@ -230,3 +230,83 @@ def test_adapter_has_no_dangerous_low_level_surface():
         "pyodbc.connect",
     ):
         assert forbidden not in text
+
+
+def test_backend_client_exchanges_service_credential_before_auth_probe(
+    monkeypatch,
+):
+    calls = []
+
+    def fake_request(**kwargs):
+        calls.append(kwargs)
+        if kwargs["url"].endswith("/api/internal/worker/auth/exchange"):
+            assert kwargs["token"] == "opaque-service-credential"
+            return 200, {
+                "access_token": "short-internal-jwt",
+                "token_type": "Bearer",
+                "expires_in": 900,
+            }
+        assert kwargs["token"] == "short-internal-jwt"
+        return 404, {
+            "detail": {
+                "job_id": "MCP-AUTH-PROBE",
+                "lifecycle": "NOT_FOUND",
+                "status": "NOT_FOUND",
+                "production_touched": False,
+            }
+        }
+
+    monkeypatch.setattr(client, "_request_json", fake_request)
+
+    assert client.verify_worker_access(
+        backend_url="https://hub.example.test",
+        token="opaque-service-credential",
+    ) is True
+    assert len(calls) == 2
+
+
+def test_backend_client_fails_closed_when_exchange_is_denied(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        client,
+        "_request_json",
+        lambda **kwargs: (
+            401,
+            {"detail": "SERVICE_CREDENTIAL_INVALID"},
+        ),
+    )
+
+    assert client.verify_worker_access(
+        backend_url="https://hub.example.test",
+        token="denied-service-credential",
+    ) is False
+
+
+def test_status_exchanges_service_credential_before_canonical_read(
+    monkeypatch,
+):
+    calls = []
+
+    def fake_request(**kwargs):
+        calls.append(kwargs)
+        if kwargs["url"].endswith("/api/internal/worker/auth/exchange"):
+            return 200, {"access_token": "short-internal-jwt"}
+        assert kwargs["token"] == "short-internal-jwt"
+        return 200, {
+            "job_id": "SEM-TEST-1",
+            "lifecycle": "RESULT",
+            "status": "READ_ONLY_COMPLETE",
+            "production_touched": False,
+        }
+
+    monkeypatch.setattr(client, "_request_json", fake_request)
+
+    result = client.get_job_status(
+        backend_url="https://hub.example.test",
+        token="opaque-service-credential",
+        job_id="SEM-TEST-1",
+    )
+
+    assert result["lifecycle"] == "RESULT"
+    assert len(calls) == 2
