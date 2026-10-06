@@ -1,0 +1,100 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SQL-WRITER-GITHUB-ACTIONS-MOUNT-AUDIT-R1-20261006",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "Cavas Personales 9"
+  },
+  "objective": "Auditar el montaje de credenciales SQL writer en GitHub Actions/runtime de migracion para confirmar ChatGPT_Escritura y no HUB_Escritura ni HRLectura como writer.",
+  "mode": "READ_ONLY",
+  "quality_gate": "AUDIT_REQUIRED",
+  "constraints": [
+    "NO_PRODUCTION",
+    "NO_DML",
+    "NO_DDL_REAL",
+    "NO_SECRET_PRINTING",
+    "NO_PASSWORD_REQUESTS",
+    "NO_HRLECTURA_AS_WRITER",
+    "SURGICAL_REVERSIBLE_CHANGES",
+    "TESTS_REQUIRED"
+  ],
+  "scheduling": {
+    "project_id": "EDARSAHUB",
+    "bounded_context": "SQL_WRITER_GITHUB_ACTIONS_MOUNT_AUDIT",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "scope": {
+    "repo": "rbalam/EDARSA_HUB",
+    "branch": "Edarsahub_Desarrollo",
+    "paths_to_audit": [
+      ".github/workflows",
+      "tools/mirror_sync/sql_migration_development.py",
+      "backend/tests/test_worker_sql_migration_development_capability.py"
+    ]
+  },
+  "instructions": "EDARSAHUB BOS - SQL WRITER GITHUB ACTIONS MOUNT AUDIT\n\nObjetivo:\nAuditar el montaje de credenciales SQL writer en GitHub Actions/runtime de migracion para que use ChatGPT_Escritura y no HUB_Escritura ni HRLectura como writer. Este R1 es READ_ONLY: no aplica correcciones automaticamente; si detecta desviacion, debe entregar dictamen BLOCKED con archivos y acciones exactas requeridas para el siguiente job quirurgico.\n\nRestricciones:\n- NO tocar Produccion.\n- NO ejecutar DML.\n- NO ejecutar DDL real.\n- NO imprimir secretos.\n- NO pedir passwords.\n- NO usar HRLectura como writer.\n- Cambios quirurgicos, reversibles y con tests.\n\nAuditar:\n1. .github/workflows/*\n2. tools/mirror_sync/sql_migration_development.py\n3. backend/tests/test_worker_sql_migration_development_capability.py\n4. referencias a HUB_Escritura, HUB_ESCRITURA, ChatGPT_Escritura, CHATGPT_ESCRITURA, EDARSAHUB_MIGRATION_USER, EDARSAHUB_MIGRATION_EXPECTED_USER, EDARSAHUB_MIGRATION_PASSWORD, EDARSAHUB_SQL_USER, HRLectura.\n\nContrato esperado:\n- EDARSAHUB_MIGRATION_USER=ChatGPT_Escritura\n- EDARSAHUB_MIGRATION_EXPECTED_USER=ChatGPT_Escritura\n- EDARSAHUB_MIGRATION_PASSWORD desde GitHub Secret correspondiente, sin imprimir valor.\n- HRLectura solo lectura/preflight/postcheck.\n- HRLectura prohibida como migration writer.\n\nEntregar RESULT con:\n- workflows auditados\n- archivos modificados: ninguno en este R1 READ_ONLY\n- diff exacto: ninguno en este R1 READ_ONLY\n- tests ejecutados\n- confirmacion de que no hubo DML/DDL ni cambios en Produccion\n- dictamen: writer secret mapping CERTIFIED o BLOCKED\n- si BLOCKED: lista exacta de archivos y acciones de cambio recomendadas para R2",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          ".github/workflows",
+          "tools/mirror_sync/sql_migration_development.py",
+          "backend/tests/test_worker_sql_migration_development_capability.py"
+        ],
+        "search_terms": [
+          "HUB_Escritura",
+          "HUB_ESCRITURA",
+          "ChatGPT_Escritura",
+          "CHATGPT_ESCRITURA",
+          "EDARSAHUB_MIGRATION_USER",
+          "EDARSAHUB_MIGRATION_EXPECTED_USER",
+          "EDARSAHUB_MIGRATION_PASSWORD",
+          "EDARSAHUB_SQL_USER",
+          "HRLectura",
+          "HRLECTURA_CANNOT_BE_MIGRATION_WRITER",
+          "MIGRATION_WRITER_IDENTITY_MISMATCH"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [],
+        "max_results": 2000
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_sql_migration_development_capability.py"
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/sql_migration_development.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "deliverables": [
+    "WORKFLOWS_AUDITED",
+    "WRITER_SECRET_MAPPING_CERTIFICATION",
+    "TEST_RESULTS",
+    "FILES_MODIFIED_NONE_EXPECTED",
+    "NO_DML_DDL_PRODUCTION_CONFIRMATION",
+    "BLOCKED_ACTIONS_IF_ANY"
+  ]
+}
