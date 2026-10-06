@@ -1,0 +1,301 @@
+{
+  "base_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-06T19:36:54Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SERVIDORES-API-VISIBILIDAD-AUDIT-R1-CARLOS-20261006T190600Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-06T19:37:06Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "id",
+              "nombre",
+              "system_type",
+              "tipo_conexion",
+              "api_url",
+              "activo",
+              "visible_en_operaciones",
+              "visible_en_listado",
+              "es_editable_ui",
+              "es_eliminable_ui"
+            ],
+            "name": "apis_locales",
+            "row_count_returned": 9,
+            "rows": [
+              [
+                "72f6e9a7-8ea2-4eb2-802e-4ee31753435e",
+                "130° QRO LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                "http://54.39.104.176:8001/query",
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              [
+                "b597d88a-ab37-4b4e-897b-efe68c9b3732",
+                "API ManagmentPro",
+                "MPRO",
+                "API_LOCAL",
+                "http://54.39.104.176:8008/query",
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              [
+                "8cbdcc89-6495-49c3-be9c-a965db82c77f",
+                "CHAPUR BACKOFFICE",
+                "ENTERPRISE",
+                "API_LOCAL",
+                "http://54.39.104.176:8009/query",
+                true,
+                false,
+                true,
+                true,
+                true
+              ],
+              [
+                "d8b2d1eb-2e1f-4e43-b7d9-822bf671e315",
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                "API_LOCAL",
+                "http://54.39.104.176:8007/query",
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              [
+                "31d62f39-632b-4684-b735-256bd9293a8f",
+                "CIENFUEGOS NOMINPAQ",
+                "SOFTRESTAURANT_PRO",
+                "API_LOCAL",
+                "http://54.39.104.176:8005/query",
+                true,
+                false,
+                true,
+                true,
+                true
+              ],
+              [
+                "2bead18c-73c9-4d86-af92-2355940274f7",
+                "GARIBALDI",
+                "SOFTRESTAURANT_PRO",
+                "API_LOCAL",
+                "http://54.39.104.176:8014/query",
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              [
+                "817a0aa8-6170-4738-a8f6-a72ac36ba0df",
+                "ORIGEN LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                "http://54.39.104.176:8000/query",
+                true,
+                false,
+                true,
+                true,
+                true
+              ],
+              [
+                "dc44c86b-8f1f-4b44-9704-6cea89297c69",
+                "TEST API LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                "http://test.local:8000/query",
+                false,
+                false,
+                true,
+                true,
+                true
+              ],
+              [
+                "ee896463-dac4-439a-a5ec-8d4cc183e4fa",
+                "TEST_COMMIT_1785357429",
+                "MPRO",
+                "API_LOCAL",
+                "http://127.0.0.1:9999/test_1785357429",
+                false,
+                false,
+                true,
+                true,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "id",
+              "nombre",
+              "system_type",
+              "tipo_conexion",
+              "api_url",
+              "activo",
+              "visible_en_operaciones",
+              "visible_en_listado",
+              "es_editable_ui",
+              "es_eliminable_ui"
+            ],
+            "name": "filas_con_api_url",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                "72f6e9a7-8ea2-4eb2-802e-4ee31753435e",
+                "130° QRO LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                "http://54.39.104.176:8001/query",
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              [
+                "b597d88a-ab37-4b4e-897b-efe68c9b3732",
+                "API ManagmentPro",
+                "MPRO",
+                "API_LOCAL",
+                "http://54.39.104.176:8008/query",
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              [
+                "8cbdcc89-6495-49c3-be9c-a965db82c77f",
+                "CHAPUR BACKOFFICE",
+                "ENTERPRISE",
+                "API_LOCAL",
+                "http://54.39.104.176:8009/query",
+                true,
+                false,
+                true,
+                true,
+                true
+              ],
+              [
+                "d8b2d1eb-2e1f-4e43-b7d9-822bf671e315",
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                "API_LOCAL",
+                "http://54.39.104.176:8007/query",
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              [
+                "31d62f39-632b-4684-b735-256bd9293a8f",
+                "CIENFUEGOS NOMINPAQ",
+                "SOFTRESTAURANT_PRO",
+                "API_LOCAL",
+                "http://54.39.104.176:8005/query",
+                true,
+                false,
+                true,
+                true,
+                true
+              ],
+              [
+                "2bead18c-73c9-4d86-af92-2355940274f7",
+                "GARIBALDI",
+                "SOFTRESTAURANT_PRO",
+                "API_LOCAL",
+                "http://54.39.104.176:8014/query",
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              [
+                "1792aa66-5da7-4b66-82fc-8f690988648f",
+                "INEGI - API Indicadores",
+                "INEGI",
+                "DATA_SOURCE",
+                "https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml",
+                false,
+                false,
+                false,
+                false,
+                false
+              ],
+              [
+                "817a0aa8-6170-4738-a8f6-a72ac36ba0df",
+                "ORIGEN LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                "http://54.39.104.176:8000/query",
+                true,
+                false,
+                true,
+                true,
+                true
+              ],
+              [
+                "dc44c86b-8f1f-4b44-9704-6cea89297c69",
+                "TEST API LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                "http://test.local:8000/query",
+                false,
+                false,
+                true,
+                true,
+                true
+              ],
+              [
+                "ee896463-dac4-439a-a5ec-8d4cc183e4fa",
+                "TEST_COMMIT_1785357429",
+                "MPRO",
+                "API_LOCAL",
+                "http://127.0.0.1:9999/test_1785357429",
+                false,
+                false,
+                true,
+                true,
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-06T19:36:53Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
