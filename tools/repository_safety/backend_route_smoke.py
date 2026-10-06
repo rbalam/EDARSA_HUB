@@ -8,8 +8,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / "backend"
 
-if str(BACKEND) not in sys.path:
-    sys.path.insert(0, str(BACKEND))
+# server.py imports both backend packages (e.g. core/modules) and repository-root
+# packages (e.g. tools.mirror_sync). The smoke must mirror that canonical runtime
+# import surface instead of assuming backend/ is the only Python root.
+for path in (str(ROOT), str(BACKEND)):
+    if path not in sys.path:
+        sys.path.insert(0, path)
 
 
 def main() -> int:
