@@ -1,0 +1,59 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-URL-PROFILE-R3-20261006T0222Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "09d3e086febaddeace2d3dcc1bd93fd8a3c97e26",
+  "production_allowed": false,
+  "objective": "Reemitir el frente P5 Runtime URL Profile sobre el SHA actual, ahora que el Universal Worker esta ONLINE, sin cola, con generation y worker_code_tree alineados. Crear el perfil canonico no-secreto de development y permitir que el workflow use vars.TEST_BASE_URL como override o el perfil canonico como fallback. No tocar backend funcional, RBAC, SQL, Worker core ni Produccion.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "ops/runtime/profiles/development.json",
+      "content": "{\n  \"schema\": \"edarsahub.runtime-profile.v1\",\n  \"environment\": \"development\",\n  \"base_url\": \"https://erp-crm-enterprise-1.preview.emergentagent.com\",\n  \"source_of_truth\": \"EDARSAHUB repository runtime profile\",\n  \"secret\": false\n}\n"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/centro-control-sync-monitor-p5-runtime-e2e.yml",
+      "old": "      TEST_BASE_URL: ${{ vars.TEST_BASE_URL }}\n",
+      "new": "      TEST_BASE_URL: ${{ vars.TEST_BASE_URL }}\n      P5_RUNTIME_PROFILE_FILE: ops/runtime/profiles/development.json\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/centro-control-sync-monitor-p5-runtime-e2e.yml",
+      "old": "      - name: Validate secure profile reference\n        shell: bash\n        run: |\n          set -euo pipefail\n",
+      "new": "      - name: Resolve canonical runtime URL\n        shell: bash\n        run: |\n          set -euo pipefail\n          if [ -z \"${TEST_BASE_URL:-}\" ]; then\n            RESOLVED_BASE_URL=\"$(python - <<'PY'\nimport json, os\nfrom pathlib import Path\np = Path(os.environ['P5_RUNTIME_PROFILE_FILE'])\ndata = json.loads(p.read_text(encoding='utf-8'))\nassert data.get('environment') == 'development'\nassert data.get('secret') is False\nvalue = str(data.get('base_url') or '').strip().rstrip('/')\nassert value.startswith('https://')\nprint(value)\nPY\n)\"\n            test -n \"$RESOLVED_BASE_URL\"\n            echo \"TEST_BASE_URL=$RESOLVED_BASE_URL\" >> \"$GITHUB_ENV\"\n          fi\n\n      - name: Validate secure profile reference\n        shell: bash\n        run: |\n          set -euo pipefail\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_control_sync_p5_runtime_secure_e2e.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_control_sync_p5_secure_profile_contract.py"
+      ]
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL writes",
+    "No RBAC mutation",
+    "No secret values in repository or worker queue",
+    "GitHub Environment development remains source for TEST_SUPERADMIN_EMAIL and TEST_SUPERADMIN_PASSWORD",
+    "vars.TEST_BASE_URL remains highest-priority override",
+    "Do not modify Universal Worker core",
+    "Do not send email or WhatsApp"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
