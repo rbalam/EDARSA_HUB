@@ -1,0 +1,167 @@
+{
+  "base_sha": "0c0856cda0bbd9b0f2b654800444ea9427cfa4ac",
+  "blockers": [],
+  "candidate_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-10-06T04:20:07Z",
+  "development_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/database/migrations/20260917_001_sql_principals_least_privilege.sql",
+    "backend/database/migrations/20260917_001_sql_principals_least_privilege_rollback.sql",
+    "backend/tests/test_worker_sql_migration_development_capability.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SQL-WRITER-CONTRACT-FIX-CHATGPT-ESCRITURA-R3-20261005",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-10-06T04:20:21Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "chatgpt_escritura"
+            ],
+            "path": "backend/database/migrations/20260917_001_sql_principals_least_privilege.sql",
+            "rbac_contracts": [
+              "RBAC_Permisos",
+              "Sistema_RBAC"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Sistema_RBAC_Permisos",
+              "Sistema_RBAC_Roles",
+              "Sistema_RBAC_RolesPermisos"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "chatgpt_escritura"
+            ],
+            "path": "backend/database/migrations/20260917_001_sql_principals_least_privilege_rollback.sql",
+            "rbac_contracts": [
+              "RBAC_Permisos",
+              "Sistema_RBAC"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Sistema_RBAC_Permisos",
+              "Sistema_RBAC_Roles",
+              "Sistema_RBAC_RolesPermisos"
+            ]
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "argparse",
+              "hashlib",
+              "json",
+              "os",
+              "pathlib",
+              "subprocess",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "hrlectura_cannot_be_migration_writer",
+              "migration_writer_identity_mismatch"
+            ],
+            "path": "tools/mirror_sync/sql_migration_development.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "MigrationContractError",
+              "build_child_env",
+              "execute_migration",
+              "main",
+              "resolve_migration_path",
+              "sha256_file",
+              "validate_request"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "hashlib",
+              "pathlib",
+              "pytest",
+              "sys",
+              "tools.mirror_sync.sql_migration_development"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "chatgpt_escritura",
+              "hrlectura_cannot_be_migration_writer",
+              "migration_writer_identity_mismatch"
+            ],
+            "path": "backend/tests/test_worker_sql_migration_development_capability.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "R",
+              "digest",
+              "env",
+              "fake_run",
+              "make_sql",
+              "test_child_env_reuses_host_db_and_overrides_only_credentials",
+              "test_confirmation_required",
+              "test_dedicated_credentials_required",
+              "test_execute_uses_argv_no_shell",
+              "test_existing_canonical_writer_requires_explicit_opt_in",
+              "test_expected_dedicated_writer_identity_matches",
+              "test_expected_dedicated_writer_identity_mismatch_fails_closed",
+              "test_explicit_canonical_writer_reuses_existing_sql_credentials",
+              "test_hash_must_match",
+              "test_hrlectura_forbidden_as_dedicated_writer",
+              "test_path_must_be_under_canonical_migrations",
+              "test_production_forbidden"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 4,
+          "scanned_files": 4,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-06T04:19:54Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
