@@ -1,0 +1,58 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "queries": [
+        {
+          "name": "sql_identity_readonly",
+          "sql": "SELECT DB_NAME() AS db_name, SUSER_SNAME() AS login_name, CURRENT_USER AS current_user_name"
+        },
+        {
+          "name": "security_candidate_tables",
+          "sql": "SELECT TOP 200 TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE '%Usuario%' OR TABLE_NAME LIKE '%User%' OR TABLE_NAME LIKE '%Rol%' OR TABLE_NAME LIKE '%Permiso%' OR TABLE_NAME LIKE '%Menu%' OR TABLE_NAME LIKE '%Empresa%' OR TABLE_NAME LIKE '%Unidad%' ORDER BY TABLE_SCHEMA, TABLE_NAME"
+        },
+        {
+          "name": "security_candidate_columns",
+          "sql": "SELECT TOP 300 TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME LIKE '%Usuario%' OR TABLE_NAME LIKE '%User%' OR TABLE_NAME LIKE '%Rol%' OR TABLE_NAME LIKE '%Permiso%' OR TABLE_NAME LIKE '%Menu%' ORDER BY TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME"
+        }
+      ],
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "expected_output": {
+    "classification": [
+      "REDEPLOY_REQUIRED",
+      "RBAC_DATA_FIX_REQUIRED",
+      "USER_DATA_FIX_REQUIRED",
+      "MIXED_FIX_REQUIRED",
+      "NO_ISSUE_FOUND",
+      "BLOCKED_BY_MISSING_EVIDENCE"
+    ],
+    "production_touched": false
+  },
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-USUARIOS-PRODUCCION-ACCESS-MENU-GATE0-SQL-READONLY-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar en modo SQL solo lectura la base canonica para diagnosticar acceso al menu Usuarios en Produccion: usuarios, roles, permisos, EmpresaID, UnidadNegocioID, menus y RBAC. Sin DML, sin DDL, sin deploy.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Usuarios Produccion Gate0",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
