@@ -1,0 +1,40 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-GLOBAL-RESYNC-FAILURE-DIAG-R35-CARLOS-20261006",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Sincronizador | Diagnostico global R35 | Leer payloads de los ultimos jobs ISCAM/detail y comercial-range fallidos para identificar error_code y fecha exactos. Solo lectura.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 30,
+      "queries": [
+        {
+          "name": "failed_iscam_payloads",
+          "sql": "SELECT TOP 12 ResyncLogID, TipoSync, UnidadCodigo, Estado, Mensaje, JSON_QUERY(Payload,'$.failed_dates') AS failed_dates, JSON_QUERY(Payload,'$.results') AS results FROM dbo.Sistema_Sync_ResyncLog WHERE TipoSync='iscam_detail_batch' AND Estado IN ('JOB_FAILED','JOB_PARTIAL','JOB_STALE') ORDER BY ResyncLogID DESC"
+        },
+        {
+          "name": "failed_range_payloads",
+          "sql": "SELECT TOP 8 ResyncLogID, TipoSync, UnidadCodigo, Estado, Mensaje, JSON_QUERY(Payload,'$.steps') AS steps FROM dbo.Sistema_Sync_ResyncLog WHERE TipoSync='comercial_range_batch' AND Estado IN ('JOB_PARTIAL','JOB_FAILED','JOB_STALE') ORDER BY ResyncLogID DESC"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY",
+    "No DDL/DML",
+    "No modificar sync_comercial_abiertas_v2"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  }
+}
