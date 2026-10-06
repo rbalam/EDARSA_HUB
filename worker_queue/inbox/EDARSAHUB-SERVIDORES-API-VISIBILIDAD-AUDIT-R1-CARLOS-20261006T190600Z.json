@@ -1,0 +1,33 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SERVIDORES-API-VISIBILIDAD-AUDIT-R1-CARLOS-20261006T190600Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "servidores-api-visibilidad"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Auditar en EDARSAHUB SQL todas las conexiones registradas como API_LOCAL y todas las filas con api_url configurada, devolviendo la relacion de APIs y su estado activo/visible sin exponer secretos.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "apis_locales",
+          "sql": "SELECT id, nombre, system_type, tipo_conexion, api_url, activo, visible_en_operaciones, visible_en_listado, es_editable_ui, es_eliminable_ui FROM Servidores_Conexiones WHERE tipo_conexion = 'API_LOCAL' ORDER BY nombre"
+        },
+        {
+          "name": "filas_con_api_url",
+          "sql": "SELECT id, nombre, system_type, tipo_conexion, api_url, activo, visible_en_operaciones, visible_en_listado, es_editable_ui, es_eliminable_ui FROM Servidores_Conexiones WHERE api_url IS NOT NULL AND LTRIM(RTRIM(api_url)) <> '' ORDER BY nombre"
+        }
+      ]
+    }
+  ]
+}
