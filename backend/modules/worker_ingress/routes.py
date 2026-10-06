@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from core.rbac.middleware import require_explicit_permission
 
@@ -14,6 +14,10 @@ from .service import (
     submit_job,
     submit_objective,
 )
+from .service_credential import (
+    WorkerServiceCredentialError,
+    exchange_service_credential,
+)
 
 
 router = APIRouter(
@@ -22,6 +26,22 @@ router = APIRouter(
 )
 
 WORKER_ADMIN_DEPENDENCY = require_explicit_permission("RBAC_ADMIN")
+
+
+def _bearer_credential(authorization: str | None) -> str:
+    header = str(authorization or "").strip()
+    if not header.lower().startswith("bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="SERVICE_CREDENTIAL_REQUIRED",
+        )
+    credential = header[7:].strip()
+    if not credential:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="SERVICE_CREDENTIAL_REQUIRED",
+        )
+    return credential
 
 
 def _raise_for_submit_status(result: dict[str, Any]) -> None:
@@ -48,6 +68,31 @@ def _raise_for_submit_status(result: dict[str, Any]) -> None:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=result,
         )
+
+
+@router.post("/auth/exchange")
+def exchange_worker_service_credential(
+    authorization: str | None = Header(
+        default=None,
+        alias="Authorization",
+    ),
+):
+    """Exchange a revocable MCP service credential for a short internal JWT."""
+    credential = _bearer_credential(authorization)
+    try:
+        return exchange_service_credential(credential)
+    except WorkerServiceCredentialError as exc:
+        code = (
+            status.HTTP_403_FORBIDDEN
+            if exc.code.startswith("SERVICE_IDENTITY")
+            or exc.code.startswith("SERVICE_PERMISSION")
+            or exc.code.startswith("SERVICE_SQL_IDENTITY")
+            else status.HTTP_401_UNAUTHORIZED
+        )
+        raise HTTPException(
+            status_code=code,
+            detail=exc.code,
+        ) from exc
 
 
 @router.post("/jobs", status_code=status.HTTP_202_ACCEPTED)
