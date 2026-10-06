@@ -1,0 +1,97 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-GLOBAL-RESYNC-FIX-R36-CARLOS-20261006",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
+  "mode": "MUTATION",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Sincronizador | Correccion integral de regresion global en Reportes ISCAM y menu Sync. Restaurar backfill selectivo, reconciliar encabezado antes de declarar NO_CUADRA_REVISAR en el batch ISCAM y esperar de forma acotada el lock compartido del Sync por rango. Aplica a ManagementPro y SoftRestaurant. No tocar sync_comercial_abiertas_v2.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "old": "import uuid\nimport time\nimport logging\nimport json\n",
+      "new": "import asyncio\nimport uuid\nimport time\nimport logging\nimport json\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "old": "                detalle_producto = _ejecutar_backfill_detalle_iscam(\n                    unidad_negocio_id,\n                    fecha_inicio,\n                    fecha_fin,\n                    commit=True,\n                    force_refresh=True,\n                )\n",
+      "new": "                detalle_producto = _ejecutar_backfill_detalle_iscam(\n                    unidad_negocio_id,\n                    fecha_inicio,\n                    fecha_fin,\n                    commit=True,\n                )\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "old": "                    resultado = _ejecutar_backfill_detalle_iscam(\n                        unidad,\n                        dia,\n                        dia,\n                        commit=True,\n                    )\n                    outcome = _iscam_batch_day_outcome(resultado)\n",
+      "new": "                    resultado = _ejecutar_backfill_detalle_iscam(\n                        unidad,\n                        dia,\n                        dia,\n                        commit=True,\n                    )\n                    outcome = _iscam_batch_day_outcome(resultado)\n\n                    # Si el detalle no cuadra contra Runtime V2, el encabezado\n                    # puede estar desfasado aunque freshness lo marque disponible.\n                    # Reconciliamos primero el header del mismo dia con el handler\n                    # oficial y dejamos que ese flujo reintente el detalle.\n                    if outcome.get('status') == 'NO_CUADRA_REVISAR':\n                        unidad_config = _get_unidad_config(unidad)\n                        if unidad_config:\n                            recovery_run_id = (\n                                f\"ISCAM-RECOVER-{unidad}-{dia:%Y%m%d}-{job_id}\"\n                            )\n                            recovery = asyncio.run(\n                                _ejecutar_sync_real(\n                                    unidad,\n                                    unidad_config,\n                                    dia,\n                                    dia,\n                                    recovery_run_id,\n                                )\n                            )\n                            if recovery.get('header_success'):\n                                recovery_detail = recovery.get('detalle_producto') or {}\n                                outcome = _iscam_batch_day_outcome(recovery_detail)\n                            else:\n                                outcome = {\n                                    'success': False,\n                                    'status': 'ERROR',\n                                    'error_code': 'HEADER_RESYNC_FAILED',\n                                    'error_type': '',\n                                    'filas_insertadas': 0,\n                                }\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "POLL_SECONDS = 5\nENTRYPOINT = Path(__file__).resolve().parents[2] / \"scripts\" / \"resync_comercial_range_worker.py\"\n",
+      "new": "POLL_SECONDS = 5\nLOCK_WAIT_SECONDS = int(os.environ.get(\"COMERCIAL_RANGE_LOCK_WAIT_SECONDS\", \"600\"))\nLOCK_POLL_SECONDS = int(os.environ.get(\"COMERCIAL_RANGE_LOCK_POLL_SECONDS\", \"15\"))\nENTRYPOINT = Path(__file__).resolve().parents[2] / \"scripts\" / \"resync_comercial_range_worker.py\"\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "                        lock = get_lock_manager().get_lock(LOCK_NAME)\n                        if not await lock.acquire(timeout_seconds=600):\n                            final_real = {\"success\": False, \"error_message\": \"LOCK_BUSY\"}\n                            if attempt < MAX_ATTEMPTS:\n                                await asyncio.sleep(30); continue\n                            break\n                        heartbeat = False\n",
+      "new": "                        lock = get_lock_manager().get_lock(LOCK_NAME)\n                        loop = asyncio.get_running_loop()\n                        deadline = loop.time() + max(1, LOCK_WAIT_SECONDS)\n                        acquired = False\n                        while not acquired:\n                            acquired = await lock.acquire(timeout_seconds=600)\n                            if acquired:\n                                break\n                            if _cancel_requested(job_id):\n                                _finish_cancelled(job_id, payload)\n                                return\n                            remaining = deadline - loop.time()\n                            if remaining <= 0:\n                                break\n                            waiting = _read(job_id) or payload\n                            waiting[\"current_phase\"] = \"WAITING_LOCK\"\n                            _write(\n                                job_id,\n                                waiting,\n                                \"JOB_WAITING_LOCK\",\n                                f\"{unit}: esperando lock de Ventas Cerradas para {start} a {end}.\",\n                            )\n                            await asyncio.sleep(min(LOCK_POLL_SECONDS, remaining))\n                        if not acquired:\n                            final_real = {\n                                \"success\": False,\n                                \"error_message\": \"LOCK_WAIT_TIMEOUT\",\n                            }\n                            break\n                        heartbeat = False\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_resync_global_regression_r36.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nAPI = ROOT / \"backend/api/admin_scheduler_resync.py\"\nRANGE = ROOT / \"backend/modules/comercial/resync_batch_jobs.py\"\nOPEN_JOB = ROOT / \"backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py\"\n\n\ndef test_manual_real_detail_is_selective_again():\n    text = API.read_text(encoding=\"utf-8\")\n    block = text.split(\"async def _ejecutar_sync_real(\", 1)[1]\n    block = block.split(\"async def resolver_dependencias_sync(\", 1)[0]\n    assert \"force_refresh=True\" not in block\n    assert \"_ejecutar_backfill_detalle_iscam(\" in block\n\n\ndef test_iscam_batch_reconciles_header_before_final_no_cuadra():\n    text = API.read_text(encoding=\"utf-8\")\n    block = text.split(\"def _run_iscam_detail_batch_job\", 1)[1]\n    block = block.split('@router.post(\"/resync/iscam-detail/jobs\"', 1)[0]\n    assert \"NO_CUADRA_REVISAR\" in block\n    assert \"_ejecutar_sync_real(\" in block\n    assert \"HEADER_RESYNC_FAILED\" in block\n\n\ndef test_range_waits_for_shared_lock_instead_of_fast_failing():\n    text = RANGE.read_text(encoding=\"utf-8\")\n    assert \"LOCK_WAIT_SECONDS\" in text\n    assert \"JOB_WAITING_LOCK\" in text\n    assert \"LOCK_WAIT_TIMEOUT\" in text\n    assert \"waiting[\\\"current_phase\\\"] = \\\"WAITING_LOCK\\\"\" in text\n\n\ndef test_protected_open_sales_job_is_not_part_of_this_fix():\n    text = OPEN_JOB.read_text(encoding=\"utf-8\")\n    assert \"sync_comercial_abiertas_v2\" in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/api/admin_scheduler_resync.py",
+        "backend/modules/comercial/resync_batch_jobs.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_resync_global_regression_r36.py",
+        "backend/tests/test_scheduler_rsync_manual_r74.py",
+        "backend/tests/test_iscam_async_detail_batch_r1.py"
+      ]
+    }
+  ],
+  "constraints": [
+    "No modificar backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+    "No modificar la logica de ventas abiertas",
+    "No ocultar NO_CUADRA_REVISAR: intentar primero reconciliacion oficial del encabezado del mismo dia",
+    "No forzar refresh del detalle ya conciliado",
+    "El lock debe seguir siendo obligatorio; solo se amplia la espera controlada"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [
+      "GIT_EDARSAHUB_RESYNC_GLOBAL"
+    ],
+    "conflict_domains": []
+  }
+}
