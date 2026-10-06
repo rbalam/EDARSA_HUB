@@ -1,0 +1,172 @@
+{
+  "base_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-06T21:14:53Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-CHAPUR58-REGISTRO-HISTORICO-AUDIT-R1-CARLOS-20261006T191000Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-06T21:16:01Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "id",
+              "nombre",
+              "system_type",
+              "tipo_conexion",
+              "api_url",
+              "activo",
+              "visible_en_operaciones",
+              "visible_en_listado",
+              "created_at",
+              "updated_at",
+              "created_by",
+              "updated_by"
+            ],
+            "name": "registro_actual_chapur58",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "8cbdcc89-6495-49c3-be9c-a965db82c77f",
+                "CHAPUR BACKOFFICE",
+                "ENTERPRISE",
+                "API_LOCAL",
+                "http://54.39.104.176:8009/query",
+                true,
+                false,
+                true,
+                "2026-05-11T14:18:36.330000",
+                "2026-05-18T18:42:43.277000",
+                "carlosruz@edarsa.com.mx",
+                "ricardo@edarsa.com.mx"
+              ],
+              [
+                "d8b2d1eb-2e1f-4e43-b7d9-822bf671e315",
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                "API_LOCAL",
+                "http://54.39.104.176:8007/query",
+                true,
+                true,
+                true,
+                "2026-05-08T14:09:33.740000",
+                "2026-05-18T13:44:54.600000",
+                "carlosruz@edarsa.com.mx",
+                "admin@inventario.com"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "servidor_id",
+              "accion",
+              "datos_anteriores",
+              "datos_nuevos",
+              "usuario",
+              "fecha",
+              "ip_origen"
+            ],
+            "name": "historial_chapur58",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                "034871b4-a1d8-45d0-a57b-c95c08fcf6f1",
+                "CREATE",
+                "{}",
+                "{\"name\": \"CHAPUR 58\", \"url\": \"http://54.39.104.176:8016/query\", \"api_key\": \"EDARSA_2026_SECURE_KEY\", \"tipo\": \"MPRO\", \"servidor_padre\": \"\", \"servidor_padre_id\": null, \"sucursal_destino\": \"CHAPUR_58\", \"hora_replica\": \"04:00\", \"solo_ventas_dia\": true, \"activo\": true, \"visible_en_operaciones\": false}",
+                "ricardo@edarsa.com.mx",
+                "2026-10-06T13:25:25.637000",
+                "API_SERVER"
+              ],
+              [
+                "8cbdcc89-6495-49c3-be9c-a965db82c77f",
+                "UPDATE",
+                "{\"id\": \"8cbdcc89-6495-49c3-be9c-a965db82c77f\", \"name\": \"CHAPUR BACKOFFICE\", \"url\": \"http://54.39.104.176:8009/query\", \"api_key\": \"***CONFIGURED***\", \"tipo\": \"SOFRESATAURANT_ENTER\", \"tipo_conexion\": \"API_LOCAL\", \"servidor_padre\": \"\", \"servidor_padre_id\": \"\", \"sucursal_destino\": \"CHAPUR\", \"hora_replica\": 4, \"solo_ventas_dia\": true, \"activo\": true, \"visible_en_operaciones\": false, \"config\": {}, \"created_at\": \"2026-05-11T14:18:36.330000\", \"updated_at\": \"2026-05-18T18:42:42.647000\", \"created_by\": \"carlosruz@edarsa.com.mx\", \"updated_by\": \"ricardo@edarsa.com.mx\", \"source\": \"EDARSAHUB_SQL\"}",
+                "{\"name\": \"CHAPUR BACKOFFICE\", \"url\": \"http://54.39.104.176:8009/query\", \"api_key\": \"\", \"tipo\": \"SOFRESATAURANT_ENTER\", \"servidor_padre\": \"\", \"sucursal_destino\": \"CHAPUR\", \"hora_replica\": \"04:00\", \"solo_ventas_dia\": true, \"activo\": true, \"visible_en_operaciones\": false}",
+                "ricardo@edarsa.com.mx",
+                "2026-05-18T18:42:43.310000",
+                "API_SERVER"
+              ],
+              [
+                "8cbdcc89-6495-49c3-be9c-a965db82c77f",
+                "UPDATE",
+                "{\"id\": \"8cbdcc89-6495-49c3-be9c-a965db82c77f\", \"name\": \"CHAPUR NORTE BACKOFICE\", \"url\": \"http://54.39.104.176:8009/query\", \"api_key\": \"***CONFIGURED***\", \"tipo\": \"SOFRESATAURANT_ENTER\", \"tipo_conexion\": \"API_LOCAL\", \"servidor_padre\": \"\", \"servidor_padre_id\": \"\", \"sucursal_destino\": \"CHAPUR\", \"hora_replica\": 4, \"solo_ventas_dia\": true, \"activo\": true, \"visible_en_operaciones\": false, \"config\": {}, \"created_at\": \"2026-05-11T14:18:36.330000\", \"updated_at\": \"2026-05-15T14:06:31.323000\", \"created_by\": \"carlosruz@edarsa.com.mx\", \"updated_by\": \"ricardo@edarsa.com.mx\", \"source\": \"EDARSAHUB_SQL\"}",
+                "{\"name\": \"CHAPUR BACKOFFICE\", \"url\": \"http://54.39.104.176:8009/query\", \"api_key\": \"\", \"tipo\": \"SOFRESATAURANT_ENTER\", \"servidor_padre\": \"\", \"sucursal_destino\": \"CHAPUR\", \"hora_replica\": \"04:00\", \"solo_ventas_dia\": true, \"activo\": true, \"visible_en_operaciones\": false}",
+                "ricardo@edarsa.com.mx",
+                "2026-05-18T18:42:42.680000",
+                "API_SERVER"
+              ],
+              [
+                "d8b2d1eb-2e1f-4e43-b7d9-822bf671e315",
+                "UPDATE",
+                "{\"id\": \"d8b2d1eb-2e1f-4e43-b7d9-822bf671e315\", \"name\": \"CHAPUR NORTE\", \"url\": \"http://54.39.104.176:8007/query\", \"api_key\": \"***CONFIGURED***\", \"tipo\": \"SOFRESATAURANT_ENTER\", \"tipo_conexion\": \"API_LOCAL\", \"servidor_padre\": \"\", \"servidor_padre_id\": \"\", \"sucursal_destino\": \"CHAPUR\", \"hora_replica\": 4, \"solo_ventas_dia\": true, \"activo\": true, \"visible_en_operaciones\": false, \"config\": {}, \"created_at\": \"2026-05-08T14:09:33.740000\", \"updated_at\": \"2026-05-15T14:06:21.023000\", \"created_by\": \"carlosruz@edarsa.com.mx\", \"updated_by\": \"ricardo@edarsa.com.mx\", \"source\": \"EDARSAHUB_SQL\"}",
+                "{\"visible_en_operaciones\": true}",
+                "admin@inventario.com",
+                "2026-05-18T13:44:54.633000",
+                "API_SERVER"
+              ],
+              [
+                "8cbdcc89-6495-49c3-be9c-a965db82c77f",
+                "UPDATE",
+                "{\"id\": \"8cbdcc89-6495-49c3-be9c-a965db82c77f\", \"name\": \"CHAPUR NORTE BACKOFICE\", \"url\": \"http://54.39.104.176:8009/query\", \"api_key\": \"***CONFIGURED***\", \"tipo\": \"SoftRestaurant\", \"tipo_conexion\": \"API_LOCAL\", \"servidor_padre\": \"\", \"servidor_padre_id\": \"\", \"sucursal_destino\": \"CHAPUR\", \"hora_replica\": 4, \"solo_ventas_dia\": true, \"activo\": true, \"visible_en_operaciones\": false, \"config\": {}, \"created_at\": \"2026-05-11T14:18:36.330000\", \"updated_at\": \"2026-05-11T14:18:36.330000\", \"created_by\": \"carlosruz@edarsa.com.mx\", \"updated_by\": null, \"source\": \"EDARSAHUB_SQL\"}",
+                "{\"name\": \"CHAPUR NORTE BACKOFICE\", \"url\": \"http://54.39.104.176:8009/query\", \"api_key\": \"\", \"tipo\": \"SOFRESATAURANT_ENTER\", \"servidor_padre\": \"\", \"sucursal_destino\": \"CHAPUR\", \"hora_replica\": \"04:00\", \"solo_ventas_dia\": true, \"activo\": true, \"visible_en_operaciones\": false}",
+                "ricardo@edarsa.com.mx",
+                "2026-05-15T14:06:31.353000",
+                "API_SERVER"
+              ],
+              [
+                "d8b2d1eb-2e1f-4e43-b7d9-822bf671e315",
+                "UPDATE",
+                "{\"id\": \"d8b2d1eb-2e1f-4e43-b7d9-822bf671e315\", \"name\": \"CHAPUR NORTE\", \"url\": \"http://54.39.104.176:8007/query\", \"api_key\": \"***CONFIGURED***\", \"tipo\": \"SoftRestaurant\", \"tipo_conexion\": \"API_LOCAL\", \"servidor_padre\": \"\", \"servidor_padre_id\": \"\", \"sucursal_destino\": \"CHAPUR\", \"hora_replica\": 4, \"solo_ventas_dia\": true, \"activo\": true, \"visible_en_operaciones\": false, \"config\": {}, \"created_at\": \"2026-05-08T14:09:33.740000\", \"updated_at\": \"2026-05-08T14:09:33.740000\", \"created_by\": \"carlosruz@edarsa.com.mx\", \"updated_by\": null, \"source\": \"EDARSAHUB_SQL\"}",
+                "{\"name\": \"CHAPUR NORTE\", \"url\": \"http://54.39.104.176:8007/query\", \"api_key\": \"\", \"tipo\": \"SOFRESATAURANT_ENTER\", \"servidor_padre\": \"\", \"sucursal_destino\": \"CHAPUR\", \"hora_replica\": \"04:00\", \"solo_ventas_dia\": true, \"activo\": true, \"visible_en_operaciones\": false}",
+                "ricardo@edarsa.com.mx",
+                "2026-05-15T14:06:21.057000",
+                "API_SERVER"
+              ],
+              [
+                "8cbdcc89-6495-49c3-be9c-a965db82c77f",
+                "CREATE",
+                "{}",
+                "{\"name\": \"CHAPUR NORTE BACKOFICE\", \"url\": \"http://54.39.104.176:8009/query\", \"api_key\": \"EDARSA_2026_SECURE_KEY\", \"tipo\": \"SoftRestaurant\", \"servidor_padre\": \"\", \"servidor_padre_id\": null, \"sucursal_destino\": \"CHAPUR\", \"hora_replica\": \"04:00\", \"solo_ventas_dia\": true, \"activo\": true, \"visible_en_operaciones\": false}",
+                "carlosruz@edarsa.com.mx",
+                "2026-05-11T14:18:36.363000",
+                "API_SERVER"
+              ],
+              [
+                "d8b2d1eb-2e1f-4e43-b7d9-822bf671e315",
+                "CREATE",
+                "{}",
+                "{\"name\": \"CHAPUR NORTE\", \"url\": \"http://54.39.104.176:8007/query\", \"api_key\": \"EDARSA_2026_SECURE_KEY\", \"tipo\": \"SoftRestaurant\", \"servidor_padre\": \"\", \"servidor_padre_id\": null, \"sucursal_destino\": \"CHAPUR\", \"hora_replica\": \"04:00\", \"solo_ventas_dia\": true, \"activo\": true, \"visible_en_operaciones\": false}",
+                "carlosruz@edarsa.com.mx",
+                "2026-05-08T14:09:33.793000",
+                "API_SERVER"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-06T21:14:51Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
