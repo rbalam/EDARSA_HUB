@@ -1,0 +1,2476 @@
+{
+  "base_sha": "09d3e086febaddeace2d3dcc1bd93fd8a3c97e26",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-06T02:55:10Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-USUARIOS-PRODUCCION-ACCESS-MENU-GATE0D-EMPRESA-RBAC-DATA-READONLY-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-06T02:55:14Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "TABLE_SCHEMA",
+              "TABLE_NAME",
+              "ORDINAL_POSITION",
+              "COLUMN_NAME",
+              "DATA_TYPE",
+              "IS_NULLABLE"
+            ],
+            "name": "columns_usuario_empresas_y_empresas",
+            "row_count_returned": 84,
+            "rows": [
+              [
+                "dbo",
+                "Sistema_Empresas",
+                1,
+                "EmpresaID",
+                "int",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Sistema_Empresas",
+                2,
+                "CodigoEmpresa",
+                "varchar",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Sistema_Empresas",
+                3,
+                "NombreEmpresa",
+                "nvarchar",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Sistema_Empresas",
+                4,
+                "NombreComercial",
+                "nvarchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Sistema_Empresas",
+                5,
+                "RFC",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Sistema_Empresas",
+                6,
+                "Activo",
+                "bit",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Sistema_Empresas",
+                7,
+                "FechaAlta",
+                "datetime2",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Sistema_Empresas",
+                8,
+                "FechaModificacion",
+                "datetime2",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Sistema_Empresas",
+                9,
+                "CreatedBy",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Sistema_Empresas",
+                10,
+                "UpdatedBy",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Sistema_EmpresasMongoMap",
+                1,
+                "MapID",
+                "int",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Sistema_EmpresasMongoMap",
+                2,
+                "EmpresaMongoUUID",
+                "varchar",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Sistema_EmpresasMongoMap",
+                3,
+                "EmpresaMongoLegacyID",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Sistema_EmpresasMongoMap",
+                4,
+                "EmpresaID_SQL",
+                "int",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Sistema_EmpresasMongoMap",
+                5,
+                "CodigoEmpresa",
+                "varchar",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Sistema_EmpresasMongoMap",
+                6,
+                "NombreEmpresa",
+                "nvarchar",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Sistema_EmpresasMongoMap",
+                7,
+                "MetodoMapeo",
+                "varchar",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Sistema_EmpresasMongoMap",
+                8,
+                "Activo",
+                "bit",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Sistema_EmpresasMongoMap",
+                9,
+                "FechaCreacion",
+                "datetime2",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Sistema_EmpresasMongoMap",
+                10,
+                "FechaActualizacion",
+                "datetime2",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Sistema_EmpresasMongoMap",
+                11,
+                "Observaciones",
+                "nvarchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Sistema_EmpresasMongoMap",
+                12,
+                "CreatedBy",
+                "varchar",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                1,
+                "UsuarioID",
+                "int",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                2,
+                "CodigoUsuario",
+                "varchar",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                3,
+                "Username",
+                "varchar",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                4,
+                "Email",
+                "varchar",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                5,
+                "PasswordHash",
+                "varbinary",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                6,
+                "PasswordHashTexto",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                7,
+                "Nombre",
+                "varchar",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                8,
+                "Apellidos",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                9,
+                "NombreCompleto",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                10,
+                "Telefono",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                11,
+                "Celular",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                12,
+                "Puesto",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                13,
+                "Departamento",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                14,
+                "EsUsuarioPortal",
+                "bit",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                15,
+                "RequiereMFA",
+                "bit",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                16,
+                "PasswordTemporal",
+                "bit",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                17,
+                "DebeCambiarPassword",
+                "bit",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                18,
+                "IntentosFallidos",
+                "int",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                19,
+                "Bloqueado",
+                "bit",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                20,
+                "FechaBloqueo",
+                "datetime2",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                21,
+                "MotivoBloqueo",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                22,
+                "UltimoAcceso",
+                "datetime2",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                23,
+                "UltimoCambioPassword",
+                "datetime2",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                24,
+                "FechaExpiracionPassword",
+                "datetime2",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                25,
+                "ZonaHoraria",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                26,
+                "Idioma",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                27,
+                "Activo",
+                "bit",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                28,
+                "FechaAlta",
+                "datetime2",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                29,
+                "FechaModificacion",
+                "datetime2",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                30,
+                "CreatedBy",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                31,
+                "ModifiedBy",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                32,
+                "MongoLegacyID",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                33,
+                "PublicUUID",
+                "uniqueidentifier",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_EmpresasAsignacion",
+                1,
+                "UsuarioEmpresaAsignacionID",
+                "bigint",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_EmpresasAsignacion",
+                2,
+                "UsuarioID",
+                "int",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_EmpresasAsignacion",
+                3,
+                "EmpresaID",
+                "int",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_EmpresasAsignacion",
+                4,
+                "EsPrincipal",
+                "bit",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_EmpresasAsignacion",
+                5,
+                "FechaInicio",
+                "datetime2",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_EmpresasAsignacion",
+                6,
+                "FechaFin",
+                "datetime2",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_EmpresasAsignacion",
+                7,
+                "Activo",
+                "bit",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_EmpresasAsignacion",
+                8,
+                "CreatedAt",
+                "datetime2",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_EmpresasAsignacion",
+                9,
+                "CreatedBy",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_EmpresasAsignacion",
+                10,
+                "UpdatedAt",
+                "datetime2",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_EmpresasAsignacion",
+                11,
+                "UpdatedBy",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Roles",
+                1,
+                "RolID",
+                "int",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Roles",
+                2,
+                "CodigoRol",
+                "varchar",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Roles",
+                3,
+                "NombreRol",
+                "varchar",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Roles",
+                4,
+                "Descripcion",
+                "varchar",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Roles",
+                5,
+                "EsRolSistema",
+                "bit",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Roles",
+                6,
+                "Activo",
+                "bit",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Roles",
+                7,
+                "FechaAlta",
+                "datetime2",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_Roles",
+                8,
+                "FechaModificacion",
+                "datetime2",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_Roles",
+                9,
+                "NivelJerarquia",
+                "int",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_RolesAsignacion",
+                1,
+                "UsuarioRolAsignacionID",
+                "bigint",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_RolesAsignacion",
+                2,
+                "UsuarioID",
+                "int",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_RolesAsignacion",
+                3,
+                "RolID",
+                "int",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_RolesAsignacion",
+                4,
+                "EsPrincipal",
+                "bit",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_RolesAsignacion",
+                5,
+                "FechaInicio",
+                "datetime2",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_RolesAsignacion",
+                6,
+                "FechaFin",
+                "datetime2",
+                "YES"
+              ],
+              [
+                "dbo",
+                "Usuario_RolesAsignacion",
+                7,
+                "Activo",
+                "bit",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_RolesAsignacion",
+                8,
+                "CreatedAt",
+                "datetime2",
+                "NO"
+              ],
+              [
+                "dbo",
+                "Usuario_RolesAsignacion",
+                9,
+                "CreatedBy",
+                "varchar",
+                "YES"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioEmpresaAsignacionID",
+              "UsuarioID",
+              "EmpresaID",
+              "EsPrincipal",
+              "FechaInicio",
+              "FechaFin",
+              "Activo",
+              "CreatedAt",
+              "CreatedBy",
+              "UpdatedAt",
+              "UpdatedBy"
+            ],
+            "name": "usuario_empresas_raw",
+            "row_count_returned": 38,
+            "rows": [
+              [
+                "1",
+                1,
+                1,
+                true,
+                "2026-05-14 01:22:10.2766667",
+                null,
+                false,
+                "2026-05-14 01:22:10.2766667",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "2",
+                1,
+                2,
+                false,
+                "2026-05-14 01:22:10.3100000",
+                null,
+                false,
+                "2026-05-14 01:22:10.3100000",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "3",
+                1,
+                3,
+                false,
+                "2026-05-14 01:22:10.3400000",
+                null,
+                false,
+                "2026-05-14 01:22:10.3400000",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "4",
+                1,
+                4,
+                false,
+                "2026-05-14 01:22:10.3733333",
+                null,
+                false,
+                "2026-05-14 01:22:10.3733333",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "5",
+                1,
+                5,
+                false,
+                "2026-05-14 01:22:10.4066667",
+                null,
+                false,
+                "2026-05-14 01:22:10.4066667",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "6",
+                2,
+                1,
+                true,
+                "2026-05-14 01:22:10.4366667",
+                null,
+                false,
+                "2026-05-14 01:22:10.4366667",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "7",
+                2,
+                2,
+                false,
+                "2026-05-14 01:22:10.4700000",
+                null,
+                false,
+                "2026-05-14 01:22:10.4700000",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "8",
+                2,
+                3,
+                false,
+                "2026-05-14 01:22:10.5000000",
+                null,
+                false,
+                "2026-05-14 01:22:10.5000000",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "9",
+                2,
+                4,
+                false,
+                "2026-05-14 01:22:10.5333333",
+                null,
+                false,
+                "2026-05-14 01:22:10.5333333",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "10",
+                2,
+                5,
+                false,
+                "2026-05-14 01:22:10.5666667",
+                null,
+                false,
+                "2026-05-14 01:22:10.5666667",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "11",
+                3,
+                1,
+                true,
+                "2026-05-14 01:22:10.5966667",
+                null,
+                false,
+                "2026-05-14 01:22:10.5966667",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "12",
+                3,
+                2,
+                false,
+                "2026-05-14 01:22:10.6300000",
+                null,
+                false,
+                "2026-05-14 01:22:10.6300000",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "13",
+                3,
+                3,
+                false,
+                "2026-05-14 01:22:10.6600000",
+                null,
+                false,
+                "2026-05-14 01:22:10.6600000",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "14",
+                3,
+                4,
+                false,
+                "2026-05-14 01:22:10.6933333",
+                null,
+                false,
+                "2026-05-14 01:22:10.6933333",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "15",
+                3,
+                5,
+                false,
+                "2026-05-14 01:22:10.7233333",
+                null,
+                false,
+                "2026-05-14 01:22:10.7233333",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "16",
+                4,
+                1,
+                true,
+                "2026-05-14 01:22:10.7566667",
+                null,
+                false,
+                "2026-05-14 01:22:10.7566667",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "17",
+                4,
+                2,
+                false,
+                "2026-05-14 01:22:10.7900000",
+                null,
+                false,
+                "2026-05-14 01:22:10.7900000",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "18",
+                4,
+                3,
+                false,
+                "2026-05-14 01:22:10.8200000",
+                null,
+                false,
+                "2026-05-14 01:22:10.8200000",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "19",
+                4,
+                4,
+                false,
+                "2026-05-14 01:22:10.8533333",
+                null,
+                false,
+                "2026-05-14 01:22:10.8533333",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "20",
+                4,
+                5,
+                false,
+                "2026-05-14 01:22:10.8833333",
+                null,
+                false,
+                "2026-05-14 01:22:10.8833333",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "21",
+                5,
+                1,
+                true,
+                "2026-05-14 01:22:10.9300000",
+                null,
+                false,
+                "2026-05-14 01:22:10.9300000",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "22",
+                5,
+                2,
+                false,
+                "2026-05-14 01:22:10.9600000",
+                null,
+                false,
+                "2026-05-14 01:22:10.9600000",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "23",
+                5,
+                3,
+                false,
+                "2026-05-14 01:22:10.9933333",
+                null,
+                false,
+                "2026-05-14 01:22:10.9933333",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "24",
+                5,
+                4,
+                false,
+                "2026-05-14 01:22:11.0233333",
+                null,
+                false,
+                "2026-05-14 01:22:11.0233333",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "25",
+                5,
+                5,
+                false,
+                "2026-05-14 01:22:11.0566667",
+                null,
+                false,
+                "2026-05-14 01:22:11.0566667",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "26",
+                6,
+                3,
+                true,
+                "2026-05-14 01:22:11.0900000",
+                null,
+                false,
+                "2026-05-14 01:22:11.0900000",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "27",
+                7,
+                3,
+                true,
+                "2026-05-14 01:22:11.1200000",
+                null,
+                false,
+                "2026-05-14 01:22:11.1200000",
+                "FASE2B3_MIGRATION",
+                null,
+                null
+              ],
+              [
+                "28",
+                9,
+                3,
+                true,
+                "2026-05-13 20:21:00.1266667",
+                null,
+                false,
+                "2026-05-13 20:21:00.1266667",
+                "FASE2F2",
+                null,
+                null
+              ],
+              [
+                "29",
+                11,
+                1,
+                true,
+                "2026-05-13 20:21:00.2200000",
+                null,
+                false,
+                "2026-05-13 20:21:00.2200000",
+                "FASE2F2",
+                null,
+                null
+              ],
+              [
+                "30",
+                11,
+                2,
+                false,
+                "2026-05-13 20:21:00.3166667",
+                null,
+                false,
+                "2026-05-13 20:21:00.3166667",
+                "FASE2F2",
+                null,
+                null
+              ],
+              [
+                "31",
+                11,
+                3,
+                false,
+                "2026-05-13 20:21:00.4133333",
+                null,
+                false,
+                "2026-05-13 20:21:00.4133333",
+                "FASE2F2",
+                null,
+                null
+              ],
+              [
+                "32",
+                11,
+                4,
+                false,
+                "2026-05-13 20:21:00.5100000",
+                null,
+                false,
+                "2026-05-13 20:21:00.5100000",
+                "FASE2F2",
+                null,
+                null
+              ],
+              [
+                "33",
+                11,
+                5,
+                false,
+                "2026-05-13 20:21:00.6066667",
+                null,
+                false,
+                "2026-05-13 20:21:00.6066667",
+                "FASE2F2",
+                null,
+                null
+              ],
+              [
+                "34",
+                12,
+                1,
+                true,
+                "2026-05-13 20:21:00.7033333",
+                null,
+                false,
+                "2026-05-13 20:21:00.7033333",
+                "FASE2F2",
+                null,
+                null
+              ],
+              [
+                "35",
+                12,
+                2,
+                false,
+                "2026-05-13 20:21:00.8000000",
+                null,
+                false,
+                "2026-05-13 20:21:00.8000000",
+                "FASE2F2",
+                null,
+                null
+              ],
+              [
+                "36",
+                12,
+                3,
+                false,
+                "2026-05-13 20:21:00.8933333",
+                null,
+                false,
+                "2026-05-13 20:21:00.8933333",
+                "FASE2F2",
+                null,
+                null
+              ],
+              [
+                "37",
+                12,
+                4,
+                false,
+                "2026-05-13 20:21:00.9900000",
+                null,
+                false,
+                "2026-05-13 20:21:00.9900000",
+                "FASE2F2",
+                null,
+                null
+              ],
+              [
+                "38",
+                12,
+                5,
+                false,
+                "2026-05-13 20:21:01.0866667",
+                null,
+                false,
+                "2026-05-13 20:21:01.0866667",
+                "FASE2F2",
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EmpresaID",
+              "CodigoEmpresa",
+              "NombreEmpresa",
+              "NombreComercial",
+              "RFC",
+              "Activo",
+              "FechaAlta",
+              "FechaModificacion",
+              "CreatedBy",
+              "UpdatedBy"
+            ],
+            "name": "sistema_empresas_raw",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                1,
+                "ORIGEN",
+                "ORIGEN",
+                "Restaurante Origen S.A. de C.V.",
+                null,
+                true,
+                "2026-05-08 20:06:32.2800000",
+                null,
+                "MIGRACION_FASE_A2",
+                null
+              ],
+              [
+                2,
+                "130QRO",
+                "130 QRO",
+                "130 Grados Querétaro S.A. de C.V.",
+                null,
+                true,
+                "2026-05-08 20:06:32.4266667",
+                null,
+                "MIGRACION_FASE_A2",
+                null
+              ],
+              [
+                3,
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "Restaurante Cienfuegos S.A. de C.V.",
+                null,
+                true,
+                "2026-05-08 20:06:32.5533333",
+                null,
+                "MIGRACION_FASE_A2",
+                null
+              ],
+              [
+                4,
+                "ESTELAR",
+                "LA ESTELAR",
+                "La Estelar S.A. de C.V.",
+                null,
+                true,
+                "2026-05-08 20:06:32.6833333",
+                null,
+                "MIGRACION_FASE_A2",
+                null
+              ],
+              [
+                5,
+                "130MID",
+                "130 MID",
+                "130 Grados Mérida S.A. de C.V.",
+                null,
+                true,
+                "2026-05-08 20:06:32.8133333",
+                null,
+                "MIGRACION_FASE_A2",
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ActivoFlag",
+              "EsPrincipalFlag",
+              "total"
+            ],
+            "name": "usuario_empresas_distribution",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                0,
+                0,
+                28
+              ],
+              [
+                0,
+                1,
+                10
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "Username",
+              "NombreCompleto",
+              "UsuarioActivo",
+              "EmpresaID",
+              "EmpresaExisteID",
+              "EsPrincipal",
+              "AsignacionActiva",
+              "IntegrityDiagnosis"
+            ],
+            "name": "usuario_empresas_integridad_join",
+            "row_count_returned": 38,
+            "rows": [
+              [
+                1,
+                "admin@edarsa.com",
+                "admin@edarsa.com",
+                "Admin Test Editado",
+                true,
+                1,
+                1,
+                true,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                1,
+                "admin@edarsa.com",
+                "admin@edarsa.com",
+                "Admin Test Editado",
+                true,
+                2,
+                2,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                1,
+                "admin@edarsa.com",
+                "admin@edarsa.com",
+                "Admin Test Editado",
+                true,
+                3,
+                3,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                1,
+                "admin@edarsa.com",
+                "admin@edarsa.com",
+                "Admin Test Editado",
+                true,
+                4,
+                4,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                1,
+                "admin@edarsa.com",
+                "admin@edarsa.com",
+                "Admin Test Editado",
+                true,
+                5,
+                5,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                2,
+                "admin@inventario.com",
+                "admin@inventario.com",
+                "Administrador",
+                false,
+                1,
+                1,
+                true,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                2,
+                "admin@inventario.com",
+                "admin@inventario.com",
+                "Administrador",
+                false,
+                2,
+                2,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                2,
+                "admin@inventario.com",
+                "admin@inventario.com",
+                "Administrador",
+                false,
+                3,
+                3,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                2,
+                "admin@inventario.com",
+                "admin@inventario.com",
+                "Administrador",
+                false,
+                4,
+                4,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                2,
+                "admin@inventario.com",
+                "admin@inventario.com",
+                "Administrador",
+                false,
+                5,
+                5,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                3,
+                "carlosruz@edarsa.com.mx",
+                "carlosruz@edarsa.com.mx",
+                "Carlos Ruz",
+                true,
+                1,
+                1,
+                true,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                3,
+                "carlosruz@edarsa.com.mx",
+                "carlosruz@edarsa.com.mx",
+                "Carlos Ruz",
+                true,
+                2,
+                2,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                3,
+                "carlosruz@edarsa.com.mx",
+                "carlosruz@edarsa.com.mx",
+                "Carlos Ruz",
+                true,
+                3,
+                3,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                3,
+                "carlosruz@edarsa.com.mx",
+                "carlosruz@edarsa.com.mx",
+                "Carlos Ruz",
+                true,
+                4,
+                4,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                3,
+                "carlosruz@edarsa.com.mx",
+                "carlosruz@edarsa.com.mx",
+                "Carlos Ruz",
+                true,
+                5,
+                5,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                4,
+                "noxte@alpyc.com",
+                "noxte@alpyc.com",
+                "Nestor Oxte",
+                true,
+                1,
+                1,
+                true,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                4,
+                "noxte@alpyc.com",
+                "noxte@alpyc.com",
+                "Nestor Oxte",
+                true,
+                2,
+                2,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                4,
+                "noxte@alpyc.com",
+                "noxte@alpyc.com",
+                "Nestor Oxte",
+                true,
+                3,
+                3,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                4,
+                "noxte@alpyc.com",
+                "noxte@alpyc.com",
+                "Nestor Oxte",
+                true,
+                4,
+                4,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                4,
+                "noxte@alpyc.com",
+                "noxte@alpyc.com",
+                "Nestor Oxte",
+                true,
+                5,
+                5,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                5,
+                "auditoria@edarsa.com.mx",
+                "auditoria@edarsa.com.mx",
+                "William Chuc",
+                true,
+                1,
+                1,
+                true,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                5,
+                "auditoria@edarsa.com.mx",
+                "auditoria@edarsa.com.mx",
+                "William Chuc",
+                true,
+                2,
+                2,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                5,
+                "auditoria@edarsa.com.mx",
+                "auditoria@edarsa.com.mx",
+                "William Chuc",
+                true,
+                3,
+                3,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                5,
+                "auditoria@edarsa.com.mx",
+                "auditoria@edarsa.com.mx",
+                "William Chuc",
+                true,
+                4,
+                4,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                5,
+                "auditoria@edarsa.com.mx",
+                "auditoria@edarsa.com.mx",
+                "William Chuc",
+                true,
+                5,
+                5,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                6,
+                "almacen@cienfuegos.mx",
+                "almacen@cienfuegos.mx",
+                "Cristina Chi",
+                true,
+                3,
+                3,
+                true,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                7,
+                "administracion@cienfuegos.mx",
+                "administracion@cienfuegos.mx",
+                "Daniel Pool",
+                false,
+                3,
+                3,
+                true,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                9,
+                "david.ricardez@cienfuegos.mx",
+                "david.ricardez@cienfuegos.mx",
+                "David Ricaldes Mendes",
+                true,
+                3,
+                3,
+                true,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                11,
+                "carlos@alpuntoycoma.mx",
+                "carlos@alpuntoycoma.mx",
+                "Carlos Alberto Aguirre de Leon",
+                true,
+                1,
+                1,
+                true,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                11,
+                "carlos@alpuntoycoma.mx",
+                "carlos@alpuntoycoma.mx",
+                "Carlos Alberto Aguirre de Leon",
+                true,
+                2,
+                2,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                11,
+                "carlos@alpuntoycoma.mx",
+                "carlos@alpuntoycoma.mx",
+                "Carlos Alberto Aguirre de Leon",
+                true,
+                3,
+                3,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                11,
+                "carlos@alpuntoycoma.mx",
+                "carlos@alpuntoycoma.mx",
+                "Carlos Alberto Aguirre de Leon",
+                true,
+                4,
+                4,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                11,
+                "carlos@alpuntoycoma.mx",
+                "carlos@alpuntoycoma.mx",
+                "Carlos Alberto Aguirre de Leon",
+                true,
+                5,
+                5,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                12,
+                "eduardo@alpuntoycoma.mx",
+                "eduardo@alpuntoycoma.mx",
+                "Eduardo Jose Medina García",
+                true,
+                1,
+                1,
+                true,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                12,
+                "eduardo@alpuntoycoma.mx",
+                "eduardo@alpuntoycoma.mx",
+                "Eduardo Jose Medina García",
+                true,
+                2,
+                2,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                12,
+                "eduardo@alpuntoycoma.mx",
+                "eduardo@alpuntoycoma.mx",
+                "Eduardo Jose Medina García",
+                true,
+                3,
+                3,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                12,
+                "eduardo@alpuntoycoma.mx",
+                "eduardo@alpuntoycoma.mx",
+                "Eduardo Jose Medina García",
+                true,
+                4,
+                4,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ],
+              [
+                12,
+                "eduardo@alpuntoycoma.mx",
+                "eduardo@alpuntoycoma.mx",
+                "Eduardo Jose Medina García",
+                true,
+                5,
+                5,
+                false,
+                false,
+                "ASSIGNMENT_INACTIVE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EmpresaID",
+              "Asignaciones",
+              "AsignacionesActivas"
+            ],
+            "name": "empresaid_inexistentes_en_asignacion",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "Asignaciones",
+              "AsignacionesActivas"
+            ],
+            "name": "usuarioid_huerfanos_en_asignacion",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "Username",
+              "NombreCompleto",
+              "UsuarioActivo",
+              "EmpresasTotal",
+              "EmpresasActivas",
+              "SucursalesActivas",
+              "ServidoresActivos"
+            ],
+            "name": "usuarios_activos_sin_empresa_activa",
+            "row_count_returned": 16,
+            "rows": [
+              [
+                1,
+                "admin@edarsa.com",
+                "admin@edarsa.com",
+                "Admin Test Editado",
+                true,
+                5,
+                0,
+                0,
+                0
+              ],
+              [
+                3,
+                "carlosruz@edarsa.com.mx",
+                "carlosruz@edarsa.com.mx",
+                "Carlos Ruz",
+                true,
+                5,
+                0,
+                10,
+                12
+              ],
+              [
+                4,
+                "noxte@alpyc.com",
+                "noxte@alpyc.com",
+                "Nestor Oxte",
+                true,
+                5,
+                0,
+                0,
+                0
+              ],
+              [
+                5,
+                "auditoria@edarsa.com.mx",
+                "auditoria@edarsa.com.mx",
+                "William Chuc",
+                true,
+                5,
+                0,
+                4,
+                4
+              ],
+              [
+                6,
+                "almacen@cienfuegos.mx",
+                "almacen@cienfuegos.mx",
+                "Cristina Chi",
+                true,
+                1,
+                0,
+                1,
+                1
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "ricardo@edarsa.com.mx",
+                "Ricardo Balam Garcia",
+                true,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                9,
+                "david.ricardez@cienfuegos.mx",
+                "david.ricardez@cienfuegos.mx",
+                "David Ricaldes Mendes",
+                true,
+                1,
+                0,
+                1,
+                8
+              ],
+              [
+                11,
+                "carlos@alpuntoycoma.mx",
+                "carlos@alpuntoycoma.mx",
+                "Carlos Alberto Aguirre de Leon",
+                true,
+                5,
+                0,
+                2,
+                5
+              ],
+              [
+                12,
+                "eduardo@alpuntoycoma.mx",
+                "eduardo@alpuntoycoma.mx",
+                "Eduardo Jose Medina García",
+                true,
+                5,
+                0,
+                0,
+                0
+              ],
+              [
+                22,
+                "qa.superadmin@edarsa.com",
+                "qa.superadmin",
+                "QA SuperAdmin",
+                true,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                25,
+                "qa.visorcomercial@edarsa.com",
+                "qa.visorcom",
+                "QA Visor Comercial",
+                true,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                27,
+                "sys-sched-alertas@edarsahub.internal",
+                "SYS-SCHED-ALERTAS",
+                "Scheduler Alertas",
+                true,
+                0,
+                0,
+                2,
+                3
+              ],
+              [
+                28,
+                "aenriquez080@gmail.com",
+                "aenriquez080@gmail.com",
+                "Allen Enriquez Toral",
+                true,
+                0,
+                0,
+                0,
+                1
+              ],
+              [
+                33,
+                "sectest_notif@edarsatest.com",
+                "sectest_notif@edarsatest.com",
+                "Notif Test",
+                true,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                37,
+                "qa9882@e.mx",
+                "qa9882@e.mx",
+                "QA",
+                true,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                38,
+                "administracion@laestelar.mx",
+                "administracion@laestelar.mx",
+                "Tesorero Estelar",
+                true,
+                0,
+                0,
+                0,
+                1
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "Username",
+              "NombreCompleto",
+              "UsuarioActivo",
+              "RolID",
+              "CodigoRol",
+              "NombreRol",
+              "NivelJerarquia",
+              "EsPrincipal",
+              "RolAsignacionActiva",
+              "EmpresasActivas"
+            ],
+            "name": "superadmin_admin_sin_empresa_activa",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                1,
+                "admin@edarsa.com",
+                "admin@edarsa.com",
+                "Admin Test Editado",
+                true,
+                6,
+                "SUPERADMIN",
+                "SuperAdministrador",
+                100,
+                true,
+                true,
+                0
+              ],
+              [
+                3,
+                "carlosruz@edarsa.com.mx",
+                "carlosruz@edarsa.com.mx",
+                "Carlos Ruz",
+                true,
+                6,
+                "SUPERADMIN",
+                "SuperAdministrador",
+                100,
+                true,
+                true,
+                0
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "ricardo@edarsa.com.mx",
+                "Ricardo Balam Garcia",
+                true,
+                6,
+                "SUPERADMIN",
+                "SuperAdministrador",
+                100,
+                true,
+                true,
+                0
+              ],
+              [
+                22,
+                "qa.superadmin@edarsa.com",
+                "qa.superadmin",
+                "QA SuperAdmin",
+                true,
+                6,
+                "SUPERADMIN",
+                "SuperAdministrador",
+                100,
+                true,
+                true,
+                0
+              ],
+              [
+                37,
+                "qa9882@e.mx",
+                "qa9882@e.mx",
+                "QA",
+                true,
+                6,
+                "SUPERADMIN",
+                "SuperAdministrador",
+                100,
+                true,
+                true,
+                0
+              ],
+              [
+                12,
+                "eduardo@alpuntoycoma.mx",
+                "eduardo@alpuntoycoma.mx",
+                "Eduardo Jose Medina García",
+                true,
+                1,
+                "ADMIN",
+                "Administrador",
+                90,
+                true,
+                true,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "Username",
+              "NombreCompleto",
+              "UsuarioActivo",
+              "MaxRolNivelActivo",
+              "EsAdminOSuperAdmin",
+              "EmpresasTotal",
+              "EmpresasActivas",
+              "ProposedReadOnlyAction"
+            ],
+            "name": "fix_candidate_matrix_readonly",
+            "row_count_returned": 27,
+            "rows": [
+              [
+                4,
+                "noxte@alpyc.com",
+                "noxte@alpyc.com",
+                "Nestor Oxte",
+                true,
+                50,
+                0,
+                5,
+                0,
+                "CANDIDATE_ASSIGN_EMPRESA_BY_BUSINESS_SCOPE_REQUIRED"
+              ],
+              [
+                5,
+                "auditoria@edarsa.com.mx",
+                "auditoria@edarsa.com.mx",
+                "William Chuc",
+                true,
+                20,
+                0,
+                5,
+                0,
+                "CANDIDATE_ASSIGN_EMPRESA_BY_BUSINESS_SCOPE_REQUIRED"
+              ],
+              [
+                6,
+                "almacen@cienfuegos.mx",
+                "almacen@cienfuegos.mx",
+                "Cristina Chi",
+                true,
+                20,
+                0,
+                1,
+                0,
+                "CANDIDATE_ASSIGN_EMPRESA_BY_BUSINESS_SCOPE_REQUIRED"
+              ],
+              [
+                9,
+                "david.ricardez@cienfuegos.mx",
+                "david.ricardez@cienfuegos.mx",
+                "David Ricaldes Mendes",
+                true,
+                0,
+                0,
+                1,
+                0,
+                "CANDIDATE_ASSIGN_EMPRESA_BY_BUSINESS_SCOPE_REQUIRED"
+              ],
+              [
+                11,
+                "carlos@alpuntoycoma.mx",
+                "carlos@alpuntoycoma.mx",
+                "Carlos Alberto Aguirre de Leon",
+                true,
+                80,
+                0,
+                5,
+                0,
+                "CANDIDATE_ASSIGN_EMPRESA_BY_BUSINESS_SCOPE_REQUIRED"
+              ],
+              [
+                25,
+                "qa.visorcomercial@edarsa.com",
+                "qa.visorcom",
+                "QA Visor Comercial",
+                true,
+                10,
+                0,
+                0,
+                0,
+                "CANDIDATE_ASSIGN_EMPRESA_BY_BUSINESS_SCOPE_REQUIRED"
+              ],
+              [
+                27,
+                "sys-sched-alertas@edarsahub.internal",
+                "SYS-SCHED-ALERTAS",
+                "Scheduler Alertas",
+                true,
+                10,
+                0,
+                0,
+                0,
+                "CANDIDATE_ASSIGN_EMPRESA_BY_BUSINESS_SCOPE_REQUIRED"
+              ],
+              [
+                28,
+                "aenriquez080@gmail.com",
+                "aenriquez080@gmail.com",
+                "Allen Enriquez Toral",
+                true,
+                10,
+                0,
+                0,
+                0,
+                "CANDIDATE_ASSIGN_EMPRESA_BY_BUSINESS_SCOPE_REQUIRED"
+              ],
+              [
+                33,
+                "sectest_notif@edarsatest.com",
+                "sectest_notif@edarsatest.com",
+                "Notif Test",
+                true,
+                0,
+                0,
+                0,
+                0,
+                "CANDIDATE_ASSIGN_EMPRESA_BY_BUSINESS_SCOPE_REQUIRED"
+              ],
+              [
+                38,
+                "administracion@laestelar.mx",
+                "administracion@laestelar.mx",
+                "Tesorero Estelar",
+                true,
+                10,
+                0,
+                0,
+                0,
+                "CANDIDATE_ASSIGN_EMPRESA_BY_BUSINESS_SCOPE_REQUIRED"
+              ],
+              [
+                1,
+                "admin@edarsa.com",
+                "admin@edarsa.com",
+                "Admin Test Editado",
+                true,
+                100,
+                1,
+                5,
+                0,
+                "CANDIDATE_ASSIGN_EMPRESA_FOR_ADMIN_SCOPE"
+              ],
+              [
+                3,
+                "carlosruz@edarsa.com.mx",
+                "carlosruz@edarsa.com.mx",
+                "Carlos Ruz",
+                true,
+                100,
+                1,
+                5,
+                0,
+                "CANDIDATE_ASSIGN_EMPRESA_FOR_ADMIN_SCOPE"
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "ricardo@edarsa.com.mx",
+                "Ricardo Balam Garcia",
+                true,
+                100,
+                1,
+                0,
+                0,
+                "CANDIDATE_ASSIGN_EMPRESA_FOR_ADMIN_SCOPE"
+              ],
+              [
+                12,
+                "eduardo@alpuntoycoma.mx",
+                "eduardo@alpuntoycoma.mx",
+                "Eduardo Jose Medina García",
+                true,
+                90,
+                1,
+                5,
+                0,
+                "CANDIDATE_ASSIGN_EMPRESA_FOR_ADMIN_SCOPE"
+              ],
+              [
+                22,
+                "qa.superadmin@edarsa.com",
+                "qa.superadmin",
+                "QA SuperAdmin",
+                true,
+                100,
+                1,
+                0,
+                0,
+                "CANDIDATE_ASSIGN_EMPRESA_FOR_ADMIN_SCOPE"
+              ],
+              [
+                37,
+                "qa9882@e.mx",
+                "qa9882@e.mx",
+                "QA",
+                true,
+                100,
+                1,
+                0,
+                0,
+                "CANDIDATE_ASSIGN_EMPRESA_FOR_ADMIN_SCOPE"
+              ],
+              [
+                2,
+                "admin@inventario.com",
+                "admin@inventario.com",
+                "Administrador",
+                false,
+                100,
+                1,
+                5,
+                0,
+                "NO_FIX_USER_INACTIVE"
+              ],
+              [
+                7,
+                "administracion@cienfuegos.mx",
+                "administracion@cienfuegos.mx",
+                "Daniel Pool",
+                false,
+                50,
+                0,
+                1,
+                0,
+                "NO_FIX_USER_INACTIVE"
+              ],
+              [
+                15,
+                "prueba.rbacg@edarsa.com.mx",
+                "prueba.rbacg",
+                "Usuario Prueba RBAC-G",
+                false,
+                0,
+                0,
+                0,
+                0,
+                "NO_FIX_USER_INACTIVE"
+              ],
+              [
+                16,
+                "test_validacion@test.com",
+                "test_validacion@test.com",
+                "Test Validación RBAC",
+                false,
+                0,
+                0,
+                0,
+                0,
+                "NO_FIX_USER_INACTIVE"
+              ],
+              [
+                17,
+                "test_rbac_val@test.com",
+                "test_rbac_val@test.com",
+                "Test EDITADO OK",
+                false,
+                0,
+                0,
+                0,
+                0,
+                "NO_FIX_USER_INACTIVE"
+              ],
+              [
+                18,
+                "superadmin@test.com",
+                "superadmin@test.com",
+                "SuperAdmin Test",
+                false,
+                100,
+                1,
+                0,
+                0,
+                "NO_FIX_USER_INACTIVE"
+              ],
+              [
+                19,
+                "superadmin2@test.com",
+                "superadmin2@test.com",
+                "Super Admin Test",
+                false,
+                100,
+                1,
+                0,
+                0,
+                "NO_FIX_USER_INACTIVE"
+              ],
+              [
+                20,
+                "usuario_test_portal@test.com",
+                "usuario_test_portal@test.com",
+                "Usuario Test Portal",
+                false,
+                0,
+                0,
+                0,
+                0,
+                "NO_FIX_USER_INACTIVE"
+              ],
+              [
+                21,
+                "test_propinas@edarsa.com",
+                "test_propinas@edarsa.com",
+                "Test Propinas",
+                false,
+                0,
+                0,
+                0,
+                0,
+                "NO_FIX_USER_INACTIVE"
+              ],
+              [
+                23,
+                "qa.temp.p02@edarsa.com",
+                "qa.temp.p02@edarsa.com",
+                "QA Temp P02 Editado",
+                false,
+                0,
+                0,
+                0,
+                0,
+                "NO_FIX_USER_INACTIVE"
+              ],
+              [
+                24,
+                "ewsbaquedano@gmail.com",
+                "ewsbaquedano@gmail.com",
+                "Salim Baquedano Mir",
+                false,
+                5,
+                0,
+                0,
+                0,
+                "NO_FIX_USER_INACTIVE"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-06T02:55:08Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
