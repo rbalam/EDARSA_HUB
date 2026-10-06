@@ -1,0 +1,76 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "queries": [
+        {
+          "name": "usuarios_reales_activos_inactivos",
+          "sql": "SELECT TOP 100 u.UsuarioID, CAST(u.PublicUUID AS NVARCHAR(100)) AS PublicUUID, u.Email, u.Username, u.Nombre, u.Apellidos, u.NombreCompleto, u.Activo FROM dbo.Usuario_Catalogo u ORDER BY u.Activo ASC, u.UsuarioID"
+        },
+        {
+          "name": "roles_por_usuario",
+          "sql": "SELECT TOP 200 u.UsuarioID, u.Email, u.Username, u.NombreCompleto, u.Activo AS UsuarioActivo, ura.UsuarioRolAsignacionID, ura.RolID, ura.EsPrincipal, ura.Activo AS RolAsignacionActiva, r.CodigoRol, r.NombreRol, r.NivelJerarquia, r.Activo AS RolActivo FROM dbo.Usuario_Catalogo u LEFT JOIN dbo.Usuario_RolesAsignacion ura   ON ura.UsuarioID = u.UsuarioID LEFT JOIN dbo.Usuario_Roles r   ON r.RolID = ura.RolID ORDER BY u.UsuarioID, ura.EsPrincipal DESC, ura.Activo DESC, r.NivelJerarquia DESC"
+        },
+        {
+          "name": "asignaciones_empresa_sucursal_servidor_por_usuario",
+          "sql": "SELECT TOP 100 u.UsuarioID, u.Email, u.Activo AS UsuarioActivo, (SELECT COUNT(*) FROM dbo.Usuario_EmpresasAsignacion ea  WHERE ea.UsuarioID = u.UsuarioID AND ISNULL(ea.Activo,1)=1) AS EmpresasActivas, (SELECT COUNT(*) FROM dbo.Usuario_SucursalesAsignacion sa  WHERE sa.UsuarioID = u.UsuarioID AND ISNULL(sa.Activo,1)=1) AS SucursalesActivas, (SELECT COUNT(*) FROM dbo.Usuario_ServidoresAsignacion sva  WHERE sva.UsuarioID = u.UsuarioID AND ISNULL(sva.Activo,1)=1) AS ServidoresActivos FROM dbo.Usuario_Catalogo u ORDER BY u.UsuarioID"
+        },
+        {
+          "name": "menu_usuarios_existencia_y_permiso_requerido",
+          "sql": "SELECT TOP 100 mm.MenuID, mm.ModuloID, mm.MenuPadreID, mm.Codigo, mm.Nombre, mm.Ruta, mm.RequierePermiso, mm.Activo, mm.Orden FROM dbo.Sistema_ModulosMenus mm WHERE LOWER(ISNULL(mm.Nombre,'')) LIKE '%usuario%'    OR LOWER(ISNULL(mm.Codigo,'')) LIKE '%usuario%'    OR LOWER(ISNULL(mm.Ruta,'')) LIKE '%usuario%'    OR LOWER(ISNULL(mm.RequierePermiso,'')) LIKE '%usuario%'    OR LOWER(ISNULL(mm.Nombre,'')) LIKE '%user%'    OR LOWER(ISNULL(mm.Codigo,'')) LIKE '%user%'    OR LOWER(ISNULL(mm.Ruta,'')) LIKE '%user%' ORDER BY mm.ModuloID, mm.Orden, mm.Nombre"
+        },
+        {
+          "name": "roles_con_permiso_menu_usuarios",
+          "sql": "WITH candidate_menus AS (  SELECT     mm.MenuID, mm.ModuloID, mm.Codigo, mm.Nombre, mm.Ruta, mm.RequierePermiso, mm.Activo,     UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(mm.RequierePermiso,''))),'-','_'),' ','_')) AS KeyRequierePermiso,     UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(mm.Codigo,''))),'-','_'),' ','_')) AS KeyCodigo,     UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(mm.Ruta,''))),'/','.'),'-','_'),' ', '_')) AS KeyRuta   FROM dbo.Sistema_ModulosMenus mm   WHERE LOWER(ISNULL(mm.Nombre,'')) LIKE '%usuario%'      OR LOWER(ISNULL(mm.Codigo,'')) LIKE '%usuario%'      OR LOWER(ISNULL(mm.Ruta,'')) LIKE '%usuario%'      OR LOWER(ISNULL(mm.RequierePermiso,'')) LIKE '%usuario%'      OR LOWER(ISNULL(mm.Nombre,'')) LIKE '%user%'      OR LOWER(ISNULL(mm.Codigo,'')) LIKE '%user%'      OR LOWER(ISNULL(mm.Ruta,'')) LIKE '%user%' ), menu_keys AS (  SELECT MenuID, ModuloID, Codigo, Nombre, Ruta, RequierePermiso, Activo, KeyRequierePermiso AS PermisoKey FROM candidate_menus   UNION ALL   SELECT MenuID, ModuloID, Codigo, Nombre, Ruta, RequierePermiso, Activo, KeyCodigo AS PermisoKey FROM candidate_menus   UNION ALL   SELECT MenuID, ModuloID, Codigo, Nombre, Ruta, RequierePermiso, Activo, KeyRuta AS PermisoKey FROM candidate_menus ) SELECT DISTINCT TOP 200 mk.MenuID, mk.Nombre AS MenuNombre, mk.Ruta, mk.RequierePermiso, mk.PermisoKey, m.ModuloID AS UsuarioModuloID, m.CodigoModulo, m.NombreModulo, r.RolID, r.CodigoRol, r.NombreRol, r.NivelJerarquia, prm.Permitido, prm.Activo AS PermisoRolModuloActivo FROM menu_keys mk JOIN dbo.Usuario_Modulos m   ON UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(m.CodigoModulo,''))),'-','_'),' ','_')) = mk.PermisoKey JOIN dbo.Usuario_PermisosRolModulo prm   ON prm.ModuloID = m.ModuloID JOIN dbo.Usuario_Roles r   ON r.RolID = prm.RolID WHERE mk.PermisoKey <> ''   AND ISNULL(prm.Activo,1)=1   AND ISNULL(prm.Permitido,1)=1   AND ISNULL(m.Activo,1)=1   AND ISNULL(r.Activo,1)=1 ORDER BY mk.MenuID, r.NivelJerarquia DESC, r.CodigoRol"
+        },
+        {
+          "name": "matriz_usuarios_vs_menu_usuarios",
+          "sql": "WITH candidate_menus AS (  SELECT     mm.MenuID, mm.ModuloID, mm.Codigo, mm.Nombre, mm.Ruta, mm.RequierePermiso, mm.Activo,     UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(mm.RequierePermiso,''))),'-','_'),' ','_')) AS KeyRequierePermiso,     UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(mm.Codigo,''))),'-','_'),' ','_')) AS KeyCodigo,     UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(mm.Ruta,''))),'/','.'),'-','_'),' ', '_')) AS KeyRuta   FROM dbo.Sistema_ModulosMenus mm   WHERE LOWER(ISNULL(mm.Nombre,'')) LIKE '%usuario%'      OR LOWER(ISNULL(mm.Codigo,'')) LIKE '%usuario%'      OR LOWER(ISNULL(mm.Ruta,'')) LIKE '%usuario%'      OR LOWER(ISNULL(mm.RequierePermiso,'')) LIKE '%usuario%'      OR LOWER(ISNULL(mm.Nombre,'')) LIKE '%user%'      OR LOWER(ISNULL(mm.Codigo,'')) LIKE '%user%'      OR LOWER(ISNULL(mm.Ruta,'')) LIKE '%user%' ), menu_keys AS (  SELECT MenuID, KeyRequierePermiso AS PermisoKey FROM candidate_menus   UNION ALL SELECT MenuID, KeyCodigo AS PermisoKey FROM candidate_menus   UNION ALL SELECT MenuID, KeyRuta AS PermisoKey FROM candidate_menus ), menu_roles AS (  SELECT DISTINCT mk.MenuID, prm.RolID   FROM menu_keys mk   JOIN dbo.Usuario_Modulos m     ON UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(m.CodigoModulo,''))),'-','_'),' ','_')) = mk.PermisoKey   JOIN dbo.Usuario_PermisosRolModulo prm     ON prm.ModuloID = m.ModuloID   WHERE mk.PermisoKey <> ''     AND ISNULL(prm.Activo,1)=1     AND ISNULL(prm.Permitido,1)=1     AND ISNULL(m.Activo,1)=1 ) SELECT TOP 300 u.UsuarioID, u.Email, u.Username, u.NombreCompleto, u.Activo AS UsuarioActivo, cm.MenuID, cm.Nombre AS MenuNombre, cm.Ruta, cm.RequierePermiso, cm.Activo AS MenuActivo, r.RolID, r.CodigoRol, r.NombreRol, r.NivelJerarquia, ura.Activo AS RolAsignacionActiva, CASE   WHEN ISNULL(u.Activo,0)=0 THEN 'BLOCKED_USER_INACTIVE'   WHEN cm.MenuID IS NULL THEN 'BLOCKED_MENU_NOT_FOUND'   WHEN ISNULL(cm.Activo,1)=0 THEN 'BLOCKED_MENU_INACTIVE'   WHEN ura.UsuarioRolAsignacionID IS NULL THEN 'BLOCKED_NO_ROLE'   WHEN ISNULL(ura.Activo,1)=0 THEN 'BLOCKED_ROLE_ASSIGNMENT_INACTIVE'   WHEN ISNULL(r.Activo,1)=0 THEN 'BLOCKED_ROLE_INACTIVE'   WHEN UPPER(ISNULL(r.CodigoRol,'')) IN ('SUPERADMIN','SUPERADMINISTRADOR','SUPER_ADMIN') THEN 'ALLOWED_SUPERADMIN'   WHEN ISNULL(r.NivelJerarquia,0) >= 100 THEN 'ALLOWED_SUPERADMIN_LEVEL'   WHEN mr.RolID IS NOT NULL THEN 'ALLOWED_BY_ROLE_PERMISSION'   ELSE 'BLOCKED_MISSING_MENU_PERMISSION' END AS AccessDiagnosis FROM dbo.Usuario_Catalogo u CROSS JOIN candidate_menus cm LEFT JOIN dbo.Usuario_RolesAsignacion ura   ON ura.UsuarioID = u.UsuarioID LEFT JOIN dbo.Usuario_Roles r   ON r.RolID = ura.RolID LEFT JOIN menu_roles mr   ON mr.MenuID = cm.MenuID AND mr.RolID = r.RolID ORDER BY u.UsuarioID, cm.MenuID, AccessDiagnosis, r.NivelJerarquia DESC"
+        },
+        {
+          "name": "usuarios_sin_asignaciones_operativas",
+          "sql": "SELECT TOP 100 u.UsuarioID, u.Email, u.Username, u.NombreCompleto, u.Activo AS UsuarioActivo, (SELECT COUNT(*) FROM dbo.Usuario_RolesAsignacion ura  WHERE ura.UsuarioID = u.UsuarioID AND ISNULL(ura.Activo,1)=1) AS RolesActivos, (SELECT COUNT(*) FROM dbo.Usuario_EmpresasAsignacion ea  WHERE ea.UsuarioID = u.UsuarioID AND ISNULL(ea.Activo,1)=1) AS EmpresasActivas, (SELECT COUNT(*) FROM dbo.Usuario_SucursalesAsignacion sa  WHERE sa.UsuarioID = u.UsuarioID AND ISNULL(sa.Activo,1)=1) AS SucursalesActivas, (SELECT COUNT(*) FROM dbo.Usuario_ServidoresAsignacion sva  WHERE sva.UsuarioID = u.UsuarioID AND ISNULL(sva.Activo,1)=1) AS ServidoresActivos, CASE   WHEN ISNULL(u.Activo,0)=0 THEN 'USER_INACTIVE'   WHEN (SELECT COUNT(*) FROM dbo.Usuario_RolesAsignacion ura WHERE ura.UsuarioID = u.UsuarioID AND ISNULL(ura.Activo,1)=1)=0 THEN 'NO_ACTIVE_ROLE'   WHEN (SELECT COUNT(*) FROM dbo.Usuario_EmpresasAsignacion ea WHERE ea.UsuarioID = u.UsuarioID AND ISNULL(ea.Activo,1)=1)=0 THEN 'NO_ACTIVE_EMPRESA'   WHEN (SELECT COUNT(*) FROM dbo.Usuario_SucursalesAsignacion sa WHERE sa.UsuarioID = u.UsuarioID AND ISNULL(sa.Activo,1)=1)=0 THEN 'NO_ACTIVE_SUCURSAL'   ELSE 'BASE_ASSIGNMENTS_OK' END AS DataDiagnosis FROM dbo.Usuario_Catalogo u ORDER BY DataDiagnosis, u.UsuarioID"
+        }
+      ],
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "expected_output": {
+    "must_report": [
+      "usuarios_activos_inactivos",
+      "roles_por_usuario",
+      "empresa_sucursal_servidor_por_usuario",
+      "menu_usuarios_existe",
+      "permiso_requerido_menu_usuarios",
+      "roles_con_permiso_menu_usuarios",
+      "usuarios_bloqueados",
+      "decision_data_rbac_fix_vs_redeploy"
+    ],
+    "production_touched": false
+  },
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-USUARIOS-PRODUCCION-ACCESS-MENU-GATE0C-USERS-MENU-RBAC-READONLY-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar usuarios reales, roles, empresas, sucursales, modulos y permisos del menu Usuarios usando tablas canonicas: Usuario_Catalogo, Usuario_RolesAsignacion, Usuario_Roles, Usuario_PermisosRolModulo, Usuario_Modulos, Sistema_ModulosMenus y asignaciones de usuario. Determinar usuarios bloqueados y clasificar DATA/RBAC fix vs redeploy. Sin DML, sin DDL, sin deploy, sin cambios de codigo.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Usuarios Produccion Gate0C",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
