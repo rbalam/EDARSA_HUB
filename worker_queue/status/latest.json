@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "09d3e086febaddeace2d3dcc1bd93fd8a3c97e26",
-  "generated_at_utc": "2026-10-06T02:44:06Z",
+  "generated_at_utc": "2026-10-06T02:45:27Z",
   "history": {
     "done_total_local": 1315,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1216,
+      "age_seconds": 1297,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-URL-PROFILE-R3-20261006T0222Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 596,
+      "age_seconds": 677,
       "job_id": "EDARSAHUB-BOS-USUARIOS-PRODUCCION-ACCESS-MENU-GATE0-SQL-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 114,
+      "age_seconds": 194,
       "job_id": "EDARSAHUB-BOS-USUARIOS-PRODUCCION-ACCESS-MENU-GATE0B-CANONICAL-TABLES-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-06T02:43:55Z",
-    "last_receive_utc": "2026-10-06T02:44:05Z",
+    "last_cycle_utc": "2026-10-06T02:45:15Z",
+    "last_receive_utc": "2026-10-06T02:45:22Z",
     "last_terminal_utc": "2026-10-06T02:42:12Z",
     "pid": "442",
     "runtime_fingerprint": {
