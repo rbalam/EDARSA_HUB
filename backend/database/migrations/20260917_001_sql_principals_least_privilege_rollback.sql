@@ -4,7 +4,7 @@ BEGIN TRY
  BEGIN TRANSACTION;
 
  IF USER_ID(N'HRLectura') IS NULL THROW 51010, 'HRLECTURA_DATABASE_USER_NOT_FOUND', 1;
- IF USER_ID(N'HUB_Escritura') IS NULL THROW 51011, 'HUB_ESCRITURA_DATABASE_USER_NOT_FOUND', 1;
+ IF USER_ID(N'ChatGPT_Escritura') IS NULL THROW 51011, 'CHATGPT_ESCRITURA_DATABASE_USER_NOT_FOUND', 1;
 
  ALTER ROLE [db_accessadmin] ADD MEMBER [HRLectura];
  ALTER ROLE [db_backupoperator] ADD MEMBER [HRLectura];
@@ -14,17 +14,17 @@ BEGIN TRY
  ALTER ROLE [db_securityadmin] ADD MEMBER [HRLectura];
  ALTER ROLE [db_owner] ADD MEMBER [HRLectura];
 
- ALTER ROLE [db_accessadmin] ADD MEMBER [HUB_Escritura];
- ALTER ROLE [db_datawriter] ADD MEMBER [HUB_Escritura];
- ALTER ROLE [db_ddladmin] ADD MEMBER [HUB_Escritura];
- ALTER ROLE [db_securityadmin] ADD MEMBER [HUB_Escritura];
- ALTER ROLE [db_owner] ADD MEMBER [HUB_Escritura];
+ ALTER ROLE [db_accessadmin] ADD MEMBER [ChatGPT_Escritura];
+ ALTER ROLE [db_datawriter] ADD MEMBER [ChatGPT_Escritura];
+ ALTER ROLE [db_ddladmin] ADD MEMBER [ChatGPT_Escritura];
+ ALTER ROLE [db_securityadmin] ADD MEMBER [ChatGPT_Escritura];
+ ALTER ROLE [db_owner] ADD MEMBER [ChatGPT_Escritura];
 
- REVOKE CREATE TABLE FROM [HUB_Escritura];
- REVOKE ALTER ON SCHEMA::[dbo] FROM [HUB_Escritura];
- REVOKE SELECT, INSERT, UPDATE ON OBJECT::dbo.Sistema_RBAC_Permisos FROM [HUB_Escritura];
- REVOKE SELECT ON OBJECT::dbo.Sistema_RBAC_Roles FROM [HUB_Escritura];
- REVOKE SELECT, INSERT ON OBJECT::dbo.Sistema_RBAC_RolesPermisos FROM [HUB_Escritura];
+ REVOKE CREATE TABLE FROM [ChatGPT_Escritura];
+ REVOKE ALTER ON SCHEMA::[dbo] FROM [ChatGPT_Escritura];
+ REVOKE SELECT, INSERT, UPDATE ON OBJECT::dbo.Sistema_RBAC_Permisos FROM [ChatGPT_Escritura];
+ REVOKE SELECT ON OBJECT::dbo.Sistema_RBAC_Roles FROM [ChatGPT_Escritura];
+ REVOKE SELECT, INSERT ON OBJECT::dbo.Sistema_RBAC_RolesPermisos FROM [ChatGPT_Escritura];
 
  COMMIT TRANSACTION;
 END TRY
