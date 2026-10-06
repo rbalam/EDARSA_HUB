@@ -1,0 +1,23 @@
+{
+  "base_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:REPLACE_COUNT_MISMATCH:backend/database/migrations/20260917_001_sql_principals_least_privilege.sql:expected=17:actual=0"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-06T04:24:29Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SQL-WRITER-CONTRACT-FIX-CHATGPT-ESCRITURA-R4-20261005",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-06T04:24:52Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-06T04:24:27Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
