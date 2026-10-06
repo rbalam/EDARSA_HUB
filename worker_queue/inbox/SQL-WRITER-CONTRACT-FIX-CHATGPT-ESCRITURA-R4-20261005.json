@@ -1,0 +1,124 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SQL-WRITER-CONTRACT-FIX-CHATGPT-ESCRITURA-R4-20261005",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "Cavas Personales 9"
+  },
+  "objective": "Corregir contrato canonico SQL writer: reemplazar HUB_Escritura por ChatGPT_Escritura donde aplique, sin tocar Produccion ni ejecutar DML/DDL.",
+  "mode": "DEVELOPMENT_REPO_CHANGE",
+  "quality_gate": "TESTS_REQUIRED",
+  "constraints": [
+    "NO_PRODUCTION",
+    "NO_DML",
+    "NO_DDL_REAL",
+    "NO_HRLECTURA_AS_WRITER",
+    "NO_BLIND_GLOBAL_REPLACE",
+    "SURGICAL_REVERSIBLE_CHANGES",
+    "TESTS_REQUIRED"
+  ],
+  "scheduling": {
+    "project_id": "EDARSAHUB",
+    "bounded_context": "SQL_WRITER_CONTRACT",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "scope": {
+    "repo": "rbalam/EDARSA_HUB",
+    "branch": "Edarsahub_Desarrollo"
+  },
+  "instructions": "EDARSAHUB BOS - SQL WRITER CONTRACT FIX - CHATGPT_ESCRITURA\n\nObjetivo:\nCorregir contrato canonico de SQL writer. HUB_Escritura no esta montada ni funcional; reemplazarla por ChatGPT_Escritura donde sea usada como usuario SQL writer esperado.\n\nRestricciones:\n- NO tocar Produccion.\n- NO ejecutar DML.\n- NO ejecutar DDL real.\n- NO usar HRLectura como writer.\n- NO reemplazo ciego global.\n- Cambios quirurgicos, reversibles y con tests.\n\nAuditar/modificar:\n1. backend/database/migrations/20260917_001_sql_principals_least_privilege.sql\n2. backend/database/migrations/20260917_001_sql_principals_least_privilege_rollback.sql\n3. tools/mirror_sync/sql_migration_development.py solo si hay hardcode a HUB_Escritura\n4. backend/tests/test_worker_sql_migration_development_capability.py\n5. cualquier test que mencione HUB_Escritura / HUB_ESCRITURA / MIGRATION_WRITER\n\nContrato final:\n- EDARSAHUB_MIGRATION_USER=ChatGPT_Escritura\n- EDARSAHUB_MIGRATION_EXPECTED_USER=ChatGPT_Escritura\n- EDARSAHUB_MIGRATION_PASSWORD desde GitHub Actions secret correspondiente\n- HRLectura sigue prohibida como writer\n\nTests requeridos:\n- HRLectura como writer => FAIL\n- migration user faltante => FAIL\n- identity mismatch => FAIL\n- ChatGPT_Escritura como dedicated migration user => PASS\n- referencias obsoletas a HUB_Escritura como writer esperado => FAIL\n\nEntregar RESULT con:\n- diff exacto\n- archivos modificados\n- tests ejecutados\n- confirmacion: NO DML, NO DDL, NO Produccion",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/database/migrations/20260917_001_sql_principals_least_privilege.sql",
+      "old": "HUB_Escritura",
+      "new": "ChatGPT_Escritura",
+      "expected_count": 17
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/database/migrations/20260917_001_sql_principals_least_privilege.sql",
+      "old": "HUB_ESCRITURA",
+      "new": "CHATGPT_ESCRITURA",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/database/migrations/20260917_001_sql_principals_least_privilege_rollback.sql",
+      "old": "HUB_Escritura",
+      "new": "ChatGPT_Escritura",
+      "expected_count": 11
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/database/migrations/20260917_001_sql_principals_least_privilege_rollback.sql",
+      "old": "HUB_ESCRITURA",
+      "new": "CHATGPT_ESCRITURA",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_sql_migration_development_capability.py",
+      "old": "GptEscritura",
+      "new": "ChatGPT_Escritura",
+      "expected_count": 4
+    }
+  ],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/database/migrations/20260917_001_sql_principals_least_privilege.sql",
+          "backend/database/migrations/20260917_001_sql_principals_least_privilege_rollback.sql",
+          "tools/mirror_sync/sql_migration_development.py",
+          "backend/tests/test_worker_sql_migration_development_capability.py"
+        ],
+        "search_terms": [
+          "HUB_Escritura",
+          "HUB_ESCRITURA",
+          "ChatGPT_Escritura",
+          "CHATGPT_ESCRITURA",
+          "HRLECTURA_CANNOT_BE_MIGRATION_WRITER",
+          "MIGRATION_WRITER_IDENTITY_MISMATCH"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_sql_migration_development_capability.py"
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/sql_migration_development.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "deliverables": [
+    "DIFF_EXACTO",
+    "TEST_RESULTS",
+    "FILES_MODIFIED",
+    "NO_DML_DDL_PRODUCTION_CONFIRMATION"
+  ]
+}
