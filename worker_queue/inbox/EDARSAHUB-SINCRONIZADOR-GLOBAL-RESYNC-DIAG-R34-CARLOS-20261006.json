@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-GLOBAL-RESYNC-DIAG-R34-CARLOS-20261006",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Sincronizador | Diagnostico global de regresion en Reportes ISCAM y menu Sync para todos los motores. Confirmar esquema de detalle canonico y revisar ultimos estados de resync. Solo lectura.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 50,
+      "queries": [
+        {
+          "name": "detalle_schema_mesa",
+          "sql": "SELECT COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto','mesa') AS mesa_column_length, COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto','descuento_pct') AS descuento_pct_column_length"
+        },
+        {
+          "name": "detalle_columns",
+          "sql": "SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Comercial_Inteligencia_VentasDetalleProducto' AND COLUMN_NAME IN ('mesa','descuento_pct') ORDER BY COLUMN_NAME"
+        },
+        {
+          "name": "recent_resync_logs",
+          "sql": "SELECT TOP 20 ResyncLogID, TipoSync, UnidadCodigo, Estado, Mensaje, RegistrosAfectados FROM dbo.Sistema_Sync_ResyncLog ORDER BY ResyncLogID DESC"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY",
+    "No DDL/DML",
+    "No modificar sync_comercial_abiertas_v2"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  }
+}
