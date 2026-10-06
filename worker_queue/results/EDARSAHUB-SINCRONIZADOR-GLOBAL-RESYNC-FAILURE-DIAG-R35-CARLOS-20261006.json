@@ -1,0 +1,182 @@
+{
+  "base_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-06T18:23:16Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-GLOBAL-RESYNC-FAILURE-DIAG-R35-CARLOS-20261006",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-06T18:23:52Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "ResyncLogID",
+              "TipoSync",
+              "UnidadCodigo",
+              "Estado",
+              "Mensaje",
+              "failed_dates",
+              "results"
+            ],
+            "name": "failed_iscam_payloads",
+            "row_count_returned": 12,
+            "rows": [
+              [
+                "495",
+                "iscam_detail_batch",
+                "CIENFUEGOS",
+                "JOB_FAILED",
+                "1/1 procesados; 0 sincronizados; 1 pendientes.",
+                "[{\"fecha\": \"2026-10-05\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}]",
+                "[{\"fecha\": \"2026-10-05\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1631, \"filas_insertadas\": 0}]"
+              ],
+              [
+                "494",
+                "iscam_detail_batch",
+                "CIENFUEGOS",
+                "JOB_FAILED",
+                "1/1 procesados; 0 sincronizados; 1 pendientes.",
+                "[{\"fecha\": \"2026-10-05\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}]",
+                "[{\"fecha\": \"2026-10-05\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1654, \"filas_insertadas\": 0}]"
+              ],
+              [
+                "493",
+                "iscam_detail_batch",
+                "ESTELAR",
+                "JOB_FAILED",
+                "1/1 procesados; 0 sincronizados; 1 pendientes.",
+                "[{\"fecha\": \"2026-10-05\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}]",
+                "[{\"fecha\": \"2026-10-05\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1388, \"filas_insertadas\": 0}]"
+              ],
+              [
+                "488",
+                "iscam_detail_batch",
+                "ESTELAR",
+                "JOB_FAILED",
+                "1/1 procesados; 0 sincronizados; 1 pendientes.",
+                "[{\"fecha\": \"2026-10-05\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}]",
+                "[{\"fecha\": \"2026-10-05\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1893, \"filas_insertadas\": 0}]"
+              ],
+              [
+                "487",
+                "iscam_detail_batch",
+                "ESTELAR",
+                "JOB_FAILED",
+                "1/1 procesados; 0 sincronizados; 1 pendientes.",
+                "[{\"fecha\": \"2026-10-05\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}]",
+                "[{\"fecha\": \"2026-10-05\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1829, \"filas_insertadas\": 0}]"
+              ],
+              [
+                "486",
+                "iscam_detail_batch",
+                "ESTELAR",
+                "JOB_FAILED",
+                "1/1 procesados; 0 sincronizados; 1 pendientes.",
+                "[{\"fecha\": \"2026-10-05\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}]",
+                "[{\"fecha\": \"2026-10-05\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1902, \"filas_insertadas\": 0}]"
+              ],
+              [
+                "481",
+                "iscam_detail_batch",
+                "CIENFUEGOS",
+                "JOB_PARTIAL",
+                "3/3 procesados; 2 sincronizados; 1 pendientes.",
+                "[{\"fecha\": \"2026-02-04\", \"status\": \"ERROR\", \"error_code\": \"RUNTIMEERROR_UNCLASSIFIED\"}]",
+                "[{\"fecha\": \"2026-02-04\", \"success\": false, \"status\": \"ERROR\", \"error_code\": \"RUNTIMEERROR_UNCLASSIFIED\", \"attempts\": 1, \"duration_ms\": 1891, \"filas_insertadas\": 0}, {\"fecha\": \"2026-02-27\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 38848, \"filas_insertadas\": 922}, {\"fecha\": \"2026-02-28\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 35750, \"filas_insertadas\": 771}]"
+              ],
+              [
+                "480",
+                "iscam_detail_batch",
+                "ESTELAR",
+                "JOB_FAILED",
+                "1/1 procesados; 0 sincronizados; 1 pendientes.",
+                "[{\"fecha\": \"2026-04-23\", \"status\": \"ERROR\", \"error_code\": \"RUNTIMEERROR_UNCLASSIFIED\"}]",
+                "[{\"fecha\": \"2026-04-23\", \"success\": false, \"status\": \"ERROR\", \"error_code\": \"RUNTIMEERROR_UNCLASSIFIED\", \"attempts\": 1, \"duration_ms\": 1873, \"filas_insertadas\": 0}]"
+              ],
+              [
+                "478",
+                "iscam_detail_batch",
+                "CIENFUEGOS",
+                "JOB_STALE",
+                "Trabajo anterior sin avance reciente; puede iniciarse uno nuevo.",
+                "[{\"fecha\": \"2026-02-04\", \"status\": \"ERROR\", \"error_code\": \"RUNTIMEERROR_UNCLASSIFIED\"}]",
+                "[{\"fecha\": \"2026-02-03\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 14902, \"filas_insertadas\": 307}, {\"fecha\": \"2026-02-04\", \"success\": false, \"status\": \"ERROR\", \"error_code\": \"RUNTIMEERROR_UNCLASSIFIED\", \"attempts\": 1, \"duration_ms\": 2704, \"filas_insertadas\": 0}, {\"fecha\": \"2026-02-05\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 27491, \"filas_insertadas\": 596}, {\"fecha\": \"2026-02-06\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 36274, \"filas_insertadas\": 925}, {\"fecha\": \"2026-02-07\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 42794, \"filas_insertadas\": 778}, {\"fecha\": \"2026-02-08\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 9135, \"filas_insertadas\": 158}, {\"fecha\": \"2026-02-09\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 13363, \"filas_insertadas\": 281}, {\"fecha\": \"2026-02-10\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 38862, \"filas_insertadas\": 960}, {\"fecha\": \"2026-02-11\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 25616, \"filas_insertadas\": 575}, {\"fecha\": \"2026-02-12\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 27538, \"filas_insertadas\": 675}, {\"fecha\": \"2026-02-13\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 34221, \"filas_insertadas\": 844}, {\"fecha\": \"2026-02-14\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 71898, \"filas_insertadas\": 1629}, {\"fecha\": \"2026-02-15\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 12966, \"filas_insertadas\": 279}, {\"fecha\": \"2026-02-16\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 15569, \"filas_insertadas\": 375}, {\"fecha\": \"2026-02-17\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 21229, \"filas_insertadas\": 476}, {\"fecha\": \"2026-02-18\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 19175, \"filas_insertadas\": 360}, {\"fecha\": \"2026-02-19\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 23701, \"filas_insertadas\": 575}, {\"fecha\": \"2026-02-20\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 31960, \"filas_insertadas\": 759}, {\"fecha\": \"2026-02-21\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 42731, \"filas_insertadas\": 902}, {\"fecha\": \"2026-02-22\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 20706, \"filas_insertadas\": 355}, {\"fecha\": \"2026-02-23\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 17915, \"filas_insertadas\": 378}, {\"fecha\": \"2026-02-24\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 18180, \"filas_insertadas\": 371}, {\"fecha\": \"2026-02-25\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 27500, \"filas_insertadas\": 719}, {\"fecha\": \"2026-02-26\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 37999, \"filas_insertadas\": 831}]"
+              ],
+              [
+                "477",
+                "iscam_detail_batch",
+                "CIENFUEGOS",
+                "JOB_STALE",
+                "Trabajo anterior sin avance reciente; puede iniciarse uno nuevo.",
+                "[]",
+                "[{\"fecha\": \"2026-02-01\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 24232, \"filas_insertadas\": 390}, {\"fecha\": \"2026-02-02\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 24211, \"filas_insertadas\": 515}]"
+              ],
+              [
+                "475",
+                "iscam_detail_batch",
+                "130MID",
+                "JOB_STALE",
+                "Trabajo anterior sin avance reciente; puede iniciarse uno nuevo.",
+                "[{\"fecha\": \"2026-03-03\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-04\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-05\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-06\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-07\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-11\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-12\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-13\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-14\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-16\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-18\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-19\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-23\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}]",
+                "[{\"fecha\": \"2026-03-03\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1681, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-04\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1623, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-05\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1823, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-06\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1855, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-07\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1866, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-11\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1731, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-12\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1838, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-13\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1729, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-14\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 3695, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-16\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1798, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-18\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1887, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-19\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 2199, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-23\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 2104, \"filas_insertadas\": 0}]"
+              ],
+              [
+                "474",
+                "iscam_detail_batch",
+                "130MID",
+                "JOB_PARTIAL",
+                "31/31 procesados; 12 sincronizados; 19 pendientes.",
+                "[{\"fecha\": \"2026-03-03\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-04\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-05\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-06\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-07\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-11\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-12\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-13\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-14\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-16\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-18\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-19\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-23\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-26\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-27\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-28\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-29\", \"status\": \"ERROR\", \"error_code\": \"POS_TIMEOUT\"}, {\"fecha\": \"2026-03-30\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}, {\"fecha\": \"2026-03-31\", \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\"}]",
+                "[{\"fecha\": \"2026-03-01\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 23352, \"filas_insertadas\": 443}, {\"fecha\": \"2026-03-02\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 23082, \"filas_insertadas\": 362}, {\"fecha\": \"2026-03-03\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 2012, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-04\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1840, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-05\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 2236, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-06\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 2266, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-07\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 2060, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-08\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 18019, \"filas_insertadas\": 468}, {\"fecha\": \"2026-03-09\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 12708, \"filas_insertadas\": 277}, {\"fecha\": \"2026-03-10\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 15499, \"filas_insertadas\": 374}, {\"fecha\": \"2026-03-11\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1787, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-12\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1911, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-13\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1909, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-14\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 2145, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-15\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 34779, \"filas_insertadas\": 669}, {\"fecha\": \"2026-03-16\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 2010, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-17\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 8346, \"filas_insertadas\": 181}, {\"fecha\": \"2026-03-18\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1898, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-19\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1862, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-20\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 27172, \"filas_insertadas\": 532}, {\"fecha\": \"2026-03-21\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 41409, \"filas_insertadas\": 864}, {\"fecha\": \"2026-03-22\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 20928, \"filas_insertadas\": 460}, {\"fecha\": \"2026-03-23\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 2005, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-24\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 17666, \"filas_insertadas\": 308}, {\"fecha\": \"2026-03-25\", \"success\": true, \"status\": \"OK_HEADER_CANONICO\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 13316, \"filas_insertadas\": 288}, {\"fecha\": \"2026-03-26\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 2162, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-27\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1842, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-28\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 1953, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-29\", \"success\": false, \"status\": \"ERROR\", \"error_code\": \"POS_TIMEOUT\", \"attempts\": 2, \"duration_ms\": 20617, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-30\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 2270, \"filas_insertadas\": 0}, {\"fecha\": \"2026-03-31\", \"success\": false, \"status\": \"NO_CUADRA_REVISAR\", \"error_code\": \"\", \"attempts\": 1, \"duration_ms\": 2038, \"filas_insertadas\": 0}]"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ResyncLogID",
+              "TipoSync",
+              "UnidadCodigo",
+              "Estado",
+              "Mensaje",
+              "steps"
+            ],
+            "name": "failed_range_payloads",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "489",
+                "comercial_range_batch",
+                "ESTELAR",
+                "JOB_PARTIAL",
+                "Proceso terminado con 1 bloque(s) pendiente(s).",
+                "{\"ESTELAR|2026-10-05|2026-10-05\": {\"unit\": \"ESTELAR\", \"fecha_inicio\": \"2026-10-05\", \"fecha_fin\": \"2026-10-05\", \"status\": \"PENDING_RECOVERY\", \"attempts\": 3, \"dry_run\": {\"success\": true, \"header_success\": true, \"detail_success\": false, \"payments_success\": null, \"records_processed\": 1, \"records_inserted\": 0, \"records_updated\": 0, \"warning_message\": \"\", \"error_message\": \"ENTRYPOINT_RC_5\"}, \"real\": {\"success\": false, \"error_message\": \"LOCK_BUSY\"}, \"completed_at_utc\": \"2026-10-06T16:03:37.314868+00:00\", \"error_message\": \"LOCK_BUSY\"}}"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-06T18:23:09Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
