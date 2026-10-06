@@ -1,0 +1,70 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "queries": [
+        {
+          "name": "canonical_candidate_tables_with_row_counts",
+          "sql": "SELECT TOP 300 s.name AS schema_name, t.name AS table_name, SUM(CASE WHEN p.index_id IN (0,1) THEN p.rows ELSE 0 END) AS row_count FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id LEFT JOIN sys.partitions p ON p.object_id = t.object_id WHERE t.name NOT LIKE 'Backup[_]%' AND t.name NOT LIKE 'BAK[_]%' AND t.name NOT LIKE '%[_]Backup[_]%' AND t.name NOT LIKE '%[_]BAK[_]%' AND (t.name LIKE '%Usuario%' OR t.name LIKE '%User%' OR t.name LIKE '%Rol%' OR t.name LIKE '%Permiso%' OR t.name LIKE '%Menu%' OR t.name LIKE '%Modulo%' OR t.name LIKE '%Empresa%' OR t.name LIKE '%Unidad%' OR t.name LIKE '%Sucursal%' OR t.name LIKE '%RBAC%') GROUP BY s.name, t.name ORDER BY s.name, t.name"
+        },
+        {
+          "name": "canonical_candidate_columns_key_fields",
+          "sql": "SELECT TOP 500 c.TABLE_SCHEMA, c.TABLE_NAME, c.COLUMN_NAME, c.DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS c WHERE c.TABLE_NAME NOT LIKE 'Backup[_]%' AND c.TABLE_NAME NOT LIKE 'BAK[_]%' AND c.TABLE_NAME NOT LIKE '%[_]Backup[_]%' AND c.TABLE_NAME NOT LIKE '%[_]BAK[_]%' AND (c.TABLE_NAME LIKE '%Usuario%' OR c.TABLE_NAME LIKE '%User%' OR c.TABLE_NAME LIKE '%Rol%' OR c.TABLE_NAME LIKE '%Permiso%' OR c.TABLE_NAME LIKE '%Menu%' OR c.TABLE_NAME LIKE '%Modulo%' OR c.TABLE_NAME LIKE '%Empresa%' OR c.TABLE_NAME LIKE '%Unidad%' OR c.TABLE_NAME LIKE '%Sucursal%' OR c.TABLE_NAME LIKE '%RBAC%') AND (c.COLUMN_NAME LIKE '%Usuario%' OR c.COLUMN_NAME LIKE '%User%' OR c.COLUMN_NAME LIKE '%Email%' OR c.COLUMN_NAME LIKE '%Correo%' OR c.COLUMN_NAME LIKE '%Activo%' OR c.COLUMN_NAME LIKE '%Rol%' OR c.COLUMN_NAME LIKE '%Permiso%' OR c.COLUMN_NAME LIKE '%Menu%' OR c.COLUMN_NAME LIKE '%Modulo%' OR c.COLUMN_NAME LIKE '%Empresa%' OR c.COLUMN_NAME LIKE '%Unidad%' OR c.COLUMN_NAME LIKE '%Sucursal%' OR c.COLUMN_NAME LIKE '%Ruta%' OR c.COLUMN_NAME LIKE '%Codigo%' OR c.COLUMN_NAME LIKE '%Nombre%' OR c.COLUMN_NAME LIKE '%Requiere%') ORDER BY c.TABLE_SCHEMA, c.TABLE_NAME, c.ORDINAL_POSITION"
+        },
+        {
+          "name": "canonical_menu_tables_candidates",
+          "sql": "SELECT TOP 100 s.name AS schema_name, t.name AS table_name, SUM(CASE WHEN p.index_id IN (0,1) THEN p.rows ELSE 0 END) AS row_count FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id LEFT JOIN sys.partitions p ON p.object_id = t.object_id WHERE t.name NOT LIKE 'Backup[_]%' AND t.name NOT LIKE 'BAK[_]%' AND (t.name LIKE '%Menu%' OR t.name LIKE '%Modulo%' OR t.name LIKE '%Sistema_ModulosMenus%') GROUP BY s.name, t.name ORDER BY s.name, t.name"
+        },
+        {
+          "name": "canonical_permission_tables_candidates",
+          "sql": "SELECT TOP 100 s.name AS schema_name, t.name AS table_name, SUM(CASE WHEN p.index_id IN (0,1) THEN p.rows ELSE 0 END) AS row_count FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id LEFT JOIN sys.partitions p ON p.object_id = t.object_id WHERE t.name NOT LIKE 'Backup[_]%' AND t.name NOT LIKE 'BAK[_]%' AND (t.name LIKE '%Permiso%' OR t.name LIKE '%RBAC%' OR t.name LIKE '%Rol%') GROUP BY s.name, t.name ORDER BY s.name, t.name"
+        },
+        {
+          "name": "canonical_user_assignment_tables_candidates",
+          "sql": "SELECT TOP 150 s.name AS schema_name, t.name AS table_name, SUM(CASE WHEN p.index_id IN (0,1) THEN p.rows ELSE 0 END) AS row_count FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id LEFT JOIN sys.partitions p ON p.object_id = t.object_id WHERE t.name NOT LIKE 'Backup[_]%' AND t.name NOT LIKE 'BAK[_]%' AND (t.name LIKE '%Usuario%' OR t.name LIKE '%User%' OR t.name LIKE '%Empresa%' OR t.name LIKE '%Unidad%' OR t.name LIKE '%Sucursal%') GROUP BY s.name, t.name ORDER BY s.name, t.name"
+        }
+      ],
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "expected_output": {
+    "must_exclude": [
+      "Backup_%",
+      "BAK_%"
+    ],
+    "must_identify": [
+      "tablas_canonicas_reales",
+      "columnas_clave",
+      "row_counts",
+      "candidatos_menu_usuarios",
+      "candidatos_permiso_usuarios",
+      "si_procede_auditoria_por_usuario_especifico"
+    ],
+    "production_touched": false
+  },
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-USUARIOS-PRODUCCION-ACCESS-MENU-GATE0B-CANONICAL-TABLES-READONLY-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Identificar tablas canonicas reales actuales para usuarios, roles, permisos, menus, EmpresaID, UnidadNegocioID y sucursales, excluyendo Backup_ y BAK_. Determinar candidatos canonicos, columnas clave, row counts y si procede auditoria por usuario especifico. Sin DML, sin DDL, sin deploy.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Usuarios Produccion Gate0B",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
