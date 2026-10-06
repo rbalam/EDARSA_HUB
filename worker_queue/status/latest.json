@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "0c0856cda0bbd9b0f2b654800444ea9427cfa4ac",
-  "generated_at_utc": "2026-10-06T03:23:03Z",
+  "generated_at_utc": "2026-10-06T03:24:25Z",
   "history": {
     "done_total_local": 1317,
     "pending_total_local": 0,
@@ -16,31 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3553,
-      "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-URL-PROFILE-R3-20261006T0222Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2933,
+      "age_seconds": 3015,
       "job_id": "EDARSAHUB-BOS-USUARIOS-PRODUCCION-ACCESS-MENU-GATE0-SQL-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2450,
+      "age_seconds": 2532,
       "job_id": "EDARSAHUB-BOS-USUARIOS-PRODUCCION-ACCESS-MENU-GATE0B-CANONICAL-TABLES-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1995,
+      "age_seconds": 2077,
       "job_id": "EDARSAHUB-BOS-USUARIOS-PRODUCCION-ACCESS-MENU-GATE0C-USERS-MENU-RBAC-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1673,
+      "age_seconds": 1755,
       "job_id": "EDARSAHUB-BOS-USUARIOS-PRODUCCION-ACCESS-MENU-GATE0D-EMPRESA-RBAC-DATA-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,14 +48,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "remote_development_sha": "0c0856cda0bbd9b0f2b654800444ea9427cfa4ac",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-06T03:22:51Z",
-    "last_receive_utc": "2026-10-06T03:22:59Z",
+    "last_cycle_utc": "2026-10-06T03:24:18Z",
+    "last_receive_utc": "2026-10-06T03:24:13Z",
     "last_terminal_utc": "2026-10-06T02:55:10Z",
     "pid": "417",
     "runtime_fingerprint": {
