@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
-  "generated_at_utc": "2026-10-07T23:35:54Z",
+  "generated_at_utc": "2026-10-07T23:37:09Z",
   "history": {
     "done_total_local": 1330,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 278,
+      "age_seconds": 354,
       "job_id": "EDARSAHUB-TICKETS-VENTA-VENTA-KEYS-R4-CARLOS-20261007",
       "reasons": [
         "INVALID_SCHEMA",
@@ -30,31 +30,31 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 162,
+      "age_seconds": 237,
       "job_id": "BOS-TOAST-GATE1-CANONICAL-PREFLIGHT-READONLY-R1-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1483,
+      "age_seconds": 1559,
       "job_id": "EDARSAHUB-TICKETS-VENTA-AUDITORIA-R1-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1352,
+      "age_seconds": 1427,
       "job_id": "EDARSAHUB-TICKETS-VENTA-AUDITORIA-R2-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1258,
+      "age_seconds": 1333,
       "job_id": "EDARSAHUB-TICKETS-VENTA-AUDITORIA-R3-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 200,
+      "age_seconds": 275,
       "job_id": "EDARSAHUB-TICKETS-VENTA-VENTA-KEYS-R5-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
@@ -74,8 +74,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-07T23:35:52Z",
-    "last_receive_utc": "2026-10-07T23:35:47Z",
+    "last_cycle_utc": "2026-10-07T23:37:09Z",
+    "last_receive_utc": "2026-10-07T23:37:04Z",
     "last_terminal_utc": "2026-10-07T23:33:12Z",
     "pid": "439",
     "runtime_fingerprint": {
