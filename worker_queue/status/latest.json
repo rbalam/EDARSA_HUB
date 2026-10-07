@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
-  "generated_at_utc": "2026-10-07T23:13:28Z",
+  "generated_at_utc": "2026-10-07T23:14:43Z",
   "history": {
     "done_total_local": 1327,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 137,
+      "age_seconds": 213,
       "job_id": "EDARSAHUB-TICKETS-VENTA-AUDITORIA-R1-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 5,
+      "age_seconds": 81,
       "job_id": "EDARSAHUB-TICKETS-VENTA-AUDITORIA-R2-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
@@ -42,8 +42,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-07T23:13:18Z",
-    "last_receive_utc": "2026-10-07T23:13:24Z",
+    "last_cycle_utc": "2026-10-07T23:14:37Z",
+    "last_receive_utc": "2026-10-07T23:14:43Z",
     "last_terminal_utc": "2026-10-07T23:13:22Z",
     "pid": "346",
     "runtime_fingerprint": {
