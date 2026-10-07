@@ -1,0 +1,57 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-TOAST-GATE2-CANONICAL-REGISTRY-DISCOVERY-READONLY-R2B-20261007",
+  "created_at_utc": "2026-10-07T23:44:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "R2B Toast READ ONLY. Repetir discovery canonico corrigiendo exclusivamente TablaDestino en Sistema_Sync_Catalogo, usando columnas certificadas por Toast Gate1. Determinar si Toast ya esta registrado/configurado. Excluir username, password_encrypted, api_key_encrypted y cualquier secreto. Sin llamadas externas, DDL/DML, Production, ToastRobot ni tablas Toast_*.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "TOAST_R2B_00_SYSTEM_TYPES",
+          "sql": "SELECT SistemaTipoID,CodigoSistema,NombreSistema,Descripcion,Activo FROM dbo.Sistema_Tipos WHERE UPPER(CodigoSistema) LIKE '%TOAST%' OR UPPER(NombreSistema) LIKE '%TOAST%' OR UPPER(ISNULL(Descripcion,'')) LIKE '%TOAST%' ORDER BY SistemaTipoID;"
+        },
+        {
+          "name": "TOAST_R2B_01_VARIANTS",
+          "sql": "SELECT v.VarianteID,v.SistemaTipoID,v.VarianteNombre,v.EsCanonico,v.Activo,t.CodigoSistema,t.NombreSistema FROM dbo.Sistema_TiposVariantes v JOIN dbo.Sistema_Tipos t ON t.SistemaTipoID=v.SistemaTipoID WHERE UPPER(v.VarianteNombre) LIKE '%TOAST%' OR UPPER(t.CodigoSistema) LIKE '%TOAST%' OR UPPER(t.NombreSistema) LIKE '%TOAST%' ORDER BY v.VarianteID;"
+        },
+        {
+          "name": "TOAST_R2B_02_VERSIONS",
+          "sql": "SELECT sistema_version_id,tipo_sistema,nombre_sistema,version_sistema,proveedor,es_version_default,activo FROM dbo.Sistema_VersionesSistemas WHERE UPPER(tipo_sistema) LIKE '%TOAST%' OR UPPER(nombre_sistema) LIKE '%TOAST%' OR UPPER(ISNULL(proveedor,'')) LIKE '%TOAST%' ORDER BY created_at;"
+        },
+        {
+          "name": "TOAST_R2B_03_CAPABILITIES",
+          "sql": "SELECT c.SistemaCapacidadID,c.SistemaTipoID,c.CodigoCapacidad,c.Descripcion,c.RequiereApiLocal,c.RequiereSqlDirecto,c.Activo,t.CodigoSistema,t.NombreSistema FROM dbo.Sistema_Capacidades c JOIN dbo.Sistema_Tipos t ON t.SistemaTipoID=c.SistemaTipoID WHERE UPPER(t.CodigoSistema) LIKE '%TOAST%' OR UPPER(t.NombreSistema) LIKE '%TOAST%' ORDER BY c.SistemaCapacidadID;"
+        },
+        {
+          "name": "TOAST_R2B_04_SYNC_CATALOG",
+          "sql": "SELECT Codigo,Nombre,Grupo,Descripcion,Handler,HandlerImplementado,TablaDestino,Activo FROM dbo.Sistema_Sync_Catalogo WHERE UPPER(Codigo) LIKE '%TOAST%' OR UPPER(Nombre) LIKE '%TOAST%' OR UPPER(ISNULL(Descripcion,'')) LIKE '%TOAST%' OR UPPER(ISNULL(Handler,'')) LIKE '%TOAST%' OR UPPER(ISNULL(TablaDestino,'')) LIKE '%TOAST%' ORDER BY Codigo;"
+        },
+        {
+          "name": "TOAST_R2B_05_EXTERNAL_IDS",
+          "sql": "SELECT ie.IdentificadorExternoID,ie.UnidadNegocioID,ie.SistemaTipoID,ie.SistemaVersionID,ie.ConexionID,ie.TipoIdentificador,ie.ValorExterno,ie.Activo,t.CodigoSistema,t.NombreSistema FROM dbo.Sistema_IdentificadoresExternos ie JOIN dbo.Sistema_Tipos t ON t.SistemaTipoID=ie.SistemaTipoID WHERE UPPER(t.CodigoSistema) LIKE '%TOAST%' OR UPPER(t.NombreSistema) LIKE '%TOAST%' ORDER BY ie.IdentificadorExternoID;"
+        },
+        {
+          "name": "TOAST_R2B_06_CONNECTIONS_SAFE",
+          "sql": "SELECT id,nombre,system_type,tipo_conexion,api_url,activo,visible_en_operaciones,visible_en_listado,es_editable_ui,es_eliminable_ui,empresa_id,EmpresaID,sistema_version_id,source_status,fecha_ultima_sincronizacion,ultimo_error_sync FROM dbo.Servidores_Conexiones WHERE UPPER(system_type) LIKE '%TOAST%' OR UPPER(nombre) LIKE '%TOAST%' OR UPPER(ISNULL(api_url,'')) LIKE '%TOAST%' ORDER BY nombre;"
+        },
+        {
+          "name": "TOAST_R2B_07_HEALTH",
+          "sql": "SELECT e.Id,e.ServidorID,e.ServerID,e.EstadoConexion,e.UltimoCheck,e.ResponseTimeMs,e.UltimaPruebaUTC,e.UltimoExitoUTC,e.UltimoErrorUTC,e.UltimoErrorCodigo,e.UltimoErrorMensaje,e.LatenciaMs,e.UltimoSyncUTC,e.UltimoSyncExitosoUTC,e.FechaActualizacionUTC FROM dbo.Servidores_ConexionEstado e JOIN dbo.Servidores_Conexiones c ON c.id=e.ServidorID WHERE UPPER(c.system_type) LIKE '%TOAST%' OR UPPER(c.nombre) LIKE '%TOAST%' ORDER BY e.FechaActualizacionUTC DESC;"
+        },
+        {
+          "name": "TOAST_R2B_08_RUNS",
+          "sql": "SELECT TOP (50) SyncControlID,SyncRunID,SyncType,ServerID,EmpresaID,FechaInicio,FechaFin,Status,ErrorMessage,ConexionID,UnidadNegocioID,CodigoSync,StartedAtUTC,FinishedAtUTC FROM dbo.Sync_Control_Ejecuciones WHERE UPPER(SyncType) LIKE '%TOAST%' OR UPPER(ISNULL(CodigoSync,'')) LIKE '%TOAST%' ORDER BY SyncControlID DESC;"
+        }
+      ]
+    }
+  ]
+}
