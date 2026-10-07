@@ -1,0 +1,34 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-LINEAGE-R11-CARLOS-20261008",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0"
+  },
+  "objective": "Corregir enlace en cerrado: auditar encabezado-documento e identificadores de partida mediante EXISTS, sin joins por producto ni PII.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "document_header_line_identity_variants",
+          "sql": "WITH q AS (SELECT vd.Sc_Cve_Sucursal, vd.Vn_Tabla, CASE WHEN ISNULL(vd.Vn_Documento_ID,'')='' THEN 1 ELSE 0 END AS line_doc_id_empty, CASE WHEN EXISTS(SELECT 1 FROM Comanda c WHERE c.Co_Folio=ve.Vn_Documento) THEN 1 ELSE 0 END AS header_found, CASE WHEN EXISTS(SELECT 1 FROM Comanda_Detalle cd WHERE cd.Co_Folio=ve.Vn_Documento AND cd.Cd_Id=vd.Vn_Documento_ID) THEN 1 ELSE 0 END AS head_and_doc_id, CASE WHEN EXISTS(SELECT 1 FROM Comanda_Detalle cd WHERE cd.Co_Folio=ve.Vn_Documento AND cd.Cd_Key=vd.Vn_Documento_ID) THEN 1 ELSE 0 END AS head_and_doc_key, CASE WHEN EXISTS(SELECT 1 FROM Comanda_Detalle cd WHERE cd.Co_Folio=ve.Vn_Documento AND cd.Cd_Id=vd.Vn_ID) THEN 1 ELSE 0 END AS head_and_sale_id, CASE WHEN EXISTS(SELECT 1 FROM Comanda_Detalle cd WHERE cd.Co_Folio=ve.Vn_Documento AND cd.Cd_Key=vd.Vn_ID) THEN 1 ELSE 0 END AS head_and_sale_key FROM Venta vd JOIN Venta_Encabezado ve ON ve.Vn_Folio=vd.Vn_Folio WHERE vd.Sc_Cve_Sucursal IN ('0023','0021') AND vd.Vn_Fecha>=DATEADD(day,-31,CONVERT(datetime,'20261007',112))) SELECT Sc_Cve_Sucursal, Vn_Tabla,COUNT_BIG(*) AS sale_lines,SUM(header_found) AS headers_found,SUM(line_doc_id_empty) AS empty_line_document_id,SUM(head_and_doc_id) AS header_docid_matches,SUM(head_and_doc_key) AS header_dockey_matches,SUM(head_and_sale_id) AS header_saleid_matches,SUM(head_and_sale_key) AS header_salekey_matches FROM q GROUP BY Sc_Cve_Sucursal,Vn_Tabla"
+        }
+      ]
+    }
+  ]
+}
