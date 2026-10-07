@@ -4,25 +4,19 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
-  "generated_at_utc": "2026-10-07T23:55:26Z",
+  "generated_at_utc": "2026-10-07T23:56:50Z",
   "history": {
-    "done_total_local": 1332,
-    "pending_total_local": 1,
+    "done_total_local": 1333,
+    "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1166,
-    "results_total_local": 2288
+    "results_total_local": 2289
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 0,
-      "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-LINEAGE-R10-CARLOS-20261007",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 1450,
+      "age_seconds": 1535,
       "job_id": "EDARSAHUB-TICKETS-VENTA-VENTA-KEYS-R4-CARLOS-20261007",
       "reasons": [
         "INVALID_SCHEMA",
@@ -36,67 +30,73 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1334,
+      "age_seconds": 1418,
       "job_id": "BOS-TOAST-GATE1-CANONICAL-PREFLIGHT-READONLY-R1-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 825,
+      "age_seconds": 910,
       "job_id": "BOS-TOAST-GATE2-CANONICAL-REGISTRY-DISCOVERY-READONLY-R1-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 633,
+      "age_seconds": 717,
       "job_id": "BOS-TOAST-GATE2-CANONICAL-REGISTRY-DISCOVERY-READONLY-R2B-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2655,
+      "age_seconds": 2740,
       "job_id": "EDARSAHUB-TICKETS-VENTA-AUDITORIA-R1-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2524,
+      "age_seconds": 2608,
       "job_id": "EDARSAHUB-TICKETS-VENTA-AUDITORIA-R2-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2430,
+      "age_seconds": 2514,
       "job_id": "EDARSAHUB-TICKETS-VENTA-AUDITORIA-R3-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 756,
+      "age_seconds": 840,
       "job_id": "EDARSAHUB-TICKETS-VENTA-MIGRATION-FILE-R6-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 11,
+      "age_seconds": 96,
       "job_id": "EDARSAHUB-TICKETS-VENTA-MIGRATION-FILE-RETRY-R9-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 474,
+      "age_seconds": 78,
+      "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-LINEAGE-R10-CARLOS-20261007",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 558,
       "job_id": "EDARSAHUB-TICKETS-VENTA-SOURCE-SQL-COMPILE-R7-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 284,
+      "age_seconds": 368,
       "job_id": "EDARSAHUB-TICKETS-VENTA-SOURCE-SQL-COMPILE-R8-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1372,
+      "age_seconds": 1456,
       "job_id": "EDARSAHUB-TICKETS-VENTA-VENTA-KEYS-R5-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
@@ -106,19 +106,19 @@
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
-  "queue_pending": 1,
+  "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 11,
+  "queue_result_ready_recent": 12,
   "queue_running": 0,
   "remote_development_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
   "runtime": {
-    "current_job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-LINEAGE-R10-CARLOS-20261007",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-07T23:55:17Z",
-    "last_receive_utc": "2026-10-07T23:55:12Z",
-    "last_terminal_utc": "2026-10-07T23:55:14Z",
+    "last_cycle_utc": "2026-10-07T23:56:45Z",
+    "last_receive_utc": "2026-10-07T23:56:40Z",
+    "last_terminal_utc": "2026-10-07T23:55:31Z",
     "pid": "439",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "4aff06e7ceeb552f43b52ea95b57ff522cd36adf",
