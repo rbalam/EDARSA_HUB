@@ -1,0 +1,97 @@
+{
+  "base_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-07T23:55:31Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-LINEAGE-R10-CARLOS-20261007",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-07T23:55:44Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "base_datos",
+              "sucursal",
+              "tabla_documento",
+              "partidas_venta",
+              "partidas_comanda_id",
+              "partidas_producto_coincide"
+            ],
+            "name": "sale_line_document_identity_coverage",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "CENTRAL2020",
+                "0021",
+                "Comanda",
+                "15941",
+                0,
+                0
+              ],
+              [
+                "CENTRAL2020",
+                "0023",
+                "Comanda",
+                "15216",
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "base_datos",
+              "sucursal",
+              "tabla_documento",
+              "partidas_venta",
+              "partidas_comanda_id",
+              "partidas_producto_coincide"
+            ],
+            "name": "sale_line_document_identity_coverage",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "CENTRAL2020",
+                "0021",
+                "Comanda",
+                "15941",
+                0,
+                0
+              ],
+              [
+                "CENTRAL2020",
+                "0023",
+                "Comanda",
+                "15216",
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-07T23:55:26Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
