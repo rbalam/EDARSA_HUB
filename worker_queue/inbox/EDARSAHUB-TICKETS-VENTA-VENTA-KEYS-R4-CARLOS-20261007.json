@@ -1,0 +1,22 @@
+{
+  "job_id": "EDARSAHUB-TICKETS-VENTA-VENTA-KEYS-R4-CARLOS-20261007",
+  "objective": "Tickets de venta: identificar llave atomica Venta y enlace con Comanda_Detalle sin inferencias ni joins por producto; auditar Tipo_Descuento antes de implementar extraccion canonica.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "venta_y_tipo_descuento_schema",
+          "sql": "SELECT DB_NAME() AS base_datos,TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS WHERE LOWER(TABLE_NAME) IN ('venta','tipo_descuento') ORDER BY TABLE_NAME,ORDINAL_POSITION"
+        }
+      ]
+    }
+  ]
+}
