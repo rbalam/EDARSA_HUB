@@ -1,0 +1,113 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TICKETS-VENTA-AUDITORIA-R1-CARLOS-20261007",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker - Actualizacion de tickets de venta"
+  },
+  "objective": "Tickets de venta — Bloque 1: auditar esquemas reales SR/MPRO y EDARSAHUB, rutas de sincronizacion dia/abiertas/cerradas, atomicidad de partidas, cliente/RFC/direccion, comentarios y tipos de descuento, cancelaciones; identificar diferencias entre detalle Comercial con Asistente IA y Ejecutivo. Solo lectura. Resultado necesario antes de construir migraciones, sincronizadores y componentes compartidos.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "esquema_ticket_destino_y_campos_relacionados",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE (TABLE_NAME IN ('Comercial_Inteligencia_VentasDetalleProducto','Comercial_Ventas_Dia_Abiertas_v2','Sync_Sales','Sync_Clientes') OR LOWER(COLUMN_NAME) LIKE '%cliente%' OR LOWER(COLUMN_NAME) LIKE '%comentario%' OR LOWER(COLUMN_NAME) LIKE '%direccion%' OR LOWER(COLUMN_NAME) LIKE '%tipodescuento%' OR LOWER(COLUMN_NAME) LIKE '%rfc%') ORDER BY TABLE_SCHEMA,TABLE_NAME,ORDINAL_POSITION"
+        },
+        {
+          "name": "vistas_ticket_cliente_descuento",
+          "sql": "SELECT s.name AS esquema,o.name AS objeto,o.type_desc,m.definition FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.type='V' AND (o.name LIKE '%Ticket%' OR o.name LIKE '%VentasDetalle%' OR o.name LIKE '%Ventas_Dia%') ORDER BY o.name"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "CIENFUEGOS",
+        "130MID",
+        "ESTELAR"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "sr_encabezado_catalogos",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,NUMERIC_PRECISION,NUMERIC_SCALE,IS_NULLABLE,ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE LOWER(TABLE_NAME) IN ('tipodescuento','cheques','clientes','tempcheques') ORDER BY TABLE_SCHEMA,TABLE_NAME,ORDINAL_POSITION"
+        },
+        {
+          "name": "sr_partidas",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,NUMERIC_PRECISION,NUMERIC_SCALE,IS_NULLABLE,ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE LOWER(TABLE_NAME) IN ('cheqdet','tempcheqdet') ORDER BY TABLE_SCHEMA,TABLE_NAME,ORDINAL_POSITION"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN",
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "mpro_comanda",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,NUMERIC_PRECISION,NUMERIC_SCALE,IS_NULLABLE,ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE LOWER(TABLE_NAME) IN ('comanda') ORDER BY TABLE_SCHEMA,TABLE_NAME,ORDINAL_POSITION"
+        },
+        {
+          "name": "mpro_partidas",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,NUMERIC_PRECISION,NUMERIC_SCALE,IS_NULLABLE,ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE LOWER(TABLE_NAME) IN ('comanda_detalle') ORDER BY TABLE_SCHEMA,TABLE_NAME,ORDINAL_POSITION"
+        },
+        {
+          "name": "mpro_clientes_direccion",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,NUMERIC_PRECISION,NUMERIC_SCALE,IS_NULLABLE,ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE LOWER(TABLE_NAME) IN ('clientes') ORDER BY TABLE_SCHEMA,TABLE_NAME,ORDINAL_POSITION"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial",
+          "backend/modules/comercial_v2",
+          "backend/modules/comercial_analytics",
+          "backend/modules/ia_assistant",
+          "backend/scripts",
+          "backend/core/scheduler/jobs",
+          "backend/database/migrations",
+          "frontend/src/pages/Comercial.js",
+          "frontend/src/pages/TableroEjecutivo.js",
+          "frontend/src/components/comercial"
+        ],
+        "search_terms": [
+          "comentariodescuento",
+          "idtipodescuento",
+          "Desc_tipodescuento",
+          "cd_comentario",
+          "cd_key",
+          "Cl_cve_cliente",
+          "Co_folio",
+          "cliente",
+          "direccion",
+          "TicketVentaModal",
+          "KpiDrilldownDialog",
+          "IAContextualLauncher",
+          "GROUP BY"
+        ],
+        "max_results": 1000
+      }
+    }
+  ]
+}
