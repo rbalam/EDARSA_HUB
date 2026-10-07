@@ -1,0 +1,109 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TICKETS-VENTA-AUDITORIA-R2-CARLOS-20261007",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker - Actualizacion de tickets de venta"
+  },
+  "objective": "Tickets de venta — Completar auditoria R1: eliminar truncamiento SR, corregir nombre real Cliente/Clientes MPRO, verificar claves/direcciones/catalogos. Etiquetar evidencia por base de datos y una unidad por check. No inferir ausencia de campos desde una consulta truncada. Solo lectura; sin cambiar sincronizador ni produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "CIENFUEGOS"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "CIENFUEGOS_campos_exactos_sr",
+          "sql": "SELECT DB_NAME() AS base_datos,TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE LOWER(TABLE_NAME) IN ('cheques','tempcheques','clientes','tipodescuento','cheqdet','tempcheqdet') AND (LOWER(COLUMN_NAME) IN ('folio','numcheque','fecha','cierre','mesa','nopersonas','idmesero','pagado','cancelado','impreso','impresiones','comentariodescuento','fechacancelado','idcliente','nombre','contacto','rfc','direccion','comentario','idtipodescuento','desc_tipodescuento','descuento','foliodet','movimiento','id','idproducto','seriefolio','codigopostal','poblacion','estado','pais') OR LOWER(COLUMN_NAME) LIKE '%key%') ORDER BY TABLE_NAME,ORDINAL_POSITION"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "130MID"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "130MID_campos_exactos_sr",
+          "sql": "SELECT DB_NAME() AS base_datos,TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE LOWER(TABLE_NAME) IN ('cheques','tempcheques','clientes','tipodescuento','cheqdet','tempcheqdet') AND (LOWER(COLUMN_NAME) IN ('folio','numcheque','fecha','cierre','mesa','nopersonas','idmesero','pagado','cancelado','impreso','impresiones','comentariodescuento','fechacancelado','idcliente','nombre','contacto','rfc','direccion','comentario','idtipodescuento','desc_tipodescuento','descuento','foliodet','movimiento','id','idproducto','seriefolio','codigopostal','poblacion','estado','pais') OR LOWER(COLUMN_NAME) LIKE '%key%') ORDER BY TABLE_NAME,ORDINAL_POSITION"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ESTELAR"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "ESTELAR_campos_exactos_sr",
+          "sql": "SELECT DB_NAME() AS base_datos,TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE LOWER(TABLE_NAME) IN ('cheques','tempcheques','clientes','tipodescuento','cheqdet','tempcheqdet') AND (LOWER(COLUMN_NAME) IN ('folio','numcheque','fecha','cierre','mesa','nopersonas','idmesero','pagado','cancelado','impreso','impresiones','comentariodescuento','fechacancelado','idcliente','nombre','contacto','rfc','direccion','comentario','idtipodescuento','desc_tipodescuento','descuento','foliodet','movimiento','id','idproducto','seriefolio','codigopostal','poblacion','estado','pais') OR LOWER(COLUMN_NAME) LIKE '%key%') ORDER BY TABLE_NAME,ORDINAL_POSITION"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "ORIGEN_catalogos_cliente_descuento",
+          "sql": "SELECT DB_NAME() AS base_datos,TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE (LOWER(TABLE_NAME) LIKE 'client%' OR LOWER(TABLE_NAME) LIKE '%descuento%') ORDER BY TABLE_NAME,ORDINAL_POSITION"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "130QRO_catalogos_cliente_descuento",
+          "sql": "SELECT DB_NAME() AS base_datos,TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE (LOWER(TABLE_NAME) LIKE 'client%' OR LOWER(TABLE_NAME) LIKE '%descuento%') ORDER BY TABLE_NAME,ORDINAL_POSITION"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "destinos_ticket_y_catalogos_existentes",
+          "sql": "SELECT DB_NAME() AS base_datos,TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Comercial_Inteligencia_VentasDetalleProducto','Comercial_Ventas_Dia_Abiertas_v2','Sync_Sales','Sync_Clientes','Cliente_Catalogo','Cliente_Direcciones') ORDER BY TABLE_NAME,ORDINAL_POSITION"
+        }
+      ]
+    }
+  ]
+}
