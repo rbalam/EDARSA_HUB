@@ -1,0 +1,35 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-LINEAGE-R10-CARLOS-20261007",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0"
+  },
+  "objective": "Verificar en datos reales el enlace atomico Venta.Documento_ID hacia Comanda_Detalle.Cd_Id, sin exponer datos personales. Solo agregados.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN",
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "sale_line_document_identity_coverage",
+          "sql": "SELECT DB_NAME() AS base_datos, vd.Sc_Cve_Sucursal AS sucursal, vd.Vn_Tabla AS tabla_documento, COUNT_BIG(*) AS partidas_venta, SUM(CASE WHEN cd.Cd_Id IS NOT NULL THEN 1 ELSE 0 END) AS partidas_comanda_id, SUM(CASE WHEN cd.Cd_Id IS NOT NULL AND vd.Pr_Cve_Producto=cd.Pr_Cve_Producto THEN 1 ELSE 0 END) AS partidas_producto_coincide FROM Venta vd LEFT JOIN Comanda_Detalle cd ON cd.Co_Folio=vd.Vn_Documento AND cd.Cd_Id=vd.Vn_Documento_ID WHERE vd.Sc_Cve_Sucursal IN ('0023','0021') AND vd.Vn_Fecha >= DATEADD(day,-31,CONVERT(datetime,'20261007',112)) GROUP BY vd.Sc_Cve_Sucursal,vd.Vn_Tabla"
+        }
+      ]
+    }
+  ]
+}
