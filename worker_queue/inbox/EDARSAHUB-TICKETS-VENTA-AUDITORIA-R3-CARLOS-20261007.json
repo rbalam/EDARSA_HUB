@@ -1,0 +1,67 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TICKETS-VENTA-AUDITORIA-R3-CARLOS-20261007",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker - Actualizacion de tickets de venta"
+  },
+  "objective": "Tickets de venta — cierre de auditoria: esquema completo de Cliente (singular) MPRO y catalogos de descuento separados sin truncamiento; identificar base realmente consultada y claves de unicidad. La evidencia de MPRO procede del contexto POS resuelto (CENTRAL2020); no certificar API local de Ventas del Dia con esta evidencia. Solo lectura.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "ORIGEN_cliente_completo",
+          "sql": "SELECT DB_NAME() AS base_datos,TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE LOWER(TABLE_NAME)='cliente' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "ORIGEN_tablas_descuento",
+          "sql": "SELECT DB_NAME() AS base_datos,TABLE_SCHEMA,TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE LOWER(TABLE_NAME) LIKE '%descuento%' ORDER BY TABLE_NAME"
+        },
+        {
+          "name": "ORIGEN_indices_cliente_comanda",
+          "sql": "SELECT DB_NAME() AS base_datos,t.name AS tabla,i.name AS indice,i.is_unique,ic.key_ordinal,c.name AS columna FROM sys.tables t JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE LOWER(t.name) IN ('cliente','comanda','comanda_detalle') AND ic.key_ordinal>0 ORDER BY t.name,i.name,ic.key_ordinal"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "130QRO_cliente_completo",
+          "sql": "SELECT DB_NAME() AS base_datos,TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE LOWER(TABLE_NAME)='cliente' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "130QRO_tablas_descuento",
+          "sql": "SELECT DB_NAME() AS base_datos,TABLE_SCHEMA,TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE LOWER(TABLE_NAME) LIKE '%descuento%' ORDER BY TABLE_NAME"
+        },
+        {
+          "name": "130QRO_indices_cliente_comanda",
+          "sql": "SELECT DB_NAME() AS base_datos,t.name AS tabla,i.name AS indice,i.is_unique,ic.key_ordinal,c.name AS columna FROM sys.tables t JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE LOWER(t.name) IN ('cliente','comanda','comanda_detalle') AND ic.key_ordinal>0 ORDER BY t.name,i.name,ic.key_ordinal"
+        }
+      ]
+    }
+  ]
+}
