@@ -30,6 +30,8 @@ from core.secret_manager import decrypt_secret, is_encrypted_secret
 from core.system_type_utils import SystemType, normalize_system_type
 
 
+from modules.comercial_v2.ticket_contract import FIELDS, fields_from, FIELD_TYPES
+
 DESTINO = "dbo.Comercial_Inteligencia_VentasDetalleProducto"
 RUNTIME = "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime"
 
@@ -766,6 +768,7 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         ),
         l AS (
             SELECT
+                CONVERT(nvarchar(100), dc.movimiento) AS partida_origen_id,
                 h.folio,
                 h.numcheque,
                 h.fecha,
@@ -803,6 +806,7 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             LEFT JOIN productos p WITH (NOLOCK)
                 ON p.idproducto = dc.idproducto
             GROUP BY
+                dc.movimiento,
                 h.folio,
                 h.numcheque,
                 h.fecha,
@@ -818,6 +822,64 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 CAST(ISNULL(dc.descuento, 0) AS decimal(9,4))
         )
         SELECT
+            CONVERT(nvarchar(100), dc2.movimiento) AS partida_origen_id,
+            NULL AS partida_key,
+            ch2.idcliente AS cliente_id,
+            cl.nombre AS cliente_nombre,
+            NULL AS cliente_razon_social,
+            NULL AS cliente_descripcion,
+            NULL AS cliente_maestro_id,
+            NULL AS cliente_sucursal_origen,
+            cl.contacto AS cliente_contacto,
+            cl.rfc AS cliente_rfc,
+            cl.direccion AS cliente_direccion_1,
+            NULL AS cliente_direccion_2,
+            NULL AS cliente_direccion_3,
+            NULL AS cliente_calle,
+            NULL AS cliente_numero_exterior,
+            NULL AS cliente_numero_interior,
+            NULL AS cliente_colonia,
+            cl.poblacion AS cliente_ciudad,
+            NULL AS cliente_municipio,
+            cl.estado AS cliente_estado,
+            cl.pais AS cliente_pais,
+            cl.codigopostal AS cliente_codigo_postal,
+            ch2.fecha AS ticket_fecha,
+            ch2.cierre AS ticket_fecha_cierre,
+            ch2.pagado AS ticket_pagado,
+            ch2.impreso AS ticket_impreso,
+            ch2.impresiones AS ticket_impresiones,
+            NULL AS ticket_comentario,
+            ch2.comentariodescuento AS ticket_comentario_descuento,
+            NULL AS ticket_fecha_alta,
+            NULL AS ticket_oper_ult_modif,
+            NULL AS ticket_oper_baja,
+            ch2.fechacancelado AS ticket_fecha_baja,
+            dc2.comentario AS partida_comentario,
+            dc2.comentariodescuento AS partida_comentario_descuento,
+            NULL AS partida_comentario_cancelacion,
+            NULL AS partida_oper_baja,
+            NULL AS partida_fecha_baja,
+            dc2.idtipodescuento AS tipo_descuento_id,
+            td.desc_tipodescuento AS tipo_descuento_descripcion,
+            td.descuento AS tipo_descuento_valor,
+            NULL AS cliente_cruzamiento_1,
+            NULL AS cliente_cruzamiento_2,
+            NULL AS cliente_entrega_direccion_1,
+            NULL AS cliente_entrega_direccion_2,
+            NULL AS cliente_entrega_direccion_3,
+            NULL AS cliente_entrega_ciudad,
+            NULL AS cliente_entrega_estado,
+            NULL AS cliente_entrega_pais,
+            NULL AS cliente_entrega_codigo_postal,
+            NULL AS cliente_colonia_origen_id,
+            NULL AS cliente_ciudad_origen_id,
+            NULL AS cliente_municipio_origen_id,
+            NULL AS cliente_estado_origen_id,
+            NULL AS cliente_pais_origen_id,
+            NULL AS cliente_codigo_postal_origen_id,
+            NULL AS cliente_latitud,
+            NULL AS cliente_longitud,
             COALESCE(
                 NULLIF(CONVERT(varchar(64), l.numcheque), ''),
                 CONVERT(varchar(64), l.folio)
@@ -853,6 +915,10 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             l.importe_bruto,
             CAST(l.importe_neto AS decimal(18,4)) AS importe_neto
         FROM l
+        LEFT JOIN cheques ch2 ON ch2.folio=l.folio
+        LEFT JOIN clientes cl ON cl.idcliente=ch2.idcliente
+        LEFT JOIN cheqdet dc2 ON dc2.foliodet=l.folio AND CONVERT(nvarchar(100),dc2.movimiento)=l.partida_origen_id
+        LEFT JOIN tipodescuento td ON td.idtipodescuento=dc2.idtipodescuento
         ORDER BY l.folio, l.producto_codigo_fuente, l.descuento_pct
         """
         cur = conn.cursor(as_dict=True)
@@ -1090,6 +1156,7 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         ),
         d AS (
             SELECT
+                vd.Vn_ID AS partida_origen_id,
                 vd.Vn_Folio,
                 vd.Sc_Cve_Sucursal,
                 vd.Pr_Cve_Producto,
@@ -1113,6 +1180,7 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         ),
         l AS (
             SELECT
+                d.partida_origen_id,
                 h.Vn_Folio,
                 h.Vn_Documento,
                 h.Vn_Fecha,
@@ -1147,6 +1215,7 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 ON d.Vn_Folio = h.Vn_Folio
                AND d.Sc_Cve_Sucursal = h.Sc_Cve_Sucursal
             GROUP BY
+                d.partida_origen_id,
                 h.Vn_Folio,
                 h.Vn_Documento,
                 h.Vn_Fecha,
@@ -1163,6 +1232,64 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 COALESCE(d.descuento_pct, CAST(0 AS decimal(9,4)))
         )
         SELECT
+            CONCAT(l.Vn_Folio,':',l.partida_origen_id) AS partida_origen_id,
+            d.Cd_Key AS partida_key,
+            c2.Cl_Cve_Cliente AS cliente_id,
+            COALESCE(NULLIF(cl.Cl_Razon_Social,''),NULLIF(cl.Cl_Descripcion,'')) AS cliente_nombre,
+            cl.Cl_Razon_Social AS cliente_razon_social,
+            cl.Cl_Descripcion AS cliente_descripcion,
+            cl.Cl_Cve_Maestro AS cliente_maestro_id,
+            cl.Sc_Cve_Sucursal AS cliente_sucursal_origen,
+            cl.Cl_Contacto_1 AS cliente_contacto,
+            cl.Cl_R_F_C AS cliente_rfc,
+            cl.Cl_Direccion_1 AS cliente_direccion_1,
+            cl.Cl_Direccion_2 AS cliente_direccion_2,
+            cl.Cl_Direccion_3 AS cliente_direccion_3,
+            cl.Cl_Calle AS cliente_calle,
+            cl.Cl_Numero_Exterior AS cliente_numero_exterior,
+            cl.Cl_Numero_Interior AS cliente_numero_interior,
+            cl.Cl_Colonia AS cliente_colonia,
+            cl.Cl_Ciudad AS cliente_ciudad,
+            cl.Cl_Municipio AS cliente_municipio,
+            cl.Cl_Estado AS cliente_estado,
+            cl.Cl_Pais AS cliente_pais,
+            cl.Cl_Codigo_Postal AS cliente_codigo_postal,
+            c2.Co_Fecha AS ticket_fecha,
+            NULL AS ticket_fecha_cierre,
+            NULL AS ticket_pagado,
+            NULL AS ticket_impreso,
+            NULL AS ticket_impresiones,
+            c2.Co_Comentario AS ticket_comentario,
+            NULL AS ticket_comentario_descuento,
+            c2.Fecha_Alta AS ticket_fecha_alta,
+            c2.Oper_Ult_Modif AS ticket_oper_ult_modif,
+            c2.Oper_Baja AS ticket_oper_baja,
+            c2.Fecha_Baja AS ticket_fecha_baja,
+            d.Cd_Comentario AS partida_comentario,
+            NULL AS partida_comentario_descuento,
+            d.Cd_Comentario_Cancelacion AS partida_comentario_cancelacion,
+            d.Oper_Baja AS partida_oper_baja,
+            d.Fecha_Baja AS partida_fecha_baja,
+            d.Cd_Tipo_Descuento AS tipo_descuento_id,
+            td.Td_Descripcion AS tipo_descuento_descripcion,
+            td.Td_Porcentaje AS tipo_descuento_valor,
+            cl.Cl_Cruzamiento_1 AS cliente_cruzamiento_1,
+            cl.Cl_Cruzamiento_2 AS cliente_cruzamiento_2,
+            cl.Cl_Direccion_Entrega_1 AS cliente_entrega_direccion_1,
+            cl.Cl_Direccion_Entrega_2 AS cliente_entrega_direccion_2,
+            cl.Cl_Direccion_Entrega_3 AS cliente_entrega_direccion_3,
+            cl.Cl_Ciudad_Entrega AS cliente_entrega_ciudad,
+            cl.Cl_Estado_Entrega AS cliente_entrega_estado,
+            cl.Cl_Pais_Entrega AS cliente_entrega_pais,
+            cl.Cl_Codigo_Postal_Entrega AS cliente_entrega_codigo_postal,
+            cl.Cl_Cve_Colonia AS cliente_colonia_origen_id,
+            cl.Cl_Cve_Ciudad AS cliente_ciudad_origen_id,
+            cl.Cl_Cve_Municipio AS cliente_municipio_origen_id,
+            cl.Cl_Cve_Estado AS cliente_estado_origen_id,
+            cl.Cl_Cve_Pais AS cliente_pais_origen_id,
+            cl.Cl_Cve_Codigo_Postal AS cliente_codigo_postal_origen_id,
+            cl.Cl_Latitud AS cliente_latitud,
+            cl.Cl_Longitud AS cliente_longitud,
             CONVERT(varchar(64), l.Vn_Folio) AS numero_ticket,
             CONCAT('MPRO:', %s, ':', CONVERT(varchar(64), l.Vn_Folio)) AS id_transaccion,
             l.Vn_Fecha AS fecha_hora,
@@ -1199,6 +1326,11 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 AS decimal(18,4)
             ) AS importe_neto
         FROM l
+        LEFT JOIN Comanda c2 ON c2.Co_Folio=l.Vn_Documento
+        LEFT JOIN Cliente cl ON cl.Cl_Cve_Cliente=c2.Cl_Cve_Cliente
+        LEFT JOIN Venta vd2 ON vd2.Vn_Folio=l.Vn_Folio AND vd2.Vn_ID=l.partida_origen_id
+        LEFT JOIN Comanda_Detalle d ON d.Co_Folio=vd2.Vn_Documento AND d.Cd_Id=vd2.Vn_Documento_ID AND vd2.Vn_Tabla='Comanda'
+        LEFT JOIN Tipo_Descuento td ON td.Td_Cve_Tipo_Descuento=d.Cd_Tipo_Descuento
         ORDER BY l.Vn_Folio, l.producto_codigo_fuente, l.descuento_pct
         """
         cur = conn.cursor(as_dict=True)
@@ -1414,6 +1546,7 @@ def _materialize_rows(cfg: Dict[str, Any], dia: date, src_rows: List[Dict[str, A
             "fecha_sincronizacion": datetime.utcnow(),
             "activo": True,
         }
+        row.update(fields_from(r))
         row["hash_origen"] = _hash_row(row)
         out.append(row)
 
@@ -1548,12 +1681,73 @@ def _insert_rows(rows: List[Dict[str, Any]]) -> int:
             vendedor_id,
             vendedor_nombre,
             descuento_pct,
-            mesa
+            mesa,
+            partida_origen_id,
+            partida_key,
+            cliente_id,
+            cliente_nombre,
+            cliente_razon_social,
+            cliente_descripcion,
+            cliente_maestro_id,
+            cliente_sucursal_origen,
+            cliente_contacto,
+            cliente_rfc,
+            cliente_direccion_1,
+            cliente_direccion_2,
+            cliente_direccion_3,
+            cliente_calle,
+            cliente_numero_exterior,
+            cliente_numero_interior,
+            cliente_colonia,
+            cliente_ciudad,
+            cliente_municipio,
+            cliente_estado,
+            cliente_pais,
+            cliente_codigo_postal,
+            ticket_fecha,
+            ticket_fecha_cierre,
+            ticket_pagado,
+            ticket_impreso,
+            ticket_impresiones,
+            ticket_comentario,
+            ticket_comentario_descuento,
+            ticket_fecha_alta,
+            ticket_oper_ult_modif,
+            ticket_oper_baja,
+            ticket_fecha_baja,
+            partida_comentario,
+            partida_comentario_descuento,
+            partida_comentario_cancelacion,
+            partida_oper_baja,
+            partida_fecha_baja,
+            tipo_descuento_id,
+            tipo_descuento_descripcion,
+            tipo_descuento_valor,
+            cliente_cruzamiento_1,
+            cliente_cruzamiento_2,
+            cliente_entrega_direccion_1,
+            cliente_entrega_direccion_2,
+            cliente_entrega_direccion_3,
+            cliente_entrega_ciudad,
+            cliente_entrega_estado,
+            cliente_entrega_pais,
+            cliente_entrega_codigo_postal,
+            cliente_colonia_origen_id,
+            cliente_ciudad_origen_id,
+            cliente_municipio_origen_id,
+            cliente_estado_origen_id,
+            cliente_pais_origen_id,
+            cliente_codigo_postal_origen_id,
+            cliente_latitud,
+            cliente_longitud
         ) VALUES (
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
-            %s,%s,%s,%s,%s,%s
+            %s,%s,%s,%s,%s,%s,
+            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s
+,
+            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s
         )
         """
 
@@ -1603,6 +1797,7 @@ def _insert_rows(rows: List[Dict[str, Any]]) -> int:
                     r["vendedor_nombre"],
                     r["descuento_pct"],
                     r["mesa"],
+                    *(r.get(field) for field in FIELDS),
                 ),
             )
 

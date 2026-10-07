@@ -34,7 +34,7 @@ def test_closed_ticket_persists_and_reads_mesa_without_live_pos():
 
 
 def test_ticket_headers_render_mesa():
-    for path in (COMERCIAL, KPI):
+    for path in (ROOT / "frontend/src/components/comercial/TicketVentaModal.jsx",):
         text = path.read_text(encoding="utf-8")
         assert "ticket.mesa" in text
         assert "<span>MESA:</span>" in text

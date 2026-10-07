@@ -25,6 +25,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import logger from '../services/logger';
 import IAContextualLauncher from '../components/ia/IAContextual';
+import TicketVentaModal from '../components/comercial/TicketVentaModal';
+import KpiDrilldownDialog from '../components/comercial/KpiDrilldownDialog';
 // FASE AUTH-SECURITY-01 / FASE 4.1: getToken eliminado, auth viaja en cookie httpOnly
 import { fetchUnidadesNegocio, getServerIdFromUnidad } from '../services/unidadesNegocioService';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
@@ -162,195 +164,6 @@ const formatPercent = (num) => {
 };
 
 // ============ MODAL DE DETALLE DE MOVIMIENTOS (Drill-down) ============
-function TicketVentaModal({ isOpen, onClose, serverId, sucursal, seleccion }) {
-  const [loading, setLoading] = useState(false);
-  const [ticket, setTicket] = useState(null);
-
-  useEffect(() => {
-    if (!isOpen || !serverId || !seleccion?.folio || !seleccion?.fecha) {
-      return;
-    }
-
-    const cargarTicket = async () => {
-      setLoading(true);
-      setTicket(null);
-      try {
-        const response = await api.get('/comercial/ticket-venta/' + serverId, {
-          params: {
-            sucursal,
-            folio: seleccion.folio,
-            fecha: seleccion.fecha
-          },
-          timeout: 30000
-        });
-        setTicket(response.data?.ticket || null);
-      } catch (error) {
-        logger.error('Error cargando ticket de venta:', error);
-        toast.error('Error al cargar el ticket de venta');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    cargarTicket();
-  }, [isOpen, serverId, sucursal, seleccion]);
-
-  if (!isOpen) return null;
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[92vh] overflow-auto bg-zinc-100">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-zinc-700" />
-            Ticket de Venta
-          </DialogTitle>
-        </DialogHeader>
-
-        {loading ? (
-          <div className="flex justify-center py-14">
-            <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
-          </div>
-        ) : ticket ? (
-          <div className="mx-auto w-full max-w-sm bg-white border border-zinc-300 shadow-sm px-6 py-7 font-mono text-[13px] text-zinc-900">
-            <div className="text-center">
-              <p className="text-lg font-bold tracking-wide">{ticket.unidad}</p>
-              <p className="font-semibold mt-1">TICKET DE SERVICIO</p>
-              <p className="text-xs mt-1">{ticket.estado === 'ABIERTA' ? 'VENTA EN CURSO' : 'VENTA CERRADA'}</p>
-            </div>
-
-            <div className="border-t border-dashed border-zinc-500 mt-4 pt-3 space-y-1">
-              <div className="flex justify-between gap-3">
-                <span>FOLIO:</span>
-                <span className="font-bold">{ticket.folio}</span>
-              </div>
-              {ticket.mesa && (
-                <div className="flex justify-between gap-3">
-                  <span>MESA:</span>
-                  <span className="text-right uppercase">{ticket.mesa}</span>
-                </div>
-              )}
-              <div className="flex justify-between gap-3">
-                <span>FECHA:</span>
-                <span className="text-right">{String(ticket.fecha_hora || '').replace('T', ' ').slice(0, 19)}</span>
-              </div>
-              {ticket.vendedor && (
-                <div className="flex justify-between gap-3">
-                  <span>VENDEDOR:</span>
-                  <span className="text-right uppercase">{ticket.vendedor}</span>
-                </div>
-              )}
-              {Number(ticket.pax || 0) > 0 && (
-                <div className="flex justify-between gap-3">
-                  <span>PAX:</span>
-                  <span>{ticket.pax}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="border-t border-dashed border-zinc-500 mt-3 pt-3">
-              <div className="grid grid-cols-[44px_1fr_88px] gap-2 font-bold pb-2">
-                <span>CANT</span>
-                <span>DESCRIPCIÓN</span>
-                <span className="text-right">IMPORTE</span>
-              </div>
-
-              <div className="space-y-2">
-                {(ticket.items || []).map((item, idx) => (
-                  <div key={idx} className="grid grid-cols-[44px_1fr_88px] gap-2 items-start">
-                    <span>{Number(item.cantidad || 0).toLocaleString('es-MX', { maximumFractionDigits: 3 })}</span>
-                    <div>
-                      <p className="uppercase leading-tight">{item.descripcion}</p>
-                      {Number(item.precio_unitario || 0) > 0 && Number(item.cantidad || 0) !== 1 && (
-                        <p className="text-[11px] text-zinc-500">
-                          @ {formatCurrency(item.precio_unitario)}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <span>{formatCurrency(item.importe_neto ?? item.importe)}</span>
-                      {Number(item.descuento_importe || 0) > 0.005 && (
-                        <div className="text-[11px] mt-1">
-                          <p className="text-zinc-500">
-                            BRUTO {formatCurrency(item.importe)}
-                          </p>
-                          <p className="text-zinc-500">
-                            DESC. {Number(item.descuento_pct || 0).toLocaleString('es-MX', { maximumFractionDigits: 2 })}%:
-                            {' '}
-                            <span className="text-red-600 font-semibold">
-                              -{formatCurrency(item.descuento_importe)}
-                            </span>
-                          </p>
-                          <p className="font-semibold">
-                            TOTAL PROD. {formatCurrency(item.importe_neto ?? 0)}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="border-t border-dashed border-zinc-500 mt-4 pt-3 space-y-1">
-              <div className="flex justify-between">
-                <span>SUBTOTAL</span>
-                <span>{formatCurrency(ticket.subtotal)}</span>
-              </div>
-              {Number(ticket.descuento_productos || 0) > 0.005 && (
-                <div className="flex justify-between">
-                  <span>DESC. PRODUCTOS</span>
-                  <span className="text-red-600 font-semibold">-{formatCurrency(ticket.descuento_productos)}</span>
-                </div>
-              )}
-              {Number(ticket.descuento_cuenta || 0) > 0.005 && (
-                <div className="flex justify-between">
-                  <span>DESC. CUENTA</span>
-                  <span className="text-red-600 font-semibold">-{formatCurrency(ticket.descuento_cuenta)}</span>
-                </div>
-              )}
-              {Number(ticket.descuento || 0) > 0.005 &&
-               Number(ticket.descuento_productos || 0) <= 0.005 &&
-               Number(ticket.descuento_cuenta || 0) <= 0.005 && (
-                <div className="flex justify-between">
-                  <span>DESCUENTO</span>
-                  <span className="text-red-600 font-semibold">-{formatCurrency(ticket.descuento)}</span>
-                </div>
-              )}
-              {ticket.impuesto != null && (
-                <div className="flex justify-between">
-                  <span>IMPUESTO</span>
-                  <span>{formatCurrency(ticket.impuesto)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-base font-bold border-t border-zinc-900 mt-2 pt-2">
-                <span>TOTAL VENTA</span>
-                <span>{formatCurrency(ticket.total)}</span>
-              </div>
-              {Number(ticket.propina || 0) > 0.005 && (
-                <div className="flex justify-between">
-                  <span>PROPINA</span>
-                  <span>{formatCurrency(ticket.propina)}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="border-t border-dashed border-zinc-500 mt-5 pt-4 text-center text-[11px] text-zinc-500">
-              <p>EDARSA HUB · CONSULTA DE VENTA</p>
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-12 text-zinc-500">
-            <Receipt className="h-10 w-10 mx-auto mb-3 opacity-30" />
-            <p>No se encontró información para este folio.</p>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-
 // ============ MODAL DE DETALLE DE MOVIMIENTOS (Drill-down) ============
 function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo, tipoKpi, selectedMeses, selectedAnios }) {
   const [loading, setLoading] = useState(false);
@@ -786,6 +599,7 @@ const getAniosDisponibles = () => {
 function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector, loadingUnidades }) {
   const [loading, setLoading] = useState(false);
   const [kpis, setKpis] = useState(null);
+  const [detallePeriodo, setDetallePeriodo] = useState(null);
   const [comparativo, setComparativo] = useState(null);
   const [alertas, setAlertas] = useState([]);
   const [periodo, setPeriodo] = useState('mes'); // mes, semana, dia
@@ -847,6 +661,7 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
       // Manejar source_status del backend
       const { source_status, source_message, cache_used, last_successful_sync, kpis: kpisData, comparativo: compData, alertas: alertasData } = response.data;
       
+      setDetallePeriodo({ inicio: response.data.fecha_inicio, fin: response.data.fecha_fin });
       setSourceStatus(source_status || 'SUCCESS');
       setSourceMessage(source_message || '');
       setCacheUsed(cache_used || false);
@@ -1405,7 +1220,20 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
       )}
 
       {/* Modal de Detalle de Movimientos */}
-      <DetalleMovimientosModal
+      {detalleModal.tipo === 'ventas' ? (
+        <KpiDrilldownDialog
+          open={detalleModal.open}
+          onClose={() => setDetalleModal({ open: false, tipo: null })}
+          tipo="ventas"
+          unidad={{
+            ...(unidadesNegocio.find(u => u.id === selectedUnidad) || {}),
+            unidad_negocio_codigo: (unidadesNegocio.find(u => u.id === selectedUnidad) || {}).codigo || (unidadesNegocio.find(u => u.id === selectedUnidad) || {}).unidad_negocio_codigo,
+            server_id: selectedServer,
+            ventas: kpis?.ventas_periodo, pax: kpis?.pax_total, cheques: kpis?.cheques_total
+          }}
+          temporalSelection={{ mode: 'date_range', startDate: detallePeriodo?.inicio, endDate: detallePeriodo?.fin }}
+        />
+      ) : <DetalleMovimientosModal
         isOpen={detalleModal.open}
         onClose={() => setDetalleModal({ open: false, tipo: null })}
         serverId={selectedServer}
@@ -1414,7 +1242,7 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
         tipoKpi={detalleModal.tipo}
         selectedMeses={selectedMeses}
         selectedAnios={selectedAnios}
-      />
+      />}
     </div>
   );
 }

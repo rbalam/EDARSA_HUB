@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from modules.comercial_v2.ticket_contract import FIELDS, fields_from, header_from, discount_comment
+
 from datetime import date, datetime
 from typing import Any, Callable, Iterable
 
@@ -148,6 +150,8 @@ def _fallback_ticket_from_comercial(
             2,
         )
         lines.append({
+            **fields_from(item),
+            "comentario_descuento": item.get("comentario_descuento"),
             "linea_pk": (
                 f"{identity.numero_ticket}:fallback:{index}"
             ),
@@ -200,6 +204,8 @@ def _fallback_ticket_from_comercial(
 
     return {
         "ticket": {
+            **{key: value for key, value in source_ticket.items() if key.startswith(("cliente_", "ticket_"))},
+            "mesa": source_ticket.get("mesa"),
             "unidad_negocio_id": identity.unidad_negocio_id,
             "unidad": (
                 source_ticket.get("unidad")
@@ -630,6 +636,7 @@ def get_ticket_detail(
 
     sql = f"""
         SELECT
+            {", ".join("d." + field for field in FIELDS)},
             d.unidad_negocio_id,
             d.unidad_negocio_nombre AS unidad,
             d.sucursal_nombre AS sucursal,
@@ -696,6 +703,8 @@ def get_ticket_detail(
 
     for index, row in enumerate(rows, start=1):
         lines.append({
+            **fields_from(row),
+            "comentario_descuento": discount_comment(row),
             "linea_pk": (
                 f"{identity.numero_ticket}:"
                 f"{index}:"
@@ -778,6 +787,7 @@ def get_ticket_detail(
 
     return {
         "ticket": {
+            **header_from(rows),
             "unidad_negocio_id": identity.unidad_negocio_id,
             "unidad": (
                 first.get("unidad")

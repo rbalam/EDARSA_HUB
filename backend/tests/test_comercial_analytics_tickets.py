@@ -311,7 +311,7 @@ def test_executive_ticket_visual_contract_matches_comercial():
     root = Path(__file__).resolve().parents[2]
     executive = (
         root
-        / "frontend/src/components/comercial/KpiDrilldownDialog.jsx"
+        / "frontend/src/components/comercial/TicketVentaModal.jsx"
     ).read_text(encoding="utf-8")
 
     assert "VENDEDOR:" in executive
