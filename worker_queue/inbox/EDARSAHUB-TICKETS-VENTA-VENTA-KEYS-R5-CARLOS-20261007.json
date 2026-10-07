@@ -1,0 +1,34 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TICKETS-VENTA-VENTA-KEYS-R5-CARLOS-20261007",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0"
+  },
+  "objective": "Tickets de venta — auditar llave atomica Venta y enlace Comanda_Detalle; Tipo_Descuento; esquema real antes de implementar. Corrige contrato incompleto R4, no reusar job rechazado.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "venta_y_tipo_descuento_schema",
+          "sql": "SELECT DB_NAME() AS base_datos,TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS WHERE LOWER(TABLE_NAME) IN ('venta','tipo_descuento') ORDER BY TABLE_NAME,ORDINAL_POSITION"
+        }
+      ]
+    }
+  ]
+}
