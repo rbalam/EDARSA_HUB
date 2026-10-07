@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-TOAST-GATE1-CANONICAL-PREFLIGHT-READONLY-R1-20261007",
+  "created_at_utc": "2026-10-07T23:30:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar exclusivamente el estado canonico real de Toast en EDARSAHUB BOS antes de construir cualquier adapter/executor. Confirmar estructura y presencia de Sistema_Tipos, Sistema_TiposVariantes, Sistema_VersionesSistemas, Sistema_Capacidades, Sistema_Sync_Catalogo, Sistema_Sync_Capacidades, Sistema_IdentificadoresExternos, Servidores_Conexiones, Servidores_ConexionEstado y Sync_Control_Ejecuciones. No leer secretos, no ejecutar conexiones externas, no DDL/DML, no Production, no crear ToastRobot ni tablas Toast_*.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "TOAST_R1_00_IDENTITY",
+          "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS database_user;"
+        },
+        {
+          "name": "TOAST_R1_01_REQUIRED_OBJECTS",
+          "sql": "SELECT name AS object_name, type_desc FROM sys.objects WHERE name IN ('Sistema_Tipos','Sistema_TiposVariantes','Sistema_VersionesSistemas','Sistema_Capacidades','Sistema_Sync_Catalogo','Sistema_Sync_Capacidades','Sistema_IdentificadoresExternos','Servidores_Conexiones','Servidores_ConexionEstado','Sync_Control_Ejecuciones','Sistema_MapeoTablasVersion','Sistema_MapeoColumnasVersion') ORDER BY name;"
+        },
+        {
+          "name": "TOAST_R1_02_SCHEMA_COLUMNS",
+          "sql": "SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS type_name,c.max_length,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Sistema_Tipos','Sistema_TiposVariantes','Sistema_VersionesSistemas','Sistema_Capacidades','Sistema_Sync_Catalogo','Sistema_Sync_Capacidades','Sistema_IdentificadoresExternos','Servidores_Conexiones','Servidores_ConexionEstado','Sync_Control_Ejecuciones','Sistema_MapeoTablasVersion','Sistema_MapeoColumnasVersion') ORDER BY t.name,c.column_id;"
+        },
+        {
+          "name": "TOAST_R1_03_SAFE_COUNTS",
+          "sql": "SELECT (SELECT COUNT(*) FROM dbo.Sistema_Tipos) AS sistema_tipos_rows,(SELECT COUNT(*) FROM dbo.Sistema_VersionesSistemas) AS versiones_rows,(SELECT COUNT(*) FROM dbo.Sistema_Capacidades) AS capacidades_rows,(SELECT COUNT(*) FROM dbo.Sistema_Sync_Catalogo) AS sync_catalogo_rows,(SELECT COUNT(*) FROM dbo.Servidores_Conexiones) AS conexiones_rows,(SELECT COUNT(*) FROM dbo.Servidores_ConexionEstado) AS conexion_estado_rows,(SELECT COUNT(*) FROM dbo.Sync_Control_Ejecuciones) AS sync_runs_rows;"
+        },
+        {
+          "name": "TOAST_R1_04_TOAST_OBJECT_COLLISION_SCAN",
+          "sql": "SELECT name AS object_name,type_desc FROM sys.objects WHERE UPPER(name) LIKE '%TOAST%' ORDER BY name;"
+        },
+        {
+          "name": "TOAST_R1_05_TOAST_COLUMN_COLLISION_SCAN",
+          "sql": "SELECT t.name AS table_name,c.name AS column_name FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id WHERE UPPER(c.name) LIKE '%TOAST%' ORDER BY t.name,c.column_id;"
+        }
+      ]
+    }
+  ]
+}
