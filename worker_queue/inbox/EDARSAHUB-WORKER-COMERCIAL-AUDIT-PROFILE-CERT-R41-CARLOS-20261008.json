@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-COMERCIAL-AUDIT-PROFILE-CERT-R41-CARLOS-20261008",
+  "created_at_utc": "2026-10-08T19:08:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "34e3ff21b9fa5032891e288023ac5fa862ee2392",
+  "production_allowed": false,
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Actualizacion de tickets de venta"
+  },
+  "objective": "Certificar en solo lectura el soporte de perfiles de auditoria preaprobados para COMERCIAL_RANGE_RESYNC y COMERCIAL_OPEN_DAY_SYNC. No modificar datos ni Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_comercial_range_resync_capability_r87.py",
+        "backend/tests/test_worker_comercial_open_day_sync_capability_r19.py"
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
