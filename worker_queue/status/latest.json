@@ -4,62 +4,20 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "08d6a3fb4dd42fa55c4369d4c89cdc0ba8133173",
-  "generated_at_utc": "2026-10-08T05:54:17Z",
+  "generated_at_utc": "2026-10-08T15:11:08Z",
   "history": {
-    "done_total_local": 1342,
+    "done_total_local": 1344,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1172,
-    "results_total_local": 2304
+    "results_total_local": 2306
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2163,
-      "job_id": "EDARSAHUB-TICKETS-VENTA-CONTRACT-STATIC-R13-CARLOS-20261007",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1807,
-      "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-130QRO-CANARY-R16-CARLOS-20261007",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2154,
-      "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-LOCAL-CANARY-R14-CARLOS-20261007",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1801,
-      "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-ORIGEN-CANARY-R15-CARLOS-20261007",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 813,
-      "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-QUERY-COMPILE-R19-CARLOS-20261007",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1223,
-      "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-REQUIRED-COLUMNS-R18-CARLOS-20261007",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1331,
-      "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-SCHEMA-AUDIT-R17-CARLOS-20261007",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 565,
-      "job_id": "EDARSAHUB-TICKETS-VENTA-OPEN-DAY-PILOT-R20-CARLOS-20261007",
+      "age_seconds": 16,
+      "job_id": "EDARSAHUB-TICKETS-CLOSED-LATEST-COVERAGE-R23-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -72,16 +30,16 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 8,
+  "queue_result_ready_recent": 1,
   "queue_running": 0,
   "remote_development_sha": "08d6a3fb4dd42fa55c4369d4c89cdc0ba8133173",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T05:54:12Z",
-    "last_receive_utc": "2026-10-08T05:54:16Z",
-    "last_terminal_utc": "2026-10-08T05:44:52Z",
-    "pid": "422",
+    "last_cycle_utc": "2026-10-08T15:10:53Z",
+    "last_receive_utc": "2026-10-08T15:11:07Z",
+    "last_terminal_utc": "2026-10-08T15:10:51Z",
+    "pid": "385",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "4aff06e7ceeb552f43b52ea95b57ff522cd36adf",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
