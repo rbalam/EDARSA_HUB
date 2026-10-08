@@ -1,22 +1,22 @@
 {
   "ahead_count": 0,
-  "behind_count": 11,
+  "behind_count": 12,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "REMOTE_AHEAD_ONLY",
-  "development_sha": "3377dfd401d8e4a1fe545fa92881a72b7d89630c",
-  "generated_at_utc": "2026-10-08T19:06:59Z",
+  "development_sha": "6dc652b8dc824d21b5f2089db18b9df3a6cf5a94",
+  "generated_at_utc": "2026-10-08T19:08:21Z",
   "history": {
-    "done_total_local": 1350,
+    "done_total_local": 1351,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1179,
-    "results_total_local": 2317
+    "results_total_local": 2318
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3114,
+      "age_seconds": 3197,
       "job_id": "EDARSAHUB-TICKETS-OCTUBRE-BACKFILL-R37-CARLOS-20261008",
       "reasons": [
         "COMERCIAL_RANGE_RESYNC_AUDIT_REQUIRED"
@@ -25,13 +25,19 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3092,
+      "age_seconds": 3175,
       "job_id": "EDARSAHUB-TICKETS-OCTUBRE-OPEN-DAY-R38-CARLOS-20261008",
       "reasons": [
         "COMERCIAL_OPEN_DAY_SYNC_AUDIT_REQUIRED"
       ],
       "state": "REJECTED",
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 50,
+      "job_id": "EDARSAHUB-WORKER-COMERCIAL-AUDIT-PROFILE-CERT-R41-CARLOS-20261008",
+      "reason": null,
+      "state": "RESULT_READY"
     }
   ],
   "local_development_sha": "b01604b91032638350bd29c07b8015fa8200f620",
@@ -42,15 +48,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 2,
-  "queue_result_ready_recent": 0,
+  "queue_result_ready_recent": 1,
   "queue_running": 0,
-  "remote_development_sha": "3377dfd401d8e4a1fe545fa92881a72b7d89630c",
+  "remote_development_sha": "6dc652b8dc824d21b5f2089db18b9df3a6cf5a94",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T19:06:58Z",
-    "last_receive_utc": "2026-10-08T19:06:53Z",
-    "last_terminal_utc": "2026-10-08T17:56:15Z",
+    "last_cycle_utc": "2026-10-08T19:08:18Z",
+    "last_receive_utc": "2026-10-08T19:08:13Z",
+    "last_terminal_utc": "2026-10-08T19:07:30Z",
     "pid": "452",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "4aff06e7ceeb552f43b52ea95b57ff522cd36adf",
