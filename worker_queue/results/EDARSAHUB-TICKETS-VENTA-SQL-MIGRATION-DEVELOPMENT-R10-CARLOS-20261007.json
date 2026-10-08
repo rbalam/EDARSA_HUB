@@ -1,0 +1,72 @@
+{
+  "base_sha": "79b137324e011b3f7dcda03413081c435250a926",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-10-08T04:07:14Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-TICKETS-VENTA-SQL-MIGRATION-DEVELOPMENT-R10-CARLOS-20261007",
+  "operation": "SQL_MIGRATION_DEVELOPMENT",
+  "operation_summary": {
+    "credential_source": "canonical",
+    "returncode": 0,
+    "status": "PASS"
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-08T04:07:41Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "metadata_columns_after",
+              "all_metadata_columns_assertion"
+            ],
+            "name": "tickets_metadata_post_columns",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                58,
+                1
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_rows",
+              "unique_index_assertion"
+            ],
+            "name": "tickets_metadata_post_unique_index",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                7,
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-08T04:06:36Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto preflight SQL HRLectura, una migracion Development versionada y SHA-bound mediante writer dedicado, y post-audit SQL HRLectura. No acepto SQL inline, shell arbitrario ni toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
