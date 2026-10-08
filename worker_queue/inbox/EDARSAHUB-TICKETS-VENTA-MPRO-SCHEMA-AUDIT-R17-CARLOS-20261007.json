@@ -1,0 +1,42 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-SCHEMA-AUDIT-R17-CARLOS-20261007",
+  "created_at_utc": "2026-10-08T05:32:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "08d6a3fb4dd42fa55c4369d4c89cdc0ba8133173",
+  "production_allowed": false,
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Plan de actualizacion de tickets"
+  },
+  "objective": "Auditar en solo lectura el esquema real MPRO de ORIGEN y 130QRO para identificar exactamente la columna o tabla que hace fallar los canarios R15/R16. No modificar datos, codigo ni Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN",
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "mpro_ticket_tables_columns",
+          "sql": "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Comanda','Comanda_Detalle','Cliente','Tipo_Descuento','Venta','Venta_Encabezado','Vendedor') ORDER BY TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "mpro_ticket_tables_presence",
+          "sql": "SELECT TABLE_NAME, COUNT(*) AS column_count FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Comanda','Comanda_Detalle','Cliente','Tipo_Descuento','Venta','Venta_Encabezado','Vendedor') GROUP BY TABLE_NAME ORDER BY TABLE_NAME"
+        }
+      ]
+    }
+  ]
+}
