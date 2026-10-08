@@ -1,0 +1,13 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Recover canonical Universal Worker runtime convergence after the ticket October backfill contract fix. Current runtime is REMOTE_AHEAD_ONLY. Fast-forward only from b01604b91032638350bd29c07b8015fa8200f620 to 34e3ff21b9fa5032891e288023ac5fa862ee2392, preserve local work, fail closed on dirty state, wrong branch, non-fast-forward or divergence. Restart only the canonical Universal Worker if required. Do not touch Production.",
+  "expected_local_head": "b01604b91032638350bd29c07b8015fa8200f620",
+  "expected_remote_head": "34e3ff21b9fa5032891e288023ac5fa862ee2392",
+  "expected_classification": "REMOTE_AHEAD_ONLY",
+  "fast_forward_only": true,
+  "preserve_local_work": true,
+  "requested_by": "carlosruz@edarsa.com.mx",
+  "source": "chatgpt",
+  "project": "Actualizacion de tickets de venta",
+  "production_touched": false
+}
