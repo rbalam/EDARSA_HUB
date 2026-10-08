@@ -1,0 +1,31 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TICKETS-CLOSED-LATEST-COVERAGE-R23-CARLOS-20261007",
+  "created_at_utc": "2026-10-08T05:56:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "08d6a3fb4dd42fa55c4369d4c89cdc0ba8133173",
+  "production_allowed": false,
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Plan de actualizacion de tickets"
+  },
+  "objective": "Auditar en solo lectura el ultimo dia cerrado disponible por cada una de las cinco unidades y medir cobertura de metadata de tickets. No modificar datos, codigo ni Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "latest_closed_ticket_metadata_coverage",
+          "sql": "WITH d AS (SELECT unidad_negocio_id, MAX(fecha_operacion) AS fecha_operacion FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('130MID','CIENFUEGOS','ESTELAR','130QRO','ORIGEN') AND fecha_operacion<='2026-10-06' AND ISNULL(activo,1)=1 GROUP BY unidad_negocio_id) SELECT v.unidad_negocio_id,v.fecha_operacion,COUNT(*) AS lineas,COUNT(v.partida_origen_id) AS con_partida_origen,COUNT(v.cliente_id) AS con_cliente,COUNT(v.ticket_fecha) AS con_ticket_fecha,COUNT(v.partida_comentario) AS con_comentario_partida,COUNT(v.tipo_descuento_id) AS con_tipo_descuento FROM dbo.Comercial_Inteligencia_VentasDetalleProducto v INNER JOIN d ON d.unidad_negocio_id=v.unidad_negocio_id AND d.fecha_operacion=v.fecha_operacion WHERE ISNULL(v.activo,1)=1 GROUP BY v.unidad_negocio_id,v.fecha_operacion ORDER BY v.unidad_negocio_id"
+        }
+      ]
+    }
+  ]
+}
