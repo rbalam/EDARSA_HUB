@@ -20,6 +20,16 @@ def test_ticket_route_and_ui_contract():
     shared = (FRONT.parent.parent / "components/comercial/TicketVentaModal.jsx").read_text(encoding="utf-8")
     assert "/comercial/ticket-venta/" in shared
     assert "TICKET DE SERVICIO" in shared
+    assert "P.UNIT." in shared
+    assert "money(item.precio_unitario)" in shared
+    assert "money(item.importe)" in shared
+
+    canonical_visual = (
+        FRONT.parent.parent
+        / "components/comercial/analytics/CanonicalTicketDrilldown.jsx"
+    ).read_text(encoding="utf-8")
+    assert "P. UNIT." in canonical_visual
+    assert "line.importe_bruto ?? line.importe" in canonical_visual
 
     ticket_block = shared
     assert "AUTORIZÓ" not in ticket_block
