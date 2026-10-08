@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -310,3 +311,18 @@ def test_status_exchanges_service_credential_before_canonical_read(
 
     assert result["lifecycle"] == "RESULT"
     assert len(calls) == 2
+
+
+def test_refresh_token_session_types_are_isolated_from_mcp_service():
+    root = Path(__file__).resolve().parents[2]
+    refresh_text = (root / "backend/core/refresh_tokens.py").read_text(encoding="utf-8")
+    routes_text = (root / "backend/modules/auth/routes.py").read_text(encoding="utf-8")
+
+    assert "expected_user_type: Optional[str] = None" in refresh_text
+    assert "FechaRevocacion IS NULL" in refresh_text
+    assert "LOWER(LTRIM(RTRIM(ISNULL(TipoUsuario, ''))))" in refresh_text
+    assert routes_text.count(
+        'validate_and_get_session(refresh_token, expected_user_type="interno")'
+    ) == 2
+    assert 'expected_user_type="interno"' in routes_text
+    assert 'user_type="interno"' in routes_text

@@ -5,6 +5,11 @@ on:
     branches: [Edarsahub_Desarrollo]
     paths:
       - "backend/modules/worker_mcp/**"
+      - "backend/core/refresh_tokens.py"
+      - "backend/modules/auth/routes.py"
+      - "backend/modules/worker_ingress/service_credential.py"
+      - "backend/tests/test_worker_service_credential_exchange_gate2e.py"
+      - "tools/tests/test_worker_mcp_gate2b.py"
       - ".github/workflows/worker-mcp-gate2b.yml"
   workflow_dispatch:
 

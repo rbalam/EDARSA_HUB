@@ -203,7 +203,7 @@ async def logout(request: Request, response: Response):
     
     if refresh_token:
         # Validar y obtener sesión
-        session = await validate_and_get_session(refresh_token)
+        session = await validate_and_get_session(refresh_token, expected_user_type="interno")
         
         if session:
             # Revocar sesión en BD
@@ -257,7 +257,8 @@ async def refresh_tokens(request: Request, response: Response):
     is_replay, replay_info = await detect_and_handle_replay(
         refresh_token=refresh_token,
         ip_address=ip_address,
-        user_agent=user_agent
+        user_agent=user_agent,
+        expected_user_type="interno",
     )
     
     if is_replay:
@@ -270,7 +271,7 @@ async def refresh_tokens(request: Request, response: Response):
         )
     
     # Validar sesión
-    session = await validate_and_get_session(refresh_token)
+    session = await validate_and_get_session(refresh_token, expected_user_type="interno")
     
     if not session:
         # Token no encontrado o expirado
@@ -307,7 +308,7 @@ async def refresh_tokens(request: Request, response: Response):
             new_refresh_token=new_refresh_token,
             ip_address=ip_address,
             user_agent=user_agent,
-            user_type=session.get("user_type", "interno")
+            user_type="interno"
         )
     except Exception as e:
         import logging

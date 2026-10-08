@@ -93,7 +93,9 @@ def test_query_requires_service_type_active_unexpired_and_not_revoked(
     result = svc.exchange_service_credential("opaque-secret")
 
     sql = conn.cursor_obj.sql
-    assert "TipoUsuario = %s" in sql
+    normalized_sql = " ".join(sql.split())
+    assert "LOWER(LTRIM(RTRIM(ISNULL(TipoUsuario, ''))))" in normalized_sql
+    assert "LOWER(LTRIM(RTRIM(%s)))" in normalized_sql
     assert "ISNULL(EstaActiva, 0) = 1" in sql
     assert "FechaExpiracion > GETUTCDATE()" in sql
     assert "FechaRevocacion IS NULL" in sql
