@@ -16348,6 +16348,11 @@ async def retirar_perfil_usuario(
 
 
 # Incluir el router después de definir TODOS los endpoints
+# MCP gateway: expose the existing isolated Universal Worker MCP under /api/mcp.
+# Keep other /api routes and Universal Worker implementation unchanged.
+from modules.worker_mcp.gateway_router import router as worker_mcp_gateway_router
+app.include_router(worker_mcp_gateway_router)
+
 app.include_router(api_router)
 
 # WORKER: endpoint autenticado de runtime wake
