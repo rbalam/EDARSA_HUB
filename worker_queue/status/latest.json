@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "b01604b91032638350bd29c07b8015fa8200f620",
-  "generated_at_utc": "2026-10-08T18:02:21Z",
+  "generated_at_utc": "2026-10-08T18:03:51Z",
   "history": {
     "done_total_local": 1350,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1035,
+      "age_seconds": 1125,
       "job_id": "EDARSAHUB-TICKET-DIA-CANONICAL-CERT-R34-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1510,
+      "age_seconds": 1600,
       "job_id": "EDARSAHUB-TICKET-DIA-PRECIO-UNITARIO-CANONICO-R32-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2697,
+      "age_seconds": 2787,
       "job_id": "EDARSAHUB-TICKET-DIA-PRECIOS-DIAGNOSTICO-R31-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 747,
+      "age_seconds": 837,
       "job_id": "EDARSAHUB-TICKET-DIA-UI-BUILD-R35-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 366,
+      "age_seconds": 456,
       "job_id": "EDARSAHUB-TICKET-DIA-UI-BUILD-R36-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T18:02:09Z",
-    "last_receive_utc": "2026-10-08T18:02:20Z",
+    "last_cycle_utc": "2026-10-08T18:03:36Z",
+    "last_receive_utc": "2026-10-08T18:03:47Z",
     "last_terminal_utc": "2026-10-08T17:56:15Z",
     "pid": "357",
     "runtime_fingerprint": {
