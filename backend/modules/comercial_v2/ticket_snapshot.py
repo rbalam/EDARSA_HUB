@@ -1055,6 +1055,14 @@ def serialize_open_detail_rows(rows: List[Dict[str, Any]]) -> str:
         folio = str(row.get("folio") or "").strip()
         if not folio:
             continue
+        importe_bruto = _number(row.get("importe_bruto"))
+        descuento_producto = _number(row.get("descuento_producto"))
+        raw_importe_neto = row.get("importe_neto_producto")
+        importe_neto_producto = (
+            _number(raw_importe_neto)
+            if raw_importe_neto is not None
+            else importe_bruto - descuento_producto
+        )
         normalized.append({
             **fields_from(row),
             "folio": folio,
@@ -1074,10 +1082,10 @@ def serialize_open_detail_rows(rows: List[Dict[str, Any]]) -> str:
             )[:300],
             "cantidad": _number(row.get("cantidad")),
             "precio_unitario": _number(row.get("precio_unitario")),
-            "importe_bruto": _number(row.get("importe_bruto")),
+            "importe_bruto": importe_bruto,
             "descuento_pct": _number(row.get("descuento_pct")),
-            "descuento_producto": _number(row.get("descuento_producto")),
-            "importe_neto_producto": _number(row.get("importe_neto_producto")),
+            "descuento_producto": descuento_producto,
+            "importe_neto_producto": importe_neto_producto,
             "descuento_encabezado_reportado": _number(
                 row.get("descuento_encabezado_reportado")
             ),
