@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "08d6a3fb4dd42fa55c4369d4c89cdc0ba8133173",
-  "generated_at_utc": "2026-10-08T05:50:32Z",
+  "generated_at_utc": "2026-10-08T05:51:46Z",
   "history": {
     "done_total_local": 1342,
     "pending_total_local": 0,
@@ -16,49 +16,49 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1937,
+      "age_seconds": 2012,
       "job_id": "EDARSAHUB-TICKETS-VENTA-CONTRACT-STATIC-R13-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1582,
+      "age_seconds": 1657,
       "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-130QRO-CANARY-R16-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1929,
+      "age_seconds": 2004,
       "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-LOCAL-CANARY-R14-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1575,
+      "age_seconds": 1650,
       "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-ORIGEN-CANARY-R15-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 587,
+      "age_seconds": 662,
       "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-QUERY-COMPILE-R19-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 998,
+      "age_seconds": 1073,
       "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-REQUIRED-COLUMNS-R18-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1106,
+      "age_seconds": 1181,
       "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-SCHEMA-AUDIT-R17-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 339,
+      "age_seconds": 414,
       "job_id": "EDARSAHUB-TICKETS-VENTA-OPEN-DAY-PILOT-R20-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
@@ -78,8 +78,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T05:50:23Z",
-    "last_receive_utc": "2026-10-08T05:50:30Z",
+    "last_cycle_utc": "2026-10-08T05:51:44Z",
+    "last_receive_utc": "2026-10-08T05:51:39Z",
     "last_terminal_utc": "2026-10-08T05:44:52Z",
     "pid": "422",
     "runtime_fingerprint": {
