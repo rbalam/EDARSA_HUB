@@ -4,7 +4,6 @@ import TicketVentaModal from './TicketVentaModal';
 import IAContextualLauncher from '../ia/IAContextual';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import {
-  AlertTriangle,
   ArrowUpDown,
   ChevronDown,
   ChevronRight,
@@ -317,30 +316,6 @@ export default function KpiDrilldownDialog({
     modoVentasDia && unidad?.fecha_operacion_desfasada
   );
 
-  const expectedClosed = useMemo(() => ({
-    cheques: modoVentasDia
-      ? toNumber(unidad?.cheques_cerrados)
-      : toNumber(unidad?.cheques),
-    pax: modoVentasDia
-      ? toNumber(unidad?.pax_cerrados)
-      : toNumber(unidad?.pax),
-    ventas: modoVentasDia
-      ? toNumber(unidad?.ventas_cerradas)
-      : toNumber(unidad?.ventas),
-  }), [modoVentasDia, unidad]);
-
-  const openTotals = useMemo(() => ({
-    cheques: modoVentasDia ? toNumber(unidad?.cheques_abiertos) : 0,
-    pax: modoVentasDia ? toNumber(unidad?.pax_abiertos) : 0,
-    ventas: modoVentasDia ? toNumber(unidad?.ventas_abiertas) : 0,
-  }), [modoVentasDia, unidad]);
-
-  const kpiTotals = useMemo(() => ({
-    cheques: toNumber(unidad?.cheques),
-    pax: toNumber(unidad?.pax),
-    ventas: toNumber(unidad?.ventas),
-  }), [unidad]);
-
   useEffect(() => {
     setSort(
       tipo === 'pax'
@@ -441,7 +416,6 @@ export default function KpiDrilldownDialog({
     unidadCodigo,
     modoVentasDia,
     currentOperationSuppressed,
-    expectedClosed.cheques,
     ranges,
   ]);
 
@@ -502,20 +476,13 @@ export default function KpiDrilldownDialog({
               <span
                 className="font-mono text-xs font-medium underline decoration-dotted underline-offset-2 cursor-pointer"
                 onClick={() => {
-                  if (modoVentasDia && item.ticket_pk) {
+                  if (item.ticket_pk) {
                     setTicketSeleccionado({
                       ticketPk: item.ticket_pk,
                     });
                   }
                 }}
-                onDoubleClick={() => {
-                  if (!modoVentasDia && item.ticket_pk) {
-                    setTicketSeleccionado({
-                      ticketPk: item.ticket_pk,
-                    });
-                  }
-                }}
-                title="Doble clic para abrir el ticket de venta"
+                title="Selecciona para abrir el ticket de venta"
               >
                 {item.numero_ticket}
               </span>
@@ -649,9 +616,7 @@ export default function KpiDrilldownDialog({
             </div>
 
             <p className="text-xs text-zinc-500 mb-2 px-1">
-              {modoVentasDia
-                ? 'Selecciona un folio para abrir el ticket de venta.'
-                : 'Doble clic en un folio para abrir el ticket de venta.'}
+              Selecciona un folio para abrir el ticket de venta.
             </p>
 
             <div className="flex-1 overflow-auto border rounded-lg">
