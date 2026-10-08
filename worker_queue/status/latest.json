@@ -4,59 +4,59 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "9ef80c58d0ea81a3fe40ed547545c6a45ac45e16",
-  "generated_at_utc": "2026-10-08T17:48:33Z",
+  "generated_at_utc": "2026-10-08T17:49:50Z",
   "history": {
     "done_total_local": 1350,
     "pending_total_local": 0,
-    "processing_total_local": 1,
-    "rejected_total_local": 1175,
-    "results_total_local": 2315
+    "processing_total_local": 0,
+    "rejected_total_local": 1176,
+    "results_total_local": 2316
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 207,
+      "age_seconds": 284,
       "job_id": "EDARSAHUB-TICKET-DIA-CANONICAL-CERT-R34-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 682,
+      "age_seconds": 759,
       "job_id": "EDARSAHUB-TICKET-DIA-PRECIO-UNITARIO-CANONICO-R32-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1868,
+      "age_seconds": 1946,
       "job_id": "EDARSAHUB-TICKET-DIA-PRECIOS-DIAGNOSTICO-R31-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 56,
+      "age_seconds": 2,
       "job_id": "EDARSAHUB-TICKET-DIA-UI-BUILD-R35-CARLOS-20261008",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
   "local_development_sha": "9ef80c58d0ea81a3fe40ed547545c6a45ac45e16",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
-  "queue_running": 1,
+  "queue_result_ready_recent": 4,
+  "queue_running": 0,
   "remote_development_sha": "9ef80c58d0ea81a3fe40ed547545c6a45ac45e16",
   "runtime": {
     "current_job_id": "EDARSAHUB-TICKET-DIA-UI-BUILD-R35-CARLOS-20261008",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T17:48:22Z",
-    "last_receive_utc": "2026-10-08T17:48:33Z",
-    "last_terminal_utc": "2026-10-08T17:45:06Z",
+    "last_cycle_utc": "2026-10-08T17:49:35Z",
+    "last_receive_utc": "2026-10-08T17:49:48Z",
+    "last_terminal_utc": "2026-10-08T17:49:48Z",
     "pid": "429",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "4aff06e7ceeb552f43b52ea95b57ff522cd36adf",
