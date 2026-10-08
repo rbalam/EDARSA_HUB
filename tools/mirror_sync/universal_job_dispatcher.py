@@ -62,6 +62,8 @@ SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
 MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
 COMERCIAL_RANGE_RESYNC_MODE = "COMERCIAL_RANGE_RESYNC"
 COMERCIAL_OPEN_DAY_SYNC_MODE = "COMERCIAL_OPEN_DAY_SYNC"
+COMERCIAL_RANGE_AUDIT_PROFILE = "closed_ticket_metadata"
+COMERCIAL_OPEN_DAY_AUDIT_PROFILE = "open_day_ticket_metadata"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
 ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
 SERVER_REGISTRY_METADATA_UPDATE_MODE = "SERVER_REGISTRY_METADATA_UPDATE"
@@ -115,6 +117,77 @@ def load_backend_runtime_env() -> dict[str, str]:
 
 def now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def build_comercial_audit_checks(job: dict[str, Any]) -> list[dict[str, Any]]:
+    """Materializa auditorias SQL preaprobadas sin aceptar SQL desde el job."""
+    mode = str(job.get("mode") or "")
+    profile = str(job.get("audit_profile") or "").strip()
+
+    if mode == COMERCIAL_RANGE_RESYNC_MODE and profile == COMERCIAL_RANGE_AUDIT_PROFILE:
+        fecha_inicio = str(job.get("fecha_inicio") or "")
+        fecha_fin = str(job.get("fecha_fin") or "")
+        units = [
+            str(unit).strip().upper()
+            for unit in (job.get("units") or [])
+            if str(unit).strip()
+        ]
+        quoted_units = ",".join("'" + unit.replace("'", "''") + "'" for unit in units)
+        return [{
+            "type": "sql_readonly_audit",
+            "source": "EDARSAHUB",
+            "queries": [{
+                "name": "closed_ticket_metadata_post_backfill",
+                "sql": (
+                    "SELECT unidad_negocio_id, COUNT(*) AS lineas, "
+                    "COUNT(partida_origen_id) AS con_partida_origen, "
+                    "COUNT(ticket_fecha) AS con_ticket_fecha, "
+                    "COUNT(cliente_id) AS con_cliente_id, "
+                    "COUNT(cliente_rfc) AS con_cliente_rfc, "
+                    "COUNT(precio_unitario) AS con_precio_unitario, "
+                    "COUNT(importe_bruto) AS con_importe_bruto "
+                    "FROM dbo.Comercial_Inteligencia_VentasDetalleProducto "
+                    f"WHERE fecha_operacion>='{fecha_inicio}' "
+                    f"AND fecha_operacion<='{fecha_fin}' "
+                    f"AND unidad_negocio_id IN ({quoted_units}) "
+                    "AND ISNULL(activo,1)=1 "
+                    "GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+                ),
+            }],
+        }]
+
+    if mode == COMERCIAL_OPEN_DAY_SYNC_MODE and profile == COMERCIAL_OPEN_DAY_AUDIT_PROFILE:
+        fecha_operacion = str(job.get("fecha_operacion") or "")
+        return [{
+            "type": "sql_readonly_audit",
+            "source": "EDARSAHUB",
+            "queries": [{
+                "name": "ticket_open_day_metadata_latest",
+                "sql": (
+                    "WITH x AS ("
+                    "SELECT unidad_negocio_id,sucursal_id,fecha_operacion,"
+                    "snapshot_timestamp,ventas_abiertas,ventas_cerradas_dia,"
+                    "detalle_abiertas_json,"
+                    "ROW_NUMBER() OVER(PARTITION BY unidad_negocio_id "
+                    "ORDER BY snapshot_timestamp DESC) AS rn "
+                    "FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 "
+                    f"WHERE fecha_operacion='{fecha_operacion}') "
+                    "SELECT unidad_negocio_id,sucursal_id,fecha_operacion,"
+                    "snapshot_timestamp,ventas_abiertas,ventas_cerradas_dia,"
+                    "CASE WHEN ISJSON(detalle_abiertas_json)=1 THEN 1 ELSE 0 END AS json_valido,"
+                    "CASE WHEN ISJSON(detalle_abiertas_json)=1 "
+                    "THEN (SELECT COUNT(*) FROM OPENJSON(detalle_abiertas_json)) ELSE -1 END AS detalle_filas,"
+                    "CASE WHEN detalle_abiertas_json LIKE '%\"partida_origen_id\"%' THEN 1 ELSE 0 END AS tiene_partida_origen,"
+                    "CASE WHEN detalle_abiertas_json LIKE '%\"cliente_id\"%' THEN 1 ELSE 0 END AS tiene_cliente_id,"
+                    "CASE WHEN detalle_abiertas_json LIKE '%\"cliente_rfc\"%' THEN 1 ELSE 0 END AS tiene_cliente_rfc,"
+                    "CASE WHEN detalle_abiertas_json LIKE '%\"precio_unitario\"%' THEN 1 ELSE 0 END AS tiene_precio_unitario,"
+                    "CASE WHEN detalle_abiertas_json LIKE '%\"importe_bruto\"%' THEN 1 ELSE 0 END AS tiene_importe_bruto "
+                    "FROM x WHERE rn=1 ORDER BY unidad_negocio_id"
+                ),
+            }],
+        }]
+
+    return []
 
 
 def summarize_softrestaurant_output(output: str) -> dict[str, Any]:
@@ -1192,6 +1265,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                 )
 
             checks = job.get("checks") or []
+            if not checks and job.get("audit_profile"):
+                checks = build_comercial_audit_checks(job)
             if (
                 not checks
                 or any(
@@ -1351,6 +1426,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
             if dry_run is False and job.get("confirm_comercial_range_resync") is not True:
                 raise RuntimeError("COMERCIAL_RANGE_RESYNC_CONFIRMATION_REQUIRED")
             checks = job.get("checks") or []
+            if not checks and job.get("audit_profile"):
+                checks = build_comercial_audit_checks(job)
             if not checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
                 raise RuntimeError("COMERCIAL_RANGE_RESYNC_SQL_AUDIT_REQUIRED")
             script = ROOT / "backend" / "scripts" / "resync_comercial_range_worker.py"
