@@ -36,3 +36,13 @@ def test_protected_comercial_and_open_sync_contract_remain_present():
     assert "MÓDULO BLINDADO - NO MODIFICAR" in comercial
     assert "/comercial/detalle-ventas-agrupado/" in comercial
     assert "sync_comercial_abiertas_v2" in sync_open
+
+
+def test_shared_day_drilldown_does_not_render_synthetic_reconciliation_rows():
+    text = DRILL.read_text(encoding="utf-8")
+    assert "Cuentas cerradas pendientes de detalle" not in text
+    assert "Cuentas no cerradas" not in text
+    assert "Sin detalle disponible" not in text
+    assert "Sin detalle por folio" not in text
+    assert "No se generan renglones artificiales de conciliación." in text
+    assert "const footerTotals = totalsFor(rows);" in text
