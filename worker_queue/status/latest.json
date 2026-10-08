@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "REMOTE_AHEAD_ONLY",
   "development_sha": "6dc652b8dc824d21b5f2089db18b9df3a6cf5a94",
-  "generated_at_utc": "2026-10-08T19:10:57Z",
+  "generated_at_utc": "2026-10-08T19:12:13Z",
   "history": {
     "done_total_local": 1351,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3353,
+      "age_seconds": 3429,
       "job_id": "EDARSAHUB-TICKETS-OCTUBRE-BACKFILL-R37-CARLOS-20261008",
       "reasons": [
         "COMERCIAL_RANGE_RESYNC_AUDIT_REQUIRED"
@@ -25,7 +25,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3331,
+      "age_seconds": 3407,
       "job_id": "EDARSAHUB-TICKETS-OCTUBRE-OPEN-DAY-R38-CARLOS-20261008",
       "reasons": [
         "COMERCIAL_OPEN_DAY_SYNC_AUDIT_REQUIRED"
@@ -34,7 +34,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 206,
+      "age_seconds": 282,
       "job_id": "EDARSAHUB-WORKER-COMERCIAL-AUDIT-PROFILE-CERT-R41-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,8 +54,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T19:10:48Z",
-    "last_receive_utc": "2026-10-08T19:10:56Z",
+    "last_cycle_utc": "2026-10-08T19:12:09Z",
+    "last_receive_utc": "2026-10-08T19:12:04Z",
     "last_terminal_utc": "2026-10-08T19:07:30Z",
     "pid": "452",
     "runtime_fingerprint": {
