@@ -27,6 +27,45 @@ def _integer(value: Any) -> int:
         return 0
 
 
+def _snapshot_line_net_amount(row: Dict[str, Any]) -> float:
+    """Resuelve neto canónico y recupera snapshots MPRO legacy sin neto."""
+    bruto = _money(row.get("importe_bruto"))
+    descuento = _money(row.get("descuento_producto"))
+    raw_neto = row.get("importe_neto_producto")
+
+    if raw_neto is None:
+        return bruto - descuento
+
+    neto = _money(raw_neto)
+    sistema = str(row.get("sistema_origen") or "").strip().upper()
+    tiene_descuento = any(
+        abs(_money(row.get(field))) > 0.005
+        for field in (
+            "descuento_producto",
+            "descuento_pct",
+            "tipo_descuento_valor",
+        )
+    )
+
+    if (
+        sistema == "MPRO"
+        and abs(neto) <= 0.005
+        and abs(bruto) > 0.005
+        and not tiene_descuento
+    ):
+        return bruto
+
+    return neto
+
+
+def _snapshot_partida_sort_key(row: Dict[str, Any]):
+    value = str(row.get("partida_origen_id") or "").strip()
+    try:
+        return (0, int(value), value)
+    except (TypeError, ValueError):
+        return (1, 0, value)
+
+
 def _folio_sort_key(value: Any):
     text = str(value or "")
     try:
@@ -250,6 +289,7 @@ def build_ticket_venta(
         )
         if str(row.get("folio") or "") == str(folio)
     ]
+    snapshot_rows.sort(key=_snapshot_partida_sort_key)
     preferir_snapshot_mpro = any(
         str(row.get("estado_ticket") or "").strip().upper() == "CERRADA"
         and str(row.get("sistema_origen") or "").strip().upper() == "MPRO"
@@ -408,14 +448,7 @@ def build_ticket_venta(
         for row in snapshot_rows
     )
     neto_productos = sum(
-        _money(
-            row.get("importe_neto_producto")
-            if row.get("importe_neto_producto") is not None
-            else (
-                _money(row.get("importe_bruto"))
-                - _money(row.get("descuento_producto"))
-            )
-        )
+        _snapshot_line_net_amount(row)
         for row in snapshot_rows
     )
     total = max(
@@ -481,14 +514,7 @@ def build_ticket_venta(
                         0.0,
                         _money(row.get("descuento_producto")),
                     ),
-                    "importe_neto": _money(
-                        row.get("importe_neto_producto")
-                        if row.get("importe_neto_producto") is not None
-                        else (
-                            _money(row.get("importe_bruto"))
-                            - _money(row.get("descuento_producto"))
-                        )
-                    ),
+                    "importe_neto": _snapshot_line_net_amount(row),
                 }
                 for row in snapshot_rows
             ],
