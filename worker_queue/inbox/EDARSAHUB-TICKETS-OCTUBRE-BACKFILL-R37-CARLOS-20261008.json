@@ -1,0 +1,31 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TICKETS-OCTUBRE-BACKFILL-R37-CARLOS-20261008",
+  "created_at_utc": "2026-10-08T18:14:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "cc79457a5e95b3ccabd0f89c18089b4c01e97bcb",
+  "production_allowed": false,
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Actualizacion de tickets de venta"
+  },
+  "objective": "Repoblar canonicamente ventas cerradas del 2026-10-01 al 2026-10-07 para 130MID, CIENFUEGOS, ESTELAR, 130QRO y ORIGEN con el contrato nuevo de tickets ya aprobado. Usar handlers oficiales. No modificar codigo, sincronizadores ni Produccion.",
+  "human_summary_language": "es",
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "actions": [],
+  "units": [
+    "130MID",
+    "CIENFUEGOS",
+    "ESTELAR",
+    "130QRO",
+    "ORIGEN"
+  ],
+  "fecha_inicio": "2026-10-01",
+  "fecha_fin": "2026-10-07",
+  "dry_run": false,
+  "confirm_comercial_range_resync": true,
+  "checks": []
+}
