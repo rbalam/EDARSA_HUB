@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "LOCAL_AHEAD_ONLY",
   "development_sha": "52764b8d19ab0d5d66664dde489b67564e6e4cb7",
-  "generated_at_utc": "2026-10-08T16:47:46Z",
+  "generated_at_utc": "2026-10-08T16:49:01Z",
   "history": {
     "done_total_local": 1348,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 200,
+      "age_seconds": 276,
       "job_id": "EDARSAHUB-TABLERO-VENTAS-DIA-DRILLDOWN-DATE-CERT-R30-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 39,
+      "age_seconds": 114,
       "job_id": "EDARSAHUB-TABLERO-VENTAS-DIA-DRILLDOWN-DATE-FIX-CERT-R30-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1436,
+      "age_seconds": 1512,
       "job_id": "EDARSAHUB-TABLERO-VENTAS-DIA-DRILLDOWN-DATE-FIX-R29-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T16:47:45Z",
-    "last_receive_utc": "2026-10-08T16:47:40Z",
+    "last_cycle_utc": "2026-10-08T16:48:59Z",
+    "last_receive_utc": "2026-10-08T16:48:54Z",
     "last_terminal_utc": "2026-10-08T16:47:07Z",
     "pid": "385",
     "runtime_fingerprint": {
