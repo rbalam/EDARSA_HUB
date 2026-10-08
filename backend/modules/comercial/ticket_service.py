@@ -178,6 +178,18 @@ def merge_open_snapshot_tickets(
         fecha_operacion,
     )
 
+    # SoftRestaurant durante la operacion activa: tempcheques/tempcheqdet
+    # es el conjunto autoritativo del turno. No se mezcla con el historico
+    # cerrado del mismo dia porque puede representar las mismas cuentas y
+    # duplicar folios/importe. Si el snapshot temporal ya no existe tras el
+    # corte, result conserva naturalmente el detalle canonico cerrado.
+    snapshot_softrestaurant = any(
+        str(row.get("sistema_origen") or "").strip().upper() == "SOFTRESTAURANT"
+        for row in snapshot_rows
+    )
+    if snapshot_softrestaurant:
+        result = []
+
     # Para MPRO del dia, el snapshot API_LOCAL es la misma fuente que el
     # encabezado. Sus tickets cerrados deben REEMPLAZAR cualquier fila
     # canonica/historica ya presente (por ejemplo, una carga Central2020).
