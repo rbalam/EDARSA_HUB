@@ -14,6 +14,7 @@ Compatibilidad:
 from __future__ import annotations
 
 import json
+from modules.comercial_v2.ticket_contract import fields_from
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Dict, List
@@ -21,6 +22,64 @@ from typing import Any, Dict, List
 
 QUERY_SOFTRESTAURANT_DETALLE_ABIERTAS = """
 SELECT
+    MAX(CAST(CONVERT(nvarchar(100), d.movimiento) AS nvarchar(100))) AS partida_origen_id,
+    MAX(CAST(NULL AS nvarchar(100))) AS partida_key,
+    MAX(CAST(ch.idcliente AS nvarchar(100))) AS cliente_id,
+    MAX(CAST(cl.nombre AS nvarchar(max))) AS cliente_nombre,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_razon_social,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_descripcion,
+    MAX(CAST(NULL AS nvarchar(100))) AS cliente_maestro_id,
+    MAX(CAST(NULL AS nvarchar(50))) AS cliente_sucursal_origen,
+    MAX(CAST(cl.contacto AS nvarchar(max))) AS cliente_contacto,
+    MAX(CAST(cl.rfc AS nvarchar(50))) AS cliente_rfc,
+    MAX(CAST(cl.direccion AS nvarchar(max))) AS cliente_direccion_1,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_direccion_2,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_direccion_3,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_calle,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_numero_exterior,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_numero_interior,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_colonia,
+    MAX(CAST(cl.poblacion AS nvarchar(max))) AS cliente_ciudad,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_municipio,
+    MAX(CAST(cl.estado AS nvarchar(max))) AS cliente_estado,
+    MAX(CAST(cl.pais AS nvarchar(max))) AS cliente_pais,
+    MAX(CAST(cl.codigopostal AS nvarchar(max))) AS cliente_codigo_postal,
+    MAX(CAST(ch.fecha AS datetime2)) AS ticket_fecha,
+    MAX(CAST(ch.cierre AS datetime2)) AS ticket_fecha_cierre,
+    MAX(CAST(ch.pagado AS tinyint)) AS ticket_pagado,
+    MAX(CAST(ch.impreso AS tinyint)) AS ticket_impreso,
+    MAX(CAST(ch.impresiones AS int)) AS ticket_impresiones,
+    MAX(CAST(NULL AS nvarchar(max))) AS ticket_comentario,
+    MAX(CAST(ch.comentariodescuento AS nvarchar(max))) AS ticket_comentario_descuento,
+    MAX(CAST(NULL AS datetime2)) AS ticket_fecha_alta,
+    MAX(CAST(NULL AS nvarchar(100))) AS ticket_oper_ult_modif,
+    MAX(CAST(NULL AS nvarchar(100))) AS ticket_oper_baja,
+    MAX(CAST(ch.fechacancelado AS datetime2)) AS ticket_fecha_baja,
+    MAX(CAST(d.comentario AS nvarchar(max))) AS partida_comentario,
+    MAX(CAST(d.comentariodescuento AS nvarchar(max))) AS partida_comentario_descuento,
+    MAX(CAST(NULL AS nvarchar(max))) AS partida_comentario_cancelacion,
+    MAX(CAST(NULL AS nvarchar(100))) AS partida_oper_baja,
+    MAX(CAST(NULL AS datetime2)) AS partida_fecha_baja,
+    MAX(CAST(d.idtipodescuento AS nvarchar(100))) AS tipo_descuento_id,
+    MAX(CAST(td.desc_tipodescuento AS nvarchar(max))) AS tipo_descuento_descripcion,
+    MAX(CAST(td.descuento AS decimal(18,6))) AS tipo_descuento_valor,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_cruzamiento_1,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_cruzamiento_2,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_entrega_direccion_1,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_entrega_direccion_2,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_entrega_direccion_3,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_entrega_ciudad,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_entrega_estado,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_entrega_pais,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_entrega_codigo_postal,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_colonia_origen_id,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_ciudad_origen_id,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_municipio_origen_id,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_estado_origen_id,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_pais_origen_id,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_codigo_postal_origen_id,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_latitud,
+    MAX(CAST(NULL AS nvarchar(max))) AS cliente_longitud,
     COALESCE(
         NULLIF(MAX(LTRIM(RTRIM(CONVERT(varchar(64), ch.numcheque)))), ''),
         CONVERT(varchar(64), ch.folio)
@@ -84,6 +143,8 @@ SELECT
 FROM tempcheques ch
 LEFT JOIN tempcheqdet d
     ON d.foliodet = ch.folio
+LEFT JOIN clientes cl ON cl.idcliente=ch.idcliente
+LEFT JOIN tipodescuento td ON td.idtipodescuento=d.idtipodescuento
 LEFT JOIN meseros m
     ON m.idmesero = ch.idmesero
 LEFT JOIN productos p
@@ -105,6 +166,7 @@ WHERE ISNULL(ch.cancelado, 0) = 0
         )
     )
 GROUP BY
+    d.movimiento,
     ch.folio,
     COALESCE(
         NULLIF(CONVERT(varchar(100), d.idproducto), ''),
@@ -117,6 +179,64 @@ ORDER BY ch.folio, producto_codigo
 
 QUERY_MPRO_DETALLE_ABIERTAS = """
 SELECT
+    MAX(CAST(CONVERT(nvarchar(100), d.Cd_Id) AS nvarchar(100))) AS partida_origen_id,
+    MAX(CAST(d.Cd_Key AS nvarchar(100))) AS partida_key,
+    MAX(CAST(c.Cl_Cve_Cliente AS nvarchar(100))) AS cliente_id,
+    MAX(CAST(COALESCE(NULLIF(cl.Cl_Razon_Social,''),NULLIF(cl.Cl_Descripcion,'')) AS nvarchar(max))) AS cliente_nombre,
+    MAX(CAST(cl.Cl_Razon_Social AS nvarchar(max))) AS cliente_razon_social,
+    MAX(CAST(cl.Cl_Descripcion AS nvarchar(max))) AS cliente_descripcion,
+    MAX(CAST(cl.Cl_Cve_Maestro AS nvarchar(100))) AS cliente_maestro_id,
+    MAX(CAST(cl.Sc_Cve_Sucursal AS nvarchar(50))) AS cliente_sucursal_origen,
+    MAX(CAST(cl.Cl_Contacto_1 AS nvarchar(max))) AS cliente_contacto,
+    MAX(CAST(cl.Cl_R_F_C AS nvarchar(50))) AS cliente_rfc,
+    MAX(CAST(cl.Cl_Direccion_1 AS nvarchar(max))) AS cliente_direccion_1,
+    MAX(CAST(cl.Cl_Direccion_2 AS nvarchar(max))) AS cliente_direccion_2,
+    MAX(CAST(cl.Cl_Direccion_3 AS nvarchar(max))) AS cliente_direccion_3,
+    MAX(CAST(cl.Cl_Calle AS nvarchar(max))) AS cliente_calle,
+    MAX(CAST(cl.Cl_Numero_Exterior AS nvarchar(max))) AS cliente_numero_exterior,
+    MAX(CAST(cl.Cl_Numero_Interior AS nvarchar(max))) AS cliente_numero_interior,
+    MAX(CAST(cl.Cl_Colonia AS nvarchar(max))) AS cliente_colonia,
+    MAX(CAST(cl.Cl_Ciudad AS nvarchar(max))) AS cliente_ciudad,
+    MAX(CAST(cl.Cl_Municipio AS nvarchar(max))) AS cliente_municipio,
+    MAX(CAST(cl.Cl_Estado AS nvarchar(max))) AS cliente_estado,
+    MAX(CAST(cl.Cl_Pais AS nvarchar(max))) AS cliente_pais,
+    MAX(CAST(cl.Cl_Codigo_Postal AS nvarchar(max))) AS cliente_codigo_postal,
+    MAX(CAST(c.Co_Fecha AS datetime2)) AS ticket_fecha,
+    MAX(CAST(NULL AS datetime2)) AS ticket_fecha_cierre,
+    MAX(CAST(NULL AS tinyint)) AS ticket_pagado,
+    MAX(CAST(NULL AS tinyint)) AS ticket_impreso,
+    MAX(CAST(NULL AS int)) AS ticket_impresiones,
+    MAX(CAST(c.Co_Comentario AS nvarchar(max))) AS ticket_comentario,
+    MAX(CAST(NULL AS nvarchar(max))) AS ticket_comentario_descuento,
+    MAX(CAST(c.Fecha_Alta AS datetime2)) AS ticket_fecha_alta,
+    MAX(CAST(c.Oper_Ult_Modif AS nvarchar(100))) AS ticket_oper_ult_modif,
+    MAX(CAST(c.Oper_Baja AS nvarchar(100))) AS ticket_oper_baja,
+    MAX(CAST(c.Fecha_Baja AS datetime2)) AS ticket_fecha_baja,
+    MAX(CAST(d.Cd_Comentario AS nvarchar(max))) AS partida_comentario,
+    MAX(CAST(NULL AS nvarchar(max))) AS partida_comentario_descuento,
+    MAX(CAST(d.Cd_Comentario_Cancelacion AS nvarchar(max))) AS partida_comentario_cancelacion,
+    MAX(CAST(d.Oper_Baja AS nvarchar(100))) AS partida_oper_baja,
+    MAX(CAST(d.Fecha_Baja AS datetime2)) AS partida_fecha_baja,
+    MAX(CAST(d.Cd_Tipo_Descuento AS nvarchar(100))) AS tipo_descuento_id,
+    MAX(CAST(td.Td_Descripcion AS nvarchar(max))) AS tipo_descuento_descripcion,
+    MAX(CAST(td.Td_Porcentaje AS decimal(18,6))) AS tipo_descuento_valor,
+    MAX(CAST(cl.Cl_Cruzamiento_1 AS nvarchar(max))) AS cliente_cruzamiento_1,
+    MAX(CAST(cl.Cl_Cruzamiento_2 AS nvarchar(max))) AS cliente_cruzamiento_2,
+    MAX(CAST(cl.Cl_Direccion_Entrega_1 AS nvarchar(max))) AS cliente_entrega_direccion_1,
+    MAX(CAST(cl.Cl_Direccion_Entrega_2 AS nvarchar(max))) AS cliente_entrega_direccion_2,
+    MAX(CAST(cl.Cl_Direccion_Entrega_3 AS nvarchar(max))) AS cliente_entrega_direccion_3,
+    MAX(CAST(cl.Cl_Ciudad_Entrega AS nvarchar(max))) AS cliente_entrega_ciudad,
+    MAX(CAST(cl.Cl_Estado_Entrega AS nvarchar(max))) AS cliente_entrega_estado,
+    MAX(CAST(cl.Cl_Pais_Entrega AS nvarchar(max))) AS cliente_entrega_pais,
+    MAX(CAST(cl.Cl_Codigo_Postal_Entrega AS nvarchar(max))) AS cliente_entrega_codigo_postal,
+    MAX(CAST(cl.Cl_Cve_Colonia AS nvarchar(max))) AS cliente_colonia_origen_id,
+    MAX(CAST(cl.Cl_Cve_Ciudad AS nvarchar(max))) AS cliente_ciudad_origen_id,
+    MAX(CAST(cl.Cl_Cve_Municipio AS nvarchar(max))) AS cliente_municipio_origen_id,
+    MAX(CAST(cl.Cl_Cve_Estado AS nvarchar(max))) AS cliente_estado_origen_id,
+    MAX(CAST(cl.Cl_Cve_Pais AS nvarchar(max))) AS cliente_pais_origen_id,
+    MAX(CAST(cl.Cl_Cve_Codigo_Postal AS nvarchar(max))) AS cliente_codigo_postal_origen_id,
+    MAX(CAST(cl.Cl_Latitud AS nvarchar(max))) AS cliente_latitud,
+    MAX(CAST(cl.Cl_Longitud AS nvarchar(max))) AS cliente_longitud,
     CONVERT(varchar(64), c.Co_Folio) AS folio,
     CONVERT(varchar(64), c.Co_Folio) AS folio_origen,
     'ABIERTA' AS estado_ticket,
@@ -151,12 +271,15 @@ LEFT JOIN Comanda_Detalle d
     ON d.Co_Folio = c.Co_Folio
    AND ISNULL(d.Es_Cve_Estado, '') = 'AC'
    AND d.Fecha_Baja IS NULL
+LEFT JOIN Cliente cl ON cl.Cl_Cve_Cliente=c.Cl_Cve_Cliente
+LEFT JOIN Tipo_Descuento td ON td.Td_Cve_Tipo_Descuento=d.Cd_Tipo_Descuento
 LEFT JOIN Vendedor vnd
     ON vnd.Vn_Cve_Vendedor = c.Vn_Cve_Vendedor
 WHERE CAST(c.Co_Fecha AS date) = '{fecha_operacion}'
   AND c.Sc_Cve_Sucursal = '{sucursal_id}'
   AND c.Es_Cve_Estado IN ('AC', 'IM')
 GROUP BY
+    d.Cd_Id,
     c.Co_Folio,
     COALESCE(
         NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),
@@ -221,6 +344,8 @@ t AS (
 l AS (
     SELECT
         h.Vn_Documento,
+        h.Vn_Folio AS venta_folio,
+        d.Vn_ID AS venta_partida_id,
         MAX(CONVERT(varchar(64), h.Vn_Folio)) AS folio_origen,
         COALESCE(
             NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),
@@ -246,12 +371,72 @@ l AS (
        AND d.Sc_Cve_Sucursal = h.Sc_Cve_Sucursal
     GROUP BY
         h.Vn_Documento,
+        h.Vn_Folio,
+        d.Vn_ID,
         COALESCE(
             NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),
             'SIN_CODIGO'
         )
 )
 SELECT
+    CONCAT(l.venta_folio,':',l.venta_partida_id) AS partida_origen_id,
+    cd2.Cd_Key AS partida_key,
+    c2.Cl_Cve_Cliente AS cliente_id,
+    COALESCE(NULLIF(cl.Cl_Razon_Social,''),NULLIF(cl.Cl_Descripcion,'')) AS cliente_nombre,
+    cl.Cl_Razon_Social AS cliente_razon_social,
+    cl.Cl_Descripcion AS cliente_descripcion,
+    cl.Cl_Cve_Maestro AS cliente_maestro_id,
+    cl.Sc_Cve_Sucursal AS cliente_sucursal_origen,
+    cl.Cl_Contacto_1 AS cliente_contacto,
+    cl.Cl_R_F_C AS cliente_rfc,
+    cl.Cl_Direccion_1 AS cliente_direccion_1,
+    cl.Cl_Direccion_2 AS cliente_direccion_2,
+    cl.Cl_Direccion_3 AS cliente_direccion_3,
+    cl.Cl_Calle AS cliente_calle,
+    cl.Cl_Numero_Exterior AS cliente_numero_exterior,
+    cl.Cl_Numero_Interior AS cliente_numero_interior,
+    cl.Cl_Colonia AS cliente_colonia,
+    cl.Cl_Ciudad AS cliente_ciudad,
+    cl.Cl_Municipio AS cliente_municipio,
+    cl.Cl_Estado AS cliente_estado,
+    cl.Cl_Pais AS cliente_pais,
+    cl.Cl_Codigo_Postal AS cliente_codigo_postal,
+    c2.Co_Fecha AS ticket_fecha,
+    NULL AS ticket_fecha_cierre,
+    NULL AS ticket_pagado,
+    NULL AS ticket_impreso,
+    NULL AS ticket_impresiones,
+    c2.Co_Comentario AS ticket_comentario,
+    NULL AS ticket_comentario_descuento,
+    c2.Fecha_Alta AS ticket_fecha_alta,
+    c2.Oper_Ult_Modif AS ticket_oper_ult_modif,
+    c2.Oper_Baja AS ticket_oper_baja,
+    c2.Fecha_Baja AS ticket_fecha_baja,
+    cd2.Cd_Comentario AS partida_comentario,
+    NULL AS partida_comentario_descuento,
+    cd2.Cd_Comentario_Cancelacion AS partida_comentario_cancelacion,
+    cd2.Oper_Baja AS partida_oper_baja,
+    cd2.Fecha_Baja AS partida_fecha_baja,
+    cd2.Cd_Tipo_Descuento AS tipo_descuento_id,
+    td.Td_Descripcion AS tipo_descuento_descripcion,
+    td.Td_Porcentaje AS tipo_descuento_valor,
+    cl.Cl_Cruzamiento_1 AS cliente_cruzamiento_1,
+    cl.Cl_Cruzamiento_2 AS cliente_cruzamiento_2,
+    cl.Cl_Direccion_Entrega_1 AS cliente_entrega_direccion_1,
+    cl.Cl_Direccion_Entrega_2 AS cliente_entrega_direccion_2,
+    cl.Cl_Direccion_Entrega_3 AS cliente_entrega_direccion_3,
+    cl.Cl_Ciudad_Entrega AS cliente_entrega_ciudad,
+    cl.Cl_Estado_Entrega AS cliente_entrega_estado,
+    cl.Cl_Pais_Entrega AS cliente_entrega_pais,
+    cl.Cl_Codigo_Postal_Entrega AS cliente_entrega_codigo_postal,
+    cl.Cl_Cve_Colonia AS cliente_colonia_origen_id,
+    cl.Cl_Cve_Ciudad AS cliente_ciudad_origen_id,
+    cl.Cl_Cve_Municipio AS cliente_municipio_origen_id,
+    cl.Cl_Cve_Estado AS cliente_estado_origen_id,
+    cl.Cl_Cve_Pais AS cliente_pais_origen_id,
+    cl.Cl_Cve_Codigo_Postal AS cliente_codigo_postal_origen_id,
+    cl.Cl_Latitud AS cliente_latitud,
+    cl.Cl_Longitud AS cliente_longitud,
     CONVERT(varchar(64), t.Vn_Documento) AS folio,
     l.folio_origen,
     'CERRADA' AS estado_ticket,
@@ -305,12 +490,75 @@ SELECT
 FROM t
 INNER JOIN l
     ON l.Vn_Documento = t.Vn_Documento
+LEFT JOIN Comanda c2 ON c2.Co_Folio=t.Vn_Documento
+LEFT JOIN Cliente cl ON cl.Cl_Cve_Cliente=c2.Cl_Cve_Cliente
+LEFT JOIN Venta vd2 ON vd2.Vn_Folio=l.venta_folio AND vd2.Vn_ID=l.venta_partida_id
+LEFT JOIN Comanda_Detalle cd2 ON cd2.Co_Folio=vd2.Vn_Documento AND cd2.Cd_Id=vd2.Vn_Documento_ID AND vd2.Vn_Tabla='Comanda'
+LEFT JOIN Tipo_Descuento td ON td.Td_Cve_Tipo_Descuento=cd2.Cd_Tipo_Descuento
 ORDER BY t.Vn_Documento, l.producto_codigo
 """
 
 
 QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_COMANDA = """
 SELECT
+    MAX(CAST(CONVERT(nvarchar(100), d.Cd_Id) AS nvarchar(100))) AS partida_origen_id,
+    MAX(CAST(d.Cd_Key AS nvarchar(100))) AS partida_key,
+    MAX(CAST(c.Cl_Cve_Cliente AS nvarchar(100))) AS cliente_id,
+    MAX(CAST(COALESCE(NULLIF(cl.Cl_Razon_Social,''),NULLIF(cl.Cl_Descripcion,'')) AS nvarchar(max))) AS cliente_nombre,
+    MAX(CAST(cl.Cl_Razon_Social AS nvarchar(max))) AS cliente_razon_social,
+    MAX(CAST(cl.Cl_Descripcion AS nvarchar(max))) AS cliente_descripcion,
+    MAX(CAST(cl.Cl_Cve_Maestro AS nvarchar(100))) AS cliente_maestro_id,
+    MAX(CAST(cl.Sc_Cve_Sucursal AS nvarchar(50))) AS cliente_sucursal_origen,
+    MAX(CAST(cl.Cl_Contacto_1 AS nvarchar(max))) AS cliente_contacto,
+    MAX(CAST(cl.Cl_R_F_C AS nvarchar(50))) AS cliente_rfc,
+    MAX(CAST(cl.Cl_Direccion_1 AS nvarchar(max))) AS cliente_direccion_1,
+    MAX(CAST(cl.Cl_Direccion_2 AS nvarchar(max))) AS cliente_direccion_2,
+    MAX(CAST(cl.Cl_Direccion_3 AS nvarchar(max))) AS cliente_direccion_3,
+    MAX(CAST(cl.Cl_Calle AS nvarchar(max))) AS cliente_calle,
+    MAX(CAST(cl.Cl_Numero_Exterior AS nvarchar(max))) AS cliente_numero_exterior,
+    MAX(CAST(cl.Cl_Numero_Interior AS nvarchar(max))) AS cliente_numero_interior,
+    MAX(CAST(cl.Cl_Colonia AS nvarchar(max))) AS cliente_colonia,
+    MAX(CAST(cl.Cl_Ciudad AS nvarchar(max))) AS cliente_ciudad,
+    MAX(CAST(cl.Cl_Municipio AS nvarchar(max))) AS cliente_municipio,
+    MAX(CAST(cl.Cl_Estado AS nvarchar(max))) AS cliente_estado,
+    MAX(CAST(cl.Cl_Pais AS nvarchar(max))) AS cliente_pais,
+    MAX(CAST(cl.Cl_Codigo_Postal AS nvarchar(max))) AS cliente_codigo_postal,
+    MAX(CAST(c.Co_Fecha AS datetime2)) AS ticket_fecha,
+    MAX(CAST(NULL AS datetime2)) AS ticket_fecha_cierre,
+    MAX(CAST(NULL AS tinyint)) AS ticket_pagado,
+    MAX(CAST(NULL AS tinyint)) AS ticket_impreso,
+    MAX(CAST(NULL AS int)) AS ticket_impresiones,
+    MAX(CAST(c.Co_Comentario AS nvarchar(max))) AS ticket_comentario,
+    MAX(CAST(NULL AS nvarchar(max))) AS ticket_comentario_descuento,
+    MAX(CAST(c.Fecha_Alta AS datetime2)) AS ticket_fecha_alta,
+    MAX(CAST(c.Oper_Ult_Modif AS nvarchar(100))) AS ticket_oper_ult_modif,
+    MAX(CAST(c.Oper_Baja AS nvarchar(100))) AS ticket_oper_baja,
+    MAX(CAST(c.Fecha_Baja AS datetime2)) AS ticket_fecha_baja,
+    MAX(CAST(d.Cd_Comentario AS nvarchar(max))) AS partida_comentario,
+    MAX(CAST(NULL AS nvarchar(max))) AS partida_comentario_descuento,
+    MAX(CAST(d.Cd_Comentario_Cancelacion AS nvarchar(max))) AS partida_comentario_cancelacion,
+    MAX(CAST(d.Oper_Baja AS nvarchar(100))) AS partida_oper_baja,
+    MAX(CAST(d.Fecha_Baja AS datetime2)) AS partida_fecha_baja,
+    MAX(CAST(d.Cd_Tipo_Descuento AS nvarchar(100))) AS tipo_descuento_id,
+    MAX(CAST(td.Td_Descripcion AS nvarchar(max))) AS tipo_descuento_descripcion,
+    MAX(CAST(td.Td_Porcentaje AS decimal(18,6))) AS tipo_descuento_valor,
+    MAX(CAST(cl.Cl_Cruzamiento_1 AS nvarchar(max))) AS cliente_cruzamiento_1,
+    MAX(CAST(cl.Cl_Cruzamiento_2 AS nvarchar(max))) AS cliente_cruzamiento_2,
+    MAX(CAST(cl.Cl_Direccion_Entrega_1 AS nvarchar(max))) AS cliente_entrega_direccion_1,
+    MAX(CAST(cl.Cl_Direccion_Entrega_2 AS nvarchar(max))) AS cliente_entrega_direccion_2,
+    MAX(CAST(cl.Cl_Direccion_Entrega_3 AS nvarchar(max))) AS cliente_entrega_direccion_3,
+    MAX(CAST(cl.Cl_Ciudad_Entrega AS nvarchar(max))) AS cliente_entrega_ciudad,
+    MAX(CAST(cl.Cl_Estado_Entrega AS nvarchar(max))) AS cliente_entrega_estado,
+    MAX(CAST(cl.Cl_Pais_Entrega AS nvarchar(max))) AS cliente_entrega_pais,
+    MAX(CAST(cl.Cl_Codigo_Postal_Entrega AS nvarchar(max))) AS cliente_entrega_codigo_postal,
+    MAX(CAST(cl.Cl_Cve_Colonia AS nvarchar(max))) AS cliente_colonia_origen_id,
+    MAX(CAST(cl.Cl_Cve_Ciudad AS nvarchar(max))) AS cliente_ciudad_origen_id,
+    MAX(CAST(cl.Cl_Cve_Municipio AS nvarchar(max))) AS cliente_municipio_origen_id,
+    MAX(CAST(cl.Cl_Cve_Estado AS nvarchar(max))) AS cliente_estado_origen_id,
+    MAX(CAST(cl.Cl_Cve_Pais AS nvarchar(max))) AS cliente_pais_origen_id,
+    MAX(CAST(cl.Cl_Cve_Codigo_Postal AS nvarchar(max))) AS cliente_codigo_postal_origen_id,
+    MAX(CAST(cl.Cl_Latitud AS nvarchar(max))) AS cliente_latitud,
+    MAX(CAST(cl.Cl_Longitud AS nvarchar(max))) AS cliente_longitud,
     CONVERT(varchar(64), c.Co_Folio) AS folio,
     CONVERT(varchar(64), c.Co_Folio) AS folio_origen,
     'CERRADA' AS estado_ticket,
@@ -350,6 +598,8 @@ INNER JOIN Comanda_Detalle d
     ON d.Co_Folio = c.Co_Folio
    AND d.Es_Cve_Estado = 'AC'
    AND d.Fecha_Baja IS NULL
+LEFT JOIN Cliente cl ON cl.Cl_Cve_Cliente=c.Cl_Cve_Cliente
+LEFT JOIN Tipo_Descuento td ON td.Td_Cve_Tipo_Descuento=d.Cd_Tipo_Descuento
 LEFT JOIN Vendedor vnd
     ON vnd.Vn_Cve_Vendedor = c.Vn_Cve_Vendedor
 WHERE CAST(c.Co_Fecha AS date) = '{fecha_operacion}'
@@ -364,6 +614,7 @@ WHERE CAST(c.Co_Fecha AS date) = '{fecha_operacion}'
         AND ve.Fecha_Baja IS NULL
   )
 GROUP BY
+    d.Cd_Id,
     c.Co_Folio,
     COALESCE(
         NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),
@@ -375,6 +626,64 @@ ORDER BY c.Co_Folio, producto_codigo
 
 QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES = """
 SELECT
+    MAX(CAST(CONVERT(nvarchar(100), d.Cd_Id) AS nvarchar(100))) AS partida_origen_id,
+    MAX(CAST(d.Cd_Key AS nvarchar(100))) AS partida_key,
+    MAX(CAST(c.Cl_Cve_Cliente AS nvarchar(100))) AS cliente_id,
+    MAX(CAST(COALESCE(NULLIF(cl.Cl_Razon_Social,''),NULLIF(cl.Cl_Descripcion,'')) AS nvarchar(max))) AS cliente_nombre,
+    MAX(CAST(cl.Cl_Razon_Social AS nvarchar(max))) AS cliente_razon_social,
+    MAX(CAST(cl.Cl_Descripcion AS nvarchar(max))) AS cliente_descripcion,
+    MAX(CAST(cl.Cl_Cve_Maestro AS nvarchar(100))) AS cliente_maestro_id,
+    MAX(CAST(cl.Sc_Cve_Sucursal AS nvarchar(50))) AS cliente_sucursal_origen,
+    MAX(CAST(cl.Cl_Contacto_1 AS nvarchar(max))) AS cliente_contacto,
+    MAX(CAST(cl.Cl_R_F_C AS nvarchar(50))) AS cliente_rfc,
+    MAX(CAST(cl.Cl_Direccion_1 AS nvarchar(max))) AS cliente_direccion_1,
+    MAX(CAST(cl.Cl_Direccion_2 AS nvarchar(max))) AS cliente_direccion_2,
+    MAX(CAST(cl.Cl_Direccion_3 AS nvarchar(max))) AS cliente_direccion_3,
+    MAX(CAST(cl.Cl_Calle AS nvarchar(max))) AS cliente_calle,
+    MAX(CAST(cl.Cl_Numero_Exterior AS nvarchar(max))) AS cliente_numero_exterior,
+    MAX(CAST(cl.Cl_Numero_Interior AS nvarchar(max))) AS cliente_numero_interior,
+    MAX(CAST(cl.Cl_Colonia AS nvarchar(max))) AS cliente_colonia,
+    MAX(CAST(cl.Cl_Ciudad AS nvarchar(max))) AS cliente_ciudad,
+    MAX(CAST(cl.Cl_Municipio AS nvarchar(max))) AS cliente_municipio,
+    MAX(CAST(cl.Cl_Estado AS nvarchar(max))) AS cliente_estado,
+    MAX(CAST(cl.Cl_Pais AS nvarchar(max))) AS cliente_pais,
+    MAX(CAST(cl.Cl_Codigo_Postal AS nvarchar(max))) AS cliente_codigo_postal,
+    MAX(CAST(c.Co_Fecha AS datetime2)) AS ticket_fecha,
+    MAX(CAST(NULL AS datetime2)) AS ticket_fecha_cierre,
+    MAX(CAST(NULL AS tinyint)) AS ticket_pagado,
+    MAX(CAST(NULL AS tinyint)) AS ticket_impreso,
+    MAX(CAST(NULL AS int)) AS ticket_impresiones,
+    MAX(CAST(c.Co_Comentario AS nvarchar(max))) AS ticket_comentario,
+    MAX(CAST(NULL AS nvarchar(max))) AS ticket_comentario_descuento,
+    MAX(CAST(c.Fecha_Alta AS datetime2)) AS ticket_fecha_alta,
+    MAX(CAST(c.Oper_Ult_Modif AS nvarchar(100))) AS ticket_oper_ult_modif,
+    MAX(CAST(c.Oper_Baja AS nvarchar(100))) AS ticket_oper_baja,
+    MAX(CAST(c.Fecha_Baja AS datetime2)) AS ticket_fecha_baja,
+    MAX(CAST(d.Cd_Comentario AS nvarchar(max))) AS partida_comentario,
+    MAX(CAST(NULL AS nvarchar(max))) AS partida_comentario_descuento,
+    MAX(CAST(d.Cd_Comentario_Cancelacion AS nvarchar(max))) AS partida_comentario_cancelacion,
+    MAX(CAST(d.Oper_Baja AS nvarchar(100))) AS partida_oper_baja,
+    MAX(CAST(d.Fecha_Baja AS datetime2)) AS partida_fecha_baja,
+    MAX(CAST(d.Cd_Tipo_Descuento AS nvarchar(100))) AS tipo_descuento_id,
+    MAX(CAST(td.Td_Descripcion AS nvarchar(max))) AS tipo_descuento_descripcion,
+    MAX(CAST(td.Td_Porcentaje AS decimal(18,6))) AS tipo_descuento_valor,
+    MAX(CAST(cl.Cl_Cruzamiento_1 AS nvarchar(max))) AS cliente_cruzamiento_1,
+    MAX(CAST(cl.Cl_Cruzamiento_2 AS nvarchar(max))) AS cliente_cruzamiento_2,
+    MAX(CAST(cl.Cl_Direccion_Entrega_1 AS nvarchar(max))) AS cliente_entrega_direccion_1,
+    MAX(CAST(cl.Cl_Direccion_Entrega_2 AS nvarchar(max))) AS cliente_entrega_direccion_2,
+    MAX(CAST(cl.Cl_Direccion_Entrega_3 AS nvarchar(max))) AS cliente_entrega_direccion_3,
+    MAX(CAST(cl.Cl_Ciudad_Entrega AS nvarchar(max))) AS cliente_entrega_ciudad,
+    MAX(CAST(cl.Cl_Estado_Entrega AS nvarchar(max))) AS cliente_entrega_estado,
+    MAX(CAST(cl.Cl_Pais_Entrega AS nvarchar(max))) AS cliente_entrega_pais,
+    MAX(CAST(cl.Cl_Codigo_Postal_Entrega AS nvarchar(max))) AS cliente_entrega_codigo_postal,
+    MAX(CAST(cl.Cl_Cve_Colonia AS nvarchar(max))) AS cliente_colonia_origen_id,
+    MAX(CAST(cl.Cl_Cve_Ciudad AS nvarchar(max))) AS cliente_ciudad_origen_id,
+    MAX(CAST(cl.Cl_Cve_Municipio AS nvarchar(max))) AS cliente_municipio_origen_id,
+    MAX(CAST(cl.Cl_Cve_Estado AS nvarchar(max))) AS cliente_estado_origen_id,
+    MAX(CAST(cl.Cl_Cve_Pais AS nvarchar(max))) AS cliente_pais_origen_id,
+    MAX(CAST(cl.Cl_Cve_Codigo_Postal AS nvarchar(max))) AS cliente_codigo_postal_origen_id,
+    MAX(CAST(cl.Cl_Latitud AS nvarchar(max))) AS cliente_latitud,
+    MAX(CAST(cl.Cl_Longitud AS nvarchar(max))) AS cliente_longitud,
     CONVERT(varchar(64), c.Co_Folio) AS folio,
     CONVERT(varchar(64), c.Co_Folio) AS folio_origen,
     'CERRADA' AS estado_ticket,
@@ -409,12 +718,15 @@ LEFT JOIN Comanda_Detalle d
     ON d.Co_Folio = c.Co_Folio
    AND ISNULL(d.Es_Cve_Estado, '') = 'AC'
    AND d.Fecha_Baja IS NULL
+LEFT JOIN Cliente cl ON cl.Cl_Cve_Cliente=c.Cl_Cve_Cliente
+LEFT JOIN Tipo_Descuento td ON td.Td_Cve_Tipo_Descuento=d.Cd_Tipo_Descuento
 LEFT JOIN Vendedor vnd
     ON vnd.Vn_Cve_Vendedor = c.Vn_Cve_Vendedor
 WHERE CAST(c.Co_Fecha AS date) = '{fecha_operacion}'
   AND c.Sc_Cve_Sucursal = '{sucursal_id}'
   AND c.Es_Cve_Estado = 'PA'
 GROUP BY
+    d.Cd_Id,
     c.Co_Folio,
     COALESCE(
         NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),
@@ -432,6 +744,64 @@ ORDER BY c.Co_Folio, producto_codigo
 # evitan conservar un detalle viejo mientras el encabezado avanza.
 QUERY_MPRO_DETALLE_ABIERTAS_RESUMEN = """
 SELECT
+    MAX(CAST(NULL AS nvarchar(100))) AS partida_origen_id,
+    MAX(CAST(NULL AS nvarchar(100))) AS partida_key,
+    MAX(CAST(c.Cl_Cve_Cliente AS nvarchar(100))) AS cliente_id,
+    MAX(CAST(COALESCE(NULLIF(cl.Cl_Razon_Social,''),NULLIF(cl.Cl_Descripcion,'')) AS nvarchar(max))) AS cliente_nombre,
+    MAX(CAST(cl.Cl_Razon_Social AS nvarchar(max))) AS cliente_razon_social,
+    MAX(CAST(cl.Cl_Descripcion AS nvarchar(max))) AS cliente_descripcion,
+    MAX(CAST(cl.Cl_Cve_Maestro AS nvarchar(100))) AS cliente_maestro_id,
+    MAX(CAST(cl.Sc_Cve_Sucursal AS nvarchar(50))) AS cliente_sucursal_origen,
+    MAX(CAST(cl.Cl_Contacto_1 AS nvarchar(max))) AS cliente_contacto,
+    MAX(CAST(cl.Cl_R_F_C AS nvarchar(50))) AS cliente_rfc,
+    MAX(CAST(cl.Cl_Direccion_1 AS nvarchar(max))) AS cliente_direccion_1,
+    MAX(CAST(cl.Cl_Direccion_2 AS nvarchar(max))) AS cliente_direccion_2,
+    MAX(CAST(cl.Cl_Direccion_3 AS nvarchar(max))) AS cliente_direccion_3,
+    MAX(CAST(cl.Cl_Calle AS nvarchar(max))) AS cliente_calle,
+    MAX(CAST(cl.Cl_Numero_Exterior AS nvarchar(max))) AS cliente_numero_exterior,
+    MAX(CAST(cl.Cl_Numero_Interior AS nvarchar(max))) AS cliente_numero_interior,
+    MAX(CAST(cl.Cl_Colonia AS nvarchar(max))) AS cliente_colonia,
+    MAX(CAST(cl.Cl_Ciudad AS nvarchar(max))) AS cliente_ciudad,
+    MAX(CAST(cl.Cl_Municipio AS nvarchar(max))) AS cliente_municipio,
+    MAX(CAST(cl.Cl_Estado AS nvarchar(max))) AS cliente_estado,
+    MAX(CAST(cl.Cl_Pais AS nvarchar(max))) AS cliente_pais,
+    MAX(CAST(cl.Cl_Codigo_Postal AS nvarchar(max))) AS cliente_codigo_postal,
+    MAX(CAST(c.Co_Fecha AS datetime2)) AS ticket_fecha,
+    MAX(CAST(NULL AS datetime2)) AS ticket_fecha_cierre,
+    MAX(CAST(NULL AS tinyint)) AS ticket_pagado,
+    MAX(CAST(NULL AS tinyint)) AS ticket_impreso,
+    MAX(CAST(NULL AS int)) AS ticket_impresiones,
+    MAX(CAST(c.Co_Comentario AS nvarchar(max))) AS ticket_comentario,
+    MAX(CAST(NULL AS nvarchar(max))) AS ticket_comentario_descuento,
+    MAX(CAST(c.Fecha_Alta AS datetime2)) AS ticket_fecha_alta,
+    MAX(CAST(c.Oper_Ult_Modif AS nvarchar(100))) AS ticket_oper_ult_modif,
+    MAX(CAST(c.Oper_Baja AS nvarchar(100))) AS ticket_oper_baja,
+    MAX(CAST(c.Fecha_Baja AS datetime2)) AS ticket_fecha_baja,
+    MAX(CAST(NULL AS nvarchar(max))) AS partida_comentario,
+    MAX(CAST(NULL AS nvarchar(max))) AS partida_comentario_descuento,
+    MAX(CAST(NULL AS nvarchar(max))) AS partida_comentario_cancelacion,
+    MAX(CAST(NULL AS nvarchar(100))) AS partida_oper_baja,
+    MAX(CAST(NULL AS datetime2)) AS partida_fecha_baja,
+    MAX(CAST(NULL AS nvarchar(100))) AS tipo_descuento_id,
+    MAX(CAST(NULL AS nvarchar(max))) AS tipo_descuento_descripcion,
+    MAX(CAST(NULL AS decimal(18,6))) AS tipo_descuento_valor,
+    MAX(CAST(cl.Cl_Cruzamiento_1 AS nvarchar(max))) AS cliente_cruzamiento_1,
+    MAX(CAST(cl.Cl_Cruzamiento_2 AS nvarchar(max))) AS cliente_cruzamiento_2,
+    MAX(CAST(cl.Cl_Direccion_Entrega_1 AS nvarchar(max))) AS cliente_entrega_direccion_1,
+    MAX(CAST(cl.Cl_Direccion_Entrega_2 AS nvarchar(max))) AS cliente_entrega_direccion_2,
+    MAX(CAST(cl.Cl_Direccion_Entrega_3 AS nvarchar(max))) AS cliente_entrega_direccion_3,
+    MAX(CAST(cl.Cl_Ciudad_Entrega AS nvarchar(max))) AS cliente_entrega_ciudad,
+    MAX(CAST(cl.Cl_Estado_Entrega AS nvarchar(max))) AS cliente_entrega_estado,
+    MAX(CAST(cl.Cl_Pais_Entrega AS nvarchar(max))) AS cliente_entrega_pais,
+    MAX(CAST(cl.Cl_Codigo_Postal_Entrega AS nvarchar(max))) AS cliente_entrega_codigo_postal,
+    MAX(CAST(cl.Cl_Cve_Colonia AS nvarchar(max))) AS cliente_colonia_origen_id,
+    MAX(CAST(cl.Cl_Cve_Ciudad AS nvarchar(max))) AS cliente_ciudad_origen_id,
+    MAX(CAST(cl.Cl_Cve_Municipio AS nvarchar(max))) AS cliente_municipio_origen_id,
+    MAX(CAST(cl.Cl_Cve_Estado AS nvarchar(max))) AS cliente_estado_origen_id,
+    MAX(CAST(cl.Cl_Cve_Pais AS nvarchar(max))) AS cliente_pais_origen_id,
+    MAX(CAST(cl.Cl_Cve_Codigo_Postal AS nvarchar(max))) AS cliente_codigo_postal_origen_id,
+    MAX(CAST(cl.Cl_Latitud AS nvarchar(max))) AS cliente_latitud,
+    MAX(CAST(cl.Cl_Longitud AS nvarchar(max))) AS cliente_longitud,
     CONVERT(varchar(64), c.Co_Folio) AS folio,
     CONVERT(varchar(64), c.Co_Folio) AS folio_origen,
     'ABIERTA' AS estado_ticket,
@@ -458,6 +828,7 @@ INNER JOIN Comanda_Detalle d
     ON d.Co_Folio = c.Co_Folio
    AND d.Es_Cve_Estado = 'AC'
    AND d.Fecha_Baja IS NULL
+LEFT JOIN Cliente cl ON cl.Cl_Cve_Cliente=c.Cl_Cve_Cliente
 LEFT JOIN Vendedor vnd
     ON vnd.Vn_Cve_Vendedor = c.Vn_Cve_Vendedor
 WHERE CAST(c.Co_Fecha AS date) = '{fecha_operacion}'
@@ -470,6 +841,64 @@ ORDER BY c.Co_Folio
 
 QUERY_MPRO_DETALLE_CERRADAS_CANONICAS_RESUMEN = """
 SELECT
+    MAX(CAST(NULL AS nvarchar(100))) AS partida_origen_id,
+    MAX(CAST(NULL AS nvarchar(100))) AS partida_key,
+    MAX(CAST(c.Cl_Cve_Cliente AS nvarchar(100))) AS cliente_id,
+    MAX(CAST(COALESCE(NULLIF(cl.Cl_Razon_Social,''),NULLIF(cl.Cl_Descripcion,'')) AS nvarchar(max))) AS cliente_nombre,
+    MAX(CAST(cl.Cl_Razon_Social AS nvarchar(max))) AS cliente_razon_social,
+    MAX(CAST(cl.Cl_Descripcion AS nvarchar(max))) AS cliente_descripcion,
+    MAX(CAST(cl.Cl_Cve_Maestro AS nvarchar(100))) AS cliente_maestro_id,
+    MAX(CAST(cl.Sc_Cve_Sucursal AS nvarchar(50))) AS cliente_sucursal_origen,
+    MAX(CAST(cl.Cl_Contacto_1 AS nvarchar(max))) AS cliente_contacto,
+    MAX(CAST(cl.Cl_R_F_C AS nvarchar(50))) AS cliente_rfc,
+    MAX(CAST(cl.Cl_Direccion_1 AS nvarchar(max))) AS cliente_direccion_1,
+    MAX(CAST(cl.Cl_Direccion_2 AS nvarchar(max))) AS cliente_direccion_2,
+    MAX(CAST(cl.Cl_Direccion_3 AS nvarchar(max))) AS cliente_direccion_3,
+    MAX(CAST(cl.Cl_Calle AS nvarchar(max))) AS cliente_calle,
+    MAX(CAST(cl.Cl_Numero_Exterior AS nvarchar(max))) AS cliente_numero_exterior,
+    MAX(CAST(cl.Cl_Numero_Interior AS nvarchar(max))) AS cliente_numero_interior,
+    MAX(CAST(cl.Cl_Colonia AS nvarchar(max))) AS cliente_colonia,
+    MAX(CAST(cl.Cl_Ciudad AS nvarchar(max))) AS cliente_ciudad,
+    MAX(CAST(cl.Cl_Municipio AS nvarchar(max))) AS cliente_municipio,
+    MAX(CAST(cl.Cl_Estado AS nvarchar(max))) AS cliente_estado,
+    MAX(CAST(cl.Cl_Pais AS nvarchar(max))) AS cliente_pais,
+    MAX(CAST(cl.Cl_Codigo_Postal AS nvarchar(max))) AS cliente_codigo_postal,
+    MAX(CAST(c.Co_Fecha AS datetime2)) AS ticket_fecha,
+    MAX(CAST(NULL AS datetime2)) AS ticket_fecha_cierre,
+    MAX(CAST(NULL AS tinyint)) AS ticket_pagado,
+    MAX(CAST(NULL AS tinyint)) AS ticket_impreso,
+    MAX(CAST(NULL AS int)) AS ticket_impresiones,
+    MAX(CAST(c.Co_Comentario AS nvarchar(max))) AS ticket_comentario,
+    MAX(CAST(NULL AS nvarchar(max))) AS ticket_comentario_descuento,
+    MAX(CAST(c.Fecha_Alta AS datetime2)) AS ticket_fecha_alta,
+    MAX(CAST(c.Oper_Ult_Modif AS nvarchar(100))) AS ticket_oper_ult_modif,
+    MAX(CAST(c.Oper_Baja AS nvarchar(100))) AS ticket_oper_baja,
+    MAX(CAST(c.Fecha_Baja AS datetime2)) AS ticket_fecha_baja,
+    MAX(CAST(NULL AS nvarchar(max))) AS partida_comentario,
+    MAX(CAST(NULL AS nvarchar(max))) AS partida_comentario_descuento,
+    MAX(CAST(NULL AS nvarchar(max))) AS partida_comentario_cancelacion,
+    MAX(CAST(NULL AS nvarchar(100))) AS partida_oper_baja,
+    MAX(CAST(NULL AS datetime2)) AS partida_fecha_baja,
+    MAX(CAST(NULL AS nvarchar(100))) AS tipo_descuento_id,
+    MAX(CAST(NULL AS nvarchar(max))) AS tipo_descuento_descripcion,
+    MAX(CAST(NULL AS decimal(18,6))) AS tipo_descuento_valor,
+    MAX(CAST(cl.Cl_Cruzamiento_1 AS nvarchar(max))) AS cliente_cruzamiento_1,
+    MAX(CAST(cl.Cl_Cruzamiento_2 AS nvarchar(max))) AS cliente_cruzamiento_2,
+    MAX(CAST(cl.Cl_Direccion_Entrega_1 AS nvarchar(max))) AS cliente_entrega_direccion_1,
+    MAX(CAST(cl.Cl_Direccion_Entrega_2 AS nvarchar(max))) AS cliente_entrega_direccion_2,
+    MAX(CAST(cl.Cl_Direccion_Entrega_3 AS nvarchar(max))) AS cliente_entrega_direccion_3,
+    MAX(CAST(cl.Cl_Ciudad_Entrega AS nvarchar(max))) AS cliente_entrega_ciudad,
+    MAX(CAST(cl.Cl_Estado_Entrega AS nvarchar(max))) AS cliente_entrega_estado,
+    MAX(CAST(cl.Cl_Pais_Entrega AS nvarchar(max))) AS cliente_entrega_pais,
+    MAX(CAST(cl.Cl_Codigo_Postal_Entrega AS nvarchar(max))) AS cliente_entrega_codigo_postal,
+    MAX(CAST(cl.Cl_Cve_Colonia AS nvarchar(max))) AS cliente_colonia_origen_id,
+    MAX(CAST(cl.Cl_Cve_Ciudad AS nvarchar(max))) AS cliente_ciudad_origen_id,
+    MAX(CAST(cl.Cl_Cve_Municipio AS nvarchar(max))) AS cliente_municipio_origen_id,
+    MAX(CAST(cl.Cl_Cve_Estado AS nvarchar(max))) AS cliente_estado_origen_id,
+    MAX(CAST(cl.Cl_Cve_Pais AS nvarchar(max))) AS cliente_pais_origen_id,
+    MAX(CAST(cl.Cl_Cve_Codigo_Postal AS nvarchar(max))) AS cliente_codigo_postal_origen_id,
+    MAX(CAST(cl.Cl_Latitud AS nvarchar(max))) AS cliente_latitud,
+    MAX(CAST(cl.Cl_Longitud AS nvarchar(max))) AS cliente_longitud,
     CONVERT(varchar(64), ve.Vn_Documento) AS folio,
     MAX(CONVERT(varchar(64), ve.Vn_Folio)) AS folio_origen,
     'CERRADA' AS estado_ticket,
@@ -495,6 +924,7 @@ FROM Venta_Encabezado ve
 LEFT JOIN Comanda c
     ON c.Co_Folio = ve.Vn_Documento
    AND c.Sc_Cve_Sucursal = ve.Sc_Cve_Sucursal
+LEFT JOIN Cliente cl ON cl.Cl_Cve_Cliente=c.Cl_Cve_Cliente
 LEFT JOIN Vendedor vnd
     ON vnd.Vn_Cve_Vendedor = ve.Vn_Cve_Vendedor
 WHERE CAST(ve.Vn_Fecha AS date) = '{fecha_operacion}'
@@ -508,6 +938,64 @@ ORDER BY ve.Vn_Documento
 
 QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES_RESUMEN = """
 SELECT
+    MAX(CAST(NULL AS nvarchar(100))) AS partida_origen_id,
+    MAX(CAST(NULL AS nvarchar(100))) AS partida_key,
+    MAX(CAST(c.Cl_Cve_Cliente AS nvarchar(100))) AS cliente_id,
+    MAX(CAST(COALESCE(NULLIF(cl.Cl_Razon_Social,''),NULLIF(cl.Cl_Descripcion,'')) AS nvarchar(max))) AS cliente_nombre,
+    MAX(CAST(cl.Cl_Razon_Social AS nvarchar(max))) AS cliente_razon_social,
+    MAX(CAST(cl.Cl_Descripcion AS nvarchar(max))) AS cliente_descripcion,
+    MAX(CAST(cl.Cl_Cve_Maestro AS nvarchar(100))) AS cliente_maestro_id,
+    MAX(CAST(cl.Sc_Cve_Sucursal AS nvarchar(50))) AS cliente_sucursal_origen,
+    MAX(CAST(cl.Cl_Contacto_1 AS nvarchar(max))) AS cliente_contacto,
+    MAX(CAST(cl.Cl_R_F_C AS nvarchar(50))) AS cliente_rfc,
+    MAX(CAST(cl.Cl_Direccion_1 AS nvarchar(max))) AS cliente_direccion_1,
+    MAX(CAST(cl.Cl_Direccion_2 AS nvarchar(max))) AS cliente_direccion_2,
+    MAX(CAST(cl.Cl_Direccion_3 AS nvarchar(max))) AS cliente_direccion_3,
+    MAX(CAST(cl.Cl_Calle AS nvarchar(max))) AS cliente_calle,
+    MAX(CAST(cl.Cl_Numero_Exterior AS nvarchar(max))) AS cliente_numero_exterior,
+    MAX(CAST(cl.Cl_Numero_Interior AS nvarchar(max))) AS cliente_numero_interior,
+    MAX(CAST(cl.Cl_Colonia AS nvarchar(max))) AS cliente_colonia,
+    MAX(CAST(cl.Cl_Ciudad AS nvarchar(max))) AS cliente_ciudad,
+    MAX(CAST(cl.Cl_Municipio AS nvarchar(max))) AS cliente_municipio,
+    MAX(CAST(cl.Cl_Estado AS nvarchar(max))) AS cliente_estado,
+    MAX(CAST(cl.Cl_Pais AS nvarchar(max))) AS cliente_pais,
+    MAX(CAST(cl.Cl_Codigo_Postal AS nvarchar(max))) AS cliente_codigo_postal,
+    MAX(CAST(c.Co_Fecha AS datetime2)) AS ticket_fecha,
+    MAX(CAST(NULL AS datetime2)) AS ticket_fecha_cierre,
+    MAX(CAST(NULL AS tinyint)) AS ticket_pagado,
+    MAX(CAST(NULL AS tinyint)) AS ticket_impreso,
+    MAX(CAST(NULL AS int)) AS ticket_impresiones,
+    MAX(CAST(c.Co_Comentario AS nvarchar(max))) AS ticket_comentario,
+    MAX(CAST(NULL AS nvarchar(max))) AS ticket_comentario_descuento,
+    MAX(CAST(c.Fecha_Alta AS datetime2)) AS ticket_fecha_alta,
+    MAX(CAST(c.Oper_Ult_Modif AS nvarchar(100))) AS ticket_oper_ult_modif,
+    MAX(CAST(c.Oper_Baja AS nvarchar(100))) AS ticket_oper_baja,
+    MAX(CAST(c.Fecha_Baja AS datetime2)) AS ticket_fecha_baja,
+    MAX(CAST(NULL AS nvarchar(max))) AS partida_comentario,
+    MAX(CAST(NULL AS nvarchar(max))) AS partida_comentario_descuento,
+    MAX(CAST(NULL AS nvarchar(max))) AS partida_comentario_cancelacion,
+    MAX(CAST(NULL AS nvarchar(100))) AS partida_oper_baja,
+    MAX(CAST(NULL AS datetime2)) AS partida_fecha_baja,
+    MAX(CAST(NULL AS nvarchar(100))) AS tipo_descuento_id,
+    MAX(CAST(NULL AS nvarchar(max))) AS tipo_descuento_descripcion,
+    MAX(CAST(NULL AS decimal(18,6))) AS tipo_descuento_valor,
+    MAX(CAST(cl.Cl_Cruzamiento_1 AS nvarchar(max))) AS cliente_cruzamiento_1,
+    MAX(CAST(cl.Cl_Cruzamiento_2 AS nvarchar(max))) AS cliente_cruzamiento_2,
+    MAX(CAST(cl.Cl_Direccion_Entrega_1 AS nvarchar(max))) AS cliente_entrega_direccion_1,
+    MAX(CAST(cl.Cl_Direccion_Entrega_2 AS nvarchar(max))) AS cliente_entrega_direccion_2,
+    MAX(CAST(cl.Cl_Direccion_Entrega_3 AS nvarchar(max))) AS cliente_entrega_direccion_3,
+    MAX(CAST(cl.Cl_Ciudad_Entrega AS nvarchar(max))) AS cliente_entrega_ciudad,
+    MAX(CAST(cl.Cl_Estado_Entrega AS nvarchar(max))) AS cliente_entrega_estado,
+    MAX(CAST(cl.Cl_Pais_Entrega AS nvarchar(max))) AS cliente_entrega_pais,
+    MAX(CAST(cl.Cl_Codigo_Postal_Entrega AS nvarchar(max))) AS cliente_entrega_codigo_postal,
+    MAX(CAST(cl.Cl_Cve_Colonia AS nvarchar(max))) AS cliente_colonia_origen_id,
+    MAX(CAST(cl.Cl_Cve_Ciudad AS nvarchar(max))) AS cliente_ciudad_origen_id,
+    MAX(CAST(cl.Cl_Cve_Municipio AS nvarchar(max))) AS cliente_municipio_origen_id,
+    MAX(CAST(cl.Cl_Cve_Estado AS nvarchar(max))) AS cliente_estado_origen_id,
+    MAX(CAST(cl.Cl_Cve_Pais AS nvarchar(max))) AS cliente_pais_origen_id,
+    MAX(CAST(cl.Cl_Cve_Codigo_Postal AS nvarchar(max))) AS cliente_codigo_postal_origen_id,
+    MAX(CAST(cl.Cl_Latitud AS nvarchar(max))) AS cliente_latitud,
+    MAX(CAST(cl.Cl_Longitud AS nvarchar(max))) AS cliente_longitud,
     CONVERT(varchar(64), c.Co_Folio) AS folio,
     CONVERT(varchar(64), c.Co_Folio) AS folio_origen,
     'CERRADA' AS estado_ticket,
@@ -534,6 +1022,7 @@ INNER JOIN Comanda_Detalle d
     ON d.Co_Folio = c.Co_Folio
    AND d.Es_Cve_Estado = 'AC'
    AND d.Fecha_Baja IS NULL
+LEFT JOIN Cliente cl ON cl.Cl_Cve_Cliente=c.Cl_Cve_Cliente
 LEFT JOIN Vendedor vnd
     ON vnd.Vn_Cve_Vendedor = c.Vn_Cve_Vendedor
 WHERE CAST(c.Co_Fecha AS date) = '{fecha_operacion}'
@@ -567,6 +1056,7 @@ def serialize_open_detail_rows(rows: List[Dict[str, Any]]) -> str:
         if not folio:
             continue
         normalized.append({
+            **fields_from(row),
             "folio": folio,
             "folio_origen": str(row.get("folio_origen") or "").strip() or None,
             "estado_ticket": str(row.get("estado_ticket") or "ABIERTA").strip().upper(),

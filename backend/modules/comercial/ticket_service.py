@@ -6,6 +6,7 @@ import json
 from typing import Any, Dict, List, Optional
 
 from .service import _query_edarsahub_tablero
+from modules.comercial_v2.ticket_contract import FIELDS, fields_from, header_from, discount_comment
 
 
 def _safe_sql(value: Any) -> str:
@@ -69,7 +70,7 @@ def load_open_snapshot_lines(
 
     sql = f"""
     SELECT TOP 1 detalle_abiertas_json
-    FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK)
+    FROM dbo.Comercial_Ventas_Dia_Abiertas_v2
     WHERE UPPER(LTRIM(RTRIM(unidad_negocio_id))) =
           UPPER(LTRIM(RTRIM('{unidad}')))
       AND fecha_operacion = '{fecha}'
@@ -261,6 +262,7 @@ def build_ticket_venta(
     closed_rows = [] if preferir_snapshot_mpro else _query_edarsahub_tablero(
         f"""
         SELECT
+            {", ".join(FIELDS)},
             sistema_origen,
             fecha_hora,
             numero_ticket,
@@ -276,7 +278,7 @@ def build_ticket_venta(
             mesa,
             propina,
             pax
-        FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK)
+        FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
         WHERE unidad_negocio_id = '{unidad}'
           AND fecha_operacion = '{fecha}'
           AND CONVERT(varchar(128), numero_ticket) = '{ticket}'
@@ -317,6 +319,8 @@ def build_ticket_venta(
                 )
             )
             items.append({
+                **fields_from(row),
+                "comentario_descuento": discount_comment(row),
                 "cantidad": _money(row.get("cantidad")),
                 "descripcion": str(
                     row.get("producto_nombre") or "VENTA SIN DETALLE DE PRODUCTO"
@@ -358,6 +362,7 @@ def build_ticket_venta(
             "source_status": "SUCCESS",
             "source": "Comercial_Inteligencia_VentasDetalleProducto",
             "ticket": {
+                **header_from(closed_rows),
                 "unidad": unidad_nombre,
                 "sistema_origen": closed_rows[0].get("sistema_origen"),
                 "folio": folio,
@@ -451,6 +456,7 @@ def build_ticket_venta(
         "source_status": "SUCCESS",
         "source": "Comercial_Ventas_Dia_Abiertas_v2.detalle_abiertas_json:API_LOCAL_DIA",
         "ticket": {
+            **header_from(snapshot_rows),
             "unidad": unidad_nombre,
             "sistema_origen": sistema_snapshot,
             "folio": folio,
@@ -461,6 +467,8 @@ def build_ticket_venta(
             "estado": estado_snapshot,
             "items": [
                 {
+                    **fields_from(row),
+                    "comentario_descuento": discount_comment(row),
                     "cantidad": _money(row.get("cantidad")),
                     "descripcion": str(
                         row.get("producto_nombre")

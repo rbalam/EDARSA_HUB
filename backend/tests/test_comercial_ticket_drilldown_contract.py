@@ -17,13 +17,11 @@ def test_ticket_route_and_ui_contract():
     front = FRONT.read_text(encoding="utf-8")
     assert '/comercial/ticket-venta/{server_id}' in routes
     assert "TicketVentaModal" in front
-    assert "/comercial/ticket-venta/" in front
-    assert "TICKET DE SERVICIO" in front
+    shared = (FRONT.parent.parent / "components/comercial/TicketVentaModal.jsx").read_text(encoding="utf-8")
+    assert "/comercial/ticket-venta/" in shared
+    assert "TICKET DE SERVICIO" in shared
 
-    ticket_block = front[
-        front.index("function TicketVentaModal"):
-        front.index("function DetalleMovimientosModal")
-    ]
+    ticket_block = shared
     assert "AUTORIZÓ" not in ticket_block
     assert "autorizacion" not in ticket_block.lower()
 

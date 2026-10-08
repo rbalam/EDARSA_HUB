@@ -16,5 +16,5 @@ def test_softrestaurant_visible_folio_uses_numcheque():
 
 
 def test_ticket_date_is_trimmed_to_seconds():
-    text = FRONTEND.read_text(encoding="utf-8")
+    text = (ROOT.parent / "frontend/src/components/comercial/TicketVentaModal.jsx").read_text(encoding="utf-8")
     assert ".replace('T', ' ').slice(0, 19)" in text

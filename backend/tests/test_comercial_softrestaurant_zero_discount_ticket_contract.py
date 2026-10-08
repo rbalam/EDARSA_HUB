@@ -36,7 +36,7 @@ def test_ticket_service_splits_product_and_account_discounts():
 
 
 def test_ticket_ui_shows_product_and_account_discount_amounts():
-    text = FRONT.read_text(encoding="utf-8")
+    text = (ROOT.parent / "frontend/src/components/comercial/TicketVentaModal.jsx").read_text(encoding="utf-8")
     assert "DESC. PRODUCTOS" in text
     assert "DESC. CUENTA" in text
     assert "TOTAL PROD." in text
@@ -63,7 +63,7 @@ def test_zero_total_discount_badge_contract_exists_for_open_and_closed():
 
 def test_ticket_seller_and_discount_color_contract():
     service = SERVICE.read_text(encoding="utf-8")
-    front = FRONT.read_text(encoding="utf-8")
+    front = (ROOT.parent / "frontend/src/components/comercial/TicketVentaModal.jsx").read_text(encoding="utf-8")
     assert '"vendedor": vendedor' in service
     assert "VENDEDOR:" in front
     assert "text-red-600 font-semibold" in front

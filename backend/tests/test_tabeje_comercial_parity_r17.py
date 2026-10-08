@@ -12,7 +12,7 @@ def test_executive_does_not_cross_to_server_rbac_routes():
     text = DRILL.read_text(encoding="utf-8")
     assert "/comercial/detalle-ventas-agrupado/" not in text
     assert "/comercial/ticket-venta/" not in text
-    assert "/v2/comercial/analytics/tickets" in text
+    assert "/v2/comercial/analytics/tickets" in (ROOT / "frontend/src/components/comercial/TicketVentaModal.jsx").read_text(encoding="utf-8")
 
 
 def test_analytics_reuses_certified_comercial_services():
