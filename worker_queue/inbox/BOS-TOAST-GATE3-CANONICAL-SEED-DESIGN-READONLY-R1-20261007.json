@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-TOAST-GATE3-CANONICAL-SEED-DESIGN-READONLY-R1-20261007",
+  "created_at_utc": "2026-10-08T01:08:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Diseñar el alta mínima canónica de Toast usando exclusivamente patrones reales existentes en EDARSAHUB. Leer ejemplos completos no secretos de Sistema_Tipos, Sistema_TiposVariantes, Sistema_VersionesSistemas, Sistema_Capacidades, Sistema_Sync_Catalogo, Sistema_Sync_Capacidades y metadata segura de Servidores_Conexiones. Determinar convenciones de CodigoSistema, variantes, versiones, capacidades, CodigoSync, Handler, TablaDestino y tipo_conexion/API sin inventar IDs. No leer secretos, no DDL/DML, no llamadas externas, no Production, no crear ToastRobot ni tablas Toast_*.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "TOAST_R3_00_SYSTEM_TYPES_SAMPLE",
+          "sql": "SELECT SistemaTipoID,CodigoSistema,NombreSistema,Descripcion,Activo FROM dbo.Sistema_Tipos ORDER BY SistemaTipoID;"
+        },
+        {
+          "name": "TOAST_R3_01_VARIANTS_SAMPLE",
+          "sql": "SELECT v.VarianteID,v.SistemaTipoID,v.VarianteNombre,v.EsCanonico,v.Activo,t.CodigoSistema,t.NombreSistema FROM dbo.Sistema_TiposVariantes v JOIN dbo.Sistema_Tipos t ON t.SistemaTipoID=v.SistemaTipoID ORDER BY v.SistemaTipoID,v.VarianteID;"
+        },
+        {
+          "name": "TOAST_R3_02_VERSIONS_SAMPLE",
+          "sql": "SELECT sistema_version_id,tipo_sistema,nombre_sistema,version_sistema,proveedor,motor_base_datos,version_base_datos,es_version_default,activo FROM dbo.Sistema_VersionesSistemas ORDER BY tipo_sistema,nombre_sistema,version_sistema;"
+        },
+        {
+          "name": "TOAST_R3_03_CAPABILITIES_SAMPLE",
+          "sql": "SELECT c.SistemaCapacidadID,c.SistemaTipoID,c.CodigoCapacidad,c.Descripcion,c.RequiereApiLocal,c.RequiereSqlDirecto,c.Activo,t.CodigoSistema,t.NombreSistema FROM dbo.Sistema_Capacidades c JOIN dbo.Sistema_Tipos t ON t.SistemaTipoID=c.SistemaTipoID ORDER BY t.CodigoSistema,c.CodigoCapacidad;"
+        },
+        {
+          "name": "TOAST_R3_04_SYNC_CATALOG_SAMPLE",
+          "sql": "SELECT Codigo,Nombre,Grupo,Descripcion,Orden,NivelRiesgo,PermiteResync,PermiteDryRun,RequiereUnidad,RequiereRangoFechas,RangoMaxDias,Handler,HandlerImplementado,TablaDestino,Dependencias,Activo FROM dbo.Sistema_Sync_Catalogo ORDER BY Orden,Codigo;"
+        },
+        {
+          "name": "TOAST_R3_05_SYNC_CAPABILITIES_SAMPLE",
+          "sql": "SELECT sc.SyncCapacidadID,sc.CodigoSync,sc.SistemaCapacidadID,sc.Obligatoria,sc.Activo,c.CodigoCapacidad,t.CodigoSistema FROM dbo.Sistema_Sync_Capacidades sc JOIN dbo.Sistema_Capacidades c ON c.SistemaCapacidadID=sc.SistemaCapacidadID JOIN dbo.Sistema_Tipos t ON t.SistemaTipoID=c.SistemaTipoID ORDER BY sc.CodigoSync,t.CodigoSistema,c.CodigoCapacidad;"
+        },
+        {
+          "name": "TOAST_R3_06_SAFE_CONNECTION_PATTERNS",
+          "sql": "SELECT id,nombre,system_type,tipo_conexion,api_url,activo,visible_en_operaciones,visible_en_listado,es_editable_ui,es_eliminable_ui,empresa_id,EmpresaID,sistema_version_id,source_status FROM dbo.Servidores_Conexiones ORDER BY system_type,nombre;"
+        }
+      ]
+    }
+  ]
+}
