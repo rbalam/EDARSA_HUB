@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "6ccf2b9fad6cfc8e04862ba1306d35afb40610fd",
-  "generated_at_utc": "2026-10-08T23:08:48Z",
+  "generated_at_utc": "2026-10-08T23:10:05Z",
   "history": {
     "done_total_local": 1353,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2562,
+      "age_seconds": 2640,
       "job_id": "EDARSAHUB-PREVIEW-DIRTY-WORKTREE-DIAG-R42-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 493,
+      "age_seconds": 571,
       "job_id": "EDARSAHUB-TICKETS-OCTUBRE-BACKFILL-R43-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 123,
+      "age_seconds": 201,
       "job_id": "EDARSAHUB-TICKETS-OCTUBRE-OPEN-DAY-R44-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T23:08:39Z",
-    "last_receive_utc": "2026-10-08T23:08:46Z",
+    "last_cycle_utc": "2026-10-08T23:09:57Z",
+    "last_receive_utc": "2026-10-08T23:10:04Z",
     "last_terminal_utc": "2026-10-08T23:06:44Z",
     "pid": "35739",
     "runtime_fingerprint": {
