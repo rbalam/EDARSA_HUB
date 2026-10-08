@@ -131,6 +131,34 @@ def load_open_snapshot_lines(
     return parsed if isinstance(parsed, list) else []
 
 
+def _snapshot_display_folio(row: Dict[str, Any]) -> str:
+    """Folio visible estable: numcheque 0/NULL no identifica una cuenta."""
+    folio = str(row.get("folio") or "").strip()
+    folio_origen = str(row.get("folio_origen") or "").strip()
+    if folio in {"", "0"}:
+        return folio_origen or folio
+    return folio
+
+
+def _snapshot_ticket_identity(row: Dict[str, Any]) -> str:
+    """Identidad atómica del ticket, independiente del folio visible."""
+    sistema = str(row.get("sistema_origen") or "").strip().upper()
+    origen = str(row.get("folio_origen") or "").strip()
+    visible = _snapshot_display_folio(row)
+    return f"{sistema}:{origen or visible}"
+
+
+def _snapshot_sales_amount(row: Dict[str, Any]) -> float:
+    """Importe de venta comparable con KPI; SoftRestaurant separa propina."""
+    total = _money(row.get("total_ticket"))
+    sistema = str(row.get("sistema_origen") or "").strip().upper()
+    if sistema == "SOFTRESTAURANT":
+        propina = max(0.0, _money(row.get("propina")))
+        if total >= propina:
+            return total - propina
+    return total
+
+
 def merge_open_snapshot_tickets(
     items: List[Dict[str, Any]],
     unidad_codigo: str,
@@ -154,9 +182,9 @@ def merge_open_snapshot_tickets(
     # encabezado. Sus tickets cerrados deben REEMPLAZAR cualquier fila
     # canonica/historica ya presente (por ejemplo, una carga Central2020).
     preferidos_api_local_mpro = {
-        str(row.get("folio") or "").strip()
+        _snapshot_display_folio(row)
         for row in snapshot_rows
-        if str(row.get("folio") or "").strip()
+        if _snapshot_display_folio(row)
         and str(row.get("estado_ticket") or "").strip().upper() == "CERRADA"
         and str(row.get("sistema_origen") or "").strip().upper() == "MPRO"
     }
@@ -168,20 +196,22 @@ def merge_open_snapshot_tickets(
             not in preferidos_api_local_mpro
         ]
 
-    existentes = {str(item.get("folio") or "") for item in result}
+    existentes = {str(item.get("folio") or "").strip() for item in result}
     grouped: Dict[str, Dict[str, Any]] = {}
 
     for row in snapshot_rows:
-        folio = str(row.get("folio") or "").strip()
+        folio = _snapshot_display_folio(row)
+        identity = _snapshot_ticket_identity(row)
         if not folio or folio in existentes:
             continue
         ticket = grouped.setdefault(
-            folio,
+            identity,
             {
                 "folio": folio,
+                "folio_origen": str(row.get("folio_origen") or "").strip() or None,
                 "fecha": row.get("fecha_hora"),
                 "pax": _integer(row.get("pax")),
-                "total_venta": _money(row.get("total_ticket")),
+                "total_venta": _snapshot_sales_amount(row),
                 "num_productos": 0,
                 "descuento_productos": 0.0,
                 "descuento_encabezado_reportado": 0.0,
@@ -215,6 +245,11 @@ def merge_open_snapshot_tickets(
             vendedor = str(row.get("vendedor_nombre") or "").strip()
             if vendedor:
                 ticket["vendedor"] = vendedor
+        ticket["pax"] = max(ticket["pax"], _integer(row.get("pax")))
+        ticket["total_venta"] = max(
+            ticket["total_venta"],
+            _snapshot_sales_amount(row),
+        )
         if not ticket.get("fecha") and row.get("fecha_hora"):
             ticket["fecha"] = row.get("fecha_hora")
         if str(row.get("estado_ticket") or "").strip().upper() == "CERRADA":
@@ -222,7 +257,8 @@ def merge_open_snapshot_tickets(
         if not ticket.get("sistema_origen") and row.get("sistema_origen"):
             ticket["sistema_origen"] = row.get("sistema_origen")
 
-    for folio, ticket in grouped.items():
+    for _identity, ticket in grouped.items():
+        folio = ticket["folio"]
         descuento_total = max(
             ticket["descuento_productos"],
             ticket["descuento_total_reportado"],
@@ -287,7 +323,7 @@ def build_ticket_venta(
             sucursal_id,
             fecha_operacion,
         )
-        if str(row.get("folio") or "") == str(folio)
+        if _snapshot_display_folio(row) == str(folio)
     ]
     snapshot_rows.sort(key=_snapshot_partida_sort_key)
     preferir_snapshot_mpro = any(
@@ -452,7 +488,7 @@ def build_ticket_venta(
         for row in snapshot_rows
     )
     total = max(
-        (_money(row.get("total_ticket")) for row in snapshot_rows),
+        (_snapshot_sales_amount(row) for row in snapshot_rows),
         default=0,
     )
     propina = max(
