@@ -313,6 +313,10 @@ export default function KpiDrilldownDialog({
     mes,
   ]);
 
+  const currentOperationSuppressed = Boolean(
+    modoVentasDia && unidad?.fecha_operacion_desfasada
+  );
+
   const expectedClosed = useMemo(() => ({
     cheques: modoVentasDia
       ? toNumber(unidad?.cheques_cerrados)
@@ -365,6 +369,11 @@ export default function KpiDrilldownDialog({
 
         if (ranges.length === 0) {
           throw new Error('No se pudo resolver el período del detalle.');
+        }
+
+        if (currentOperationSuppressed) {
+          if (active) setRows([]);
+          return;
         }
 
         const allRows = [];
@@ -431,6 +440,7 @@ export default function KpiDrilldownDialog({
     open,
     unidadCodigo,
     modoVentasDia,
+    currentOperationSuppressed,
     expectedClosed.cheques,
     ranges,
   ]);

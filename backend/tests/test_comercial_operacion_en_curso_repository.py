@@ -68,10 +68,16 @@ def test_common_date_prevents_mixed_operational_days():
         for item in result["items"]
     }
 
+    assert by_unit["A"]["fecha_operacion"] == "2026-08-02"
+    assert by_unit["A"]["fecha_operacion_resuelta"] == "2026-08-02"
+    assert by_unit["A"]["fecha_operacion_desfasada"] is False
     assert by_unit["A"]["cerradas"]["ventas"] == 100
     assert by_unit["A"]["abiertas"]["ventas"] == 50
     assert by_unit["A"]["operacion_estimada"]["ventas"] == 150
 
+    assert by_unit["B"]["fecha_operacion"] == "2026-08-02"
+    assert by_unit["B"]["fecha_operacion_resuelta"] == "2026-08-01"
+    assert by_unit["B"]["fecha_operacion_desfasada"] is True
     assert by_unit["B"]["cerradas"]["ventas"] == 0
     assert by_unit["B"]["abiertas"]["ventas"] == 0
     assert by_unit["B"]["operacion_estimada"]["ventas"] == 0
@@ -237,3 +243,8 @@ def test_executive_current_day_uses_certified_comercial_sales_detail():
 
     # Se conserva la conciliacion de cuentas abiertas.
     assert "hasMissingOpen" in drill
+
+    # Una unidad neutralizada por fecha operativa rezagada no puede
+    # consultar el día anterior desde el drill-down de Ventas del Día.
+    assert "fecha_operacion_desfasada" in drill
+    assert "currentOperationSuppressed" in drill

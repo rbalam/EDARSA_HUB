@@ -280,8 +280,19 @@ def build_current_operation(
 
     if common_operation_date and len(effective_dates) > 1:
         for item in items:
-            if item.get("fecha_operacion") == common_operation_date:
+            resolved_operation_date = item.get("fecha_operacion")
+            item["fecha_operacion_resuelta"] = resolved_operation_date
+            item["fecha_operacion_desfasada"] = (
+                resolved_operation_date != common_operation_date
+            )
+
+            if resolved_operation_date == common_operation_date:
                 continue
+
+            # La tarjeta ya representa la fecha operativa comun y sus KPI
+            # fueron neutralizados a cero para no mezclar dias. El detalle
+            # debe quedar anclado a esa misma fecha, nunca al dia rezagado.
+            item["fecha_operacion"] = common_operation_date
 
             for bucket_name in (
                 "cerradas",
