@@ -193,6 +193,11 @@ def test_backend_client_auth_probe_accepts_only_canonical_404_shape(
 ):
     monkeypatch.setattr(
         client,
+        "exchange_service_credential",
+        lambda *, backend_url, credential: "short-internal-jwt",
+    )
+    monkeypatch.setattr(
+        client,
         "_request_json",
         lambda **kwargs: (
             404,
