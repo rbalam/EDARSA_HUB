@@ -445,58 +445,6 @@ export default function KpiDrilldownDialog({
     ranges,
   ]);
 
-  const detailedClosedRows = useMemo(
-    () => (
-      modoVentasDia
-        ? rows.filter((row) => row?.fuente_ticket !== 'ABIERTA')
-        : rows
-    ),
-    [modoVentasDia, rows]
-  );
-
-  const detailedOpenRows = useMemo(
-    () => (
-      modoVentasDia
-        ? rows.filter((row) => row?.fuente_ticket === 'ABIERTA')
-        : []
-    ),
-    [modoVentasDia, rows]
-  );
-
-  const closedDetailTotals = useMemo(
-    () => totalsFor(detailedClosedRows),
-    [detailedClosedRows]
-  );
-
-  const openDetailTotals = useMemo(
-    () => totalsFor(detailedOpenRows),
-    [detailedOpenRows]
-  );
-
-  const missingClosed = useMemo(() => ({
-    cheques: Math.max(0, expectedClosed.cheques - closedDetailTotals.cheques),
-    pax: Math.max(0, expectedClosed.pax - closedDetailTotals.pax),
-    ventas: Math.max(0, expectedClosed.ventas - closedDetailTotals.ventas),
-  }), [expectedClosed, closedDetailTotals]);
-
-  const hasMissingClosed = (
-    missingClosed.cheques > 0
-    || missingClosed.pax > 0
-    || missingClosed.ventas > 0.01
-  );
-
-  const missingOpen = useMemo(() => ({
-    cheques: Math.max(0, openTotals.cheques - openDetailTotals.cheques),
-    pax: Math.max(0, openTotals.pax - openDetailTotals.pax),
-    ventas: Math.max(0, openTotals.ventas - openDetailTotals.ventas),
-  }), [openTotals, openDetailTotals]);
-
-  const hasMissingOpen = (
-    missingOpen.cheques > 0
-    || missingOpen.pax > 0
-    || missingOpen.ventas > 0.01
-  );
-
   const mode = useMemo(
     () => hierarchyMode({ rows, ranges, temporalSelection, modoVentasDia }),
     [rows, ranges, temporalSelection, modoVentasDia]
@@ -652,16 +600,7 @@ export default function KpiDrilldownDialog({
 
   const { Icon } = titleConfig;
 
-  const onlyOpen = (
-    modoVentasDia
-    && expectedClosed.cheques <= 0
-    && openTotals.cheques > 0
-    && detailedOpenRows.length === 0
-  );
-
-  const footerTotals = modoVentasDia
-    ? totalsFor(rows)
-    : expectedClosed;
+  const footerTotals = totalsFor(rows);
 
   return (
     <>
@@ -708,32 +647,6 @@ export default function KpiDrilldownDialog({
                 />
               </div>
             </div>
-
-            {onlyOpen && (
-              <div className="mb-3 p-3 rounded border border-amber-200 bg-amber-50 text-amber-800 flex gap-2">
-                <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
-                <p>
-                  Las cuentas de la operación todavía no están cerradas. No existe
-                  detalle por folio para mostrar; se conserva únicamente el agregado
-                  de cuentas no cerradas para conciliar contra el KPI.
-                </p>
-              </div>
-            )}
-
-            {!onlyOpen
-              && modoVentasDia
-              && expectedClosed.cheques > 0
-              && detailedClosedRows.length === 0
-              && (
-              <div className="mb-3 p-3 rounded border border-amber-200 bg-amber-50 text-amber-800 flex gap-2">
-                <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
-                <p>
-                  Existen cuentas cerradas en el KPI, pero su detalle por folio
-                  todavía no está disponible. El faltante se muestra únicamente
-                  como agregado de conciliación.
-                </p>
-              </div>
-            )}
 
             <p className="text-xs text-zinc-500 mb-2 px-1">
               {modoVentasDia
@@ -783,53 +696,14 @@ export default function KpiDrilldownDialog({
                 <tbody>
                   {renderRows(hierarchy)}
 
-                  {hasMissingClosed && (
-                    <tr className="border-b bg-orange-50 font-semibold">
-                      <td className="py-2 px-3 text-orange-800">
-                        Cuentas cerradas pendientes de detalle
-                      </td>
-                      <td className="py-2 px-3 text-zinc-600">
-                        Sin detalle disponible
-                      </td>
-                      <td className="py-2 px-3 text-right">
-                        {number(missingClosed.cheques)}
-                      </td>
-                      <td className="py-2 px-3 text-center">
-                        {number(missingClosed.pax)}
-                      </td>
-                      <td className="py-2 px-3 text-right font-semibold text-green-600">
-                        {money(missingClosed.ventas)}
-                      </td>
-                    </tr>
-                  )}
-
-                  {modoVentasDia && hasMissingOpen && (
-                    <tr className="border-b bg-amber-50 font-semibold">
-                      <td className="py-2 px-3 text-amber-800">
-                        Cuentas no cerradas
-                      </td>
-                      <td className="py-2 px-3 text-zinc-600">
-                        Sin detalle por folio
-                      </td>
-                      <td className="py-2 px-3 text-right">
-                        {number(missingOpen.cheques)}
-                      </td>
-                      <td className="py-2 px-3 text-center">
-                        {number(missingOpen.pax)}
-                      </td>
-                      <td className="py-2 px-3 text-right font-semibold text-green-600">
-                        {money(missingOpen.ventas)}
-                      </td>
-                    </tr>
-                  )}
-
-                  {rows.length === 0 && !hasMissingClosed && !(modoVentasDia && openTotals.cheques > 0) && (
+                  {rows.length === 0 && (
                     <tr>
                       <td colSpan={5} className="py-10 text-center text-zinc-500">
-                        No hay movimientos cerrados en este período.
+                        No hay movimientos sincronizados para este período.
                       </td>
                     </tr>
                   )}
+
                 </tbody>
               </table>
             </div>
@@ -848,12 +722,10 @@ export default function KpiDrilldownDialog({
               </p>
             </div>
 
-            {!modoVentasDia && (
-              <p className="mt-2 text-xs text-zinc-500">
-                El detalle utiliza la información sincronizada en EDARSAHUB. Los
-                folios pendientes de detalle se identifican para su conciliación.
-              </p>
-            )}
+            <p className="mt-2 text-xs text-zinc-500">
+              El detalle utiliza únicamente tickets sincronizados en EDARSAHUB.
+              No se generan renglones artificiales de conciliación.
+            </p>
           </div>
         )}
       </DialogContent>
