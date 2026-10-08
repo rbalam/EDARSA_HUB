@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "08d6a3fb4dd42fa55c4369d4c89cdc0ba8133173",
-  "generated_at_utc": "2026-10-08T05:26:45Z",
+  "generated_at_utc": "2026-10-08T05:28:00Z",
   "history": {
     "done_total_local": 1338,
     "pending_total_local": 0,
@@ -16,37 +16,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2194,
+      "age_seconds": 2269,
       "job_id": "EDARSAHUB-TICKETS-VENTA-CONTRACT-CANARY-R12-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 511,
+      "age_seconds": 585,
       "job_id": "EDARSAHUB-TICKETS-VENTA-CONTRACT-STATIC-R13-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2205,
+      "age_seconds": 2280,
       "job_id": "EDARSAHUB-TICKETS-VENTA-FRONTEND-BUILD-R11-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 155,
+      "age_seconds": 230,
       "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-130QRO-CANARY-R16-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 502,
+      "age_seconds": 577,
       "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-LOCAL-CANARY-R14-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 149,
+      "age_seconds": 224,
       "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-ORIGEN-CANARY-R15-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,8 +66,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T05:26:42Z",
-    "last_receive_utc": "2026-10-08T05:26:37Z",
+    "last_cycle_utc": "2026-10-08T05:28:00Z",
+    "last_receive_utc": "2026-10-08T05:27:55Z",
     "last_terminal_utc": "2026-10-08T05:24:16Z",
     "pid": "422",
     "runtime_fingerprint": {
