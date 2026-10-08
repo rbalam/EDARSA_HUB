@@ -56,6 +56,8 @@ SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
 MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
 COMERCIAL_RANGE_RESYNC_MODE = "COMERCIAL_RANGE_RESYNC"
 COMERCIAL_OPEN_DAY_SYNC_MODE = "COMERCIAL_OPEN_DAY_SYNC"
+COMERCIAL_RANGE_AUDIT_PROFILE = "closed_ticket_metadata"
+COMERCIAL_OPEN_DAY_AUDIT_PROFILE = "open_day_ticket_metadata"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
 ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
 SERVER_REGISTRY_METADATA_UPDATE_MODE = "SERVER_REGISTRY_METADATA_UPDATE"
@@ -506,12 +508,26 @@ def validate(job: Any) -> list[str]:
         if _expected_native_decision_requires_semantic_extract(job) and not _has_worker_result_semantic_extract(checks):
             errors.append("EXPECTED_NATIVE_DECISION_REQUIRES_WORKER_RESULT_SEMANTIC_EXTRACT")
     elif mode == COMERCIAL_RANGE_RESYNC_MODE:
-        if not isinstance(checks, list) or not checks:
+        audit_profile = str(job.get("audit_profile") or "").strip()
+        if audit_profile:
+            if audit_profile != COMERCIAL_RANGE_AUDIT_PROFILE:
+                errors.append("COMERCIAL_RANGE_RESYNC_AUDIT_PROFILE_INVALID")
+            if job.get("checks") not in (None, []):
+                errors.append("COMERCIAL_RANGE_RESYNC_AUDIT_PROFILE_WITH_INLINE_CHECKS_FORBIDDEN")
+            checks = []
+        elif not isinstance(checks, list) or not checks:
             errors.append("COMERCIAL_RANGE_RESYNC_AUDIT_REQUIRED")
         elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
             errors.append("COMERCIAL_RANGE_RESYNC_ONLY_SQL_AUDIT_ALLOWED")
     elif mode == COMERCIAL_OPEN_DAY_SYNC_MODE:
-        if not isinstance(checks, list) or not checks:
+        audit_profile = str(job.get("audit_profile") or "").strip()
+        if audit_profile:
+            if audit_profile != COMERCIAL_OPEN_DAY_AUDIT_PROFILE:
+                errors.append("COMERCIAL_OPEN_DAY_SYNC_AUDIT_PROFILE_INVALID")
+            if job.get("checks") not in (None, []):
+                errors.append("COMERCIAL_OPEN_DAY_SYNC_AUDIT_PROFILE_WITH_INLINE_CHECKS_FORBIDDEN")
+            checks = []
+        elif not isinstance(checks, list) or not checks:
             errors.append("COMERCIAL_OPEN_DAY_SYNC_AUDIT_REQUIRED")
         elif any(
             not isinstance(c, dict)
