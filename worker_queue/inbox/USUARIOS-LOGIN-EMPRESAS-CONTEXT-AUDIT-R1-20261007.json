@@ -1,0 +1,78 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "USUARIOS-LOGIN-EMPRESAS-CONTEXT-AUDIT-R1-20261007",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "Usuarios Produccion"
+  },
+  "objective": "Auditar por que usuarios con servidores/sucursales/almacenes correctamente asignados en Usuarios no reciben ni visualizan las empresas/unidades permitidas despues del login. Determinar el drift entre alcance de servidores y contexto canonico de empresas, sin modificar datos.",
+  "mode": "READ_ONLY",
+  "quality_gate": "AUDIT_REQUIRED",
+  "constraints": [
+    "NO_PRODUCTION",
+    "NO_DML",
+    "NO_DDL",
+    "NO_MONGO_AS_SOURCE_OF_TRUTH",
+    "SQL_SERVER_CANONICAL",
+    "NO_HARDCODE_NAMES_OR_IDS",
+    "NO_DUPLICATE_CATALOGS"
+  ],
+  "scheduling": {
+    "project_id": "EDARSAHUB",
+    "bounded_context": "AUTH_USER_ACCESS_CONTEXT",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "AUTH_RBAC",
+      "USER_ACCESS_CONTEXT"
+    ]
+  },
+  "scope": {
+    "repo": "rbalam/EDARSA_HUB",
+    "branch": "Edarsahub_Desarrollo"
+  },
+  "instructions": "Auditar el flujo completo Usuarios UI -> persistencia de allowed_servers/allowed_sucursales/allowed_warehouses -> login -> user_repository_sql -> user_access_context -> empresas_permitidas/unidades permitidas -> payload de sesion/frontend. Usar como evidencia el caso reportado de usuarios que muestran servidores marcados en el modal pero al iniciar sesion no visualizan empresas. Revisar especialmente frontend/src/pages/Usuarios.js, backend/core/user_access_context.py, backend/core/auth/user_repository_sql.py, backend/modules/auth/routes.py y tablas/relaciones canonicas Usuario_EmpresasAsignacion, Usuario_SucursalesAsignacion y las relaciones oficiales Empresa/Unidad/Servidor. Verificar si el modal esta configurando solo alcance tecnico de servidores mientras el login exige empresas_permitidas. No asumir que asignar servidor equivale a asignar empresa; determinar relacion canonica. Entregar causa raiz, contrato correcto, archivos/tablas implicados, pruebas necesarias y plan quirurgico R2. No modificar repo ni SQL en R1.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/Usuarios.js",
+          "backend/core/user_access_context.py",
+          "backend/core/auth/user_repository_sql.py",
+          "backend/modules/auth/routes.py"
+        ],
+        "search_terms": [
+          "allowed_servers",
+          "allowed_sucursales",
+          "allowed_warehouses",
+          "Usuario_EmpresasAsignacion",
+          "Usuario_SucursalesAsignacion",
+          "empresas_permitidas",
+          "SUPERADMIN",
+          "Sistema_EmpresasMongoMap"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    }
+  ],
+  "deliverables": [
+    "ROOT_CAUSE",
+    "LOGIN_CONTEXT_FLOW",
+    "CANONICAL_COMPANY_SCOPE_CONTRACT",
+    "AFFECTED_FILES_AND_TABLES",
+    "R2_SURGICAL_FIX_PLAN",
+    "NO_PRODUCTION_NO_DML_NO_DDL_CONFIRMATION"
+  ]
+}
