@@ -118,7 +118,7 @@ export default function TicketVentaModal({
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <DialogContent className="max-w-lg max-h-[92vh] overflow-auto bg-zinc-100">
+      <DialogContent className="max-w-xl max-h-[92vh] overflow-auto bg-zinc-100">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Receipt className="h-5 w-5 text-zinc-700" />
@@ -131,7 +131,7 @@ export default function TicketVentaModal({
             <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
           </div>
         ) : ticket ? (
-          <div className="mx-auto w-full max-w-sm bg-white border border-zinc-300 shadow-sm px-6 py-7 font-mono text-[13px] text-zinc-900">
+          <div className="mx-auto w-full max-w-md bg-white border border-zinc-300 shadow-sm px-6 py-7 font-mono text-[13px] text-zinc-900">
             <div className="text-center">
               <p className="text-lg font-bold tracking-wide">{ticket.unidad}</p>
               <p className="font-semibold mt-1">TICKET DE SERVICIO</p>
@@ -175,15 +175,16 @@ export default function TicketVentaModal({
               {ticket.cliente_direccion && <p><strong>DIRECCIÓN:</strong> {ticket.cliente_direccion}</p>}
             </div>
             <div className="border-t border-dashed border-zinc-500 mt-3 pt-3">
-              <div className="grid grid-cols-[44px_1fr_88px] gap-2 font-bold pb-2">
+              <div className="grid grid-cols-[44px_1fr_76px_88px] gap-2 font-bold pb-2">
                 <span>CANT</span>
                 <span>DESCRIPCIÓN</span>
+                <span className="text-right">P.UNIT.</span>
                 <span className="text-right">IMPORTE</span>
               </div>
 
               <div className="space-y-2">
                 {(ticket.items || []).map((item, idx) => (
-                  <div key={item.partida_origen_id || idx} className="grid grid-cols-[44px_1fr_88px] gap-2 items-start">
+                  <div key={item.partida_origen_id || idx} className="grid grid-cols-[44px_1fr_76px_88px] gap-2 items-start">
                     <span>
                       {Number(item.cantidad || 0).toLocaleString(
                         'es-MX',
@@ -194,20 +195,14 @@ export default function TicketVentaModal({
                       <p className="uppercase leading-tight">{item.descripcion}</p>
                       {item.partida_comentario && <p className="text-xs whitespace-pre-wrap break-words">{item.partida_comentario}</p>}
                       {item.comentario_descuento && <p className="text-xs whitespace-pre-wrap break-words">DESC.: {item.comentario_descuento}</p>}
-                      {Number(item.precio_unitario || 0) > 0
-                        && Number(item.cantidad || 0) !== 1 && (
-                        <p className="text-[11px] text-zinc-500">
-                          @ {money(item.precio_unitario)}
-                        </p>
-                      )}
                     </div>
+                    <span className="text-right">
+                      {money(item.precio_unitario)}
+                    </span>
                     <div className="text-right">
-                      <span>{money(item.importe_neto ?? item.importe)}</span>
+                      <span>{money(item.importe)}</span>
                       {Number(item.descuento_importe || 0) > 0.005 && (
                         <div className="text-[11px] mt-1">
-                          <p className="text-zinc-500">
-                            BRUTO {money(item.importe)}
-                          </p>
                           <p className="text-zinc-500">
                             DESC. {Number(item.descuento_pct || 0).toLocaleString('es-MX', { maximumFractionDigits: 2 })}%:
                             {' '}
