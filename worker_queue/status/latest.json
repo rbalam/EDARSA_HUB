@@ -1,10 +1,10 @@
 {
-  "ahead_count": 0,
+  "ahead_count": 1,
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "SYNC",
+  "convergence_status": "LOCAL_AHEAD_ONLY",
   "development_sha": "52764b8d19ab0d5d66664dde489b67564e6e4cb7",
-  "generated_at_utc": "2026-10-08T16:41:24Z",
+  "generated_at_utc": "2026-10-08T16:42:42Z",
   "history": {
     "done_total_local": 1346,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1054,
+      "age_seconds": 1132,
       "job_id": "EDARSAHUB-TABLERO-VENTAS-DIA-DRILLDOWN-DATE-FIX-R29-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "52764b8d19ab0d5d66664dde489b67564e6e4cb7",
+  "local_development_sha": "2faeebe66fa1ab9cd6ecd9b7e92fba8935a09de9",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -36,15 +36,15 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T16:41:18Z",
-    "last_receive_utc": "2026-10-08T16:41:13Z",
+    "last_cycle_utc": "2026-10-08T16:42:36Z",
+    "last_receive_utc": "2026-10-08T16:42:31Z",
     "last_terminal_utc": "2026-10-08T16:23:49Z",
     "pid": "385",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "4aff06e7ceeb552f43b52ea95b57ff522cd36adf",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "52764b8d19ab0d5d66664dde489b67564e6e4cb7",
+      "development_sha": "2faeebe66fa1ab9cd6ecd9b7e92fba8935a09de9",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
