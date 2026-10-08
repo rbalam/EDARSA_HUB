@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TABLERO-VENTAS-DIA-DRILLDOWN-DATE-FIX-CERT-R30-CARLOS-20261008",
+  "created_at_utc": "2026-10-08T16:45:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "52764b8d19ab0d5d66664dde489b67564e6e4cb7",
+  "production_allowed": false,
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Actualizacion de tickets de venta"
+  },
+  "objective": "Certificar la correccion ya aplicada del desfase de fecha en el drill-down de Ventas del Dia. Validar regresion backend, paridad de tableros y build frontend. No modificar codigo, tickets, sincronizadores ni Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial_analytics/repository_operational.py",
+        "backend/tests/test_comercial_operacion_en_curso_repository.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_operacion_en_curso_repository.py",
+        "backend/tests/test_tabeje_comercial_parity_r17.py",
+        "backend/tests/test_comercial_ticket_metadata_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
