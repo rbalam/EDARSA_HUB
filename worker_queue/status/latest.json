@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "79b137324e011b3f7dcda03413081c435250a926",
-  "generated_at_utc": "2026-10-08T04:08:05Z",
+  "generated_at_utc": "2026-10-08T04:09:29Z",
   "history": {
     "done_total_local": 1337,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 51,
+      "age_seconds": 135,
       "job_id": "EDARSAHUB-TICKETS-VENTA-SQL-MIGRATION-DEVELOPMENT-R10-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3270,
+      "age_seconds": 3354,
       "job_id": "USUARIOS-LOGIN-EMPRESAS-CONTEXT-AUDIT-R1-20261007",
       "reason": null,
       "state": "RESULT_READY"
@@ -42,8 +42,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T04:07:55Z",
-    "last_receive_utc": "2026-10-08T04:08:04Z",
+    "last_cycle_utc": "2026-10-08T04:09:23Z",
+    "last_receive_utc": "2026-10-08T04:09:29Z",
     "last_terminal_utc": "2026-10-08T04:07:14Z",
     "pid": "425",
     "runtime_fingerprint": {
