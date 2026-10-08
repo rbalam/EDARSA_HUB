@@ -1,68 +1,68 @@
 {
   "ahead_count": 0,
-  "behind_count": 2,
+  "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "REMOTE_AHEAD_ONLY",
-  "development_sha": "11c114351c8a1474e4c93cacb84cf70057515d84",
-  "generated_at_utc": "2026-10-08T17:44:23Z",
+  "convergence_status": "SYNC",
+  "development_sha": "9ef80c58d0ea81a3fe40ed547545c6a45ac45e16",
+  "generated_at_utc": "2026-10-08T17:48:33Z",
   "history": {
-    "done_total_local": 1349,
+    "done_total_local": 1350,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 1175,
-    "results_total_local": 2314
+    "results_total_local": 2315
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3598,
-      "job_id": "EDARSAHUB-TABLERO-VENTAS-DIA-DRILLDOWN-DATE-CERT-R30-CARLOS-20261008",
+      "age_seconds": 207,
+      "job_id": "EDARSAHUB-TICKET-DIA-CANONICAL-CERT-R34-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3436,
-      "job_id": "EDARSAHUB-TABLERO-VENTAS-DIA-DRILLDOWN-DATE-FIX-CERT-R30-CARLOS-20261008",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 432,
+      "age_seconds": 682,
       "job_id": "EDARSAHUB-TICKET-DIA-PRECIO-UNITARIO-CANONICO-R32-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1619,
+      "age_seconds": 1868,
       "job_id": "EDARSAHUB-TICKET-DIA-PRECIOS-DIAGNOSTICO-R31-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 56,
+      "job_id": "EDARSAHUB-TICKET-DIA-UI-BUILD-R35-CARLOS-20261008",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
-  "local_development_sha": "1c37a4e5ddf6fce4c0bed0328661475586645f7f",
+  "local_development_sha": "9ef80c58d0ea81a3fe40ed547545c6a45ac45e16",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
-  "queue_running": 0,
-  "remote_development_sha": "11c114351c8a1474e4c93cacb84cf70057515d84",
+  "queue_result_ready_recent": 3,
+  "queue_running": 1,
+  "remote_development_sha": "9ef80c58d0ea81a3fe40ed547545c6a45ac45e16",
   "runtime": {
-    "current_job_id": "EDARSAHUB-TICKET-DIA-PRECIO-UNITARIO-CANONICO-R32-CARLOS-20261008",
+    "current_job_id": "EDARSAHUB-TICKET-DIA-UI-BUILD-R35-CARLOS-20261008",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T17:44:20Z",
-    "last_receive_utc": "2026-10-08T17:44:15Z",
-    "last_terminal_utc": "2026-10-08T17:37:10Z",
-    "pid": "309",
+    "last_cycle_utc": "2026-10-08T17:48:22Z",
+    "last_receive_utc": "2026-10-08T17:48:33Z",
+    "last_terminal_utc": "2026-10-08T17:45:06Z",
+    "pid": "429",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "4aff06e7ceeb552f43b52ea95b57ff522cd36adf",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "1c37a4e5ddf6fce4c0bed0328661475586645f7f",
+      "development_sha": "9ef80c58d0ea81a3fe40ed547545c6a45ac45e16",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
