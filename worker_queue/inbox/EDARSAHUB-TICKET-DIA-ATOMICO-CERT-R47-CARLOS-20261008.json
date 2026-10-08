@@ -4,7 +4,7 @@
   "created_at_utc": "2026-10-08T23:49:00Z",
   "target_repo": "rbalam/EDARSA_HUB",
   "target_branch": "Edarsahub_Desarrollo",
-  "expected_base_sha": "42d0a4075d3e18e450c1230df935aa8abb137f9d",
+  "expected_base_sha": "0c855c76358bb00b0776e1508a578c8364fe1122",
   "production_allowed": false,
   "requester": {
     "email": "carlosruz@edarsa.com.mx",
@@ -12,7 +12,7 @@
     "project": "V1.0",
     "chat": "Actualizacion de tickets de venta"
   },
-  "objective": "Certificar la correccion atomica y transversal de Ventas del Dia: SoftRestaurant numcheque 0/NULL usa folio interno como identidad visible, cada cuenta temporal permanece separada, la venta del detalle excluye propina igual que el KPI y el drilldown compartido no genera filas sinteticas de conciliacion. No modificar sync_comercial_abiertas_v2 ni Produccion.",
+  "objective": "Certificar la correccion atomica y transversal de Ventas del Dia: SoftRestaurant numcheque 0/NULL usa folio interno como identidad visible, cada cuenta temporal permanece separada, la venta del detalle excluye propina igual que el KPI y ambos tableros usan el mismo drilldown sin filas sinteticas y con la misma interaccion. No modificar sync_comercial_abiertas_v2 ni Produccion.",
   "human_summary_language": "es",
   "mode": "READ_ONLY",
   "actions": [],
