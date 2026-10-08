@@ -1,0 +1,33 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TICKETS-VENTA-OPEN-DAY-PILOT-R20-CARLOS-20261007",
+  "created_at_utc": "2026-10-08T05:43:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "08d6a3fb4dd42fa55c4369d4c89cdc0ba8133173",
+  "production_allowed": false,
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Plan de actualizacion de tickets"
+  },
+  "objective": "Ejecutar el sincronizador canonico de Ventas del Dia para 2026-10-07 y validar que los snapshots persistidos en EDARSAHUB contengan el contrato ampliado de tickets. No modificar codigo ni Produccion.",
+  "human_summary_language": "es",
+  "mode": "COMERCIAL_OPEN_DAY_SYNC",
+  "actions": [],
+  "fecha_operacion": "2026-10-07",
+  "confirm_comercial_open_day_sync": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "ticket_open_day_metadata_latest",
+          "sql": "WITH x AS (\nSELECT unidad_negocio_id,sucursal_id,fecha_operacion,snapshot_timestamp,ventas_abiertas,ventas_cerradas_dia,detalle_abiertas_json,\nROW_NUMBER() OVER(PARTITION BY unidad_negocio_id ORDER BY snapshot_timestamp DESC) AS rn\nFROM dbo.Comercial_Ventas_Dia_Abiertas_v2\nWHERE fecha_operacion='2026-10-07'\n)\nSELECT unidad_negocio_id,sucursal_id,fecha_operacion,snapshot_timestamp,ventas_abiertas,ventas_cerradas_dia,\nCASE WHEN ISJSON(detalle_abiertas_json)=1 THEN 1 ELSE 0 END AS json_valido,\nCASE WHEN ISJSON(detalle_abiertas_json)=1 THEN (SELECT COUNT(*) FROM OPENJSON(detalle_abiertas_json)) ELSE -1 END AS detalle_filas,\nCASE WHEN detalle_abiertas_json LIKE '%\"partida_origen_id\"%' THEN 1 ELSE 0 END AS tiene_partida_origen,\nCASE WHEN detalle_abiertas_json LIKE '%\"cliente_id\"%' THEN 1 ELSE 0 END AS tiene_cliente_id,\nCASE WHEN detalle_abiertas_json LIKE '%\"cliente_rfc\"%' THEN 1 ELSE 0 END AS tiene_cliente_rfc,\nCASE WHEN detalle_abiertas_json LIKE '%\"ticket_comentario\"%' THEN 1 ELSE 0 END AS tiene_ticket_comentario,\nCASE WHEN detalle_abiertas_json LIKE '%\"partida_comentario\"%' THEN 1 ELSE 0 END AS tiene_partida_comentario,\nCASE WHEN detalle_abiertas_json LIKE '%\"tipo_descuento_descripcion\"%' THEN 1 ELSE 0 END AS tiene_tipo_descuento\nFROM x WHERE rn=1 ORDER BY unidad_negocio_id"
+        }
+      ]
+    }
+  ]
+}
