@@ -1,0 +1,35 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TICKETS-OCTUBRE-FINAL-CERT-R46-CARLOS-20261008",
+  "created_at_utc": "2026-10-08T23:14:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "6ccf2b9fad6cfc8e04862ba1306d35afb40610fd",
+  "production_allowed": false,
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Actualizacion de tickets de venta"
+  },
+  "objective": "Certificar en solo lectura el cierre de octubre: todas las partidas reales cerradas del 01 al 07 deben tener identidad, precio unitario e importe bruto; los renglones HEADER_SIN_DETALLE se reportan por separado; Ventas del Dia del 08 debe conservar metadata canonica en las cinco unidades. No modificar datos, codigo, tickets, sincronizadores ni Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "octubre_closed_business_line_certification",
+          "sql": "SELECT unidad_negocio_id, COUNT(*) AS lineas_totales, SUM(CASE WHEN producto_codigo_fuente='HEADER_SIN_DETALLE' THEN 1 ELSE 0 END) AS placeholders_header_sin_detalle, SUM(CASE WHEN ISNULL(producto_codigo_fuente,'')<>'HEADER_SIN_DETALLE' AND partida_origen_id IS NULL THEN 1 ELSE 0 END) AS partidas_reales_sin_identidad, SUM(CASE WHEN ISNULL(producto_codigo_fuente,'')<>'HEADER_SIN_DETALLE' AND precio_unitario IS NULL THEN 1 ELSE 0 END) AS partidas_reales_sin_precio_unitario, SUM(CASE WHEN ISNULL(producto_codigo_fuente,'')<>'HEADER_SIN_DETALLE' AND importe_bruto IS NULL THEN 1 ELSE 0 END) AS partidas_reales_sin_importe_bruto, SUM(CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(cliente_id,''))),'') IS NOT NULL AND cliente_rfc IS NULL THEN 1 ELSE 0 END) AS lineas_con_cliente_id_sin_rfc FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE fecha_operacion>='2026-10-01' AND fecha_operacion<='2026-10-07' AND unidad_negocio_id IN ('130MID','CIENFUEGOS','ESTELAR','130QRO','ORIGEN') AND ISNULL(activo,1)=1 GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        },
+        {
+          "name": "octubre_open_day_final_certification",
+          "sql": "WITH x AS (SELECT unidad_negocio_id, fecha_operacion, snapshot_timestamp, detalle_abiertas_json, ROW_NUMBER() OVER(PARTITION BY unidad_negocio_id ORDER BY snapshot_timestamp DESC) AS rn FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WHERE fecha_operacion='2026-10-08' AND unidad_negocio_id IN ('130MID','CIENFUEGOS','ESTELAR','130QRO','ORIGEN')) SELECT unidad_negocio_id, fecha_operacion, CASE WHEN ISJSON(detalle_abiertas_json)=1 THEN 1 ELSE 0 END AS json_valido, CASE WHEN detalle_abiertas_json LIKE '%\"partida_origen_id\"%' THEN 1 ELSE 0 END AS tiene_partida_origen, CASE WHEN detalle_abiertas_json LIKE '%\"precio_unitario\"%' THEN 1 ELSE 0 END AS tiene_precio_unitario, CASE WHEN detalle_abiertas_json LIKE '%\"importe_bruto\"%' THEN 1 ELSE 0 END AS tiene_importe_bruto, CASE WHEN detalle_abiertas_json LIKE '%\"cliente_id\"%' THEN 1 ELSE 0 END AS tiene_cliente_id, CASE WHEN detalle_abiertas_json LIKE '%\"cliente_rfc\"%' THEN 1 ELSE 0 END AS tiene_cliente_rfc FROM x WHERE rn=1 ORDER BY unidad_negocio_id"
+        }
+      ]
+    }
+  ]
+}
