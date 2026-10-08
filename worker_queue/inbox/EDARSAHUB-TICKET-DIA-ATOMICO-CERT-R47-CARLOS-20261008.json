@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TICKET-DIA-ATOMICO-CERT-R47-CARLOS-20261008",
+  "created_at_utc": "2026-10-08T23:49:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "42d0a4075d3e18e450c1230df935aa8abb137f9d",
+  "production_allowed": false,
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Actualizacion de tickets de venta"
+  },
+  "objective": "Certificar la correccion atomica y transversal de Ventas del Dia: SoftRestaurant numcheque 0/NULL usa folio interno como identidad visible, cada cuenta temporal permanece separada, la venta del detalle excluye propina igual que el KPI y el drilldown compartido no genera filas sinteticas de conciliacion. No modificar sync_comercial_abiertas_v2 ni Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial_v2/ticket_snapshot.py",
+        "backend/modules/comercial/ticket_service.py",
+        "backend/tests/test_comercial_day_ticket_atomic_identity_r47.py",
+        "backend/tests/test_comercial_ticket_numcheque_date_contract.py",
+        "backend/tests/test_tabeje_comercial_parity_r17.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_day_ticket_atomic_identity_r47.py",
+        "backend/tests/test_comercial_ticket_numcheque_date_contract.py",
+        "backend/tests/test_tabeje_comercial_parity_r17.py",
+        "backend/tests/test_comercial_ticket_drilldown_contract.py",
+        "backend/tests/test_comercial_ticket_metadata_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
