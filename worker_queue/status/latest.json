@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "REMOTE_AHEAD_ONLY",
   "development_sha": "23f9c9458fdac15db470f1989f19c6fabe87115e",
-  "generated_at_utc": "2026-10-08T18:17:09Z",
+  "generated_at_utc": "2026-10-08T18:18:48Z",
   "history": {
     "done_total_local": 1350,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 125,
+      "age_seconds": 224,
       "job_id": "EDARSAHUB-TICKETS-OCTUBRE-BACKFILL-R37-CARLOS-20261008",
       "reasons": [
         "COMERCIAL_RANGE_RESYNC_AUDIT_REQUIRED"
@@ -25,7 +25,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 103,
+      "age_seconds": 202,
       "job_id": "EDARSAHUB-TICKETS-OCTUBRE-OPEN-DAY-R38-CARLOS-20261008",
       "reasons": [
         "COMERCIAL_OPEN_DAY_SYNC_AUDIT_REQUIRED"
@@ -34,31 +34,25 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1923,
+      "age_seconds": 2022,
       "job_id": "EDARSAHUB-TICKET-DIA-CANONICAL-CERT-R34-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2398,
+      "age_seconds": 2497,
       "job_id": "EDARSAHUB-TICKET-DIA-PRECIO-UNITARIO-CANONICO-R32-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3584,
-      "job_id": "EDARSAHUB-TICKET-DIA-PRECIOS-DIAGNOSTICO-R31-CARLOS-20261008",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1635,
+      "age_seconds": 1734,
       "job_id": "EDARSAHUB-TICKET-DIA-UI-BUILD-R35-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1253,
+      "age_seconds": 1353,
       "job_id": "EDARSAHUB-TICKET-DIA-UI-BUILD-R36-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,14 +66,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 2,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "remote_development_sha": "23f9c9458fdac15db470f1989f19c6fabe87115e",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T18:17:05Z",
-    "last_receive_utc": "2026-10-08T18:17:00Z",
+    "last_cycle_utc": "2026-10-08T18:18:43Z",
+    "last_receive_utc": "2026-10-08T18:18:48Z",
     "last_terminal_utc": "2026-10-08T17:56:15Z",
     "pid": "357",
     "runtime_fingerprint": {
