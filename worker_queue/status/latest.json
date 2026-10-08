@@ -4,47 +4,47 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "6ccf2b9fad6cfc8e04862ba1306d35afb40610fd",
-  "generated_at_utc": "2026-10-08T22:59:39Z",
+  "generated_at_utc": "2026-10-08T23:01:03Z",
   "history": {
-    "done_total_local": 1351,
+    "done_total_local": 1352,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 1180,
-    "results_total_local": 2319
+    "results_total_local": 2320
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2013,
+      "age_seconds": 2098,
       "job_id": "EDARSAHUB-PREVIEW-DIRTY-WORKTREE-DIAG-R42-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 740,
+      "age_seconds": 29,
       "job_id": "EDARSAHUB-TICKETS-OCTUBRE-BACKFILL-R43-CARLOS-20261008",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
   "local_development_sha": "6ccf2b9fad6cfc8e04862ba1306d35afb40610fd",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
-  "queue_running": 1,
+  "queue_result_ready_recent": 2,
+  "queue_running": 0,
   "remote_development_sha": "6ccf2b9fad6cfc8e04862ba1306d35afb40610fd",
   "runtime": {
-    "current_job_id": "EDARSAHUB-TICKETS-OCTUBRE-BACKFILL-R43-CARLOS-20261008",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T22:59:27Z",
-    "last_receive_utc": "2026-10-08T22:59:38Z",
-    "last_terminal_utc": "2026-10-08T22:26:05Z",
+    "last_cycle_utc": "2026-10-08T23:01:02Z",
+    "last_receive_utc": "2026-10-08T23:00:57Z",
+    "last_terminal_utc": "2026-10-08T23:00:34Z",
     "pid": "35739",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "b65cdf9f2a3d0d78acc1e727e7c4b40f4e4daadf",
