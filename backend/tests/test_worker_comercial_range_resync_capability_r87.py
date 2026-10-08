@@ -40,3 +40,13 @@ def test_script_accepts_both_supported_pos_engines():
     assert '{"SOFTRESTAURANT", "MPRO"}' in text
     assert 'SYSTEM_NOT_SUPPORTED' in text
     assert 'SYSTEM_NOT_SOFTRESTAURANT' not in text
+
+
+def test_range_resync_supports_preapproved_audit_profile():
+    bridge = BRIDGE.read_text(encoding='utf-8')
+    dispatcher = DISPATCHER.read_text(encoding='utf-8')
+    assert 'COMERCIAL_RANGE_AUDIT_PROFILE = "closed_ticket_metadata"' in bridge
+    assert 'COMERCIAL_RANGE_AUDIT_PROFILE = "closed_ticket_metadata"' in dispatcher
+    assert 'build_comercial_audit_checks' in dispatcher
+    assert 'closed_ticket_metadata_post_backfill' in dispatcher
+    assert 'COMERCIAL_RANGE_RESYNC_AUDIT_PROFILE_INVALID' in bridge
