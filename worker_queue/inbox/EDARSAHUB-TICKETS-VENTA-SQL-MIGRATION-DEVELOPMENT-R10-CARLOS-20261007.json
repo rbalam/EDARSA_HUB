@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TICKETS-VENTA-SQL-MIGRATION-DEVELOPMENT-R10-CARLOS-20261007",
+  "created_at_utc": "2026-10-08T04:06:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "79b137324e011b3f7dcda03413081c435250a926",
+  "production_allowed": false,
+  "objective": "Aplicar exclusivamente en EDARSAHUB Desarrollo la migracion idempotente de metadata atomica para tickets de venta ahora que el runtime esta convergido en 79b137324e011b3f7dcda03413081c435250a926. Agregar 58 columnas al destino canonico Comercial_Inteligencia_VentasDetalleProducto y reemplazar el indice unico de detalle segun el archivo versionado. No ejecutar ETL, no resincronizar ventas, no tocar frontend, no tocar Produccion.",
+  "human_summary_language": "es",
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20261007_003_ticket_cliente_comentarios_atomicos.sql",
+  "migration_sha256": "5daa07f835c3bc455d217fd8fa4e931a19dd4e6607683ee61423d677e493978e",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "preflight_checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "tickets_metadata_preflight",
+          "sql": "SELECT DB_NAME() AS database_name, OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto','U') AS detail_table_id, (SELECT COUNT(*) FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto') AND name IN ('partida_origen_id','partida_key','cliente_id','cliente_nombre','cliente_razon_social','cliente_descripcion','cliente_maestro_id','cliente_sucursal_origen','cliente_contacto','cliente_rfc','cliente_direccion_1','cliente_direccion_2','cliente_direccion_3','cliente_calle','cliente_numero_exterior','cliente_numero_interior','cliente_colonia','cliente_ciudad','cliente_municipio','cliente_estado','cliente_pais','cliente_codigo_postal','ticket_fecha','ticket_fecha_cierre','ticket_pagado','ticket_impreso','ticket_impresiones','ticket_comentario','ticket_comentario_descuento','ticket_fecha_alta','ticket_oper_ult_modif','ticket_oper_baja','ticket_fecha_baja','partida_comentario','partida_comentario_descuento','partida_comentario_cancelacion','partida_oper_baja','partida_fecha_baja','tipo_descuento_id','tipo_descuento_descripcion','tipo_descuento_valor','cliente_cruzamiento_1','cliente_cruzamiento_2','cliente_entrega_direccion_1','cliente_entrega_direccion_2','cliente_entrega_direccion_3','cliente_entrega_ciudad','cliente_entrega_estado','cliente_entrega_pais','cliente_entrega_codigo_postal','cliente_colonia_origen_id','cliente_ciudad_origen_id','cliente_municipio_origen_id','cliente_estado_origen_id','cliente_pais_origen_id','cliente_codigo_postal_origen_id','cliente_latitud','cliente_longitud')) AS metadata_columns_before, 1/CASE WHEN DB_NAME()='EDARSAHUB' AND OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto','U') IS NOT NULL THEN 1 ELSE 0 END AS preflight_assertion"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "tickets_metadata_post_columns",
+          "sql": "SELECT COUNT(*) AS metadata_columns_after, 1/CASE WHEN COUNT(*)=58 THEN 1 ELSE 0 END AS all_metadata_columns_assertion FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto') AND name IN ('partida_origen_id','partida_key','cliente_id','cliente_nombre','cliente_razon_social','cliente_descripcion','cliente_maestro_id','cliente_sucursal_origen','cliente_contacto','cliente_rfc','cliente_direccion_1','cliente_direccion_2','cliente_direccion_3','cliente_calle','cliente_numero_exterior','cliente_numero_interior','cliente_colonia','cliente_ciudad','cliente_municipio','cliente_estado','cliente_pais','cliente_codigo_postal','ticket_fecha','ticket_fecha_cierre','ticket_pagado','ticket_impreso','ticket_impresiones','ticket_comentario','ticket_comentario_descuento','ticket_fecha_alta','ticket_oper_ult_modif','ticket_oper_baja','ticket_fecha_baja','partida_comentario','partida_comentario_descuento','partida_comentario_cancelacion','partida_oper_baja','partida_fecha_baja','tipo_descuento_id','tipo_descuento_descripcion','tipo_descuento_valor','cliente_cruzamiento_1','cliente_cruzamiento_2','cliente_entrega_direccion_1','cliente_entrega_direccion_2','cliente_entrega_direccion_3','cliente_entrega_ciudad','cliente_entrega_estado','cliente_entrega_pais','cliente_entrega_codigo_postal','cliente_colonia_origen_id','cliente_ciudad_origen_id','cliente_municipio_origen_id','cliente_estado_origen_id','cliente_pais_origen_id','cliente_codigo_postal_origen_id','cliente_latitud','cliente_longitud')"
+        },
+        {
+          "name": "tickets_metadata_post_unique_index",
+          "sql": "SELECT COUNT(*) AS index_rows, 1/CASE WHEN COUNT(*)=7 AND SUM(CASE WHEN c.name IN ('unidad_negocio_id','id_transaccion','numero_ticket','producto_codigo_fuente','descuento_pct','fecha_operacion','partida_origen_id') THEN 1 ELSE 0 END)=7 THEN 1 ELSE 0 END AS unique_index_assertion FROM sys.indexes i INNER JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id INNER JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto') AND i.name='UX_Comercial_Intel_VentasDetalle_NoDup' AND i.is_unique=1 AND ic.is_included_column=0"
+        }
+      ]
+    }
+  ]
+}
