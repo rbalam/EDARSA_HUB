@@ -27,6 +27,38 @@ def test_snapshot_preserves_distinct_partidas_and_unicode():
     assert sum(r['importe_neto_producto'] for r in result) == 180
 
 
+def test_snapshot_without_explicit_net_uses_gross_less_discount():
+    row = {
+        'folio': 'T1',
+        'sistema_origen': 'GENERIC',
+        'cantidad': 2,
+        'precio_unitario': 100,
+        'importe_bruto': 200,
+        'descuento_producto': 20,
+    }
+    result = json.loads(serialize_open_detail_rows([row]))
+    assert result[0]['precio_unitario'] == 100
+    assert result[0]['importe_bruto'] == 200
+    assert result[0]['importe_neto_producto'] == 180
+
+
+def test_mpro_legacy_zero_net_is_recovered_only_without_discount():
+    from modules.comercial.ticket_service import _snapshot_line_net_amount
+
+    assert _snapshot_line_net_amount({
+        'sistema_origen': 'MPRO',
+        'importe_bruto': 299,
+        'importe_neto_producto': 0,
+    }) == 299
+
+    assert _snapshot_line_net_amount({
+        'sistema_origen': 'MPRO',
+        'importe_bruto': 299,
+        'importe_neto_producto': 0,
+        'tipo_descuento_valor': 100,
+    }) == 0
+
+
 def test_header_refuses_to_mix_clients():
     with pytest.raises(ValueError, match='TICKET_HEADER_CONFLICT:cliente_id'):
         header_from([{'cliente_id': 'A'}, {'cliente_id': 'B'}])
