@@ -1,0 +1,47 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TICKET-DIA-PRECIOS-DIAGNOSTICO-R31-CARLOS-20261008",
+  "created_at_utc": "2026-10-08T17:18:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "52764b8d19ab0d5d66664dde489b67564e6e4cb7",
+  "production_allowed": false,
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Actualizacion de tickets de venta"
+  },
+  "objective": "Diagnosticar en solo lectura el ticket abierto ORIGEN SB-0055579 del 2026-10-08: comparar precio/cantidad/importe persistidos en EDARSAHUB contra Comanda_Detalle MPRO. No modificar tickets, sincronizadores, codigo ni Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "origen_open_ticket_persisted_lines",
+          "sql": "WITH s AS (SELECT TOP (1) detalle_abiertas_json FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion='2026-10-08' ORDER BY snapshot_timestamp DESC) SELECT JSON_VALUE(j.value,'$.folio') AS folio, JSON_VALUE(j.value,'$.partida_origen_id') AS partida_origen_id, JSON_VALUE(j.value,'$.producto_codigo') AS producto_codigo, JSON_VALUE(j.value,'$.producto_nombre') AS producto_nombre, TRY_CONVERT(decimal(18,4),JSON_VALUE(j.value,'$.cantidad')) AS cantidad, TRY_CONVERT(decimal(18,4),JSON_VALUE(j.value,'$.precio_unitario')) AS precio_unitario, TRY_CONVERT(decimal(18,4),JSON_VALUE(j.value,'$.importe_bruto')) AS importe_bruto, TRY_CONVERT(decimal(18,4),JSON_VALUE(j.value,'$.importe_neto_producto')) AS importe_neto_producto, TRY_CONVERT(decimal(18,4),JSON_VALUE(j.value,'$.total_ticket')) AS total_ticket FROM s CROSS APPLY OPENJSON(s.detalle_abiertas_json) j WHERE JSON_VALUE(j.value,'$.folio')='SB-0055579' ORDER BY partida_origen_id"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "origen_open_ticket_source_lines",
+          "sql": "SELECT c.Co_Folio,d.Cd_Id,d.Cd_Key,d.Pr_Cve_Producto,d.Cd_Concepto,d.Cd_Cantidad,d.Cd_Precio,d.Cd_Importe,d.Cd_Tipo_Descuento,d.Es_Cve_Estado,d.Fecha_Baja,c.Co_Personas,c.Co_Propina,c.Es_Cve_Estado AS comanda_estado FROM Comanda c LEFT JOIN Comanda_Detalle d ON d.Co_Folio=c.Co_Folio WHERE c.Co_Folio='SB-0055579' ORDER BY d.Cd_Id"
+        }
+      ]
+    }
+  ]
+}
