@@ -1,0 +1,152 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TICKET-DIA-PRECIO-UNITARIO-CANONICO-R32-CARLOS-20261008",
+  "created_at_utc": "2026-10-08T17:23:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "52764b8d19ab0d5d66664dde489b67564e6e4cb7",
+  "production_allowed": false,
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Actualizacion de tickets de venta"
+  },
+  "objective": "Corregir canonicalmente el importe neto faltante de snapshots MPRO de Ventas del Dia y mostrar Precio Unitario como columna fija en todos los visualizadores compartidos del ticket. Mantener cantidad x precio unitario = importe bruto visible. Recuperar snapshots MPRO legacy sin descuento que quedaron con neto cero. Ordenar partidas por identidad de origen. No modificar sincronizadores, Ticket closed ETL ni Produccion.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/ticket_snapshot.py",
+      "old": "        normalized.append({\n            **fields_from(row),\n",
+      "new": "        importe_bruto = _number(row.get(\"importe_bruto\"))\n        descuento_producto = _number(row.get(\"descuento_producto\"))\n        raw_importe_neto = row.get(\"importe_neto_producto\")\n        importe_neto_producto = (\n            _number(raw_importe_neto)\n            if raw_importe_neto is not None\n            else importe_bruto - descuento_producto\n        )\n        normalized.append({\n            **fields_from(row),\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/ticket_snapshot.py",
+      "old": "            \"importe_bruto\": _number(row.get(\"importe_bruto\")),\n            \"descuento_pct\": _number(row.get(\"descuento_pct\")),\n            \"descuento_producto\": _number(row.get(\"descuento_producto\")),\n            \"importe_neto_producto\": _number(row.get(\"importe_neto_producto\")),\n",
+      "new": "            \"importe_bruto\": importe_bruto,\n            \"descuento_pct\": _number(row.get(\"descuento_pct\")),\n            \"descuento_producto\": descuento_producto,\n            \"importe_neto_producto\": importe_neto_producto,\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/ticket_service.py",
+      "old": "def _integer(value: Any) -> int:\n    try:\n        return int(float(value or 0))\n    except (TypeError, ValueError):\n        return 0\n\n\ndef _folio_sort_key(value: Any):\n",
+      "new": "def _integer(value: Any) -> int:\n    try:\n        return int(float(value or 0))\n    except (TypeError, ValueError):\n        return 0\n\n\ndef _snapshot_line_net_amount(row: Dict[str, Any]) -> float:\n    \"\"\"Resuelve neto canónico y recupera snapshots MPRO legacy sin neto.\"\"\"\n    bruto = _money(row.get(\"importe_bruto\"))\n    descuento = _money(row.get(\"descuento_producto\"))\n    raw_neto = row.get(\"importe_neto_producto\")\n\n    if raw_neto is None:\n        return bruto - descuento\n\n    neto = _money(raw_neto)\n    sistema = str(row.get(\"sistema_origen\") or \"\").strip().upper()\n    tiene_descuento = any(\n        abs(_money(row.get(field))) > 0.005\n        for field in (\n            \"descuento_producto\",\n            \"descuento_pct\",\n            \"tipo_descuento_valor\",\n        )\n    )\n\n    if (\n        sistema == \"MPRO\"\n        and abs(neto) <= 0.005\n        and abs(bruto) > 0.005\n        and not tiene_descuento\n    ):\n        return bruto\n\n    return neto\n\n\ndef _snapshot_partida_sort_key(row: Dict[str, Any]):\n    value = str(row.get(\"partida_origen_id\") or \"\").strip()\n    try:\n        return (0, int(value), value)\n    except (TypeError, ValueError):\n        return (1, 0, value)\n\n\ndef _folio_sort_key(value: Any):\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/ticket_service.py",
+      "old": "    snapshot_rows = [\n        row\n        for row in load_open_snapshot_lines(\n            unidad_codigo,\n            sucursal_id,\n            fecha_operacion,\n        )\n        if str(row.get(\"folio\") or \"\") == str(folio)\n    ]\n",
+      "new": "    snapshot_rows = [\n        row\n        for row in load_open_snapshot_lines(\n            unidad_codigo,\n            sucursal_id,\n            fecha_operacion,\n        )\n        if str(row.get(\"folio\") or \"\") == str(folio)\n    ]\n    snapshot_rows.sort(key=_snapshot_partida_sort_key)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/ticket_service.py",
+      "old": "    neto_productos = sum(\n        _money(\n            row.get(\"importe_neto_producto\")\n            if row.get(\"importe_neto_producto\") is not None\n            else (\n                _money(row.get(\"importe_bruto\"))\n                - _money(row.get(\"descuento_producto\"))\n            )\n        )\n        for row in snapshot_rows\n    )\n",
+      "new": "    neto_productos = sum(\n        _snapshot_line_net_amount(row)\n        for row in snapshot_rows\n    )\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/ticket_service.py",
+      "old": "                    \"importe_neto\": _money(\n                        row.get(\"importe_neto_producto\")\n                        if row.get(\"importe_neto_producto\") is not None\n                        else (\n                            _money(row.get(\"importe_bruto\"))\n                            - _money(row.get(\"descuento_producto\"))\n                        )\n                    ),\n",
+      "new": "                    \"importe_neto\": _snapshot_line_net_amount(row),\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/TicketVentaModal.jsx",
+      "old": "      <DialogContent className=\"max-w-lg max-h-[92vh] overflow-auto bg-zinc-100\">\n",
+      "new": "      <DialogContent className=\"max-w-xl max-h-[92vh] overflow-auto bg-zinc-100\">\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/TicketVentaModal.jsx",
+      "old": "          <div className=\"mx-auto w-full max-w-sm bg-white border border-zinc-300 shadow-sm px-6 py-7 font-mono text-[13px] text-zinc-900\">\n",
+      "new": "          <div className=\"mx-auto w-full max-w-md bg-white border border-zinc-300 shadow-sm px-6 py-7 font-mono text-[13px] text-zinc-900\">\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/TicketVentaModal.jsx",
+      "old": "              <div className=\"grid grid-cols-[44px_1fr_88px] gap-2 font-bold pb-2\">\n                <span>CANT</span>\n                <span>DESCRIPCIÓN</span>\n                <span className=\"text-right\">IMPORTE</span>\n              </div>\n",
+      "new": "              <div className=\"grid grid-cols-[44px_1fr_76px_88px] gap-2 font-bold pb-2\">\n                <span>CANT</span>\n                <span>DESCRIPCIÓN</span>\n                <span className=\"text-right\">P.UNIT.</span>\n                <span className=\"text-right\">IMPORTE</span>\n              </div>\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/TicketVentaModal.jsx",
+      "old": "                  <div key={item.partida_origen_id || idx} className=\"grid grid-cols-[44px_1fr_88px] gap-2 items-start\">\n",
+      "new": "                  <div key={item.partida_origen_id || idx} className=\"grid grid-cols-[44px_1fr_76px_88px] gap-2 items-start\">\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/TicketVentaModal.jsx",
+      "old": "                      {Number(item.precio_unitario || 0) > 0\n                        && Number(item.cantidad || 0) !== 1 && (\n                        <p className=\"text-[11px] text-zinc-500\">\n                          @ {money(item.precio_unitario)}\n                        </p>\n                      )}\n                    </div>\n                    <div className=\"text-right\">\n                      <span>{money(item.importe_neto ?? item.importe)}</span>\n",
+      "new": "                    </div>\n                    <span className=\"text-right\">\n                      {money(item.precio_unitario)}\n                    </span>\n                    <div className=\"text-right\">\n                      <span>{money(item.importe)}</span>\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/TicketVentaModal.jsx",
+      "old": "                          <p className=\"text-zinc-500\">\n                            BRUTO {money(item.importe)}\n                          </p>\n                          <p className=\"text-zinc-500\">\n                            DESC. {Number(item.descuento_pct || 0).toLocaleString('es-MX', { maximumFractionDigits: 2 })}%:\n",
+      "new": "                          <p className=\"text-zinc-500\">\n                            DESC. {Number(item.descuento_pct || 0).toLocaleString('es-MX', { maximumFractionDigits: 2 })}%:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/analytics/CanonicalTicketDrilldown.jsx",
+      "old": "                      {formatMoney(line.importe)}\n",
+      "new": "                      {formatMoney(line.importe_bruto ?? line.importe)}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_comercial_ticket_metadata_contract.py",
+      "old": "def test_header_refuses_to_mix_clients():\n",
+      "new": "def test_mpro_snapshot_without_explicit_net_uses_gross_amount():\n    row = {\n        'folio': 'SB-1',\n        'sistema_origen': 'MPRO',\n        'cantidad': 1,\n        'precio_unitario': 299,\n        'importe_bruto': 299,\n    }\n    result = json.loads(serialize_open_detail_rows([row]))\n    assert result[0]['precio_unitario'] == 299\n    assert result[0]['importe_bruto'] == 299\n    assert result[0]['importe_neto_producto'] == 299\n\n\ndef test_mpro_legacy_zero_net_is_recovered_only_without_discount():\n    from modules.comercial.ticket_service import _snapshot_line_net_amount\n\n    assert _snapshot_line_net_amount({\n        'sistema_origen': 'MPRO',\n        'importe_bruto': 299,\n        'importe_neto_producto': 0,\n    }) == 299\n\n    assert _snapshot_line_net_amount({\n        'sistema_origen': 'MPRO',\n        'importe_bruto': 299,\n        'importe_neto_producto': 0,\n        'tipo_descuento_valor': 100,\n    }) == 0\n\n\ndef test_header_refuses_to_mix_clients():\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_comercial_ticket_drilldown_contract.py",
+      "old": "    assert \"TICKET DE SERVICIO\" in shared\n\n    ticket_block = shared\n",
+      "new": "    assert \"TICKET DE SERVICIO\" in shared\n    assert \"P.UNIT.\" in shared\n    assert \"money(item.precio_unitario)\" in shared\n    assert \"money(item.importe)\" in shared\n    assert \"money(item.importe_neto ?? item.importe)\" not in shared\n\n    canonical_visual = (\n        FRONT.parent.parent\n        / \"components/comercial/analytics/CanonicalTicketDrilldown.jsx\"\n    ).read_text(encoding=\"utf-8\")\n    assert \"P. UNIT.\" in canonical_visual\n    assert \"line.importe_bruto ?? line.importe\" in canonical_visual\n\n    ticket_block = shared\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial_v2/ticket_snapshot.py",
+        "backend/modules/comercial/ticket_service.py",
+        "backend/tests/test_comercial_ticket_metadata_contract.py",
+        "backend/tests/test_comercial_ticket_drilldown_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_ticket_metadata_contract.py",
+        "backend/tests/test_comercial_ticket_drilldown_contract.py",
+        "backend/tests/test_tabeje_comercial_parity_r17.py",
+        "backend/tests/test_comercial_softrestaurant_zero_discount_ticket_contract.py"
+      ]
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
