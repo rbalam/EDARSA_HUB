@@ -55,3 +55,13 @@ def test_open_day_operational_mode_has_long_grace_no_git_writer():
     assert "COMERCIAL_OPEN_DAY_SYNC" in guard
     assert "COMERCIAL_OPEN_DAY_SYNC" in health
     assert "COMERCIAL_OPEN_DAY_SYNC" in control
+
+
+def test_open_day_supports_preapproved_audit_profile():
+    bridge = BRIDGE.read_text(encoding="utf-8")
+    dispatcher = DISPATCHER.read_text(encoding="utf-8")
+    assert 'COMERCIAL_OPEN_DAY_AUDIT_PROFILE = "open_day_ticket_metadata"' in bridge
+    assert 'COMERCIAL_OPEN_DAY_AUDIT_PROFILE = "open_day_ticket_metadata"' in dispatcher
+    assert "build_comercial_audit_checks" in dispatcher
+    assert "ticket_open_day_metadata_latest" in dispatcher
+    assert "COMERCIAL_OPEN_DAY_SYNC_AUDIT_PROFILE_INVALID" in bridge
