@@ -3,8 +3,8 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "9ef80c58d0ea81a3fe40ed547545c6a45ac45e16",
-  "generated_at_utc": "2026-10-08T17:49:50Z",
+  "development_sha": "b01604b91032638350bd29c07b8015fa8200f620",
+  "generated_at_utc": "2026-10-08T17:51:17Z",
   "history": {
     "done_total_local": 1350,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 284,
+      "age_seconds": 371,
       "job_id": "EDARSAHUB-TICKET-DIA-CANONICAL-CERT-R34-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 759,
+      "age_seconds": 846,
       "job_id": "EDARSAHUB-TICKET-DIA-PRECIO-UNITARIO-CANONICO-R32-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1946,
+      "age_seconds": 2032,
       "job_id": "EDARSAHUB-TICKET-DIA-PRECIOS-DIAGNOSTICO-R31-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2,
+      "age_seconds": 83,
       "job_id": "EDARSAHUB-TICKET-DIA-UI-BUILD-R35-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "9ef80c58d0ea81a3fe40ed547545c6a45ac45e16",
+  "local_development_sha": "b01604b91032638350bd29c07b8015fa8200f620",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -50,19 +50,19 @@
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 4,
   "queue_running": 0,
-  "remote_development_sha": "9ef80c58d0ea81a3fe40ed547545c6a45ac45e16",
+  "remote_development_sha": "b01604b91032638350bd29c07b8015fa8200f620",
   "runtime": {
     "current_job_id": "EDARSAHUB-TICKET-DIA-UI-BUILD-R35-CARLOS-20261008",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T17:49:35Z",
-    "last_receive_utc": "2026-10-08T17:49:48Z",
+    "last_cycle_utc": "2026-10-08T17:51:09Z",
+    "last_receive_utc": "2026-10-08T17:51:04Z",
     "last_terminal_utc": "2026-10-08T17:49:48Z",
     "pid": "429",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "4aff06e7ceeb552f43b52ea95b57ff522cd36adf",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "9ef80c58d0ea81a3fe40ed547545c6a45ac45e16",
+      "development_sha": "b01604b91032638350bd29c07b8015fa8200f620",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
