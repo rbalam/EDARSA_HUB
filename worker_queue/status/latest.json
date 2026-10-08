@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "b44dcbf41e1d1d6d48d64d439fbd6cb4f34d2068",
-  "generated_at_utc": "2026-10-08T00:11:31Z",
+  "generated_at_utc": "2026-10-08T00:12:47Z",
   "history": {
     "done_total_local": 1334,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2416,
+      "age_seconds": 2491,
       "job_id": "EDARSAHUB-TICKETS-VENTA-VENTA-KEYS-R4-CARLOS-20261007",
       "reasons": [
         "INVALID_SCHEMA",
@@ -30,73 +30,73 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2299,
+      "age_seconds": 2375,
       "job_id": "BOS-TOAST-GATE1-CANONICAL-PREFLIGHT-READONLY-R1-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1791,
+      "age_seconds": 1866,
       "job_id": "BOS-TOAST-GATE2-CANONICAL-REGISTRY-DISCOVERY-READONLY-R1-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1598,
+      "age_seconds": 1673,
       "job_id": "BOS-TOAST-GATE2-CANONICAL-REGISTRY-DISCOVERY-READONLY-R2B-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3489,
+      "age_seconds": 3564,
       "job_id": "EDARSAHUB-TICKETS-VENTA-AUDITORIA-R2-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3395,
+      "age_seconds": 3471,
       "job_id": "EDARSAHUB-TICKETS-VENTA-AUDITORIA-R3-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1721,
+      "age_seconds": 1796,
       "job_id": "EDARSAHUB-TICKETS-VENTA-MIGRATION-FILE-R6-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 977,
+      "age_seconds": 1052,
       "job_id": "EDARSAHUB-TICKETS-VENTA-MIGRATION-FILE-RETRY-R9-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 959,
+      "age_seconds": 1035,
       "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-LINEAGE-R10-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 242,
+      "age_seconds": 318,
       "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-LINEAGE-R11-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1439,
+      "age_seconds": 1515,
       "job_id": "EDARSAHUB-TICKETS-VENTA-SOURCE-SQL-COMPILE-R7-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1249,
+      "age_seconds": 1325,
       "job_id": "EDARSAHUB-TICKETS-VENTA-SOURCE-SQL-COMPILE-R8-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2337,
+      "age_seconds": 2413,
       "job_id": "EDARSAHUB-TICKETS-VENTA-VENTA-KEYS-R5-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
@@ -116,8 +116,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T00:11:27Z",
-    "last_receive_utc": "2026-10-08T00:11:22Z",
+    "last_cycle_utc": "2026-10-08T00:12:46Z",
+    "last_receive_utc": "2026-10-08T00:12:40Z",
     "last_terminal_utc": "2026-10-08T00:07:28Z",
     "pid": "381",
     "runtime_fingerprint": {
