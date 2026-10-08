@@ -54,3 +54,42 @@ def test_soft_snapshot_display_folio_prefers_numcheque_when_nonzero():
     }
     assert ticket_service._snapshot_display_folio(row) == "103994"
     assert ticket_service._snapshot_ticket_identity(row) == "SOFTRESTAURANT:2"
+
+
+def test_soft_snapshot_replaces_same_day_closed_rows_while_active(monkeypatch):
+    rows = [
+        {
+            "folio": "103994",
+            "folio_origen": "2",
+            "sistema_origen": "SOFTRESTAURANT",
+            "estado_ticket": "ABIERTA",
+            "fecha_hora": "2026-10-08T10:30:00",
+            "pax": 3,
+            "propina": 85,
+            "total_ticket": 1385,
+            "producto_codigo": "P1",
+            "producto_nombre": "P1",
+            "cantidad": 1,
+            "precio_unitario": 1300,
+            "importe_bruto": 1300,
+            "descuento_producto": 0,
+            "descuento_pct": 0,
+        }
+    ]
+    monkeypatch.setattr(ticket_service, "load_open_snapshot_lines", lambda *_: rows)
+    closed = [{
+        "folio": "900001",
+        "total_venta": 9999,
+        "importe": 9999,
+        "pax": 10,
+        "num_productos": 1,
+        "fuente_ticket": "CERRADA",
+    }]
+
+    result = ticket_service.merge_open_snapshot_tickets(
+        closed, "CIENFUEGOS", "DEFAULT", "2026-10-08"
+    )
+
+    assert len(result) == 1
+    assert result[0]["folio"] == "103994"
+    assert result[0]["total_venta"] == 1300.0
