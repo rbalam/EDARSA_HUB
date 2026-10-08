@@ -9,6 +9,13 @@ if hasattr(sys.stdout, 'reconfigure'):
     except Exception:
         pass
 
+# DEPLOY-FIX: asegurar que el repo-root (/app) esté en sys.path para que
+# imports como `tools.mirror_sync` resuelvan cuando uvicorn corre desde /app/backend
+# (en producción no hay PYTHONPATH=/app como en el supervisor local).
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
 # ==============================================================================
 # CARGA DE VARIABLES DE ENTORNO - DEBE ESTAR ANTES DE CUALQUIER OTRO IMPORT
 # ==============================================================================
