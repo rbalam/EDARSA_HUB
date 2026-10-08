@@ -26,7 +26,8 @@ def test_analytics_reuses_certified_comercial_services():
 def test_day_view_keeps_comercial_interaction_contract():
     text = DRILL.read_text(encoding="utf-8")
     assert "Selecciona un folio para abrir el ticket de venta." in text
-    assert "modoVentasDia && item.ticket_pk" in text
+    assert "if (item.ticket_pk)" in text
+    assert "Doble clic para abrir el ticket de venta" not in text
     assert "totalsFor(rows)" in text
 
 
