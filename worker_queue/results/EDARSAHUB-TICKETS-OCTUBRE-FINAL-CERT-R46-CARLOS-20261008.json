@@ -1,0 +1,163 @@
+{
+  "base_sha": "6ccf2b9fad6cfc8e04862ba1306d35afb40610fd",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-08T23:13:21Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-TICKETS-OCTUBRE-FINAL-CERT-R46-CARLOS-20261008",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-08T23:13:26Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "lineas_totales",
+              "placeholders_header_sin_detalle",
+              "partidas_reales_sin_identidad",
+              "partidas_reales_sin_precio_unitario",
+              "partidas_reales_sin_importe_bruto",
+              "lineas_con_cliente_id_sin_rfc"
+            ],
+            "name": "octubre_closed_business_line_certification",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                3757,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                "130QRO",
+                4240,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                4617,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                "ESTELAR",
+                5688,
+                5,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                "ORIGEN",
+                3804,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "json_valido",
+              "tiene_partida_origen",
+              "tiene_precio_unitario",
+              "tiene_importe_bruto",
+              "tiene_cliente_id",
+              "tiene_cliente_rfc"
+            ],
+            "name": "octubre_open_day_final_certification",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                "2026-10-08",
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+              ],
+              [
+                "130QRO",
+                "2026-10-08",
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-08",
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+              ],
+              [
+                "ESTELAR",
+                "2026-10-08",
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+              ],
+              [
+                "ORIGEN",
+                "2026-10-08",
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-08T23:13:20Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
