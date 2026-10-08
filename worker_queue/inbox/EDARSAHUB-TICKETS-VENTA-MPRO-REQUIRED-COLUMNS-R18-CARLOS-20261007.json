@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TICKETS-VENTA-MPRO-REQUIRED-COLUMNS-R18-CARLOS-20261007",
+  "created_at_utc": "2026-10-08T05:36:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "08d6a3fb4dd42fa55c4369d4c89cdc0ba8133173",
+  "production_allowed": false,
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Plan de actualizacion de tickets"
+  },
+  "objective": "Comparar en solo lectura las columnas exactas requeridas por el contrato y el canario MPRO de tickets contra ORIGEN y 130QRO, devolviendo unicamente faltantes. No modificar datos, codigo ni Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN",
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "missing_required_ticket_columns",
+          "sql": "WITH expected(TABLE_NAME,COLUMN_NAME) AS (\nSELECT 'Comanda','Co_Folio' UNION ALL\nSELECT 'Comanda','Co_Fecha' UNION ALL\nSELECT 'Comanda','Sc_Cve_Sucursal' UNION ALL\nSELECT 'Comanda','Vn_Cve_Vendedor' UNION ALL\nSELECT 'Comanda','Cl_Cve_Cliente' UNION ALL\nSELECT 'Comanda','Co_Referencia' UNION ALL\nSELECT 'Comanda','Co_Personas' UNION ALL\nSELECT 'Comanda','Co_Propina' UNION ALL\nSELECT 'Comanda','Co_Comentario' UNION ALL\nSELECT 'Comanda','Fecha_Alta' UNION ALL\nSELECT 'Comanda','Oper_Ult_Modif' UNION ALL\nSELECT 'Comanda','Oper_Baja' UNION ALL\nSELECT 'Comanda','Fecha_Baja' UNION ALL\nSELECT 'Comanda','Es_Cve_Estado' UNION ALL\nSELECT 'Comanda_Detalle','Co_Folio' UNION ALL\nSELECT 'Comanda_Detalle','Cd_Id' UNION ALL\nSELECT 'Comanda_Detalle','Cd_Key' UNION ALL\nSELECT 'Comanda_Detalle','Pr_Cve_Producto' UNION ALL\nSELECT 'Comanda_Detalle','Cd_Concepto' UNION ALL\nSELECT 'Comanda_Detalle','Cd_Cantidad' UNION ALL\nSELECT 'Comanda_Detalle','Cd_Precio' UNION ALL\nSELECT 'Comanda_Detalle','Cd_Importe' UNION ALL\nSELECT 'Comanda_Detalle','Cd_Comentario' UNION ALL\nSELECT 'Comanda_Detalle','Cd_Comentario_Cancelacion' UNION ALL\nSELECT 'Comanda_Detalle','Cd_Tipo_Descuento' UNION ALL\nSELECT 'Comanda_Detalle','Oper_Baja' UNION ALL\nSELECT 'Comanda_Detalle','Fecha_Baja' UNION ALL\nSELECT 'Comanda_Detalle','Es_Cve_Estado' UNION ALL\nSELECT 'Cliente','Cl_Cve_Cliente' UNION ALL\nSELECT 'Cliente','Sc_Cve_Sucursal' UNION ALL\nSELECT 'Cliente','Cl_Cve_Maestro' UNION ALL\nSELECT 'Cliente','Cl_Razon_Social' UNION ALL\nSELECT 'Cliente','Cl_Descripcion' UNION ALL\nSELECT 'Cliente','Cl_R_F_C' UNION ALL\nSELECT 'Cliente','Cl_Contacto_1' UNION ALL\nSELECT 'Cliente','Cl_Direccion_1' UNION ALL\nSELECT 'Cliente','Cl_Direccion_2' UNION ALL\nSELECT 'Cliente','Cl_Direccion_3' UNION ALL\nSELECT 'Cliente','Cl_Calle' UNION ALL\nSELECT 'Cliente','Cl_Numero_Exterior' UNION ALL\nSELECT 'Cliente','Cl_Numero_Interior' UNION ALL\nSELECT 'Cliente','Cl_Colonia' UNION ALL\nSELECT 'Cliente','Cl_Ciudad' UNION ALL\nSELECT 'Cliente','Cl_Municipio' UNION ALL\nSELECT 'Cliente','Cl_Estado' UNION ALL\nSELECT 'Cliente','Cl_Pais' UNION ALL\nSELECT 'Cliente','Cl_Codigo_Postal' UNION ALL\nSELECT 'Cliente','Cl_Cruzamiento_1' UNION ALL\nSELECT 'Cliente','Cl_Cruzamiento_2' UNION ALL\nSELECT 'Cliente','Cl_Direccion_Entrega_1' UNION ALL\nSELECT 'Cliente','Cl_Direccion_Entrega_2' UNION ALL\nSELECT 'Cliente','Cl_Direccion_Entrega_3' UNION ALL\nSELECT 'Cliente','Cl_Ciudad_Entrega' UNION ALL\nSELECT 'Cliente','Cl_Estado_Entrega' UNION ALL\nSELECT 'Cliente','Cl_Pais_Entrega' UNION ALL\nSELECT 'Cliente','Cl_Codigo_Postal_Entrega' UNION ALL\nSELECT 'Cliente','Cl_Cve_Colonia' UNION ALL\nSELECT 'Cliente','Cl_Cve_Ciudad' UNION ALL\nSELECT 'Cliente','Cl_Cve_Municipio' UNION ALL\nSELECT 'Cliente','Cl_Cve_Estado' UNION ALL\nSELECT 'Cliente','Cl_Cve_Pais' UNION ALL\nSELECT 'Cliente','Cl_Cve_Codigo_Postal' UNION ALL\nSELECT 'Cliente','Cl_Latitud' UNION ALL\nSELECT 'Cliente','Cl_Longitud' UNION ALL\nSELECT 'Tipo_Descuento','Td_Cve_Tipo_Descuento' UNION ALL\nSELECT 'Tipo_Descuento','Td_Descripcion' UNION ALL\nSELECT 'Tipo_Descuento','Td_Porcentaje' UNION ALL\nSELECT 'Vendedor','Vn_Cve_Vendedor' UNION ALL\nSELECT 'Vendedor','Vn_Descripcion' UNION ALL\nSELECT 'Venta','Vn_Folio' UNION ALL\nSELECT 'Venta','Vn_ID' UNION ALL\nSELECT 'Venta','Vn_Tabla' UNION ALL\nSELECT 'Venta','Vn_Documento' UNION ALL\nSELECT 'Venta','Vn_Documento_ID' UNION ALL\nSELECT 'Venta_Encabezado','Vn_Folio' UNION ALL\nSELECT 'Venta_Encabezado','Vn_Documento' UNION ALL\nSELECT 'Venta_Encabezado','Vn_Fecha' UNION ALL\nSELECT 'Venta_Encabezado','Sc_Cve_Sucursal' UNION ALL\nSELECT 'Venta_Encabezado','Vn_Cve_Vendedor' UNION ALL\nSELECT 'Venta_Encabezado','Vn_Precio_Neto_Importe' UNION ALL\nSELECT 'Venta_Encabezado','Es_Cve_Estado' UNION ALL\nSELECT 'Venta_Encabezado','Fecha_Baja'\n)\nSELECT e.TABLE_NAME,e.COLUMN_NAME\nFROM expected e\nLEFT JOIN INFORMATION_SCHEMA.COLUMNS c\n  ON c.TABLE_NAME=e.TABLE_NAME AND c.COLUMN_NAME=e.COLUMN_NAME\nWHERE c.COLUMN_NAME IS NULL\nORDER BY e.TABLE_NAME,e.COLUMN_NAME"
+        }
+      ]
+    }
+  ]
+}
