@@ -1,0 +1,86 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TABLERO-VENTAS-DIA-DRILLDOWN-DATE-FIX-R29-CARLOS-20261008",
+  "created_at_utc": "2026-10-08T16:20:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b3da478c37f770f663e0cb050f35c9fae89048fb",
+  "production_allowed": false,
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Actualizacion de tickets de venta"
+  },
+  "objective": "Corregir exclusivamente la inconsistencia de fecha del drill-down de Ventas del Dia: cuando una unidad queda neutralizada a cero por fecha operativa rezagada, el detalle no debe consultar ni mostrar el dia anterior. Preservar trazabilidad de la fecha resuelta. No modificar TicketVentaModal, ticket_service, mappings de tickets ni sincronizadores. No tocar Produccion.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_analytics/repository_operational.py",
+      "old": "    if common_operation_date and len(effective_dates) > 1:\n        for item in items:\n            if item.get(\"fecha_operacion\") == common_operation_date:\n                continue\n\n            for bucket_name in (\n",
+      "new": "    if common_operation_date and len(effective_dates) > 1:\n        for item in items:\n            resolved_operation_date = item.get(\"fecha_operacion\")\n            item[\"fecha_operacion_resuelta\"] = resolved_operation_date\n            item[\"fecha_operacion_desfasada\"] = (\n                resolved_operation_date != common_operation_date\n            )\n\n            if resolved_operation_date == common_operation_date:\n                continue\n\n            # La tarjeta ya representa la fecha operativa comun y sus KPI\n            # fueron neutralizados a cero para no mezclar dias. El detalle\n            # debe quedar anclado a esa misma fecha, nunca al dia rezagado.\n            item[\"fecha_operacion\"] = common_operation_date\n\n            for bucket_name in (\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "  const expectedClosed = useMemo(() => ({\n",
+      "new": "  const currentOperationSuppressed = Boolean(\n    modoVentasDia && unidad?.fecha_operacion_desfasada\n  );\n\n  const expectedClosed = useMemo(() => ({\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "        if (ranges.length === 0) {\n          throw new Error('No se pudo resolver el período del detalle.');\n        }\n\n        const allRows = [];\n",
+      "new": "        if (ranges.length === 0) {\n          throw new Error('No se pudo resolver el período del detalle.');\n        }\n\n        if (currentOperationSuppressed) {\n          if (active) setRows([]);\n          return;\n        }\n\n        const allRows = [];\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "old": "    modoVentasDia,\n    expectedClosed.cheques,\n    ranges,\n",
+      "new": "    modoVentasDia,\n    currentOperationSuppressed,\n    expectedClosed.cheques,\n    ranges,\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_comercial_operacion_en_curso_repository.py",
+      "old": "    assert by_unit[\"A\"][\"cerradas\"][\"ventas\"] == 100\n    assert by_unit[\"A\"][\"abiertas\"][\"ventas\"] == 50\n    assert by_unit[\"A\"][\"operacion_estimada\"][\"ventas\"] == 150\n\n    assert by_unit[\"B\"][\"cerradas\"][\"ventas\"] == 0\n",
+      "new": "    assert by_unit[\"A\"][\"fecha_operacion\"] == \"2026-08-02\"\n    assert by_unit[\"A\"][\"fecha_operacion_resuelta\"] == \"2026-08-02\"\n    assert by_unit[\"A\"][\"fecha_operacion_desfasada\"] is False\n    assert by_unit[\"A\"][\"cerradas\"][\"ventas\"] == 100\n    assert by_unit[\"A\"][\"abiertas\"][\"ventas\"] == 50\n    assert by_unit[\"A\"][\"operacion_estimada\"][\"ventas\"] == 150\n\n    assert by_unit[\"B\"][\"fecha_operacion\"] == \"2026-08-02\"\n    assert by_unit[\"B\"][\"fecha_operacion_resuelta\"] == \"2026-08-01\"\n    assert by_unit[\"B\"][\"fecha_operacion_desfasada\"] is True\n    assert by_unit[\"B\"][\"cerradas\"][\"ventas\"] == 0\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_comercial_operacion_en_curso_repository.py",
+      "old": "    # Se conserva la conciliacion de cuentas abiertas.\n    assert \"hasMissingOpen\" in drill\n",
+      "new": "    # Se conserva la conciliacion de cuentas abiertas.\n    assert \"hasMissingOpen\" in drill\n\n    # Una unidad neutralizada por fecha operativa rezagada no puede\n    # consultar el día anterior desde el drill-down de Ventas del Día.\n    assert \"fecha_operacion_desfasada\" in drill\n    assert \"currentOperationSuppressed\" in drill\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial_analytics/repository_operational.py",
+        "backend/tests/test_comercial_operacion_en_curso_repository.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_operacion_en_curso_repository.py",
+        "backend/tests/test_tabeje_comercial_parity_r17.py",
+        "backend/tests/test_comercial_ticket_metadata_contract.py"
+      ]
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
