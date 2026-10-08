@@ -81,7 +81,7 @@ SELECT
     MAX(CAST(NULL AS nvarchar(max))) AS cliente_latitud,
     MAX(CAST(NULL AS nvarchar(max))) AS cliente_longitud,
     COALESCE(
-        NULLIF(MAX(LTRIM(RTRIM(CONVERT(varchar(64), ch.numcheque)))), ''),
+        NULLIF(NULLIF(MAX(LTRIM(RTRIM(CONVERT(varchar(64), ch.numcheque)))), ''), '0'),
         CONVERT(varchar(64), ch.folio)
     ) AS folio,
     CONVERT(varchar(64), ch.folio) AS folio_origen,
