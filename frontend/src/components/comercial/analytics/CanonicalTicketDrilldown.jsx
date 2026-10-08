@@ -456,7 +456,7 @@ export default function CanonicalTicketDrilldown({
                       {formatMoney(line.precio_unitario)}
                     </td>
                     <td className="px-4 py-2 text-right font-semibold text-emerald-400">
-                      {formatMoney(line.importe)}
+                      {formatMoney(line.importe_bruto ?? line.importe)}
                     </td>
                   </tr>
                 ))}
