@@ -1,13 +1,13 @@
 {
   "ahead_count": 0,
-  "behind_count": 1,
+  "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "REMOTE_AHEAD_ONLY",
-  "development_sha": "e5ee1675c99c6f0de3bde37e49634cfd0f3eda4a",
-  "generated_at_utc": "2026-10-08T23:50:06Z",
+  "convergence_status": "SYNC",
+  "development_sha": "7ac5e44298ac23c5e37487ba24ab426411632321",
+  "generated_at_utc": "2026-10-08T23:57:50Z",
   "history": {
     "done_total_local": 1356,
-    "pending_total_local": 1,
+    "pending_total_local": 0,
     "processing_total_local": 1,
     "rejected_total_local": 1181,
     "results_total_local": 2325
@@ -16,43 +16,43 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 88,
+      "age_seconds": 551,
       "job_id": "EDARSAHUB-TICKET-DIA-ATOMICO-CERT-R47-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 23,
+      "age_seconds": 290,
       "job_id": "EDARSAHUB-TICKET-DIA-ATOMICO-UI-BUILD-R48-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2972,
+      "age_seconds": 3435,
       "job_id": "EDARSAHUB-TICKETS-OCTUBRE-BACKFILL-R43-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2205,
+      "age_seconds": 2668,
       "job_id": "EDARSAHUB-TICKETS-OCTUBRE-FINAL-CERT-R46-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2602,
+      "age_seconds": 3065,
       "job_id": "EDARSAHUB-TICKETS-OCTUBRE-OPEN-DAY-R44-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2298,
+      "age_seconds": 2761,
       "job_id": "EDARSAHUB-TICKETS-OCTUBRE-RESIDUOS-AUDIT-R45-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "0c855c76358bb00b0776e1508a578c8364fe1122",
+  "local_development_sha": "7ac5e44298ac23c5e37487ba24ab426411632321",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -62,19 +62,19 @@
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 6,
   "queue_running": 0,
-  "remote_development_sha": "e5ee1675c99c6f0de3bde37e49634cfd0f3eda4a",
+  "remote_development_sha": "7ac5e44298ac23c5e37487ba24ab426411632321",
   "runtime": {
     "current_job_id": "EDARSAHUB-TICKET-DIA-ATOMICO-UI-BUILD-R48-CARLOS-20261008",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T23:49:48Z",
-    "last_receive_utc": "2026-10-08T23:50:06Z",
-    "last_terminal_utc": "2026-10-08T23:49:43Z",
-    "pid": "2224",
+    "last_cycle_utc": "2026-10-08T23:57:42Z",
+    "last_receive_utc": "2026-10-08T23:57:37Z",
+    "last_terminal_utc": "2026-10-08T23:52:59Z",
+    "pid": "435",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "b65cdf9f2a3d0d78acc1e727e7c4b40f4e4daadf",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "0c855c76358bb00b0776e1508a578c8364fe1122",
+      "development_sha": "7ac5e44298ac23c5e37487ba24ab426411632321",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
