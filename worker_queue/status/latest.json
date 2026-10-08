@@ -4,53 +4,53 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "08d6a3fb4dd42fa55c4369d4c89cdc0ba8133173",
-  "generated_at_utc": "2026-10-08T04:48:57Z",
+  "generated_at_utc": "2026-10-08T04:50:17Z",
   "history": {
     "done_total_local": 1337,
-    "pending_total_local": 1,
-    "processing_total_local": 1,
-    "rejected_total_local": 1167,
-    "results_total_local": 2294
+    "pending_total_local": 0,
+    "processing_total_local": 0,
+    "rejected_total_local": 1169,
+    "results_total_local": 2296
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 14,
+      "age_seconds": 7,
       "job_id": "EDARSAHUB-TICKETS-VENTA-CONTRACT-CANARY-R12-CARLOS-20261007",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 2503,
-      "job_id": "EDARSAHUB-TICKETS-VENTA-SQL-MIGRATION-DEVELOPMENT-R10-CARLOS-20261007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 25,
+      "age_seconds": 18,
       "job_id": "EDARSAHUB-TICKETS-VENTA-FRONTEND-BUILD-R11-CARLOS-20261007",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2583,
+      "job_id": "EDARSAHUB-TICKETS-VENTA-SQL-MIGRATION-DEVELOPMENT-R10-CARLOS-20261007",
+      "reason": null,
+      "state": "RESULT_READY"
     }
   ],
   "local_development_sha": "08d6a3fb4dd42fa55c4369d4c89cdc0ba8133173",
-  "oldest_pending_age_seconds": 14,
+  "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 2,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
-  "queue_pending": 1,
+  "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
-  "queue_running": 1,
+  "queue_result_ready_recent": 3,
+  "queue_running": 0,
   "remote_development_sha": "08d6a3fb4dd42fa55c4369d4c89cdc0ba8133173",
   "runtime": {
-    "current_job_id": "EDARSAHUB-TICKETS-VENTA-FRONTEND-BUILD-R11-CARLOS-20261007",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T04:48:49Z",
-    "last_receive_utc": "2026-10-08T04:48:57Z",
-    "last_terminal_utc": "2026-10-08T04:07:14Z",
+    "last_cycle_utc": "2026-10-08T04:50:05Z",
+    "last_receive_utc": "2026-10-08T04:50:13Z",
+    "last_terminal_utc": "2026-10-08T04:50:10Z",
     "pid": "369",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "4aff06e7ceeb552f43b52ea95b57ff522cd36adf",
