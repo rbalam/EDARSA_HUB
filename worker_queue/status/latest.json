@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "b3da478c37f770f663e0cb050f35c9fae89048fb",
-  "generated_at_utc": "2026-10-08T16:09:39Z",
+  "generated_at_utc": "2026-10-08T16:10:56Z",
   "history": {
     "done_total_local": 1346,
     "pending_total_local": 0,
@@ -16,25 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2466,
+      "age_seconds": 2543,
       "job_id": "EDARSAHUB-TICKETS-CLOSED-BACKFILL-R24-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3528,
-      "job_id": "EDARSAHUB-TICKETS-CLOSED-LATEST-COVERAGE-R23-CARLOS-20261007",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2088,
+      "age_seconds": 2164,
       "job_id": "EDARSAHUB-TICKETS-FINAL-BACKEND-R26-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1999,
+      "age_seconds": 2075,
       "job_id": "EDARSAHUB-TICKETS-FINAL-UI-R27-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,14 +42,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "remote_development_sha": "b3da478c37f770f663e0cb050f35c9fae89048fb",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-08T16:09:30Z",
-    "last_receive_utc": "2026-10-08T16:09:37Z",
+    "last_cycle_utc": "2026-10-08T16:10:55Z",
+    "last_receive_utc": "2026-10-08T16:10:50Z",
     "last_terminal_utc": "2026-10-08T15:36:20Z",
     "pid": "385",
     "runtime_fingerprint": {
