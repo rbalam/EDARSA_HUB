@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "08d6a3fb4dd42fa55c4369d4c89cdc0ba8133173",
+  "production_allowed": false,
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Plan de actualizacion de tickets"
+  },
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "job_id": "EDARSAHUB-TICKETS-VENTA-CONTRACT-STATIC-R13-CARLOS-20261007",
+  "created_at_utc": "2026-10-08T05:11:00Z",
+  "objective": "Aislar la certificacion estatica del contrato de tickets post-merge. Ejecutar solo las pruebas locales del contrato, sin canarios de APIs. No modificar archivos, SQL, datos ni Produccion.",
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_analytics_tickets.py",
+        "backend/tests/test_comercial_softrestaurant_zero_discount_ticket_contract.py",
+        "backend/tests/test_comercial_ticket_drilldown_contract.py",
+        "backend/tests/test_comercial_ticket_mesa_contract.py",
+        "backend/tests/test_comercial_ticket_metadata_contract.py",
+        "backend/tests/test_comercial_ticket_numcheque_date_contract.py",
+        "backend/tests/test_tabeje_comercial_parity_r17.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
