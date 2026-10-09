@@ -61,6 +61,7 @@ def _load_atomic_context(sync_control_id: int) -> Dict[str, Any]:
                 e.UnidadNegocioID,
                 e.CodigoSync,
                 e.SistemaTipoID,
+                e.SistemaCapacidadID,
                 e.SistemaVersionID,
                 e.SucursalID,
                 e.SucursalOrigenID,
@@ -107,8 +108,9 @@ def _load_atomic_context(sync_control_id: int) -> Dict[str, Any]:
               ON sc.Codigo=e.CodigoSync
             JOIN dbo.Sistema_Sync_Capacidades link
               ON link.CodigoSync=sc.Codigo
+             AND link.SistemaCapacidadID=e.SistemaCapacidadID
             JOIN dbo.Sistema_Capacidades cap
-              ON cap.SistemaCapacidadID=link.SistemaCapacidadID
+              ON cap.SistemaCapacidadID=e.SistemaCapacidadID
              AND cap.SistemaTipoID=e.SistemaTipoID
             JOIN dbo.Sistema_Tipos st
               ON st.SistemaTipoID=e.SistemaTipoID
