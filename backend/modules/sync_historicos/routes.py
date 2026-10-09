@@ -15,6 +15,7 @@ from modules.sync_historicos.catalog_service import (
 )
 from modules.sync_historicos.controls import (
     get_parent_status,
+    list_parent_jobs,
     prepare_resume,
     request_cancel,
     request_pause,
@@ -165,6 +166,19 @@ def create_job(
         "success": True,
         **persisted,
         "worker": worker,
+    }
+
+
+@router.get("/jobs")
+def job_history(
+    limit: int = 50,
+    current_user: dict = Depends(
+        require_permission("SCHEDULER_VER")
+    ),
+):
+    return {
+        "success": True,
+        "items": list_parent_jobs(limit),
     }
 
 
