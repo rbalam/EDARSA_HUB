@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-003-20261009",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "bb7e7e51a87829f08607a5380c5dddc33f108162",
+  "production_allowed": false,
+  "objective": "Aplicar exclusivamente en EDARSAHUB Desarrollo la migracion 003 del modulo Sincronizacion Historica: certificar la primera capability comercial_ventas_cerradas y vincularla solo a capacidades historicas ya existentes de sistemas canonicos soportados. No inferir IDs, no tocar Produccion ni sync_comercial_abiertas_v2.",
+  "human_summary_language": "es",
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20261009_003_sync_historical_first_certified_capability.sql",
+  "migration_sha256": "125b416e131720ce2a979bed61467cd6982b1f5f960db8b26dee840fd561b5a2",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "preflight_checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "sync_historical_seed_preflight_catalog",
+          "sql": "SELECT COUNT(*) AS catalog_rows, 1/CASE WHEN COUNT(*)=1 THEN 1 ELSE 0 END AS catalog_assertion FROM dbo.Sistema_Sync_Catalogo WHERE Codigo='comercial_ventas_cerradas' AND ISNULL(Activo,1)=1 AND ISNULL(PermiteResync,0)=1 AND ISNULL(HandlerImplementado,0)=1"
+        },
+        {
+          "name": "sync_historical_seed_preflight_system_capabilities",
+          "sql": "SELECT COUNT(*) AS eligible_system_capabilities, 1/CASE WHEN COUNT(*)>=1 THEN 1 ELSE 0 END AS capabilities_assertion FROM dbo.Sistema_Capacidades sc JOIN dbo.Sistema_Tipos st ON st.SistemaTipoID=sc.SistemaTipoID WHERE sc.CodigoCapacidad='SYNC_VENTAS_HISTORICAS' AND ISNULL(sc.Activo,1)=1 AND ISNULL(st.Activo,1)=1 AND st.CodigoSistema IN ('MPRO','SOFTRESTAURANT')"
+        },
+        {
+          "name": "sync_historical_seed_preflight_fecha_modificacion",
+          "sql": "SELECT COUNT(*) AS fecha_modificacion_column, 1/CASE WHEN COUNT(*)=1 THEN 1 ELSE 0 END AS fecha_modificacion_assertion FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Sistema_Sync_Catalogo') AND name='FechaModificacion'"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "sync_historical_seed_post_metadata",
+          "sql": "SELECT COUNT(*) AS configured_rows, 1/CASE WHEN COUNT(*)=1 THEN 1 ELSE 0 END AS metadata_assertion FROM dbo.Sistema_Sync_Catalogo WHERE Codigo='comercial_ventas_cerradas' AND CategoriaCodigo='VENTAS' AND EntidadCodigo='VENTAS_CERRADAS_KPI' AND CampoFecha='fecha_operacion' AND SoportaResume=1 AND SoportaSafeStop=1 AND VersionContrato='historical-v1' AND ISJSON(ClaveNegocio)=1 AND ISJSON(MetadataJSON)=1"
+        },
+        {
+          "name": "sync_historical_seed_post_bindings",
+          "sql": "SELECT COUNT(*) AS binding_rows, 1/CASE WHEN COUNT(*)>=1 THEN 1 ELSE 0 END AS bindings_assertion FROM dbo.Sistema_Sync_Capacidades link JOIN dbo.Sistema_Capacidades cap ON cap.SistemaCapacidadID=link.SistemaCapacidadID JOIN dbo.Sistema_Tipos st ON st.SistemaTipoID=cap.SistemaTipoID WHERE link.CodigoSync='comercial_ventas_cerradas' AND ISNULL(link.Activo,1)=1 AND cap.CodigoCapacidad='SYNC_VENTAS_HISTORICAS' AND st.CodigoSistema IN ('MPRO','SOFTRESTAURANT')"
+        }
+      ]
+    }
+  ]
+}
