@@ -407,6 +407,43 @@ def _list_current_day_with_comercial_merge(
     }
 
 
+
+def summarize_current_day_tickets(
+    *,
+    operation_date: str,
+    unit_code: str,
+) -> dict[str, Any]:
+    """Resume exactamente el mismo conjunto atomico que usa Detalle de Ventas.
+
+    Esta funcion NO crea una segunda logica de KPI: consume
+    _list_current_day_with_comercial_merge(), que es la ruta certificada usada
+    por /v2/comercial/analytics/tickets para una sola fecha/unidad.
+    """
+    payload = _list_current_day_with_comercial_merge(
+        operation_date=_date_string(operation_date, "operation_date"),
+        unit_code=_required(unit_code, "unit_code"),
+        page=1,
+        page_size=1_000_000,
+    )
+    items = list(payload.get("items") or [])
+    ventas = round(sum(float(item.get("ventas") or 0) for item in items), 2)
+    pax = sum(int(item.get("pax") or 0) for item in items)
+    cheques = len(items)
+
+    return {
+        "ventas": ventas,
+        "pax": pax,
+        "cheques": cheques,
+        "ticket_promedio": round(ventas / cheques, 2) if cheques > 0 else 0.0,
+        "pax_promedio": round(ventas / pax, 2) if pax > 0 else 0.0,
+        "items": items,
+        "traceability": {
+            **dict(payload.get("traceability") or {}),
+            "contract": "DETALLE_VENTAS_CANONICO_ATOMICO_TRANSVERSAL",
+            "aggregation": "SUM(items.ventas), SUM(items.pax), COUNT(items)",
+        },
+    }
+
 def list_tickets(
     *,
     fecha_inicio: Any,
