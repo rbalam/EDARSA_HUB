@@ -24,8 +24,7 @@ BEGIN TRY
            SoportaResume=1,
            SoportaSafeStop=1,
            VersionContrato='historical-v1',
-           MetadataJSON=N'{"chunk_unit":"day","max_attempts":3,"retry_backoff_seconds":15,"atomic_boundary":"unit-capability-day"}',
-           FechaModificacion=SYSUTCDATETIME()
+           MetadataJSON=N'{"chunk_unit":"day","max_attempts":3,"retry_backoff_seconds":15,"atomic_boundary":"unit-capability-day"}'
      WHERE Codigo='comercial_ventas_cerradas'
        AND ISNULL(Activo,1)=1
        AND ISNULL(PermiteResync,0)=1
@@ -48,7 +47,7 @@ BEGIN TRY
     WHERE sc.CodigoCapacidad='SYNC_VENTAS_HISTORICAS'
       AND ISNULL(sc.Activo,1)=1
       AND ISNULL(st.Activo,1)=1
-      AND st.CodigoSistema IN ('MPRO','SOFTRESTAURANT')
+      AND st.CodigoSistema IN ('MPRO','SOFTRESTAURANT_PRO')
       AND NOT EXISTS (
           SELECT 1
           FROM dbo.Sistema_Sync_Capacidades x
