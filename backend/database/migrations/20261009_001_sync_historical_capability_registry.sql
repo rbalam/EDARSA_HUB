@@ -66,21 +66,31 @@ BEGIN TRY
     IF COL_LENGTH('dbo.Sistema_Sync_Catalogo','MetadataJSON') IS NULL
         ALTER TABLE dbo.Sistema_Sync_Catalogo ADD MetadataJSON nvarchar(max) NULL;
 
+    /*
+      SQL Server compila el batch antes de ejecutar los ALTER ADD anteriores.
+      Los objetos que referencian columnas nuevas se materializan con SQL
+      dinamico para diferir la resolucion de nombres hasta despues de agregar
+      las columnas, manteniendo la migracion idempotente y atomica.
+    */
     IF NOT EXISTS (
         SELECT 1 FROM sys.check_constraints
         WHERE name = 'CK_Sistema_Sync_Catalogo_ClaveNegocio_JSON'
     )
-        ALTER TABLE dbo.Sistema_Sync_Catalogo
-        ADD CONSTRAINT CK_Sistema_Sync_Catalogo_ClaveNegocio_JSON
-        CHECK (ClaveNegocio IS NULL OR ISJSON(ClaveNegocio) = 1);
+        EXEC(N'
+            ALTER TABLE dbo.Sistema_Sync_Catalogo
+            ADD CONSTRAINT CK_Sistema_Sync_Catalogo_ClaveNegocio_JSON
+            CHECK (ClaveNegocio IS NULL OR ISJSON(ClaveNegocio) = 1);
+        ');
 
     IF NOT EXISTS (
         SELECT 1 FROM sys.check_constraints
         WHERE name = 'CK_Sistema_Sync_Catalogo_MetadataJSON_JSON'
     )
-        ALTER TABLE dbo.Sistema_Sync_Catalogo
-        ADD CONSTRAINT CK_Sistema_Sync_Catalogo_MetadataJSON_JSON
-        CHECK (MetadataJSON IS NULL OR ISJSON(MetadataJSON) = 1);
+        EXEC(N'
+            ALTER TABLE dbo.Sistema_Sync_Catalogo
+            ADD CONSTRAINT CK_Sistema_Sync_Catalogo_MetadataJSON_JSON
+            CHECK (MetadataJSON IS NULL OR ISJSON(MetadataJSON) = 1);
+        ');
 
     IF NOT EXISTS (
         SELECT 1
@@ -88,9 +98,12 @@ BEGIN TRY
         WHERE object_id = OBJECT_ID('dbo.Sistema_Sync_Catalogo')
           AND name = 'IX_Sistema_Sync_Catalogo_HistoricalRegistry'
     )
-        CREATE INDEX IX_Sistema_Sync_Catalogo_HistoricalRegistry
-        ON dbo.Sistema_Sync_Catalogo (Activo, PermiteResync, CategoriaCodigo, Orden)
-        INCLUDE (Codigo, Handler, HandlerImplementado, TablaDestino);
+        EXEC(N'
+            CREATE INDEX IX_Sistema_Sync_Catalogo_HistoricalRegistry
+            ON dbo.Sistema_Sync_Catalogo
+                (Activo, PermiteResync, CategoriaCodigo, Orden)
+            INCLUDE (Codigo, Handler, HandlerImplementado, TablaDestino);
+        ');
 
     COMMIT TRANSACTION;
 END TRY
