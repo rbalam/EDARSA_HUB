@@ -1,0 +1,31 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-003-DIAG-20261009",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "bb7e7e51a87829f08607a5380c5dddc33f108162",
+  "production_allowed": false,
+  "objective": "Diagnosticar en solo lectura el preflight bloqueado de la migracion 003 de Sincronizacion Historica. Revisar catalogo comercial_ventas_cerradas, capacidades historicas por sistema y columna FechaModificacion. No escribir datos ni tocar Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "seed_catalog_state",
+          "sql": "SELECT Codigo, Activo, PermiteResync, HandlerImplementado, Handler, Grupo, Nombre FROM dbo.Sistema_Sync_Catalogo WHERE Codigo='comercial_ventas_cerradas'"
+        },
+        {
+          "name": "seed_system_capabilities_state",
+          "sql": "SELECT st.SistemaTipoID, st.CodigoSistema, st.NombreSistema, st.Activo AS SistemaActivo, sc.SistemaCapacidadID, sc.CodigoCapacidad, sc.Activo AS CapacidadActiva FROM dbo.Sistema_Capacidades sc JOIN dbo.Sistema_Tipos st ON st.SistemaTipoID=sc.SistemaTipoID WHERE sc.CodigoCapacidad='SYNC_VENTAS_HISTORICAS' ORDER BY st.CodigoSistema"
+        },
+        {
+          "name": "seed_fecha_modificacion_state",
+          "sql": "SELECT c.name AS column_name, TYPE_NAME(c.user_type_id) AS type_name, c.max_length, c.is_nullable FROM sys.columns c WHERE c.object_id=OBJECT_ID('dbo.Sistema_Sync_Catalogo') AND c.name='FechaModificacion'"
+        }
+      ]
+    }
+  ]
+}
