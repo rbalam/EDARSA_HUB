@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Sequence
 from core.sql_first.db import get_sql_connection
 
 from .planner import HistoricalPlan, plan_json
+from .logging_service import log_event
 
 
 ACTIVE_ATOMIC_STATES = (
@@ -223,6 +224,20 @@ def persist_plan(
             )
 
         conn.commit()
+        log_event(
+            sync_control_id=parent_id,
+            correlation_id=plan.correlation_id,
+            event_code="PLAN_PERSISTED",
+            level="INFO",
+            message=f"Plan historico persistido con {len(children)} unidad(es) atomica(s).",
+            operator=requested_by,
+            payload={
+                "date_start": plan.start,
+                "date_end": plan.end,
+                "dry_run": bool(dry_run),
+                "total_atomic_units": len(children),
+            },
+        )
         return {
             "parent_sync_control_id": parent_id,
             "parent_sync_run_id": parent_run_id,
