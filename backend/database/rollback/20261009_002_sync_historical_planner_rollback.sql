@@ -43,6 +43,19 @@ BEGIN TRY
     IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name='CK_Sync_Control_Ejecuciones_Attempts')
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP CONSTRAINT CK_Sync_Control_Ejecuciones_Attempts;
 
+    IF EXISTS (SELECT 1 FROM sys.default_constraints WHERE name='DF_Sync_Control_Ejecuciones_RunKind')
+        ALTER TABLE dbo.Sync_Control_Ejecuciones DROP CONSTRAINT DF_Sync_Control_Ejecuciones_RunKind;
+    IF EXISTS (SELECT 1 FROM sys.default_constraints WHERE name='DF_Sync_Control_Ejecuciones_AttemptCount')
+        ALTER TABLE dbo.Sync_Control_Ejecuciones DROP CONSTRAINT DF_Sync_Control_Ejecuciones_AttemptCount;
+    IF EXISTS (SELECT 1 FROM sys.default_constraints WHERE name='DF_Sync_Control_Ejecuciones_MaxAttempts')
+        ALTER TABLE dbo.Sync_Control_Ejecuciones DROP CONSTRAINT DF_Sync_Control_Ejecuciones_MaxAttempts;
+    IF EXISTS (SELECT 1 FROM sys.default_constraints WHERE name='DF_Sync_Control_Ejecuciones_PauseRequested')
+        ALTER TABLE dbo.Sync_Control_Ejecuciones DROP CONSTRAINT DF_Sync_Control_Ejecuciones_PauseRequested;
+    IF EXISTS (SELECT 1 FROM sys.default_constraints WHERE name='DF_Sync_Control_Ejecuciones_CancelRequested')
+        ALTER TABLE dbo.Sync_Control_Ejecuciones DROP CONSTRAINT DF_Sync_Control_Ejecuciones_CancelRequested;
+    IF EXISTS (SELECT 1 FROM sys.default_constraints WHERE name='DF_Sync_Control_Ejecuciones_DispatchCount')
+        ALTER TABLE dbo.Sync_Control_Ejecuciones DROP CONSTRAINT DF_Sync_Control_Ejecuciones_DispatchCount;
+
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','UpdatedAtUTC') IS NOT NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN UpdatedAtUTC;
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','Reason') IS NOT NULL
