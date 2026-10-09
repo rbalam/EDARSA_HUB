@@ -1,0 +1,106 @@
+{
+  "base_sha": "bb7e7e51a87829f08607a5380c5dddc33f108162",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-09T19:48:41Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-003-DIAG-20261009",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-09T19:48:51Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "Codigo",
+              "Activo",
+              "PermiteResync",
+              "HandlerImplementado",
+              "Handler",
+              "Grupo",
+              "Nombre"
+            ],
+            "name": "seed_catalog_state",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "comercial_ventas_cerradas",
+                true,
+                true,
+                true,
+                "sync_softrestaurant_ventas_cerradas",
+                "Comercial",
+                "Ventas Cerradas (KPIs)"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "SistemaTipoID",
+              "CodigoSistema",
+              "NombreSistema",
+              "SistemaActivo",
+              "SistemaCapacidadID",
+              "CodigoCapacidad",
+              "CapacidadActiva"
+            ],
+            "name": "seed_system_capabilities_state",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                2,
+                "MPRO",
+                "ManagementPro",
+                true,
+                21,
+                "SYNC_VENTAS_HISTORICAS",
+                true
+              ],
+              [
+                1,
+                "SOFTRESTAURANT_PRO",
+                "SoftRestaurant Pro",
+                true,
+                6,
+                "SYNC_VENTAS_HISTORICAS",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_name",
+              "type_name",
+              "max_length",
+              "is_nullable"
+            ],
+            "name": "seed_fecha_modificacion_state",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-09T19:48:40Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
