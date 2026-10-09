@@ -3,6 +3,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SERVICE = ROOT / "modules/ia_assistant/service.py"
 FRONT = ROOT.parent / "frontend/src/components/ia/IAContextual.jsx"
+RENDERER = ROOT.parent / "frontend/src/components/ia/visualization/IAVisualizationRenderer.jsx"
 
 
 def test_backend_normalizes_inline_markdown_table_rows():
@@ -25,7 +26,7 @@ def test_explicit_visual_request_overrides_partial_backend_open_view():
 
 
 def test_real_chart_renderer_and_number_formatting_are_used():
-    source = FRONT.read_text(encoding="utf-8")
+    source = RENDERER.read_text(encoding="utf-8")
     assert "ResponsiveContainer" in source
     assert "<BarChart" in source
     assert "<LineChart" in source

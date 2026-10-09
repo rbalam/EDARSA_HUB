@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Mapping
 MAX_CONTEXT_STRING = 500
 MAX_CONTEXT_LIST = 50
 MAX_ACTIONS = 4
+MAX_CHART_SERIES = 10
 
 VIEW_KEYS = {
     "modulo", "view_id", "titulo", "scope", "filtros", "periodo",
@@ -265,6 +266,24 @@ def validate_actions(
             value = str(data.get(key) or "").strip()
             if value and value in allowed_columns:
                 payload_out[key] = value
+
+        if view_type in {"bar_chart", "line_chart"}:
+            safe_series: List[Dict[str, str]] = []
+            raw_series = data.get("series") or []
+            if isinstance(raw_series, list):
+                for item in raw_series[:MAX_CHART_SERIES]:
+                    if not isinstance(item, Mapping):
+                        continue
+                    series_key = str(item.get("key") or "").strip()
+                    if not series_key or series_key not in allowed_columns:
+                        continue
+                    safe_series.append({
+                        "key": series_key,
+                        "label": str(item.get("label") or series_key)[:80],
+                    })
+            if safe_series:
+                payload_out["series"] = safe_series
+                payload_out.setdefault("y_key", safe_series[0]["key"])
 
         result.append({
             "type": action_type,

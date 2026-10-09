@@ -52,7 +52,9 @@ Solo puedes proponer APPLY_FILTERS, CLEAR_FILTERS, OPEN_VIEW o EXPORT_FILE.
 APPLY_FILTERS solo acepta: ventas_min, ventas_max, pax_min, pax_max, ticket_contiene.
 OPEN_VIEW solo acepta view_type table, bar_chart, line_chart o kpi_cards.
 OPEN_VIEW puede usar dataset tickets/lines de la vista o un dataset_id autorizado
-retornado por el backend.
+retornado por el backend. Para bar_chart o line_chart puede usar hasta 10 series
+con forma [{"key":"columna_autorizada","label":"Etiqueta"}]. y_key se conserva
+como compatibilidad para una sola serie.
 EXPORT_FILE solo acepta formatos xlsx, txt o pdf y debe usar un dataset autorizado
 del backend o tickets/lines de la vista.
 Si el usuario pide explícitamente "gráfico", "gráfica", "barras", "línea", "chart"
