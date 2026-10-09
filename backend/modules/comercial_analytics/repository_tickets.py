@@ -450,6 +450,36 @@ def summarize_current_day_tickets(
         },
     }
 
+
+def _latest_snapshot_operation_date(unit_code: str) -> str | None:
+    """Fecha operativa del snapshot intradía más reciente de la unidad.
+
+    Usa únicamente EDARSAHUB SQL. Sirve para que un rango histórico que incluye
+    la jornada activa sustituya esa jornada por el mismo conjunto atómico usado
+    en Ventas del Día, en lugar de mostrar sólo tickets cerrados.
+    """
+    rows = _execute(
+        """
+        SELECT TOP 1
+            fecha_operacion
+        FROM dbo.Comercial_Ventas_Dia_Abiertas_v2
+        WHERE unidad_negocio_id = %s
+          AND fecha_operacion IS NOT NULL
+        ORDER BY
+            snapshot_timestamp DESC,
+            fecha_ultima_actualizacion DESC
+        """,
+        (_required(unit_code, "unit_code"),),
+    )
+    if not rows:
+        return None
+
+    raw = rows[0].get("fecha_operacion")
+    if raw in (None, ""):
+        return None
+    return _date_string(raw, "fecha_operacion")
+
+
 def list_tickets(
     *,
     fecha_inicio: Any,
@@ -510,6 +540,33 @@ def list_tickets(
             page_size=page_size,
         )
 
+    # Regla canónica/transversal para rangos históricos:
+    # si el rango contiene la jornada con snapshot intradía, esa jornada se
+    # reconstruye con el MISMO contrato atómico de Ventas del Día. Los días
+    # anteriores siguen leyendo el detalle histórico cerrado.
+    snapshot_operation_date = None
+    current_day_items: list[dict[str, Any]] = []
+
+    if requested_unit and query_executor is None and start < end:
+        snapshot_operation_date = _latest_snapshot_operation_date(
+            requested_unit
+        )
+        if (
+            snapshot_operation_date
+            and start <= snapshot_operation_date <= end
+        ):
+            current_payload = _list_current_day_with_comercial_merge(
+                operation_date=snapshot_operation_date,
+                unit_code=requested_unit,
+                page=1,
+                page_size=1_000_000,
+            )
+            current_day_items = list(
+                current_payload.get("items") or []
+            )
+        else:
+            snapshot_operation_date = None
+
     placeholders = ", ".join(["%s"] * len(effective_units))
 
     where_sql = f"""
@@ -526,6 +583,17 @@ def list_tickets(
         end,
         *effective_units,
     )
+
+    if snapshot_operation_date:
+        # Evita duplicar la jornada activa: no se mezcla el detalle histórico
+        # cerrado de esa fecha con el snapshot atómico abierto/cerrado.
+        where_sql += """
+        AND d.fecha_operacion <> %s
+        """
+        base_params = (
+            *base_params,
+            snapshot_operation_date,
+        )
 
     count_sql = f"""
         SELECT COUNT(*) AS total
@@ -549,11 +617,30 @@ def list_tickets(
         query_executor=query_executor,
     )
 
-    total = int(
+    historical_total = int(
         count_rows[0].get("total") or 0
     ) if count_rows else 0
+    current_total = len(current_day_items)
+    total = historical_total + current_total
 
     offset = (page - 1) * page_size
+    items: list[dict[str, Any]] = []
+
+    historical_offset = offset
+    if current_total:
+        if offset < current_total:
+            current_end = min(
+                current_total,
+                offset + page_size,
+            )
+            items.extend(
+                current_day_items[offset:current_end]
+            )
+            historical_offset = 0
+        else:
+            historical_offset = offset - current_total
+
+    remaining = page_size - len(items)
 
     data_sql = f"""
         SELECT
@@ -581,17 +668,17 @@ def list_tickets(
         FETCH NEXT %s ROWS ONLY
     """
 
-    rows = _execute(
-        data_sql,
-        (
-            *base_params,
-            offset,
-            page_size,
-        ),
-        query_executor=query_executor,
-    )
-
-    items = []
+    rows = []
+    if remaining > 0 and historical_offset < historical_total:
+        rows = _execute(
+            data_sql,
+            (
+                *base_params,
+                historical_offset,
+                remaining,
+            ),
+            query_executor=query_executor,
+        )
 
     for row in rows:
         unit_code = _required(
@@ -645,7 +732,20 @@ def list_tickets(
         "returned": returned,
         "has_more": offset + returned < total,
         "traceability": {
-            "source": DETAIL_TABLE,
+            "source": (
+                (
+                    DETAIL_TABLE
+                    + " + Comercial_Ventas_Dia_Abiertas_v2.detalle_abiertas_json"
+                )
+                if snapshot_operation_date
+                else DETAIL_TABLE
+            ),
+            "contract": (
+                "HISTORICO_CON_DIA_OPERATIVO_ATOMICO"
+                if snapshot_operation_date
+                else "DETALLE_HISTORICO_CERRADO"
+            ),
+            "snapshot_operation_date": snapshot_operation_date,
             "temporal_field": "fecha_operacion",
             "live": False,
             "paginated": True,
