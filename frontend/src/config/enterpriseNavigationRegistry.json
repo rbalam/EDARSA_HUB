@@ -1039,6 +1039,15 @@
       "status": "active",
       "releasedAt": "2026-08-03",
       "legacy": false
+    },
+    "sistema.sync_historical": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "sincronizacion-automatizacion",
+      "label": "Sincronizacion Historica",
+      "expectedPath": "/sync-historical",
+      "order": 15,
+      "status": "active",
+      "releasedAt": "2026-10-09"
     }
   },
   "plannedItems": [
