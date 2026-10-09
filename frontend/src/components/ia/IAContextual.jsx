@@ -30,16 +30,16 @@ const numberValue = (value) => {
 
 
 const stripVisualCodeBlocks = (text) => String(text || '')
-  .replace(/\`\`\`(?:mermaid|xychart-beta)[\\s\\S]*?\`\`\`/gi, '')
-  .replace(/\`\`\`[\\s\\S]*?xychart-beta[\\s\\S]*?\`\`\`/gi, '')
-  .replace(/\\|\\s*\\|/g, '|\\n|')
-  .replace(/\\n{3,}/g, '\\n\\n')
+  .replace(/```(?:mermaid|xychart-beta)\s*[\s\S]*?```/gi, '')
+  .replace(/```[\s\S]*?xychart-beta[\s\S]*?```/gi, '')
+  .replace(/\|\s*\|/g, '|\n|')
+  .replace(/\n{3,}/g, '\n\n')
   .trim();
 
 const parseTableRow = (line) => String(line || '')
   .trim()
-  .replace(/^\\|/, '')
-  .replace(/\\|$/, '')
+  .replace(/^\|/, '')
+  .replace(/\|$/, '')
   .split('|')
   .map((cell) => cell.trim());
 
@@ -50,12 +50,12 @@ const isTableLine = (line) => (
 const isTableSeparator = (line) => {
   const cells = parseTableRow(line);
   return cells.length > 1 && cells.every((cell) => (
-    /^:?-{3,}:?$/.test(cell.replace(/\\s/g, ''))
+    /^:?-{3,}:?$/.test(cell.replace(/\s/g, ''))
   ));
 };
 
 function IAInlineMarkdown({ text }) {
-  const parts = String(text ?? '').split(/(\\*\\*[^*]+\\*\\*)/g);
+  const parts = String(text ?? '').split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, index) => (
     part.startsWith('**') && part.endsWith('**')
       ? <strong key={index} className="font-semibold text-white">{part.slice(2, -2)}</strong>
@@ -64,7 +64,7 @@ function IAInlineMarkdown({ text }) {
 }
 
 export function IAMessageContent({ text }) {
-  const lines = stripVisualCodeBlocks(text).split('\\n');
+  const lines = stripVisualCodeBlocks(text).split('\n');
   const blocks = [];
 
   for (let index = 0; index < lines.length;) {
@@ -131,20 +131,20 @@ export function IAMessageContent({ text }) {
 
 const datasetNumericValue = (value) => {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
-  const cleaned = String(value ?? '').replace(/[$,%\\s,]/g, '');
+  const cleaned = String(value ?? '').replace(/[$,%\s,]/g, '');
   const numeric = Number(cleaned);
   return Number.isFinite(numeric) ? numeric : null;
 };
 
 const metricKey = (value) => String(value || '')
   .normalize('NFD')
-  .replace(/[\\u0300-\\u036f]/g, '')
+  .replace(/[\u0300-\u036f]/g, '')
   .toLowerCase()
   .replace(/[^a-z0-9]+/g, '_')
   .replace(/^_+|_+$/g, '');
 
 const extractMarkdownTables = (text) => {
-  const lines = stripVisualCodeBlocks(text).split('\\n');
+  const lines = stripVisualCodeBlocks(text).split('\n');
   const tables = [];
 
   for (let index = 0; index < lines.length - 1;) {
@@ -336,7 +336,8 @@ export function IAAnalysisModal({ config, rows, onClose }) {
 
         <div className="max-h-[70vh] overflow-auto p-5">
           {config.view_type === 'table' && (
-            <table className="w-full text-sm">
+            <div className="max-w-full overflow-x-auto">
+              <table className="min-w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-slate-400">
                   {keys.map((key) => <th key={key} className="px-3 py-2">{key}</th>)}
@@ -349,7 +350,8 @@ export function IAAnalysisModal({ config, rows, onClose }) {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           )}
 
           {config.view_type === 'kpi_cards' && (
@@ -571,10 +573,10 @@ export function IAContextualPanel({
           )}
           {messages.map((message, index) => (
             <div key={index} className={message.role === 'user' ? 'text-right' : 'text-left'}>
-              <div className={`inline-block max-w-[90%] rounded-2xl px-4 py-3 text-sm ${
+              <div className={`rounded-2xl px-4 py-3 text-sm ${
                 message.role === 'user'
-                  ? 'whitespace-pre-wrap bg-indigo-600 text-white'
-                  : 'border border-slate-800 bg-slate-900 text-slate-200'
+                  ? 'inline-block max-w-[90%] whitespace-pre-wrap bg-indigo-600 text-white'
+                  : 'block w-full max-w-full border border-slate-800 bg-slate-900 text-slate-200'
               }`}>
                 {message.role === 'assistant'
                   ? <IAMessageContent text={message.text} />

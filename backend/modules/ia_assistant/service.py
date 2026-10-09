@@ -263,11 +263,11 @@ def _parse_planner_response(raw: str) -> Dict[str, Any]:
 
 
 _VISUAL_CODE_BLOCK_RE = re.compile(
-    r"\`\`\`(?:mermaid|xychart-beta)\\s*[\\s\\S]*?\`\`\`",
+    r"```(?:mermaid|xychart-beta)\s*[\s\S]*?```",
     re.IGNORECASE,
 )
 _XYCHART_FENCED_BLOCK_RE = re.compile(
-    r"\`\`\`[\\s\\S]*?xychart-beta[\\s\\S]*?\`\`\`",
+    r"```[\s\S]*?xychart-beta[\s\S]*?```",
     re.IGNORECASE,
 )
 
@@ -277,8 +277,8 @@ def _sanitize_assistant_visual_markup(text: str) -> str:
     cleaned = str(text or "")
     cleaned = _VISUAL_CODE_BLOCK_RE.sub("", cleaned)
     cleaned = _XYCHART_FENCED_BLOCK_RE.sub("", cleaned)
-    cleaned = re.sub(r"\\|\\s*\\|", "|\\n|", cleaned)
-    cleaned = re.sub(r"\\n{3,}", "\\n\\n", cleaned).strip()
+    cleaned = re.sub(r"\|\s*\|", "|\n|", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
     return cleaned
 
 

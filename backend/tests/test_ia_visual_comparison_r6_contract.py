@@ -7,7 +7,7 @@ FRONT = ROOT.parent / "frontend/src/components/ia/IAContextual.jsx"
 
 def test_backend_normalizes_inline_markdown_table_rows():
     source = SERVICE.read_text(encoding="utf-8")
-    assert 're.sub(r"\\\\|\\\\s*\\\\|", "|\\\\n|", cleaned)' in source
+    assert 're.sub(r"\\|\\s*\\|", "|\\n|", cleaned)' in source
 
 
 def test_frontend_builds_comparison_dataset_from_answer_table():
