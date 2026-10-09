@@ -43,6 +43,10 @@ BEGIN TRY
 
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','UpdatedAtUTC') IS NOT NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN UpdatedAtUTC;
+    IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','Reason') IS NOT NULL
+        ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN Reason;
+    IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','RequestedBy') IS NOT NULL
+        ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN RequestedBy;
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','LastHeartbeatUTC') IS NOT NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN LastHeartbeatUTC;
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','CancelRequested') IS NOT NULL
@@ -65,6 +69,8 @@ BEGIN TRY
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN EntidadCodigo;
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','CategoriaCodigo') IS NOT NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN CategoriaCodigo;
+    IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','SucursalOrigenID') IS NOT NULL
+        ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN SucursalOrigenID;
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','SucursalID') IS NOT NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN SucursalID;
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','SistemaVersionID') IS NOT NULL
