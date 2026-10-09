@@ -65,6 +65,8 @@ SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
 FRONTEND_BUILD_CERTIFICATION_MODE = "FRONTEND_BUILD_CERTIFICATION"
 SYNC_HISTORICAL_PARENT_MODE = "SYNC_HISTORICAL_PARENT"
 SYNC_HISTORICAL_ATOMIC_MODE = "SYNC_HISTORICAL_ATOMIC"
+SYNC_HISTORICAL_PARENT_AUDIT_PROFILE = "sync_historical_parent_status_v1"
+SYNC_HISTORICAL_ATOMIC_AUDIT_PROFILE = "sync_historical_atomic_status_v1"
 UNIT_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 MAX_ACTIONS = int(os.environ.get("EDARSAHUB_JOB_MAX_ACTIONS", "100"))
@@ -591,15 +593,19 @@ def validate(job: Any) -> list[str]:
         elif any(not isinstance(c, dict) or c.get("type") not in {"frontend_build", "git_diff_check", "repository_contract_audit"} for c in checks):
             errors.append("FRONTEND_BUILD_CERTIFICATION_ONLY_ALLOWED_CHECKS")
     elif mode == SYNC_HISTORICAL_PARENT_MODE:
-        if not isinstance(checks, list) or not checks:
-            errors.append("SYNC_HISTORICAL_PARENT_AUDIT_REQUIRED")
-        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
-            errors.append("SYNC_HISTORICAL_PARENT_ONLY_SQL_AUDIT_ALLOWED")
+        audit_profile = str(job.get("audit_profile") or "").strip()
+        if audit_profile != SYNC_HISTORICAL_PARENT_AUDIT_PROFILE:
+            errors.append("SYNC_HISTORICAL_PARENT_AUDIT_PROFILE_INVALID")
+        if job.get("checks") not in (None, []):
+            errors.append("SYNC_HISTORICAL_PARENT_INLINE_CHECKS_FORBIDDEN")
+        checks = []
     elif mode == SYNC_HISTORICAL_ATOMIC_MODE:
-        if not isinstance(checks, list) or not checks:
-            errors.append("SYNC_HISTORICAL_ATOMIC_AUDIT_REQUIRED")
-        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
-            errors.append("SYNC_HISTORICAL_ATOMIC_ONLY_SQL_AUDIT_ALLOWED")
+        audit_profile = str(job.get("audit_profile") or "").strip()
+        if audit_profile != SYNC_HISTORICAL_ATOMIC_AUDIT_PROFILE:
+            errors.append("SYNC_HISTORICAL_ATOMIC_AUDIT_PROFILE_INVALID")
+        if job.get("checks") not in (None, []):
+            errors.append("SYNC_HISTORICAL_ATOMIC_INLINE_CHECKS_FORBIDDEN")
+        checks = []
     elif mode == MPRO_FULL_HISTORY_MODE:
         if not isinstance(checks, list) or not checks:
             errors.append("MPRO_RESYNC_AUDIT_REQUIRED")
