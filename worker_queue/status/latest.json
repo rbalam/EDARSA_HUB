@@ -4,11 +4,11 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "83d87b85633b5a29e8b9ef22d438f5e8932d78cb",
-  "generated_at_utc": "2026-10-09T05:17:13Z",
+  "generated_at_utc": "2026-10-09T05:18:32Z",
   "history": {
     "done_total_local": 1356,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 1191,
     "results_total_local": 2335
   },
@@ -16,52 +16,52 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 141,
+      "age_seconds": 220,
       "job_id": "EDARSAHUB-IA-CANONICAL-VISUALIZATION-R10-CARLOS-20261009T0520",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 324,
+      "age_seconds": 403,
       "job_id": "EDARSAHUB-IA-CANONICAL-VISUALIZATION-R9-CARLOS-20261009T0018",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3087,
+      "age_seconds": 3166,
       "job_id": "EDARSAHUB-IA-MARKDOWN-PARSER-R7-CARLOS-20261008T2238",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2616,
+      "age_seconds": 2695,
       "job_id": "EDARSAHUB-IA-MARKDOWN-PARSER-R8-CARLOS-20261008T2254",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3573,
-      "job_id": "EDARSAHUB-IA-VISUAL-COMPARISON-R6-CARLOS-20261008T2215",
+      "age_seconds": 45,
+      "job_id": "EDARSAHUB-IA-CANONICAL-VISUALIZATION-R11-CARLOS-20261009T0535",
       "reason": null,
-      "state": "RESULT_READY"
+      "state": "RUNNING"
     }
   ],
   "local_development_sha": "83d87b85633b5a29e8b9ef22d438f5e8932d78cb",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 5,
-  "queue_running": 0,
+  "queue_result_ready_recent": 4,
+  "queue_running": 1,
   "remote_development_sha": "83d87b85633b5a29e8b9ef22d438f5e8932d78cb",
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-IA-CANONICAL-VISUALIZATION-R11-CARLOS-20261009T0535",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-09T05:17:06Z",
-    "last_receive_utc": "2026-10-09T05:17:10Z",
+    "last_cycle_utc": "2026-10-09T05:18:23Z",
+    "last_receive_utc": "2026-10-09T05:18:29Z",
     "last_terminal_utc": "2026-10-09T05:14:52Z",
     "pid": "398",
     "runtime_fingerprint": {
