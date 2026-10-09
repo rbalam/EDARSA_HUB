@@ -1,0 +1,27 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-CANARY-RECOVERY-CHECK-20261009",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "3f4a4203e21122ea1bf516f9c1557ecc6c9455a1",
+  "production_allowed": false,
+  "objective": "Verificar en solo lectura el estado persistido del canario de Sincronizacion Historica despues del reinicio de Emergent. Revisar padre 11949 e hijos 11950/11951 antes de decidir retry. No escribir datos ni tocar Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "historical_canary_parent_state",
+          "sql": "SELECT SyncControlID,SyncRunID,Status,IsDryRun,AttemptCount,MaxAttempts,PauseRequested,CancelRequested,WorkerJobID,DispatchCount,ErrorMessage,StartedAtUTC,FinishedAtUTC,UpdatedAtUTC FROM dbo.Sync_Control_Ejecuciones WHERE SyncControlID=11949 AND RunKind='PARENT'"
+        },
+        {
+          "name": "historical_canary_children_state",
+          "sql": "SELECT SyncControlID,SyncRunID,Status,IsDryRun,CodigoSync,AttemptCount,MaxAttempts,NextRetryAtUTC,ErrorMessage,CheckpointJSON,StartedAtUTC,FinishedAtUTC,UpdatedAtUTC FROM dbo.Sync_Control_Ejecuciones WHERE ParentSyncControlID=11949 AND RunKind='ATOMIC' ORDER BY SyncControlID"
+        }
+      ]
+    }
+  ]
+}
