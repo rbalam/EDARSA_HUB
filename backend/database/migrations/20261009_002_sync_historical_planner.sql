@@ -161,63 +161,79 @@ BEGIN TRY
             REFERENCES dbo.Sistema_Sucursales(SucursalID);
         ');
 
+    /*
+      Los checks e indices referencian columnas agregadas en este mismo batch.
+      Se difiere su compilacion hasta despues de materializar las columnas.
+    */
     IF NOT EXISTS (
         SELECT 1 FROM sys.check_constraints
         WHERE name='CK_Sync_Control_Ejecuciones_RunKind'
     )
-        ALTER TABLE dbo.Sync_Control_Ejecuciones
-        ADD CONSTRAINT CK_Sync_Control_Ejecuciones_RunKind
-        CHECK (RunKind IN ('LEGACY','PARENT','ATOMIC'));
+        EXEC(N'
+            ALTER TABLE dbo.Sync_Control_Ejecuciones
+            ADD CONSTRAINT CK_Sync_Control_Ejecuciones_RunKind
+            CHECK (RunKind IN (''LEGACY'',''PARENT'',''ATOMIC''));
+        ');
 
     IF NOT EXISTS (
         SELECT 1 FROM sys.check_constraints
         WHERE name='CK_Sync_Control_Ejecuciones_PlanJSON'
     )
-        ALTER TABLE dbo.Sync_Control_Ejecuciones
-        ADD CONSTRAINT CK_Sync_Control_Ejecuciones_PlanJSON
-        CHECK (PlanJSON IS NULL OR ISJSON(PlanJSON)=1);
+        EXEC(N'
+            ALTER TABLE dbo.Sync_Control_Ejecuciones
+            ADD CONSTRAINT CK_Sync_Control_Ejecuciones_PlanJSON
+            CHECK (PlanJSON IS NULL OR ISJSON(PlanJSON)=1);
+        ');
 
     IF NOT EXISTS (
         SELECT 1 FROM sys.check_constraints
         WHERE name='CK_Sync_Control_Ejecuciones_CheckpointJSON'
     )
-        ALTER TABLE dbo.Sync_Control_Ejecuciones
-        ADD CONSTRAINT CK_Sync_Control_Ejecuciones_CheckpointJSON
-        CHECK (CheckpointJSON IS NULL OR ISJSON(CheckpointJSON)=1);
+        EXEC(N'
+            ALTER TABLE dbo.Sync_Control_Ejecuciones
+            ADD CONSTRAINT CK_Sync_Control_Ejecuciones_CheckpointJSON
+            CHECK (CheckpointJSON IS NULL OR ISJSON(CheckpointJSON)=1);
+        ');
 
     IF NOT EXISTS (
         SELECT 1 FROM sys.check_constraints
         WHERE name='CK_Sync_Control_Ejecuciones_Attempts'
     )
-        ALTER TABLE dbo.Sync_Control_Ejecuciones
-        ADD CONSTRAINT CK_Sync_Control_Ejecuciones_Attempts
-        CHECK (
-            AttemptCount >= 0
-            AND MaxAttempts >= 1
-            AND AttemptCount <= MaxAttempts
-        );
+        EXEC(N'
+            ALTER TABLE dbo.Sync_Control_Ejecuciones
+            ADD CONSTRAINT CK_Sync_Control_Ejecuciones_Attempts
+            CHECK (
+                AttemptCount >= 0
+                AND MaxAttempts >= 1
+                AND AttemptCount <= MaxAttempts
+            );
+        ');
 
     IF NOT EXISTS (
         SELECT 1 FROM sys.indexes
         WHERE object_id=OBJECT_ID('dbo.Sync_Control_Ejecuciones')
           AND name='IX_Sync_Control_Ejecuciones_Parent_Status'
     )
-        CREATE INDEX IX_Sync_Control_Ejecuciones_Parent_Status
-        ON dbo.Sync_Control_Ejecuciones
-            (ParentSyncControlID, Status, ExecutionOrder, BlockOrdinal, SyncControlID)
-        INCLUDE (
-            SyncRunID, CodigoSync, UnidadNegocioID, ConexionID,
-            FechaInicio, FechaFin, AttemptCount, NextRetryAtUTC
-        );
+        EXEC(N'
+            CREATE INDEX IX_Sync_Control_Ejecuciones_Parent_Status
+            ON dbo.Sync_Control_Ejecuciones
+                (ParentSyncControlID, Status, ExecutionOrder, BlockOrdinal, SyncControlID)
+            INCLUDE (
+                SyncRunID, CodigoSync, UnidadNegocioID, ConexionID,
+                FechaInicio, FechaFin, AttemptCount, NextRetryAtUTC
+            );
+        ');
 
     IF NOT EXISTS (
         SELECT 1 FROM sys.indexes
         WHERE object_id=OBJECT_ID('dbo.Sync_Control_Ejecuciones')
           AND name='IX_Sync_Control_Ejecuciones_Correlation'
     )
-        CREATE INDEX IX_Sync_Control_Ejecuciones_Correlation
-        ON dbo.Sync_Control_Ejecuciones
-            (CorrelationID, RunKind, Status, SyncControlID);
+        EXEC(N'
+            CREATE INDEX IX_Sync_Control_Ejecuciones_Correlation
+            ON dbo.Sync_Control_Ejecuciones
+                (CorrelationID, RunKind, Status, SyncControlID);
+        ');
 
     COMMIT TRANSACTION;
 END TRY
