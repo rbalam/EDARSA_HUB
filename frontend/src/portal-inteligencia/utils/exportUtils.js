@@ -68,3 +68,29 @@ export function exportToPDF(title, columns, rows, meta = '') {
   });
   doc.save(`${title.replace(/\s+/g, '_')}_${stamp()}.pdf`);
 }
+
+
+/**
+ * Exporta una tabla a TXT UTF-8 delimitado por tabuladores.
+ */
+export function exportToTXT(filename, columns, rows, meta = '') {
+  const cleanCell = (value) => String(value ?? '')
+    .replace(/\r?\n/g, ' ')
+    .replace(/\t/g, ' ');
+
+  const header = (columns || []).map((column) => cleanCell(column.label)).join('\t');
+  const body = (rows || []).map((row) => (
+    (columns || []).map((column) => cleanCell(row?.[column.key])).join('\t')
+  ));
+
+  const content = [
+    ...(meta ? [cleanCell(meta), ''] : []),
+    header,
+    ...body,
+  ].join('\n');
+
+  saveAs(
+    new Blob(['\uFEFF' + content], { type: 'text/plain;charset=utf-8' }),
+    filename + '_' + stamp() + '.txt'
+  );
+}

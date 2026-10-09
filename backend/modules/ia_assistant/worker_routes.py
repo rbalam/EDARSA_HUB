@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from core.rbac_sql.service import RBACSQLService
 from core.security import create_access_token
 from modules.auth.repository import AuthRepository
+from modules.ia_assistant import access
 from modules.ia_assistant import query_bridge
 from modules.ia_assistant import repository
 from modules.ia_assistant import service
@@ -112,6 +113,10 @@ async def worker_chat(
         if not user_email:
             raise HTTPException(status_code=403, detail="Usuario no autorizado")
 
+        access_context = access.build_ai_access_context(user)
+        if access_context.get("authorized") is not True:
+            raise HTTPException(status_code=403, detail="Usuario no autorizado")
+
         session_id = _resolve_session(user_email, payload.context.session_id)
         message = payload.message.strip()
 
@@ -128,6 +133,7 @@ async def worker_chat(
             session_id,
             message,
             prompt_catalog,
+            access_context=access_context,
         )
         system_context = await query_bridge.execute_planned_queries(
             http_request.app,
@@ -141,6 +147,7 @@ async def worker_chat(
             user_email,
             message,
             system_context=system_context,
+            access_context=access_context,
         )
 
     except HTTPException:
@@ -163,4 +170,6 @@ async def worker_chat(
         "session_id": session_id,
         "model": result.get("modelo"),
         "data_sources": result.get("data_sources") or [],
+        "datasets": result.get("datasets") or [],
+        "source_policy": "EDARSAHUB_ONLY",
     }

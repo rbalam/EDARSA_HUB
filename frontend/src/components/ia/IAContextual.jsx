@@ -5,6 +5,10 @@ import {
   enviarMensaje,
   iaHealth,
 } from '../../services/iaAssistantApi';
+import {
+  exportActionDataset,
+  resolveActionDataset,
+} from './iaContextualData';
 
 const VIEW_TYPES = new Set(['table', 'bar_chart', 'line_chart', 'kpi_cards']);
 
@@ -145,7 +149,7 @@ export function IAContextualPanel({
 
   if (!open) return null;
 
-  const executeAction = (action) => {
+  const executeAction = (action, systemDatasets = []) => {
     if (action?.type === 'APPLY_FILTERS') {
       onApplyFilters?.(action.payload?.filters || {});
       return;
@@ -154,9 +158,23 @@ export function IAContextualPanel({
       onClearFilters?.();
       return;
     }
-    if (action?.type === 'OPEN_VIEW' && VIEW_TYPES.has(action.payload?.view_type)) {
-      const dataset = action.payload?.dataset === 'lines' ? 'lines' : 'tickets';
-      setAnalysis({ ...action.payload, dataset });
+
+    const resolved = resolveActionDataset(action, viewData, systemDatasets);
+
+    if (
+      action?.type === 'OPEN_VIEW'
+      && VIEW_TYPES.has(action.payload?.view_type)
+      && resolved
+    ) {
+      setAnalysis({
+        config: action.payload,
+        rows: resolved.rows,
+      });
+      return;
+    }
+
+    if (action?.type === 'EXPORT_FILE' && resolved) {
+      exportActionDataset(action, resolved);
     }
   };
 
@@ -169,7 +187,7 @@ export function IAContextualPanel({
     try {
       let sid = sessionId;
       if (!sid) {
-        const created = await crearSesion('Comercial · Drilldown contextual');
+        const created = await crearSesion('Asistente IA contextual EDARSAHUB');
         sid = created?.sesion?.sesion_id;
         setSessionId(sid);
       }
@@ -180,6 +198,7 @@ export function IAContextualPanel({
           role: 'assistant',
           text: response?.respuesta || '',
           actions: Array.isArray(response?.acciones_ui) ? response.acciones_ui : [],
+          datasets: Array.isArray(response?.datasets) ? response.datasets : [],
         },
       ]);
     } catch (error) {
@@ -200,7 +219,9 @@ export function IAContextualPanel({
             <Sparkles className="h-4 w-4 text-indigo-400" />
             <div>
               <p className="text-sm font-semibold text-white">Asistente IA</p>
-              <p className="text-[11px] text-slate-500">Contexto: Comercial / Drilldown</p>
+              <p className="text-[11px] text-slate-500">
+                Contexto: {contextoVista?.modulo || 'EDARSAHUB'} / {contextoVista?.view_id || 'vista'}
+              </p>
             </div>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800">
@@ -212,7 +233,7 @@ export function IAContextualPanel({
           {messages.length === 0 && (
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-300">
               <Bot className="mb-2 h-5 w-5 text-indigo-400" />
-              Pregunta sobre los tickets, filtros o la selección actual. El Asistente usa el mismo servicio IA de EDARSAHUB.
+              Pregunta sobre cualquier información autorizada de EDARSAHUB. La vista actual aporta contexto, pero no limita periodos ni módulos permitidos por tu RBAC.
             </div>
           )}
           {messages.map((message, index) => (
@@ -230,7 +251,7 @@ export function IAContextualPanel({
                     <button
                       key={`${action.type}:${actionIndex}`}
                       type="button"
-                      onClick={() => executeAction(action)}
+                      onClick={() => executeAction(action, message.datasets || [])}
                       className="rounded-lg border border-indigo-500/50 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-300 hover:bg-indigo-500/20"
                     >
                       {action.label}
@@ -259,7 +280,7 @@ export function IAContextualPanel({
                   send();
                 }
               }}
-              placeholder="Pregunta sobre esta vista…"
+              placeholder="Pregunta sobre EDARSAHUB…"
               className="flex-1 resize-none bg-transparent px-2 py-1 text-sm text-white outline-none placeholder:text-slate-500"
             />
             <button
@@ -275,8 +296,8 @@ export function IAContextualPanel({
       </div>
 
       <IAAnalysisModal
-        config={analysis}
-        rows={analysis ? (viewData?.[analysis.dataset] || []) : []}
+        config={analysis?.config}
+        rows={analysis?.rows || []}
         onClose={() => setAnalysis(null)}
       />
     </>

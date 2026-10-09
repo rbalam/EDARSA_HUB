@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from core.rbac.middleware import (
     require_explicit_permission_dual,
 )
+from modules.ia_assistant import access
 from modules.ia_assistant import contextual
 from modules.ia_assistant import query_bridge
 from modules.ia_assistant import repository
@@ -284,12 +285,22 @@ async def chat(
         view_context = contextual.normalize_view_context(
             request.contexto_vista
         )
+        access_context = access.build_ai_access_context(current_user)
+        if access_context.get("authorized") is not True:
+            raise HTTPException(status_code=403, detail="Alcance IA no autorizado")
+
         catalog = query_bridge.build_readonly_catalog(http_request.app)
-        prompt_catalog = query_bridge.catalog_for_prompt(catalog, message)
+        prompt_catalog = query_bridge.catalog_for_prompt(
+            catalog,
+            message,
+            context_text=str(view_context),
+        )
         planned = await service.plan_system_queries(
             session_id,
             message,
             prompt_catalog,
+            view_context=view_context,
+            access_context=access_context,
         )
         system_context = await query_bridge.execute_planned_queries(
             http_request.app,
@@ -307,12 +318,14 @@ async def chat(
             message,
             system_context=system_context,
             view_context=view_context,
+            access_context=access_context,
         )
         response["acciones_ui"] = await service.plan_contextual_actions(
             session_id,
             message,
             response.get("respuesta") or "",
             view_context,
+            datasets=response.get("datasets") or [],
         )
         response["contexto_vista_aceptado"] = bool(view_context)
         return response

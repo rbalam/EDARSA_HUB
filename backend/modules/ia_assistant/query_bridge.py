@@ -14,9 +14,9 @@ from urllib.parse import quote
 
 import httpx
 
-MAX_SYSTEM_CALLS = 3
+MAX_SYSTEM_CALLS = 6
 MAX_CATALOG_FOR_PROMPT = 180
-MAX_LIST_ITEMS = 50
+MAX_LIST_ITEMS = 500
 MAX_DICT_ITEMS = 100
 MAX_STRING_CHARS = 4000
 MAX_SANITIZE_DEPTH = 7
@@ -183,11 +183,18 @@ def catalog_for_prompt(
     catalog: Iterable[Mapping[str, Any]],
     user_message: str,
     limit: int = MAX_CATALOG_FOR_PROMPT,
+    context_text: str = "",
 ) -> List[Dict[str, Any]]:
-    """Reduce el catálogo priorizando operaciones relacionadas con la solicitud."""
+    """Reduce catálogo usando solicitud + contexto visual, sin ampliar autorización."""
+    search_text = " ".join(
+        (
+            str(user_message or ""),
+            str(context_text or ""),
+        )
+    ).lower()
     words = {
         token
-        for token in re.findall(r"[a-z0-9_áéíóúñ]{3,}", str(user_message or "").lower())
+        for token in re.findall(r"[a-z0-9_áéíóúñ]{3,}", search_text)
     }
 
     ranked = []
