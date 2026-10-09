@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "7ac5e44298ac23c5e37487ba24ab426411632321",
-  "generated_at_utc": "2026-10-09T00:08:06Z",
+  "generated_at_utc": "2026-10-09T00:09:20Z",
   "history": {
     "done_total_local": 1356,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 480,
+      "age_seconds": 555,
       "job_id": "EDARSAHUB-IA-GLOBAL-AUTH-DATA-R1-CARLOS-20261008T1750",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1167,
+      "age_seconds": 1242,
       "job_id": "EDARSAHUB-TICKET-DIA-ATOMICO-CERT-R47-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 570,
+      "age_seconds": 644,
       "job_id": "EDARSAHUB-TICKET-DIA-ATOMICO-UI-BUILD-R48-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3284,
+      "age_seconds": 3359,
       "job_id": "EDARSAHUB-TICKETS-OCTUBRE-FINAL-CERT-R46-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3377,
+      "age_seconds": 3451,
       "job_id": "EDARSAHUB-TICKETS-OCTUBRE-RESIDUOS-AUDIT-R45-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-09T00:08:01Z",
-    "last_receive_utc": "2026-10-09T00:08:05Z",
+    "last_cycle_utc": "2026-10-09T00:09:16Z",
+    "last_receive_utc": "2026-10-09T00:09:11Z",
     "last_terminal_utc": "2026-10-09T00:00:05Z",
     "pid": "435",
     "runtime_fingerprint": {
