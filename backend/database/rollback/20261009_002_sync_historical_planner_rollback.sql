@@ -63,6 +63,8 @@ BEGIN TRY
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN CheckpointJSON;
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','PlanJSON') IS NOT NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN PlanJSON;
+    IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','ExecutionOrder') IS NOT NULL
+        ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN ExecutionOrder;
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','BlockOrdinal') IS NOT NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN BlockOrdinal;
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','EntidadCodigo') IS NOT NULL
