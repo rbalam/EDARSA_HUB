@@ -4,26 +4,32 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "b4fad82d2c4cb348f89c9c9dabba5b9505b947a0",
-  "generated_at_utc": "2026-10-09T19:39:09Z",
+  "generated_at_utc": "2026-10-09T19:40:26Z",
   "history": {
-    "done_total_local": 1356,
+    "done_total_local": 1357,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1196,
-    "results_total_local": 2340
+    "results_total_local": 2341
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 426,
+      "age_seconds": 503,
       "job_id": "EDARSAHUB-IA-GLOBAL-RBAC-DATA-SCOPE-R14-CARLOS-20261009T1325",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 31,
+      "age_seconds": 108,
       "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-001-20261009",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 13,
+      "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-001-DIAG-20261009",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -36,15 +42,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "remote_development_sha": "b4fad82d2c4cb348f89c9c9dabba5b9505b947a0",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-09T19:39:06Z",
-    "last_receive_utc": "2026-10-09T19:39:01Z",
-    "last_terminal_utc": "2026-10-09T19:38:37Z",
+    "last_cycle_utc": "2026-10-09T19:40:17Z",
+    "last_receive_utc": "2026-10-09T19:40:22Z",
+    "last_terminal_utc": "2026-10-09T19:40:12Z",
     "pid": "330",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "6c1233dbc0beba1383034f88dcb52bf9525e0084",
