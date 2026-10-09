@@ -14,6 +14,7 @@ INSERT INTO @required (ColumnName) VALUES
 ('SistemaTipoID'),
 ('SistemaVersionID'),
 ('SucursalID'),
+('SucursalOrigenID'),
 ('CategoriaCodigo'),
 ('EntidadCodigo'),
 ('BlockOrdinal'),
@@ -25,6 +26,8 @@ INSERT INTO @required (ColumnName) VALUES
 ('PauseRequested'),
 ('CancelRequested'),
 ('LastHeartbeatUTC'),
+('RequestedBy'),
+('Reason'),
 ('UpdatedAtUTC');
 
 IF EXISTS (
