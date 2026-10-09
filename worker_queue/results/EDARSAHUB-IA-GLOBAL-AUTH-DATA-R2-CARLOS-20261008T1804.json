@@ -1,0 +1,37 @@
+{
+  "base_sha": "7ac5e44298ac23c5e37487ba24ab426411632321",
+  "blockers": [
+    "check_failed:py_compile"
+  ],
+  "candidate_sha": "5150547076cf84927e9aed7eac2815ad8c16b8f2",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-09T00:12:42Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/ia_assistant/access.py",
+    "backend/modules/ia_assistant/contextual.py",
+    "backend/modules/ia_assistant/query_bridge.py",
+    "backend/modules/ia_assistant/routes.py",
+    "backend/modules/ia_assistant/service.py",
+    "backend/modules/ia_assistant/worker_routes.py",
+    "backend/tests/test_ia_global_authorized_contract.py",
+    "frontend/src/components/ia/IAContextual.jsx",
+    "frontend/src/components/ia/iaContextualData.js",
+    "frontend/src/portal-inteligencia/utils/exportUtils.js"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-IA-GLOBAL-AUTH-DATA-R2-CARLOS-20261008T1804",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-10-09T00:13:12Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-09T00:12:40Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
