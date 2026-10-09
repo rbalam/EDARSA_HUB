@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "2bfc943c2cf9ddafeb66ee5d40aa6c69d14f6b1c",
-  "generated_at_utc": "2026-10-09T01:19:09Z",
+  "generated_at_utc": "2026-10-09T01:20:24Z",
   "history": {
     "done_total_local": 1356,
     "pending_total_local": 0,
@@ -14,14 +14,7 @@
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [
-    {
-      "age_seconds": 3579,
-      "job_id": "EDARSAHUB-IA-GLOBAL-AUTH-DATA-R3-CARLOS-20261008T1816",
-      "reason": null,
-      "state": "RESULT_READY"
-    }
-  ],
+  "jobs": [],
   "local_development_sha": "2bfc943c2cf9ddafeb66ee5d40aa6c69d14f6b1c",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
@@ -30,14 +23,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 0,
   "queue_running": 0,
   "remote_development_sha": "2bfc943c2cf9ddafeb66ee5d40aa6c69d14f6b1c",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-09T01:19:00Z",
-    "last_receive_utc": "2026-10-09T01:19:05Z",
+    "last_cycle_utc": "2026-10-09T01:20:17Z",
+    "last_receive_utc": "2026-10-09T01:20:22Z",
     "last_terminal_utc": "2026-10-09T00:19:30Z",
     "pid": "435",
     "runtime_fingerprint": {
