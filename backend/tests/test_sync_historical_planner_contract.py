@@ -56,6 +56,7 @@ def _registry(system_code="MPRO"):
             "metadata": {
                 "chunk_unit": "day",
                 "max_attempts": 3,
+                "retry_backoff_seconds": 5,
             },
         },
     ]
