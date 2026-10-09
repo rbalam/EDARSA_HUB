@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-CANARY-SEED-20261009",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "3f4a4203e21122ea1bf516f9c1557ecc6c9455a1",
+  "production_allowed": false,
+  "objective": "Sembrar exclusivamente en EDARSAHUB Desarrollo un canario DRY RUN del modulo Sincronizacion Historica para ORIGEN (MPRO) y CIENFUEGOS (SoftRestaurant Pro), usando relaciones canonicas y sin escribir ventas. Crear un job padre y exactamente dos unidades atomicas QUEUED para fecha 2026-10-08. No tocar Produccion ni sync_comercial_abiertas_v2.",
+  "human_summary_language": "es",
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "actions": [],
+  "migration_path": "backend/database/migrations/canary/20261009_sync_historical_dry_run_canary_seed.sql",
+  "migration_sha256": "6461891f6a41bb38f9e61acd509da1608c628a7fd880bca824c9f3007eec245b",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "preflight_checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "historical_canary_preflight_registry",
+          "sql": "SELECT COUNT(*) AS binding_rows, 1/CASE WHEN COUNT(*)=2 THEN 1 ELSE 0 END AS binding_assertion FROM dbo.Sistema_Sync_Capacidades link JOIN dbo.Sistema_Capacidades cap ON cap.SistemaCapacidadID=link.SistemaCapacidadID JOIN dbo.Sistema_Tipos st ON st.SistemaTipoID=cap.SistemaTipoID WHERE link.CodigoSync='comercial_ventas_cerradas' AND ISNULL(link.Activo,1)=1 AND cap.CodigoCapacidad='SYNC_VENTAS_HISTORICAS' AND st.CodigoSistema IN ('MPRO','SOFTRESTAURANT_PRO')"
+        },
+        {
+          "name": "historical_canary_preflight_units",
+          "sql": "SELECT COUNT(DISTINCT UPPER(LTRIM(RTRIM(u.codigo)))) AS candidate_units, 1/CASE WHEN COUNT(DISTINCT UPPER(LTRIM(RTRIM(u.codigo))))=2 THEN 1 ELSE 0 END AS units_assertion FROM dbo.Unidades_Negocio u JOIN dbo.Servidores_Conexiones s ON LOWER(CONVERT(nvarchar(100),s.id))=LOWER(CONVERT(nvarchar(100),u.server_id)) JOIN dbo.Sistema_SucursalServidorMapeo map ON LOWER(CONVERT(nvarchar(100),map.ServidorID))=LOWER(CONVERT(nvarchar(100),u.server_id)) AND ISNULL(map.Activo,0)=1 AND (NULLIF(LTRIM(RTRIM(CONVERT(nvarchar(100),map.SucursalOrigenID))),'')=NULLIF(LTRIM(RTRIM(CONVERT(nvarchar(100),u.sucursal_origen_id))),'') OR (NULLIF(LTRIM(RTRIM(CONVERT(nvarchar(100),map.SucursalOrigenID))),'') IS NULL AND NULLIF(LTRIM(RTRIM(CONVERT(nvarchar(100),u.sucursal_origen_id))),'') IS NULL)) WHERE ISNULL(u.activo,1)=1 AND ISNULL(s.activo,1)=1 AND UPPER(LTRIM(RTRIM(u.codigo))) IN ('ORIGEN','CIENFUEGOS')"
+        },
+        {
+          "name": "historical_canary_preflight_existing_parent",
+          "sql": "SELECT COUNT(*) AS existing_parent_count FROM dbo.Sync_Control_Ejecuciones WHERE SyncRunID='HIST-CANARY-P-20261009' AND RunKind='PARENT'"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "historical_canary_post_parent",
+          "sql": "SELECT COUNT(*) AS parent_rows, 1/CASE WHEN COUNT(*)=1 AND MIN(CAST(IsDryRun AS int))=1 AND MIN(Status)='QUEUED' THEN 1 ELSE 0 END AS parent_assertion FROM dbo.Sync_Control_Ejecuciones WHERE SyncRunID='HIST-CANARY-P-20261009' AND RunKind='PARENT'"
+        },
+        {
+          "name": "historical_canary_post_children",
+          "sql": "SELECT COUNT(*) AS atomic_rows, COUNT(DISTINCT SistemaTipoID) AS systems, SUM(CASE WHEN IsDryRun=1 AND Status='QUEUED' AND CodigoSync='comercial_ventas_cerradas' THEN 1 ELSE 0 END) AS valid_rows, 1/CASE WHEN COUNT(*)=2 AND COUNT(DISTINCT SistemaTipoID)=2 AND SUM(CASE WHEN IsDryRun=1 AND Status='QUEUED' AND CodigoSync='comercial_ventas_cerradas' THEN 1 ELSE 0 END)=2 THEN 1 ELSE 0 END AS children_assertion FROM dbo.Sync_Control_Ejecuciones WHERE ParentSyncControlID=(SELECT TOP 1 SyncControlID FROM dbo.Sync_Control_Ejecuciones WHERE SyncRunID='HIST-CANARY-P-20261009' AND RunKind='PARENT' ORDER BY SyncControlID DESC) AND RunKind='ATOMIC'"
+        }
+      ]
+    }
+  ]
+}
