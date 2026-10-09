@@ -69,6 +69,7 @@ ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
 SERVER_REGISTRY_METADATA_UPDATE_MODE = "SERVER_REGISTRY_METADATA_UPDATE"
 SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
 FRONTEND_BUILD_CERTIFICATION_MODE = "FRONTEND_BUILD_CERTIFICATION"
+SYNC_HISTORICAL_PARENT_MODE = "SYNC_HISTORICAL_PARENT"
 SYNC_HISTORICAL_ATOMIC_MODE = "SYNC_HISTORICAL_ATOMIC"
 UNIT_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -1835,6 +1836,150 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                 result["percent_complete"] = 100
                 result["certification"] = "CERTIFIED_OPERATIONAL"
                 result["summary_es"] = "El Worker ejecuto preflight SQL HRLectura, una migracion Development versionada y SHA-bound mediante writer dedicado, y post-audit SQL HRLectura. No acepto SQL inline, shell arbitrario ni toco Produccion."
+            else:
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
+
+        if mode == SYNC_HISTORICAL_PARENT_MODE:
+            if expected_base and expected_base != current_head:
+                raise RuntimeError(
+                    f"BASE_SHA_MISMATCH_OPERATIONAL_MODE:"
+                    f"expected={expected_base}:actual={current_head}"
+                )
+            if job.get("actions") not in (None, []):
+                raise RuntimeError(
+                    "SYNC_HISTORICAL_PARENT_ACTIONS_FORBIDDEN"
+                )
+            for forbidden_field in (
+                "sql",
+                "command",
+                "shell",
+                "script",
+                "path",
+            ):
+                if job.get(forbidden_field) is not None:
+                    raise RuntimeError(
+                        "SYNC_HISTORICAL_PARENT_FORBIDDEN_FIELD:"
+                        + forbidden_field
+                    )
+
+            parent_id = job.get("parent_sync_control_id")
+            if (
+                not isinstance(parent_id, int)
+                or isinstance(parent_id, bool)
+                or parent_id < 1
+            ):
+                raise RuntimeError(
+                    "SYNC_HISTORICAL_PARENT_CONTROL_ID_INVALID"
+                )
+            if job.get("confirm_sync_historical_parent") is not True:
+                raise RuntimeError(
+                    "SYNC_HISTORICAL_PARENT_CONFIRMATION_REQUIRED"
+                )
+
+            checks = job.get("checks") or []
+            if (
+                not checks
+                or any(
+                    not isinstance(c, dict)
+                    or c.get("type") != "sql_readonly_audit"
+                    for c in checks
+                )
+            ):
+                raise RuntimeError(
+                    "SYNC_HISTORICAL_PARENT_SQL_AUDIT_REQUIRED"
+                )
+
+            script = (
+                ROOT
+                / "backend"
+                / "scripts"
+                / "run_sync_historical_parent.py"
+            )
+            if not script.is_file():
+                raise RuntimeError(
+                    "SYNC_HISTORICAL_PARENT_SCRIPT_NOT_FOUND"
+                )
+
+            backend = ROOT / "backend"
+            execution = run(
+                [
+                    PYTHON_BIN,
+                    str(script),
+                    "--parent-sync-control-id",
+                    str(parent_id),
+                ],
+                cwd=ROOT,
+                timeout=SOFTRESTAURANT_RESYNC_MAX_SECONDS,
+                env_extra={
+                    **load_backend_runtime_env(),
+                    "PYTHONPATH": str(backend),
+                },
+            )
+            result["operation"] = SYNC_HISTORICAL_PARENT_MODE
+            result["parent_sync_control_id"] = parent_id
+            result["canonical_sql_mutation"] = True
+            result["operation_output"] = execution.stdout[-20000:]
+            result["files_changed"] = []
+
+            summary = {}
+            for raw_line in reversed(
+                (execution.stdout or "").splitlines()
+            ):
+                try:
+                    candidate = json.loads(raw_line)
+                except Exception:
+                    continue
+                if (
+                    isinstance(candidate, dict)
+                    and candidate.get("event")
+                    == "sync_historical_parent_summary"
+                ):
+                    summary = candidate
+                    break
+            result["operation_summary"] = summary
+
+            if execution.returncode != 0:
+                result["blockers"].append(
+                    "sync_historical_parent_failed:"
+                    f"rc={execution.returncode}"
+                )
+
+            check_results = []
+            if not result["blockers"]:
+                for check in checks:
+                    check_result = run_check(ROOT, check)
+                    check_results.append(check_result)
+                    if check_result["status"] != "PASS":
+                        result["blockers"].append(
+                            "check_failed:sql_readonly_audit"
+                        )
+                        break
+            result["checks"] = check_results
+            result["tests"] = (
+                "PASS"
+                if check_results
+                and all(
+                    item["status"] == "PASS"
+                    for item in check_results
+                )
+                else "FAIL"
+            )
+            result["quality_gate"] = (
+                "PASS" if not result["blockers"] else "FAIL"
+            )
+            if not result["blockers"]:
+                result["status"] = "OPERATIONAL_COMPLETE"
+                result["percent_complete"] = 100
+                result["certification"] = "CERTIFIED_OPERATIONAL"
+                result["summary_es"] = (
+                    "El Worker Universal V1.2 orquesto el job padre "
+                    "historico sobre unidades atomicas persistidas, "
+                    "respetando checkpoints, reintentos y detencion segura; "
+                    "despues ejecuto auditoria SQL de solo lectura. No "
+                    "acepto shell, rutas ni comandos y no toco Produccion."
+                )
             else:
                 result["percent_complete"] = 0
                 result["certification"] = "NOT_CERTIFIED"
