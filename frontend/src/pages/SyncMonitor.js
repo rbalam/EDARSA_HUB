@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   RefreshCw, 
   Server, 
@@ -264,6 +265,7 @@ const SyncTimeline = ({ ultimos }) => {
 
 // Componente principal
 const SyncMonitor = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -354,7 +356,15 @@ const SyncMonitor = () => {
             Vista NOC • Fuente: EDARSAHUB SQL
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => navigate('/sync-historical')}
+            className="flex items-center gap-2 rounded-md border border-blue-500/50 bg-blue-500/15 px-4 py-2 text-sm font-medium text-blue-300 transition-colors hover:bg-blue-500/25"
+            data-testid="open-sync-historical"
+          >
+            <Database className="w-4 h-4" />
+            Sincronización Histórica
+          </button>
           <label className="flex items-center gap-2 text-white/60 text-sm cursor-pointer">
             <input
               type="checkbox"
