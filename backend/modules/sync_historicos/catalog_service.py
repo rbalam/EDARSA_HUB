@@ -82,20 +82,48 @@ def _internal_catalog() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
 
     resolver = SystemCapabilityResolver()
     unit_contexts: List[Dict[str, Any]] = []
-    seen_units = set()
+    grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     for row in _unit_rows():
         code = str(row.get("unit_code") or "").strip().upper()
-        if not code or code in seen_units:
-            continue
-        normalized = resolver.normalize_system_type(
-            str(row.get("raw_system_type") or "")
-        )
-        system_code = str(
-            normalized.get("codigo_sistema") or ""
-        ).strip().upper()
-        if system_code not in supported_systems:
+        if code:
+            grouped[code].append(row)
+
+    for code, candidates in sorted(grouped.items()):
+        normalized_candidates = []
+        for row in candidates:
+            normalized = resolver.normalize_system_type(
+                str(row.get("raw_system_type") or "")
+            )
+            system_code = str(
+                normalized.get("codigo_sistema") or ""
+            ).strip().upper()
+            if system_code in supported_systems:
+                normalized_candidates.append((row, system_code))
+
+        if not normalized_candidates:
             continue
 
+        systems_for_unit = {
+            system_code for _, system_code in normalized_candidates
+        }
+        if len(systems_for_unit) != 1:
+            continue
+
+        branch_bindings = {
+            (
+                row.get("branch_id"),
+                str(row.get("branch_origin_id") or "").strip(),
+            )
+            for row, _ in normalized_candidates
+            if row.get("branch_id") is not None
+        }
+        if len(branch_bindings) != 1:
+            # Fail-closed: no elegimos una sucursal fisica por posicion,
+            # nombre ni primer resultado cuando el mapeo es ambiguo/ausente.
+            continue
+
+        row, system_code = normalized_candidates[0]
+        branch_id, branch_origin = next(iter(branch_bindings))
         template = supported_systems[system_code]
         unit_contexts.append(
             {
@@ -106,20 +134,18 @@ def _internal_catalog() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
                 "connection_name": row.get("connection_name"),
                 "connection_type": row.get("connection_type"),
                 "system_version_id": row.get("system_version_id"),
-                "branch_id": row.get("branch_id"),
+                "branch_id": branch_id,
                 "branch_code": row.get("branch_code"),
                 "branch_name": row.get("branch_name"),
-                "branch_origin_id": row.get("branch_origin_id"),
+                "branch_origin_id": branch_origin or None,
                 "company_id": row.get("company_id"),
                 "system_id": template.get("system_id"),
                 "system_code": system_code,
                 "system_name": template.get("system_name"),
             }
         )
-        seen_units.add(code)
 
     return registry, unit_contexts
-
 
 def planner_inputs():
     return _internal_catalog()
