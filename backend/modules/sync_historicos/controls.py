@@ -5,6 +5,7 @@ import json
 from typing import Any, Dict
 
 from core.sql_first.db import get_sql_connection
+from .logging_service import log_event
 
 
 def get_parent_status(parent_id: int) -> Dict[str, Any] | None:
@@ -108,6 +109,42 @@ def get_parent_status(parent_id: int) -> Dict[str, Any] | None:
     }
 
 
+def list_parent_jobs(limit: int = 50) -> list[Dict[str, Any]]:
+    safe_limit = max(1, min(int(limit), 200))
+    conn = get_sql_connection()
+    cur = conn.cursor(as_dict=True)
+    try:
+        cur.execute(
+            f'''
+            SELECT TOP {safe_limit}
+                e.SyncControlID, e.SyncRunID, e.Status, e.CorrelationID,
+                e.FechaInicio, e.FechaFin, e.IsDryRun,
+                e.StartedAtUTC, e.FinishedAtUTC, e.UpdatedAtUTC,
+                e.RequestedBy, e.Reason, e.WorkerJobID,
+                e.DispatchCount, e.ErrorMessage,
+                COUNT(c.SyncControlID) AS TotalAtomicUnits,
+                SUM(CASE WHEN c.Status='SUCCESS' THEN 1 ELSE 0 END) AS SuccessCount,
+                SUM(CASE WHEN c.Status='PERMANENT_FAILURE' THEN 1 ELSE 0 END) AS FailureCount,
+                SUM(CASE WHEN c.Status='CANCELLED_SAFE' THEN 1 ELSE 0 END) AS CancelledCount
+            FROM dbo.Sync_Control_Ejecuciones e
+            LEFT JOIN dbo.Sync_Control_Ejecuciones c
+              ON c.ParentSyncControlID=e.SyncControlID
+             AND c.RunKind='ATOMIC'
+            WHERE e.RunKind='PARENT'
+            GROUP BY
+                e.SyncControlID, e.SyncRunID, e.Status, e.CorrelationID,
+                e.FechaInicio, e.FechaFin, e.IsDryRun,
+                e.StartedAtUTC, e.FinishedAtUTC, e.UpdatedAtUTC,
+                e.RequestedBy, e.Reason, e.WorkerJobID,
+                e.DispatchCount, e.ErrorMessage
+            ORDER BY e.SyncControlID DESC
+            '''
+        )
+        return [dict(row) for row in (cur.fetchall() or [])]
+    finally:
+        cur.close()
+        conn.close()
+
 def request_pause(parent_id: int) -> Dict[str, Any]:
     conn = get_sql_connection()
     cur = conn.cursor(as_dict=True)
@@ -138,6 +175,7 @@ def request_pause(parent_id: int) -> Dict[str, Any]:
             (target, int(parent_id)),
         )
         conn.commit()
+        log_event(sync_control_id=int(parent_id), correlation_id=None, event_code="PAUSE_REQUESTED", level="INFO", message=f"Pausa solicitada. Estado: {target}")
         return {"status": target}
     except Exception:
         conn.rollback()
@@ -179,6 +217,7 @@ def request_cancel(parent_id: int) -> Dict[str, Any]:
             (int(parent_id),),
         )
         conn.commit()
+        log_event(sync_control_id=int(parent_id), correlation_id=None, event_code="CANCEL_REQUESTED", level="WARN", message="Detencion segura solicitada.")
         return {"status": "CANCEL_REQUESTED"}
     except Exception:
         conn.rollback()
@@ -268,6 +307,7 @@ def prepare_resume(
                 (int(parent_id),),
             )
         conn.commit()
+        log_event(sync_control_id=int(parent_id), correlation_id=None, event_code="RESUME_REQUESTED", level="INFO", message=("Reanudacion solicitada con reintento de fallidos." if retry_failed else "Reanudacion solicitada."), payload={"retry_failed": bool(retry_failed)})
         return {"status": "QUEUED", "retry_failed": bool(retry_failed)}
     except Exception:
         conn.rollback()
