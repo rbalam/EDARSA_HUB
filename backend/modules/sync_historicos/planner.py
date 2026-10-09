@@ -335,6 +335,10 @@ def build_historical_plan(
                 metadata.get("max_attempts"),
                 "MAX_ATTEMPTS",
             )
+            _positive_int(
+                metadata.get("retry_backoff_seconds"),
+                "RETRY_BACKOFF_SECONDS",
+            )
 
             for block in blocks:
                 atomic.append(
