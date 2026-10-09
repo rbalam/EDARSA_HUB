@@ -13,8 +13,159 @@ import {
 const VIEW_TYPES = new Set(['table', 'bar_chart', 'line_chart', 'kpi_cards']);
 
 const numberValue = (value) => {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : 0;
+  const parsed = datasetNumericValue(value);
+  return parsed === null ? 0 : parsed;
+};
+
+
+const stripVisualCodeBlocks = (text) => String(text || '')
+  .replace(/\`\`\`(?:mermaid|xychart-beta)[\\s\\S]*?\`\`\`/gi, '')
+  .replace(/\`\`\`[\\s\\S]*?xychart-beta[\\s\\S]*?\`\`\`/gi, '')
+  .replace(/\\n{3,}/g, '\\n\\n')
+  .trim();
+
+const parseTableRow = (line) => String(line || '')
+  .trim()
+  .replace(/^\\|/, '')
+  .replace(/\\|$/, '')
+  .split('|')
+  .map((cell) => cell.trim());
+
+const isTableLine = (line) => (
+  String(line || '').includes('|') && parseTableRow(line).length > 1
+);
+
+const isTableSeparator = (line) => {
+  const cells = parseTableRow(line);
+  return cells.length > 1 && cells.every((cell) => (
+    /^:?-{3,}:?$/.test(cell.replace(/\\s/g, ''))
+  ));
+};
+
+function IAInlineMarkdown({ text }) {
+  const parts = String(text ?? '').split(/(\\*\\*[^*]+\\*\\*)/g);
+  return parts.map((part, index) => (
+    part.startsWith('**') && part.endsWith('**')
+      ? <strong key={index} className="font-semibold text-white">{part.slice(2, -2)}</strong>
+      : <React.Fragment key={index}>{part}</React.Fragment>
+  ));
+}
+
+export function IAMessageContent({ text }) {
+  const lines = stripVisualCodeBlocks(text).split('\\n');
+  const blocks = [];
+
+  for (let index = 0; index < lines.length;) {
+    if (
+      isTableLine(lines[index])
+      && index + 1 < lines.length
+      && isTableSeparator(lines[index + 1])
+    ) {
+      const headers = parseTableRow(lines[index]);
+      const rows = [];
+      index += 2;
+
+      while (index < lines.length && isTableLine(lines[index])) {
+        const cells = parseTableRow(lines[index]);
+        if (cells.length !== headers.length) break;
+        rows.push(cells);
+        index += 1;
+      }
+
+      blocks.push(
+        <div key={`table-${index}`} className="my-3 max-w-full overflow-x-auto rounded-lg border border-slate-700">
+          <table className="min-w-full text-left text-xs">
+            <thead className="bg-slate-800/80 text-slate-300">
+              <tr>
+                {headers.map((header, headerIndex) => (
+                  <th key={headerIndex} className="whitespace-nowrap px-3 py-2 font-semibold">
+                    <IAInlineMarkdown text={header} />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, rowIndex) => (
+                <tr key={rowIndex} className="border-t border-slate-800 text-slate-200">
+                  {row.map((cell, cellIndex) => (
+                    <td key={cellIndex} className="whitespace-nowrap px-3 py-2">
+                      <IAInlineMarkdown text={cell} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      continue;
+    }
+
+    const line = lines[index];
+    blocks.push(
+      line.trim()
+        ? (
+          <div key={`line-${index}`} className="leading-6">
+            <IAInlineMarkdown text={line} />
+          </div>
+        )
+        : <div key={`space-${index}`} className="h-2" />
+    );
+    index += 1;
+  }
+
+  return <div className="min-w-0">{blocks}</div>;
+}
+
+const datasetNumericValue = (value) => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  const cleaned = String(value ?? '').replace(/[$,%\\s,]/g, '');
+  const numeric = Number(cleaned);
+  return Number.isFinite(numeric) ? numeric : null;
+};
+
+const inferVisualAction = (userText, datasets = []) => {
+  const normalized = String(userText || '').toLowerCase();
+  const wantsChart = /gr[aá]fic|chart|barras?|l[ií]nea/.test(normalized);
+  const wantsTable = /tabla|tabular|cuadro/.test(normalized);
+  if (!wantsChart && !wantsTable) return null;
+
+  const candidates = (datasets || [])
+    .filter((item) => item?.dataset_id && Array.isArray(item?.rows) && item.rows.length)
+    .sort((a, b) => (b?.row_count || b?.rows?.length || 0) - (a?.row_count || a?.rows?.length || 0));
+
+  const dataset = candidates[0];
+  if (!dataset) return null;
+
+  const rows = dataset.rows || [];
+  const columns = Array.isArray(dataset.columns) && dataset.columns.length
+    ? dataset.columns
+    : Object.keys(rows[0] || {});
+
+  const numericColumns = columns.filter((key) => (
+    rows.some((row) => datasetNumericValue(row?.[key]) !== null)
+  ));
+  const yKey = numericColumns.find((key) => /venta|total|importe|monto|valor|ingreso/i.test(key))
+    || numericColumns[0];
+  const xKey = columns.find((key) => (
+    key !== yKey && /periodo|fecha|mes|a[nñ]o|sucursal|nombre|unidad/i.test(key)
+  )) || columns.find((key) => key !== yKey);
+
+  const viewType = wantsChart
+    ? (/l[ií]nea/.test(normalized) ? 'line_chart' : 'bar_chart')
+    : 'table';
+
+  return {
+    type: 'OPEN_VIEW',
+    label: wantsChart ? 'Ver gráfica' : 'Ver tabla',
+    payload: {
+      dataset_id: dataset.dataset_id,
+      view_type: viewType,
+      title: wantsChart ? 'Gráfico solicitado' : 'Tabla solicitada',
+      ...(xKey ? { x_key: xKey } : {}),
+      ...(yKey ? { y_key: yKey } : {}),
+    },
+  };
 };
 
 export function IAAnalysisModal({ config, rows, onClose }) {
@@ -191,16 +342,39 @@ export function IAContextualPanel({
         sid = created?.sesion?.sesion_id;
         setSessionId(sid);
       }
+      const previousDatasets = [...messages]
+        .reverse()
+        .find((message) => message?.role === 'assistant' && (message?.datasets || []).length)
+        ?.datasets || [];
+
       const response = await enviarMensaje(sid, text, contextoVista);
+      const responseDatasets = Array.isArray(response?.datasets) ? response.datasets : [];
+      const datasets = responseDatasets.length ? responseDatasets : previousDatasets;
+      const actions = Array.isArray(response?.acciones_ui) ? [...response.acciones_ui] : [];
+
+      const localVisualAction = inferVisualAction(text, datasets);
+      const hasOpenView = actions.some((action) => action?.type === 'OPEN_VIEW');
+      if (localVisualAction && !hasOpenView) {
+        actions.push(localVisualAction);
+      }
+
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
           text: response?.respuesta || '',
-          actions: Array.isArray(response?.acciones_ui) ? response.acciones_ui : [],
-          datasets: Array.isArray(response?.datasets) ? response.datasets : [],
+          actions,
+          datasets,
         },
       ]);
+
+      const autoVisual = actions.find((action) => (
+        action?.type === 'OPEN_VIEW'
+        && ['bar_chart', 'line_chart', 'kpi_cards'].includes(action?.payload?.view_type)
+      ));
+      if (autoVisual) {
+        executeAction(autoVisual, datasets);
+      }
     } catch (error) {
       setMessages((prev) => [
         ...prev,
@@ -238,12 +412,14 @@ export function IAContextualPanel({
           )}
           {messages.map((message, index) => (
             <div key={index} className={message.role === 'user' ? 'text-right' : 'text-left'}>
-              <div className={`inline-block max-w-[90%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ${
+              <div className={`inline-block max-w-[90%] rounded-2xl px-4 py-3 text-sm ${
                 message.role === 'user'
-                  ? 'bg-indigo-600 text-white'
+                  ? 'whitespace-pre-wrap bg-indigo-600 text-white'
                   : 'border border-slate-800 bg-slate-900 text-slate-200'
               }`}>
-                {message.text}
+                {message.role === 'assistant'
+                  ? <IAMessageContent text={message.text} />
+                  : message.text}
               </div>
               {message.role === 'assistant' && (message.actions || []).length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
