@@ -4434,11 +4434,11 @@ async def comercial_dashboard(
         logging.info(f"Comparación mes ant: {fecha_ini_ant} a {fecha_fin_ant}")
         logging.info(f"Comparación año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant}")
 
-        # HOY: fuente integral para todas las sucursales y motores.
-        # El sincronizador autorizado ya consolida ventas abiertas + cerradas
-        # en Comercial_Ventas_Dia_Abiertas_v2 para SoftRestaurant y MPRO.
-        # No consultar POS desde este endpoint.
-        if periodo == "dia":
+        # HOY - SOFTRESTAURANT:
+        # Aplicar el snapshot atomico compartido SOLO a SoftRestaurant.
+        # ManagementPro conserva su ruta canónica propia más abajo; no debe
+        # quedar interceptado por esta corrección específica de tempcheques.
+        if periodo == "dia" and is_softrestaurant_system(server.get('system_type')):
             # VENTAS DEL DIA: usar exactamente la misma fotografia SQL que
             # consume Tablero Ejecutivo. Para SoftRestaurant,
             # get_ventas_dia_abiertas() aplica el overlay atomico de
