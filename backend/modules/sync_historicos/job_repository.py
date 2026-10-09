@@ -71,6 +71,7 @@ def persist_plan(
     plan: HistoricalPlan,
     *,
     requested_by: str,
+    reason: str,
     dry_run: bool = False,
 ) -> Dict[str, Any]:
     """Persiste padre + hijos en una sola transaccion.
@@ -78,6 +79,13 @@ def persist_plan(
     Si existe una unidad atomica activa con la misma IdempotencyKey, falla
     cerrado antes de insertar el nuevo job.
     """
+    requested_by = str(requested_by or "").strip()
+    reason = str(reason or "").strip()
+    if not requested_by:
+        raise ValueError("REQUESTED_BY_REQUIRED")
+    if len(reason) < 10:
+        raise ValueError("REASON_MIN_LENGTH_10")
+
     atomic_keys = [item.atomic_key for item in plan.atomic_units]
     duplicates = find_active_atomic_duplicates(atomic_keys)
     if duplicates:
@@ -102,7 +110,7 @@ def persist_plan(
                 RunKind, CorrelationID, PlanJSON,
                 AttemptCount, MaxAttempts,
                 PauseRequested, CancelRequested,
-                UpdatedAtUTC
+                RequestedBy, Reason, UpdatedAtUTC
             )
             OUTPUT INSERTED.SyncControlID
             VALUES (
@@ -112,7 +120,7 @@ def persist_plan(
                 'PARENT', %s, %s,
                 0, 1,
                 0, 0,
-                %s
+                %s, %s, %s
             )
             """,
             (
@@ -124,6 +132,8 @@ def persist_plan(
                 parent_idempotency,
                 plan.correlation_id,
                 parent_payload,
+                requested_by,
+                reason,
                 now_utc,
             ),
         )
@@ -153,10 +163,10 @@ def persist_plan(
                     StartedAtUTC, IdempotencyKey,
                     ParentSyncControlID, RunKind, CorrelationID,
                     SistemaTipoID, SistemaVersionID, SucursalID,
-                    CategoriaCodigo, EntidadCodigo, BlockOrdinal,
+                    SucursalOrigenID, CategoriaCodigo, EntidadCodigo, BlockOrdinal,
                     PlanJSON, AttemptCount, MaxAttempts,
                     PauseRequested, CancelRequested,
-                    UpdatedAtUTC
+                    RequestedBy, Reason, UpdatedAtUTC
                 )
                 OUTPUT INSERTED.SyncControlID
                 VALUES (
@@ -167,10 +177,10 @@ def persist_plan(
                     %s, %s,
                     %s, 'ATOMIC', %s,
                     %s, %s, %s,
-                    %s, %s, %s,
+                    %s, %s, %s, %s,
                     %s, 0, %s,
                     0, 0,
-                    %s
+                    %s, %s, %s
                 )
                 """,
                 (
@@ -190,11 +200,14 @@ def persist_plan(
                     item.system_id,
                     item.system_version_id,
                     item.branch_id,
+                    item.branch_origin_id,
                     item.category_key,
                     item.entity_key,
                     item.block_ordinal,
                     child_plan,
                     item.max_attempts,
+                    requested_by,
+                    reason,
                     now_utc,
                 ),
             )
