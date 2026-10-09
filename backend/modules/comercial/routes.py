@@ -4439,77 +4439,57 @@ async def comercial_dashboard(
         # en Comercial_Ventas_Dia_Abiertas_v2 para SoftRestaurant y MPRO.
         # No consultar POS desde este endpoint.
         if periodo == "dia":
-            snapshot_hoy = get_ventas_dia_snapshot_from_edarsahub(
-                server_id=server_id,
-                fecha_operacion=fecha_ini,
+            # VENTAS DEL DIA: usar exactamente la misma fotografia SQL que
+            # consume Tablero Ejecutivo. Para SoftRestaurant,
+            # get_ventas_dia_abiertas() aplica el overlay atomico de
+            # detalle_abiertas_json y evita sumar cheques + tempcheques.
+            from datetime import date as _date
+            from core.server_registry import resolve_unidad_by_server_sucursal
+            from modules.comercial_v2.repository_readonly import (
+                get_ventas_dia_abiertas,
             )
 
-            # CONTRATO CANONICO/ATOMICO/TRANSVERSAL:
-            # El KPI de Hoy debe agregarse desde los mismos tickets que alimentan
-            # KpiDrilldownDialog (/v2/comercial/analytics/tickets), no desde un
-            # agregado paralelo. El snapshot agregado queda solo como fallback.
-            try:
-                from core.server_registry import resolve_unidad_by_server_sucursal
-                from modules.comercial_analytics.repository_tickets import (
-                    summarize_current_day_tickets,
+            sucursal_resolver = str(sucursal or "").strip()
+            if sucursal_resolver.upper() in {
+                "",
+                "DEFAULT",
+                "ALL",
+                "TODAS",
+                "TODOS",
+            }:
+                sucursal_resolver = None
+
+            unidad_hoy = resolve_unidad_by_server_sucursal(
+                server_id,
+                sucursal_resolver,
+            ) or {}
+            unidad_codigo_hoy = str(
+                unidad_hoy.get("codigo")
+                or unidad_hoy.get("unidad_negocio_id")
+                or unidad_hoy.get("unidad_negocio_pk")
+                or ""
+            ).strip()
+
+            filas_hoy = (
+                get_ventas_dia_abiertas(
+                    _date.fromisoformat(fecha_ini),
+                    [unidad_codigo_hoy],
                 )
+                if unidad_codigo_hoy
+                else []
+            )
+            fila_hoy = filas_hoy[0] if filas_hoy else None
 
-                sucursal_resolver = str(sucursal or "").strip()
-                if sucursal_resolver.upper() in {
-                    "",
-                    "DEFAULT",
-                    "ALL",
-                    "TODAS",
-                    "TODOS",
-                }:
-                    sucursal_resolver = None
-
-                unidad_hoy = resolve_unidad_by_server_sucursal(
-                    server_id,
-                    sucursal_resolver,
-                ) or {}
-                unidad_codigo_hoy = str(
-                    unidad_hoy.get("codigo")
-                    or unidad_hoy.get("unidad_negocio_id")
-                    or unidad_hoy.get("unidad_negocio_pk")
-                    or ""
-                ).strip()
-
-                if unidad_codigo_hoy:
-                    resumen_canonico_hoy = summarize_current_day_tickets(
-                        operation_date=fecha_ini,
-                        unit_code=unidad_codigo_hoy,
-                    )
-                    if resumen_canonico_hoy.get("cheques", 0) > 0:
-                        snapshot_hoy = {
-                            "exists": True,
-                            "ventas": resumen_canonico_hoy["ventas"],
-                            "pax": resumen_canonico_hoy["pax"],
-                            "cheques": resumen_canonico_hoy["cheques"],
-                            "ticket_promedio": resumen_canonico_hoy["ticket_promedio"],
-                            "pax_promedio": resumen_canonico_hoy["pax_promedio"],
-                            "estado_dato": "CANONICO_ATOMICO",
-                            "_source": "DETALLE_VENTAS_CANONICO",
-                        }
-                        logging.info(
-                            "[CANONICO-HOY] Dashboard Comercial %s: "
-                            "ventas=$%s cheques=%s pax=%s",
-                            unidad_codigo_hoy,
-                            f"{resumen_canonico_hoy['ventas']:,.2f}",
-                            resumen_canonico_hoy["cheques"],
-                            resumen_canonico_hoy["pax"],
-                        )
-            except Exception as canon_error:
-                logging.warning(
-                    "[CANONICO-HOY] No se pudo usar resumen atomico en Dashboard Comercial: %s. "
-                    "Se conserva snapshot agregado como fallback.",
-                    canon_error,
+            if fila_hoy:
+                ventas_hoy = float(fila_hoy.get("total_estimado_dia") or 0)
+                pax_hoy = (
+                    int(fila_hoy.get("pax_abiertos") or 0)
+                    + int(fila_hoy.get("pax_cerrados_dia") or 0)
                 )
-
-            if snapshot_hoy.get("exists"):
-                ventas_hoy = float(snapshot_hoy.get("ventas") or 0)
-                pax_hoy = int(snapshot_hoy.get("pax") or 0)
-                cheques_hoy = int(snapshot_hoy.get("cheques") or 0)
+                cheques_hoy = (
+                    int(fila_hoy.get("tickets_abiertos") or 0)
+                    + int(fila_hoy.get("tickets_cerrados_dia") or 0)
+                )
                 ticket_promedio_hoy = (
                     ventas_hoy / cheques_hoy if cheques_hoy > 0 else 0
                 )
@@ -4518,21 +4498,19 @@ async def comercial_dashboard(
                 )
                 return {
                     "source_status": "SUCCESS",
-                    "source_message": (
-                        "Datos de Hoy desde Detalle de Ventas canonico"
-                        if snapshot_hoy.get("_source") == "DETALLE_VENTAS_CANONICO"
-                        else "Datos de Hoy desde snapshot EDARSAHUB "
-                             f"({snapshot_hoy.get('estado_dato', 'VIGENTE')})"
-                    ),
+                    "source_message": "Datos de Hoy desde snapshot atomico compartido",
                     "source_type": (
-                        "DETALLE_VENTAS_CANONICO"
-                        if snapshot_hoy.get("_source") == "DETALLE_VENTAS_CANONICO"
-                        else "EDARSAHUB_SNAPSHOT_DIA"
+                        fila_hoy.get("_ventas_dia_source")
+                        or "EDARSAHUB_SNAPSHOT_DIA"
                     ),
                     "server_name": server.get("name", "Desconocido"),
                     "server_type": server.get("system_type", "Desconocido"),
                     "fecha_inicio": fecha_ini,
                     "fecha_fin": fecha_fin,
+                    "snapshot_timestamp": (
+                        str(fila_hoy.get("snapshot_timestamp") or "")
+                    ),
+                    "sync_run_id": fila_hoy.get("sync_run_id"),
                     "kpis": {
                         "ventas_periodo": ventas_hoy,
                         "ticket_promedio": ticket_promedio_hoy,
@@ -4554,6 +4532,36 @@ async def comercial_dashboard(
                     },
                     "alertas": [],
                 }
+
+            return {
+                "source_status": "NO_DATA",
+                "source_message": "Sin snapshot de Ventas del Dia para la unidad/fecha",
+                "source_type": "EDARSAHUB_SNAPSHOT_DIA",
+                "server_name": server.get("name", "Desconocido"),
+                "server_type": server.get("system_type", "Desconocido"),
+                "fecha_inicio": fecha_ini,
+                "fecha_fin": fecha_fin,
+                "kpis": {
+                    "ventas_periodo": 0,
+                    "ticket_promedio": 0,
+                    "cheques_total": 0,
+                    "pax_total": 0,
+                    "pax_promedio": 0,
+                    "consumo_persona": 0,
+                    "mesas_atendidas": 0,
+                    "rotacion_mesas": 0,
+                    "venta_por_hora": 0,
+                },
+                "comparativo": {
+                    "vs_periodo_anterior": None,
+                    "vs_ano_anterior": None,
+                    "vs_presupuesto": None,
+                    "tipo_comparacion": tipo_comparacion,
+                    "ventas_anterior": None,
+                    "ventas_ano_anterior": None,
+                },
+                "alertas": [],
+            }
 
         # FASE 3A.2: Migrado a helper centralizado
         if is_softrestaurant_system(server.get('system_type')):
