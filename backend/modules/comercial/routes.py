@@ -998,6 +998,47 @@ async def _tablero_ejecutivo_internal(
                                     servidor_data = vd
                                     break
                             
+                            # Antes de agregar KPIs, usar exactamente el mismo conjunto
+                            # atomico del Detalle de Ventas cuando exista. Esto evita que
+                            # Ejecutivo y Comercial diverjan por agregados distintos.
+                            try:
+                                from modules.comercial_analytics.repository_tickets import (
+                                    summarize_current_day_tickets,
+                                )
+                                if unidad_codigo:
+                                    resumen_canonico = summarize_current_day_tickets(
+                                        operation_date=str(fecha_op),
+                                        unit_code=unidad_codigo,
+                                    )
+                                    if resumen_canonico.get("cheques", 0) > 0:
+                                        servidor_data = {
+                                            'total_estimado_dia': resumen_canonico['ventas'],
+                                            'ventas_abiertas': resumen_canonico['ventas'],
+                                            'ventas_cerradas_dia': 0,
+                                            'tickets_abiertos': resumen_canonico['cheques'],
+                                            'tickets_cerrados_dia': 0,
+                                            'pax_abiertos': resumen_canonico['pax'],
+                                            'pax_cerrados_dia': 0,
+                                            'snapshot_timestamp': '',
+                                            'fecha_operacion': str(fecha_op),
+                                            '_source': 'DETALLE_VENTAS_CANONICO',
+                                        }
+                                        logging.info(
+                                            "[CANONICO-HOY] Tablero Ejecutivo %s: "
+                                            "ventas=$%s cheques=%s pax=%s",
+                                            unidad_codigo,
+                                            f"{resumen_canonico['ventas']:,.2f}",
+                                            resumen_canonico['cheques'],
+                                            resumen_canonico['pax'],
+                                        )
+                            except Exception as canon_error:
+                                logging.warning(
+                                    "[CANONICO-HOY] No se pudo usar resumen atomico en Ejecutivo %s: %s. "
+                                    "Se conserva Comercial_Ventas_Dia_Abiertas_v2 como fallback.",
+                                    server.get('name'),
+                                    canon_error,
+                                )
+
                             if servidor_data:
                                 # Convertir al formato de KPIs
                                 total_estimado = float(servidor_data.get('total_estimado_dia') or 0)
@@ -1023,7 +1064,7 @@ async def _tablero_ejecutivo_internal(
                                     'snapshot_timestamp': str(servidor_data.get('snapshot_timestamp', '')),
                                     'fecha_operacion': str(servidor_data.get('fecha_operacion', fecha_op)),
                                     'fuente': 'EDARSAHUB_SQL',
-                                    '_source': 'Comercial_Ventas_Dia_Abiertas_v2',
+                                    '_source': servidor_data.get('_source') or 'Comercial_Ventas_Dia_Abiertas_v2',
                                 }
                                 logging.info(f"[P0.5-EDARSAHUB] {server['name']}: Ventas del día desde EDARSAHUB SQL = ${total_estimado:,.2f}")
                             else:
@@ -4388,6 +4429,59 @@ async def comercial_dashboard(
                 server_id=server_id,
                 fecha_operacion=fecha_ini,
             )
+
+            # CONTRATO CANONICO/ATOMICO/TRANSVERSAL:
+            # El KPI de Hoy debe agregarse desde los mismos tickets que alimentan
+            # KpiDrilldownDialog (/v2/comercial/analytics/tickets), no desde un
+            # agregado paralelo. El snapshot agregado queda solo como fallback.
+            try:
+                from core.server_registry import resolve_unidad_by_server_sucursal
+                from modules.comercial_analytics.repository_tickets import (
+                    summarize_current_day_tickets,
+                )
+
+                unidad_hoy = resolve_unidad_by_server_sucursal(
+                    server_id,
+                    sucursal or None,
+                ) or {}
+                unidad_codigo_hoy = str(
+                    unidad_hoy.get("codigo")
+                    or unidad_hoy.get("unidad_negocio_id")
+                    or unidad_hoy.get("unidad_negocio_pk")
+                    or ""
+                ).strip()
+
+                if unidad_codigo_hoy:
+                    resumen_canonico_hoy = summarize_current_day_tickets(
+                        operation_date=fecha_ini,
+                        unit_code=unidad_codigo_hoy,
+                    )
+                    if resumen_canonico_hoy.get("cheques", 0) > 0:
+                        snapshot_hoy = {
+                            "exists": True,
+                            "ventas": resumen_canonico_hoy["ventas"],
+                            "pax": resumen_canonico_hoy["pax"],
+                            "cheques": resumen_canonico_hoy["cheques"],
+                            "ticket_promedio": resumen_canonico_hoy["ticket_promedio"],
+                            "pax_promedio": resumen_canonico_hoy["pax_promedio"],
+                            "estado_dato": "CANONICO_ATOMICO",
+                            "_source": "DETALLE_VENTAS_CANONICO",
+                        }
+                        logging.info(
+                            "[CANONICO-HOY] Dashboard Comercial %s: "
+                            "ventas=$%s cheques=%s pax=%s",
+                            unidad_codigo_hoy,
+                            f"{resumen_canonico_hoy['ventas']:,.2f}",
+                            resumen_canonico_hoy["cheques"],
+                            resumen_canonico_hoy["pax"],
+                        )
+            except Exception as canon_error:
+                logging.warning(
+                    "[CANONICO-HOY] No se pudo usar resumen atomico en Dashboard Comercial: %s. "
+                    "Se conserva snapshot agregado como fallback.",
+                    canon_error,
+                )
+
             if snapshot_hoy.get("exists"):
                 ventas_hoy = float(snapshot_hoy.get("ventas") or 0)
                 pax_hoy = int(snapshot_hoy.get("pax") or 0)
@@ -4401,10 +4495,16 @@ async def comercial_dashboard(
                 return {
                     "source_status": "SUCCESS",
                     "source_message": (
-                        "Datos de Hoy desde snapshot EDARSAHUB "
-                        f"({snapshot_hoy.get('estado_dato', 'VIGENTE')})"
+                        "Datos de Hoy desde Detalle de Ventas canonico"
+                        if snapshot_hoy.get("_source") == "DETALLE_VENTAS_CANONICO"
+                        else "Datos de Hoy desde snapshot EDARSAHUB "
+                             f"({snapshot_hoy.get('estado_dato', 'VIGENTE')})"
                     ),
-                    "source_type": "EDARSAHUB_SNAPSHOT_DIA",
+                    "source_type": (
+                        "DETALLE_VENTAS_CANONICO"
+                        if snapshot_hoy.get("_source") == "DETALLE_VENTAS_CANONICO"
+                        else "EDARSAHUB_SNAPSHOT_DIA"
+                    ),
                     "server_name": server.get("name", "Desconocido"),
                     "server_type": server.get("system_type", "Desconocido"),
                     "fecha_inicio": fecha_ini,
