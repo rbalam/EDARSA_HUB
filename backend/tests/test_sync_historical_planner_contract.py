@@ -170,3 +170,18 @@ def test_ambiguous_system_capability_binding_is_rejected():
             registry=registry + [duplicate],
             unit_contexts=[_unit()],
         )
+
+
+def test_branch_mapping_is_mandatory_for_atomic_unit():
+    unit = _unit()
+    unit["branch_id"] = None
+    with pytest.raises(HistoricalPlanError, match="BRANCH_ID_INVALID"):
+        build_historical_plan(
+            start=date(2026, 1, 1),
+            end=date(2026, 1, 1),
+            selected_systems=["MPRO"],
+            selected_units=["UNIDAD-A"],
+            selected_capabilities=["ventas_encabezado"],
+            registry=_registry(),
+            unit_contexts=[unit],
+        )
