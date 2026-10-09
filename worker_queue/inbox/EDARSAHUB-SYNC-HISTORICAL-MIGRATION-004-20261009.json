@@ -1,0 +1,42 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-004-20261009",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "3067b11a8cb1a883ea011273ca7f4c5afe8d2e6a",
+  "production_allowed": false,
+  "objective": "Aplicar exclusivamente en EDARSAHUB Desarrollo la migracion 004 del modulo Sincronizacion Historica para extender la bitacora canonica Sync_Logs con SyncControlID, CorrelationID, EventCode y PayloadJSON, manteniendo FK, JSON check e indice. No tocar Produccion ni sync_comercial_abiertas_v2.",
+  "human_summary_language": "es",
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20261009_004_sync_logs_canonical_execution_context.sql",
+  "migration_sha256": "a533fb59a2800b72963ad95ece119579f6fa7e5644e3363a1cf22cb8e0b1767e",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "preflight_checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "sync_historical_logs_preflight",
+          "sql": "SELECT DB_NAME() AS database_name, OBJECT_ID('dbo.Sync_Logs','U') AS logs_id, OBJECT_ID('dbo.Sync_Control_Ejecuciones','U') AS ledger_id, 1/CASE WHEN DB_NAME()='EDARSAHUB' AND OBJECT_ID('dbo.Sync_Logs','U') IS NOT NULL AND OBJECT_ID('dbo.Sync_Control_Ejecuciones','U') IS NOT NULL THEN 1 ELSE 0 END AS preflight_assertion"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "sync_historical_logs_post_columns",
+          "sql": "SELECT COUNT(*) AS required_columns, 1/CASE WHEN COUNT(*)=4 THEN 1 ELSE 0 END AS columns_assertion FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Sync_Logs') AND name IN ('SyncControlID','CorrelationID','EventCode','PayloadJSON')"
+        },
+        {
+          "name": "sync_historical_logs_post_contract",
+          "sql": "SELECT 1/CASE WHEN EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name='FK_Sync_Logs_SyncControl') AND EXISTS (SELECT 1 FROM sys.check_constraints WHERE name='CK_Sync_Logs_PayloadJSON') AND EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Sync_Logs') AND name='IX_Sync_Logs_Control_Time') THEN 1 ELSE 0 END AS logs_contract_assertion"
+        }
+      ]
+    }
+  ]
+}
