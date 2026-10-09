@@ -1,4 +1,5 @@
 import os
+import json
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
 """
@@ -425,6 +426,91 @@ def get_kpis_mensuales(
 # FUNCIONES DE LECTURA - VENTAS DIA ABIERTAS
 # =============================================================================
 
+
+def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Hace que Ventas del Dia use una sola fotografia para KPI y detalle.
+
+    Para SoftRestaurant durante la jornada activa, detalle_abiertas_json proviene
+    de tempcheques/tempcheqdet y es el conjunto atomico autoritativo. El agregado
+    persistido puede contener tempcheques + cheques y duplicar cuentas que ya
+    siguen presentes en tempcheques. Este overlay es SOLO de lectura: no modifica
+    sync_comercial_abiertas_v2 ni escribe SQL.
+    """
+    sistema = str(row.get("sistema_origen") or "").strip().upper()
+    raw = row.get("detalle_abiertas_json")
+    if "SOFT" not in sistema or not raw:
+        return row
+
+    try:
+        items = json.loads(raw) if isinstance(raw, str) else raw
+    except (TypeError, ValueError):
+        return row
+
+    if not isinstance(items, list):
+        return row
+
+    tickets: Dict[str, Dict[str, Any]] = {}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        identity = str(
+            item.get("folio_origen")
+            or item.get("folio")
+            or ""
+        ).strip()
+        if not identity:
+            continue
+
+        current = tickets.setdefault(
+            identity,
+            {"total": 0.0, "pax": 0, "propina": 0.0},
+        )
+        try:
+            current["total"] = max(
+                float(current["total"] or 0),
+                float(item.get("total_ticket") or 0),
+            )
+        except (TypeError, ValueError):
+            pass
+        try:
+            current["pax"] = max(
+                int(current["pax"] or 0),
+                int(float(item.get("pax") or 0)),
+            )
+        except (TypeError, ValueError):
+            pass
+        try:
+            current["propina"] = max(
+                float(current["propina"] or 0),
+                float(item.get("propina") or 0),
+            )
+        except (TypeError, ValueError):
+            pass
+
+    if not tickets:
+        return row
+
+    ventas = round(sum(t["total"] for t in tickets.values()), 2)
+    pax = sum(t["pax"] for t in tickets.values())
+    propinas = round(sum(t["propina"] for t in tickets.values()), 2)
+    cheques = len(tickets)
+
+    row["ventas_abiertas"] = ventas
+    row["tickets_abiertos"] = cheques
+    row["pax_abiertos"] = pax
+    row["propinas_abiertas"] = propinas
+
+    # Durante la operacion activa el snapshot tempcheques ya contiene la
+    # fotografia completa que debe mostrarse. No sumar cheques otra vez.
+    row["ventas_cerradas_dia"] = 0
+    row["tickets_cerrados_dia"] = 0
+    row["pax_cerrados_dia"] = 0
+    row["propinas_cerradas_dia"] = 0
+    row["total_estimado_dia"] = ventas
+    row["propinas_total"] = propinas
+    row["_ventas_dia_source"] = "DETALLE_ABIERTAS_JSON_ATOMICO"
+    return row
+
 def get_ventas_dia_abiertas(
     fecha: date,
     unidades_permitidas: Optional[List[str]] = None
@@ -473,6 +559,7 @@ def get_ventas_dia_abiertas(
             a.propinas_abiertas,
             a.propinas_cerradas_dia,
             a.propinas_total,
+            a.detalle_abiertas_json,
             a.fuente_original,
             a.sync_run_id,
             a.fecha_ultima_actualizacion,
@@ -504,6 +591,7 @@ def get_ventas_dia_abiertas(
         propinas_abiertas,
         propinas_cerradas_dia,
         propinas_total,
+        detalle_abiertas_json,
         fuente_original,
         sync_run_id,
         fecha_ultima_actualizacion
@@ -515,6 +603,8 @@ def get_ventas_dia_abiertas(
     rows = _execute_readonly_query(query)
 
     for row in rows:
+        _overlay_softrestaurant_intraday_from_detail_json(row)
+
         codigo = str(
             row.get("unidad_negocio_codigo")
             or row.get("unidad_negocio_pk")
