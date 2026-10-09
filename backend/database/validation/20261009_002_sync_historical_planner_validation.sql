@@ -27,6 +27,8 @@ INSERT INTO @required (ColumnName) VALUES
 ('PauseRequested'),
 ('CancelRequested'),
 ('LastHeartbeatUTC'),
+('DispatchCount'),
+('WorkerJobID'),
 ('RequestedBy'),
 ('Reason'),
 ('UpdatedAtUTC');
