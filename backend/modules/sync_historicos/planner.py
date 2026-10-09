@@ -40,7 +40,7 @@ class AtomicHistoricalUnit:
     unit_code: str
     connection_id: str
     system_version_id: Optional[str]
-    branch_id: Optional[int]
+    branch_id: int
     branch_origin_id: Optional[str]
     company_id: Optional[int]
     category_key: str
@@ -375,10 +375,9 @@ def build_historical_plan(
                             if context.get("system_version_id")
                             else None
                         ),
-                        branch_id=(
-                            int(context["branch_id"])
-                            if context.get("branch_id") is not None
-                            else None
+                        branch_id=_positive_int(
+                            context.get("branch_id"),
+                            "BRANCH_ID",
                         ),
                         branch_origin_id=(
                             _clean(context.get("branch_origin_id")) or None
