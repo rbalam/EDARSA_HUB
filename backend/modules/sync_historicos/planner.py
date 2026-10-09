@@ -34,6 +34,7 @@ class HistoricalBlock:
 class AtomicHistoricalUnit:
     atomic_key: str
     system_id: int
+    system_capability_id: int
     system_code: str
     unit_id: str
     unit_code: str
@@ -165,7 +166,15 @@ def _registry_by_system(
         capability = _clean(item.get("capability_key"))
         if not system_code or not capability:
             continue
-        result[(system_code, capability)] = item
+        key = (system_code, capability)
+        existing = result.get(key)
+        if existing and int(existing.get("system_capability_id") or 0) != int(
+            item.get("system_capability_id") or 0
+        ):
+            raise HistoricalPlanError(
+                f"AMBIGUOUS_SYSTEM_CAPABILITY_BINDING:{system_code}:{capability}"
+            )
+        result[key] = item
     return result
 
 
@@ -353,6 +362,10 @@ def build_historical_plan(
                             version=capability.get("version"),
                         ),
                         system_id=system_id,
+                        system_capability_id=_positive_int(
+                            capability.get("system_capability_id"),
+                            "SYSTEM_CAPABILITY_ID",
+                        ),
                         system_code=system_code,
                         unit_id=unit_id,
                         unit_code=unit_code.upper(),
