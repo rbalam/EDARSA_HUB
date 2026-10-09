@@ -1,0 +1,16 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-PARENT-CANARY-20261009",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "3f4a4203e21122ea1bf516f9c1557ecc6c9455a1",
+  "production_allowed": false,
+  "objective": "Ejecutar mediante WORKER UNIVERSAL V1.2 el job padre canario 11949 de Sincronizacion Historica. Procesar exactamente las dos unidades atomicas DRY RUN persistidas para ORIGEN MPRO y CIENFUEGOS SoftRestaurant Pro, fecha 2026-10-08, sin escribir ventas. Validar checkpoints y auditoria. No tocar Produccion ni sync_comercial_abiertas_v2.",
+  "human_summary_language": "es",
+  "mode": "SYNC_HISTORICAL_PARENT",
+  "actions": [],
+  "checks": [],
+  "parent_sync_control_id": 11949,
+  "confirm_sync_historical_parent": true,
+  "audit_profile": "sync_historical_parent_status_v1"
+}
