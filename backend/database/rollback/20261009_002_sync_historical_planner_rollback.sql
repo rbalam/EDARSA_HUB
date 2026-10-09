@@ -47,6 +47,10 @@ BEGIN TRY
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN Reason;
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','RequestedBy') IS NOT NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN RequestedBy;
+    IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','WorkerJobID') IS NOT NULL
+        ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN WorkerJobID;
+    IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','DispatchCount') IS NOT NULL
+        ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN DispatchCount;
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','LastHeartbeatUTC') IS NOT NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN LastHeartbeatUTC;
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','CancelRequested') IS NOT NULL
