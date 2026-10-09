@@ -149,15 +149,8 @@ def _snapshot_ticket_identity(row: Dict[str, Any]) -> str:
 
 
 def _snapshot_sales_amount(row: Dict[str, Any]) -> float:
-    """Importe de venta comparable con KPI; SoftRestaurant separa propina."""
-    total = _money(row.get("total_ticket"))
-    sistema = str(row.get("sistema_origen") or "").strip().upper()
-    if sistema == "SOFTRESTAURANT":
-        propina = max(0.0, _money(row.get("propina")))
-        if total >= propina:
-            return total - propina
-    return total
-
+    """Venta visible bruta del ticket; incluye propina cuando el origen la incluye."""
+    return _money(row.get("total_ticket"))
 
 def merge_open_snapshot_tickets(
     items: List[Dict[str, Any]],
