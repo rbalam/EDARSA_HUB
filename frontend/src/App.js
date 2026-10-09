@@ -26,6 +26,7 @@ import ReportesBI from '@/pages/ReportesBI';
 import MisTareas from '@/pages/MisTareas';
 import Catalogos from '@/pages/Catalogos';
 import Scheduler from '@/pages/Scheduler';
+import SyncHistorical from '@/pages/SyncHistorical';
 import AuditoriasProgramadas from '@/pages/AuditoriasProgramadas';
 import CentroControl from '@/pages/CentroControl';
 import ConfigAsignaciones from '@/pages/ConfigAsignaciones';
@@ -200,6 +201,7 @@ function App() {
               <Route path="mis-tareas" element={<MisTareas />} />
               <Route path="catalogos" element={<Catalogos />} />
               <Route path="scheduler" element={<Scheduler />} />
+              <Route path="sync-historical" element={<SyncHistorical />} />
               <Route path="automatizaciones" element={<AuditoriasProgramadas />} />
               <Route path="auditorias-programadas" element={<Navigate to="/automatizaciones" replace />} />
               <Route path="centro-control" element={<CentroControl />} />
