@@ -1,10 +1,10 @@
 {
   "ahead_count": 0,
-  "behind_count": 1,
+  "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "REMOTE_AHEAD_ONLY",
+  "convergence_status": "SYNC",
   "development_sha": "4b05250adca5549259454bded9a632c58b6f7f64",
-  "generated_at_utc": "2026-10-09T01:05:15Z",
+  "generated_at_utc": "2026-10-09T01:06:30Z",
   "history": {
     "done_total_local": 1356,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3152,
+      "age_seconds": 3227,
       "job_id": "EDARSAHUB-IA-GLOBAL-AUTH-DATA-R2-CARLOS-20261008T1804",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2745,
+      "age_seconds": 2820,
       "job_id": "EDARSAHUB-IA-GLOBAL-AUTH-DATA-R3-CARLOS-20261008T1816",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "2eb7341c6949e95ba6733c984cf288dbd54c820c",
+  "local_development_sha": "4b05250adca5549259454bded9a632c58b6f7f64",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -42,15 +42,15 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-09T01:05:11Z",
-    "last_receive_utc": "2026-10-09T01:05:06Z",
+    "last_cycle_utc": "2026-10-09T01:06:29Z",
+    "last_receive_utc": "2026-10-09T01:06:24Z",
     "last_terminal_utc": "2026-10-09T00:19:30Z",
     "pid": "435",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "b65cdf9f2a3d0d78acc1e727e7c4b40f4e4daadf",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "2eb7341c6949e95ba6733c984cf288dbd54c820c",
+      "development_sha": "4b05250adca5549259454bded9a632c58b6f7f64",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
