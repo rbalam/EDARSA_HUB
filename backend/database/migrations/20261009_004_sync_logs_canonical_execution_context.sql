@@ -32,22 +32,30 @@ BEGIN TRY
             REFERENCES dbo.Sync_Control_Ejecuciones(SyncControlID);
         ');
 
+    /*
+      PayloadJSON/SyncControlID/CorrelationID/EventCode nacen en este batch.
+      Diferir checks e indice evita resolucion temprana de columnas nuevas.
+    */
     IF NOT EXISTS (
         SELECT 1 FROM sys.check_constraints
         WHERE name='CK_Sync_Logs_PayloadJSON'
     )
-        ALTER TABLE dbo.Sync_Logs
-        ADD CONSTRAINT CK_Sync_Logs_PayloadJSON
-        CHECK (PayloadJSON IS NULL OR ISJSON(PayloadJSON)=1);
+        EXEC(N'
+            ALTER TABLE dbo.Sync_Logs
+            ADD CONSTRAINT CK_Sync_Logs_PayloadJSON
+            CHECK (PayloadJSON IS NULL OR ISJSON(PayloadJSON)=1);
+        ');
 
     IF NOT EXISTS (
         SELECT 1 FROM sys.indexes
         WHERE object_id=OBJECT_ID('dbo.Sync_Logs')
           AND name='IX_Sync_Logs_Control_Time'
     )
-        CREATE INDEX IX_Sync_Logs_Control_Time
-        ON dbo.Sync_Logs (SyncControlID, timestamp DESC, id DESC)
-        INCLUDE (CorrelationID, EventCode, type);
+        EXEC(N'
+            CREATE INDEX IX_Sync_Logs_Control_Time
+            ON dbo.Sync_Logs (SyncControlID, timestamp DESC, id DESC)
+            INCLUDE (CorrelationID, EventCode, type);
+        ');
 
     COMMIT TRANSACTION;
 END TRY
