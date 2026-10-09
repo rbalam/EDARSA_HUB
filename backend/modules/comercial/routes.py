@@ -951,19 +951,33 @@ async def _tablero_ejecutivo_internal(
                             from core.utils.operational_window import get_fecha_operacion
                             from datetime import date
                             
-                            # Buscar el código de unidad asociado a este servidor
-                            # Intentar obtenerlo desde el nombre del servidor o configuración
-                            unidad_codigo = server.get('unidad_negocio_pk') or server.get('codigo_unidad')
-                            
-                            # Si no está en el servidor, buscar en las unidades registradas
+                            # Resolver SIEMPRE la unidad canónica desde EDARSAHUB.
+                            # Servidores_Conexiones no garantiza unidad_negocio_pk/codigo_unidad;
+                            # depender de esos campos hacía que el Ejecutivo saltara el resumen
+                            # canónico y conservara el agregado viejo del snapshot.
+                            unidad_codigo = None
+                            try:
+                                from core.server_registry import resolve_unidad_by_server_sucursal
+                                unidad_resuelta = resolve_unidad_by_server_sucursal(
+                                    server['id'],
+                                    None,
+                                ) or {}
+                                unidad_codigo = str(
+                                    unidad_resuelta.get('codigo') or ''
+                                ).strip() or None
+                            except Exception as unidad_error:
+                                logging.warning(
+                                    "[CANONICO-HOY] No se pudo resolver unidad de %s: %s",
+                                    server.get('name'),
+                                    unidad_error,
+                                )
+
+                            # Compatibilidad temporal con configuraciones que sí traen código.
                             if not unidad_codigo:
-                                try:
-                                    from core.unidades_registry import get_unidad_by_server_id
-                                    unidad_info = get_unidad_by_server_id(server['id'])
-                                    if unidad_info:
-                                        unidad_codigo = unidad_info.codigo
-                                except Exception:
-                                    pass
+                                unidad_codigo = (
+                                    server.get('unidad_negocio_pk')
+                                    or server.get('codigo_unidad')
+                                )
                             
                             if unidad_codigo:
                                 fecha_op = get_fecha_operacion(unidad_codigo)
@@ -4440,9 +4454,19 @@ async def comercial_dashboard(
                     summarize_current_day_tickets,
                 )
 
+                sucursal_resolver = str(sucursal or "").strip()
+                if sucursal_resolver.upper() in {
+                    "",
+                    "DEFAULT",
+                    "ALL",
+                    "TODAS",
+                    "TODOS",
+                }:
+                    sucursal_resolver = None
+
                 unidad_hoy = resolve_unidad_by_server_sucursal(
                     server_id,
-                    sucursal or None,
+                    sucursal_resolver,
                 ) or {}
                 unidad_codigo_hoy = str(
                     unidad_hoy.get("codigo")
