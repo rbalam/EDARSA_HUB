@@ -1,0 +1,27 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-CANARY-PARENT-DISCOVERY-20261009",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "3f4a4203e21122ea1bf516f9c1557ecc6c9455a1",
+  "production_allowed": false,
+  "objective": "Resolver en solo lectura el SyncControlID del job padre canario de Sincronizacion Historica y verificar sus dos hijos atomicos DRY RUN antes de entregar el job al Worker Universal V1.2. No escribir datos ni tocar Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "historical_canary_parent",
+          "sql": "SELECT SyncControlID,SyncRunID,Status,CorrelationID,IsDryRun,FechaInicio,FechaFin,PauseRequested,CancelRequested FROM dbo.Sync_Control_Ejecuciones WHERE SyncRunID='HIST-CANARY-P-20261009' AND RunKind='PARENT'"
+        },
+        {
+          "name": "historical_canary_children",
+          "sql": "SELECT SyncControlID,SyncRunID,Status,IsDryRun,CodigoSync,SistemaTipoID,SistemaCapacidadID,UnidadNegocioID,ConexionID,SucursalID,FechaInicio,FechaFin,AttemptCount,MaxAttempts FROM dbo.Sync_Control_Ejecuciones WHERE ParentSyncControlID=(SELECT TOP 1 SyncControlID FROM dbo.Sync_Control_Ejecuciones WHERE SyncRunID='HIST-CANARY-P-20261009' AND RunKind='PARENT') AND RunKind='ATOMIC' ORDER BY SyncControlID"
+        }
+      ]
+    }
+  ]
+}
