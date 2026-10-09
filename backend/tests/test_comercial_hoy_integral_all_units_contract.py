@@ -33,3 +33,17 @@ def test_daily_drilldown_keeps_open_snapshot_merge_for_all_engines():
     assert 'if periodo == "dia":' in block
     assert 'merge_open_snapshot_tickets(' in block
     assert 'fecha_ini_dt = hoy_inicio' in block
+
+
+def test_daily_kpis_resolve_canonical_unit_without_legacy_server_fields():
+    text = ROUTES.read_text(encoding="utf-8")
+    assert "unidad_resuelta = resolve_unidad_by_server_sucursal(" in text
+    assert "server['id']," in text
+    assert "unidad_resuelta.get('codigo')" in text
+
+
+def test_comercial_default_scope_does_not_break_canonical_unit_resolution():
+    text = ROUTES.read_text(encoding="utf-8")
+    assert 'sucursal_resolver.upper() in {' in text
+    assert '"DEFAULT",' in text
+    assert 'unidad_hoy = resolve_unidad_by_server_sucursal(' in text
