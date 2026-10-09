@@ -1,0 +1,46 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-002-20261009",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "bb7e7e51a87829f08607a5380c5dddc33f108162",
+  "production_allowed": false,
+  "objective": "Aplicar exclusivamente en EDARSAHUB Desarrollo la migracion 002 del modulo Sincronizacion Historica para extender el ledger canonico Sync_Control_Ejecuciones con parent/atomic jobs, contexto, checkpoints, retries, safe stop y dispatch Worker. No tocar Produccion ni sync_comercial_abiertas_v2.",
+  "human_summary_language": "es",
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20261009_002_sync_historical_planner.sql",
+  "migration_sha256": "15d86894150cf44895cde3aa4e53f159712bf113e263b3fca86bcabe4b533075",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "preflight_checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "sync_historical_planner_preflight",
+          "sql": "SELECT DB_NAME() AS database_name, OBJECT_ID('dbo.Sync_Control_Ejecuciones','U') AS ledger_id, OBJECT_ID('dbo.Sistema_Tipos','U') AS systems_id, OBJECT_ID('dbo.Sistema_Capacidades','U') AS capabilities_id, OBJECT_ID('dbo.Sistema_VersionesSistemas','U') AS versions_id, OBJECT_ID('dbo.Sistema_Sucursales','U') AS branches_id, 1/CASE WHEN DB_NAME()='EDARSAHUB' AND OBJECT_ID('dbo.Sync_Control_Ejecuciones','U') IS NOT NULL AND OBJECT_ID('dbo.Sistema_Tipos','U') IS NOT NULL AND OBJECT_ID('dbo.Sistema_Capacidades','U') IS NOT NULL AND OBJECT_ID('dbo.Sistema_VersionesSistemas','U') IS NOT NULL AND OBJECT_ID('dbo.Sistema_Sucursales','U') IS NOT NULL THEN 1 ELSE 0 END AS preflight_assertion"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "sync_historical_planner_post_columns",
+          "sql": "SELECT COUNT(*) AS required_columns, 1/CASE WHEN COUNT(*)=22 THEN 1 ELSE 0 END AS required_columns_assertion FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Sync_Control_Ejecuciones') AND name IN ('ParentSyncControlID','RunKind','CorrelationID','SistemaTipoID','SistemaCapacidadID','SistemaVersionID','SucursalID','SucursalOrigenID','CategoriaCodigo','EntidadCodigo','BlockOrdinal','ExecutionOrder','PlanJSON','CheckpointJSON','AttemptCount','MaxAttempts','NextRetryAtUTC','PauseRequested','CancelRequested','LastHeartbeatUTC','DispatchCount','WorkerJobID')"
+        },
+        {
+          "name": "sync_historical_planner_post_audit_columns",
+          "sql": "SELECT COUNT(*) AS audit_columns, 1/CASE WHEN COUNT(*)=3 THEN 1 ELSE 0 END AS audit_columns_assertion FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Sync_Control_Ejecuciones') AND name IN ('RequestedBy','Reason','UpdatedAtUTC')"
+        },
+        {
+          "name": "sync_historical_planner_post_contracts",
+          "sql": "SELECT 1/CASE WHEN (SELECT COUNT(*) FROM sys.foreign_keys WHERE name IN ('FK_Sync_Control_Ejecuciones_Parent','FK_Sync_Control_Ejecuciones_SistemaTipo','FK_Sync_Control_Ejecuciones_SistemaCapacidad','FK_Sync_Control_Ejecuciones_SistemaVersion','FK_Sync_Control_Ejecuciones_Sucursal'))=5 AND (SELECT COUNT(*) FROM sys.check_constraints WHERE name IN ('CK_Sync_Control_Ejecuciones_RunKind','CK_Sync_Control_Ejecuciones_PlanJSON','CK_Sync_Control_Ejecuciones_CheckpointJSON','CK_Sync_Control_Ejecuciones_Attempts'))=4 AND (SELECT COUNT(*) FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Sync_Control_Ejecuciones') AND name IN ('IX_Sync_Control_Ejecuciones_Parent_Status','IX_Sync_Control_Ejecuciones_Correlation'))=2 THEN 1 ELSE 0 END AS planner_contract_assertion"
+        }
+      ]
+    }
+  ]
+}
