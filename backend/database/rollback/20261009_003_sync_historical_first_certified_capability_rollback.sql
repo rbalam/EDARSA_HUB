@@ -38,7 +38,7 @@ BEGIN TRY
       ON st.SistemaTipoID=cap.SistemaTipoID
     WHERE link.CodigoSync='comercial_ventas_cerradas'
       AND cap.CodigoCapacidad='SYNC_VENTAS_HISTORICAS'
-      AND st.CodigoSistema IN ('MPRO','SOFTRESTAURANT');
+      AND st.CodigoSistema IN ('MPRO','SOFTRESTAURANT_PRO');
 
     UPDATE dbo.Sistema_Sync_Catalogo
        SET CategoriaCodigo=NULL,
@@ -50,8 +50,7 @@ BEGIN TRY
            SoportaResume=0,
            SoportaSafeStop=0,
            VersionContrato=NULL,
-           MetadataJSON=NULL,
-           FechaModificacion=SYSUTCDATETIME()
+           MetadataJSON=NULL
      WHERE Codigo='comercial_ventas_cerradas'
        AND CategoriaCodigo='VENTAS'
        AND EntidadCodigo='VENTAS_CERRADAS_KPI'
