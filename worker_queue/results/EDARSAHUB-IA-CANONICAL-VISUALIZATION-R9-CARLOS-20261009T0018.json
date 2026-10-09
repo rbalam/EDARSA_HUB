@@ -1,0 +1,34 @@
+{
+  "base_sha": "83d87b85633b5a29e8b9ef22d438f5e8932d78cb",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "candidate_sha": "e2bb6503202780719b19b310eb42eefb11cbbde7",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-09T05:11:49Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/ia_assistant/contextual.py",
+    "backend/modules/ia_assistant/service.py",
+    "backend/tests/test_ia_canonical_visualization_r9_contract.py",
+    "frontend/src/components/ia/IAContextual.jsx",
+    "frontend/src/components/ia/visualization/IAVisualizationRenderer.jsx",
+    "frontend/src/components/ia/visualization/chartPalette.js",
+    "frontend/src/components/ia/visualization/visualizationContract.js"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-IA-CANONICAL-VISUALIZATION-R9-CARLOS-20261009T0018",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-10-09T05:12:24Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-09T05:11:35Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
