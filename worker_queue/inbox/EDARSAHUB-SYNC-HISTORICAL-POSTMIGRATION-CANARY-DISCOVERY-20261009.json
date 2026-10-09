@@ -1,0 +1,35 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-POSTMIGRATION-CANARY-DISCOVERY-20261009",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "3067b11a8cb1a883ea011273ca7f4c5afe8d2e6a",
+  "production_allowed": false,
+  "objective": "Auditar en solo lectura el estado post-migracion de Sincronizacion Historica y descubrir una unidad canonica elegible para canario DRY RUN. Revisar registry, bindings, unidades, conexiones y sucursal fisica. No escribir datos ni tocar Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "historical_registry_ready",
+          "sql": "SELECT sc.Codigo,sc.Nombre,sc.Grupo,sc.CategoriaCodigo,sc.EntidadCodigo,sc.CampoFecha,sc.ClaveNegocio,sc.SoportaResume,sc.SoportaSafeStop,sc.VersionContrato,st.SistemaTipoID,st.CodigoSistema,st.NombreSistema,cap.SistemaCapacidadID,cap.CodigoCapacidad,link.SyncCapacidadID,link.Activo AS BindingActivo FROM dbo.Sistema_Sync_Catalogo sc JOIN dbo.Sistema_Sync_Capacidades link ON link.CodigoSync=sc.Codigo JOIN dbo.Sistema_Capacidades cap ON cap.SistemaCapacidadID=link.SistemaCapacidadID JOIN dbo.Sistema_Tipos st ON st.SistemaTipoID=cap.SistemaTipoID WHERE sc.Codigo='comercial_ventas_cerradas' ORDER BY st.CodigoSistema"
+        },
+        {
+          "name": "historical_candidate_units",
+          "sql": "SELECT TOP 20 CONVERT(varchar(36),u.id) AS unit_id,u.codigo AS unit_code,u.nombre AS unit_name,CONVERT(varchar(36),u.server_id) AS connection_id,u.sucursal_origen_id,s.system_type,s.nombre AS connection_name,CONVERT(varchar(36),s.sistema_version_id) AS system_version_id,map.SucursalID,suc.CodigoSucursal,suc.NombreSucursal,suc.EmpresaID FROM dbo.Unidades_Negocio u JOIN dbo.Servidores_Conexiones s ON LOWER(CONVERT(nvarchar(100),s.id))=LOWER(CONVERT(nvarchar(100),u.server_id)) LEFT JOIN dbo.Sistema_SucursalServidorMapeo map ON LOWER(CONVERT(nvarchar(100),map.ServidorID))=LOWER(CONVERT(nvarchar(100),u.server_id)) AND ISNULL(map.Activo,0)=1 AND (NULLIF(LTRIM(RTRIM(CONVERT(nvarchar(100),map.SucursalOrigenID))),'')=NULLIF(LTRIM(RTRIM(CONVERT(nvarchar(100),u.sucursal_origen_id))),'') OR (NULLIF(LTRIM(RTRIM(CONVERT(nvarchar(100),map.SucursalOrigenID))),'') IS NULL AND NULLIF(LTRIM(RTRIM(CONVERT(nvarchar(100),u.sucursal_origen_id))),'') IS NULL)) LEFT JOIN dbo.Sistema_Sucursales suc ON suc.SucursalID=map.SucursalID WHERE ISNULL(u.activo,1)=1 AND ISNULL(s.activo,1)=1 AND map.SucursalID IS NOT NULL ORDER BY u.codigo"
+        },
+        {
+          "name": "historical_ledger_schema_ready",
+          "sql": "SELECT COUNT(*) AS required_fields FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Sync_Control_Ejecuciones') AND name IN ('ParentSyncControlID','RunKind','CorrelationID','SistemaTipoID','SistemaCapacidadID','SucursalID','ExecutionOrder','PlanJSON','CheckpointJSON','PauseRequested','CancelRequested','WorkerJobID')"
+        },
+        {
+          "name": "historical_log_schema_ready",
+          "sql": "SELECT COUNT(*) AS required_fields FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Sync_Logs') AND name IN ('SyncControlID','CorrelationID','EventCode','PayloadJSON')"
+        }
+      ]
+    }
+  ]
+}
