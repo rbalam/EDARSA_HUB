@@ -71,6 +71,8 @@ SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
 FRONTEND_BUILD_CERTIFICATION_MODE = "FRONTEND_BUILD_CERTIFICATION"
 SYNC_HISTORICAL_PARENT_MODE = "SYNC_HISTORICAL_PARENT"
 SYNC_HISTORICAL_ATOMIC_MODE = "SYNC_HISTORICAL_ATOMIC"
+SYNC_HISTORICAL_PARENT_AUDIT_PROFILE = "sync_historical_parent_status_v1"
+SYNC_HISTORICAL_ATOMIC_AUDIT_PROFILE = "sync_historical_atomic_status_v1"
 UNIT_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 SOFTRESTAURANT_RESYNC_MAX_SECONDS = int(os.environ.get("EDARSAHUB_SOFTRESTAURANT_RESYNC_MAX_SECONDS", "21600"))
@@ -185,6 +187,45 @@ def build_comercial_audit_checks(job: dict[str, Any]) -> list[dict[str, Any]]:
                     "CASE WHEN detalle_abiertas_json LIKE '%\"precio_unitario\"%' THEN 1 ELSE 0 END AS tiene_precio_unitario,"
                     "CASE WHEN detalle_abiertas_json LIKE '%\"importe_bruto\"%' THEN 1 ELSE 0 END AS tiene_importe_bruto "
                     "FROM x WHERE rn=1 ORDER BY unidad_negocio_id"
+                ),
+            }],
+        }]
+
+    if mode == SYNC_HISTORICAL_PARENT_MODE and profile == SYNC_HISTORICAL_PARENT_AUDIT_PROFILE:
+        parent_id = int(job.get("parent_sync_control_id") or 0)
+        return [{
+            "type": "sql_readonly_audit",
+            "source": "EDARSAHUB",
+            "queries": [{
+                "name": "sync_historical_parent_post_status",
+                "sql": (
+                    "SELECT p.SyncControlID,p.Status,p.CorrelationID,"
+                    "COUNT(c.SyncControlID) AS total_hijos,"
+                    "SUM(CASE WHEN c.Status='SUCCESS' THEN 1 ELSE 0 END) AS exitosos,"
+                    "SUM(CASE WHEN c.Status='PERMANENT_FAILURE' THEN 1 ELSE 0 END) AS fallos_permanentes,"
+                    "SUM(CASE WHEN c.Status='CANCELLED_SAFE' THEN 1 ELSE 0 END) AS cancelados "
+                    "FROM dbo.Sync_Control_Ejecuciones p "
+                    "LEFT JOIN dbo.Sync_Control_Ejecuciones c "
+                    "ON c.ParentSyncControlID=p.SyncControlID AND c.RunKind='ATOMIC' "
+                    f"WHERE p.SyncControlID={parent_id} AND p.RunKind='PARENT' "
+                    "GROUP BY p.SyncControlID,p.Status,p.CorrelationID"
+                ),
+            }],
+        }]
+
+    if mode == SYNC_HISTORICAL_ATOMIC_MODE and profile == SYNC_HISTORICAL_ATOMIC_AUDIT_PROFILE:
+        control_id = int(job.get("sync_control_id") or 0)
+        return [{
+            "type": "sql_readonly_audit",
+            "source": "EDARSAHUB",
+            "queries": [{
+                "name": "sync_historical_atomic_post_status",
+                "sql": (
+                    "SELECT SyncControlID,ParentSyncControlID,Status,CodigoSync,"
+                    "UnidadNegocioID,ConexionID,AttemptCount,MaxAttempts,"
+                    "RegistrosProcesados,RegistrosInsertados,RegistrosActualizados,RegistrosError "
+                    "FROM dbo.Sync_Control_Ejecuciones "
+                    f"WHERE SyncControlID={control_id} AND RunKind='ATOMIC'"
                 ),
             }],
         }]
@@ -1878,17 +1919,19 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                     "SYNC_HISTORICAL_PARENT_CONFIRMATION_REQUIRED"
                 )
 
-            checks = job.get("checks") or []
-            if (
-                not checks
-                or any(
-                    not isinstance(c, dict)
-                    or c.get("type") != "sql_readonly_audit"
-                    for c in checks
-                )
-            ):
+            audit_profile = str(job.get("audit_profile") or "").strip()
+            if audit_profile != SYNC_HISTORICAL_PARENT_AUDIT_PROFILE:
                 raise RuntimeError(
-                    "SYNC_HISTORICAL_PARENT_SQL_AUDIT_REQUIRED"
+                    "SYNC_HISTORICAL_PARENT_AUDIT_PROFILE_INVALID"
+                )
+            if job.get("checks") not in (None, []):
+                raise RuntimeError(
+                    "SYNC_HISTORICAL_PARENT_INLINE_CHECKS_FORBIDDEN"
+                )
+            checks = build_comercial_audit_checks(job)
+            if not checks:
+                raise RuntimeError(
+                    "SYNC_HISTORICAL_PARENT_AUDIT_MATERIALIZATION_FAILED"
                 )
 
             script = (
@@ -2022,17 +2065,19 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                     "SYNC_HISTORICAL_ATOMIC_CONFIRMATION_REQUIRED"
                 )
 
-            checks = job.get("checks") or []
-            if (
-                not checks
-                or any(
-                    not isinstance(c, dict)
-                    or c.get("type") != "sql_readonly_audit"
-                    for c in checks
-                )
-            ):
+            audit_profile = str(job.get("audit_profile") or "").strip()
+            if audit_profile != SYNC_HISTORICAL_ATOMIC_AUDIT_PROFILE:
                 raise RuntimeError(
-                    "SYNC_HISTORICAL_ATOMIC_SQL_AUDIT_REQUIRED"
+                    "SYNC_HISTORICAL_ATOMIC_AUDIT_PROFILE_INVALID"
+                )
+            if job.get("checks") not in (None, []):
+                raise RuntimeError(
+                    "SYNC_HISTORICAL_ATOMIC_INLINE_CHECKS_FORBIDDEN"
+                )
+            checks = build_comercial_audit_checks(job)
+            if not checks:
+                raise RuntimeError(
+                    "SYNC_HISTORICAL_ATOMIC_AUDIT_MATERIALIZATION_FAILED"
                 )
 
             script = (
