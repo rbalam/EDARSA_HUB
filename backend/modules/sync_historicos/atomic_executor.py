@@ -18,6 +18,7 @@ from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable, Dict, Mapping
 
 from core.sql_first.db import get_sql_connection
+from .logging_service import log_event
 
 
 AtomicAdapter = Callable[[Mapping[str, Any]], Awaitable[Dict[str, Any]]]
@@ -53,6 +54,8 @@ def _load_atomic_context(sync_control_id: int) -> Dict[str, Any]:
                 e.SyncControlID,
                 e.SyncRunID,
                 e.ParentSyncControlID,
+                e.CorrelationID,
+                e.RequestedBy,
                 e.Status,
                 e.IsDryRun,
                 e.FechaInicio,
@@ -383,6 +386,17 @@ async def execute_atomic_unit(sync_control_id: int) -> Dict[str, Any]:
     try:
         context = _load_atomic_context(sync_control_id)
         capability_key = str(context.get("CodigoSync") or "").strip()
+        log_event(
+            sync_control_id=int(sync_control_id),
+            correlation_id=str(context.get("CorrelationID") or "") or None,
+            event_code="ATOMIC_RUNNING",
+            level="INFO",
+            message=(
+                f"Unidad atomica iniciada: {capability_key} "
+                f"{context.get('FechaInicio')} a {context.get('FechaFin')}."
+            ),
+            operator=str(context.get("RequestedBy") or "WORKER_UNIVERSAL_V1.2"),
+        )
         adapter = _ATOMIC_ADAPTERS.get(capability_key)
         if not adapter:
             raise HistoricalAtomicExecutionError(
@@ -391,6 +405,19 @@ async def execute_atomic_unit(sync_control_id: int) -> Dict[str, Any]:
         result = await adapter(context)
         success = bool(result.get("success"))
         final = _finish(sync_control_id, success=success, result=result)
+        log_event(
+            sync_control_id=int(sync_control_id),
+            correlation_id=str(context.get("CorrelationID") or "") or None,
+            event_code="ATOMIC_FINISHED",
+            level="INFO" if success else "ERROR",
+            message=f"Unidad atomica finalizada con estado {final['status']}.",
+            operator=str(context.get("RequestedBy") or "WORKER_UNIVERSAL_V1.2"),
+            payload={
+                "capability_key": capability_key,
+                "status": final["status"],
+                "success": success,
+            },
+        )
         return {
             "success": success,
             "sync_control_id": int(sync_control_id),
