@@ -164,7 +164,7 @@ def persist_plan(
                     ParentSyncControlID, RunKind, CorrelationID,
                     SistemaTipoID, SistemaVersionID, SucursalID,
                     SucursalOrigenID, CategoriaCodigo, EntidadCodigo, BlockOrdinal,
-                    PlanJSON, AttemptCount, MaxAttempts,
+                    ExecutionOrder, PlanJSON, AttemptCount, MaxAttempts,
                     PauseRequested, CancelRequested,
                     RequestedBy, Reason, UpdatedAtUTC
                 )
@@ -178,7 +178,7 @@ def persist_plan(
                     %s, 'ATOMIC', %s,
                     %s, %s, %s,
                     %s, %s, %s, %s,
-                    %s, 0, %s,
+                    %s, %s, 0, %s,
                     0, 0,
                     %s, %s, %s
                 )
@@ -204,6 +204,7 @@ def persist_plan(
                     item.category_key,
                     item.entity_key,
                     item.block_ordinal,
+                    item.execution_order,
                     child_plan,
                     item.max_attempts,
                     requested_by,
