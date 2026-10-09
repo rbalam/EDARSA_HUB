@@ -29,6 +29,19 @@ _CAMPOS = (
     "HandlerImplementado, TablaDestino, Dependencias, Activo"
 )
 
+_HISTORICAL_CAMPOS = (
+    "sc.Codigo, sc.Nombre, sc.Grupo, sc.Descripcion, sc.Orden, sc.NivelRiesgo, "
+    "sc.PermiteResync, sc.PermiteDryRun, sc.RequiereUnidad, sc.RequiereRangoFechas, "
+    "sc.RangoMaxDias, sc.Handler, sc.HandlerImplementado, sc.TablaDestino, "
+    "sc.Dependencias, sc.Activo, sc.CategoriaCodigo, sc.EntidadCodigo, "
+    "sc.CampoFecha, sc.ClaveNegocio, sc.SoportaIncremental, sc.SoportaFullSync, "
+    "sc.SoportaResume, sc.SoportaSafeStop, sc.VersionContrato, sc.MetadataJSON, "
+    "link.SyncCapacidadID, link.Obligatoria AS VinculoObligatorio, "
+    "link.Activo AS VinculoActivo, cap.SistemaCapacidadID, "
+    "cap.CodigoCapacidad, cap.Activo AS CapacidadSistemaActiva, "
+    "st.SistemaTipoID, st.CodigoSistema, st.NombreSistema, st.Activo AS SistemaActivo"
+)
+
 
 def _row_to_dict(r: Dict[str, Any]) -> Dict[str, Any]:
     deps_raw = r.get('Dependencias')
@@ -54,6 +67,137 @@ def _row_to_dict(r: Dict[str, Any]) -> Dict[str, Any]:
         'dependencias': deps,
         'activo': bool(r.get('Activo')),
     }
+
+
+def _json_list(value: Any) -> List[Any]:
+    if value in (None, ''):
+        return []
+    if isinstance(value, list):
+        return value
+    try:
+        parsed = json.loads(value)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return []
+    return parsed if isinstance(parsed, list) else []
+
+
+def _json_object(value: Any) -> Dict[str, Any]:
+    if value in (None, ''):
+        return {}
+    if isinstance(value, dict):
+        return value
+    try:
+        parsed = json.loads(value)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _historical_row_to_dict(r: Dict[str, Any]) -> Dict[str, Any]:
+    """Proyecta una fila del registry historico sin inventar compatibilidades.
+
+    La elegibilidad es fail-closed: solo una combinacion declarada en
+    Sistema_Sync_Capacidades, con metadata atomica suficiente, puede ejecutarse.
+    """
+    base = _row_to_dict(r)
+    business_key = _json_list(r.get('ClaveNegocio'))
+    metadata = _json_object(r.get('MetadataJSON'))
+    requires_date = bool(r.get('RequiereRangoFechas'))
+
+    incomplete: List[str] = []
+    if not r.get('CategoriaCodigo'):
+        incomplete.append('CATEGORY_KEY_MISSING')
+    if not r.get('EntidadCodigo'):
+        incomplete.append('ENTITY_KEY_MISSING')
+    if requires_date and not r.get('CampoFecha'):
+        incomplete.append('DATE_FIELD_MISSING')
+    if not business_key:
+        incomplete.append('BUSINESS_KEY_MISSING')
+    if not r.get('SyncCapacidadID') or not r.get('SistemaTipoID'):
+        incomplete.append('SYSTEM_BINDING_MISSING')
+    if not bool(r.get('VinculoActivo')):
+        incomplete.append('SYSTEM_BINDING_INACTIVE')
+    if not bool(r.get('CapacidadSistemaActiva')):
+        incomplete.append('SYSTEM_CAPABILITY_INACTIVE')
+    if not bool(r.get('SistemaActivo')):
+        incomplete.append('SYSTEM_INACTIVE')
+    if not base['handler_implementado']:
+        incomplete.append('HANDLER_NOT_IMPLEMENTED')
+    if not base['activo']:
+        incomplete.append('SYNC_DISABLED')
+    if not base['permite_resync']:
+        incomplete.append('HISTORICAL_NOT_SUPPORTED')
+
+    return {
+        **base,
+        'system_id': r.get('SistemaTipoID'),
+        'system_code': r.get('CodigoSistema'),
+        'system_name': r.get('NombreSistema'),
+        'system_capability_id': r.get('SistemaCapacidadID'),
+        'system_capability_key': r.get('CodigoCapacidad'),
+        'sync_capability_link_id': r.get('SyncCapacidadID'),
+        'binding_required': bool(r.get('VinculoObligatorio')),
+        'category_key': r.get('CategoriaCodigo'),
+        'category_name': base['grupo'],
+        'entity_key': r.get('EntidadCodigo'),
+        'capability_key': base['codigo'],
+        'display_name': base['nombre'],
+        'date_field': r.get('CampoFecha'),
+        'business_key': business_key,
+        'supports_historical': base['permite_resync'],
+        'supports_incremental': bool(r.get('SoportaIncremental')),
+        'supports_full_sync': bool(r.get('SoportaFullSync')),
+        'supports_resume': bool(r.get('SoportaResume')),
+        'supports_safe_stop': bool(r.get('SoportaSafeStop')),
+        'execution_order': base['orden'],
+        'enabled': base['activo'],
+        'version': r.get('VersionContrato'),
+        'metadata': metadata,
+        'eligible_for_historical': not incomplete,
+        'incomplete_reasons': incomplete,
+    }
+
+
+def get_historical_registry(
+    incluir_inactivos: bool = False,
+    incluir_incompletos: bool = False,
+) -> List[Dict[str, Any]]:
+    """Registry transversal para Sincronizacion Historica.
+
+    Reutiliza Sistema_Sync_Catalogo y el puente Sistema_Sync_Capacidades.
+    No infiere compatibilidades por nombre de sistema, handler o tabla.
+    """
+    conn = get_sql_connection()
+    cur = conn.cursor(as_dict=True)
+    where = [] if incluir_inactivos else [
+        "ISNULL(sc.Activo,1)=1",
+        "ISNULL(st.Activo,1)=1",
+        "ISNULL(cap.Activo,1)=1",
+        "ISNULL(link.Activo,1)=1",
+    ]
+    where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+    cur.execute(
+        f"""
+        SELECT {_HISTORICAL_CAMPOS}
+        FROM dbo.Sistema_Sync_Catalogo sc
+        LEFT JOIN dbo.Sistema_Sync_Capacidades link
+          ON link.CodigoSync = sc.Codigo
+        LEFT JOIN dbo.Sistema_Capacidades cap
+          ON cap.SistemaCapacidadID = link.SistemaCapacidadID
+        LEFT JOIN dbo.Sistema_Tipos st
+          ON st.SistemaTipoID = cap.SistemaTipoID
+        {where_sql}
+        ORDER BY st.SistemaTipoID, sc.Grupo, sc.Orden, sc.Nombre
+        """
+    )
+    rows = list(cur.fetchall())
+    cur.close()
+    conn.close()
+
+    items = [_historical_row_to_dict(row) for row in rows]
+    if incluir_incompletos:
+        return items
+    return [item for item in items if item['eligible_for_historical']]
 
 
 def get_catalogo(incluir_inactivos: bool = False) -> List[Dict[str, Any]]:
