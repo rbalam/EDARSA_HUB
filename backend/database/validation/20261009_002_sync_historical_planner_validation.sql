@@ -18,6 +18,7 @@ INSERT INTO @required (ColumnName) VALUES
 ('CategoriaCodigo'),
 ('EntidadCodigo'),
 ('BlockOrdinal'),
+('ExecutionOrder'),
 ('PlanJSON'),
 ('CheckpointJSON'),
 ('AttemptCount'),
