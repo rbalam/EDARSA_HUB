@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "3f4a4203e21122ea1bf516f9c1557ecc6c9455a1",
-  "generated_at_utc": "2026-10-09T20:02:23Z",
+  "generated_at_utc": "2026-10-09T21:39:29Z",
   "history": {
     "done_total_local": 1365,
     "pending_total_local": 0,
@@ -14,86 +14,7 @@
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [
-    {
-      "age_seconds": 1821,
-      "job_id": "EDARSAHUB-IA-GLOBAL-RBAC-DATA-SCOPE-R14-CARLOS-20261009T1325",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 183,
-      "job_id": "EDARSAHUB-SYNC-HISTORICAL-CANARY-PARENT-DISCOVERY-20261009",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 225,
-      "job_id": "EDARSAHUB-SYNC-HISTORICAL-CANARY-SEED-20261009",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1426,
-      "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-001-20261009",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1331,
-      "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-001-DIAG-20261009",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1128,
-      "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-001-R2-20261009",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 929,
-      "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-002-20261009",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 876,
-      "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-003-20261009",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 822,
-      "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-003-DIAG-20261009",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 627,
-      "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-003-R2-20261009",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 571,
-      "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-004-20261009",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 26,
-      "job_id": "EDARSAHUB-SYNC-HISTORICAL-PARENT-CANARY-20261009",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 509,
-      "job_id": "EDARSAHUB-SYNC-HISTORICAL-POSTMIGRATION-CANARY-DISCOVERY-20261009",
-      "reason": null,
-      "state": "RESULT_READY"
-    }
-  ],
+  "jobs": [],
   "local_development_sha": "3f4a4203e21122ea1bf516f9c1557ecc6c9455a1",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
@@ -102,16 +23,16 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 13,
+  "queue_result_ready_recent": 0,
   "queue_running": 0,
   "remote_development_sha": "3f4a4203e21122ea1bf516f9c1557ecc6c9455a1",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-09T20:02:23Z",
-    "last_receive_utc": "2026-10-09T20:02:18Z",
+    "last_cycle_utc": "2026-10-09T21:39:17Z",
+    "last_receive_utc": "2026-10-09T21:39:29Z",
     "last_terminal_utc": "2026-10-09T20:01:56Z",
-    "pid": "330",
+    "pid": "428",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "6c1233dbc0beba1383034f88dcb52bf9525e0084",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
