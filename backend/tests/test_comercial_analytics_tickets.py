@@ -322,3 +322,85 @@ def test_executive_ticket_visual_contract_matches_comercial():
     assert "DESC. PRODUCTOS" in executive
     assert "DESC. CUENTA" in executive
     assert "text-red-600 font-semibold" in executive
+
+
+
+def test_historical_range_replaces_active_day_with_atomic_snapshot(monkeypatch):
+    monkeypatch.setattr(
+        repository_tickets,
+        "_latest_snapshot_operation_date",
+        lambda unit_code: "2026-10-09",
+    )
+    monkeypatch.setattr(
+        repository_tickets,
+        "_list_current_day_with_comercial_merge",
+        lambda **kwargs: {
+            "items": [
+                {
+                    "ticket_pk": "today-1",
+                    "unidad_negocio_id": "ORIGEN",
+                    "fecha_operacion": "2026-10-09",
+                    "numero_ticket": "SB-0055609",
+                    "pax": 1,
+                    "ventas": 130.0,
+                    "propina": 0.0,
+                },
+                {
+                    "ticket_pk": "today-2",
+                    "unidad_negocio_id": "ORIGEN",
+                    "fecha_operacion": "2026-10-09",
+                    "numero_ticket": "SB-0055610",
+                    "pax": 2,
+                    "ventas": 535.0,
+                    "propina": 0.0,
+                },
+            ]
+        },
+    )
+
+    calls = []
+
+    def fake_execute(sql, params, query_executor=None):
+        calls.append((sql, params))
+        if "COUNT(*) AS total" in sql:
+            return [{"total": 2}]
+        return [{
+            "unidad_negocio_id": "ORIGEN",
+            "unidad": "ORIGEN",
+            "sucursal": "ORIGEN",
+            "fecha_operacion": "2026-10-01",
+            "numero_ticket": "SB-0050312",
+            "fecha_hora": datetime(2026, 10, 1, 12, 0),
+            "pax": 1,
+            "lineas": 1,
+            "ventas": 45.0,
+            "propina": 0.0,
+        }]
+
+    monkeypatch.setattr(
+        repository_tickets,
+        "_execute",
+        fake_execute,
+    )
+
+    result = repository_tickets.list_tickets(
+        fecha_inicio="2026-10-01",
+        fecha_fin="2026-10-31",
+        allowed_unit_codes=["ORIGEN"],
+        unidad_negocio_id="ORIGEN",
+        page=1,
+        page_size=200,
+    )
+
+    assert result["total"] == 4
+    assert result["items"][0]["numero_ticket"] == "SB-0055609"
+    assert result["items"][1]["numero_ticket"] == "SB-0055610"
+    assert result["items"][2]["numero_ticket"] == "SB-0050312"
+    assert result["traceability"]["contract"] == (
+        "HISTORICO_CON_DIA_OPERATIVO_ATOMICO"
+    )
+    assert result["traceability"]["snapshot_operation_date"] == "2026-10-09"
+
+    count_sql, count_params = calls[0]
+    assert "d.fecha_operacion <> %s" in count_sql
+    assert count_params[-1] == "2026-10-09"
