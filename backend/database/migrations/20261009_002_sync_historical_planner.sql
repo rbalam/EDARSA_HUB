@@ -33,6 +33,9 @@ BEGIN TRY
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','SistemaTipoID') IS NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones ADD SistemaTipoID int NULL;
 
+    IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','SistemaCapacidadID') IS NULL
+        ALTER TABLE dbo.Sync_Control_Ejecuciones ADD SistemaCapacidadID int NULL;
+
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','SistemaVersionID') IS NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones ADD SistemaVersionID uniqueidentifier NULL;
 
@@ -123,6 +126,17 @@ BEGIN TRY
             ADD CONSTRAINT FK_Sync_Control_Ejecuciones_SistemaTipo
             FOREIGN KEY (SistemaTipoID)
             REFERENCES dbo.Sistema_Tipos(SistemaTipoID);
+        ');
+
+    IF NOT EXISTS (
+        SELECT 1 FROM sys.foreign_keys
+        WHERE name='FK_Sync_Control_Ejecuciones_SistemaCapacidad'
+    )
+        EXEC(N'
+            ALTER TABLE dbo.Sync_Control_Ejecuciones WITH CHECK
+            ADD CONSTRAINT FK_Sync_Control_Ejecuciones_SistemaCapacidad
+            FOREIGN KEY (SistemaCapacidadID)
+            REFERENCES dbo.Sistema_Capacidades(SistemaCapacidadID);
         ');
 
     IF NOT EXISTS (
