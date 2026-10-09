@@ -1,0 +1,133 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-IA-CANONICAL-VISUALIZATION-R9-CARLOS-20261009T0018",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "base_sha": "83d87b85633b5a29e8b9ef22d438f5e8932d78cb",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "scheduling": {
+    "project_id": "V1.0",
+    "bounded_context": "Asistente IA Visualizacion Canonica Transversal",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "mode": "MUTATION",
+  "objective": "Hacer canonica, atomica y transversal la visualizacion del mismo Asistente IA para cualquier modulo o ventana EDARSAHUB. Extraer el renderer visual a un componente generico, definir una unica paleta deterministica de 10 colores, usar Cell para color por categoria en barras de una serie, color estable por serie en multiples barras/lineas, tooltip y Legend. Extender OPEN_VIEW con series [{key,label}] hasta 10, validando solo columnas autorizadas y conservando y_key. Reutilizar el mismo dataset_id para tabla/grafica/export. No introducir logica de Comercial/Inventarios, no tocar RBAC, EDARSAHUB_ONLY, query_bridge, sync_comercial_abiertas_v2 ni Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/ia/IAContextual.jsx",
+      "old": "import React, { useEffect, useMemo, useRef, useState } from 'react';\nimport { Bot, Loader2, Send, Sparkles, X } from 'lucide-react';\nimport {\n  Bar,\n  BarChart,\n  CartesianGrid,\n  Line,\n  LineChart,\n  ResponsiveContainer,\n  Tooltip,\n  XAxis,\n  YAxis,\n} from 'recharts';\n",
+      "new": "import React, { useEffect, useMemo, useRef, useState } from 'react';\nimport { Bot, Loader2, Send, Sparkles, X } from 'lucide-react';\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/ia/IAContextual.jsx",
+      "old": "import {\n  exportActionDataset,\n  resolveActionDataset,\n} from './iaContextualData';\n\nconst VIEW_TYPES = new Set(['table', 'bar_chart', 'line_chart', 'kpi_cards']);\n\nconst numberValue = (value) => {\n  const parsed = datasetNumericValue(value);\n  return parsed === null ? 0 : parsed;\n};\n\n\n",
+      "new": "import {\n  exportActionDataset,\n  resolveActionDataset,\n} from './iaContextualData';\nimport { IAVisualizationRenderer } from './visualization/IAVisualizationRenderer';\nimport { IA_VIEW_TYPES } from './visualization/visualizationContract';\n\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/ia/IAContextual.jsx",
+      "old": "export function IAAnalysisModal({ config, rows, onClose }) {\n  if (!config || !VIEW_TYPES.has(config.view_type)) return null;\n  const safeRows = Array.isArray(rows) ? rows.slice(0, 100) : [];\n  const keys = safeRows.length ? Object.keys(safeRows[0]).slice(0, 8) : [];\n  const xKey = keys.includes(config.x_key) ? config.x_key : keys[0];\n  const yKey = keys.includes(config.y_key) ? config.y_key : keys.find(\n    (key) => safeRows.some((row) => Number.isFinite(Number(row?.[key])))\n  );\n  const maxValue = Math.max(1, ...safeRows.map((row) => numberValue(row?.[yKey])));\n  const chartRows = safeRows.slice(0, 40).map((row) => ({\n    ...row,\n    ...(yKey ? { [yKey]: numberValue(row?.[yKey]) } : {}),\n  }));\n\n  return (\n    <div className=\"fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-6\">\n      <div className=\"max-h-[82vh] w-full max-w-4xl overflow-hidden rounded-2xl border border-slate-600 bg-slate-900 shadow-2xl\">\n        <header className=\"flex items-center justify-between border-b border-slate-700 px-5 py-3\">\n          <div>\n            <h3 className=\"font-semibold text-white\">{config.title || 'Análisis IA'}</h3>\n            <p className=\"text-xs text-slate-400\">Vista temporal · no modifica datos</p>\n          </div>\n          <button type=\"button\" onClick={onClose} className=\"rounded-lg p-2 text-slate-300 hover:bg-slate-800\">\n            <X className=\"h-4 w-4\" />\n          </button>\n        </header>\n\n        <div className=\"max-h-[70vh] overflow-auto p-5\">\n          {config.view_type === 'table' && (\n            <div className=\"max-w-full overflow-x-auto\">\n              <table className=\"min-w-full text-sm\">\n              <thead>\n                <tr className=\"text-left text-xs text-slate-400\">\n                  {keys.map((key) => <th key={key} className=\"px-3 py-2\">{key}</th>)}\n                </tr>\n              </thead>\n              <tbody>\n                {safeRows.map((row, index) => (\n                  <tr key={index} className=\"border-t border-slate-800 text-slate-200\">\n                    {keys.map((key) => <td key={key} className=\"px-3 py-2\">{formatDisplayValue(row?.[key])}</td>)}\n                  </tr>\n                ))}\n              </tbody>\n              </table>\n            </div>\n          )}\n\n          {config.view_type === 'kpi_cards' && (\n            <div className=\"grid gap-3 md:grid-cols-3\">\n              <div className=\"rounded-xl border border-slate-700 p-4\">\n                <p className=\"text-xs text-slate-400\">Registros visibles</p>\n                <p className=\"mt-1 text-2xl font-bold text-white\">{safeRows.length}</p>\n              </div>\n              {yKey && (\n                <>\n                  <div className=\"rounded-xl border border-slate-700 p-4\">\n                    <p className=\"text-xs text-slate-400\">Suma {yKey}</p>\n                    <p className=\"mt-1 text-2xl font-bold text-white\">\n                      {safeRows.reduce((sum, row) => sum + numberValue(row?.[yKey]), 0).toLocaleString('es-MX')}\n                    </p>\n                  </div>\n                  <div className=\"rounded-xl border border-slate-700 p-4\">\n                    <p className=\"text-xs text-slate-400\">Promedio {yKey}</p>\n                    <p className=\"mt-1 text-2xl font-bold text-white\">\n                      {(safeRows.length\n                        ? safeRows.reduce((sum, row) => sum + numberValue(row?.[yKey]), 0) / safeRows.length\n                        : 0).toLocaleString('es-MX', { maximumFractionDigits: 2 })}\n                    </p>\n                  </div>\n                </>\n              )}\n            </div>\n          )}\n\n          {config.view_type === 'bar_chart' && (\n            <div className=\"h-80 w-full text-indigo-400\">\n              <ResponsiveContainer width=\"100%\" height=\"100%\">\n                <BarChart data={chartRows} margin={{ top: 12, right: 18, left: 12, bottom: 12 }}>\n                  <CartesianGrid strokeDasharray=\"3 3\" opacity={0.16} />\n                  <XAxis dataKey={xKey} tick={{ fill: '#cbd5e1', fontSize: 12 }} />\n                  <YAxis\n                    tick={{ fill: '#94a3b8', fontSize: 12 }}\n                    tickFormatter={(value) => Number(value).toLocaleString('es-MX', { notation: 'compact' })}\n                  />\n                  <Tooltip\n                    formatter={(value) => Number(value).toLocaleString('es-MX', { maximumFractionDigits: 2 })}\n                    labelStyle={{ color: '#0f172a' }}\n                  />\n                  <Bar dataKey={yKey} name={yKey || 'valor'} fill=\"currentColor\" radius={[6, 6, 0, 0]} />\n                </BarChart>\n              </ResponsiveContainer>\n              <p className=\"mt-2 text-xs text-slate-500\">{xKey || 'periodo'} · {yKey || 'valor'}</p>\n            </div>\n          )}\n\n          {config.view_type === 'line_chart' && (\n            <div className=\"h-80 w-full text-indigo-400\">\n              <ResponsiveContainer width=\"100%\" height=\"100%\">\n                <LineChart data={chartRows} margin={{ top: 12, right: 18, left: 12, bottom: 12 }}>\n                  <CartesianGrid strokeDasharray=\"3 3\" opacity={0.16} />\n                  <XAxis dataKey={xKey} tick={{ fill: '#cbd5e1', fontSize: 12 }} />\n                  <YAxis\n                    tick={{ fill: '#94a3b8', fontSize: 12 }}\n                    tickFormatter={(value) => Number(value).toLocaleString('es-MX', { notation: 'compact' })}\n                  />\n                  <Tooltip\n                    formatter={(value) => Number(value).toLocaleString('es-MX', { maximumFractionDigits: 2 })}\n                    labelStyle={{ color: '#0f172a' }}\n                  />\n                  <Line\n                    type=\"monotone\"\n                    dataKey={yKey}\n                    name={yKey || 'valor'}\n                    stroke=\"currentColor\"\n                    strokeWidth={3}\n                    dot={{ r: 4 }}\n                  />\n                </LineChart>\n              </ResponsiveContainer>\n              <p className=\"mt-2 text-xs text-slate-500\">{xKey || 'periodo'} · {yKey || 'valor'}</p>\n            </div>\n          )}\n        </div>\n      </div>\n    </div>\n  );\n}\n\n",
+      "new": "export function IAAnalysisModal({ config, rows, onClose }) {\n  if (!config || !IA_VIEW_TYPES.has(config.view_type)) return null;\n\n  return (\n    <div className=\"fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-6\">\n      <div className=\"max-h-[82vh] w-full max-w-4xl overflow-hidden rounded-2xl border border-slate-600 bg-slate-900 shadow-2xl\">\n        <header className=\"flex items-center justify-between border-b border-slate-700 px-5 py-3\">\n          <div>\n            <h3 className=\"font-semibold text-white\">{config.title || 'Análisis IA'}</h3>\n            <p className=\"text-xs text-slate-400\">Vista temporal · no modifica datos</p>\n          </div>\n          <button type=\"button\" onClick={onClose} className=\"rounded-lg p-2 text-slate-300 hover:bg-slate-800\">\n            <X className=\"h-4 w-4\" />\n          </button>\n        </header>\n        <div className=\"max-h-[70vh] overflow-auto p-5\">\n          <IAVisualizationRenderer config={config} rows={rows} />\n        </div>\n      </div>\n    </div>\n  );\n}\n\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/ia/IAContextual.jsx",
+      "old": "&& VIEW_TYPES.has(action.payload?.view_type)",
+      "new": "&& IA_VIEW_TYPES.has(action.payload?.view_type)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/ia/IAContextual.jsx",
+      "old": "  const viewType = wantsChart\n    ? (/l[ií]nea/.test(normalized) ? 'line_chart' : 'bar_chart')\n    : 'table';\n\n  return {\n    type: 'OPEN_VIEW',\n    label: wantsChart ? 'Ver gráfica' : 'Ver tabla',\n    payload: {\n      dataset_id: dataset.dataset_id,\n      view_type: viewType,\n      title: wantsChart ? 'Comparativo solicitado' : 'Tabla solicitada',\n      ...(xKey ? { x_key: xKey } : {}),\n      ...(yKey ? { y_key: yKey } : {}),\n    },\n  };\n};\n",
+      "new": "  const requestedSeries = numericColumns.filter((key) => {\n    const tokens = metricKey(key).split('_').filter((token) => token.length >= 3);\n    return tokens.some((token) => normalized.includes(token));\n  });\n  const seriesKeys = (requestedSeries.length > 1 ? requestedSeries : (yKey ? [yKey] : []))\n    .slice(0, 10);\n\n  const viewType = wantsChart\n    ? (/l[ií]nea/.test(normalized) ? 'line_chart' : 'bar_chart')\n    : 'table';\n\n  return {\n    type: 'OPEN_VIEW',\n    label: wantsChart ? 'Ver gráfica' : 'Ver tabla',\n    payload: {\n      dataset_id: dataset.dataset_id,\n      view_type: viewType,\n      title: wantsChart ? 'Comparativo solicitado' : 'Tabla solicitada',\n      ...(xKey ? { x_key: xKey } : {}),\n      ...(yKey ? { y_key: yKey } : {}),\n      ...(seriesKeys.length ? { series: seriesKeys.map((key) => ({ key, label: key })) } : {}),\n    },\n  };\n};\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "frontend/src/components/ia/visualization/chartPalette.js",
+      "content": "export const IA_CHART_PALETTE = Object.freeze([\n  '#4F46E5',\n  '#06B6D4',\n  '#22C55E',\n  '#F59E0B',\n  '#EF4444',\n  '#8B5CF6',\n  '#EC4899',\n  '#14B8A6',\n  '#84CC16',\n  '#F97316',\n]);\n\nexport const iaChartColor = (index = 0) => {\n  const numeric = Number.isFinite(Number(index)) ? Number(index) : 0;\n  const normalized = ((numeric % IA_CHART_PALETTE.length) + IA_CHART_PALETTE.length)\n    % IA_CHART_PALETTE.length;\n  return IA_CHART_PALETTE[normalized];\n};\n"
+    },
+    {
+      "type": "write_file",
+      "path": "frontend/src/components/ia/visualization/visualizationContract.js",
+      "content": "export const IA_VIEW_TYPES = new Set([\n  'table',\n  'bar_chart',\n  'line_chart',\n  'kpi_cards',\n]);\n\nexport const MAX_IA_CHART_SERIES = 10;\n"
+    },
+    {
+      "type": "write_file",
+      "path": "frontend/src/components/ia/visualization/IAVisualizationRenderer.jsx",
+      "content": "import React from 'react';\nimport {\n  Bar,\n  BarChart,\n  CartesianGrid,\n  Cell,\n  Legend,\n  Line,\n  LineChart,\n  ResponsiveContainer,\n  Tooltip,\n  XAxis,\n  YAxis,\n} from 'recharts';\nimport { iaChartColor } from './chartPalette';\nimport { IA_VIEW_TYPES, MAX_IA_CHART_SERIES } from './visualizationContract';\n\nconst numericValue = (value) => {\n  if (typeof value === 'number' && Number.isFinite(value)) return value;\n  const cleaned = String(value ?? '').replace(/[$,%\\s,]/g, '');\n  const parsed = Number(cleaned);\n  return Number.isFinite(parsed) ? parsed : null;\n};\n\nconst numberValue = (value) => numericValue(value) ?? 0;\n\nconst formatDisplayValue = (value) => (\n  typeof value === 'number' && Number.isFinite(value)\n    ? value.toLocaleString('es-MX', { maximumFractionDigits: 2 })\n    : String(value ?? '—')\n);\n\nconst normalizeSeries = (config, rows, keys, xKey) => {\n  const allowed = new Set(keys);\n  const requested = Array.isArray(config?.series) ? config.series : [];\n  const safeRequested = requested\n    .filter((item) => item && allowed.has(String(item.key || '')))\n    .map((item) => ({\n      key: String(item.key),\n      label: String(item.label || item.key),\n    }))\n    .slice(0, MAX_IA_CHART_SERIES);\n\n  if (safeRequested.length) return safeRequested;\n\n  if (allowed.has(config?.y_key)) {\n    return [{ key: config.y_key, label: config.y_key }];\n  }\n\n  const fallback = keys.find((key) => (\n    key !== xKey && rows.some((row) => numericValue(row?.[key]) !== null)\n  ));\n  return fallback ? [{ key: fallback, label: fallback }] : [];\n};\n\nexport function IAVisualizationRenderer({ config, rows }) {\n  if (!config || !IA_VIEW_TYPES.has(config.view_type)) return null;\n\n  const safeRows = Array.isArray(rows) ? rows.slice(0, 100) : [];\n  const keys = safeRows.length ? Object.keys(safeRows[0]).slice(0, 32) : [];\n  const tableKeys = keys.slice(0, 8);\n  const xKey = keys.includes(config.x_key) ? config.x_key : keys[0];\n  const series = normalizeSeries(config, safeRows, keys, xKey);\n  const primarySeries = series[0];\n  const chartRows = safeRows.slice(0, 40).map((row) => {\n    const normalized = { ...row };\n    series.forEach((item) => {\n      normalized[item.key] = numberValue(row?.[item.key]);\n    });\n    return normalized;\n  });\n\n  if (config.view_type === 'table') {\n    return (\n      <div className=\"max-w-full overflow-x-auto\">\n        <table className=\"min-w-full text-sm\">\n          <thead>\n            <tr className=\"text-left text-xs text-slate-400\">\n              {tableKeys.map((key) => <th key={key} className=\"px-3 py-2\">{key}</th>)}\n            </tr>\n          </thead>\n          <tbody>\n            {safeRows.map((row, index) => (\n              <tr key={index} className=\"border-t border-slate-800 text-slate-200\">\n                {tableKeys.map((key) => (\n                  <td key={key} className=\"px-3 py-2\">{formatDisplayValue(row?.[key])}</td>\n                ))}\n              </tr>\n            ))}\n          </tbody>\n        </table>\n      </div>\n    );\n  }\n\n  if (config.view_type === 'kpi_cards') {\n    const yKey = primarySeries?.key;\n    return (\n      <div className=\"grid gap-3 md:grid-cols-3\">\n        <div className=\"rounded-xl border border-slate-700 p-4\">\n          <p className=\"text-xs text-slate-400\">Registros visibles</p>\n          <p className=\"mt-1 text-2xl font-bold text-white\">{safeRows.length}</p>\n        </div>\n        {yKey && (\n          <>\n            <div className=\"rounded-xl border border-slate-700 p-4\">\n              <p className=\"text-xs text-slate-400\">Suma {yKey}</p>\n              <p className=\"mt-1 text-2xl font-bold text-white\">\n                {safeRows.reduce((sum, row) => sum + numberValue(row?.[yKey]), 0).toLocaleString('es-MX')}\n              </p>\n            </div>\n            <div className=\"rounded-xl border border-slate-700 p-4\">\n              <p className=\"text-xs text-slate-400\">Promedio {yKey}</p>\n              <p className=\"mt-1 text-2xl font-bold text-white\">\n                {(safeRows.length\n                  ? safeRows.reduce((sum, row) => sum + numberValue(row?.[yKey]), 0) / safeRows.length\n                  : 0).toLocaleString('es-MX', { maximumFractionDigits: 2 })}\n              </p>\n            </div>\n          </>\n        )}\n      </div>\n    );\n  }\n\n  if (config.view_type === 'bar_chart') {\n    return (\n      <div className=\"h-80 w-full\">\n        <ResponsiveContainer width=\"100%\" height=\"100%\">\n          <BarChart data={chartRows} margin={{ top: 12, right: 18, left: 12, bottom: 12 }}>\n            <CartesianGrid strokeDasharray=\"3 3\" opacity={0.16} />\n            <XAxis dataKey={xKey} tick={{ fill: '#cbd5e1', fontSize: 12 }} />\n            <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} tickFormatter={(value) => Number(value).toLocaleString('es-MX', { notation: 'compact' })} />\n            <Tooltip formatter={(value) => Number(value).toLocaleString('es-MX', { maximumFractionDigits: 2 })} labelStyle={{ color: '#0f172a' }} />\n            <Legend />\n            {series.length <= 1 && primarySeries && (\n              <Bar dataKey={primarySeries.key} name={primarySeries.label} fill={iaChartColor(0)} radius={[6, 6, 0, 0]}>\n                {chartRows.map((_row, index) => (\n                  <Cell key={`ia-bar-cell-${index}`} fill={iaChartColor(index)} />\n                ))}\n              </Bar>\n            )}\n            {series.length > 1 && series.map((item, index) => (\n              <Bar key={item.key} dataKey={item.key} name={item.label} fill={iaChartColor(index)} radius={[6, 6, 0, 0]} />\n            ))}\n          </BarChart>\n        </ResponsiveContainer>\n      </div>\n    );\n  }\n\n  if (config.view_type === 'line_chart') {\n    return (\n      <div className=\"h-80 w-full\">\n        <ResponsiveContainer width=\"100%\" height=\"100%\">\n          <LineChart data={chartRows} margin={{ top: 12, right: 18, left: 12, bottom: 12 }}>\n            <CartesianGrid strokeDasharray=\"3 3\" opacity={0.16} />\n            <XAxis dataKey={xKey} tick={{ fill: '#cbd5e1', fontSize: 12 }} />\n            <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} tickFormatter={(value) => Number(value).toLocaleString('es-MX', { notation: 'compact' })} />\n            <Tooltip formatter={(value) => Number(value).toLocaleString('es-MX', { maximumFractionDigits: 2 })} labelStyle={{ color: '#0f172a' }} />\n            <Legend />\n            {series.map((item, index) => (\n              <Line\n                key={item.key}\n                type=\"monotone\"\n                dataKey={item.key}\n                name={item.label}\n                stroke={iaChartColor(index)}\n                strokeWidth={3}\n                dot={{ r: 4, fill: iaChartColor(index) }}\n              />\n            ))}\n          </LineChart>\n        </ResponsiveContainer>\n      </div>\n    );\n  }\n\n  return null;\n}\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/ia_assistant/contextual.py",
+      "old": "MAX_ACTIONS = 4\n",
+      "new": "MAX_ACTIONS = 4\nMAX_CHART_SERIES = 10\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/ia_assistant/contextual.py",
+      "old": "        for key in (\"x_key\", \"y_key\"):\n            value = str(data.get(key) or \"\").strip()\n            if value and value in allowed_columns:\n                payload_out[key] = value\n\n        result.append({\n",
+      "new": "        for key in (\"x_key\", \"y_key\"):\n            value = str(data.get(key) or \"\").strip()\n            if value and value in allowed_columns:\n                payload_out[key] = value\n\n        if view_type in {\"bar_chart\", \"line_chart\"}:\n            safe_series: List[Dict[str, str]] = []\n            raw_series = data.get(\"series\") or []\n            if isinstance(raw_series, list):\n                for item in raw_series[:MAX_CHART_SERIES]:\n                    if not isinstance(item, Mapping):\n                        continue\n                    series_key = str(item.get(\"key\") or \"\").strip()\n                    if not series_key or series_key not in allowed_columns:\n                        continue\n                    safe_series.append({\n                        \"key\": series_key,\n                        \"label\": str(item.get(\"label\") or series_key)[:80],\n                    })\n            if safe_series:\n                payload_out[\"series\"] = safe_series\n                payload_out.setdefault(\"y_key\", safe_series[0][\"key\"])\n\n        result.append({\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/ia_assistant/service.py",
+      "old": "OPEN_VIEW puede usar dataset tickets/lines de la vista o un dataset_id autorizado\nretornado por el backend.\nEXPORT_FILE solo acepta formatos xlsx, txt o pdf y debe usar un dataset autorizado\n",
+      "new": "OPEN_VIEW puede usar dataset tickets/lines de la vista o un dataset_id autorizado\nretornado por el backend. Para bar_chart o line_chart puede usar hasta 10 series\ncon forma [{\"key\":\"columna_autorizada\",\"label\":\"Etiqueta\"}]. y_key se conserva\ncomo compatibilidad para una sola serie.\nEXPORT_FILE solo acepta formatos xlsx, txt o pdf y debe usar un dataset autorizado\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_ia_canonical_visualization_r9_contract.py",
+      "content": "from pathlib import Path\n\nfrom modules.ia_assistant import contextual\n\nROOT = Path(__file__).resolve().parents[1]\nFRONT = ROOT.parent / \"frontend/src/components/ia/IAContextual.jsx\"\nRENDERER = ROOT.parent / \"frontend/src/components/ia/visualization/IAVisualizationRenderer.jsx\"\nPALETTE = ROOT.parent / \"frontend/src/components/ia/visualization/chartPalette.js\"\n\n\ndef test_palette_has_ten_colors_and_recycles():\n    source = PALETTE.read_text(encoding=\"utf-8\")\n    colors = [token for token in source.split(\"'\") if token.startswith(\"#\") and len(token) == 7]\n    assert len(colors) == 10\n    assert \"% IA_CHART_PALETTE.length\" in source\n\n\ndef test_renderer_is_transversal_and_has_category_and_series_colors():\n    front = FRONT.read_text(encoding=\"utf-8\")\n    renderer = RENDERER.read_text(encoding=\"utf-8\")\n    assert \"IAVisualizationRenderer\" in front\n    assert \"from 'recharts'\" not in front\n    assert \"<Cell\" in renderer\n    assert \"<Legend\" in renderer\n    assert \"series.map\" in renderer\n    assert \"iaChartColor(index)\" in renderer\n    assert \"comercial\" not in renderer.lower()\n\n\ndef test_open_view_accepts_authorized_series_and_preserves_y_key():\n    assert contextual.MAX_CHART_SERIES == 10\n    actions = contextual.validate_actions(\n        {\"actions\": [{\"type\": \"OPEN_VIEW\", \"payload\": {\n            \"dataset_id\": \"d1\", \"view_type\": \"bar_chart\", \"x_key\": \"periodo\",\n            \"series\": [{\"key\": \"ventas\", \"label\": \"Ventas\"}, {\"key\": \"pax\", \"label\": \"PAX\"}],\n        }}]},\n        {},\n        datasets=[{\"dataset_id\": \"d1\", \"columns\": [\"periodo\", \"ventas\", \"pax\"], \"rows\": [], \"row_count\": 0}],\n    )\n    assert actions[0][\"payload\"][\"series\"] == [\n        {\"key\": \"ventas\", \"label\": \"Ventas\"},\n        {\"key\": \"pax\", \"label\": \"PAX\"},\n    ]\n    assert actions[0][\"payload\"][\"y_key\"] == \"ventas\"\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/ia_assistant/contextual.py",
+        "backend/modules/ia_assistant/service.py",
+        "backend/tests/test_ia_canonical_visualization_r9_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_ia_canonical_visualization_r9_contract.py",
+        "backend/tests/test_ia_markdown_parser_r7_contract.py",
+        "backend/tests/test_ia_visual_comparison_r6_contract.py",
+        "backend/tests/test_ia_visual_render_contract.py",
+        "backend/tests/test_ia_global_authorized_contract.py"
+      ]
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
