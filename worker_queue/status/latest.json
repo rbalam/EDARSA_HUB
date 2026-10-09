@@ -1,53 +1,59 @@
 {
   "ahead_count": 0,
-  "behind_count": 0,
+  "behind_count": 1,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "SYNC",
-  "development_sha": "bb7e7e51a87829f08607a5380c5dddc33f108162",
-  "generated_at_utc": "2026-10-09T19:48:21Z",
+  "convergence_status": "REMOTE_AHEAD_ONLY",
+  "development_sha": "eefad0b72e6384be79fb174e9d933a647eeb0d2d",
+  "generated_at_utc": "2026-10-09T19:49:36Z",
   "history": {
-    "done_total_local": 1359,
+    "done_total_local": 1360,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1197,
-    "results_total_local": 2344
+    "results_total_local": 2345
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 979,
+      "age_seconds": 1054,
       "job_id": "EDARSAHUB-IA-GLOBAL-RBAC-DATA-SCOPE-R14-CARLOS-20261009T1325",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 584,
+      "age_seconds": 659,
       "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-001-20261009",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 489,
+      "age_seconds": 563,
       "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-001-DIAG-20261009",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 286,
+      "age_seconds": 361,
       "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-001-R2-20261009",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 87,
+      "age_seconds": 162,
       "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-002-20261009",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 34,
+      "age_seconds": 108,
       "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-003-20261009",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 55,
+      "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-003-DIAG-20261009",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -60,15 +66,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 7,
   "queue_running": 0,
-  "remote_development_sha": "bb7e7e51a87829f08607a5380c5dddc33f108162",
+  "remote_development_sha": "eefad0b72e6384be79fb174e9d933a647eeb0d2d",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-09T19:48:19Z",
-    "last_receive_utc": "2026-10-09T19:48:14Z",
-    "last_terminal_utc": "2026-10-09T19:47:47Z",
+    "last_cycle_utc": "2026-10-09T19:49:28Z",
+    "last_receive_utc": "2026-10-09T19:49:32Z",
+    "last_terminal_utc": "2026-10-09T19:48:41Z",
     "pid": "330",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "6c1233dbc0beba1383034f88dcb52bf9525e0084",
