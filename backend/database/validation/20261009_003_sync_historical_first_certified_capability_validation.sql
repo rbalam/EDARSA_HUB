@@ -24,4 +24,5 @@ JOIN dbo.Sistema_Capacidades cap
 JOIN dbo.Sistema_Tipos st
   ON st.SistemaTipoID=cap.SistemaTipoID
 WHERE link.CodigoSync='comercial_ventas_cerradas'
+AND st.CodigoSistema IN ('MPRO','SOFTRESTAURANT_PRO')
 ORDER BY st.CodigoSistema;
