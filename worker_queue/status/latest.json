@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "c7acf462b82404ac52f7abcf95c788b5f5e26333",
-  "generated_at_utc": "2026-10-09T05:23:41Z",
+  "generated_at_utc": "2026-10-09T05:24:56Z",
   "history": {
     "done_total_local": 1356,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 529,
+      "age_seconds": 604,
       "job_id": "EDARSAHUB-IA-CANONICAL-VISUALIZATION-R10-CARLOS-20261009T0520",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 199,
+      "age_seconds": 274,
       "job_id": "EDARSAHUB-IA-CANONICAL-VISUALIZATION-R11-CARLOS-20261009T0535",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 712,
+      "age_seconds": 787,
       "job_id": "EDARSAHUB-IA-CANONICAL-VISUALIZATION-R9-CARLOS-20261009T0018",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3475,
+      "age_seconds": 3550,
       "job_id": "EDARSAHUB-IA-MARKDOWN-PARSER-R7-CARLOS-20261008T2238",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3004,
+      "age_seconds": 3079,
       "job_id": "EDARSAHUB-IA-MARKDOWN-PARSER-R8-CARLOS-20261008T2254",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-09T05:23:37Z",
-    "last_receive_utc": "2026-10-09T05:23:32Z",
+    "last_cycle_utc": "2026-10-09T05:24:47Z",
+    "last_receive_utc": "2026-10-09T05:24:54Z",
     "last_terminal_utc": "2026-10-09T05:20:22Z",
     "pid": "398",
     "runtime_fingerprint": {
