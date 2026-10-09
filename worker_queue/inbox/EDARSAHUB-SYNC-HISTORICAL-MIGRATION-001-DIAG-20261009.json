@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-001-DIAG-20261009",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "b4fad82d2c4cb348f89c9c9dabba5b9505b947a0",
+  "production_allowed": false,
+  "objective": "Diagnosticar en solo lectura por que fallo la migracion 001 de Sincronizacion Historica. Revisar columnas, constraints, indices, compatibilidad y definicion canonica de Sistema_Sync_Catalogo. No escribir datos, no tocar Produccion y no modificar sync_comercial_abiertas_v2.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "identity_and_compatibility",
+          "sql": "SELECT DB_NAME() AS database_name, CAST(SERVERPROPERTY('ProductVersion') AS nvarchar(128)) AS product_version, d.compatibility_level FROM sys.databases d WHERE d.name=DB_NAME()"
+        },
+        {
+          "name": "historical_columns_state",
+          "sql": "SELECT c.name AS column_name, TYPE_NAME(c.user_type_id) AS type_name, c.max_length, c.is_nullable, dc.name AS default_constraint, dc.definition AS default_definition FROM sys.columns c LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE c.object_id=OBJECT_ID('dbo.Sistema_Sync_Catalogo') AND c.name IN ('CategoriaCodigo','EntidadCodigo','CampoFecha','ClaveNegocio','SoportaIncremental','SoportaFullSync','SoportaResume','SoportaSafeStop','VersionContrato','MetadataJSON') ORDER BY c.column_id"
+        },
+        {
+          "name": "constraint_name_conflicts",
+          "sql": "SELECT o.name AS constraint_name, OBJECT_SCHEMA_NAME(o.parent_object_id) AS parent_schema, OBJECT_NAME(o.parent_object_id) AS parent_table, o.type_desc FROM sys.objects o WHERE o.name IN ('DF_Sistema_Sync_Catalogo_SoportaIncremental','DF_Sistema_Sync_Catalogo_SoportaFullSync','DF_Sistema_Sync_Catalogo_SoportaResume','DF_Sistema_Sync_Catalogo_SoportaSafeStop','CK_Sistema_Sync_Catalogo_ClaveNegocio_JSON','CK_Sistema_Sync_Catalogo_MetadataJSON_JSON') ORDER BY o.name"
+        },
+        {
+          "name": "historical_index_state",
+          "sql": "SELECT i.name, i.type_desc, i.is_unique, i.is_disabled, COL_NAME(ic.object_id,ic.column_id) AS column_name, ic.key_ordinal, ic.is_included_column FROM sys.indexes i JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id WHERE i.object_id=OBJECT_ID('dbo.Sistema_Sync_Catalogo') AND i.name='IX_Sistema_Sync_Catalogo_HistoricalRegistry' ORDER BY ic.key_ordinal,ic.index_column_id"
+        },
+        {
+          "name": "catalog_columns_required_base",
+          "sql": "SELECT c.name AS column_name, TYPE_NAME(c.user_type_id) AS type_name, c.max_length, c.is_nullable FROM sys.columns c WHERE c.object_id=OBJECT_ID('dbo.Sistema_Sync_Catalogo') AND c.name IN ('Activo','PermiteResync','Orden','Codigo','Handler','HandlerImplementado','TablaDestino') ORDER BY c.name"
+        }
+      ]
+    }
+  ]
+}
