@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "83d87b85633b5a29e8b9ef22d438f5e8932d78cb",
-  "generated_at_utc": "2026-10-09T04:57:31Z",
+  "generated_at_utc": "2026-10-09T04:58:47Z",
   "history": {
     "done_total_local": 1356,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1905,
+      "age_seconds": 1981,
       "job_id": "EDARSAHUB-IA-MARKDOWN-PARSER-R7-CARLOS-20261008T2238",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1433,
+      "age_seconds": 1510,
       "job_id": "EDARSAHUB-IA-MARKDOWN-PARSER-R8-CARLOS-20261008T2254",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2391,
+      "age_seconds": 2468,
       "job_id": "EDARSAHUB-IA-VISUAL-COMPARISON-R6-CARLOS-20261008T2215",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3371,
+      "age_seconds": 3448,
       "job_id": "EDARSAHUB-IA-VISUAL-RENDER-R5-CARLOS-20261008T1938",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,8 +54,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-09T04:57:30Z",
-    "last_receive_utc": "2026-10-09T04:57:25Z",
+    "last_cycle_utc": "2026-10-09T04:58:44Z",
+    "last_receive_utc": "2026-10-09T04:58:39Z",
     "last_terminal_utc": "2026-10-09T04:33:37Z",
     "pid": "435",
     "runtime_fingerprint": {
