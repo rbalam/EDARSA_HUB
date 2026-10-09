@@ -12,6 +12,7 @@ INSERT INTO @required (ColumnName) VALUES
 ('RunKind'),
 ('CorrelationID'),
 ('SistemaTipoID'),
+('SistemaCapacidadID'),
 ('SistemaVersionID'),
 ('SucursalID'),
 ('SucursalOrigenID'),
