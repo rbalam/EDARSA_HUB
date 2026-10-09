@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "de5b154fbc2de4f1083744514981dbadf3e686d1",
-  "generated_at_utc": "2026-10-09T18:24:38Z",
+  "generated_at_utc": "2026-10-09T18:25:54Z",
   "history": {
     "done_total_local": 1356,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 657,
+      "age_seconds": 732,
       "job_id": "EDARSAHUB-IA-GLOBAL-RBAC-DATA-SCOPE-R12-CARLOS-20261009T1205",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,8 +36,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-09T18:24:33Z",
-    "last_receive_utc": "2026-10-09T18:24:38Z",
+    "last_cycle_utc": "2026-10-09T18:25:46Z",
+    "last_receive_utc": "2026-10-09T18:25:52Z",
     "last_terminal_utc": "2026-10-09T18:13:41Z",
     "pid": "477",
     "runtime_fingerprint": {
