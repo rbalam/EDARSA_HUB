@@ -1,5 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { BarChart3, Bot, Loader2, Send, Sparkles, X } from 'lucide-react';
+import { Bot, Loader2, Send, Sparkles, X } from 'lucide-react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import {
   crearSesion,
   enviarMensaje,
@@ -21,6 +32,7 @@ const numberValue = (value) => {
 const stripVisualCodeBlocks = (text) => String(text || '')
   .replace(/\`\`\`(?:mermaid|xychart-beta)[\\s\\S]*?\`\`\`/gi, '')
   .replace(/\`\`\`[\\s\\S]*?xychart-beta[\\s\\S]*?\`\`\`/gi, '')
+  .replace(/\\|\\s*\\|/g, '|\\n|')
   .replace(/\\n{3,}/g, '\\n\\n')
   .trim();
 
@@ -124,17 +136,143 @@ const datasetNumericValue = (value) => {
   return Number.isFinite(numeric) ? numeric : null;
 };
 
+const metricKey = (value) => String(value || '')
+  .normalize('NFD')
+  .replace(/[\\u0300-\\u036f]/g, '')
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, '_')
+  .replace(/^_+|_+$/g, '');
+
+const extractMarkdownTables = (text) => {
+  const lines = stripVisualCodeBlocks(text).split('\\n');
+  const tables = [];
+
+  for (let index = 0; index < lines.length - 1;) {
+    if (!isTableLine(lines[index]) || !isTableSeparator(lines[index + 1])) {
+      index += 1;
+      continue;
+    }
+
+    const headers = parseTableRow(lines[index]);
+    const rows = [];
+    index += 2;
+
+    while (index < lines.length && isTableLine(lines[index])) {
+      const cells = parseTableRow(lines[index]);
+      if (cells.length !== headers.length) break;
+      rows.push(cells);
+      index += 1;
+    }
+
+    if (headers.length > 1 && rows.length) {
+      tables.push({ headers, rows });
+    }
+  }
+
+  return tables;
+};
+
+const buildPresentationDatasets = (text) => {
+  const datasets = [];
+
+  extractMarkdownTables(text).forEach((table, tableIndex) => {
+    const tableRows = table.rows.map((cells) => (
+      table.headers.reduce((row, header, headerIndex) => {
+        row[header] = cells[headerIndex] ?? '';
+        return row;
+      }, {})
+    ));
+
+    datasets.push({
+      dataset_id: `answer_table_${tableIndex + 1}`,
+      title: 'Tabla solicitada',
+      columns: table.headers,
+      rows: tableRows,
+      row_count: tableRows.length,
+      presentation_kind: 'answer_table',
+      source_policy: 'EDARSAHUB_ONLY',
+    });
+
+    const firstHeader = String(table.headers[0] || '').toLowerCase();
+    if (!/(indicador|m[eé]trica|concepto)/i.test(firstHeader)) return;
+
+    const periodColumns = table.headers.slice(1).filter((header) => (
+      !/(variaci[oó]n|cambio|delta|diferencia|%)/i.test(String(header || ''))
+    ));
+
+    if (periodColumns.length < 2) return;
+
+    const metricRows = table.rows
+      .map((cells) => ({
+        key: metricKey(cells[0]),
+        label: cells[0],
+        cells,
+      }))
+      .filter((row) => row.key);
+
+    const comparisonRows = periodColumns.map((period) => {
+      const periodIndex = table.headers.indexOf(period);
+      const row = { periodo: period };
+
+      metricRows.forEach((metric) => {
+        const numeric = datasetNumericValue(metric.cells[periodIndex]);
+        if (numeric !== null) row[metric.key] = numeric;
+      });
+
+      return row;
+    });
+
+    const comparisonColumns = [
+      'periodo',
+      ...metricRows
+        .map((row) => row.key)
+        .filter((key, index, all) => all.indexOf(key) === index),
+    ];
+
+    datasets.push({
+      dataset_id: `answer_comparison_${tableIndex + 1}`,
+      title: 'Comparativo solicitado',
+      columns: comparisonColumns,
+      rows: comparisonRows,
+      row_count: comparisonRows.length,
+      presentation_kind: 'comparison',
+      source_policy: 'EDARSAHUB_ONLY',
+    });
+  });
+
+  return datasets;
+};
+
+const formatDisplayValue = (value) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value.toLocaleString('es-MX', { maximumFractionDigits: 2 });
+  }
+  return String(value ?? '—');
+};
+
 const inferVisualAction = (userText, datasets = []) => {
   const normalized = String(userText || '').toLowerCase();
   const wantsChart = /gr[aá]fic|chart|barras?|l[ií]nea/.test(normalized);
   const wantsTable = /tabla|tabular|cuadro/.test(normalized);
   if (!wantsChart && !wantsTable) return null;
 
-  const candidates = (datasets || [])
-    .filter((item) => item?.dataset_id && Array.isArray(item?.rows) && item.rows.length)
-    .sort((a, b) => (b?.row_count || b?.rows?.length || 0) - (a?.row_count || a?.rows?.length || 0));
+  const all = (datasets || []).filter(
+    (item) => item?.dataset_id && Array.isArray(item?.rows) && item.rows.length
+  );
 
-  const dataset = candidates[0];
+  let dataset;
+  if (wantsChart) {
+    dataset = all.find((item) => item?.presentation_kind === 'comparison');
+  } else {
+    dataset = all.find((item) => item?.presentation_kind === 'answer_table');
+  }
+
+  if (!dataset) {
+    dataset = [...all].sort(
+      (a, b) => (b?.row_count || b?.rows?.length || 0) - (a?.row_count || a?.rows?.length || 0)
+    )[0];
+  }
+
   if (!dataset) return null;
 
   const rows = dataset.rows || [];
@@ -145,7 +283,8 @@ const inferVisualAction = (userText, datasets = []) => {
   const numericColumns = columns.filter((key) => (
     rows.some((row) => datasetNumericValue(row?.[key]) !== null)
   ));
-  const yKey = numericColumns.find((key) => /venta|total|importe|monto|valor|ingreso/i.test(key))
+  const yKey = numericColumns.find((key) => /^ventas?$|ventas_total|total_venta/i.test(key))
+    || numericColumns.find((key) => /venta|total|importe|monto|valor|ingreso/i.test(key))
     || numericColumns[0];
   const xKey = columns.find((key) => (
     key !== yKey && /periodo|fecha|mes|a[nñ]o|sucursal|nombre|unidad/i.test(key)
@@ -161,7 +300,7 @@ const inferVisualAction = (userText, datasets = []) => {
     payload: {
       dataset_id: dataset.dataset_id,
       view_type: viewType,
-      title: wantsChart ? 'Gráfico solicitado' : 'Tabla solicitada',
+      title: wantsChart ? 'Comparativo solicitado' : 'Tabla solicitada',
       ...(xKey ? { x_key: xKey } : {}),
       ...(yKey ? { y_key: yKey } : {}),
     },
@@ -177,6 +316,10 @@ export function IAAnalysisModal({ config, rows, onClose }) {
     (key) => safeRows.some((row) => Number.isFinite(Number(row?.[key])))
   );
   const maxValue = Math.max(1, ...safeRows.map((row) => numberValue(row?.[yKey])));
+  const chartRows = safeRows.slice(0, 40).map((row) => ({
+    ...row,
+    ...(yKey ? { [yKey]: numberValue(row?.[yKey]) } : {}),
+  }));
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-6">
@@ -202,7 +345,7 @@ export function IAAnalysisModal({ config, rows, onClose }) {
               <tbody>
                 {safeRows.map((row, index) => (
                   <tr key={index} className="border-t border-slate-800 text-slate-200">
-                    {keys.map((key) => <td key={key} className="px-3 py-2">{String(row?.[key] ?? '—')}</td>)}
+                    {keys.map((key) => <td key={key} className="px-3 py-2">{formatDisplayValue(row?.[key])}</td>)}
                   </tr>
                 ))}
               </tbody>
@@ -237,40 +380,51 @@ export function IAAnalysisModal({ config, rows, onClose }) {
           )}
 
           {config.view_type === 'bar_chart' && (
-            <div className="space-y-2">
-              {safeRows.slice(0, 25).map((row, index) => {
-                const value = numberValue(row?.[yKey]);
-                return (
-                  <div key={index} className="grid grid-cols-[180px_1fr_100px] items-center gap-3 text-sm">
-                    <span className="truncate text-slate-300">{String(row?.[xKey] ?? index + 1)}</span>
-                    <div className="h-3 rounded-full bg-slate-800">
-                      <div className="h-3 rounded-full bg-indigo-500" style={{ width: `${Math.max(1, (value / maxValue) * 100)}%` }} />
-                    </div>
-                    <span className="text-right text-slate-300">{value.toLocaleString('es-MX')}</span>
-                  </div>
-                );
-              })}
+            <div className="h-80 w-full text-indigo-400">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartRows} margin={{ top: 12, right: 18, left: 12, bottom: 12 }}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.16} />
+                  <XAxis dataKey={xKey} tick={{ fill: '#cbd5e1', fontSize: 12 }} />
+                  <YAxis
+                    tick={{ fill: '#94a3b8', fontSize: 12 }}
+                    tickFormatter={(value) => Number(value).toLocaleString('es-MX', { notation: 'compact' })}
+                  />
+                  <Tooltip
+                    formatter={(value) => Number(value).toLocaleString('es-MX', { maximumFractionDigits: 2 })}
+                    labelStyle={{ color: '#0f172a' }}
+                  />
+                  <Bar dataKey={yKey} name={yKey || 'valor'} fill="currentColor" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              <p className="mt-2 text-xs text-slate-500">{xKey || 'periodo'} · {yKey || 'valor'}</p>
             </div>
           )}
 
           {config.view_type === 'line_chart' && (
-            <div>
-              <svg viewBox="0 0 800 260" className="h-72 w-full rounded-xl bg-slate-950/40 p-4">
-                <polyline
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  className="text-indigo-400"
-                  points={safeRows.slice(0, 40).map((row, index, arr) => {
-                    const x = arr.length <= 1 ? 20 : 20 + (760 * index / (arr.length - 1));
-                    const y = 235 - (210 * numberValue(row?.[yKey]) / maxValue);
-                    return `${x},${y}`;
-                  }).join(' ')}
-                />
-              </svg>
-              <p className="mt-2 text-xs text-slate-500">
-                {xKey || 'índice'} · {yKey || 'valor'}
-              </p>
+            <div className="h-80 w-full text-indigo-400">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartRows} margin={{ top: 12, right: 18, left: 12, bottom: 12 }}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.16} />
+                  <XAxis dataKey={xKey} tick={{ fill: '#cbd5e1', fontSize: 12 }} />
+                  <YAxis
+                    tick={{ fill: '#94a3b8', fontSize: 12 }}
+                    tickFormatter={(value) => Number(value).toLocaleString('es-MX', { notation: 'compact' })}
+                  />
+                  <Tooltip
+                    formatter={(value) => Number(value).toLocaleString('es-MX', { maximumFractionDigits: 2 })}
+                    labelStyle={{ color: '#0f172a' }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey={yKey}
+                    name={yKey || 'valor'}
+                    stroke="currentColor"
+                    strokeWidth={3}
+                    dot={{ r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+              <p className="mt-2 text-xs text-slate-500">{xKey || 'periodo'} · {yKey || 'valor'}</p>
             </div>
           )}
         </div>
@@ -349,13 +503,18 @@ export function IAContextualPanel({
 
       const response = await enviarMensaje(sid, text, contextoVista);
       const responseDatasets = Array.isArray(response?.datasets) ? response.datasets : [];
-      const datasets = responseDatasets.length ? responseDatasets : previousDatasets;
-      const actions = Array.isArray(response?.acciones_ui) ? [...response.acciones_ui] : [];
+      const presentationDatasets = buildPresentationDatasets(response?.respuesta || '');
+      const currentDatasets = [
+        ...presentationDatasets,
+        ...responseDatasets,
+      ];
+      const datasets = currentDatasets.length ? currentDatasets : previousDatasets;
+      let actions = Array.isArray(response?.acciones_ui) ? [...response.acciones_ui] : [];
 
       const localVisualAction = inferVisualAction(text, datasets);
-      const hasOpenView = actions.some((action) => action?.type === 'OPEN_VIEW');
-      if (localVisualAction && !hasOpenView) {
-        actions.push(localVisualAction);
+      if (localVisualAction) {
+        actions = actions.filter((action) => action?.type !== 'OPEN_VIEW');
+        actions.unshift(localVisualAction);
       }
 
       setMessages((prev) => [

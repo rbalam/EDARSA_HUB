@@ -273,10 +273,11 @@ _XYCHART_FENCED_BLOCK_RE = re.compile(
 
 
 def _sanitize_assistant_visual_markup(text: str) -> str:
-    """Elimina pseudo-gráficos que la UI no debe mostrar como código."""
+    """Elimina pseudo-gráficos y normaliza tablas Markdown compactadas."""
     cleaned = str(text or "")
     cleaned = _VISUAL_CODE_BLOCK_RE.sub("", cleaned)
     cleaned = _XYCHART_FENCED_BLOCK_RE.sub("", cleaned)
+    cleaned = re.sub(r"\\|\\s*\\|", "|\\n|", cleaned)
     cleaned = re.sub(r"\\n{3,}", "\\n\\n", cleaned).strip()
     return cleaned
 
