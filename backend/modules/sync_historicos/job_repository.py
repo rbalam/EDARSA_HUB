@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from typing import Any, Dict, Iterable, List, Mapping, Sequence
+from typing import Any, Dict, List, Sequence
 
 from core.sql_first.db import get_sql_connection
 
@@ -91,7 +91,7 @@ def persist_plan(
     conn = get_sql_connection()
     cur = conn.cursor(as_dict=True)
     try:
-        conn.begin()
+        cur.execute("BEGIN TRANSACTION")
 
         cur.execute(
             """
