@@ -15,6 +15,7 @@ def _registry(system_code="MPRO"):
             "eligible_for_historical": True,
             "system_code": system_code,
             "system_id": 2,
+            "system_capability_id": 201,
             "capability_key": "ventas_encabezado",
             "category_key": "VENTAS",
             "category_name": "Ventas",
@@ -37,6 +38,7 @@ def _registry(system_code="MPRO"):
             "eligible_for_historical": True,
             "system_code": system_code,
             "system_id": 2,
+            "system_capability_id": 202,
             "capability_key": "ventas_detalle",
             "category_key": "VENTAS",
             "category_name": "Ventas",
@@ -149,3 +151,22 @@ def test_protected_open_sales_sync_is_not_referenced():
     ]
     text = "\n".join(path.read_text(encoding="utf-8") for path in sources).lower()
     assert "sync_comercial_abiertas_v2" not in text
+
+
+def test_ambiguous_system_capability_binding_is_rejected():
+    registry = _registry()
+    duplicate = dict(registry[0])
+    duplicate["system_capability_id"] = 999
+    with pytest.raises(
+        HistoricalPlanError,
+        match="AMBIGUOUS_SYSTEM_CAPABILITY_BINDING",
+    ):
+        build_historical_plan(
+            start=date(2026, 1, 1),
+            end=date(2026, 1, 1),
+            selected_systems=["MPRO"],
+            selected_units=["UNIDAD-A"],
+            selected_capabilities=["ventas_encabezado"],
+            registry=registry + [duplicate],
+            unit_contexts=[_unit()],
+        )
