@@ -63,6 +63,7 @@ ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
 SERVER_REGISTRY_METADATA_UPDATE_MODE = "SERVER_REGISTRY_METADATA_UPDATE"
 SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
 FRONTEND_BUILD_CERTIFICATION_MODE = "FRONTEND_BUILD_CERTIFICATION"
+SYNC_HISTORICAL_ATOMIC_MODE = "SYNC_HISTORICAL_ATOMIC"
 UNIT_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 MAX_ACTIONS = int(os.environ.get("EDARSAHUB_JOB_MAX_ACTIONS", "100"))
@@ -464,6 +465,19 @@ def validate(job: Any) -> list[str]:
     elif mode == FRONTEND_BUILD_CERTIFICATION_MODE:
         if actions not in (None, []):
             errors.append("FRONTEND_BUILD_CERTIFICATION_ACTIONS_FORBIDDEN")
+    elif mode == SYNC_HISTORICAL_ATOMIC_MODE:
+        if actions not in (None, []):
+            errors.append("SYNC_HISTORICAL_ATOMIC_ACTIONS_FORBIDDEN")
+        for forbidden_field in ("sql", "command", "shell", "script", "path"):
+            if job.get(forbidden_field) is not None:
+                errors.append(
+                    f"SYNC_HISTORICAL_ATOMIC_FORBIDDEN_FIELD:{forbidden_field}"
+                )
+        sync_control_id = job.get("sync_control_id")
+        if not isinstance(sync_control_id, int) or isinstance(sync_control_id, bool) or sync_control_id < 1:
+            errors.append("SYNC_HISTORICAL_ATOMIC_CONTROL_ID_INVALID")
+        if job.get("confirm_sync_historical_atomic") is not True:
+            errors.append("SYNC_HISTORICAL_ATOMIC_CONFIRMATION_REQUIRED")
     elif mode == MPRO_FULL_HISTORY_MODE:
         if actions not in (None, []):
             errors.append("MPRO_RESYNC_ACTIONS_FORBIDDEN")
@@ -562,6 +576,11 @@ def validate(job: Any) -> list[str]:
             errors.append("FRONTEND_BUILD_CERTIFICATION_FRONTEND_BUILD_REQUIRED")
         elif any(not isinstance(c, dict) or c.get("type") not in {"frontend_build", "git_diff_check", "repository_contract_audit"} for c in checks):
             errors.append("FRONTEND_BUILD_CERTIFICATION_ONLY_ALLOWED_CHECKS")
+    elif mode == SYNC_HISTORICAL_ATOMIC_MODE:
+        if not isinstance(checks, list) or not checks:
+            errors.append("SYNC_HISTORICAL_ATOMIC_AUDIT_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+            errors.append("SYNC_HISTORICAL_ATOMIC_ONLY_SQL_AUDIT_ALLOWED")
     elif mode == MPRO_FULL_HISTORY_MODE:
         if not isinstance(checks, list) or not checks:
             errors.append("MPRO_RESYNC_AUDIT_REQUIRED")
