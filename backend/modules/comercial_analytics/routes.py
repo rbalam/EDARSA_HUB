@@ -12,6 +12,7 @@ from .schemas import (
 from .repository_operational import build_current_operation
 from .repository_tickets import (
     get_ticket_detail,
+    list_discounts,
     list_tickets,
 )
 from .service import build_drilldown
@@ -136,6 +137,57 @@ async def commercial_tickets(
         raise HTTPException(
             status_code=500,
             detail="No fue posible consultar los tickets",
+        ) from exc
+
+
+@router.get(
+    "/descuentos",
+    summary="Descuentos aplicados en ventas",
+    description=(
+        "Detalle histórico read-only de descuentos aplicados por ticket y producto "
+        "desde EDARSAHUB. Respeta el alcance RBAC de unidades/sucursales del usuario."
+    ),
+)
+async def commercial_discounts(
+    fecha_inicio: str = Query(..., description="Fecha inicial YYYY-MM-DD"),
+    fecha_fin: str = Query(..., description="Fecha final YYYY-MM-DD"),
+    unidad_negocio_id: str | None = Query(
+        None,
+        description="Unidad opcional; si se omite usa todas las unidades autorizadas",
+    ),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(200, ge=1, le=500),
+    current_user: dict = Depends(get_current_user_dual_dependency()),
+):
+    try:
+        allowed_units = await get_unidades_permitidas_v2(current_user)
+        allowed_codes = [
+            str(value)
+            for value in (allowed_units or [])
+            if value is not None
+        ]
+
+        result = list_discounts(
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            allowed_unit_codes=allowed_codes,
+            unidad_negocio_id=unidad_negocio_id,
+            page=page,
+            page_size=page_size,
+        )
+
+        return {"success": True, "data": result}
+
+    except HTTPException:
+        raise
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="No fue posible consultar descuentos aplicados",
         ) from exc
 
 

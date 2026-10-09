@@ -231,7 +231,11 @@ def test_default_executor_uses_parameterized_edarsahub_query(monkeypatch):
 
     assert result["total"] == 0
     assert len(calls) == 2
-    assert calls[0][-1] == (
+    # Para rangos históricos de una unidad, el contrato canónico primero
+    # resuelve si existe una jornada activa en snapshot y después ejecuta el
+    # conteo histórico parametrizado. Ambas llamadas son EDARSAHUB read-only.
+    assert calls[0][-1] == ("CIENFUEGOS",)
+    assert calls[1][-1] == (
         "2026-07-01",
         "2026-07-31",
         "CIENFUEGOS",

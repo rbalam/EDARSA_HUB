@@ -753,6 +753,161 @@ def list_tickets(
     }
 
 
+def list_discounts(
+    *,
+    fecha_inicio: Any,
+    fecha_fin: Any,
+    allowed_unit_codes: Iterable[Any],
+    unidad_negocio_id: str | None = None,
+    page: int = 1,
+    page_size: int = 200,
+    query_executor: QueryExecutor | None = None,
+) -> dict[str, Any]:
+    """Detalle canónico de descuentos aplicado exclusivamente sobre EDARSAHUB."""
+    start = _date_string(fecha_inicio, "fecha_inicio")
+    end = _date_string(fecha_fin, "fecha_fin")
+    if start > end:
+        raise ValueError("fecha_inicio no puede ser posterior a fecha_fin")
+
+    page = int(page)
+    page_size = int(page_size)
+    if page < 1:
+        raise ValueError("page debe ser mayor o igual a 1")
+    if page_size < 1 or page_size > 500:
+        raise ValueError("page_size debe estar entre 1 y 500")
+
+    allowed = _normalize_allowed_units(allowed_unit_codes)
+    if not allowed:
+        raise PermissionError("El usuario no tiene unidades permitidas")
+
+    requested_unit = (
+        _required(unidad_negocio_id, "unidad_negocio_id")
+        if unidad_negocio_id is not None
+        else None
+    )
+    if requested_unit:
+        _ensure_unit_allowed(requested_unit, allowed)
+        effective_units = [requested_unit]
+    else:
+        effective_units = allowed
+
+    placeholders = ", ".join(["%s"] * len(effective_units))
+    where_sql = f"""
+        ISNULL(d.activo, 1) = 1
+        AND ISNULL(d.es_kpi_valido, 1) = 1
+        AND ISNULL(d.cancelado_origen, 0) = 0
+        AND d.fecha_operacion BETWEEN %s AND %s
+        AND d.unidad_negocio_id IN ({placeholders})
+        AND (
+            ABS(ISNULL(d.descuento, 0)) > 0.0001
+            OR ABS(ISNULL(d.descuento_pct, 0)) > 0.0001
+            OR NULLIF(LTRIM(RTRIM(ISNULL(d.tipo_descuento_id, ''))), '') IS NOT NULL
+            OR NULLIF(LTRIM(RTRIM(ISNULL(d.tipo_descuento_descripcion, ''))), '') IS NOT NULL
+            OR NULLIF(LTRIM(RTRIM(ISNULL(d.partida_comentario_descuento, ''))), '') IS NOT NULL
+            OR NULLIF(LTRIM(RTRIM(ISNULL(d.ticket_comentario_descuento, ''))), '') IS NOT NULL
+        )
+    """
+    base_params: tuple[Any, ...] = (start, end, *effective_units)
+
+    count_rows = _execute(
+        f"SELECT COUNT(*) AS total FROM {DETAIL_TABLE} AS d WHERE {where_sql}",
+        base_params,
+        query_executor=query_executor,
+    )
+    total = int(count_rows[0].get("total") or 0) if count_rows else 0
+
+    summary_rows = _execute(
+        f"""
+        SELECT
+            CAST(SUM(ISNULL(d.descuento, 0)) AS decimal(18,2)) AS descuento_total,
+            COUNT(DISTINCT CONCAT(
+                d.unidad_negocio_id, '|',
+                CONVERT(varchar(10), d.fecha_operacion, 23), '|',
+                d.numero_ticket
+            )) AS tickets_con_descuento
+        FROM {DETAIL_TABLE} AS d
+        WHERE {where_sql}
+        """,
+        base_params,
+        query_executor=query_executor,
+    )
+    summary = summary_rows[0] if summary_rows else {}
+
+    offset = (page - 1) * page_size
+    rows = _execute(
+        f"""
+        SELECT
+            d.unidad_negocio_id,
+            d.unidad_negocio_nombre AS unidad,
+            d.sucursal_nombre AS sucursal,
+            d.fecha_operacion,
+            d.fecha_hora,
+            d.numero_ticket,
+            d.producto_codigo_fuente AS producto_codigo,
+            d.producto_nombre AS producto,
+            d.familia_nombre AS familia,
+            d.cantidad,
+            d.precio_unitario,
+            d.importe_bruto,
+            d.importe_neto,
+            d.descuento,
+            d.descuento_pct,
+            d.tipo_descuento_id,
+            d.tipo_descuento_descripcion,
+            d.tipo_descuento_valor,
+            d.partida_comentario_descuento,
+            d.ticket_comentario_descuento
+        FROM {DETAIL_TABLE} AS d
+        WHERE {where_sql}
+        ORDER BY
+            d.fecha_operacion DESC,
+            d.fecha_hora DESC,
+            d.unidad_negocio_id,
+            d.numero_ticket,
+            d.producto_nombre
+        OFFSET %s ROWS
+        FETCH NEXT %s ROWS ONLY
+        """,
+        (*base_params, offset, page_size),
+        query_executor=query_executor,
+    )
+
+    items = []
+    for row in rows:
+        items.append({
+            **dict(row),
+            "fecha_operacion": _date_string(row.get("fecha_operacion"), "fecha_operacion"),
+            "descuento": round(float(row.get("descuento") or 0), 2),
+            "descuento_pct": round(float(row.get("descuento_pct") or 0), 2),
+            "importe_bruto": round(float(row.get("importe_bruto") or 0), 2),
+            "importe_neto": round(float(row.get("importe_neto") or 0), 2),
+            "precio_unitario": round(float(row.get("precio_unitario") or 0), 2),
+        })
+
+    returned = len(items)
+    return {
+        "items": items,
+        "resumen": {
+            "descuento_total": round(float(summary.get("descuento_total") or 0), 2),
+            "tickets_con_descuento": int(summary.get("tickets_con_descuento") or 0),
+            "lineas_con_descuento": total,
+        },
+        "page": page,
+        "page_size": page_size,
+        "total": total,
+        "returned": returned,
+        "has_more": offset + returned < total,
+        "traceability": {
+            "source": DETAIL_TABLE,
+            "contract": "DESCUENTOS_APLICADOS_CANONICO",
+            "temporal_field": "fecha_operacion",
+            "live": False,
+            "rbac": "UNIDADES_AUTORIZADAS",
+            "source_policy": "EDARSAHUB_ONLY",
+        },
+    }
+
+
 def get_ticket_detail(
     *,
     identity: TicketIdentity,

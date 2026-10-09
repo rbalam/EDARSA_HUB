@@ -15,7 +15,7 @@ from urllib.parse import quote
 import httpx
 
 MAX_SYSTEM_CALLS = 6
-MAX_CATALOG_FOR_PROMPT = 180
+MAX_CATALOG_FOR_PROMPT = 240
 MAX_LIST_ITEMS = 500
 MAX_DICT_ITEMS = 100
 MAX_STRING_CHARS = 4000
@@ -171,12 +171,27 @@ def build_readonly_catalog(app: Any) -> List[Dict[str, Any]]:
                     operation.get("summary")
                     or operation.get("description")
                     or ""
-                )[:300],
+                )[:500],
+                "tags": [
+                    str(value)[:80]
+                    for value in (operation.get("tags") or [])
+                    if str(value or "").strip()
+                ][:12],
                 "parameters": _parameter_rows(raw_path_item, operation),
             }
         )
 
     return sorted(catalog, key=lambda row: (row["path"], row["operation_id"]))
+
+
+def _search_words(value: Any) -> set[str]:
+    return {
+        token
+        for token in re.findall(
+            r"[a-z0-9_áéíóúñ]{3,}",
+            str(value or "").lower(),
+        )
+    }
 
 
 def catalog_for_prompt(
@@ -185,17 +200,13 @@ def catalog_for_prompt(
     limit: int = MAX_CATALOG_FOR_PROMPT,
     context_text: str = "",
 ) -> List[Dict[str, Any]]:
-    """Reduce catálogo usando solicitud + contexto visual, sin ampliar autorización."""
-    search_text = " ".join(
-        (
-            str(user_message or ""),
-            str(context_text or ""),
-        )
-    ).lower()
-    words = {
-        token
-        for token in re.findall(r"[a-z0-9_áéíóúñ]{3,}", search_text)
-    }
+    """Prioriza la intención del usuario; la vista solo aporta contexto.
+
+    El contexto visual jamás elimina dominios ni concede/revoca permisos. La
+    autorización real se revalida en el endpoint interno al ejecutar la llamada.
+    """
+    user_words = _search_words(user_message)
+    context_words = _search_words(context_text)
 
     ranked = []
     for row in catalog:
@@ -203,20 +214,36 @@ def catalog_for_prompt(
             "operation_id": str(row.get("operation_id") or ""),
             "path": str(row.get("path") or ""),
             "summary": str(row.get("summary") or ""),
+            "tags": list(row.get("tags") or []),
             "parameters": list(row.get("parameters") or []),
         }
+        parameter_text = " ".join(
+            " ".join(
+                (
+                    str(param.get("name") or ""),
+                    str(param.get("description") or ""),
+                )
+            )
+            for param in compact["parameters"]
+            if isinstance(param, Mapping)
+        )
         haystack = " ".join(
             (
                 compact["operation_id"],
                 compact["path"],
                 compact["summary"],
+                " ".join(map(str, compact["tags"])),
+                parameter_text,
             )
         ).lower()
-        score = sum(1 for word in words if word in haystack)
-        ranked.append((score, compact["path"], compact))
 
-    ranked.sort(key=lambda item: (-item[0], item[1]))
-    return [item[2] for item in ranked[: max(1, int(limit))]]
+        user_score = sum(1 for word in user_words if word in haystack)
+        context_score = sum(1 for word in context_words if word in haystack)
+        score = (user_score * 100) + context_score
+        ranked.append((score, user_score, compact["path"], compact))
+
+    ranked.sort(key=lambda item: (-item[0], -item[1], item[2]))
+    return [item[3] for item in ranked[: max(1, int(limit))]]
 
 
 def _is_sensitive_key(key: Any) -> bool:
