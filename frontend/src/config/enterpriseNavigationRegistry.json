@@ -1043,7 +1043,7 @@
     "sistema.sync_historical": {
       "groupId": "plataforma-integraciones",
       "sectionId": "sincronizacion-automatizacion",
-      "label": "Sincronizacion Historica",
+      "label": "Sincronización Histórica",
       "expectedPath": "/sync-historical",
       "order": 15,
       "status": "active",
