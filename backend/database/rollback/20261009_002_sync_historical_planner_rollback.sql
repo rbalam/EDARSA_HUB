@@ -27,6 +27,8 @@ BEGIN TRY
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP CONSTRAINT FK_Sync_Control_Ejecuciones_Parent;
     IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name='FK_Sync_Control_Ejecuciones_SistemaTipo')
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP CONSTRAINT FK_Sync_Control_Ejecuciones_SistemaTipo;
+    IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name='FK_Sync_Control_Ejecuciones_SistemaCapacidad')
+        ALTER TABLE dbo.Sync_Control_Ejecuciones DROP CONSTRAINT FK_Sync_Control_Ejecuciones_SistemaCapacidad;
     IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name='FK_Sync_Control_Ejecuciones_SistemaVersion')
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP CONSTRAINT FK_Sync_Control_Ejecuciones_SistemaVersion;
     IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name='FK_Sync_Control_Ejecuciones_Sucursal')
@@ -81,6 +83,8 @@ BEGIN TRY
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN SucursalID;
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','SistemaVersionID') IS NOT NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN SistemaVersionID;
+    IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','SistemaCapacidadID') IS NOT NULL
+        ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN SistemaCapacidadID;
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','SistemaTipoID') IS NOT NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones DROP COLUMN SistemaTipoID;
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','CorrelationID') IS NOT NULL
