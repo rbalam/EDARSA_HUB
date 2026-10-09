@@ -1,0 +1,42 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-001-20261009",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "b4fad82d2c4cb348f89c9c9dabba5b9505b947a0",
+  "production_allowed": false,
+  "objective": "Aplicar exclusivamente en EDARSAHUB Desarrollo la migracion canonica 001 del modulo Sincronizacion Historica de Tablas. Extender Sistema_Sync_Catalogo con metadata historica minima reutilizando Sistema_Sync_Capacidades. No tocar Produccion ni sync_comercial_abiertas_v2.",
+  "human_summary_language": "es",
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20261009_001_sync_historical_capability_registry.sql",
+  "migration_sha256": "a6d47e304605192b658fcb09c5d542f66128ba60cdc20fab37afd1090be180bb",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "preflight_checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "sync_historical_registry_preflight",
+          "sql": "SELECT DB_NAME() AS database_name, OBJECT_ID('dbo.Sistema_Sync_Catalogo','U') AS catalog_id, OBJECT_ID('dbo.Sistema_Sync_Capacidades','U') AS bridge_id, 1/CASE WHEN DB_NAME()='EDARSAHUB' AND OBJECT_ID('dbo.Sistema_Sync_Catalogo','U') IS NOT NULL AND OBJECT_ID('dbo.Sistema_Sync_Capacidades','U') IS NOT NULL THEN 1 ELSE 0 END AS preflight_assertion"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "sync_historical_registry_post_columns",
+          "sql": "SELECT COUNT(*) AS required_columns, 1/CASE WHEN COUNT(*)=10 THEN 1 ELSE 0 END AS required_columns_assertion FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Sistema_Sync_Catalogo') AND name IN ('CategoriaCodigo','EntidadCodigo','CampoFecha','ClaveNegocio','SoportaIncremental','SoportaFullSync','SoportaResume','SoportaSafeStop','VersionContrato','MetadataJSON')"
+        },
+        {
+          "name": "sync_historical_registry_post_contract",
+          "sql": "SELECT 1/CASE WHEN EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Sistema_Sync_Catalogo') AND name='IX_Sistema_Sync_Catalogo_HistoricalRegistry') AND EXISTS (SELECT 1 FROM sys.check_constraints WHERE name='CK_Sistema_Sync_Catalogo_ClaveNegocio_JSON') AND EXISTS (SELECT 1 FROM sys.check_constraints WHERE name='CK_Sistema_Sync_Catalogo_MetadataJSON_JSON') THEN 1 ELSE 0 END AS registry_contract_assertion"
+        }
+      ]
+    }
+  ]
+}
