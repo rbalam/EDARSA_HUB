@@ -51,6 +51,9 @@ BEGIN TRY
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','BlockOrdinal') IS NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones ADD BlockOrdinal int NULL;
 
+    IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','ExecutionOrder') IS NULL
+        ALTER TABLE dbo.Sync_Control_Ejecuciones ADD ExecutionOrder int NULL;
+
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','PlanJSON') IS NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones ADD PlanJSON nvarchar(max) NULL;
 
@@ -179,7 +182,7 @@ BEGIN TRY
     )
         CREATE INDEX IX_Sync_Control_Ejecuciones_Parent_Status
         ON dbo.Sync_Control_Ejecuciones
-            (ParentSyncControlID, Status, BlockOrdinal, SyncControlID)
+            (ParentSyncControlID, Status, ExecutionOrder, BlockOrdinal, SyncControlID)
         INCLUDE (
             SyncRunID, CodigoSync, UnidadNegocioID, ConexionID,
             FechaInicio, FechaFin, AttemptCount, NextRetryAtUTC
