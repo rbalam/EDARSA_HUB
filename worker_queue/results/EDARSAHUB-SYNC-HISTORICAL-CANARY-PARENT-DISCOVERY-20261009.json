@@ -1,0 +1,119 @@
+{
+  "base_sha": "3f4a4203e21122ea1bf516f9c1557ecc6c9455a1",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-09T19:59:20Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-CANARY-PARENT-DISCOVERY-20261009",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-09T19:59:23Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "SyncControlID",
+              "SyncRunID",
+              "Status",
+              "CorrelationID",
+              "IsDryRun",
+              "FechaInicio",
+              "FechaFin",
+              "PauseRequested",
+              "CancelRequested"
+            ],
+            "name": "historical_canary_parent",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                11949,
+                "HIST-CANARY-P-20261009",
+                "QUEUED",
+                "4e7a84de-3e62-4c95-9f53-202610090001",
+                true,
+                "2026-10-08",
+                "2026-10-08",
+                false,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "SyncControlID",
+              "SyncRunID",
+              "Status",
+              "IsDryRun",
+              "CodigoSync",
+              "SistemaTipoID",
+              "SistemaCapacidadID",
+              "UnidadNegocioID",
+              "ConexionID",
+              "SucursalID",
+              "FechaInicio",
+              "FechaFin",
+              "AttemptCount",
+              "MaxAttempts"
+            ],
+            "name": "historical_canary_children",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                11950,
+                "HIST-CAN-ORIGEN-20261008",
+                "QUEUED",
+                true,
+                "comercial_ventas_cerradas",
+                2,
+                21,
+                "23ca0b76-6580-4874-ba9b-672b122ca197",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                1,
+                "2026-10-08",
+                "2026-10-08",
+                0,
+                1
+              ],
+              [
+                11951,
+                "HIST-CAN-CIENFUEGOS-20261008",
+                "QUEUED",
+                true,
+                "comercial_ventas_cerradas",
+                1,
+                6,
+                "b06ee652-0370-4267-b0a8-da6fc39b590a",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                3,
+                "2026-10-08",
+                "2026-10-08",
+                0,
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-09T19:59:20Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
