@@ -1,0 +1,148 @@
+{
+  "base_sha": "b4fad82d2c4cb348f89c9c9dabba5b9505b947a0",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-09T19:40:12Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-MIGRATION-001-DIAG-20261009",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-09T19:40:33Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "product_version",
+              "compatibility_level"
+            ],
+            "name": "identity_and_compatibility",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "16.0.1000.6",
+                160
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_name",
+              "type_name",
+              "max_length",
+              "is_nullable",
+              "default_constraint",
+              "default_definition"
+            ],
+            "name": "historical_columns_state",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "constraint_name",
+              "parent_schema",
+              "parent_table",
+              "type_desc"
+            ],
+            "name": "constraint_name_conflicts",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "name",
+              "type_desc",
+              "is_unique",
+              "is_disabled",
+              "column_name",
+              "key_ordinal",
+              "is_included_column"
+            ],
+            "name": "historical_index_state",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_name",
+              "type_name",
+              "max_length",
+              "is_nullable"
+            ],
+            "name": "catalog_columns_required_base",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "Activo",
+                "bit",
+                1,
+                false
+              ],
+              [
+                "Codigo",
+                "nvarchar",
+                200,
+                false
+              ],
+              [
+                "Handler",
+                "nvarchar",
+                400,
+                true
+              ],
+              [
+                "HandlerImplementado",
+                "bit",
+                1,
+                false
+              ],
+              [
+                "Orden",
+                "int",
+                4,
+                false
+              ],
+              [
+                "PermiteResync",
+                "bit",
+                1,
+                false
+              ],
+              [
+                "TablaDestino",
+                "nvarchar",
+                400,
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-09T19:40:11Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
