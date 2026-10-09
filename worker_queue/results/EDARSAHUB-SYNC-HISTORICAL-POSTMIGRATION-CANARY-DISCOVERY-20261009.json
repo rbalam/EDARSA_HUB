@@ -1,0 +1,216 @@
+{
+  "base_sha": "3067b11a8cb1a883ea011273ca7f4c5afe8d2e6a",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-09T19:53:54Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-POSTMIGRATION-CANARY-DISCOVERY-20261009",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-09T19:54:18Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "Codigo",
+              "Nombre",
+              "Grupo",
+              "CategoriaCodigo",
+              "EntidadCodigo",
+              "CampoFecha",
+              "ClaveNegocio",
+              "SoportaResume",
+              "SoportaSafeStop",
+              "VersionContrato",
+              "SistemaTipoID",
+              "CodigoSistema",
+              "NombreSistema",
+              "SistemaCapacidadID",
+              "CodigoCapacidad",
+              "SyncCapacidadID",
+              "BindingActivo"
+            ],
+            "name": "historical_registry_ready",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "comercial_ventas_cerradas",
+                "Ventas Cerradas (KPIs)",
+                "Comercial",
+                "VENTAS",
+                "VENTAS_CERRADAS_KPI",
+                "fecha_operacion",
+                "[\"unidad_negocio_id\",\"sucursal_id\",\"fecha_operacion\"]",
+                true,
+                true,
+                "historical-v1",
+                2,
+                "MPRO",
+                "ManagementPro",
+                21,
+                "SYNC_VENTAS_HISTORICAS",
+                "2",
+                true
+              ],
+              [
+                "comercial_ventas_cerradas",
+                "Ventas Cerradas (KPIs)",
+                "Comercial",
+                "VENTAS",
+                "VENTAS_CERRADAS_KPI",
+                "fecha_operacion",
+                "[\"unidad_negocio_id\",\"sucursal_id\",\"fecha_operacion\"]",
+                true,
+                true,
+                "historical-v1",
+                1,
+                "SOFTRESTAURANT_PRO",
+                "SoftRestaurant Pro",
+                6,
+                "SYNC_VENTAS_HISTORICAS",
+                "1",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unit_id",
+              "unit_code",
+              "unit_name",
+              "connection_id",
+              "sucursal_origen_id",
+              "system_type",
+              "connection_name",
+              "system_version_id",
+              "SucursalID",
+              "CodigoSucursal",
+              "NombreSucursal",
+              "EmpresaID"
+            ],
+            "name": "historical_candidate_units",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "130MID",
+                "130° MERIDA",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                null,
+                "SOFTRESTAURANT_PRO",
+                "130° MERIDA",
+                "6306C6A4-C7AA-4EFF-86C2-28B6BBBEAE91",
+                5,
+                "130_MERIDA",
+                "130° MERIDA",
+                5
+              ],
+              [
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "130QRO",
+                "130° QUERETARO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0021",
+                "MPRO",
+                "ManagmentPro",
+                "2F97B098-D3FD-40F1-83DF-4513D1E35551",
+                2,
+                "130_QUERETARO",
+                "130° QUERETARO",
+                2
+              ],
+              [
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                null,
+                "SOFTRESTAURANT_PRO",
+                "CIENFUEGOS",
+                "6306C6A4-C7AA-4EFF-86C2-28B6BBBEAE91",
+                3,
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                3
+              ],
+              [
+                "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+                "ESTELAR",
+                "LA ESTELAR",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                null,
+                "SOFTRESTAURANT_PRO",
+                "LA ESTELAR",
+                "6306C6A4-C7AA-4EFF-86C2-28B6BBBEAE91",
+                4,
+                "LA_ESTELAR",
+                "LA ESTELAR",
+                4
+              ],
+              [
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "ORIGEN",
+                "ORIGEN",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0023",
+                "MPRO",
+                "ManagmentPro",
+                "2F97B098-D3FD-40F1-83DF-4513D1E35551",
+                1,
+                "ORIGEN",
+                "ORIGEN",
+                1
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "required_fields"
+            ],
+            "name": "historical_ledger_schema_ready",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                12
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "required_fields"
+            ],
+            "name": "historical_log_schema_ready",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                4
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-09T19:53:53Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
