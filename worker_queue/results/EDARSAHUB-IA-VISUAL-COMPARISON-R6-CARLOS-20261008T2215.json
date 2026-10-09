@@ -1,0 +1,22 @@
+{
+  "blockers": [
+    "dispatcher_exception:RuntimeError:CONCURRENT_SCOPE_CONFLICT:expected=f796a94e051acc49e7f0eb6a944fc344b4003914:actual=35eefeeb812437c7edbe2163ddb898518a655fdc:paths=backend/modules/ia_assistant/service.py,backend/tests/test_ia_visual_comparison_r6_contract.py,frontend/src/components/ia/IAContextual.jsx"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-09T04:17:39Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-IA-VISUAL-COMPARISON-R6-CARLOS-20261008T2215",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-09T04:18:07Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-09T04:17:39Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
