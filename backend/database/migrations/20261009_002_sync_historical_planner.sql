@@ -39,6 +39,9 @@ BEGIN TRY
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','SucursalID') IS NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones ADD SucursalID int NULL;
 
+    IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','SucursalOrigenID') IS NULL
+        ALTER TABLE dbo.Sync_Control_Ejecuciones ADD SucursalOrigenID nvarchar(100) NULL;
+
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','CategoriaCodigo') IS NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones ADD CategoriaCodigo nvarchar(100) NULL;
 
@@ -79,6 +82,12 @@ BEGIN TRY
 
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','LastHeartbeatUTC') IS NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones ADD LastHeartbeatUTC datetime2(3) NULL;
+
+    IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','RequestedBy') IS NULL
+        ALTER TABLE dbo.Sync_Control_Ejecuciones ADD RequestedBy nvarchar(320) NULL;
+
+    IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','Reason') IS NULL
+        ALTER TABLE dbo.Sync_Control_Ejecuciones ADD Reason nvarchar(1000) NULL;
 
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','UpdatedAtUTC') IS NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones ADD UpdatedAtUTC datetime2(3) NULL;
