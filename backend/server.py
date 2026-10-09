@@ -16428,6 +16428,13 @@ from api.admin_scheduler_resync import router as admin_resync_router
 app.include_router(admin_resync_router, tags=["Admin - Scheduler Resync"])
 logger.info("Consola Admin Scheduler Resync registrada")
 
+# ============= SINCRONIZACION HISTORICA DE TABLAS =============
+# Modulo canonico metadata-driven. La API solo planifica/persiste/encola;
+# la ejecucion real pertenece al WORKER UNIVERSAL V1.2.
+from modules.sync_historicos.routes import router as sync_historical_router
+app.include_router(sync_historical_router)
+logger.info("Sincronizacion Historica de Tablas registrada")
+
 # ============= LIMPIEZA DE CACHÉ PREVIEW =============
 # P0-CACHE-PREVIEW: Limpieza automática de cachés en modo preview
 from api.admin_cache import router as admin_cache_router
