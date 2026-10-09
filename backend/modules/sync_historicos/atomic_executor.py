@@ -258,7 +258,7 @@ def _finish(
         cur.execute("BEGIN TRANSACTION")
         cur.execute(
             """
-            SELECT CancelRequested, PauseRequested
+            SELECT CancelRequested, PauseRequested, AttemptCount, MaxAttempts
             FROM dbo.Sync_Control_Ejecuciones WITH (UPDLOCK, HOLDLOCK)
             WHERE SyncControlID=%s
             """,
@@ -268,12 +268,17 @@ def _finish(
         cancel_requested = bool(control.get("CancelRequested"))
         pause_requested = bool(control.get("PauseRequested"))
 
+        attempt_count = int(control.get("AttemptCount") or 0)
+        max_attempts = int(control.get("MaxAttempts") or 1)
+
         if success and cancel_requested:
             status = "CANCELLED_SAFE"
         elif success and pause_requested:
             status = "PAUSED"
         elif success:
             status = "SUCCESS"
+        elif attempt_count >= max_attempts:
+            status = "PERMANENT_FAILURE"
         else:
             status = "FAILED_RETRYABLE"
 
