@@ -4470,15 +4470,46 @@ async def comercial_dashboard(
                 or ""
             ).strip()
 
-            filas_hoy = (
-                get_ventas_dia_abiertas(
-                    _date.fromisoformat(fecha_ini),
-                    [unidad_codigo_hoy],
-                )
-                if unidad_codigo_hoy
-                else []
+            # Leer la fotografia del dia y seleccionar por server_id ya
+            # autorizado por RBAC. No depender del alias/codigo de sucursal del
+            # frontend, porque puede no coincidir con unidad_negocio_id y dejar
+            # el Comercial en cero aunque el Ejecutivo tenga snapshot.
+            filas_hoy = get_ventas_dia_abiertas(
+                _date.fromisoformat(fecha_ini),
+                None,
             )
-            fila_hoy = filas_hoy[0] if filas_hoy else None
+            server_id_norm = str(server_id or "").strip().lower()
+            fila_hoy = next(
+                (
+                    row for row in filas_hoy
+                    if str(row.get("server_id") or "").strip().lower()
+                    == server_id_norm
+                ),
+                None,
+            )
+
+            # Si existen varias unidades sobre el mismo servidor, refinar por
+            # codigo canonico cuando este disponible.
+            if fila_hoy and unidad_codigo_hoy:
+                candidatos = [
+                    row for row in filas_hoy
+                    if str(row.get("server_id") or "").strip().lower()
+                    == server_id_norm
+                ]
+                codigo_norm = unidad_codigo_hoy.strip().lower()
+                fila_codigo = next(
+                    (
+                        row for row in candidatos
+                        if str(
+                            row.get("unidad_negocio_codigo")
+                            or row.get("unidad_negocio_id")
+                            or ""
+                        ).strip().lower() == codigo_norm
+                    ),
+                    None,
+                )
+                if fila_codigo:
+                    fila_hoy = fila_codigo
 
             if fila_hoy:
                 ventas_hoy = float(fila_hoy.get("total_estimado_dia") or 0)
