@@ -18,6 +18,7 @@ from typing import Any, Dict, List
 from core.sql_first.db import get_sql_connection
 
 from .atomic_executor import execute_atomic_unit_sync
+from .logging_service import log_event
 
 
 class HistoricalParentExecutionError(RuntimeError):
@@ -126,6 +127,18 @@ def _set_parent_status(
             ),
         )
         conn.commit()
+        log_event(
+            sync_control_id=int(parent_id),
+            correlation_id=None,
+            event_code="PARENT_STATUS",
+            level=(
+                "ERROR"
+                if status in {"PARTIAL_FAILED", "ENQUEUE_FAILED"}
+                else "INFO"
+            ),
+            message=f"Job padre historico en estado {status}.",
+            payload={"status": status, "finished": bool(finished)},
+        )
     finally:
         cur.close()
         conn.close()
