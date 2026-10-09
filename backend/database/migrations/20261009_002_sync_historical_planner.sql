@@ -86,6 +86,14 @@ BEGIN TRY
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','LastHeartbeatUTC') IS NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones ADD LastHeartbeatUTC datetime2(3) NULL;
 
+    IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','DispatchCount') IS NULL
+        ALTER TABLE dbo.Sync_Control_Ejecuciones
+        ADD DispatchCount int NOT NULL
+            CONSTRAINT DF_Sync_Control_Ejecuciones_DispatchCount DEFAULT (0);
+
+    IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','WorkerJobID') IS NULL
+        ALTER TABLE dbo.Sync_Control_Ejecuciones ADD WorkerJobID nvarchar(121) NULL;
+
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','RequestedBy') IS NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones ADD RequestedBy nvarchar(320) NULL;
 
