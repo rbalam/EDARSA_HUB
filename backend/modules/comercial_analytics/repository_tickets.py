@@ -284,8 +284,8 @@ def _list_current_day_with_comercial_merge(
             MIN(d.fecha_hora) AS fecha_hora,
             MAX(ISNULL(d.pax, 0)) AS pax,
             COUNT(*) AS lineas,
-            SUM(ISNULL(d.importe_neto, 0)) AS ventas,
-            SUM(ISNULL(d.propina, 0)) AS propina
+            SUM(ISNULL(d.importe_neto, 0)) AS ventas_sin_propina,
+            MAX(ISNULL(d.propina, 0)) AS propina
         FROM {DETAIL_TABLE} AS d
         WHERE
             ISNULL(d.activo, 1) = 1
@@ -327,8 +327,14 @@ def _list_current_day_with_comercial_merge(
             "fecha": str(row.get("fecha_hora") or operation_date),
             "folios": 1,
             "pax": int(row.get("pax") or 0),
-            "total_venta": float(row.get("ventas") or 0),
-            "importe": float(row.get("ventas") or 0),
+            "total_venta": (
+                float(row.get("ventas_sin_propina") or 0)
+                + float(row.get("propina") or 0)
+            ),
+            "importe": (
+                float(row.get("ventas_sin_propina") or 0)
+                + float(row.get("propina") or 0)
+            ),
             "num_productos": int(row.get("lineas") or 0),
             "expandible": False,
             "siguiente_nivel": None,
