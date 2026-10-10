@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "f5ff431a639489bf539587b404138332641731a6",
-  "generated_at_utc": "2026-10-10T19:39:03Z",
+  "generated_at_utc": "2026-10-10T19:40:18Z",
   "history": {
     "done_total_local": 1368,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 575,
+      "age_seconds": 650,
       "job_id": "EDARSAHUB-VENTAS-DIA-INCIDENT-DIAG-R1-20261010",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 504,
+      "age_seconds": 580,
       "job_id": "EDARSAHUB-VENTAS-DIA-INCIDENT-DIAG-R2-20261010",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 453,
+      "age_seconds": 529,
       "job_id": "EDARSAHUB-VENTAS-DIA-INCIDENT-DIAG-R3-20261010",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-10T19:38:59Z",
-    "last_receive_utc": "2026-10-10T19:38:54Z",
+    "last_cycle_utc": "2026-10-10T19:40:11Z",
+    "last_receive_utc": "2026-10-10T19:40:17Z",
     "last_terminal_utc": "2026-10-10T19:31:29Z",
     "pid": "321",
     "runtime_fingerprint": {
