@@ -32,11 +32,12 @@ async def startup_scheduler_service():
     if not status.get("running"):
         raise RuntimeError("PRODUCTION_SCHEDULER_FAILED_TO_START")
 
+    jobs = status.get("jobs") or []
     logger.warning(
         "Production scheduler service started environment=%s role=%s jobs=%s",
         policy.get("environment"),
         policy.get("role"),
-        status.get("jobs_count"),
+        len(jobs),
     )
 
 
@@ -59,6 +60,6 @@ async def scheduler_health():
         "role_explicit": policy.get("role_explicit"),
         "scheduler_enabled": policy.get("scheduler_enabled"),
         "running": status.get("running", False),
-        "jobs_count": status.get("jobs_count", 0),
+        "jobs_count": len(status.get("jobs") or []),
         "jobs": status.get("jobs", []),
     }
