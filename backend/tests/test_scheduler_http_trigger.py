@@ -1,5 +1,7 @@
 import asyncio
 from pathlib import Path
+import sys
+from types import ModuleType
 
 import pytest
 from fastapi import HTTPException
@@ -129,12 +131,16 @@ def test_trigger_invokes_only_canonical_protected_job(monkeypatch):
     async def fake_latest_event():
         return next(events)
 
-    import core.scheduler.scheduler_manager as scheduler_manager
-
-    monkeypatch.setattr(
-        scheduler_manager,
-        "get_scheduler_manager",
-        lambda: FakeManager(),
+    fake_scheduler_manager = ModuleType(
+        "core.scheduler.scheduler_manager"
+    )
+    fake_scheduler_manager.get_scheduler_manager = (
+        lambda: FakeManager()
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "core.scheduler.scheduler_manager",
+        fake_scheduler_manager,
     )
     monkeypatch.setattr(
         routes,
