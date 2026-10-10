@@ -8,6 +8,14 @@ Required runtime:
 """
 
 import logging
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Cargar el mismo archivo de entorno que usa backend/server.py.
+# load_dotenv no sobreescribe variables inyectadas por el runtime, por lo que
+# EDARSA_RUNTIME_ROLE y EDARSA_ENV siguen siendo autoridad de despliegue.
+load_dotenv(Path(__file__).parent / ".env")
 
 from fastapi import FastAPI
 
