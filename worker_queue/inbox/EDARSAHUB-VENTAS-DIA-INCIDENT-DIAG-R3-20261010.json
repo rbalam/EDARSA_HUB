@@ -1,0 +1,27 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-VENTAS-DIA-INCIDENT-DIAG-R3-20261010",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "f5ff431a639489bf539587b404138332641731a6",
+  "production_allowed": false,
+  "objective": "Confirmar en solo lectura que Ventas del Dia se recupero despues del reinicio de Emergent y determinar el ultimo run real del sincronizador, sin tocar su codigo ni ejecutar escrituras.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "ventas_dia_synclog_recent_correct_schema",
+          "sql": "SELECT TOP 30 run_id,run_timestamp,run_type,unidad_negocio_id,server_id,sucursal_id,fecha_inicio,fecha_fin,status,records_processed,records_inserted,records_updated,records_skipped,records_errored,error_code,error_message,duration_seconds,source_connection_status FROM dbo.Comercial_SyncLog_v2 WHERE run_type='VENTAS_DIA' ORDER BY run_timestamp DESC"
+        },
+        {
+          "name": "ventas_dia_snapshot_freshness",
+          "sql": "SELECT unidad_negocio_id,fecha_operacion,snapshot_timestamp,total_estimado_dia,ventas_abiertas,ventas_cerradas_dia FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WHERE fecha_operacion='2026-10-10' ORDER BY snapshot_timestamp DESC,unidad_negocio_id"
+        }
+      ]
+    }
+  ]
+}
