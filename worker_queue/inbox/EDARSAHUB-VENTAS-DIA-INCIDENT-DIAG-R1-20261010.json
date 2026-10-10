@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-VENTAS-DIA-INCIDENT-DIAG-R1-20261010",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "f5ff431a639489bf539587b404138332641731a6",
+  "production_allowed": false,
+  "objective": "Diagnosticar en solo lectura la interrupcion de Ventas del Dia del 2026-10-10 sin modificar sync_comercial_abiertas_v2. Confirmar si el scheduler dejo de ejecutar, si el lock/ledger quedo bloqueado, si los snapshots de hoy faltan y si existe error de escritura asociado a cambios de esquema. No escribir datos ni tocar Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "ventas_dia_ledger_recent",
+          "sql": "SELECT TOP 25 SyncControlID,SyncRunID,SyncType,FechaInicio,FechaFin,Status,StartedAtMexico,FinishedAtMexico,StartedAtUTC,FinishedAtUTC,ErrorMessage,RunKind,AttemptCount,MaxAttempts,UpdatedAtUTC FROM dbo.Sync_Control_Ejecuciones WHERE SyncType='VENTAS_DIA_ABIERTAS' ORDER BY SyncControlID DESC"
+        },
+        {
+          "name": "ventas_dia_snapshot_today",
+          "sql": "SELECT unidad_negocio_id,unidad_negocio_nombre,sistema_origen,fecha_operacion,MAX(snapshot_timestamp) AS ultimo_snapshot,MAX(fecha_ultima_actualizacion) AS ultima_actualizacion,MAX(total_estimado_dia) AS total_estimado_dia,MAX(ventas_abiertas) AS ventas_abiertas,MAX(ventas_cerradas_dia) AS ventas_cerradas_dia,COUNT(*) AS filas FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WHERE fecha_operacion='2026-10-10' GROUP BY unidad_negocio_id,unidad_negocio_nombre,sistema_origen,fecha_operacion ORDER BY unidad_negocio_id"
+        },
+        {
+          "name": "ventas_dia_snapshot_latest_per_unit",
+          "sql": "SELECT unidad_negocio_id,MAX(fecha_operacion) AS ultima_fecha_operacion,MAX(snapshot_timestamp) AS ultimo_snapshot FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        },
+        {
+          "name": "ventas_dia_synclog_recent",
+          "sql": "SELECT TOP 40 run_id,run_timestamp,run_type,unidad_negocio_id,server_id,sucursal_id,fecha_inicio,fecha_fin,status,records_processed,records_inserted,records_updated,records_failed,error_message,source_connection_status FROM dbo.Comercial_SyncLog_v2 WHERE run_type='VENTAS_DIA' ORDER BY run_timestamp DESC"
+        },
+        {
+          "name": "ventas_dia_recent_scheduler_bitacora",
+          "sql": "SELECT TOP 40 ID,JobName,RunID,Accion,FechaAccion,ServerID,Exito,MensajeError,DetallesJSON FROM dbo.Scheduler_BitacoraJobs WHERE JobName LIKE '%comercial%abiertas%' OR JobName='sync_comercial_abiertas_v2' ORDER BY ID DESC"
+        },
+        {
+          "name": "ventas_dia_schema_constraints",
+          "sql": "SELECT o.name,o.type_desc,OBJECT_NAME(o.parent_object_id) AS parent_table FROM sys.objects o WHERE o.parent_object_id IN (OBJECT_ID('dbo.Sync_Control_Ejecuciones'),OBJECT_ID('dbo.Sync_Logs')) AND (o.name LIKE 'CK_Sync_Control_Ejecuciones_%' OR o.name LIKE 'FK_Sync_Control_Ejecuciones_%' OR o.name LIKE 'CK_Sync_Logs_%' OR o.name LIKE 'FK_Sync_Logs_%') ORDER BY parent_table,o.name"
+        }
+      ]
+    }
+  ]
+}
