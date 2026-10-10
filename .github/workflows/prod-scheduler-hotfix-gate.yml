@@ -1,0 +1,75 @@
+name: Production Scheduler Hotfix Gate
+
+on:
+  push:
+    branches:
+      - hotfix/prod-scheduler-decoupling-20261010
+    paths:
+      - "backend/modules/scheduler_runtime/**"
+      - "backend/scheduler_service.py"
+      - "backend/server.py"
+      - "backend/tests/test_scheduler_runtime_policy.py"
+      - "backend/tests/test_sync_comercial_abiertas_v2_immutable.py"
+      - ".github/workflows/prod-scheduler-hotfix-gate.yml"
+  pull_request:
+    branches:
+      - Edarsahub_Produccion
+    paths:
+      - "backend/modules/scheduler_runtime/**"
+      - "backend/scheduler_service.py"
+      - "backend/server.py"
+      - "backend/tests/test_scheduler_runtime_policy.py"
+      - "backend/tests/test_sync_comercial_abiertas_v2_immutable.py"
+      - ".github/workflows/prod-scheduler-hotfix-gate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hotfix-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Protect production day-sales synchronizer
+        run: |
+          test "$(git hash-object backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py)" = \
+            "e97b55a06b0adb5b447904c7643b99844f00aae7"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-ci.txt
+          python -m pip install -r /tmp/requirements-ci.txt
+
+      - name: Compile scheduler hotfix
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          python -m py_compile \
+            backend/modules/scheduler_runtime/policy.py \
+            backend/scheduler_service.py
+
+      - name: Run scheduler ownership contracts
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          python -m pytest -q --tb=short \
+            backend/tests/test_scheduler_runtime_policy.py \
+            backend/tests/test_sync_comercial_abiertas_v2_immutable.py
+
+      - name: Assert protected synchronizer absent from hotfix diff
+        run: |
+          git diff --name-only 935ea169613aa9f010e0ae92eedfd2870c18a2a7...HEAD > /tmp/hotfix-files.txt
+          cat /tmp/hotfix-files.txt
+          ! grep -Fx "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py" /tmp/hotfix-files.txt
