@@ -16768,17 +16768,40 @@ except Exception as e:
     logger.warning(f"Error registrando Universal Worker wake router: {e}")
 
 
-# Startup: Iniciar scheduler
+# Startup: ownership explicito del Scheduler.
 @app.on_event("startup")
 async def startup_scheduler():
-    """Inicia el scheduler de jobs automáticos."""
+    """Arranca APScheduler solo si la politica de runtime lo permite."""
     try:
-        from core.scheduler import start_scheduler
-        await start_scheduler(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad
-        logger.info("Scheduler iniciado correctamente (SQL-only mode)")
+        from modules.scheduler_runtime.policy import (
+            runtime_policy_snapshot,
+            should_start_embedded_scheduler,
+        )
+
+        policy = runtime_policy_snapshot()
+
+        if should_start_embedded_scheduler():
+            from core.scheduler import start_scheduler
+
+            await start_scheduler(db)
+            logger.warning(
+                "Scheduler embebido iniciado environment=%s role=%s legacy_fallback=%s",
+                policy.get("environment"),
+                policy.get("role"),
+                policy.get("legacy_fallback_active"),
+            )
+        else:
+            logger.warning(
+                "Scheduler embebido NO iniciado por politica environment=%s role=%s "
+                "role_required=%s scheduler_enabled=%s",
+                policy.get("environment"),
+                policy.get("role"),
+                policy.get("role_required"),
+                policy.get("scheduler_enabled"),
+            )
     except Exception as e:
-        logger.error(f"Error iniciando scheduler: {e}")
-        # No fallar el startup por el scheduler
+        logger.error(f"Error evaluando/iniciando scheduler: {e}")
+        # Fail-closed para roles invalidos; el backend web debe continuar disponible.
 
 # Shutdown: Detener scheduler
 @app.on_event("shutdown")
