@@ -9,6 +9,13 @@ if hasattr(sys.stdout, 'reconfigure'):
     except Exception:
         pass
 
+# DEPLOY-FIX: asegurar que el repo-root (/app) esté en sys.path para que
+# imports como `tools.mirror_sync` resuelvan cuando uvicorn corre desde /app/backend
+# (en producción no hay PYTHONPATH=/app como en el supervisor local).
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
 # ==============================================================================
 # CARGA DE VARIABLES DE ENTORNO - DEBE ESTAR ANTES DE CUALQUIER OTRO IMPORT
 # ==============================================================================
@@ -119,6 +126,29 @@ logger.info("[DB] Sistema funcionando 100% SQL Server - MongoDB ELIMINADO (usand
 
 app = FastAPI(title="EDARSA HUB API")
 api_router = APIRouter(prefix="/api")
+
+# PRODUCTION QUALITY / FOTO FINISH - bounded context canónico
+# SQL-first, RBAC explícito y sin dependencia LIVE.
+from modules.production_quality import router as production_quality_router
+api_router.include_router(production_quality_router)
+
+# CAVAS CORPORATIVAS GATE 5 - API backend B2B separada y RBAC SQL explicito
+from modules.cavas_corporativas.routes import router as cavas_corporativas_router
+api_router.include_router(cavas_corporativas_router)
+
+# CATALOGO AMPLIADO GATE 4 - Gobierno corporativo SQL-first
+from modules.catalogo_ampliado.routes import router as catalogo_ampliado_router
+api_router.include_router(catalogo_ampliado_router)
+
+# TABLAJERIA - Operaciones / Produccion
+# Router existente con prefijo propio /api/tablajeria; se monta directo en app para evitar /api/api.
+from modules.tablajeria.routes import router as tablajeria_router
+app.include_router(tablajeria_router)
+
+# TABLAJERIA - Operaciones / Produccion
+# Router existente con prefijo propio /api/tablajeria; se monta directo en app para evitar /api/api.
+from modules.tablajeria.routes import router as tablajeria_router
+app.include_router(tablajeria_router)
 
 # Montar archivos estáticos para descargas
 STATIC_DIR = ROOT_DIR / "static"
@@ -711,6 +741,10 @@ from modules.comercial.kpis_repository import init_kpis_repository
 init_sync_receiver(None)  # MongoDB eliminado
 init_kpis_repository(None)  # MongoDB eliminado
 api_router.include_router(sync_receiver_router)
+
+# RRR - atribucion determinista cliente <-> venta (Gate 4E)
+from modules.rrr.routes import router as rrr_attribution_router
+api_router.include_router(rrr_attribution_router)
 
 # ============================================================================
 # MÓDULO API CONNECTIONS: CRUD de conexiones a APIs locales
@@ -1987,7 +2021,7 @@ async def get_servers(current_user: Dict = Depends(get_current_user), _rbac: dic
         allow_mongo_fallback=False,  # P5: Fallback MongoDB deshabilitado
         filter_active=True,
         filter_visible_listado=True,
-        exclude_core=False,
+        exclude_core=True,
         mask_secrets=True
     )
 
@@ -2154,9 +2188,9 @@ def _sql_upsert_servidor_status(server_id: str, is_online: bool, response_time_m
             """, (1 if is_online else 0, response_time_ms, server_id))
         else:
             cur.execute("""
-                INSERT INTO dbo.Servidores_Status (StatusID, ServerID, IsOnline, ResponseTimeMs, LastCheck)
-                VALUES (%s, %s, %s, %s, GETDATE())
-            """, (_sql_next_id(cur, "Servidores_Status", "StatusID"), server_id, 1 if is_online else 0, response_time_ms))
+                INSERT INTO dbo.Servidores_Status (ServerID, IsOnline, ResponseTimeMs, LastCheck)
+                VALUES (%s, %s, %s, GETDATE())
+            """, (server_id, 1 if is_online else 0, response_time_ms))
         conn.commit()
     finally:
         conn.close()
@@ -12265,7 +12299,7 @@ import os
 from datetime import datetime
 
 # Directorio para almacenar evidencias
-EVIDENCIAS_DIR = "/app/uploads/evidencias"
+EVIDENCIAS_DIR = os.environ.get("EDARSAHUB_EVIDENCIAS_DIR", "/app/uploads/evidencias")
 os.makedirs(EVIDENCIAS_DIR, exist_ok=True)
 
 # Modelos Pydantic para Informes de Auditoría
@@ -16317,8 +16351,20 @@ async def retirar_perfil_usuario(
 app.include_router(api_router)
 
 # WORKER: endpoint autenticado de runtime wake
-from modules.worker_runtime_wake.routes import router as worker_runtime_wake_router
+# Runtime reload marker 2026-09-20: fuerza recarga Preview sin cambio funcional; Produccion fuera de alcance.
+from modules.worker_runtime_wake.routes import (
+    router as worker_runtime_wake_router,
+    ensure_worker_runtime_on_preview_startup,
+)
 app.include_router(worker_runtime_wake_router, prefix="/api")
+
+# Universal Worker Remote Canonical Ingress (global)
+from modules.worker_ingress.routes import router as worker_ingress_router
+app.include_router(worker_ingress_router, prefix="/api")
+
+# EDARSAHUB Universal Worker Console (Fase 1, solo lectura)
+from modules.worker_console.routes import router as worker_console_router
+app.include_router(worker_console_router, prefix="/api")
 
 # FASE6: health canónico V1.0 (SQL-First / NO-LIVE) -> /api/health/v1
 app.include_router(health_v1_router, prefix="/api")
@@ -16381,6 +16427,13 @@ app.include_router(scheduler_router, tags=["Scheduler"])
 from api.admin_scheduler_resync import router as admin_resync_router
 app.include_router(admin_resync_router, tags=["Admin - Scheduler Resync"])
 logger.info("Consola Admin Scheduler Resync registrada")
+
+# ============= SINCRONIZACION HISTORICA DE TABLAS =============
+# Modulo canonico metadata-driven. La API solo planifica/persiste/encola;
+# la ejecucion real pertenece al WORKER UNIVERSAL V1.2.
+from modules.sync_historicos.routes import router as sync_historical_router
+app.include_router(sync_historical_router)
+logger.info("Sincronizacion Historica de Tablas registrada")
 
 # ============= LIMPIEZA DE CACHÉ PREVIEW =============
 # P0-CACHE-PREVIEW: Limpieza automática de cachés en modo preview
@@ -16757,28 +16810,50 @@ except Exception as e:
     logger.warning(f"Error registrando SQL Compat Bridge router: {e}")
 
 
-# =============================================================================
-# UNIVERSAL WORKER - WAKE INTERNO CANONICO
-# =============================================================================
-try:
-    from modules.worker_runtime_wake.routes import router as worker_runtime_wake_router
-    app.include_router(worker_runtime_wake_router, prefix="/api")
-    logger.info("Universal Worker wake router registrado")
-except Exception as e:
-    logger.warning(f"Error registrando Universal Worker wake router: {e}")
+# UNIVERSAL WORKER: el router se registra una sola vez arriba.
+# El arranque del backend actua como frontera local de auto-recuperacion del Worker.
 
 
-# Startup: Iniciar scheduler
+# Startup: recuperar Worker y aplicar ownership explicito del Scheduler.
 @app.on_event("startup")
 async def startup_scheduler():
-    """Inicia el scheduler de jobs automáticos."""
+    """Recupera el Worker y arranca APScheduler solo si la politica lo permite."""
     try:
-        from core.scheduler import start_scheduler
-        await start_scheduler(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad
-        logger.info("Scheduler iniciado correctamente (SQL-only mode)")
+        worker_runtime_state = ensure_worker_runtime_on_preview_startup()
+        logger.info(f"Universal Worker startup self-heal: {worker_runtime_state}")
     except Exception as e:
-        logger.error(f"Error iniciando scheduler: {e}")
-        # No fallar el startup por el scheduler
+        logger.warning(f"Universal Worker startup self-heal no disponible: {e}")
+
+    try:
+        from modules.scheduler_runtime.policy import (
+            runtime_policy_snapshot,
+            should_start_embedded_scheduler,
+        )
+
+        policy = runtime_policy_snapshot()
+
+        if should_start_embedded_scheduler():
+            from core.scheduler import start_scheduler
+
+            await start_scheduler(db)  # SQL-only; StubDatabase conserva firmas legacy
+            logger.warning(
+                "Scheduler embebido iniciado environment=%s role=%s legacy_fallback=%s",
+                policy.get("environment"),
+                policy.get("role"),
+                policy.get("legacy_fallback_active"),
+            )
+        else:
+            logger.warning(
+                "Scheduler embebido NO iniciado por politica environment=%s role=%s "
+                "role_required=%s scheduler_enabled=%s",
+                policy.get("environment"),
+                policy.get("role"),
+                policy.get("role_required"),
+                policy.get("scheduler_enabled"),
+            )
+    except Exception as e:
+        logger.error(f"Error evaluando/iniciando scheduler: {e}")
+        # Fail-closed para roles invalidos; el backend web debe continuar disponible.
 
 # Shutdown: Detener scheduler
 @app.on_event("shutdown")

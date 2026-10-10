@@ -1,0 +1,13 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Recover canonical Universal Worker runtime convergence for existing R41 after REMOTE_AHEAD_ONLY. Fast-forward only to current Edarsahub_Desarrollo, preserve local work, fail closed on dirty state, wrong branch, non-fast-forward or divergence, then consume R41 without creating a duplicate. Do not touch Production.",
+  "expected_local_head": "b01604b91032638350bd29c07b8015fa8200f620",
+  "expected_classification": "REMOTE_AHEAD_ONLY",
+  "fast_forward_only": true,
+  "preserve_local_work": true,
+  "requested_by": "carlosruz@edarsa.com.mx",
+  "source": "chatgpt",
+  "project": "Actualizacion de tickets de venta",
+  "production_touched": false,
+  "existing_job_id": "EDARSAHUB-WORKER-COMERCIAL-AUDIT-PROFILE-CERT-R41-CARLOS-20261008"
+}

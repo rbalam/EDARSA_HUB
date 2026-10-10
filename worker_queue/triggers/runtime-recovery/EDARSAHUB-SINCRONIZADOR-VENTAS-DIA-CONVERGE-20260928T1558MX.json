@@ -1,0 +1,13 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "triggered_at_utc": "2026-09-28T21:58:30Z",
+  "source": "chatgpt",
+  "project": "EDARSAHUB-CONCILIACIONES",
+  "requested_by": "carlosruz@edarsa.com.mx",
+  "reason": "Converger de forma segura el runtime /app al commit actual de Edarsahub_Desarrollo que contiene exclusivamente el trigger de restauracion del Scheduler de Ventas del Dia. Estado observado REMOTE_AHEAD_ONLY. Aplicar solo fast-forward seguro, preservar trabajo local, no reset destructivo. Releer backend/.env y garantizar SCHEDULER_SYNC_COMERCIAL_ABIERTAS_V2_ENABLED=true. Reiniciar solamente backend/Scheduler si es necesario. PROHIBIDO modificar backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py o cualquier logica del job. No tocar Produccion.",
+  "expected_remote_head": "1c0c66f67c09811c8f905f955493df73f53bac37",
+  "protected_paths": [
+    "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py"
+  ],
+  "production_touched": false
+}

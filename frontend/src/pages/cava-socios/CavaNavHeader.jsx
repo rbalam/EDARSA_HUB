@@ -18,6 +18,7 @@ export default function CavaNavHeader({ title, subtitle, onRefresh, loading }) {
     { label: 'Carga Inv. Inicial', path: '/cava-socios/inventario?tab=inicial', icon: Plus, active: currentPath === '/cava-socios/inventario' && currentTab === 'inicial' },
     { label: 'Kardex Canónico (PZ)', path: '/cava-socios/inventario?tab=kardex', icon: ArrowRightLeft, active: currentPath === '/cava-socios/inventario' && currentTab === 'kardex' },
     { label: 'Auditoría Física', path: '/cava-socios/inventario?tab=fisico', icon: ClipboardCheck, active: currentPath === '/cava-socios/inventario' && currentTab === 'fisico' },
+    { label: 'Auditoría Ciega', path: '/cava-socios/auditoria-ciega', icon: ClipboardCheck, active: currentPath === '/cava-socios/auditoria-ciega' },
     { label: 'Bitácora Consumos', path: '/cava-socios/consumos', icon: TrendingDown, active: currentPath === '/cava-socios/consumos' },
   ];
 

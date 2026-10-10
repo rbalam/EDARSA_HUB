@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker to consume existing v2 job EDARSAHUB-SERVIDORES-API-HEALTH-TIMEOUT-R11A-FRONTEND-FIX. Preserve original job identity. Do not duplicate or clone the job. Do not touch Production.",
+  "existing_job_id": "EDARSAHUB-SERVIDORES-API-HEALTH-TIMEOUT-R11A-FRONTEND-FIX",
+  "production_touched": false
+}

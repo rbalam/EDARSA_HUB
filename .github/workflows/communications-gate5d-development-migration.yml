@@ -1,0 +1,174 @@
+name: Gate 5D Communications Development Migration
+
+on:
+  push:
+    branches: [Edarsahub_Desarrollo]
+    paths:
+      - ops/migrations/requests/COMMUNICATIONS-GATE5D-20260909.execute
+
+permissions:
+  contents: read
+
+concurrency:
+  group: communications-gate5d-development-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate-development:
+    if: github.ref == 'refs/heads/Edarsahub_Desarrollo'
+    runs-on: ubuntu-latest
+    environment: development
+    timeout-minutes: 20
+    env:
+      EDARSAHUB_SQL_HOST: '54.39.104.176'
+      EDARSAHUB_SQL_PORT: '1433'
+      EDARSAHUB_SQL_DATABASE: 'EDARSAHUB'
+      MIGRATION_SCRIPT: backend/database/migrations/20260909_002_communications_queue_rbac.sql
+      ROLLBACK_SCRIPT: backend/database/migrations/20260909_002_communications_queue_rbac_rollback.sql
+      EXPECTED_MIGRATION_BLOB_SHA: '47991456ad0441727898a693ef0fd715518e8e8c'
+
+    steps:
+      - name: Checkout exact Development commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install SQL runtime
+        run: python -m pip install pymssql pydantic python-dotenv email-validator
+
+      - name: Verify Development and immutable migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF}" = 'refs/heads/Edarsahub_Desarrollo'
+          test -f "${MIGRATION_SCRIPT}"
+          test -f "${ROLLBACK_SCRIPT}"
+          actual_blob="$(git hash-object "${MIGRATION_SCRIPT}")"
+          echo "EXPECTED_MIGRATION_BLOB_SHA=${EXPECTED_MIGRATION_BLOB_SHA}"
+          echo "ACTUAL_MIGRATION_BLOB_SHA=${actual_blob}"
+          test "${actual_blob}" = "${EXPECTED_MIGRATION_BLOB_SHA}"
+          echo 'GATE5D_IMMUTABLE_MIGRATION=PASS'
+
+      - name: Preflight readonly identity and baseline
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          test -n "${EDARSAHUB_SQL_PASSWORD:-}"
+          python - <<'PY' | tee evidence/preflight.txt
+          import os,pymssql
+          conn=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15)
+          cur=conn.cursor(as_dict=True)
+          cur.execute("SELECT DB_NAME() database_name,SUSER_SNAME() login_name,USER_NAME() db_user")
+          identity=cur.fetchone(); print({'identity':identity})
+          if identity['database_name']!='EDARSAHUB' or identity['login_name']!='HRLectura': raise SystemExit('GATE5D_READONLY_IDENTITY_MISMATCH')
+          for table in ('Sistema_NotificacionesConfig','Operativo_Notificaciones_Log','Sistema_RBAC_Permisos','Sistema_RBAC_Roles','Sistema_RBAC_RolesPermisos'):
+              cur.execute("SELECT CASE WHEN OBJECT_ID(%s,'U') IS NULL THEN 0 ELSE 1 END present",('dbo.'+table,))
+              if int(cur.fetchone()['present'])!=1: raise SystemExit('GATE5D_REQUIRED_OBJECT_MISSING:'+table)
+          cur.execute("SELECT COUNT_BIG(*) n FROM dbo.Sistema_NotificacionesConfig"); config_count=int(cur.fetchone()['n'])
+          cur.execute("SELECT COUNT_BIG(*) n FROM dbo.Operativo_Notificaciones_Log"); log_count=int(cur.fetchone()['n'])
+          cur.execute("SELECT CASE WHEN OBJECT_ID('dbo.Operativo_Notificaciones_Queue','U') IS NULL THEN 0 ELSE 1 END present"); queue_present=int(cur.fetchone()['present'])
+          cur.execute("SELECT COUNT(*) n FROM dbo.Sistema_RBAC_Permisos WHERE codigo IN ('NOTIFICACIONES_VER','NOTIFICACIONES_CONFIGURAR','NOTIFICACIONES_ENVIAR')"); perms=int(cur.fetchone()['n'])
+          print({'config_rows_before':config_count,'log_rows_before':log_count,'queue_present_before':queue_present,'permissions_before':perms})
+          with open(os.environ['GITHUB_ENV'],'a',encoding='utf-8') as h:
+              h.write(f'GATE5D_CONFIG_ROWS_BEFORE={config_count}\nGATE5D_LOG_ROWS_BEFORE={log_count}\n')
+          cur.close(); conn.close(); print('GATE5D_PREFLIGHT=PASS')
+          PY
+
+      - name: Fail closed - Development migration writer is not configured
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'MIGRATION_WRITER_STATUS=UNCONFIGURED' | tee evidence/writer_permissions.txt
+          echo 'HRLECTURA_WRITER_FORBIDDEN=YES' | tee -a evidence/writer_permissions.txt
+          echo 'MIGRATION_EXECUTED=NO' | tee -a evidence/writer_permissions.txt
+          exit 78
+          test -n "${EDARSAHUB_SQL_USER:-}"
+          test -n "${EDARSAHUB_SQL_PASSWORD:-}"
+          python - <<'PY' | tee evidence/writer_permissions.txt
+          import os,pymssql
+          if os.environ['EDARSAHUB_SQL_USER'].strip().lower()=='hrlectura': raise SystemExit('GATE5D_HRLECTURA_WRITER_FORBIDDEN')
+          conn=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15)
+          cur=conn.cursor(as_dict=True)
+          cur.execute("SELECT DB_NAME() database_name,SUSER_SNAME() login_name,COALESCE(HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE TABLE'),0) can_create,COALESCE(HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER'),0) can_alter,COALESCE(HAS_PERMS_BY_NAME('dbo.Sistema_RBAC_Permisos','OBJECT','INSERT'),0) can_insert_perms,COALESCE(HAS_PERMS_BY_NAME('dbo.Sistema_RBAC_Permisos','OBJECT','UPDATE'),0) can_update_perms,COALESCE(HAS_PERMS_BY_NAME('dbo.Sistema_RBAC_RolesPermisos','OBJECT','INSERT'),0) can_insert_links")
+          row=cur.fetchone(); print({k:v for k,v in row.items() if k!='login_name'}); cur.close(); conn.close()
+          if row['database_name']!='EDARSAHUB': raise SystemExit('GATE5D_WRITER_DB_MISMATCH')
+          required=('can_create','can_alter','can_insert_perms','can_update_perms','can_insert_links')
+          if any(int(row[k])!=1 for k in required): raise SystemExit('GATE5D_WRITER_PERMISSIONS_NOT_CONFIRMED')
+          print('GATE5D_DEDICATED_WRITER=PASS')
+          PY
+
+      - name: Execute transactional migration
+        if: ${{ false }}
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+          EDARSAHUB_ALLOW_MIGRATIONS: 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE/backend" python backend/tools/edarsahub_sql_runner.py --mode migrate --script "${MIGRATION_SCRIPT}" 2>&1 | tee evidence/migration.txt
+          echo 'GATE5D_MIGRATION=PASS'
+
+      - name: Postcheck exact Communications contract
+        id: postcheck
+        continue-on-error: true
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' | tee evidence/postcheck.txt
+          import os,pymssql
+          conn=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15)
+          cur=conn.cursor(as_dict=True)
+          cur.execute("SELECT COUNT(*) n FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Operativo_Notificaciones_Queue')"); columns=int(cur.fetchone()['n'])
+          cur.execute("SELECT COUNT(*) n FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Operativo_Notificaciones_Queue') AND name IN ('IX_Operativo_Notificaciones_Queue_Pendientes','IX_Operativo_Notificaciones_Queue_Lock')"); indexes=int(cur.fetchone()['n'])
+          cur.execute("SELECT COUNT_BIG(*) n FROM dbo.Operativo_Notificaciones_Queue"); queue_rows=int(cur.fetchone()['n'])
+          cur.execute("SELECT COUNT_BIG(*) n FROM dbo.Sistema_NotificacionesConfig"); config_rows=int(cur.fetchone()['n'])
+          cur.execute("SELECT COUNT_BIG(*) n FROM dbo.Operativo_Notificaciones_Log"); log_rows=int(cur.fetchone()['n'])
+          cur.execute("SELECT COUNT(*) n FROM dbo.Sistema_RBAC_Permisos WHERE codigo IN ('NOTIFICACIONES_VER','NOTIFICACIONES_CONFIGURAR','NOTIFICACIONES_ENVIAR') AND activo=1"); perms=int(cur.fetchone()['n'])
+          cur.execute("SELECT COUNT(*) n FROM dbo.Sistema_RBAC_RolesPermisos rp JOIN dbo.Sistema_RBAC_Roles r ON r.rol_id=rp.rol_id JOIN dbo.Sistema_RBAC_Permisos p ON p.permiso_id=rp.permiso_id WHERE r.codigo='SUPERADMIN' AND r.activo=1 AND rp.activo=1 AND p.codigo IN ('NOTIFICACIONES_VER','NOTIFICACIONES_CONFIGURAR','NOTIFICACIONES_ENVIAR')"); super_links=int(cur.fetchone()['n'])
+          cur.execute("SELECT COUNT(*) n FROM sys.tables WHERE name LIKE 'Toast[_]%'"); toast=int(cur.fetchone()['n'])
+          print({'queue_columns':columns,'queue_indexes':indexes,'queue_rows':queue_rows,'config_rows':config_rows,'log_rows':log_rows,'permissions':perms,'superadmin_links':super_links,'toast_tables':toast})
+          cur.close(); conn.close()
+          if columns!=20 or indexes!=2 or queue_rows!=0 or config_rows!=int(os.environ['GATE5D_CONFIG_ROWS_BEFORE']) or log_rows!=int(os.environ['GATE5D_LOG_ROWS_BEFORE']) or perms!=3 or super_links!=3 or toast!=0: raise SystemExit('GATE5D_POSTCHECK_CONTRACT_MISMATCH')
+          print('GATE5D_POSTCHECK=PASS')
+          PY
+
+      - name: Rollback if postcheck failed
+        if: ${{ false }}
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+          EDARSAHUB_ALLOW_MIGRATIONS: 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE/backend" python backend/tools/edarsahub_sql_runner.py --mode migrate --script "${ROLLBACK_SCRIPT}" 2>&1 | tee evidence/rollback.txt
+          echo 'GATE5D_ROLLBACK=EXECUTED'
+
+      - name: Fail after rollback
+        if: steps.postcheck.outcome == 'failure'
+        run: exit 1
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: communications-gate5d-development-migration-${{ github.run_id }}
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 30

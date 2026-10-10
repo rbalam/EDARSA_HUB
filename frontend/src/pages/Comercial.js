@@ -24,6 +24,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 // AUDITORIA-TABLEROS-KPIS-FILTROS-01: Migrado de axios directo a api centralizado
 import api from '../lib/api';
 import logger from '../services/logger';
+import IAContextualLauncher from '../components/ia/IAContextual';
+import TicketVentaModal from '../components/comercial/TicketVentaModal';
+import KpiDrilldownDialog from '../components/comercial/KpiDrilldownDialog';
 // FASE AUTH-SECURITY-01 / FASE 4.1: getToken eliminado, auth viaja en cookie httpOnly
 import { fetchUnidadesNegocio, getServerIdFromUnidad } from '../services/unidadesNegocioService';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
@@ -161,43 +164,66 @@ const formatPercent = (num) => {
 };
 
 // ============ MODAL DE DETALLE DE MOVIMIENTOS (Drill-down) ============
+// ============ MODAL DE DETALLE DE MOVIMIENTOS (Drill-down) ============
 function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo, tipoKpi, selectedMeses, selectedAnios }) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [page, setPage] = useState(1);
+  const [ventasTree, setVentasTree] = useState({});
+  const [ticketSeleccionado, setTicketSeleccionado] = useState(null);
 
   const titulos = {
     ventas: { titulo: 'Detalle de Ventas', icono: DollarSign, color: 'text-green-600' },
     ticket: { titulo: 'Detalle de Cheques', icono: Receipt, color: 'text-blue-600' },
-    pax: { titulo: 'Detalle de Comensales (PAX)', icono: Users, color: 'text-purple-600' },
-    rotacion: { titulo: 'Detalle de Mesas', icono: Utensils, color: 'text-orange-600' }
+    pax: { titulo: 'Detalle PAX Total', icono: Users, color: 'text-purple-600' },
+    pax_promedio: { titulo: 'Detalle PAX Promedio por Cuenta', icono: Users, color: 'text-purple-600' },
+    rotacion: { titulo: 'Rotación de Mesas por Mes', icono: Utensils, color: 'text-orange-600' }
   };
 
   const config = titulos[tipoKpi] || titulos.ventas;
   const IconComponent = config.icono;
+  const esRotacion = tipoKpi === 'rotacion';
+  const esPaxPromedio = tipoKpi === 'pax_promedio';
+  const esVentas = tipoKpi === 'ventas';
+
+  useEffect(() => {
+    setPage(1);
+    setVentasTree({});
+    setTicketSeleccionado(null);
+  }, [tipoKpi, selectedMeses, selectedAnios, periodo]);
 
   useEffect(() => {
     if (isOpen && serverId && sucursal) {
       cargarDetalle();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, serverId, sucursal, page, periodo]);
+  }, [isOpen, serverId, sucursal, page, periodo, tipoKpi, selectedMeses, selectedAnios]);
+
+  const baseParams = () => ({
+    sucursal,
+    periodo,
+    meses: selectedMeses?.join(',') || '',
+    anios: selectedAnios?.join(',') || ''
+  });
 
   const cargarDetalle = async () => {
     setLoading(true);
     try {
-      const response = await api.get(`/comercial/detalle-movimientos/${serverId}`, {
-        params: { 
-          sucursal, 
-          tipo: tipoKpi, 
-          periodo, 
-          page, 
-          limit: 50,
-          meses: selectedMeses?.join(',') || '',
-          anios: selectedAnios?.join(',') || ''
-        }
-      });
-      setData(response.data);
+      const endpoint = esVentas
+        ? '/comercial/detalle-ventas-agrupado/' + serverId
+        : '/comercial/detalle-movimientos/' + serverId;
+
+      const params = esVentas
+        ? { ...baseParams(), nivel: 'auto', page: 1, limit: 5000 }
+        : { ...baseParams(), tipo: tipoKpi, page, limit: 50 };
+
+      const response = await api.get(endpoint, { params, timeout: 30000 });
+      const payload = response.data || {};
+      if (payload.source_status === 'ERROR') {
+        throw new Error(payload.source_message || 'Error al consultar detalle');
+      }
+      setData(payload);
+      if (esVentas) setVentasTree({});
     } catch (error) {
       logger.error('Error cargando detalle:', error);
       toast.error('Error al cargar detalle de movimientos');
@@ -206,114 +232,341 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
     }
   };
 
+  const toggleGrupoVentas = async (grupo) => {
+    if (!grupo?.expandible || !grupo?.clave) return;
+
+    const actual = ventasTree[grupo.clave];
+    if (actual?.open) {
+      setVentasTree(prev => ({
+        ...prev,
+        [grupo.clave]: { ...prev[grupo.clave], open: false }
+      }));
+      return;
+    }
+
+    if (actual?.children) {
+      setVentasTree(prev => ({
+        ...prev,
+        [grupo.clave]: { ...prev[grupo.clave], open: true }
+      }));
+      return;
+    }
+
+    setVentasTree(prev => ({
+      ...prev,
+      [grupo.clave]: { open: true, loading: true, children: null }
+    }));
+
+    try {
+      const params = { ...baseParams(), nivel: grupo.siguiente_nivel, page: 1, limit: 5000 };
+      if (grupo.anio) params.anio_filtro = grupo.anio;
+      if (grupo.mes) params.mes_filtro = grupo.mes;
+      if (grupo.fecha) params.fecha_filtro = grupo.fecha;
+
+      const response = await api.get(
+        '/comercial/detalle-ventas-agrupado/' + serverId,
+        { params, timeout: 30000 }
+      );
+      const payload = response.data || {};
+      if (payload.source_status === 'ERROR') {
+        throw new Error(payload.source_message || 'Error al consultar el grupo');
+      }
+
+      setVentasTree(prev => ({
+        ...prev,
+        [grupo.clave]: {
+          open: true,
+          loading: false,
+          children: payload.items || payload.movimientos || []
+        }
+      }));
+    } catch (error) {
+      logger.error('Error cargando grupo de ventas:', error);
+      setVentasTree(prev => ({
+        ...prev,
+        [grupo.clave]: { open: false, loading: false, children: null }
+      }));
+      toast.error('Error al abrir el detalle del período');
+    }
+  };
+
+  const abrirTicket = (item) => {
+    const fecha = String(item?.fecha || '').slice(0, 10);
+    if (!item?.folio || !fecha) return;
+    setTicketSeleccionado({ folio: item.folio, fecha });
+  };
+
+  const renderVentasRows = (items, depth = 0) => (items || []).map((item, idx) => {
+    const esDetalle = item.nivel === 'detalle';
+    const state = item.clave ? ventasTree[item.clave] : null;
+    const rowKey = item.clave || ((item.folio || 'venta') + '-' + (item.fecha || idx) + '-' + depth);
+
+    return (
+      <React.Fragment key={rowKey}>
+        <tr
+          className={
+            'border-b transition-colors ' +
+            ((item.expandible || esDetalle) ? 'hover:bg-zinc-50 cursor-pointer' : 'hover:bg-zinc-50')
+          }
+          onClick={() => {
+            if (esDetalle) {
+              abrirTicket(item);
+            } else if (item.expandible) {
+              toggleGrupoVentas(item);
+            }
+          }}
+          title={esDetalle ? 'Abrir ticket de venta' : undefined}
+        >
+          <td className="py-2 px-3">
+            <div className="flex items-center gap-1" style={{ paddingLeft: (depth * 18) + 'px' }}>
+              {item.expandible ? (
+                state?.loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-zinc-400 flex-shrink-0" />
+                ) : state?.open ? (
+                  <ChevronDown className="h-4 w-4 text-zinc-500 flex-shrink-0" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-zinc-500 flex-shrink-0" />
+                )
+              ) : esDetalle ? (
+                <Receipt className="h-4 w-4 text-zinc-400 flex-shrink-0" />
+              ) : (
+                <span className="w-4" />
+              )}
+              <span className={esDetalle ? 'font-mono text-xs font-medium underline decoration-dotted underline-offset-2' : 'font-semibold'}>
+                {esDetalle ? item.folio : item.label}
+              </span>
+              {esDetalle && item.total_cero_por_descuento && (
+                <span className="inline-flex items-center rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                  TOTAL $0 · DESCUENTO
+                </span>
+              )}
+            </div>
+          </td>
+          <td className="py-2 px-3 text-zinc-600">
+            {esDetalle ? item.fecha : (item.nivel === 'dia' ? item.fecha : '-')}
+          </td>
+          <td className="py-2 px-3 text-right">
+            {esDetalle ? '-' : formatNumber(item.folios)}
+          </td>
+          <td className="py-2 px-3 text-center">
+            {Number(item.pax || 0) > 0 ? (
+              <span className="inline-flex items-center gap-1">
+                <Users className="h-3 w-3 text-purple-500" />
+                {formatNumber(item.pax)}
+              </span>
+            ) : '-'}
+          </td>
+          <td className="py-2 px-3 text-right font-semibold text-green-600">
+            {formatCurrency(item.total_venta ?? item.importe)}
+          </td>
+        </tr>
+        {state?.open && state?.children && renderVentasRows(state.children, depth + 1)}
+      </React.Fragment>
+    );
+  });
+
   if (!isOpen) return null;
 
+  const ventasItems = data?.items || data?.movimientos || [];
+  const hayDatos = esVentas ? ventasItems.length > 0 : data?.movimientos?.length > 0;
+
+  const contextoVistaIA = {
+    modulo: 'comercial',
+    view_id: 'comercial_detalle_ventas',
+    titulo: config.titulo,
+    scope: {
+      server_id: serverId || null,
+      unidad: sucursal || null,
+      periodo: periodo || null,
+      meses: selectedMeses || [],
+      anios: selectedAnios || [],
+      metric: tipoKpi || null
+    },
+    filtros: {
+      periodo: periodo || null,
+      meses: selectedMeses || [],
+      anios: selectedAnios || []
+    },
+    periodo: {
+      label: data?.periodo
+        ? ((data.periodo.inicio || '') + ' a ' + (data.periodo.fin || ''))
+        : null,
+      fecha_inicio: data?.periodo?.inicio || null,
+      fecha_fin: data?.periodo?.fin || null
+    },
+    unidad_negocio: data?.servidor || sucursal || null,
+    seleccion: ticketSeleccionado
+      ? {
+          numero_ticket: ticketSeleccionado.folio || null,
+          fecha: ticketSeleccionado.fecha || null
+        }
+      : null,
+    columnas_visibles: esVentas
+      ? [
+          { key: 'folio', label: 'Período / Folio' },
+          { key: 'fecha', label: 'Fecha' },
+          { key: 'folios', label: 'Folios' },
+          { key: 'pax', label: 'PAX' },
+          { key: 'total_venta', label: 'Total Venta' }
+        ]
+      : [],
+    estado_vista: {
+      total_folios: Number(data?.resumen_periodo?.folios || 0),
+      total_pax: Number(data?.resumen_periodo?.pax || 0),
+      total_venta: Number(data?.resumen_periodo?.total_venta || 0)
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <IconComponent className={`h-5 w-5 ${config.color}`} />
-            {config.titulo}
-            {data?.servidor && <span className="text-sm font-normal text-zinc-500">• {data.servidor}</span>}
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-5xl max-h-[88vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <IconComponent className={'h-5 w-5 ' + config.color} />
+              {config.titulo}
+              {data?.servidor && <span className="text-sm font-normal text-zinc-500">• {data.servidor}</span>}
+            </DialogTitle>
+          </DialogHeader>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
-          </div>
-        ) : data?.movimientos?.length > 0 ? (
-          <div className="flex-1 overflow-hidden flex flex-col">
-            {/* Info del período */}
-            <div className="flex items-center justify-between mb-3 px-1">
-              <span className="text-sm text-zinc-500">
-                Período: {data.periodo?.inicio} a {data.periodo?.fin}
-              </span>
-              <span className="text-sm font-medium">
-                {data.total} movimientos
-              </span>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
             </div>
-
-            {/* Tabla de movimientos */}
-            <div className="flex-1 overflow-auto border rounded-lg">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-zinc-800 text-white">
-                  <tr>
-                    <th className="py-2 px-3 text-left">Folio</th>
-                    <th className="py-2 px-3 text-left">Fecha/Hora</th>
-                    <th className="py-2 px-3 text-right">Importe</th>
-                    <th className="py-2 px-3 text-center">PAX</th>
-                    <th className="py-2 px-3 text-center">Productos</th>
-                    <th className="py-2 px-3 text-left">Tipo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.movimientos.map((mov, idx) => (
-                    <tr key={mov.folio || `mov-${idx}`} className="border-b hover:bg-zinc-50 transition-colors">
-                      <td className="py-2 px-3 font-mono text-xs font-medium">{mov.folio}</td>
-                      <td className="py-2 px-3 text-zinc-600">{mov.fecha}</td>
-                      <td className="py-2 px-3 text-right font-semibold text-green-600">
-                        {formatCurrency(mov.importe)}
-                      </td>
-                      <td className="py-2 px-3 text-center">
-                        {mov.pax > 0 ? (
-                          <span className="inline-flex items-center gap-1">
-                            <Users className="h-3 w-3 text-purple-500" />
-                            {mov.pax}
-                          </span>
-                        ) : '-'}
-                      </td>
-                      <td className="py-2 px-3 text-center text-zinc-500">{mov.num_productos}</td>
-                      <td className="py-2 px-3">
-                        <span className={`px-2 py-0.5 rounded text-xs ${
-                          mov.tipo_servicio === 'Comedor' ? 'bg-blue-100 text-blue-700' :
-                          mov.tipo_servicio === 'Domicilio' ? 'bg-orange-100 text-orange-700' :
-                          mov.tipo_servicio === 'Para llevar' ? 'bg-green-100 text-green-700' :
-                          'bg-zinc-100 text-zinc-700'
-                        }`}>
-                          {mov.tipo_servicio}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Paginación */}
-            {data.pages > 1 && (
-              <div className="flex items-center justify-between pt-3 border-t mt-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
-                </Button>
+          ) : hayDatos ? (
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between mb-3 px-1 gap-3">
                 <span className="text-sm text-zinc-500">
-                  Página {page} de {data.pages}
+                  Período: {data.periodo?.inicio} a {data.periodo?.fin}
                 </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => Math.min(data.pages, p + 1))}
-                  disabled={page >= data.pages}
-                >
-                  Siguiente <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium">
+                    {esVentas
+                      ? (formatNumber(data.resumen_periodo?.folios || 0) + ' folio(s)')
+                      : (data.total + ' ' + (esRotacion ? 'mes(es)' : 'folio(s)'))}
+                  </span>
+                  {esVentas && (
+                    <IAContextualLauncher
+                      contextoVista={contextoVistaIA}
+                      viewData={{ tickets: ventasItems, lines: [] }}
+                    />
+                  )}
+                </div>
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-center py-12 text-zinc-500">
-            <Receipt className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p>No hay movimientos en este período</p>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+
+              {esVentas && (
+                <p className="text-xs text-zinc-500 mb-2 px-1">
+                  Selecciona un folio para abrir el ticket de venta.
+                </p>
+              )}
+
+              <div className="flex-1 overflow-auto border rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-zinc-800 text-white z-10">
+                    {esVentas ? (
+                      <tr>
+                        <th className="py-2 px-3 text-left">Período / Folio</th>
+                        <th className="py-2 px-3 text-left">Fecha</th>
+                        <th className="py-2 px-3 text-right">Folios</th>
+                        <th className="py-2 px-3 text-center">PAX</th>
+                        <th className="py-2 px-3 text-right">Total Venta</th>
+                      </tr>
+                    ) : esRotacion ? (
+                      <tr>
+                        <th className="py-2 px-3 text-left">Mes</th>
+                        <th className="py-2 px-3 text-right">Rotación</th>
+                        <th className="py-2 px-3 text-right">Cheques</th>
+                        <th className="py-2 px-3 text-right">PAX</th>
+                      </tr>
+                    ) : (
+                      <tr>
+                        <th className="py-2 px-3 text-left">Folio</th>
+                        <th className="py-2 px-3 text-left">Fecha</th>
+                        <th className="py-2 px-3 text-center">PAX</th>
+                        <th className="py-2 px-3 text-right">Total Venta</th>
+                        {esPaxPromedio && <th className="py-2 px-3 text-right">PAX Promedio</th>}
+                      </tr>
+                    )}
+                  </thead>
+                  <tbody>
+                    {esVentas ? renderVentasRows(ventasItems) : data.movimientos.map((mov, idx) => (
+                      esRotacion ? (
+                        <tr key={mov.folio || ('rot-' + idx)} className="border-b hover:bg-zinc-50 transition-colors">
+                          <td className="py-2 px-3 font-medium">{mov.mes_label || mov.fecha}</td>
+                          <td className="py-2 px-3 text-right font-semibold">{Number(mov.rotacion || 0).toFixed(2)}x</td>
+                          <td className="py-2 px-3 text-right">{formatNumber(mov.cheques)}</td>
+                          <td className="py-2 px-3 text-right">{formatNumber(mov.pax)}</td>
+                        </tr>
+                      ) : (
+                        <tr key={(mov.folio || 'mov') + '-' + idx} className="border-b hover:bg-zinc-50 transition-colors">
+                          <td className="py-2 px-3 font-mono text-xs font-medium">{mov.folio}</td>
+                          <td className="py-2 px-3 text-zinc-600">{mov.fecha}</td>
+                          <td className="py-2 px-3 text-center">
+                            {mov.pax > 0 ? (
+                              <span className="inline-flex items-center gap-1">
+                                <Users className="h-3 w-3 text-purple-500" />
+                                {mov.pax}
+                              </span>
+                            ) : '-'}
+                          </td>
+                          <td className="py-2 px-3 text-right font-semibold text-green-600">
+                            {formatCurrency(mov.importe)}
+                          </td>
+                          {esPaxPromedio && (
+                            <td className="py-2 px-3 text-right font-semibold text-purple-600">
+                              {mov.pax_promedio == null ? '-' : formatCurrency(mov.pax_promedio)}
+                            </td>
+                          )}
+                        </tr>
+                      )
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {esVentas && (
+                <div className="mt-3 rounded-lg border bg-zinc-50 px-4 py-3 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-zinc-500">Total del período seleccionado</p>
+                    <p className="text-xs text-zinc-500">
+                      {formatNumber(data.resumen_periodo?.folios || 0)} folio(s) • {formatNumber(data.resumen_periodo?.pax || 0)} PAX
+                    </p>
+                  </div>
+                  <p className="text-xl font-bold text-green-600">
+                    {formatCurrency(data.resumen_periodo?.total_venta || 0)}
+                  </p>
+                </div>
+              )}
+
+              {!esVentas && !esRotacion && data.pages > 1 && (
+                <div className="flex items-center justify-between pt-3 border-t mt-3">
+                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+                  </Button>
+                  <span className="text-sm text-zinc-500">Página {page} de {data.pages}</span>
+                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(data.pages, p + 1))} disabled={page >= data.pages}>
+                    Siguiente <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-zinc-500">
+              <Receipt className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p>No hay movimientos en este período</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <TicketVentaModal
+        isOpen={Boolean(ticketSeleccionado)}
+        onClose={() => setTicketSeleccionado(null)}
+        serverId={serverId}
+        sucursal={sucursal}
+        seleccion={ticketSeleccionado}
+      />
+    </>
   );
 }
 
@@ -346,6 +599,7 @@ const getAniosDisponibles = () => {
 function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector, loadingUnidades }) {
   const [loading, setLoading] = useState(false);
   const [kpis, setKpis] = useState(null);
+  const [detallePeriodo, setDetallePeriodo] = useState(null);
   const [comparativo, setComparativo] = useState(null);
   const [alertas, setAlertas] = useState([]);
   const [periodo, setPeriodo] = useState('mes'); // mes, semana, dia
@@ -407,6 +661,7 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
       // Manejar source_status del backend
       const { source_status, source_message, cache_used, last_successful_sync, kpis: kpisData, comparativo: compData, alertas: alertasData } = response.data;
       
+      setDetallePeriodo({ inicio: response.data.fecha_inicio, fin: response.data.fecha_fin });
       setSourceStatus(source_status || 'SUCCESS');
       setSourceMessage(source_message || '');
       setCacheUsed(cache_used || false);
@@ -713,7 +968,7 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
       {/* Instrucción de drill-down */}
       {kpis && (
         <p className="text-xs text-zinc-500 italic text-center">
-          💡 Doble clic en cualquier tarjeta para ver el detalle de movimientos
+          💡 Doble clic para ver el detalle. Rotación de Mesas muestra detalle solo cuando seleccionas varios meses.
         </p>
       )}
 
@@ -758,7 +1013,7 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
             {/* Pax Promedio (MORADO) */}
             <Card 
               className="border bg-gradient-to-br from-purple-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
-              onDoubleClick={() => handleDoubleClick('pax')}
+              onDoubleClick={() => handleDoubleClick('pax_promedio')}
               data-testid="kpi-pax-promedio"
             >
               <CardContent className="py-4">
@@ -830,8 +1085,9 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* Rotación Mesas (VERDE - debajo de Ventas) */}
             <Card 
-              className="border bg-gradient-to-br from-green-50/50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
-              onDoubleClick={() => handleDoubleClick('rotacion')}
+              className={`border bg-gradient-to-br from-green-50/50 to-white transition-all ${esMultiMes ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02]' : 'cursor-default'}`}
+              onDoubleClick={() => esMultiMes && handleDoubleClick('rotacion')}
+              title={esMultiMes ? 'Doble clic para ver rotación por mes' : 'Selecciona varios meses para ver el detalle mensual'}
               data-testid="kpi-rotacion"
             >
               <CardContent className="py-4">
@@ -927,33 +1183,34 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
                 <CardTitle className="text-base">Comparativo de Ventas</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className={`grid ${esMultiMes ? 'grid-cols-2' : 'grid-cols-3'} gap-4`}>
-                  {/* Ocultar "vs Período Anterior" cuando hay multiselección de meses */}
-                  {!esMultiMes && (
-                    <div className="text-center p-4 bg-zinc-50 rounded">
-                      <p className="text-xs text-zinc-500 mb-1">vs Período Anterior</p>
-                      <p className={`text-xl font-bold ${comparativo.vs_periodo_anterior >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatPercent(comparativo.vs_periodo_anterior)}
-                        {comparativo?.sin_datos_periodo_anterior && (
-                          <span className="ml-1 text-sm text-zinc-400 cursor-help" title="Sin datos del período anterior">*</span>
-                        )}
-                      </p>
-                    </div>
-                  )}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-zinc-50 rounded">
-                    <p className="text-xs text-zinc-500 mb-1">{esMultiMes ? 'vs Mismo Periodo Año Ant.' : 'vs Año Anterior'}</p>
+                    <p className="text-xs text-zinc-500 mb-1">vs Período Anterior</p>
+                    <p className={`text-xl font-bold ${comparativo.vs_periodo_anterior >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatPercent(comparativo.vs_periodo_anterior)}
+                      {comparativo?.sin_datos_periodo_anterior && (
+                        <span className="ml-1 text-sm text-zinc-400 cursor-help" title="Sin datos del período anterior">*</span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="text-center p-4 bg-zinc-50 rounded">
+                    <p className="text-xs text-zinc-500 mb-1">vs Mismo Período Año Anterior</p>
                     <p className={`text-xl font-bold ${comparativo.vs_ano_anterior >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {formatPercent(comparativo.vs_ano_anterior)}
                       {comparativo?.sin_datos_ano_anterior && (
-                        <span className="ml-1 text-sm text-zinc-400 cursor-help" title="Sin datos del año anterior - No había operación en este período">*</span>
+                        <span className="ml-1 text-sm text-zinc-400 cursor-help" title="Sin datos del año anterior">*</span>
                       )}
                     </p>
                   </div>
                   <div className="text-center p-4 bg-zinc-50 rounded">
                     <p className="text-xs text-zinc-500 mb-1">vs Presupuesto</p>
-                    <p className={`text-xl font-bold ${comparativo.vs_presupuesto >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatPercent(comparativo.vs_presupuesto)}
-                    </p>
+                    {comparativo?.presupuesto_disponible === false || comparativo?.vs_presupuesto == null ? (
+                      <p className="text-xl font-bold text-zinc-500">Sin presupuesto</p>
+                    ) : (
+                      <p className={`text-xl font-bold ${comparativo.vs_presupuesto >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatPercent(comparativo.vs_presupuesto)}
+                      </p>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -963,7 +1220,20 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
       )}
 
       {/* Modal de Detalle de Movimientos */}
-      <DetalleMovimientosModal
+      {detalleModal.tipo === 'ventas' ? (
+        <KpiDrilldownDialog
+          open={detalleModal.open}
+          onClose={() => setDetalleModal({ open: false, tipo: null })}
+          tipo="ventas"
+          unidad={{
+            ...(unidadesNegocio.find(u => u.id === selectedUnidad) || {}),
+            unidad_negocio_codigo: (unidadesNegocio.find(u => u.id === selectedUnidad) || {}).codigo || (unidadesNegocio.find(u => u.id === selectedUnidad) || {}).unidad_negocio_codigo,
+            server_id: selectedServer,
+            ventas: kpis?.ventas_periodo, pax: kpis?.pax_total, cheques: kpis?.cheques_total
+          }}
+          temporalSelection={{ mode: 'date_range', startDate: detallePeriodo?.inicio, endDate: detallePeriodo?.fin }}
+        />
+      ) : <DetalleMovimientosModal
         isOpen={detalleModal.open}
         onClose={() => setDetalleModal({ open: false, tipo: null })}
         serverId={selectedServer}
@@ -972,7 +1242,7 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
         tipoKpi={detalleModal.tipo}
         selectedMeses={selectedMeses}
         selectedAnios={selectedAnios}
-      />
+      />}
     </div>
   );
 }

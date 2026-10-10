@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "CAVAS-GATE12N-SCOPE-FIX-R2B-CERT-READONLY-R1-20260918",
+  "reason": "Post-reload verification of the already-published Cavas Gate12N R2B READ_ONLY certification. Require wake HTTP 200/202, preserve unrelated active work, no Production.",
+  "production_touched": false
+}

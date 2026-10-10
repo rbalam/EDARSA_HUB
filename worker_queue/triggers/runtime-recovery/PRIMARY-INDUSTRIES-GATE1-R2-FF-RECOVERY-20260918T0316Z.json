@@ -1,0 +1,11 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Recover canonical Universal Worker runtime convergence for existing PRIMARY-INDUSTRIES-GATE1-CANONICAL-DOMAIN-DESIGN-R2-20260917 after terminal GIT_DIVERGENCE_BLOCKED with NEEDS_FAST_FORWARD_REFRESH. The local worktree was clean, local branch was behind origin/Edarsahub_Desarrollo by exactly one commit, and that remote-only commit belongs to another Worker job. Fast-forward only to current Edarsahub_Desarrollo, preserve local work, fail closed on wrong branch, dirty state, non-fast-forward or divergence, then consume the existing Gate 1 R2 without modifying or cloning it. Do not create Gate1 R3, do not touch Production.",
+  "existing_job_id": "PRIMARY-INDUSTRIES-GATE1-CANONICAL-DOMAIN-DESIGN-R2-20260917",
+  "expected_local_head": "4cd17ed44a4b595b9145f64c0497d6aa3ea7b576",
+  "expected_remote_head": "2cf69ee09beb0b3fc415aa817bb8b6ae1c31ade1",
+  "expected_classification": "REMOTE_AHEAD_ONLY",
+  "fast_forward_only": true,
+  "preserve_local_work": true,
+  "production_touched": false
+}

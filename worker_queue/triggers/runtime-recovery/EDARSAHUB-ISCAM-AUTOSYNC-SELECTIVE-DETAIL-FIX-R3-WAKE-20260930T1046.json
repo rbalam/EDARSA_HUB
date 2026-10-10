@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-ISCAM-AUTOSYNC-SELECTIVE-DETAIL-FIX-R3-CARLOS-20260930T1045",
+  "reason": "Wake canonical Universal Worker and prefer ISCAM autosync selective-detail fix R3. R3 corrects the regression test scope after R2 reached GIT_TESTS_FAILED. Preserve queue identities; do not touch Production.",
+  "production_touched": false
+}

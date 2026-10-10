@@ -296,7 +296,8 @@ def _get_servers_from_sql(
         if exclude_core:
             conditions.append("(tipo_conexion != 'CORE' OR tipo_conexion IS NULL)")
         
-        # Excluir conexiones API_LOCAL (tienen su propio endpoint /api/api-connections)
+        # API_LOCAL tiene endpoint y tab propios: /api/api-connections.
+        # El listado /api/servers alimenta exclusivamente el tab SQL Servers.
         conditions.append("(tipo_conexion != 'API_LOCAL' OR tipo_conexion IS NULL)")
         
         where_clause = " AND ".join(conditions) if conditions else "1=1"
@@ -325,7 +326,7 @@ def _get_servers_from_sql(
         return []
 
 
-def _get_server_by_id_from_sql(server_id: str) -> Optional[Dict]:
+def _get_server_by_id_from_sql(server_id: str, include_inactive: bool = False) -> Optional[Dict]:
     """
     Obtiene un servidor específico por ID desde EDARSAHUB SQL.
     Busca tanto por id como por mongodb_id para compatibilidad.
@@ -335,11 +336,12 @@ def _get_server_by_id_from_sql(server_id: str) -> Optional[Dict]:
         
         # Escapar el ID para prevenir SQL injection básico
         safe_id = server_id.replace("'", "''")
+        active_clause = "" if include_inactive else "AND activo = 1"
         
         query = f"""
         SELECT * FROM Servidores_Conexiones
         WHERE (CAST(id AS VARCHAR(50)) = '{safe_id}' OR mongodb_id = '{safe_id}')
-          AND activo = 1
+          {active_clause}
         """
         
         results = execute_sql_query(
@@ -1058,8 +1060,9 @@ async def update_server(
             'sync_status': 'VALIDATION_ERROR'
         }
     
-    # Verificar que existe en SQL
-    existing = _get_server_by_id_from_sql(server_id)
+    # Verificar que existe en SQL, incluyendo registros inactivos para permitir
+    # su corrección/configuración sin activarlos implícitamente.
+    existing = _get_server_by_id_from_sql(server_id, include_inactive=True)
     if not existing:
         return {
             'success': False,
@@ -1915,7 +1918,7 @@ def get_connection_config(server_id: str) -> Optional[Dict]:
     }
 
 
-def get_server_connection_info_with_secrets(server_id: str) -> Optional[Dict]:
+def get_server_connection_info_with_secrets(server_id: str, include_inactive: bool = False) -> Optional[Dict]:
     """
     USO INTERNO BACKEND - Obtiene configuración completa de conexión incluyendo credenciales.
     
@@ -1938,7 +1941,7 @@ def get_server_connection_info_with_secrets(server_id: str) -> Optional[Dict]:
         - active
         O None si no existe
     """
-    server = _get_server_by_id_from_sql(server_id)
+    server = _get_server_by_id_from_sql(server_id, include_inactive=include_inactive)
     if not server:
         logger.debug(f"[SERVER_REGISTRY] Servidor {server_id} no encontrado para conexión")
         return None

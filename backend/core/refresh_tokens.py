@@ -314,12 +314,16 @@ async def create_session(
         raise
 
 
-async def validate_and_get_session(refresh_token: str) -> Optional[Dict[str, Any]]:
+async def validate_and_get_session(
+    refresh_token: str,
+    expected_user_type: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
     """
     Valida un refresh token y retorna la sesión si es válida.
     
     Args:
         refresh_token: Token a validar
+        expected_user_type: Si se indica, limita la sesión a ese TipoUsuario
         
     Returns:
         Dict con datos de sesión o None si inválido
@@ -336,10 +340,18 @@ async def validate_and_get_session(refresh_token: str) -> Optional[Dict[str, Any
             RefreshTokenHash = %s
             AND EstaActiva = 1
             AND FechaExpiracion > GETUTCDATE()
+            AND FechaRevocacion IS NULL
     """
+    params = [token_hash]
+    if expected_user_type:
+        query += """
+            AND LOWER(LTRIM(RTRIM(ISNULL(TipoUsuario, '')))) =
+                LOWER(LTRIM(RTRIM(%s)))
+        """
+        params.append(expected_user_type)
     
     try:
-        result = await _execute_sql_async(query, (token_hash,), fetch_one=True)
+        result = await _execute_sql_async(query, tuple(params), fetch_one=True)
         
         if result:
             # SQL puede devolver datetimes como objetos datetime o como str
@@ -463,7 +475,8 @@ async def rotate_refresh_token(
 async def detect_and_handle_replay(
     refresh_token: str,
     ip_address: Optional[str] = None,
-    user_agent: Optional[str] = None
+    user_agent: Optional[str] = None,
+    expected_user_type: Optional[str] = None,
 ) -> Tuple[bool, Optional[Dict]]:
     """
     Detecta si un refresh token es un intento de replay.
@@ -500,9 +513,16 @@ async def detect_and_handle_replay(
             AND EstaActiva = 0
             AND MotivoRevocacion = 'token_rotated'
     """
+    params = [token_hash]
+    if expected_user_type:
+        query += """
+            AND LOWER(LTRIM(RTRIM(ISNULL(TipoUsuario, '')))) =
+                LOWER(LTRIM(RTRIM(%s)))
+        """
+        params.append(expected_user_type)
     
     try:
-        result = await _execute_sql_async(query, (token_hash,), fetch_one=True)
+        result = await _execute_sql_async(query, tuple(params), fetch_one=True)
         
         if result:
             # ¡REPLAY DETECTADO!

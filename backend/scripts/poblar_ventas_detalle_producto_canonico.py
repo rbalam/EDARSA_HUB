@@ -30,6 +30,8 @@ from core.secret_manager import decrypt_secret, is_encrypted_secret
 from core.system_type_utils import SystemType, normalize_system_type
 
 
+from modules.comercial_v2.ticket_contract import FIELDS, fields_from, FIELD_TYPES
+
 DESTINO = "dbo.Comercial_Inteligencia_VentasDetalleProducto"
 RUNTIME = "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime"
 
@@ -622,21 +624,35 @@ def _runtime_metrics(row: Dict[str, Any]) -> Dict[str, Any]:
         0,
     )
 
-    source_text = " ".join(
-        str(value)
-        for value in row.values()
-        if value is not None
+    es_venta_abierta_raw = _first(
+        row,
+        ["es_venta_abierta"],
+        None,
     )
+    es_corte_cerrado_raw = _first(
+        row,
+        ["es_corte_cerrado"],
+        None,
+    )
+
+    if es_venta_abierta_raw is not None:
+        es_abierta = _s(es_venta_abierta_raw).upper() in {
+            "1", "TRUE", "SI", "YES"
+        }
+    elif es_corte_cerrado_raw is not None:
+        es_corte_cerrado = _s(es_corte_cerrado_raw).upper() in {
+            "1", "TRUE", "SI", "YES"
+        }
+        es_abierta = not es_corte_cerrado
+    else:
+        es_abierta = _d(ventas_abiertas) > 0
 
     return {
         "ventas": _d(row["ventas_total"]),
         "tickets": int(_d(row["tickets_total"])),
         "pax": int(_d(row["pax_total"])),
         "ventas_abiertas": _d(ventas_abiertas),
-        "es_abierta": (
-            "Comercial_Ventas_Dia_Abiertas_v2"
-            in source_text
-        ),
+        "es_abierta": es_abierta,
     }
 
 
@@ -693,8 +709,9 @@ def _soft_operational_datetime_range(cfg: Dict[str, Any], dia: date) -> Tuple[st
 
     Para un dia, Reporte Ejecutivo equivale a [00:00:00, siguiente 00:00:00).
     """
-    del cfg
     inicio = datetime.combine(dia, datetime.min.time())
+    if str(cfg.get('unidad_codigo') or '').strip().upper() == 'ESTELAR':
+        inicio += timedelta(hours=9)
     fin = inicio + timedelta(days=1)
     return (
         inicio.strftime("%Y-%m-%d %H:%M:%S"),
@@ -717,6 +734,12 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
 
         prop_expr = f"ISNULL(ch.{prop_col}, 0)" if prop_col else "CAST(0 AS decimal(18,4))"
         desc_expr = f"ISNULL(ch.{desc_col}, 0)" if desc_col else "CAST(0 AS decimal(18,4))"
+        mesa_col = "mesa" if _table_has_col(conn, "cheques", "mesa") else None
+        mesa_expr = (
+            f"NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), ch.{mesa_col}))), '')"
+            if mesa_col
+            else "CAST(NULL AS varchar(100))"
+        )
 
         fi, ff = _soft_operational_datetime_range(cfg, dia)
 
@@ -724,13 +747,19 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         WITH h AS (
             SELECT
                 ch.folio,
+                ch.numcheque,
                 ch.fecha,
-                  ISNULL(ch.cancelado, 0) AS cancelado_origen,
+                CONVERT(varchar(100), ch.idmesero) AS vendedor_id,
+                NULLIF(LTRIM(RTRIM(CONVERT(varchar(200), m.nombre))), '') AS vendedor_nombre,
+                {mesa_expr} AS mesa,
+                ISNULL(ch.cancelado, 0) AS cancelado_origen,
                 ISNULL(ch.nopersonas, 0) AS pax_ticket,
                 ISNULL(ch.total, 0) AS importe_neto_ticket,
                 {prop_expr} AS propina_ticket,
                 {desc_expr} AS descuento_ticket
             FROM cheques ch WITH (NOLOCK)
+            LEFT JOIN meseros m WITH (NOLOCK)
+                ON m.idmesero = ch.idmesero
             INNER JOIN turnos tr WITH (NOLOCK)
                 ON tr.idturno = ch.idturno
             WHERE tr.apertura >= %s
@@ -739,9 +768,14 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         ),
         l AS (
             SELECT
+                CONVERT(nvarchar(100), dc.movimiento) AS partida_origen_id,
                 h.folio,
+                h.numcheque,
                 h.fecha,
-                  h.cancelado_origen,
+                h.vendedor_id,
+                h.vendedor_nombre,
+                h.mesa,
+                h.cancelado_origen,
                 h.pax_ticket,
                 h.importe_neto_ticket,
                 h.propina_ticket,
@@ -751,6 +785,7 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                     ELSE COALESCE(NULLIF(CONVERT(varchar(100), dc.idproducto), ''), 'SIN_CODIGO')
                 END AS producto_codigo_fuente,
                 COALESCE(MAX(CONVERT(varchar(300), p.descripcion)), 'HEADER SIN DETALLE') AS producto_nombre,
+                CAST(ISNULL(dc.descuento, 0) AS decimal(9,4)) AS descuento_pct,
                 SUM(CAST(ISNULL(dc.cantidad, 0) AS decimal(18,4))) AS cantidad,
                 CASE
                     WHEN SUM(CAST(ISNULL(dc.cantidad, 0) AS decimal(18,4))) <> 0
@@ -758,69 +793,298 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                          / SUM(CAST(ISNULL(dc.cantidad, 0) AS decimal(18,4)))
                     ELSE MAX(CAST(ISNULL(dc.precio, 0) AS decimal(18,4)))
                 END AS precio_unitario,
-                SUM(CAST(ISNULL(dc.cantidad, 0) * ISNULL(dc.precio, 0) AS decimal(18,4))) AS importe_bruto
+                SUM(CAST(ISNULL(dc.cantidad, 0) * ISNULL(dc.precio, 0) AS decimal(18,4))) AS importe_bruto,
+                SUM(CAST(
+                    ISNULL(dc.cantidad, 0)
+                    * ISNULL(dc.precio, 0)
+                    * (1 - (ISNULL(dc.descuento, 0) / 100.0))
+                    AS decimal(18,4)
+                )) AS importe_neto
             FROM h
             LEFT JOIN cheqdet dc WITH (NOLOCK)
                 ON dc.foliodet = h.folio
             LEFT JOIN productos p WITH (NOLOCK)
                 ON p.idproducto = dc.idproducto
             GROUP BY
+                dc.movimiento,
                 h.folio,
+                h.numcheque,
                 h.fecha,
-                  h.cancelado_origen,
+                h.vendedor_id,
+                h.vendedor_nombre,
+                h.mesa,
+                h.cancelado_origen,
                 h.pax_ticket,
                 h.importe_neto_ticket,
                 h.propina_ticket,
                 h.descuento_ticket,
-                COALESCE(NULLIF(CONVERT(varchar(100), dc.idproducto), ''), 'SIN_CODIGO')
-        ),
-        t AS (
-            SELECT folio, SUM(importe_bruto) AS bruto_ticket
-            FROM l
-            GROUP BY folio
+                COALESCE(NULLIF(CONVERT(varchar(100), dc.idproducto), ''), 'SIN_CODIGO'),
+                CAST(ISNULL(dc.descuento, 0) AS decimal(9,4))
         )
         SELECT
-            CONVERT(varchar(64), l.folio) AS numero_ticket,
+            CONVERT(nvarchar(100), dc2.movimiento) AS partida_origen_id,
+            NULL AS partida_key,
+            ch2.idcliente AS cliente_id,
+            cl.nombre AS cliente_nombre,
+            NULL AS cliente_razon_social,
+            NULL AS cliente_descripcion,
+            NULL AS cliente_maestro_id,
+            NULL AS cliente_sucursal_origen,
+            cl.contacto AS cliente_contacto,
+            cl.rfc AS cliente_rfc,
+            cl.direccion AS cliente_direccion_1,
+            NULL AS cliente_direccion_2,
+            NULL AS cliente_direccion_3,
+            NULL AS cliente_calle,
+            NULL AS cliente_numero_exterior,
+            NULL AS cliente_numero_interior,
+            NULL AS cliente_colonia,
+            cl.poblacion AS cliente_ciudad,
+            NULL AS cliente_municipio,
+            cl.estado AS cliente_estado,
+            cl.pais AS cliente_pais,
+            cl.codigopostal AS cliente_codigo_postal,
+            ch2.fecha AS ticket_fecha,
+            ch2.cierre AS ticket_fecha_cierre,
+            ch2.pagado AS ticket_pagado,
+            ch2.impreso AS ticket_impreso,
+            ch2.impresiones AS ticket_impresiones,
+            NULL AS ticket_comentario,
+            ch2.comentariodescuento AS ticket_comentario_descuento,
+            NULL AS ticket_fecha_alta,
+            NULL AS ticket_oper_ult_modif,
+            NULL AS ticket_oper_baja,
+            ch2.fechacancelado AS ticket_fecha_baja,
+            dc2.comentario AS partida_comentario,
+            dc2.comentariodescuento AS partida_comentario_descuento,
+            NULL AS partida_comentario_cancelacion,
+            NULL AS partida_oper_baja,
+            NULL AS partida_fecha_baja,
+            dc2.idtipodescuento AS tipo_descuento_id,
+            td.desc_tipodescuento AS tipo_descuento_descripcion,
+            td.descuento AS tipo_descuento_valor,
+            NULL AS cliente_cruzamiento_1,
+            NULL AS cliente_cruzamiento_2,
+            NULL AS cliente_entrega_direccion_1,
+            NULL AS cliente_entrega_direccion_2,
+            NULL AS cliente_entrega_direccion_3,
+            NULL AS cliente_entrega_ciudad,
+            NULL AS cliente_entrega_estado,
+            NULL AS cliente_entrega_pais,
+            NULL AS cliente_entrega_codigo_postal,
+            NULL AS cliente_colonia_origen_id,
+            NULL AS cliente_ciudad_origen_id,
+            NULL AS cliente_municipio_origen_id,
+            NULL AS cliente_estado_origen_id,
+            NULL AS cliente_pais_origen_id,
+            NULL AS cliente_codigo_postal_origen_id,
+            NULL AS cliente_latitud,
+            NULL AS cliente_longitud,
+            COALESCE(
+                NULLIF(CONVERT(varchar(64), l.numcheque), ''),
+                CONVERT(varchar(64), l.folio)
+            ) AS numero_ticket,
             CONCAT('SOFT:', CONVERT(varchar(64), l.folio)) AS id_transaccion,
             l.fecha AS fecha_hora,
-              l.cancelado_origen,
-              CASE
-                  WHEN ISNULL(l.cancelado_origen, 0) = 0 THEN 'ACTIVO'
-                  ELSE 'CANCELADO'
-              END AS estado_origen,
-              CASE
-                  WHEN ISNULL(l.cancelado_origen, 0) = 0 THEN 1
-                  ELSE 0
-              END AS es_kpi_valido,
-              CONVERT(varchar(64), l.folio) AS folio_origen,
-              CONVERT(varchar(64), l.folio) AS documento_origen,
+            l.cancelado_origen,
+            CASE
+                WHEN ISNULL(l.cancelado_origen, 0) = 0 THEN 'ACTIVO'
+                ELSE 'CANCELADO'
+            END AS estado_origen,
+            CASE
+                WHEN ISNULL(l.cancelado_origen, 0) = 0 THEN 1
+                ELSE 0
+            END AS es_kpi_valido,
+            CONVERT(varchar(64), l.folio) AS folio_origen,
+            COALESCE(
+                NULLIF(CONVERT(varchar(64), l.numcheque), ''),
+                CONVERT(varchar(64), l.folio)
+            ) AS documento_origen,
+            l.vendedor_id,
+            l.vendedor_nombre,
+            l.mesa,
             l.pax_ticket,
             l.importe_neto_ticket,
             l.propina_ticket,
             l.descuento_ticket,
             l.producto_codigo_fuente,
             l.producto_nombre,
+            l.descuento_pct,
             l.cantidad,
             l.precio_unitario,
             l.importe_bruto,
-            CASE
-                WHEN ISNULL(t.bruto_ticket, 0) <> 0
-                THEN CAST(l.importe_bruto * l.importe_neto_ticket / t.bruto_ticket AS decimal(18,4))
-                ELSE CAST(0 AS decimal(18,4))
-            END AS importe_neto
+            CAST(l.importe_neto AS decimal(18,4)) AS importe_neto
         FROM l
-        INNER JOIN t ON t.folio = l.folio
-        ORDER BY l.folio, l.producto_codigo_fuente
+        LEFT JOIN cheques ch2 ON ch2.folio=l.folio
+        LEFT JOIN clientes cl ON cl.idcliente=ch2.idcliente
+        LEFT JOIN cheqdet dc2 ON dc2.foliodet=l.folio AND CONVERT(nvarchar(100),dc2.movimiento)=l.partida_origen_id
+        LEFT JOIN tipodescuento td ON td.idtipodescuento=dc2.idtipodescuento
+        ORDER BY l.folio, l.producto_codigo_fuente, l.descuento_pct
         """
         cur = conn.cursor(as_dict=True)
         cur.execute(sql, (fi, ff))
         rows = cur.fetchall() or []
         for r in rows:
             r["sistema_origen"] = "SOFTRESTAURANT"
-        return rows
+        return _soft_add_ticket_adjustments(rows)
     finally:
         conn.close()
 
+
+SOFT_AJUSTE_CHEQUE = "__ISCAM_AJUSTE_CHEQUE__"
+SOFT_AJUSTE_FRANQUICIA_CERO = "__ISCAM_AJUSTE_FRANQUICIA_CERO__"
+SOFT_AJUSTE_ANTICIPO_CERO = "__ISCAM_AJUSTE_ANTICIPO_CERO__"
+SOFT_AJUSTE_ENCABEZADO = "__ISCAM_AJUSTE_ENCABEZADO__"
+
+
+def _soft_add_ticket_adjustments(src_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Conserva productos reales y hace que el detalle dependa del folio header.
+
+    La poblacion valida nace exclusivamente de ``h`` (cheques validos) y cada linea
+    de ``cheqdet`` se une por ``dc.foliodet = h.folio``. No se prorratea ni se crea
+    una poblacion de tickets independiente. El total monetario autoritativo es el
+    encabezado del mismo folio; cualquier diferencia residual se conserva como una
+    linea tecnica de conciliacion ligada al ticket para que el detalle sume
+    exactamente al encabezado sin alterar los productos reales.
+    """
+    grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for raw in src_rows:
+        row = dict(raw)
+        key = _s(row.get("id_transaccion"))
+        if not key:
+            raise RuntimeError("SoftRestaurant: fila sin id_transaccion")
+        grouped[key].append(row)
+
+    out: List[Dict[str, Any]] = []
+    for ticket_key, items in grouped.items():
+        header_values = {_d(row.get("importe_neto_ticket")) for row in items}
+        discount_values = {_d(row.get("descuento_ticket")) for row in items}
+        if len(header_values) != 1 or len(discount_values) != 1:
+            raise RuntimeError(f"SoftRestaurant: encabezado inconsistente en ticket {ticket_key}")
+
+        header_total = next(iter(header_values))
+        discount_indicator = next(iter(discount_values))
+        product_total = sum((_d(row.get("importe_neto")) for row in items), Decimal("0"))
+        delta = header_total - product_total
+
+        out.extend(items)
+        if abs(delta) <= TOLERANCIA_VENTAS:
+            if delta == Decimal("0"):
+                continue
+            adjustment = dict(items[0])
+            adjustment["producto_codigo_fuente"] = SOFT_AJUSTE_ENCABEZADO
+            adjustment["producto_nombre"] = (
+                "AJUSTE DE CONCILIACION CONTRA ENCABEZADO DEL TICKET"
+            )
+            adjustment["cantidad"] = Decimal("0")
+            adjustment["precio_unitario"] = Decimal("0")
+            adjustment["importe_bruto"] = Decimal("0")
+            adjustment["importe_neto"] = delta
+            out.append(adjustment)
+            continue
+
+        if delta < 0 and discount_indicator > 0:
+            adjustment = dict(items[0])
+            adjustment["producto_codigo_fuente"] = SOFT_AJUSTE_CHEQUE
+            adjustment["producto_nombre"] = "AJUSTE DEL CHEQUE (DESCUENTO / CORTESIA NO ASIGNADO A PRODUCTO)"
+            adjustment["cantidad"] = Decimal("0")
+            adjustment["precio_unitario"] = Decimal("0")
+            adjustment["importe_bruto"] = Decimal("0")
+            adjustment["importe_neto"] = delta
+            out.append(adjustment)
+            continue
+
+        negative_franchise = any(
+            _d(row.get("importe_neto")) < 0
+            and (
+                "FRANQUICIA" in _s(row.get("producto_nombre")).upper()
+                or "FRANQICIA" in _s(row.get("producto_nombre")).upper()
+            )
+            for row in items
+        )
+        if (
+            header_total == Decimal("0")
+            and product_total < Decimal("0")
+            and delta > Decimal("0")
+            and negative_franchise
+        ):
+            adjustment = dict(items[0])
+            adjustment["producto_codigo_fuente"] = SOFT_AJUSTE_FRANQUICIA_CERO
+            adjustment["producto_nombre"] = "AJUSTE DE CIERRE A CERO (FRANQUICIA)"
+            adjustment["cantidad"] = Decimal("0")
+            adjustment["precio_unitario"] = Decimal("0")
+            adjustment["importe_bruto"] = Decimal("0")
+            adjustment["importe_neto"] = delta
+            out.append(adjustment)
+            continue
+
+        negative_advance_application = any(
+            _d(row.get("importe_neto")) < 0
+            and "ANTICIPO" in _s(row.get("producto_nombre")).upper()
+            and "VENTAS" in _s(row.get("producto_nombre")).upper()
+            and "APLICACION" in _s(row.get("producto_nombre")).upper()
+            for row in items
+        )
+        if (
+            header_total == Decimal("0")
+            and product_total < Decimal("0")
+            and delta > Decimal("0")
+            and negative_advance_application
+        ):
+            adjustment = dict(items[0])
+            adjustment["producto_codigo_fuente"] = SOFT_AJUSTE_ANTICIPO_CERO
+            adjustment["producto_nombre"] = "AJUSTE DE CIERRE A CERO (ANTICIPO S/VENTAS APLICACION)"
+            adjustment["cantidad"] = Decimal("0")
+            adjustment["precio_unitario"] = Decimal("0")
+            adjustment["importe_bruto"] = Decimal("0")
+            adjustment["importe_neto"] = delta
+            out.append(adjustment)
+            continue
+
+        technical_microprice_zero = (
+            header_total == Decimal("0")
+            and discount_indicator == Decimal("0")
+            and product_total > Decimal("0")
+            and product_total <= Decimal("0.50")
+            and all(
+                Decimal("0") <= _d(row.get("precio_unitario")) <= Decimal("0.001")
+                for row in items
+            )
+        )
+        if technical_microprice_zero:
+            adjustment = dict(items[0])
+            adjustment["producto_codigo_fuente"] = SOFT_AJUSTE_ENCABEZADO
+            adjustment["producto_nombre"] = "AJUSTE DE CIERRE A CERO (MICROPRECIO TECNICO)"
+            adjustment["cantidad"] = Decimal("0")
+            adjustment["precio_unitario"] = Decimal("0")
+            adjustment["importe_bruto"] = Decimal("0")
+            adjustment["importe_neto"] = delta
+            out.append(adjustment)
+            continue
+
+        if header_total == Decimal("0"):
+            raise RuntimeError(
+                f"SoftRestaurant: diferencia no explicada en ticket {ticket_key}; "
+                f"productos={product_total}; encabezado={header_total}; delta={delta}; "
+                f"indicador_descuento_cortesia={discount_indicator}"
+            )
+
+        # El folio del encabezado es el padre y la cifra autoritativa.
+        # Conservamos las lineas reales tal como vienen del POS y agregamos una
+        # linea tecnica por la diferencia residual del MISMO folio. De esta forma
+        # nunca se fabrica una poblacion de detalle independiente del header.
+        adjustment = dict(items[0])
+        adjustment["producto_codigo_fuente"] = SOFT_AJUSTE_ENCABEZADO
+        adjustment["producto_nombre"] = (
+            "AJUSTE DE CONCILIACION CONTRA ENCABEZADO DEL TICKET"
+        )
+        adjustment["cantidad"] = Decimal("0")
+        adjustment["precio_unitario"] = Decimal("0")
+        adjustment["importe_bruto"] = Decimal("0")
+        adjustment["importe_neto"] = delta
+        out.append(adjustment)
+
+    return out
 
 
 def _mpro_operational_datetime_range(
@@ -869,83 +1133,180 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 v.Vn_Documento,
                 v.Vn_Fecha,
                 v.Sc_Cve_Sucursal,
-                  ISNULL(v.Es_Cve_Estado, '') AS estado_origen,
+                CONVERT(varchar(100), v.Vn_Cve_Vendedor) AS vendedor_id,
+                NULLIF(LTRIM(RTRIM(CONVERT(varchar(200), vnd.Vn_Descripcion))), '') AS vendedor_nombre,
+                NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), c.Co_Referencia))), '') AS mesa,
+                ISNULL(v.Es_Cve_Estado, '') AS estado_origen,
                 ISNULL(c.Co_Personas, 0) AS pax_ticket,
                 ISNULL(v.Vn_Precio_Neto_Importe, 0) AS importe_neto_ticket,
                 ISNULL(c.Co_Propina, 0) AS propina_ticket,
-                ISNULL(c.Co_Descuento_Importe, 0) AS descuento_comanda,
-                ISNULL(v.Vn_Descuento_Global_Importe, 0)
-                  + ISNULL(v.Vn_Descuento_Importe, 0) AS descuento_ticket
+                CAST(0 AS decimal(18,4)) AS descuento_comanda,
+                CAST(0 AS decimal(18,4)) AS descuento_ticket
             FROM Venta_Encabezado v WITH (NOLOCK)
             LEFT JOIN Comanda c WITH (NOLOCK)
                 ON c.Co_Folio = v.Vn_Documento
                AND c.Sc_Cve_Sucursal = v.Sc_Cve_Sucursal
-            WHERE v.Vn_Fecha >= %s
-              AND v.Vn_Fecha < %s
+            LEFT JOIN Vendedor vnd WITH (NOLOCK)
+                ON vnd.Vn_Cve_Vendedor = v.Vn_Cve_Vendedor
+            WHERE CONVERT(date, v.Vn_Fecha) >= CONVERT(date, %s)
+              AND CONVERT(date, v.Vn_Fecha) < CONVERT(date, %s)
               AND v.Sc_Cve_Sucursal = %s
               AND ISNULL(v.Vn_Tabla, '') = 'Comanda'
               AND ISNULL(v.Es_Cve_Estado, '') IN ('AC', 'FA', 'CA')
         ),
+        d AS (
+            SELECT
+                vd.Vn_ID AS partida_origen_id,
+                vd.Vn_Folio,
+                vd.Sc_Cve_Sucursal,
+                vd.Pr_Cve_Producto,
+                vd.Vn_Concepto,
+                CAST(ISNULL(vd.Vn_Cantidad_1, 0) AS decimal(18,4)) AS cantidad,
+                CAST(ISNULL(vd.Vn_Precio_Lista, 0) AS decimal(18,4)) AS precio_lista,
+                CAST(ISNULL(vd.Vn_Precio_Lista_Importe, 0) AS decimal(18,4)) AS importe_lista,
+                CAST(ISNULL(vd.Vn_Descuento_Importe, 0) AS decimal(18,4)) AS descuento_producto_importe,
+                CAST(ISNULL(vd.Vn_Descuento_Global_Importe, 0) AS decimal(18,4)) AS descuento_global_importe,
+                CAST(ISNULL(vd.Vn_Precio_Neto_Importe, 0) AS decimal(18,4)) AS importe_neto_pos,
+                CAST(
+                    CASE
+                        WHEN ISNULL(vd.Vn_Precio_Lista_Importe, 0) <> 0
+                        THEN ISNULL(vd.Vn_Descuento_Importe, 0) * 100.0
+                             / NULLIF(vd.Vn_Precio_Lista_Importe, 0)
+                        ELSE 0
+                    END
+                    AS decimal(9,4)
+                ) AS descuento_pct
+            FROM Venta vd WITH (NOLOCK)
+        ),
         l AS (
             SELECT
+                d.partida_origen_id,
                 h.Vn_Folio,
                 h.Vn_Documento,
                 h.Vn_Fecha,
-                  h.estado_origen,
+                h.vendedor_id,
+                h.vendedor_nombre,
+                h.mesa,
+                h.estado_origen,
                 h.pax_ticket,
                 h.importe_neto_ticket,
                 h.propina_ticket,
                 h.descuento_comanda,
                 h.descuento_ticket,
                 CASE
-                    WHEN MAX(d.Co_Folio) IS NULL THEN 'HEADER_SIN_DETALLE'
+                    WHEN MAX(d.Vn_Folio) IS NULL THEN 'HEADER_SIN_DETALLE'
                     ELSE COALESCE(NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''), 'SIN_CODIGO')
                 END AS producto_codigo_fuente,
-                COALESCE(MAX(CONVERT(varchar(300), d.Cd_Concepto)), 'HEADER SIN DETALLE') AS producto_nombre,
-                SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4))) AS cantidad,
+                COALESCE(MAX(CONVERT(varchar(300), d.Vn_Concepto)), 'HEADER SIN DETALLE') AS producto_nombre,
+                COALESCE(d.descuento_pct, CAST(0 AS decimal(9,4))) AS descuento_pct,
+                SUM(ISNULL(d.cantidad, 0)) AS cantidad,
                 CASE
-                    WHEN SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4))) <> 0
-                    THEN SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4)))
-                         / SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4)))
-                    ELSE MAX(CAST(ISNULL(d.Cd_Precio, 0) AS decimal(18,4)))
+                    WHEN SUM(ISNULL(d.cantidad, 0)) <> 0
+                    THEN SUM(ISNULL(d.importe_lista, 0))
+                         / SUM(ISNULL(d.cantidad, 0))
+                    ELSE MAX(ISNULL(d.precio_lista, 0))
                 END AS precio_unitario,
-                SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS importe_bruto
+                SUM(ISNULL(d.importe_lista, 0)) AS importe_bruto,
+                SUM(ISNULL(d.descuento_producto_importe, 0)) AS descuento_producto_importe,
+                SUM(ISNULL(d.descuento_global_importe, 0)) AS descuento_global_importe,
+                SUM(ISNULL(d.importe_neto_pos, 0)) AS importe_neto_pos
             FROM h
-            LEFT JOIN Comanda_Detalle d WITH (NOLOCK)
-                ON d.Co_Folio = h.Vn_Documento
-               AND ISNULL(d.Es_Cve_Estado, '') IN ('AC', 'FA')
+            LEFT JOIN d
+                ON d.Vn_Folio = h.Vn_Folio
+               AND d.Sc_Cve_Sucursal = h.Sc_Cve_Sucursal
             GROUP BY
+                d.partida_origen_id,
                 h.Vn_Folio,
                 h.Vn_Documento,
                 h.Vn_Fecha,
-                  h.estado_origen,
+                h.vendedor_id,
+                h.vendedor_nombre,
+                h.mesa,
+                h.estado_origen,
                 h.pax_ticket,
                 h.importe_neto_ticket,
                 h.propina_ticket,
                 h.descuento_comanda,
                 h.descuento_ticket,
-                COALESCE(NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''), 'SIN_CODIGO')
-        ),
-        t AS (
-            SELECT Vn_Folio, SUM(importe_bruto) AS bruto_ticket
-            FROM l
-            GROUP BY Vn_Folio
+                COALESCE(NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''), 'SIN_CODIGO'),
+                COALESCE(d.descuento_pct, CAST(0 AS decimal(9,4)))
         )
         SELECT
+            CONCAT(l.Vn_Folio,':',l.partida_origen_id) AS partida_origen_id,
+            d.Cd_Key AS partida_key,
+            c2.Cl_Cve_Cliente AS cliente_id,
+            COALESCE(NULLIF(cl.Cl_Razon_Social,''),NULLIF(cl.Cl_Descripcion,'')) AS cliente_nombre,
+            cl.Cl_Razon_Social AS cliente_razon_social,
+            cl.Cl_Descripcion AS cliente_descripcion,
+            cl.Cl_Cve_Maestro AS cliente_maestro_id,
+            cl.Sc_Cve_Sucursal AS cliente_sucursal_origen,
+            cl.Cl_Contacto_1 AS cliente_contacto,
+            cl.Cl_R_F_C AS cliente_rfc,
+            cl.Cl_Direccion_1 AS cliente_direccion_1,
+            cl.Cl_Direccion_2 AS cliente_direccion_2,
+            cl.Cl_Direccion_3 AS cliente_direccion_3,
+            cl.Cl_Calle AS cliente_calle,
+            cl.Cl_Numero_Exterior AS cliente_numero_exterior,
+            cl.Cl_Numero_Interior AS cliente_numero_interior,
+            cl.Cl_Colonia AS cliente_colonia,
+            cl.Cl_Ciudad AS cliente_ciudad,
+            cl.Cl_Municipio AS cliente_municipio,
+            cl.Cl_Estado AS cliente_estado,
+            cl.Cl_Pais AS cliente_pais,
+            cl.Cl_Codigo_Postal AS cliente_codigo_postal,
+            c2.Co_Fecha AS ticket_fecha,
+            NULL AS ticket_fecha_cierre,
+            NULL AS ticket_pagado,
+            NULL AS ticket_impreso,
+            NULL AS ticket_impresiones,
+            c2.Co_Comentario AS ticket_comentario,
+            NULL AS ticket_comentario_descuento,
+            c2.Fecha_Alta AS ticket_fecha_alta,
+            c2.Oper_Ult_Modif AS ticket_oper_ult_modif,
+            c2.Oper_Baja AS ticket_oper_baja,
+            c2.Fecha_Baja AS ticket_fecha_baja,
+            d.Cd_Comentario AS partida_comentario,
+            NULL AS partida_comentario_descuento,
+            d.Cd_Comentario_Cancelacion AS partida_comentario_cancelacion,
+            d.Oper_Baja AS partida_oper_baja,
+            d.Fecha_Baja AS partida_fecha_baja,
+            d.Cd_Tipo_Descuento AS tipo_descuento_id,
+            td.Td_Descripcion AS tipo_descuento_descripcion,
+            td.Td_Porcentaje AS tipo_descuento_valor,
+            cl.Cl_Cruzamiento_1 AS cliente_cruzamiento_1,
+            cl.Cl_Cruzamiento_2 AS cliente_cruzamiento_2,
+            cl.Cl_Direccion_Entrega_1 AS cliente_entrega_direccion_1,
+            cl.Cl_Direccion_Entrega_2 AS cliente_entrega_direccion_2,
+            cl.Cl_Direccion_Entrega_3 AS cliente_entrega_direccion_3,
+            cl.Cl_Ciudad_Entrega AS cliente_entrega_ciudad,
+            cl.Cl_Estado_Entrega AS cliente_entrega_estado,
+            cl.Cl_Pais_Entrega AS cliente_entrega_pais,
+            cl.Cl_Codigo_Postal_Entrega AS cliente_entrega_codigo_postal,
+            cl.Cl_Cve_Colonia AS cliente_colonia_origen_id,
+            cl.Cl_Cve_Ciudad AS cliente_ciudad_origen_id,
+            cl.Cl_Cve_Municipio AS cliente_municipio_origen_id,
+            cl.Cl_Cve_Estado AS cliente_estado_origen_id,
+            cl.Cl_Cve_Pais AS cliente_pais_origen_id,
+            cl.Cl_Cve_Codigo_Postal AS cliente_codigo_postal_origen_id,
+            cl.Cl_Latitud AS cliente_latitud,
+            cl.Cl_Longitud AS cliente_longitud,
             CONVERT(varchar(64), l.Vn_Folio) AS numero_ticket,
             CONCAT('MPRO:', %s, ':', CONVERT(varchar(64), l.Vn_Folio)) AS id_transaccion,
             l.Vn_Fecha AS fecha_hora,
-              CASE
-                  WHEN ISNULL(l.estado_origen, '') = 'CA' THEN 1
-                  ELSE 0
-              END AS cancelado_origen,
-              l.estado_origen,
-              CASE
-                  WHEN ISNULL(l.estado_origen, '') IN ('AC', 'FA') THEN 1
-                  ELSE 0
-              END AS es_kpi_valido,
-              CONVERT(varchar(64), l.Vn_Folio) AS folio_origen,
-              CONVERT(varchar(64), l.Vn_Documento) AS documento_origen,
+            CASE
+                WHEN ISNULL(l.estado_origen, '') = 'CA' THEN 1
+                ELSE 0
+            END AS cancelado_origen,
+            l.estado_origen,
+            CASE
+                WHEN ISNULL(l.estado_origen, '') IN ('AC', 'FA') THEN 1
+                ELSE 0
+            END AS es_kpi_valido,
+            CONVERT(varchar(64), l.Vn_Folio) AS folio_origen,
+            CONVERT(varchar(64), l.Vn_Documento) AS documento_origen,
+            l.vendedor_id,
+            l.vendedor_nombre,
+            l.mesa,
             l.pax_ticket,
             l.importe_neto_ticket,
             l.propina_ticket,
@@ -953,17 +1314,24 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             l.descuento_ticket,
             l.producto_codigo_fuente,
             l.producto_nombre,
+            l.descuento_pct,
             l.cantidad,
             l.precio_unitario,
             l.importe_bruto,
-            CASE
-                WHEN ISNULL(t.bruto_ticket, 0) <> 0
-                THEN CAST(l.importe_bruto * l.importe_neto_ticket / t.bruto_ticket AS decimal(18,4))
-                ELSE CAST(0 AS decimal(18,4))
-            END AS importe_neto
+            l.descuento_producto_importe,
+            l.descuento_global_importe,
+            l.importe_neto_pos,
+            CAST(
+                l.importe_bruto - l.descuento_producto_importe
+                AS decimal(18,4)
+            ) AS importe_neto
         FROM l
-        INNER JOIN t ON t.Vn_Folio = l.Vn_Folio
-        ORDER BY l.Vn_Folio, l.producto_codigo_fuente
+        LEFT JOIN Comanda c2 ON c2.Co_Folio=l.Vn_Documento
+        LEFT JOIN Cliente cl ON cl.Cl_Cve_Cliente=c2.Cl_Cve_Cliente
+        LEFT JOIN Venta vd2 ON vd2.Vn_Folio=l.Vn_Folio AND vd2.Vn_ID=l.partida_origen_id
+        LEFT JOIN Comanda_Detalle d ON d.Co_Folio=vd2.Vn_Documento AND d.Cd_Id=vd2.Vn_Documento_ID AND vd2.Vn_Tabla='Comanda'
+        LEFT JOIN Tipo_Descuento td ON td.Td_Cve_Tipo_Descuento=d.Cd_Tipo_Descuento
+        ORDER BY l.Vn_Folio, l.producto_codigo_fuente, l.descuento_pct
         """
         cur = conn.cursor(as_dict=True)
         cur.execute(sql, (fi, ff, str(suc), str(suc)))
@@ -973,7 +1341,6 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         return _prorratear_mpro_por_ticket(rows)
     finally:
         conn.close()
-
 
 
 
@@ -995,9 +1362,21 @@ def _mpro_row_es_kpi_valido(row: Dict[str, Any]) -> bool:
 def _prorratear_mpro_por_ticket(
     src_rows: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
-    """Distribuye el descuento de la comanda entre productos MPRO."""
+    """Conserva el descuento real por producto y concilia contra el header MPRO.
+
+    Venta es el detalle monetario real. Cada linea conserva
+    Vn_Descuento_Importe como descuento de producto y su porcentaje derivado
+    sobre Vn_Precio_Lista_Importe. Venta_Encabezado.Vn_Precio_Neto_Importe
+    sigue siendo la cifra final autoritativa del ticket.
+
+    Si despues de aplicar los descuentos explicitos de producto queda una
+    diferencia contra el encabezado, se conserva como una linea tecnica del mismo
+    folio. Asi no se reparte artificialmente un descuento global, impuesto u otro
+    ajuste de cierre entre los productos reales.
+    """
     rows = [dict(row) for row in src_rows]
     grouped: Dict[str, List[Tuple[int, Dict[str, Any]]]] = defaultdict(list)
+    technical_rows: List[Dict[str, Any]] = []
 
     for position, row in enumerate(rows):
         if not _mpro_row_es_kpi_valido(row):
@@ -1011,105 +1390,85 @@ def _prorratear_mpro_por_ticket(
 
     for ticket_key, items in grouped.items():
         net_values = {_q4(row.get("importe_neto_ticket")) for _, row in items}
-        discount_values = {_q4(row.get("descuento_comanda")) for _, row in items}
-
         if len(net_values) != 1:
             raise RuntimeError(
                 f"MPRO: venta neta inconsistente en ticket {ticket_key}"
             )
 
-        if len(discount_values) != 1:
-            raise RuntimeError(
-                f"MPRO: descuento inconsistente en ticket {ticket_key}"
-            )
-
         target_net = next(iter(net_values))
-        total_discount = next(iter(discount_values))
-        gross_values = [_q4(row.get("importe_bruto")) for _, row in items]
+        if target_net < 0:
+            raise RuntimeError(f"MPRO: venta neta negativa en ticket {ticket_key}")
 
-        if any(value < 0 for value in gross_values):
-            raise RuntimeError(f"MPRO: importe bruto negativo en ticket {ticket_key}")
-
-        gross_total = _q4(sum(gross_values, Decimal("0")))
-
-        if gross_total <= 0:
-            raise RuntimeError(
-                f"MPRO: ticket sin detalle monetario distribuible: {ticket_key}"
-            )
-
-        expected_discount = _q4(gross_total - target_net)
-
-        if expected_discount != total_discount:
-            raise RuntimeError(
-                "MPRO: no concilia bruto - descuento = neto: "
-                f"ticket={ticket_key}; bruto={gross_total}; "
-                f"descuento={total_discount}; neto={target_net}"
-            )
-
-        if total_discount < 0 or total_discount > gross_total:
-            raise RuntimeError(f"MPRO: descuento invalido en ticket {ticket_key}")
-
-        allocations: List[Decimal] = []
-        remainders: List[Decimal] = []
-
-        for gross in gross_values:
-            raw = total_discount * gross / gross_total
-            base = raw.quantize(PRORRATEO_Q4, rounding=ROUND_DOWN)
-            allocations.append(base)
-            remainders.append(raw - base)
-
-        residual = _q4(total_discount - sum(allocations, Decimal("0")))
-        residual_units = int(
-            (residual / PRORRATEO_Q4).to_integral_value(
-                rounding=ROUND_HALF_UP
-            )
+        header_only = all(
+            _s(row.get("producto_codigo_fuente")).upper() == "HEADER_SIN_DETALLE"
+            for _, row in items
         )
 
-        if residual_units < 0 or residual_units > len(items):
-            raise RuntimeError(
-                f"MPRO: residuo de prorrateo invalido en ticket {ticket_key}"
-            )
+        if header_only:
+            for index, (_, row) in enumerate(items):
+                line_net = target_net if index == 0 else Decimal("0")
+                row["producto_codigo_fuente"] = SOFT_AJUSTE_ENCABEZADO
+                row["producto_nombre"] = "AJUSTE MPRO: HEADER SIN DETALLE DE PRODUCTO"
+                row["cantidad"] = Decimal("0")
+                row["precio_unitario"] = Decimal("0")
+                row["importe_bruto"] = line_net
+                row["importe_neto"] = line_net
+                row["descuento_producto_importe"] = Decimal("0")
+                row["descuento_pct"] = None
+            continue
 
-        ordered_indexes = sorted(
-            range(len(items)),
-            key=lambda index: (
-                -remainders[index],
-                _s(items[index][1].get("producto_codigo_fuente")),
-                _s(items[index][1].get("producto_nombre")),
-                items[index][0],
-            ),
-        )
+        product_net_total = Decimal("0")
+        for _, row in items:
+            gross = _q4(row.get("importe_bruto"))
+            product_discount = _q4(row.get("descuento_producto_importe"))
 
-        for index in ordered_indexes[:residual_units]:
-            allocations[index] += PRORRATEO_Q4
-
-        allocated_total = _q4(sum(allocations, Decimal("0")))
-        if allocated_total != total_discount:
-            raise RuntimeError(
-                f"MPRO: descuento distribuido no concilia en ticket {ticket_key}"
-            )
-
-        net_total = Decimal("0")
-
-        for index, (_, row) in enumerate(items):
-            allocated_discount = _q4(allocations[index])
-            line_net = _q4(gross_values[index] - allocated_discount)
-
-            if line_net < 0:
+            if gross < 0:
                 raise RuntimeError(
-                    f"MPRO: importe neto negativo en ticket {ticket_key}"
+                    f"MPRO: importe bruto negativo en ticket {ticket_key}"
+                )
+            if product_discount < 0:
+                raise RuntimeError(
+                    f"MPRO: descuento de producto negativo en ticket {ticket_key}"
+                )
+            if product_discount > gross and gross > 0:
+                raise RuntimeError(
+                    f"MPRO: descuento de producto mayor al bruto en ticket {ticket_key}"
                 )
 
-            row["descuento_prorrateado"] = allocated_discount
+            line_net = _q4(gross - product_discount)
             row["importe_neto"] = line_net
-            net_total += line_net
+            row["descuento_prorrateado"] = product_discount
+            product_net_total += line_net
 
-        if _q4(net_total) != target_net:
-            raise RuntimeError(
-                f"MPRO: suma neta por productos no concilia en ticket {ticket_key}"
+        product_net_total = _q4(product_net_total)
+        delta = _q4(target_net - product_net_total)
+
+        if delta == Decimal("0.0000"):
+            continue
+
+        adjustment = dict(items[0][1])
+        adjustment["producto_codigo_fuente"] = SOFT_AJUSTE_ENCABEZADO
+        adjustment["producto_nombre"] = (
+            "AJUSTE MPRO: DESCUENTO GLOBAL / CIERRE"
+            if delta < 0
+            else "AJUSTE MPRO: IMPUESTOS / CIERRE"
+        )
+        adjustment["cantidad"] = Decimal("0")
+        adjustment["precio_unitario"] = Decimal("0")
+        adjustment["importe_bruto"] = Decimal("0")
+        adjustment["importe_neto"] = delta
+        adjustment["descuento_producto_importe"] = Decimal("0")
+        adjustment["descuento_global_importe"] = _q4(
+            sum(
+                (_d(row.get("descuento_global_importe")) for _, row in items),
+                Decimal("0"),
             )
+        )
+        adjustment["descuento_pct"] = None
+        adjustment["descuento_prorrateado"] = _q4(-delta) if delta < 0 else Decimal("0")
+        technical_rows.append(adjustment)
 
-    return rows
+    return rows + technical_rows
 
 def _materialize_rows(cfg: Dict[str, Any], dia: date, src_rows: List[Dict[str, Any]], run_id: str) -> List[Dict[str, Any]]:
     seen_ticket = set()
@@ -1157,6 +1516,14 @@ def _materialize_rows(cfg: Dict[str, Any], dia: date, src_rows: List[Dict[str, A
             "folio_origen": _s(r.get("folio_origen") or r.get("numero_ticket")),
             "documento_origen": _s(r.get("documento_origen") or r.get("numero_ticket")),
             "fuente_original": _s(r.get("sistema_origen")),
+            "vendedor_id": _s(r.get("vendedor_id")) or None,
+            "vendedor_nombre": _s(r.get("vendedor_nombre"))[:200] or None,
+            "mesa": _s(r.get("mesa"))[:100] or None,
+            "descuento_pct": (
+                _d(r.get("descuento_pct"))
+                if r.get("descuento_pct") is not None
+                else None
+            ),
             "producto_codigo_fuente": _s(r.get("producto_codigo_fuente")) or "SIN_CODIGO",
             "producto_id": None,
             "producto_nombre": _s(r.get("producto_nombre"))[:300],
@@ -1179,6 +1546,7 @@ def _materialize_rows(cfg: Dict[str, Any], dia: date, src_rows: List[Dict[str, A
             "fecha_sincronizacion": datetime.utcnow(),
             "activo": True,
         }
+        row.update(fields_from(r))
         row["hash_origen"] = _hash_row(row)
         out.append(row)
 
@@ -1187,6 +1555,7 @@ def _materialize_rows(cfg: Dict[str, Any], dia: date, src_rows: List[Dict[str, A
 
 def _validate(src_rows: List[Dict[str, Any]], runtime: Dict[str, Any]) -> Dict[str, Any]:
     tickets: Dict[str, Dict[str, Any]] = {}
+    detalle_por_ticket: Dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
 
     for r in src_rows:
         es_kpi_raw = _s(_first(r, ["es_kpi_valido"], 1)).upper()
@@ -1199,10 +1568,22 @@ def _validate(src_rows: List[Dict[str, Any]], runtime: Dict[str, Any]) -> Dict[s
                 "venta": _d(r.get("importe_neto_ticket")),
                 "pax": int(_d(r.get("pax_ticket"))),
             }
+        detalle_por_ticket[k] += _d(r.get("importe_neto"))
 
     ventas_por_ticket = sum((v["venta"] for v in tickets.values()), Decimal("0"))
+    ventas_detalle = sum(detalle_por_ticket.values(), Decimal("0"))
     pax = sum(v["pax"] for v in tickets.values())
     tickets_total = len(tickets)
+    diferencias = []
+    for key, ticket in tickets.items():
+        detalle = detalle_por_ticket.get(key, Decimal("0"))
+        if not _money_eq(detalle, ticket["venta"]):
+            diferencias.append({
+                "id_transaccion": key,
+                "encabezado": ticket["venta"],
+                "detalle": detalle,
+                "delta": detalle - ticket["venta"],
+            })
 
     ventas_runtime = runtime["ventas"]
     tickets_runtime = runtime["tickets"]
@@ -1210,6 +1591,8 @@ def _validate(src_rows: List[Dict[str, Any]], runtime: Dict[str, Any]) -> Dict[s
 
     ok = (
         _money_eq(ventas_por_ticket, ventas_runtime)
+        and _money_eq(ventas_detalle, ventas_runtime)
+        and not diferencias
         and _int_eq(tickets_total, tickets_runtime)
         and _int_eq(pax, pax_runtime)
     )
@@ -1218,14 +1601,17 @@ def _validate(src_rows: List[Dict[str, Any]], runtime: Dict[str, Any]) -> Dict[s
         "ok": ok,
         "ventas_runtime": ventas_runtime,
         "ventas_por_ticket": ventas_por_ticket,
+        "ventas_detalle": ventas_detalle,
         "delta_ventas": ventas_por_ticket - ventas_runtime,
+        "delta_detalle": ventas_detalle - ventas_runtime,
         "tickets_runtime": tickets_runtime,
         "tickets_por_ticket": tickets_total,
         "delta_tickets": tickets_total - tickets_runtime,
         "pax_runtime": pax_runtime,
         "pax_por_ticket": pax,
         "delta_pax": pax - pax_runtime,
-        "lineas_producto": len(src_rows),
+        "tickets_no_conciliados": diferencias[:20],
+        "lineas_producto_y_ajustes": len(src_rows),
     }
 
 
@@ -1291,12 +1677,77 @@ def _insert_rows(rows: List[Dict[str, Any]]) -> int:
             sync_run_id,
             hash_origen,
             fecha_sincronizacion,
-            activo
+            activo,
+            vendedor_id,
+            vendedor_nombre,
+            descuento_pct,
+            mesa,
+            partida_origen_id,
+            partida_key,
+            cliente_id,
+            cliente_nombre,
+            cliente_razon_social,
+            cliente_descripcion,
+            cliente_maestro_id,
+            cliente_sucursal_origen,
+            cliente_contacto,
+            cliente_rfc,
+            cliente_direccion_1,
+            cliente_direccion_2,
+            cliente_direccion_3,
+            cliente_calle,
+            cliente_numero_exterior,
+            cliente_numero_interior,
+            cliente_colonia,
+            cliente_ciudad,
+            cliente_municipio,
+            cliente_estado,
+            cliente_pais,
+            cliente_codigo_postal,
+            ticket_fecha,
+            ticket_fecha_cierre,
+            ticket_pagado,
+            ticket_impreso,
+            ticket_impresiones,
+            ticket_comentario,
+            ticket_comentario_descuento,
+            ticket_fecha_alta,
+            ticket_oper_ult_modif,
+            ticket_oper_baja,
+            ticket_fecha_baja,
+            partida_comentario,
+            partida_comentario_descuento,
+            partida_comentario_cancelacion,
+            partida_oper_baja,
+            partida_fecha_baja,
+            tipo_descuento_id,
+            tipo_descuento_descripcion,
+            tipo_descuento_valor,
+            cliente_cruzamiento_1,
+            cliente_cruzamiento_2,
+            cliente_entrega_direccion_1,
+            cliente_entrega_direccion_2,
+            cliente_entrega_direccion_3,
+            cliente_entrega_ciudad,
+            cliente_entrega_estado,
+            cliente_entrega_pais,
+            cliente_entrega_codigo_postal,
+            cliente_colonia_origen_id,
+            cliente_ciudad_origen_id,
+            cliente_municipio_origen_id,
+            cliente_estado_origen_id,
+            cliente_pais_origen_id,
+            cliente_codigo_postal_origen_id,
+            cliente_latitud,
+            cliente_longitud
         ) VALUES (
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
-            %s,%s
+            %s,%s,%s,%s,%s,%s,
+            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s
+,
+            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s
         )
         """
 
@@ -1342,6 +1793,11 @@ def _insert_rows(rows: List[Dict[str, Any]]) -> int:
                     r["hash_origen"],
                     r["fecha_sincronizacion"],
                     1 if r["activo"] else 0,
+                    r["vendedor_id"],
+                    r["vendedor_nombre"],
+                    r["descuento_pct"],
+                    r["mesa"],
+                    *(r.get(field) for field in FIELDS),
                 ),
             )
 

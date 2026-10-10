@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-WORKER-RESULTS-PUBLISHER-CONSISTENCY-READONLY-R1-20260919",
+  "reason": "Wake READ_ONLY audit for worker results publisher consistency after Tablajeria R24F UAT wiring R2 showed RESULT_READY in health but no visible terminal blob in worker/results. No product mutation, no Production, no SQL.",
+  "production_touched": false
+}

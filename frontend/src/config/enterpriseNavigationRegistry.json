@@ -610,6 +610,15 @@
       "status": "active",
       "legacy": true
     },
+    "tablajeria.lotes_proveedor": {
+      "groupId": "operaciones-abasto",
+      "sectionId": "produccion",
+      "label": "Lotes proveedor",
+      "expectedPath": "/tablajeria/lotes-proveedor",
+      "order": 60,
+      "status": "active",
+      "releasedAt": "2026-09-18"
+    },
     "cava.dashboard": {
       "groupId": "portales-satelites",
       "sectionId": "aplicaciones-satelite",
@@ -649,6 +658,16 @@
       "status": "active",
       "cluster": "Cava de Socios",
       "releasedAt": "2026-08-15"
+    },
+    "cava.auditoria_ciega": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Auditoría Ciega",
+      "expectedPath": "/cava-socios/auditoria-ciega",
+      "order": 50,
+      "status": "active",
+      "cluster": "Cava de Socios",
+      "releasedAt": "2026-09-20"
     },
     "coa.dashboard": {
       "groupId": "portales-satelites",
@@ -938,6 +957,15 @@
       "status": "active",
       "legacy": true
     },
+    "sistema.worker_console": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "administracion-seguridad",
+      "label": "Universal Worker Console",
+      "expectedPath": "/worker-console",
+      "order": 30,
+      "status": "active",
+      "releasedAt": "2026-09-20"
+    },
     "sistema.asignaciones": {
       "groupId": "plataforma-integraciones",
       "sectionId": "administracion-seguridad",
@@ -1011,6 +1039,15 @@
       "status": "active",
       "releasedAt": "2026-08-03",
       "legacy": false
+    },
+    "sistema.sync_historical": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "sincronizacion-automatizacion",
+      "label": "Sincronización Histórica",
+      "expectedPath": "/sync-historical",
+      "order": 15,
+      "status": "active",
+      "releasedAt": "2026-10-09"
     }
   },
   "plannedItems": [
@@ -1501,5 +1538,8 @@
     "tablajeria.ordenes",
     "tablajeria.plantillas"
   ],
-  "routeExemptions": []
+  "routeExemptions": [
+    "/cavas-corporativas",
+    "/catalogo-ampliado"
+  ]
 }

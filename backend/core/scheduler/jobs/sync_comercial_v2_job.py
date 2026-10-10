@@ -45,6 +45,71 @@ logger = logging.getLogger(__name__)
 JOB_NAME = "sync_comercial_v2"
 SYNC_INCREMENTAL_DAYS = int(os.environ.get("SYNC_COMERCIAL_V2_DAYS", "3"))
 
+SYNC_HEADER_PROCESS_TIMEOUT_SECONDS = int(
+    os.environ.get("SYNC_COMERCIAL_V2_HEADER_TIMEOUT_SECONDS", "120")
+)
+
+def _run_header_sync_isolated(unidad, fecha_inicio, fecha_fin, run_id):
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    script = Path(__file__).resolve().parents[3] / "scripts" / "sync_comercial_v2_header_worker.py"
+    cmd = [
+        sys.executable, str(script),
+        "--unidad", str(unidad["unidad_negocio_id"]),
+        "--fecha-inicio", fecha_inicio.isoformat(),
+        "--fecha-fin", fecha_fin.isoformat(),
+        "--run-id", run_id,
+    ]
+    try:
+        done = subprocess.run(
+            cmd, cwd=str(script.parents[1]), capture_output=True, text=True,
+            timeout=SYNC_HEADER_PROCESS_TIMEOUT_SECONDS, check=False,
+        )
+    except subprocess.TimeoutExpired:
+        return SimpleNamespace(
+            success=False, records_processed=0, records_inserted=0,
+            records_updated=0, records_skipped=0, records_errored=1,
+            duration_seconds=SYNC_HEADER_PROCESS_TIMEOUT_SECONDS,
+            error_message=f"HEADER_TIMEOUT:{unidad['unidad_negocio_id']}",
+        )
+
+    prefix = "EDARSAHUB_HEADER_RESULT="
+    payload = None
+    for line in reversed((done.stdout or "").splitlines()):
+        if line.startswith(prefix):
+            payload = json.loads(line[len(prefix):])
+            break
+    if payload is None:
+        payload = {
+            "success": False, "records_errored": 1,
+            "error_message": f"HEADER_PROCESS_EXIT:{done.returncode}",
+        }
+    return SimpleNamespace(
+        success=bool(payload.get("success")),
+        records_processed=int(payload.get("records_processed") or 0),
+        records_inserted=int(payload.get("records_inserted") or 0),
+        records_updated=int(payload.get("records_updated") or 0),
+        records_skipped=int(payload.get("records_skipped") or 0),
+        records_errored=int(payload.get("records_errored") or 0),
+        duration_seconds=float(payload.get("duration_seconds") or 0),
+        error_message=payload.get("error_message"),
+    )
+
+def _resolve_estatus_general(results: Dict[str, Any]) -> str:
+    """No declara COMPLETADO si detalle o pagos ISCAM tienen fallos."""
+    header_failures = int(results.get("unidades_fallidas") or 0)
+    detail_failures = int(results.get("detalle_producto_fallidos") or 0)
+    payment_failures = int(results.get("pagos_iscam_fallidos") or 0)
+    if header_failures == 0 and detail_failures == 0 and payment_failures == 0:
+        return "COMPLETADO"
+    if int(results.get("unidades_exitosas") or 0) > 0:
+        return "PARCIAL"
+    return "FALLIDO"
+
 
 # =============================================================================
 # CONFIGURACIÓN DE UNIDADES - REFACTORIZADO CON UnidadesService
@@ -99,7 +164,7 @@ def _get_unidades_from_edarsahub() -> tuple:
 # FUNCIÓN PRINCIPAL DEL JOB
 # =============================================================================
 
-async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_unidades: Optional[List[str]] = None) -> Dict[str, Any]:
+async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_unidades: Optional[List[str]] = None, isolated_headers: bool = False) -> Dict[str, Any]:
     """
     Ejecuta sincronización incremental de KPIs comerciales V2.
     
@@ -118,13 +183,7 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
         UnidadNegocioConfig,
         SistemaOrigen
     )
-    from scripts.poblar_ventas_detalle_producto_canonico import (
-        get_unidades_negocio_pos,
-        get_pos_config_for_unidad,
-        _load_runtime_rows,
-        _runtime_for,
-        sync_detalle_producto_canonico_dia,
-    )
+    from scripts.backfill_detalle_producto_pendientes import ejecutar_backfill
     
     logger.info(f"[SYNC_COMERCIAL_V2] Iniciando sincronización incremental ({SYNC_INCREMENTAL_DAYS} días)")
     
@@ -156,7 +215,15 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
         "detalle_producto_fallidos": 0,
         "detalle_producto_omitidos": 0,
         "detalle_producto_filas_insertadas": 0,
+        "pagos_iscam_exitosos": 0,
+        "pagos_iscam_fallidos": 0,
+        "pagos_iscam_extraidos": 0,
+        "pagos_iscam_insertados": 0,
     }
+
+    # Header-first: los enriquecimientos esperan hasta que las ventas cerradas
+    # de todas las unidades hayan sido procesadas.
+    post_header_queue = []
     
     def _sync_detalle_post_header(
         unidad_codigo,
@@ -164,73 +231,56 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
         detalle_unidad,
     ):
         """
-        Ejecuta detalle únicamente después de que el header/KPI
-        canónico de la unidad haya sincronizado correctamente.
+        Repara detalle ISCAM después del header usando el mismo backfill
+        selectivo que utiliza el botón manual "Sincronizar faltantes".
 
-        El fallo del detalle se registra de forma independiente.
-        No invalida un header ya confirmado.
+        El backfill consulta primero el detalle ya conciliado y evita volver a
+        extraer del POS los días que ya están completos. Así cada ciclo
+        automático concentra el trabajo únicamente en faltantes reales y una
+        unidad no obliga a reprocesar el histórico reciente de todas las demás.
         """
         try:
-            unidad_rows = get_unidades_negocio_pos(
-                [unidad_codigo]
+            _, resumen_detalle = ejecutar_backfill(
+                fecha_inicio=dia,
+                fecha_fin=dia + timedelta(days=1),
+                unidades=[unidad_codigo],
+                commit=detail_commit,
             )
 
-            if len(unidad_rows) != 1:
+            unidades_detalle = resumen_detalle.get("unidades") or []
+            if len(unidades_detalle) != 1:
                 raise RuntimeError(
-                    "Contexto POS canónico no único para "
-                    f"unidad={unidad_codigo!r}"
+                    "Backfill ISCAM no devolvió contexto único para "
+                    f"unidad={unidad_codigo!r} fecha_operacion={dia}"
                 )
 
-            cfg = get_pos_config_for_unidad(
-                unidad_rows[0]
-            )
-
-            runtime_rows = _load_runtime_rows(
-                dia,
-                dia + timedelta(days=1),
-                unidad_codigo,
-            )
-
-            runtime_row = _runtime_for(
-                runtime_rows,
-                cfg,
-                dia,
-            )
-
-            if runtime_row is None:
+            dias_detalle = unidades_detalle[0].get("dias") or []
+            if len(dias_detalle) != 1:
                 raise RuntimeError(
-                    "Runtime V2 no disponible para "
-                    f"unidad={unidad_codigo!r} "
-                    f"fecha_operacion={dia}"
+                    "Backfill ISCAM no devolvió un resultado diario único para "
+                    f"unidad={unidad_codigo!r} fecha_operacion={dia}"
                 )
 
-            detail_result = (
-                sync_detalle_producto_canonico_dia(
-                    cfg=cfg,
-                    dia=dia,
-                    runtime_row=runtime_row,
-                    run_id=run_id,
-                    commit=detail_commit,
-                    excluir_abiertas=True,
-                )
+            detail_result = dias_detalle[0]
+            status = str(detail_result.get("status") or "ERROR")
+            filas_insertadas = int(
+                detail_result.get("filas_insertadas") or 0
             )
-
-            status = detail_result.get("status")
 
             detail_trace = {
                 "fecha_operacion": dia.isoformat(),
                 "status": status,
-                "filas_insertadas": int(
-                    detail_result.get(
-                        "filas_insertadas"
-                    ) or 0
-                ),
-                "filas_preparadas": int(
-                    detail_result.get(
-                        "filas_destino_preparadas"
-                    ) or 0
-                ),
+                "filas_insertadas": filas_insertadas,
+                "filas_preparadas": filas_insertadas,
             }
+            if detail_result.get("error_code"):
+                detail_trace["error_code"] = str(
+                    detail_result.get("error_code")
+                )
+            if detail_result.get("error_type"):
+                detail_trace["error_type"] = str(
+                    detail_result.get("error_type")
+                )
 
             detalle_unidad.setdefault(
                 "detalle_producto_dias",
@@ -254,16 +304,16 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
                 ]
             )
 
-            if status == "OK_HEADER_CANONICO":
+            if status in {
+                "OK_HEADER_CANONICO",
+                "YA_CONCILIADO",
+            }:
                 results[
                     "detalle_producto_exitosos"
                 ] += 1
-
                 results[
                     "detalle_producto_filas_insertadas"
-                ] += detalle_unidad[
-                    "detalle_producto_filas_insertadas"
-                ]
+                ] += filas_insertadas
 
             elif status == "NO_PROBAR_ABIERTO_REAL":
                 results[
@@ -274,24 +324,20 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
                 results[
                     "detalle_producto_fallidos"
                 ] += 1
-
                 detalle_unidad[
                     "detalle_producto_error"
-                ] = status
+                ] = detail_result.get("error_code") or status
 
         except Exception as exc:
             results[
                 "detalle_producto_fallidos"
             ] += 1
-
             detalle_unidad[
                 "detalle_producto_status"
             ] = "ERROR"
-
             detalle_unidad[
                 "detalle_producto_error"
             ] = str(exc)
-
             detalle_unidad.setdefault(
                 "detalle_producto_dias",
                 [],
@@ -301,7 +347,6 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
                 "filas_insertadas": 0,
                 "error": str(exc),
             })
-
             logger.exception(
                 "[SYNC_COMERCIAL_V2] "
                 "Fallo detalle producto "
@@ -309,6 +354,66 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
                 unidad_codigo,
                 dia,
             )
+
+    def _sync_pagos_post_header(
+        unidad_codigo,
+        fecha_inicio_unidad,
+        fecha_fin_unidad,
+        detalle_unidad,
+    ):
+        """Sincroniza pagos ISCAM por día para cualquier POS tras un header válido."""
+        from core.scheduler.jobs.inteligencia_comercial_enrich import (
+            resync_pagos_unidad,
+        )
+
+        traces = []
+        total_days = (fecha_fin_unidad - fecha_inicio_unidad).days + 1
+
+        for offset in range(total_days):
+            dia = fecha_inicio_unidad + timedelta(days=offset)
+            ff = dia + timedelta(days=1)
+            try:
+                payment_result = resync_pagos_unidad(
+                    unidad_codigo,
+                    dia.isoformat(),
+                    ff.isoformat(),
+                    dry_run=not detail_commit,
+                )
+            except Exception as exc:
+                payment_result = {
+                    "unidad": unidad_codigo,
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "pagos_extraidos": 0,
+                    "pagos_insertados": 0,
+                }
+
+            trace = {
+                "fecha_operacion": dia.isoformat(),
+                "status": "ERROR" if payment_result.get("error") else "OK",
+                "pagos_extraidos": int(payment_result.get("pagos_extraidos") or 0),
+                "pagos_insertados": int(payment_result.get("pagos_insertados") or 0),
+            }
+
+            if payment_result.get("error"):
+                trace["error"] = str(payment_result.get("error"))
+                results["pagos_iscam_fallidos"] += 1
+            else:
+                results["pagos_iscam_exitosos"] += 1
+                results["pagos_iscam_extraidos"] += trace["pagos_extraidos"]
+                results["pagos_iscam_insertados"] += trace["pagos_insertados"]
+
+            traces.append(trace)
+
+        detalle_unidad["pagos_iscam_dias"] = traces
+        detalle_unidad["pagos_iscam_status"] = (
+            "ERROR" if any(item["status"] == "ERROR" for item in traces) else "OK"
+        )
+        detalle_unidad["pagos_iscam_extraidos"] = sum(
+            item["pagos_extraidos"] for item in traces
+        )
+        detalle_unidad["pagos_iscam_insertados"] = sum(
+            item["pagos_insertados"] for item in traces
+        )
 
     # =========================================================================
     # FASE P0: CARGAR UNIDADES DESDE EDARSAHUB (códigos canónicos)
@@ -409,12 +514,7 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
             )
             
             # Ejecutar sync
-            resultado = sync_softrestaurant_ventas_cerradas(
-                config=config,
-                fecha_inicio=fecha_inicio,
-                fecha_fin=fecha_fin,
-                run_id=run_id
-            )
+            resultado = (_run_header_sync_isolated(unidad, fecha_inicio, fecha_fin, run_id) if isolated_headers else sync_softrestaurant_ventas_cerradas(config=config, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, run_id=run_id))
             
             detalle = {
                 "unidad_negocio_id": unidad_id,
@@ -435,19 +535,12 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
             results["detalles_unidades"].append(detalle)
             
             if resultado.success:
-                for detail_day_offset in range(
-                    (fecha_fin - fecha_inicio).days + 1
-                ):
-                    detail_day = (
-                        fecha_inicio
-                        + timedelta(days=detail_day_offset)
-                    )
-
-                    _sync_detalle_post_header(
-                        unidad_id,
-                        detail_day,
-                        detalle,
-                    )
+                post_header_queue.append((
+                    unidad_id,
+                    fecha_inicio,
+                    fecha_fin,
+                    detalle,
+                ))
 
                 results["unidades_exitosas"] += 1
                 results["total_insertados"] += resultado.records_inserted
@@ -512,13 +605,7 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
             )
             
             # Ejecutar sync
-            resultado = sync_mpro_ventas_cerradas(
-                config=config,
-                sucursal_id=sucursal_id,
-                fecha_inicio=fecha_inicio,
-                fecha_fin=fecha_fin,
-                run_id=run_id
-            )
+            resultado = (_run_header_sync_isolated(unidad, fecha_inicio, fecha_fin, run_id) if isolated_headers else sync_mpro_ventas_cerradas(config=config, sucursal_id=sucursal_id, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, run_id=run_id))
             
             detalle = {
                 "unidad_negocio_id": unidad_id,
@@ -540,19 +627,12 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
             results["detalles_unidades"].append(detalle)
             
             if resultado.success:
-                for detail_day_offset in range(
-                    (fecha_fin - fecha_inicio).days + 1
-                ):
-                    detail_day = (
-                        fecha_inicio
-                        + timedelta(days=detail_day_offset)
-                    )
-
-                    _sync_detalle_post_header(
-                        unidad_id,
-                        detail_day,
-                        detalle,
-                    )
+                post_header_queue.append((
+                    unidad_id,
+                    fecha_inicio,
+                    fecha_fin,
+                    detalle,
+                ))
 
                 results["unidades_exitosas"] += 1
                 results["total_insertados"] += resultado.records_inserted
@@ -586,6 +666,36 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
             })
     
     # =========================================================================
+    # FASE P1: ENRIQUECER PAGOS Y DETALLE DESPUES DE TODOS LOS HEADERS
+    # =========================================================================
+
+    for (
+        unidad_id,
+        fecha_inicio,
+        fecha_fin,
+        detalle,
+    ) in post_header_queue:
+        _sync_pagos_post_header(
+            unidad_id,
+            fecha_inicio,
+            fecha_fin,
+            detalle,
+        )
+
+        for detail_day_offset in range(
+            (fecha_fin - fecha_inicio).days + 1
+        ):
+            detail_day = (
+                fecha_inicio
+                + timedelta(days=detail_day_offset)
+            )
+            _sync_detalle_post_header(
+                unidad_id,
+                detail_day,
+                detalle,
+            )
+
+    # =========================================================================
     # FINALIZAR
     # =========================================================================
     
@@ -594,11 +704,7 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
     
     results["fin_ejecucion"] = end_time.isoformat()
     results["duracion_ms"] = duration_ms
-    results["estatus_general"] = (
-        "COMPLETADO" if results["unidades_fallidas"] == 0 
-        else "PARCIAL" if results["unidades_exitosas"] > 0 
-        else "FALLIDO"
-    )
+    results["estatus_general"] = _resolve_estatus_general(results)
     
     logger.info(
         f"[SYNC_COMERCIAL_V2] Sincronización finalizada: "

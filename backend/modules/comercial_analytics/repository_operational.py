@@ -218,6 +218,15 @@ def build_current_operation(
         )
 
         item = snapshot["items"][0]
+
+        # Metadatos de conexión necesarios para que el Ejecutivo reutilice
+        # exactamente el drill-down certificado de Tablero Comercial.
+        if source_row:
+            item["server_id"] = source_row.get("server_id")
+            item["sucursal_id"] = source_row.get("sucursal_id")
+            item["sucursal_nombre"] = source_row.get("sucursal_nombre")
+            item["sistema_origen"] = source_row.get("sistema_origen")
+
         effective_dates.add(item["fecha_operacion"])
         items.append(item)
 
@@ -271,8 +280,19 @@ def build_current_operation(
 
     if common_operation_date and len(effective_dates) > 1:
         for item in items:
-            if item.get("fecha_operacion") == common_operation_date:
+            resolved_operation_date = item.get("fecha_operacion")
+            item["fecha_operacion_resuelta"] = resolved_operation_date
+            item["fecha_operacion_desfasada"] = (
+                resolved_operation_date != common_operation_date
+            )
+
+            if resolved_operation_date == common_operation_date:
                 continue
+
+            # La tarjeta ya representa la fecha operativa comun y sus KPI
+            # fueron neutralizados a cero para no mezclar dias. El detalle
+            # debe quedar anclado a esa misma fecha, nunca al dia rezagado.
+            item["fecha_operacion"] = common_operation_date
 
             for bucket_name in (
                 "cerradas",

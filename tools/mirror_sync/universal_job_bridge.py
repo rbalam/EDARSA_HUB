@@ -9,6 +9,14 @@ and it never executes shell text supplied by a request.
 
 from __future__ import annotations
 
+# WORKER_DELIVERABLE_IMPORT_COMPAT_V1
+try:
+    from tools.mirror_sync.worker_deliverable_contract import normalize_deliverable_specs, normalize_required_deliverables
+    from tools.mirror_sync.worker_mutation_materializer import V2_ACTIONS
+except ModuleNotFoundError:
+    from worker_deliverable_contract import normalize_deliverable_specs, normalize_required_deliverables
+    from worker_mutation_materializer import V2_ACTIONS
+
 import json
 import os
 import re
@@ -23,8 +31,11 @@ STATE = ROOT / ".git" / "universal-worker-queue"
 PENDING = STATE / "pending"
 PROCESSING = STATE / "processing"
 REJECTED = STATE / "rejected"
+REJECTED_HISTORY = STATE / "rejected_history"
 DONE = STATE / "done"
 RESULTS = STATE / "results"
+CORRECTABLE_REJECTION_REASONS = {"SUMMARY_LANGUAGE_MUST_BE_ES"}
+CORRECTABLE_REJECTION_FIELDS = {"human_summary_language"}
 REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
 CANONICAL_REMOTE = os.environ.get(
     "EDARSAHUB_QUEUE_CANONICAL_REMOTE",
@@ -37,10 +48,25 @@ QUEUE_REF = os.environ.get(
 )
 SCHEMA = "edarsahub.worker-job.v2"
 JOB_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
-ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
-ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit"}
+ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file", "insert_before", "insert_after", "append_once"}
+ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract"}
+READ_ONLY_MODE = "READ_ONLY"
+READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract"}
 SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
+MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
+COMERCIAL_RANGE_RESYNC_MODE = "COMERCIAL_RANGE_RESYNC"
+COMERCIAL_OPEN_DAY_SYNC_MODE = "COMERCIAL_OPEN_DAY_SYNC"
+COMERCIAL_RANGE_AUDIT_PROFILE = "closed_ticket_metadata"
+COMERCIAL_OPEN_DAY_AUDIT_PROFILE = "open_day_ticket_metadata"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
+ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
+SERVER_REGISTRY_METADATA_UPDATE_MODE = "SERVER_REGISTRY_METADATA_UPDATE"
+SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
+FRONTEND_BUILD_CERTIFICATION_MODE = "FRONTEND_BUILD_CERTIFICATION"
+SYNC_HISTORICAL_PARENT_MODE = "SYNC_HISTORICAL_PARENT"
+SYNC_HISTORICAL_ATOMIC_MODE = "SYNC_HISTORICAL_ATOMIC"
+SYNC_HISTORICAL_PARENT_AUDIT_PROFILE = "sync_historical_parent_status_v1"
+SYNC_HISTORICAL_ATOMIC_AUDIT_PROFILE = "sync_historical_atomic_status_v1"
 UNIT_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 MAX_ACTIONS = int(os.environ.get("EDARSAHUB_JOB_MAX_ACTIONS", "100"))
@@ -75,7 +101,7 @@ def resolve_queue_remote() -> str:
 
 
 def ensure_dirs() -> None:
-    for path in (PENDING, PROCESSING, REJECTED, DONE, RESULTS):
+    for path in (PENDING, PROCESSING, REJECTED, REJECTED_HISTORY, DONE, RESULTS):
         path.mkdir(parents=True, exist_ok=True)
 
 
@@ -101,6 +127,52 @@ def validate_action(action: Any, index: int) -> list[str]:
         return errors
     if not safe_repo_path(action.get("path")):
         errors.append(f"{prefix}_INVALID_PATH")
+
+    is_v2 = (
+        kind in V2_ACTIONS
+        and (
+            kind != "replace_text"
+            or "source_sha256" in action
+            or "old_text" in action
+        )
+    )
+
+    if is_v2:
+        source_sha = action.get("source_sha256")
+        if not isinstance(source_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", source_sha):
+            errors.append(f"{prefix}_SOURCE_SHA256_REQUIRED_OR_INVALID")
+
+        replacement = action.get("replacement")
+        if not isinstance(replacement, str):
+            errors.append(f"{prefix}_REPLACEMENT_REQUIRED")
+
+        expected_occurrences = action.get("expected_occurrences", 1)
+        if (
+            not isinstance(expected_occurrences, int)
+            or expected_occurrences < 1
+            or expected_occurrences > 1000
+        ):
+            errors.append(f"{prefix}_INVALID_EXPECTED_OCCURRENCES")
+
+        if kind in {"insert_before", "insert_after"}:
+            anchor = action.get("anchor")
+            if not isinstance(anchor, str) or not anchor:
+                errors.append(f"{prefix}_ANCHOR_REQUIRED")
+
+        if kind == "replace_text":
+            old_text = action.get("old_text")
+            if not isinstance(old_text, str) or not old_text:
+                errors.append(f"{prefix}_OLD_TEXT_REQUIRED")
+
+        return errors
+    relative = str(action.get("path") or "")
+    repo_path = Path(relative)
+    if (
+        kind == "write_file"
+        and repo_path.parts[:2] == ("backend", "core")
+        and not (ROOT / repo_path).exists()
+    ):
+        errors.append(f"{prefix}_CORE_GROWTH_FORBIDDEN")
     if kind == "replace_text":
         old = action.get("old")
         new = action.get("new")
@@ -145,6 +217,20 @@ def validate_check(check: Any, index: int) -> list[str]:
         if not safe_repo_path(directory):
             return [f"{prefix}_INVALID_DIRECTORY"]
     if kind == "sql_readonly_audit":
+        source = str(check.get("source") or "EDARSAHUB").strip().upper()
+        if source not in {"EDARSAHUB", "POS", "SERVER"}:
+            return [f"{prefix}_INVALID_READONLY_SOURCE"]
+        server_id = check.get("server_id")
+        include_inactive = check.get("include_inactive", False)
+        if not isinstance(include_inactive, bool):
+            return [f"{prefix}_INCLUDE_INACTIVE_MUST_BE_BOOL"]
+        if source == "SERVER":
+            if not isinstance(server_id, str) or not re.fullmatch(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", server_id):
+                return [f"{prefix}_SERVER_ID_REQUIRED_OR_INVALID"]
+            if check.get("units") is not None or check.get("system_types") is not None:
+                return [f"{prefix}_SERVER_POS_SELECTORS_FORBIDDEN"]
+        elif server_id is not None or include_inactive:
+            return [f"{prefix}_SERVER_SELECTORS_FORBIDDEN_FOR_SOURCE"]
         queries = check.get("queries")
         if not isinstance(queries, list) or not queries:
             return [f"{prefix}_QUERIES_REQUIRED"]
@@ -156,8 +242,57 @@ def validate_check(check: Any, index: int) -> list[str]:
             sql = item.get("sql")
             if not isinstance(sql, str) or not sql.strip():
                 return [f"{prefix}_QUERY_SQL_REQUIRED"]
+    if kind == "worker_result_semantic_extract":
+        request = check.get("request")
+        if not isinstance(request, dict):
+            return [f"{prefix}_REQUEST_REQUIRED"]
+        source_result = request.get("source_result")
+        if not isinstance(source_result, dict):
+            return [f"{prefix}_SOURCE_RESULT_REQUIRED"]
+        if not safe_repo_path(source_result.get("path")):
+            return [f"{prefix}_INVALID_SOURCE_RESULT_PATH"]
+        branch = str(source_result.get("branch") or "worker/results").strip()
+        if branch != "worker/results":
+            return [f"{prefix}_INVALID_SOURCE_RESULT_BRANCH"]
+        for field in ("commit", "blob_sha"):
+            value = source_result.get(field)
+            if value is not None and not re.fullmatch(r"[0-9a-fA-F]{40}", str(value)):
+                return [f"{prefix}_INVALID_SOURCE_RESULT_{field.upper()}"]
+        fields = request.get("required_semantic_fields", [])
+        if fields is not None and (not isinstance(fields, list) or not all(isinstance(item, str) and item.strip() for item in fields)):
+            return [f"{prefix}_REQUIRED_SEMANTIC_FIELDS_INVALID"]
+    if kind == "repository_contract_audit":
+        request = check.get("request")
+        if not isinstance(request, dict):
+            return [f"{prefix}_REQUEST_REQUIRED"]
+        paths = request.get("paths")
+        if not isinstance(paths, list) or not paths or not all(safe_repo_path(p) for p in paths):
+            return [f"{prefix}_INVALID_PATHS"]
+        terms = request.get("search_terms")
+        if not isinstance(terms, list) or not terms or not all(isinstance(t, str) and t.strip() for t in terms):
+            return [f"{prefix}_SEARCH_TERMS_REQUIRED"]
+        for field in ("include_patterns", "exclude_patterns"):
+            value = request.get(field, [])
+            if not isinstance(value, list) or not all(isinstance(item, str) and item.strip() for item in value):
+                return [f"{prefix}_{field.upper()}_INVALID"]
+        max_results = request.get("max_results", 500)
+        if not isinstance(max_results, int) or max_results < 1 or max_results > 5000:
+            return [f"{prefix}_MAX_RESULTS_INVALID"]
     return []
 
+
+
+def _expected_native_decision_requires_semantic_extract(job):
+    expected = job.get("expected_native_decision")
+    return isinstance(expected, dict) and bool(expected)
+
+
+def _has_worker_result_semantic_extract(checks):
+    return any(
+        isinstance(check, dict)
+        and check.get("type") == "worker_result_semantic_extract"
+        for check in (checks or [])
+    )
 
 def validate(job: Any) -> list[str]:
     errors: list[str] = []
@@ -178,6 +313,23 @@ def validate(job: Any) -> list[str]:
         errors.append("OBJECTIVE_REQUIRED")
     if job.get("human_summary_language") != "es":
         errors.append("SUMMARY_LANGUAGE_MUST_BE_ES")
+
+    if "required_deliverables" in job:
+        try:
+            normalize_required_deliverables(
+                job.get("required_deliverables")
+            )
+        except ValueError as exc:
+            errors.append(str(exc))
+
+    if "deliverable_specs" in job:
+        try:
+            normalize_deliverable_specs(
+                job.get("deliverable_specs"),
+                job.get("required_deliverables"),
+            )
+        except ValueError as exc:
+            errors.append(str(exc))
     requester = job.get("requester")
     if requester is None:
         if REQUIRE_REQUESTER:
@@ -200,6 +352,39 @@ def validate(job: Any) -> list[str]:
     if mode == "READ_ONLY_SQL":
         if actions not in (None, []):
             errors.append("READ_ONLY_SQL_ACTIONS_FORBIDDEN")
+    elif mode == READ_ONLY_MODE:
+        if actions != []:
+            errors.append("READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST")
+    elif mode == COMERCIAL_RANGE_RESYNC_MODE:
+        if actions not in (None, []):
+            errors.append("COMERCIAL_RANGE_RESYNC_ACTIONS_FORBIDDEN")
+        units = job.get("units", [])
+        if not isinstance(units, list) or not units or len(units) > 32 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):
+            errors.append("COMERCIAL_RANGE_RESYNC_UNITS_INVALID")
+        if not isinstance(job.get("fecha_inicio"), str) or not DATE_RE.fullmatch(job.get("fecha_inicio", "")):
+            errors.append("COMERCIAL_RANGE_RESYNC_FECHA_INICIO_INVALID")
+        if not isinstance(job.get("fecha_fin"), str) or not DATE_RE.fullmatch(job.get("fecha_fin", "")):
+            errors.append("COMERCIAL_RANGE_RESYNC_FECHA_FIN_INVALID")
+        dry_run = job.get("dry_run", True)
+        if not isinstance(dry_run, bool):
+            errors.append("COMERCIAL_RANGE_RESYNC_DRY_RUN_INVALID")
+        if dry_run is False and job.get("confirm_comercial_range_resync") is not True:
+            errors.append("COMERCIAL_RANGE_RESYNC_CONFIRMATION_REQUIRED")
+    elif mode == COMERCIAL_OPEN_DAY_SYNC_MODE:
+        if actions not in (None, []):
+            errors.append("COMERCIAL_OPEN_DAY_SYNC_ACTIONS_FORBIDDEN")
+        for forbidden_field in ("sql", "command", "shell", "script", "path"):
+            if job.get(forbidden_field) is not None:
+                errors.append(
+                    f"COMERCIAL_OPEN_DAY_SYNC_FORBIDDEN_FIELD:{forbidden_field}"
+                )
+        if (
+            not isinstance(job.get("fecha_operacion"), str)
+            or not DATE_RE.fullmatch(job.get("fecha_operacion", ""))
+        ):
+            errors.append("COMERCIAL_OPEN_DAY_SYNC_FECHA_INVALID")
+        if job.get("confirm_comercial_open_day_sync") is not True:
+            errors.append("COMERCIAL_OPEN_DAY_SYNC_CONFIRMATION_REQUIRED")
     elif mode == ISCAM_DETAIL_BACKFILL_MODE:
         if actions not in (None, []):
             errors.append("ISCAM_DETAIL_BACKFILL_ACTIONS_FORBIDDEN")
@@ -215,6 +400,111 @@ def validate(job: Any) -> list[str]:
             errors.append("ISCAM_DETAIL_BACKFILL_DRY_RUN_INVALID")
         if dry_run is False and job.get("confirm_detail_backfill") is not True:
             errors.append("ISCAM_DETAIL_BACKFILL_CONFIRMATION_REQUIRED")
+    elif mode == ISCAM_PAYMENTS_ONLY_RESYNC_MODE:
+        if actions not in (None, []):
+            errors.append("ISCAM_PAYMENTS_ONLY_ACTIONS_FORBIDDEN")
+        units = job.get("units", [])
+        if not isinstance(units, list) or len(units) != 1 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):
+            errors.append("ISCAM_PAYMENTS_ONLY_EXACTLY_ONE_UNIT_REQUIRED")
+        if not isinstance(job.get("fecha_inicio"), str) or not DATE_RE.fullmatch(job.get("fecha_inicio", "")):
+            errors.append("ISCAM_PAYMENTS_ONLY_FECHA_INICIO_INVALID")
+        if not isinstance(job.get("fecha_fin"), str) or not DATE_RE.fullmatch(job.get("fecha_fin", "")):
+            errors.append("ISCAM_PAYMENTS_ONLY_FECHA_FIN_INVALID")
+        dry_run = job.get("dry_run", True)
+        if not isinstance(dry_run, bool):
+            errors.append("ISCAM_PAYMENTS_ONLY_DRY_RUN_INVALID")
+        if dry_run is False and job.get("confirm_payments_only_resync") is not True:
+            errors.append("ISCAM_PAYMENTS_ONLY_CONFIRMATION_REQUIRED")
+    elif mode == SERVER_REGISTRY_METADATA_UPDATE_MODE:
+        if actions not in (None, []):
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_ACTIONS_FORBIDDEN")
+        for forbidden_field in ("sql", "command", "shell", "script", "path", "password", "secret", "username"):
+            if job.get(forbidden_field) is not None:
+                errors.append(f"SERVER_REGISTRY_METADATA_UPDATE_FORBIDDEN_FIELD:{forbidden_field}")
+        server_id = str(job.get("server_id") or "").strip()
+        if not re.fullmatch(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", server_id):
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_SERVER_ID_INVALID")
+        database_name = str(job.get("database_name") or "").strip()
+        if not re.fullmatch(r"[A-Za-z0-9_]{1,128}", database_name):
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_DATABASE_NAME_INVALID")
+        if job.get("confirm_server_registry_metadata_update") is not True:
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_CONFIRMATION_REQUIRED")
+        preflight_checks = job.get("preflight_checks")
+        if not isinstance(preflight_checks, list) or not preflight_checks:
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_PREFLIGHT_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in preflight_checks):
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_PREFLIGHT_ONLY_SQL_AUDIT_ALLOWED")
+        else:
+            for index, check in enumerate(preflight_checks, 1):
+                errors.extend(validate_check(check, index))
+    elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:
+        if actions not in (None, []):
+            errors.append("SQL_MIGRATION_ACTIONS_FORBIDDEN")
+        for forbidden_field in ("sql", "command", "shell", "script", "path"):
+            if job.get(forbidden_field) is not None:
+                errors.append(f"SQL_MIGRATION_FORBIDDEN_FIELD:{forbidden_field}")
+        migration_path = str(job.get("migration_path") or "")
+        migration_parts = Path(migration_path).parts
+        if (
+            not safe_repo_path(migration_path)
+            or len(migration_parts) < 4
+            or migration_parts[:3] != ("backend", "database", "migrations")
+            or not migration_path.lower().endswith(".sql")
+        ):
+            errors.append("SQL_MIGRATION_PATH_INVALID")
+        migration_sha256 = str(job.get("migration_sha256") or "").lower()
+        if not re.fullmatch(r"[0-9a-f]{64}", migration_sha256):
+            errors.append("SQL_MIGRATION_SHA256_INVALID")
+        if job.get("confirm_sql_migration") is not True:
+            errors.append("SQL_MIGRATION_CONFIRMATION_REQUIRED")
+        preflight_checks = job.get("preflight_checks")
+        if not isinstance(preflight_checks, list) or not preflight_checks:
+            errors.append("SQL_MIGRATION_PREFLIGHT_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in preflight_checks):
+            errors.append("SQL_MIGRATION_PREFLIGHT_ONLY_SQL_AUDIT_ALLOWED")
+        else:
+            for index, check in enumerate(preflight_checks, 1):
+                errors.extend(validate_check(check, index))
+    elif mode == FRONTEND_BUILD_CERTIFICATION_MODE:
+        if actions not in (None, []):
+            errors.append("FRONTEND_BUILD_CERTIFICATION_ACTIONS_FORBIDDEN")
+    elif mode == SYNC_HISTORICAL_PARENT_MODE:
+        if actions not in (None, []):
+            errors.append("SYNC_HISTORICAL_PARENT_ACTIONS_FORBIDDEN")
+        for forbidden_field in ("sql", "command", "shell", "script", "path"):
+            if job.get(forbidden_field) is not None:
+                errors.append(
+                    f"SYNC_HISTORICAL_PARENT_FORBIDDEN_FIELD:{forbidden_field}"
+                )
+        parent_id = job.get("parent_sync_control_id")
+        if not isinstance(parent_id, int) or isinstance(parent_id, bool) or parent_id < 1:
+            errors.append("SYNC_HISTORICAL_PARENT_CONTROL_ID_INVALID")
+        if job.get("confirm_sync_historical_parent") is not True:
+            errors.append("SYNC_HISTORICAL_PARENT_CONFIRMATION_REQUIRED")
+    elif mode == SYNC_HISTORICAL_ATOMIC_MODE:
+        if actions not in (None, []):
+            errors.append("SYNC_HISTORICAL_ATOMIC_ACTIONS_FORBIDDEN")
+        for forbidden_field in ("sql", "command", "shell", "script", "path"):
+            if job.get(forbidden_field) is not None:
+                errors.append(
+                    f"SYNC_HISTORICAL_ATOMIC_FORBIDDEN_FIELD:{forbidden_field}"
+                )
+        sync_control_id = job.get("sync_control_id")
+        if not isinstance(sync_control_id, int) or isinstance(sync_control_id, bool) or sync_control_id < 1:
+            errors.append("SYNC_HISTORICAL_ATOMIC_CONTROL_ID_INVALID")
+        if job.get("confirm_sync_historical_atomic") is not True:
+            errors.append("SYNC_HISTORICAL_ATOMIC_CONFIRMATION_REQUIRED")
+    elif mode == MPRO_FULL_HISTORY_MODE:
+        if actions not in (None, []):
+            errors.append("MPRO_RESYNC_ACTIONS_FORBIDDEN")
+        units = job.get("units", [])
+        if not isinstance(units, list) or len(units) != 1 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):
+            errors.append("MPRO_RESYNC_EXACTLY_ONE_UNIT_REQUIRED")
+        dry_run = job.get("dry_run", True)
+        if not isinstance(dry_run, bool):
+            errors.append("MPRO_RESYNC_DRY_RUN_INVALID")
+        if dry_run is False and job.get("confirm_full_history_resync") is not True:
+            errors.append("MPRO_RESYNC_CONFIRMATION_REQUIRED")
     elif mode == SOFTRESTAURANT_FULL_HISTORY_MODE:
         if actions not in (None, []):
             errors.append("SOFTRESTAURANT_RESYNC_ACTIONS_FORBIDDEN")
@@ -240,11 +530,87 @@ def validate(job: Any) -> list[str]:
             errors.append("READ_ONLY_SQL_CHECK_REQUIRED")
         elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
             errors.append("READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED")
+    elif mode == READ_ONLY_MODE:
+        if not isinstance(checks, list) or not checks:
+            errors.append("READ_ONLY_CHECK_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") not in READ_ONLY_CHECKS for c in checks):
+            errors.append("READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED")
+        if _expected_native_decision_requires_semantic_extract(job) and not _has_worker_result_semantic_extract(checks):
+            errors.append("EXPECTED_NATIVE_DECISION_REQUIRES_WORKER_RESULT_SEMANTIC_EXTRACT")
+    elif mode == COMERCIAL_RANGE_RESYNC_MODE:
+        audit_profile = str(job.get("audit_profile") or "").strip()
+        if audit_profile:
+            if audit_profile != COMERCIAL_RANGE_AUDIT_PROFILE:
+                errors.append("COMERCIAL_RANGE_RESYNC_AUDIT_PROFILE_INVALID")
+            if job.get("checks") not in (None, []):
+                errors.append("COMERCIAL_RANGE_RESYNC_AUDIT_PROFILE_WITH_INLINE_CHECKS_FORBIDDEN")
+            checks = []
+        elif not isinstance(checks, list) or not checks:
+            errors.append("COMERCIAL_RANGE_RESYNC_AUDIT_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+            errors.append("COMERCIAL_RANGE_RESYNC_ONLY_SQL_AUDIT_ALLOWED")
+    elif mode == COMERCIAL_OPEN_DAY_SYNC_MODE:
+        audit_profile = str(job.get("audit_profile") or "").strip()
+        if audit_profile:
+            if audit_profile != COMERCIAL_OPEN_DAY_AUDIT_PROFILE:
+                errors.append("COMERCIAL_OPEN_DAY_SYNC_AUDIT_PROFILE_INVALID")
+            if job.get("checks") not in (None, []):
+                errors.append("COMERCIAL_OPEN_DAY_SYNC_AUDIT_PROFILE_WITH_INLINE_CHECKS_FORBIDDEN")
+            checks = []
+        elif not isinstance(checks, list) or not checks:
+            errors.append("COMERCIAL_OPEN_DAY_SYNC_AUDIT_REQUIRED")
+        elif any(
+            not isinstance(c, dict)
+            or c.get("type") != "sql_readonly_audit"
+            for c in checks
+        ):
+            errors.append("COMERCIAL_OPEN_DAY_SYNC_ONLY_SQL_AUDIT_ALLOWED")
     elif mode == ISCAM_DETAIL_BACKFILL_MODE:
         if not isinstance(checks, list) or not checks:
             errors.append("ISCAM_DETAIL_BACKFILL_AUDIT_REQUIRED")
         elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
             errors.append("ISCAM_DETAIL_BACKFILL_ONLY_SQL_AUDIT_ALLOWED")
+    elif mode == ISCAM_PAYMENTS_ONLY_RESYNC_MODE:
+        if not isinstance(checks, list) or not checks:
+            errors.append("ISCAM_PAYMENTS_ONLY_AUDIT_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+            errors.append("ISCAM_PAYMENTS_ONLY_ONLY_SQL_AUDIT_ALLOWED")
+    elif mode == SERVER_REGISTRY_METADATA_UPDATE_MODE:
+        if not isinstance(checks, list) or not checks:
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_POST_AUDIT_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_POST_ONLY_SQL_AUDIT_ALLOWED")
+    elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:
+        if not isinstance(checks, list) or not checks:
+            errors.append("SQL_MIGRATION_POST_AUDIT_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+            errors.append("SQL_MIGRATION_POST_ONLY_SQL_AUDIT_ALLOWED")
+    elif mode == FRONTEND_BUILD_CERTIFICATION_MODE:
+        if not isinstance(checks, list) or not checks:
+            errors.append("FRONTEND_BUILD_CERTIFICATION_CHECK_REQUIRED")
+        elif not any(isinstance(c, dict) and c.get("type") == "frontend_build" for c in checks):
+            errors.append("FRONTEND_BUILD_CERTIFICATION_FRONTEND_BUILD_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") not in {"frontend_build", "git_diff_check", "repository_contract_audit"} for c in checks):
+            errors.append("FRONTEND_BUILD_CERTIFICATION_ONLY_ALLOWED_CHECKS")
+    elif mode == SYNC_HISTORICAL_PARENT_MODE:
+        audit_profile = str(job.get("audit_profile") or "").strip()
+        if audit_profile != SYNC_HISTORICAL_PARENT_AUDIT_PROFILE:
+            errors.append("SYNC_HISTORICAL_PARENT_AUDIT_PROFILE_INVALID")
+        if job.get("checks") not in (None, []):
+            errors.append("SYNC_HISTORICAL_PARENT_INLINE_CHECKS_FORBIDDEN")
+        checks = []
+    elif mode == SYNC_HISTORICAL_ATOMIC_MODE:
+        audit_profile = str(job.get("audit_profile") or "").strip()
+        if audit_profile != SYNC_HISTORICAL_ATOMIC_AUDIT_PROFILE:
+            errors.append("SYNC_HISTORICAL_ATOMIC_AUDIT_PROFILE_INVALID")
+        if job.get("checks") not in (None, []):
+            errors.append("SYNC_HISTORICAL_ATOMIC_INLINE_CHECKS_FORBIDDEN")
+        checks = []
+    elif mode == MPRO_FULL_HISTORY_MODE:
+        if not isinstance(checks, list) or not checks:
+            errors.append("MPRO_RESYNC_AUDIT_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+            errors.append("MPRO_RESYNC_ONLY_SQL_AUDIT_ALLOWED")
     elif mode == SOFTRESTAURANT_FULL_HISTORY_MODE:
         if not isinstance(checks, list) or not checks:
             errors.append("SOFTRESTAURANT_RESYNC_AUDIT_REQUIRED")
@@ -275,13 +641,114 @@ def read_remote(path: str) -> str:
     return git("show", f"{QUEUE_REF}:{path}").stdout
 
 
-def already_claimed(name: str) -> bool:
-    # worker_queue/inbox is immutable audit history. A job is actionable only
-    # when no local lifecycle/terminal evidence exists for its job_id.
-    return any(
-        (folder / name).exists()
-        for folder in (PENDING, PROCESSING, DONE, REJECTED, RESULTS)
+def _read_json_file(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        return payload if isinstance(payload, dict) else {}
+    except Exception:
+        return {}
+
+
+_SLOT_ALREADY_CLAIMED_BLOCKER = (
+    "dispatcher_exception:SlotRuntimeError:SLOT_ALREADY_CLAIMED"
+)
+
+
+def slot_claim_retry_decision(name: str) -> dict[str, Any]:
+    result_path = RESULTS / name
+    if not result_path.is_file():
+        return {
+            "present": False,
+            "allowed": False,
+        }
+
+    result = _read_json_file(result_path)
+    allowed = (
+        result.get("status") == "BLOCKED"
+        and result.get("certification") == "NOT_CERTIFIED"
+        and result.get("percent_complete") == 0
+        and result.get("production_touched") is False
+        and result.get("blockers") == [
+            _SLOT_ALREADY_CLAIMED_BLOCKER
+        ]
     )
+
+    return {
+        "present": True,
+        "allowed": allowed,
+        "result_path": str(result_path),
+        "blockers": result.get("blockers"),
+    }
+
+
+def already_claimed(name: str) -> bool:
+    # worker_queue/inbox is immutable audit history. PENDING, PROCESSING and
+    # DONE remain terminal/active claims. RESULTS is terminal except for the
+    # single pre-execution infrastructure block explicitly allowed below.
+    if any(
+        (folder / name).exists()
+        for folder in (PENDING, PROCESSING, DONE)
+    ):
+        return True
+
+    result_retry = slot_claim_retry_decision(name)
+    if result_retry["present"]:
+        return not result_retry["allowed"]
+
+    return False
+
+
+def rejected_correction_retry_decision(name: str, raw: str, job: dict[str, Any]) -> dict[str, Any]:
+    rejection_path = REJECTED / name
+    if not rejection_path.exists():
+        return {"present": False, "allowed": True}
+    raw_path = REJECTED / f"{name}.raw"
+    if not raw_path.is_file():
+        return {"present": True, "allowed": False, "reason": "REJECTED_RETRY_RAW_EVIDENCE_MISSING"}
+    previous_raw = raw_path.read_text(encoding="utf-8")
+    if previous_raw == raw:
+        return {"present": True, "allowed": False, "reason": "REJECTED_REQUEST_UNCHANGED"}
+    rejection = _read_json_file(rejection_path)
+    reasons = {str(value) for value in (rejection.get("reasons") or [])}
+    if not reasons or not reasons.issubset(CORRECTABLE_REJECTION_REASONS):
+        return {"present": True, "allowed": False, "reason": "REJECTED_REASON_NOT_CORRECTABLE", "previous_reasons": sorted(reasons)}
+    if list(REJECTED_HISTORY.glob(f"{Path(name).stem}.*.json")):
+        return {"present": True, "allowed": False, "reason": "REJECTED_CORRECTION_RETRY_LIMIT_REACHED"}
+    try:
+        previous_job = json.loads(previous_raw)
+    except json.JSONDecodeError:
+        return {"present": True, "allowed": False, "reason": "REJECTED_RETRY_PREVIOUS_JSON_INVALID"}
+    if not isinstance(previous_job, dict):
+        return {"present": True, "allowed": False, "reason": "REJECTED_RETRY_PREVIOUS_JOB_INVALID"}
+    keys = set(previous_job) | set(job)
+    changed_fields = sorted(key for key in keys if previous_job.get(key) != job.get(key))
+    if not changed_fields:
+        return {"present": True, "allowed": False, "reason": "REJECTED_REQUEST_UNCHANGED"}
+    if set(changed_fields) - CORRECTABLE_REJECTION_FIELDS:
+        return {"present": True, "allowed": False, "reason": "REJECTED_RETRY_SCOPE_CHANGED", "changed_fields": changed_fields}
+    if job.get("human_summary_language") != "es":
+        return {"present": True, "allowed": False, "reason": "REJECTED_RETRY_CORRECTION_INVALID", "changed_fields": changed_fields}
+    return {
+        "present": True,
+        "allowed": True,
+        "reason": "REJECTED_CONTRACT_CORRECTION_ALLOWED",
+        "previous_reasons": sorted(reasons),
+        "corrected_fields": changed_fields,
+    }
+
+
+def archive_rejection_for_retry(name: str) -> dict[str, str]:
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    rejection_path = REJECTED / name
+    raw_path = REJECTED / f"{name}.raw"
+    archived_rejection = REJECTED_HISTORY / f"{Path(name).stem}.{stamp}.json"
+    archived_raw = REJECTED_HISTORY / f"{Path(name).stem}.{stamp}.json.raw"
+    os.replace(rejection_path, archived_rejection)
+    os.replace(raw_path, archived_raw)
+    return {
+        "rejection": str(archived_rejection),
+        "raw": str(archived_raw),
+    }
 
 
 def write_rejection(source: str, reason: list[str], raw: str = "") -> None:
@@ -306,6 +773,7 @@ def receive() -> int:
     accepted = rejected = skipped = 0
     for path in queue_files():
         name = Path(path).name
+        result_retry = slot_claim_retry_decision(name)
         if already_claimed(name):
             skipped += 1
             continue
@@ -313,11 +781,31 @@ def receive() -> int:
         try:
             job = json.loads(raw)
         except json.JSONDecodeError:
+            if (REJECTED / name).exists():
+                skipped += 1
+                continue
             write_rejection(path, ["INVALID_JSON"], raw)
             rejected += 1
             continue
+
+        if result_retry.get("allowed"):
+            # Preserve prior RESULTS/REJECTED evidence in place. This retry is
+            # not a contract-correction retry and must not archive/delete it.
+            retry_decision = {
+                "present": False,
+                "allowed": True,
+            }
+        else:
+            retry_decision = rejected_correction_retry_decision(name, raw, job)
+
+        if retry_decision.get("present") and not retry_decision.get("allowed"):
+            skipped += 1
+            continue
         errors = validate(job)
         if errors:
+            if retry_decision.get("present"):
+                skipped += 1
+                continue
             write_rejection(path, errors, raw)
             rejected += 1
             continue
@@ -344,6 +832,9 @@ def receive() -> int:
                 rejected += 1
                 continue
 
+        retry_archive = None
+        if retry_decision.get("present"):
+            retry_archive = archive_rejection_for_retry(name)
         envelope = {
             "received_at_utc": datetime.now(timezone.utc).isoformat(),
             "queue_branch": QUEUE_BRANCH,
@@ -351,6 +842,20 @@ def receive() -> int:
             "requester_authorization": requester_authorization,
             "job": job,
         }
+        if result_retry.get("allowed"):
+            envelope["_worker_slot_claim_retry"] = {
+                "same_job_id": True,
+                "previous_result_path": result_retry.get("result_path"),
+                "previous_blockers": result_retry.get("blockers"),
+                "evidence_preserved": True,
+            }
+        if retry_decision.get("present"):
+            envelope["_worker_rejected_correction_retry"] = {
+                "retry_count": 1,
+                "previous_reasons": retry_decision.get("previous_reasons", []),
+                "corrected_fields": retry_decision.get("corrected_fields", []),
+                "archived_evidence": retry_archive,
+            }
         (PENDING / name).write_text(json.dumps(envelope, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         accepted += 1
     print(f"UNIVERSAL_QUEUE_ACCEPTED={accepted}")

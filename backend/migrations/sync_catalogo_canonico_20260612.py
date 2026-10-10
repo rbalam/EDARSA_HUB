@@ -106,7 +106,7 @@ def _seed():
              desc='Sincroniza requisiciones/órdenes de compra (encabezado y detalle).'),
         dict(codigo='inventarios_fisicos', nombre='Inventarios Físicos',
              grupo='Inventarios', orden=20, nivel='MEDIO', resync=1, dry=1, unidad=1, rango=1,
-             rmax=60, handler='sync_inventarios_fisicos', impl=0,
+             rmax=60, handler='sync_inventarios_fisicos', impl=1,
              tabla='Compras_Inventarios_Fisicos_Sync',
              deps=[{'codigo': 'catalogo_productos', 'obligatoria': False}],
              desc='Sincroniza los inventarios físicos capturados en el POS.'),

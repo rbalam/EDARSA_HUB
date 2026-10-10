@@ -529,27 +529,30 @@ const Servidores = () => {
     }));
     
     try {
-      // Usar endpoint que obtiene api_key internamente y no requiere permisos estrictos
-      const response = await api.post(`/api-connections/${apiConn.id}/test-connectivity`);
+      const response = await api.post(
+        `/api-connections/${apiConn.id}/test-connectivity`,
+        {},
+        { timeout: 40000 }
+      );
       
       if (response.data.success) {
         if (response.data.sql_connected) {
           setApiTestStatus(prev => ({
             ...prev,
-            [apiConn.id]: { 
-              loading: false, 
-              status: 'success', 
-              message: `✅ ${response.data.message || 'API y SQL Server conectados'}` 
+            [apiConn.id]: {
+              loading: false,
+              status: 'success',
+              message: `✅ ${response.data.message || 'API y SQL Server conectados'}`
             }
           }));
           toast.success(`${apiConn.name}: Conexión exitosa`);
         } else {
           setApiTestStatus(prev => ({
             ...prev,
-            [apiConn.id]: { 
-              loading: false, 
-              status: 'warning', 
-              message: `⚠️ API responde pero SQL Server no disponible: ${response.data.sql_error || 'Error desconocido'}` 
+            [apiConn.id]: {
+              loading: false,
+              status: 'warning',
+              message: `⚠️ API responde pero SQL Server no disponible: ${response.data.sql_error || 'Error desconocido'}`
             }
           }));
           toast.warning(`${apiConn.name}: API OK pero SQL Server no disponible`);
@@ -558,36 +561,48 @@ const Servidores = () => {
         const errorText = response.data.sql_error || response.data.message || 'Error de conexión';
         setApiTestStatus(prev => ({
           ...prev,
-          [apiConn.id]: { 
-            loading: false, 
-            status: 'error', 
-            message: `❌ ${errorText.substring(0, 100)}` 
+          [apiConn.id]: {
+            loading: false,
+            status: 'error',
+            message: `❌ ${errorText.substring(0, 100)}`
           }
         }));
         toast.error(`${apiConn.name}: ${errorText.substring(0, 100)}`);
       }
     } catch (error) {
+      const detail = error.response?.data?.detail;
       let errorMsg = 'Error de conexión';
+      let status = 'error';
+
       if (error.response?.status === 404) {
         errorMsg = 'Conexión no encontrada';
+      } else if (error.response?.status === 409) {
+        errorMsg = typeof detail === 'string'
+          ? detail
+          : 'Falta EmpresaID canónico para esta conexión API';
+        status = 'warning';
       } else if (error.response?.status === 400) {
-        const detail = error.response?.data?.detail;
         errorMsg = typeof detail === 'string' ? detail : 'Conexión inválida';
-      } else if (error.response?.data?.detail) {
-        const detail = error.response.data.detail;
+      } else if (detail) {
         errorMsg = typeof detail === 'string' ? detail : JSON.stringify(detail);
       } else if (error.message) {
         errorMsg = error.message;
       }
+
       setApiTestStatus(prev => ({
         ...prev,
-        [apiConn.id]: { 
-          loading: false, 
-          status: 'error', 
-          message: `❌ ${errorMsg.substring(0, 150)}` 
+        [apiConn.id]: {
+          loading: false,
+          status,
+          message: `${status === 'warning' ? '⚠️' : '❌'} ${errorMsg.substring(0, 150)}`
         }
       }));
-      toast.error(`${apiConn.name}: ${errorMsg.substring(0, 100)}`);
+
+      if (status === 'warning') {
+        toast.warning(`${apiConn.name}: ${errorMsg.substring(0, 100)}`);
+      } else {
+        toast.error(`${apiConn.name}: ${errorMsg.substring(0, 100)}`);
+      }
     }
   };
   

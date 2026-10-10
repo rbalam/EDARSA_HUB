@@ -68,10 +68,16 @@ def test_common_date_prevents_mixed_operational_days():
         for item in result["items"]
     }
 
+    assert by_unit["A"]["fecha_operacion"] == "2026-08-02"
+    assert by_unit["A"]["fecha_operacion_resuelta"] == "2026-08-02"
+    assert by_unit["A"]["fecha_operacion_desfasada"] is False
     assert by_unit["A"]["cerradas"]["ventas"] == 100
     assert by_unit["A"]["abiertas"]["ventas"] == 50
     assert by_unit["A"]["operacion_estimada"]["ventas"] == 150
 
+    assert by_unit["B"]["fecha_operacion"] == "2026-08-02"
+    assert by_unit["B"]["fecha_operacion_resuelta"] == "2026-08-01"
+    assert by_unit["B"]["fecha_operacion_desfasada"] is True
     assert by_unit["B"]["cerradas"]["ventas"] == 0
     assert by_unit["B"]["abiertas"]["ventas"] == 0
     assert by_unit["B"]["operacion_estimada"]["ventas"] == 0
@@ -182,3 +188,63 @@ def test_closed_and_open_values_remain_separate():
     assert item["operacion_estimada"]["ventas"] == 200
     assert item["operacion_estimada"]["cheques"] == 6
     assert item["operacion_estimada"]["pax"] == 11
+def test_current_operation_preserves_comercial_drilldown_metadata():
+    result = build_current_operation(
+        allowed_unit_codes=["ORIGEN"],
+        date_resolver=lambda unit: date(2026, 10, 1),
+        sales_reader=lambda operation_date, units: [{
+            "unidad_negocio_id": "ORIGEN",
+            "unidad_negocio_nombre": "ORIGEN",
+            "server_id": "SERVER-MPRO",
+            "sucursal_id": "0023",
+            "sucursal_nombre": "ORIGEN",
+            "sistema_origen": "MPRO",
+            "fecha_operacion": "2026-10-01",
+            "ventas_abiertas": 2095,
+            "tickets_abiertos": 3,
+            "pax_abiertos": 7,
+            "ventas_cerradas_dia": 4231,
+            "tickets_cerrados_dia": 2,
+            "pax_cerrados_dia": 15,
+        }],
+    )
+
+    item = result["items"][0]
+
+    assert item["server_id"] == "SERVER-MPRO"
+    assert item["sucursal_id"] == "0023"
+    assert item["sucursal_nombre"] == "ORIGEN"
+    assert item["sistema_origen"] == "MPRO"
+
+
+def test_executive_current_day_uses_certified_comercial_sales_detail():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    tablero = (
+        root / "frontend/src/pages/TableroEjecutivo.js"
+    ).read_text(encoding="utf-8")
+    drill = (
+        root
+        / "frontend/src/components/comercial/KpiDrilldownDialog.jsx"
+    ).read_text(encoding="utf-8")
+
+    assert "server_id: item.server_id || null" in tablero
+    assert "sucursal_id: item.sucursal_id || null" in tablero
+
+    # Tablero Ejecutivo conserva RBAC por unidad y no cruza
+    # directamente a las rutas Comercial protegidas por server_id.
+    assert "/comercial/detalle-ventas-agrupado/" not in drill
+    assert "/comercial/ticket-venta/" not in drill
+
+    # Ventas del Dia utiliza el endpoint analytics del Ejecutivo.
+    assert "/v2/comercial/analytics/tickets" in drill
+    assert "ticketPk: item.ticket_pk" in drill
+
+    # Se conserva la conciliacion de cuentas abiertas.
+    assert "hasMissingOpen" in drill
+
+    # Una unidad neutralizada por fecha operativa rezagada no puede
+    # consultar el día anterior desde el drill-down de Ventas del Día.
+    assert "fecha_operacion_desfasada" in drill
+    assert "currentOperationSuppressed" in drill

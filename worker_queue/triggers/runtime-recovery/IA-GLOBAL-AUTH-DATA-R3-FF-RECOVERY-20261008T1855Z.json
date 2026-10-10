@@ -1,0 +1,8 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Recover canonical Universal Worker runtime convergence for existing EDARSAHUB-IA-GLOBAL-AUTH-DATA-R3-CARLOS-20261008T1816 after terminal GIT_DIVERGENCE_BLOCKED with NEEDS_FAST_FORWARD_REFRESH. Fast-forward only to current Edarsahub_Desarrollo, preserve local work, fail closed on wrong branch, dirty state, non-fast-forward, divergence or unsafe local state, then consume the existing R3 without creating a new functional job. Do not modify the functional request and do not touch Production.",
+  "existing_job_id": "EDARSAHUB-IA-GLOBAL-AUTH-DATA-R3-CARLOS-20261008T1816",
+  "expected_remote_head": "14cf90704768dbbe8fb90cd6eaa712263ceb8b62",
+  "expected_classification": "REMOTE_AHEAD_ONLY",
+  "production_touched": false
+}

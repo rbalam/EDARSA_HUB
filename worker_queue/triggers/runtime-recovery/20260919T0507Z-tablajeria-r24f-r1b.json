@@ -1,0 +1,6 @@
+{
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-IMPLEMENTATION-MUTATION-R1B-20260919",
+  "reason": "wake R24F implementation R1B after REMOTE_MOVED_RETRY_REQUIRED",
+  "created_at_utc": "2026-09-19T05:07:00Z",
+  "production_touched": false
+}

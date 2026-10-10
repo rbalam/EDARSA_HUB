@@ -85,6 +85,7 @@ const getAniosDisponibles = () => {
 // ============ TAB 1: DASHBOARD DE COMPRAS ============
 function DashboardCompras({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, loadingUnidades }) {
   const [kpis, setKpis] = useState(null);
+  const [error, setError] = useState(null);
   const [alertas, setAlertas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [topProveedores, setTopProveedores] = useState([]);

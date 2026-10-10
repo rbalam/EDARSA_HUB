@@ -123,9 +123,17 @@ class TemplateService:
         if cache_key in self._cache:
             return self._cache[cache_key]
         
-        # 2. SQL-FIRST P4C: BD legacy de templates neutralizada.
-        template = None
-        
+        # 2. Gate 5D: leer template SQL canonico antes del fallback default.
+        try:
+            from ..notifications.repository import NotificationRepository
+            template = await NotificationRepository(self.db).get_template(canal, codigo)
+        except Exception as exc:
+            logger.warning("No se pudo leer template SQL %s/%s: %s", canal, codigo, type(exc).__name__)
+            template = None
+        if template:
+            self._cache[cache_key] = template
+            return template
+
         # 3. Usar default
         if codigo in DEFAULT_TEMPLATES:
             default = DEFAULT_TEMPLATES[codigo].copy()
