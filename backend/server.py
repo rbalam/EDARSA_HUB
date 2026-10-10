@@ -16814,10 +16814,10 @@ except Exception as e:
 # El arranque del backend actua como frontera local de auto-recuperacion del Worker.
 
 
-# Startup: Iniciar scheduler
+# Startup: recuperar Worker y aplicar ownership explicito del Scheduler.
 @app.on_event("startup")
 async def startup_scheduler():
-    """Inicia el scheduler y recupera el Universal Worker en Preview."""
+    """Recupera el Worker y arranca APScheduler solo si la politica lo permite."""
     try:
         worker_runtime_state = ensure_worker_runtime_on_preview_startup()
         logger.info(f"Universal Worker startup self-heal: {worker_runtime_state}")
@@ -16825,12 +16825,35 @@ async def startup_scheduler():
         logger.warning(f"Universal Worker startup self-heal no disponible: {e}")
 
     try:
-        from core.scheduler import start_scheduler
-        await start_scheduler(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad
-        logger.info("Scheduler iniciado correctamente (SQL-only mode)")
+        from modules.scheduler_runtime.policy import (
+            runtime_policy_snapshot,
+            should_start_embedded_scheduler,
+        )
+
+        policy = runtime_policy_snapshot()
+
+        if should_start_embedded_scheduler():
+            from core.scheduler import start_scheduler
+
+            await start_scheduler(db)  # SQL-only; StubDatabase conserva firmas legacy
+            logger.warning(
+                "Scheduler embebido iniciado environment=%s role=%s legacy_fallback=%s",
+                policy.get("environment"),
+                policy.get("role"),
+                policy.get("legacy_fallback_active"),
+            )
+        else:
+            logger.warning(
+                "Scheduler embebido NO iniciado por politica environment=%s role=%s "
+                "role_required=%s scheduler_enabled=%s",
+                policy.get("environment"),
+                policy.get("role"),
+                policy.get("role_required"),
+                policy.get("scheduler_enabled"),
+            )
     except Exception as e:
-        logger.error(f"Error iniciando scheduler: {e}")
-        # No fallar el startup por el scheduler
+        logger.error(f"Error evaluando/iniciando scheduler: {e}")
+        # Fail-closed para roles invalidos; el backend web debe continuar disponible.
 
 # Shutdown: Detener scheduler
 @app.on_event("shutdown")
