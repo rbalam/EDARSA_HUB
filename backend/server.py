@@ -16758,6 +16758,17 @@ except Exception as e:
 
 
 # =============================================================================
+# P0 - TRIGGER HTTP PRODUCTIVO PARA VENTAS DEL DIA
+# =============================================================================
+try:
+    from modules.scheduler_trigger.routes import router as scheduler_trigger_router
+    app.include_router(scheduler_trigger_router)
+    logger.info("Production scheduler HTTP trigger router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando scheduler HTTP trigger router: {e}")
+
+
+# =============================================================================
 # UNIVERSAL WORKER - WAKE INTERNO CANONICO
 # =============================================================================
 try:
