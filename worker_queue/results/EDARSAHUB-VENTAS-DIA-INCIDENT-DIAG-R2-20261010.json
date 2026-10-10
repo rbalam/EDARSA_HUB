@@ -1,0 +1,413 @@
+{
+  "base_sha": "f5ff431a639489bf539587b404138332641731a6",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-10T19:30:38Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-VENTAS-DIA-INCIDENT-DIAG-R2-20261010",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-10T19:30:40Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "SyncControlID",
+              "SyncRunID",
+              "SyncType",
+              "FechaInicio",
+              "FechaFin",
+              "Status",
+              "StartedAtMexico",
+              "FinishedAtMexico",
+              "ErrorMessage"
+            ],
+            "name": "ventas_dia_ledger_recent_minimal",
+            "row_count_returned": 20,
+            "rows": [
+              [
+                7244,
+                "ABIERTA-20260806-205527-5300",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-08-06",
+                "2026-08-06",
+                "IN_PROGRESS",
+                "2026-08-06 14:55:27.4040000",
+                null,
+                null
+              ],
+              [
+                4754,
+                "ABIERTA-20260712-162815-abdf",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-12",
+                "2026-07-12",
+                "SUCCESS",
+                "2026-07-12 10:28:15.4340000",
+                "2026-07-12 10:28:23.5520000",
+                null
+              ],
+              [
+                4753,
+                "ABIERTA-20260712-072509-8375",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-12",
+                "2026-07-12",
+                "SUCCESS",
+                "2026-07-12 01:25:09.6950000",
+                "2026-07-12 01:25:14.4280000",
+                null
+              ],
+              [
+                4752,
+                "ABIERTA-20260712-072013-3a3a",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-12",
+                "2026-07-12",
+                "SUCCESS",
+                "2026-07-12 01:20:13.2310000",
+                "2026-07-12 01:20:18.4780000",
+                null
+              ],
+              [
+                4751,
+                "ABIERTA-20260712-071509-4601",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-12",
+                "2026-07-12",
+                "SUCCESS",
+                "2026-07-12 01:15:09.6810000",
+                "2026-07-12 01:15:15.2320000",
+                null
+              ],
+              [
+                4750,
+                "ABIERTA-20260712-071010-282f",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-12",
+                "2026-07-12",
+                "SUCCESS",
+                "2026-07-12 01:10:10.5060000",
+                "2026-07-12 01:10:16.8300000",
+                null
+              ],
+              [
+                4749,
+                "ABIERTA-20260712-070513-06dd",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-12",
+                "2026-07-12",
+                "SUCCESS",
+                "2026-07-12 01:05:13.5390000",
+                "2026-07-12 01:05:19.7020000",
+                null
+              ],
+              [
+                4748,
+                "ABIERTA-20260712-070010-a28d",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-12",
+                "2026-07-12",
+                "SUCCESS",
+                "2026-07-12 01:00:10.2660000",
+                "2026-07-12 01:00:15.5700000",
+                null
+              ],
+              [
+                4747,
+                "ABIERTA-20260712-065509-23da",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-12",
+                "2026-07-12",
+                "SUCCESS",
+                "2026-07-12 00:55:09.6950000",
+                "2026-07-12 00:55:17.7390000",
+                null
+              ],
+              [
+                4746,
+                "ABIERTA-20260712-064417-5fe2",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-12",
+                "2026-07-12",
+                "SUCCESS",
+                "2026-07-12 00:44:17.4580000",
+                "2026-07-12 00:44:24.2510000",
+                null
+              ],
+              [
+                4745,
+                "ABIERTA-20260712-063621-c066",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-12",
+                "2026-07-12",
+                "SUCCESS",
+                "2026-07-12 00:36:21.7530000",
+                "2026-07-12 00:36:27.9250000",
+                null
+              ],
+              [
+                4744,
+                "ABIERTA-20260712-063123-8195",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-12",
+                "2026-07-12",
+                "SUCCESS",
+                "2026-07-12 00:31:23.6150000",
+                "2026-07-12 00:31:28.8460000",
+                null
+              ],
+              [
+                4743,
+                "ABIERTA-20260712-062621-24d7",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-12",
+                "2026-07-12",
+                "SUCCESS",
+                "2026-07-12 00:26:21.7630000",
+                "2026-07-12 00:26:27.0180000",
+                null
+              ],
+              [
+                4742,
+                "ABIERTA-20260712-062121-f0b4",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-12",
+                "2026-07-12",
+                "SUCCESS",
+                "2026-07-12 00:21:21.3050000",
+                "2026-07-12 00:21:30.2220000",
+                null
+              ],
+              [
+                4741,
+                "ABIERTA-20260712-060905-a76c",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-12",
+                "2026-07-12",
+                "SUCCESS",
+                "2026-07-12 00:09:06.0750000",
+                "2026-07-12 00:09:12.5630000",
+                null
+              ],
+              [
+                4740,
+                "ABIERTA-20260712-055729-4069",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-11",
+                "2026-07-11",
+                "SUCCESS",
+                "2026-07-11 23:57:30.1660000",
+                "2026-07-11 23:57:35.2600000",
+                null
+              ],
+              [
+                4739,
+                "ABIERTA-20260712-055230-e849",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-11",
+                "2026-07-11",
+                "SUCCESS",
+                "2026-07-11 23:52:30.7420000",
+                "2026-07-11 23:52:37.3510000",
+                null
+              ],
+              [
+                4738,
+                "ABIERTA-20260712-054230-d5a3",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-11",
+                "2026-07-11",
+                "SUCCESS",
+                "2026-07-11 23:42:30.7380000",
+                "2026-07-11 23:42:36.2180000",
+                null
+              ],
+              [
+                4737,
+                "ABIERTA-20260712-053730-1577",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-11",
+                "2026-07-11",
+                "SUCCESS",
+                "2026-07-11 23:37:30.5570000",
+                "2026-07-11 23:37:38.2740000",
+                null
+              ],
+              [
+                4736,
+                "ABIERTA-20260712-053122-35c7",
+                "VENTAS_DIA_ABIERTAS",
+                "2026-07-11",
+                "2026-07-11",
+                "SUCCESS",
+                "2026-07-11 23:31:22.2750000",
+                "2026-07-11 23:31:27.5590000",
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "unidad_negocio_nombre",
+              "sistema_origen",
+              "fecha_operacion",
+              "ultimo_snapshot",
+              "total_estimado_dia",
+              "filas"
+            ],
+            "name": "ventas_dia_snapshot_today_minimal",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                "130° MERIDA",
+                "SOFTRESTAURANT",
+                "2026-10-10",
+                "2026-10-10 19:29:07.9069360",
+                "8405.00",
+                1
+              ],
+              [
+                "130QRO",
+                "130° QUERETARO",
+                "MPRO",
+                "2026-10-10",
+                "2026-10-10 19:29:15.0216030",
+                "295.00",
+                1
+              ],
+              [
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "SOFTRESTAURANT",
+                "2026-10-10",
+                "2026-10-10 19:29:09.2294900",
+                "7387.75",
+                1
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "SOFTRESTAURANT",
+                "2026-10-10",
+                "2026-10-10 19:29:10.4265440",
+                "8719.75",
+                1
+              ],
+              [
+                "ORIGEN",
+                "ORIGEN",
+                "MPRO",
+                "2026-10-10",
+                "2026-10-10 19:29:19.6926210",
+                "2838.01",
+                1
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "ultima_fecha_operacion",
+              "ultimo_snapshot"
+            ],
+            "name": "ventas_dia_snapshot_latest_minimal",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                "2026-10-10",
+                "2026-10-10 19:29:07.9069360"
+              ],
+              [
+                "130QRO",
+                "2026-10-10",
+                "2026-10-10 19:29:15.0216030"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-10",
+                "2026-10-10 19:29:09.2294900"
+              ],
+              [
+                "ESTELAR",
+                "2026-10-10",
+                "2026-10-10 19:29:10.4265440"
+              ],
+              [
+                "ORIGEN",
+                "2026-10-10",
+                "2026-10-10 19:29:19.6926210"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_name",
+              "is_nullable",
+              "default_definition"
+            ],
+            "name": "ventas_dia_schema_new_defaults",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                "AttemptCount",
+                false,
+                "((0))"
+              ],
+              [
+                "CancelRequested",
+                false,
+                "((0))"
+              ],
+              [
+                "DispatchCount",
+                false,
+                "((0))"
+              ],
+              [
+                "MaxAttempts",
+                false,
+                "((3))"
+              ],
+              [
+                "PauseRequested",
+                false,
+                "((0))"
+              ],
+              [
+                "RunKind",
+                false,
+                "('LEGACY')"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-10T19:30:37Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
