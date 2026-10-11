@@ -87,6 +87,7 @@ from core.user_access_context import (
     UserAccessContext,
 )
 from core.rbac_sql.service import RBACSQLService
+from core.rbac_helper_sql import has_full_access
 from .ticket_service import build_ticket_venta, merge_open_snapshot_tickets
 from core.source_resolver import QueryStatus, SourceQueryResult
 from core.db import (
@@ -304,16 +305,45 @@ async def validate_server_access_rbac(current_user: Dict, server_id: str) -> Use
     """
     Valida acceso a endpoints individuales del módulo Comercial.
 
-    Reglas:
-    - conserva el alcance explícito existente por servidor;
-    - si el usuario no tiene asignaciones explícitas y su permiso canónico
-      comercial_VER no restringe sucursal, permite cualquier servidor que
-      pertenezca a una unidad de negocio activa;
-    - nunca amplía usuarios con alcance explícito;
-    - no interviene en Tablero Ejecutivo, Inteligencia Comercial ni procesos
-      de sincronización.
+    Contrato canónico:
+    - comparte la misma semántica de acceso global SQL que Comercial V2;
+    - un rol con NivelJerarquia >= 80 puede acceder a cualquier servidor ACTIVO
+      asociado a una unidad de negocio activa;
+    - para usuarios sin acceso global conserva el alcance explícito existente;
+    - el fallback comercial_VER nunca amplía usuarios con asignaciones explícitas;
+    - no autoriza IDs de servidor ajenos al catálogo activo de EDARSAHUB.
     """
     context = await resolve_user_access_context(current_user)
+    normalized_server_id = str(server_id or "").strip().lower()
+
+    def _active_server_ids() -> set[str]:
+        return {
+            str(unit.get("server_id") or "").strip().lower()
+            for unit in UnidadesService.get_all()
+            if unit.get("server_id")
+            and bool(unit.get("activo", True))
+        }
+
+    # RBAC CANÓNICO TRANSVERSAL:
+    # Comercial V2 ya usa has_full_access(); los endpoints legacy por servidor
+    # deben respetar exactamente el mismo criterio SQL de jerarquía.
+    try:
+        if has_full_access(current_user):
+            if normalized_server_id in _active_server_ids():
+                context.tiene_acceso_global = True
+                context.fuente_acceso = "RBAC_GLOBAL"
+                logging.info(
+                    "[RBAC-COMERCIAL-GLOBAL] Usuario %s con acceso global "
+                    "canónico accede a servidor activo %s",
+                    current_user.get("email"),
+                    server_id,
+                )
+                return context
+    except Exception:
+        logging.exception(
+            "[RBAC-COMERCIAL-GLOBAL] Error resolviendo acceso global para %s",
+            current_user.get("email"),
+        )
 
     if has_server_access(context, server_id):
         return context
@@ -348,14 +378,7 @@ async def validate_server_access_rbac(current_user: Dict, server_id: str) -> Use
                 )
 
                 if unrestricted and not has_explicit_scope:
-                    active_server_ids = {
-                        str(unit.get("server_id") or "").strip().lower()
-                        for unit in UnidadesService.get_all()
-                        if unit.get("server_id")
-                        and bool(unit.get("activo", True))
-                    }
-
-                    if str(server_id).strip().lower() in active_server_ids:
+                    if normalized_server_id in _active_server_ids():
                         logging.info(
                             "[RBAC-COMERCIAL-GLOBAL] Usuario %s con "
                             "comercial_VER sin restricción accede a servidor %s",
