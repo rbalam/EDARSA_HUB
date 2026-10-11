@@ -1,10 +1,10 @@
 {
   "ahead_count": 1,
   "behind_count": 0,
-  "branch": "fix/p5-runtime-workflow",
+  "branch": "Edarsahub_Desarrollo",
   "convergence_status": "LOCAL_AHEAD_ONLY",
   "development_sha": "e5cd5bcb6f4838e34bc34b6a093027dd88c1eac6",
-  "generated_at_utc": "2026-10-11T06:27:06Z",
+  "generated_at_utc": "2026-10-11T06:28:27Z",
   "history": {
     "done_total_local": 1369,
     "pending_total_local": 0,
@@ -29,15 +29,30 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-11T06:26:55Z",
-    "last_receive_utc": "2026-10-11T06:27:02Z",
+    "last_cycle_utc": "2026-10-11T06:28:24Z",
+    "last_receive_utc": "2026-10-11T06:28:19Z",
     "last_terminal_utc": "2026-10-10T19:52:52Z",
     "pid": "280",
     "runtime_fingerprint": {
-      "error_type": "RuntimeFingerprintError",
+      "active_worker_code_tree_sha": "6c1233dbc0beba1383034f88dcb52bf9525e0084",
+      "actual_generation": "20260827-universal-job-worker-selfheal-v3",
+      "branch": "Edarsahub_Desarrollo",
+      "development_sha": "38744bbba1fa2f0a3fa05e65582fb50fd542050c",
+      "expected_generation": "20260827-universal-job-worker-selfheal-v3",
+      "generation_aligned": true,
       "production_touched": false,
+      "required_capabilities": [
+        "canonical_git_guard_refresh",
+        "runtime_code_tree_identity",
+        "runtime_generation_identity",
+        "worker_heartbeat",
+        "startup_selfheal",
+        "wake_proof",
+        "production_fail_closed"
+      ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "status": "RUNTIME_FINGERPRINT_UNAVAILABLE"
+      "worker_code_tree_aligned": true,
+      "worker_code_tree_sha": "6c1233dbc0beba1383034f88dcb52bf9525e0084"
     }
   },
   "schema": "edarsahub.worker-health.v3",
