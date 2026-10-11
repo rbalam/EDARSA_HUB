@@ -6,7 +6,7 @@ from types import ModuleType
 import pytest
 from fastapi import HTTPException
 
-from modules.scheduler_trigger import routes
+from modules.scheduler_trigger import routes, wake_loop
 
 
 _ENV_KEYS = (
@@ -163,4 +163,70 @@ def test_trigger_invokes_only_canonical_protected_job(monkeypatch):
 
 def test_trigger_module_does_not_import_protected_job_directly():
     source = Path(routes.__file__).read_text(encoding="utf-8")
+    assert "core.scheduler.jobs.sync_comercial_abiertas_v2_job" not in source
+
+
+def test_internal_wake_runs_only_in_production_web(monkeypatch):
+    _clear(monkeypatch)
+    monkeypatch.setenv("EDARSA_ENV", "PRODUCTION")
+    monkeypatch.setenv("EDARSA_RUNTIME_ROLE", "PRODUCTION_WEB")
+    monkeypatch.setenv("EDARSA_SCHEDULER_TRIGGER_ENABLED", "true")
+    monkeypatch.setenv(
+        "SCHEDULER_SYNC_COMERCIAL_ABIERTAS_V2_ENABLED",
+        "true",
+    )
+
+    assert wake_loop.internal_wake_eligible() is True
+
+    monkeypatch.setenv("EDARSA_ENV", "PREVIEW")
+    assert wake_loop.internal_wake_eligible() is False
+
+    monkeypatch.setenv("EDARSA_ENV", "PRODUCTION")
+    monkeypatch.setenv("EDARSA_RUNTIME_ROLE", "PREVIEW_WEB")
+    assert wake_loop.internal_wake_eligible() is False
+
+
+def test_internal_wake_respects_existing_job_interval(monkeypatch):
+    _clear(monkeypatch)
+
+    assert wake_loop.wake_interval_seconds() == 300
+
+    monkeypatch.setenv(
+        "SCHEDULER_SYNC_COMERCIAL_ABIERTAS_V2_INTERVAL_SECONDS",
+        "600",
+    )
+    assert wake_loop.wake_interval_seconds() == 600
+
+
+def test_internal_wake_invokes_only_canonical_scheduler_job(monkeypatch):
+    calls = []
+
+    class FakeManager:
+        async def run_job_now(self, job_id):
+            calls.append(job_id)
+            return {"status": "executed", "job_id": job_id}
+
+    fake_scheduler_manager = ModuleType(
+        "core.scheduler.scheduler_manager"
+    )
+    fake_scheduler_manager.get_scheduler_manager = (
+        lambda: FakeManager()
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "core.scheduler.scheduler_manager",
+        fake_scheduler_manager,
+    )
+
+    result = asyncio.run(wake_loop._run_once())
+
+    assert calls == ["sync_comercial_abiertas_v2"]
+    assert result == {
+        "status": "executed",
+        "job_id": "sync_comercial_abiertas_v2",
+    }
+
+
+def test_internal_wake_does_not_import_protected_job_directly():
+    source = Path(wake_loop.__file__).read_text(encoding="utf-8")
     assert "core.scheduler.jobs.sync_comercial_abiertas_v2_job" not in source

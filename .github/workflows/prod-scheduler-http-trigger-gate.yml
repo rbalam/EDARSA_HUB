@@ -53,7 +53,7 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}/backend
         run: |
-          python -m py_compile             backend/modules/scheduler_trigger/routes.py             backend/modules/scheduler_runtime/policy.py
+          python -m py_compile             backend/modules/scheduler_trigger/routes.py             backend/modules/scheduler_trigger/wake_loop.py             backend/modules/scheduler_runtime/policy.py
 
       - name: Run trigger and ownership contracts
         env:

@@ -16782,7 +16782,7 @@ except Exception as e:
 # Startup: ownership explicito del Scheduler.
 @app.on_event("startup")
 async def startup_scheduler():
-    """Arranca APScheduler solo si la politica de runtime lo permite."""
+    """Aplica ownership del scheduler y despierta Ventas del Dia en Live."""
     try:
         from modules.scheduler_runtime.policy import (
             runtime_policy_snapshot,
@@ -16814,10 +16814,33 @@ async def startup_scheduler():
         logger.error(f"Error evaluando/iniciando scheduler: {e}")
         # Fail-closed para roles invalidos; el backend web debe continuar disponible.
 
+    try:
+        from modules.scheduler_trigger.wake_loop import (
+            start_internal_wake_loop,
+        )
+
+        wake_state = start_internal_wake_loop()
+        logger.warning(
+            "Production internal wake state: %s",
+            wake_state,
+        )
+    except Exception as e:
+        logger.error(f"Error iniciando production internal wake: {e}")
+
 # Shutdown: Detener scheduler
 @app.on_event("shutdown")
 async def shutdown_scheduler():
-    """Detiene el scheduler limpiamente."""
+    """Detiene scheduler y wake loop limpiamente."""
+    try:
+        from modules.scheduler_trigger.wake_loop import (
+            stop_internal_wake_loop,
+        )
+
+        await stop_internal_wake_loop()
+        logger.info("Production internal wake detenido correctamente")
+    except Exception as e:
+        logger.error(f"Error deteniendo production internal wake: {e}")
+
     try:
         from core.scheduler import stop_scheduler
         await stop_scheduler()
