@@ -17,3 +17,8 @@ def test_login_is_required():
 def test_health_is_required():
     text = SMOKE.read_text(encoding="utf-8")
     assert "/api/health" in text
+
+
+def test_root_health_alias_is_required():
+    server = (ROOT / "backend/server.py").read_text(encoding="utf-8")
+    assert '@app.get("/health")' in server
