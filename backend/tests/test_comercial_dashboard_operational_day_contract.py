@@ -56,7 +56,7 @@ def test_softrestaurant_visible_unit_code_is_not_used_as_sucursal_origen_id():
 
 def test_softrestaurant_snapshot_resolution_uses_same_canonical_scope():
     text = ROUTES.read_text(encoding="utf-8")
-    start = text.index("# HOY - SOFTRESTAURANT:")
+    start = text.index("# HOY - CANONICO, ATOMICO Y TRANSVERSAL:")
     end = text.index("# FASE 3A.2: Migrado a helper centralizado", start)
     block = text[start:end]
 
