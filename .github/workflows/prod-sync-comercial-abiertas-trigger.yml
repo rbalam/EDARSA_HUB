@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "2-59/5 * * * *"
   workflow_dispatch:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - ".github/workflows/prod-sync-comercial-abiertas-trigger.yml"
 
 permissions:
   contents: read
