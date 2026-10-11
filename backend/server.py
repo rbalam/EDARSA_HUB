@@ -16860,6 +16860,22 @@ async def startup_scheduler():
         )
 
     try:
+        from modules.scheduler_runtime.preview_scoped_scheduler import (
+            start_preview_scoped_scheduler,
+        )
+
+        preview_scoped_scheduler_state = await start_preview_scoped_scheduler(db)
+        logger.warning(
+            "Preview scoped scheduler state=%s",
+            preview_scoped_scheduler_state,
+        )
+    except Exception as e:
+        logger.error(
+            "Preview scoped scheduler no disponible: %s",
+            e,
+        )
+
+    try:
         from modules.scheduler_runtime.policy import (
             runtime_policy_snapshot,
             should_start_embedded_scheduler,
