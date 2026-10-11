@@ -16824,6 +16824,24 @@ async def startup_scheduler():
     except Exception as e:
         logger.warning(f"Universal Worker startup self-heal no disponible: {e}")
 
+    # PREVIEW: restaurar exclusivamente la cadencia de Ventas del Dia.
+    # No arranca el scheduler completo y no altera el job protegido.
+    try:
+        from modules.scheduler_runtime.preview_sales_wake import (
+            start_preview_sales_wake,
+        )
+
+        preview_sales_wake_state = start_preview_sales_wake(db)
+        logger.warning(
+            "Preview Ventas del Dia wake state=%s",
+            preview_sales_wake_state,
+        )
+    except Exception as e:
+        logger.error(
+            "Preview Ventas del Dia wake no disponible: %s",
+            e,
+        )
+
     try:
         from modules.scheduler_runtime.policy import (
             runtime_policy_snapshot,
@@ -16858,7 +16876,19 @@ async def startup_scheduler():
 # Shutdown: Detener scheduler
 @app.on_event("shutdown")
 async def shutdown_scheduler():
-    """Detiene el scheduler limpiamente."""
+    """Detiene el scheduler y el wake acotado de Preview limpiamente."""
+    try:
+        from modules.scheduler_runtime.preview_sales_wake import (
+            stop_preview_sales_wake,
+        )
+
+        await stop_preview_sales_wake()
+    except Exception as e:
+        logger.error(
+            "Error deteniendo Preview Ventas del Dia wake: %s",
+            e,
+        )
+
     try:
         from core.scheduler import stop_scheduler
         await stop_scheduler()
