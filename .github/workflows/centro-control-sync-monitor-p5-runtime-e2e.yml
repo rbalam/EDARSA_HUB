@@ -36,17 +36,17 @@ jobs:
           set -euo pipefail
           if [ -z "${TEST_BASE_URL:-}" ]; then
             RESOLVED_BASE_URL="$(python - <<'PY'
-import json, os
-from pathlib import Path
-p = Path(os.environ['P5_RUNTIME_PROFILE_FILE'])
-data = json.loads(p.read_text(encoding='utf-8'))
-assert data.get('environment') == 'development'
-assert data.get('secret') is False
-value = str(data.get('base_url') or '').strip().rstrip('/')
-assert value.startswith('https://')
-print(value)
-PY
-)"
+          import json, os
+          from pathlib import Path
+          p = Path(os.environ['P5_RUNTIME_PROFILE_FILE'])
+          data = json.loads(p.read_text(encoding='utf-8'))
+          assert data.get('environment') == 'development'
+          assert data.get('secret') is False
+          value = str(data.get('base_url') or '').strip().rstrip('/')
+          assert value.startswith('https://')
+          print(value)
+          PY
+          )"
             test -n "$RESOLVED_BASE_URL"
             echo "TEST_BASE_URL=$RESOLVED_BASE_URL" >> "$GITHUB_ENV"
           fi
