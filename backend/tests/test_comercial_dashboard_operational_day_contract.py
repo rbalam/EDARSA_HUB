@@ -62,3 +62,42 @@ def test_softrestaurant_snapshot_resolution_uses_same_canonical_scope():
 
     assert "sucursal_resolver = _dashboard_unit_resolution_sucursal(" in block
     assert "resolve_unidad_by_server_sucursal(" in block
+
+
+def test_hoy_snapshot_is_transversal_for_all_supported_systems():
+    text = ROUTES.read_text(encoding="utf-8")
+    start = text.index("# HOY - CANONICO, ATOMICO Y TRANSVERSAL:")
+    end = text.index("# FASE 3A.2: Migrado a helper centralizado", start)
+    block = text[start:end]
+
+    assert 'if periodo == "dia" and is_supported_system_type(' in block
+    assert "get_ventas_dia_abiertas(" in block
+    assert "Comercial_Ventas_Dia_Abiertas_v2" in block
+    assert "SOLO a SoftRestaurant" not in block
+    assert "get_dashboard_kpis_from_edarsahub(" not in block
+
+
+def test_mpro_visible_unit_alias_is_resolved_dynamically_not_hardcoded():
+    text = ROUTES.read_text(encoding="utf-8")
+    helper_start = text.index("def _dashboard_unit_resolution_sucursal(")
+    helper_end = text.index("\n# =", helper_start)
+    helper = text[helper_start:helper_end]
+
+    assert "UnidadesService.get_all()" in helper
+    assert 'unidad.get("sucursal_origen_id")' in helper
+    assert 'unidad.get("codigo")' in helper
+    assert 'unidad.get("nombre")' in helper
+    assert "130QRO" not in helper
+    assert "ORIGEN" not in helper
+
+
+def test_hoy_source_contract_is_engine_agnostic():
+    text = ROUTES.read_text(encoding="utf-8")
+    start = text.index("# HOY - CANONICO, ATOMICO Y TRANSVERSAL:")
+    end = text.index("# FASE 3A.2: Migrado a helper centralizado", start)
+    block = text[start:end]
+
+    assert "server_id_norm" in block
+    assert "unidad_codigo_hoy" in block
+    assert '"source_type": (' in block
+    assert '"EDARSAHUB_SNAPSHOT_DIA"' in block
