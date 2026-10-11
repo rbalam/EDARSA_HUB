@@ -15,6 +15,7 @@ Contrato de seguridad:
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import hashlib
 import hmac
 import logging
 import os
@@ -38,6 +39,24 @@ router = APIRouter(
 JOB_ID = "sync_comercial_abiertas_v2"
 TOKEN_ENV = "EDARSA_SCHEDULER_TRIGGER_KEY"
 ENABLED_ENV = "EDARSA_SCHEDULER_TRIGGER_ENABLED"
+
+
+def _log_trigger_secret_fingerprint() -> None:
+    """Log seguro y temporal para diagnosticar inyeccion del secreto en Live.
+
+    No imprime el secreto. Solo longitud y prefijo SHA-256 para comparar
+    contra una huella calculada localmente durante el diagnostico.
+    """
+    value = str(os.environ.get(TOKEN_ENV) or "").strip()
+    digest = hashlib.sha256(value.encode("utf-8")).hexdigest()[:12] if value else "EMPTY"
+    logger.warning(
+        "SCHEDULER_TRIGGER_SECRET_DIAG length=%s sha256_prefix=%s",
+        len(value),
+        digest,
+    )
+
+
+_log_trigger_secret_fingerprint()
 
 
 def _truthy_env(name: str, default: str = "false") -> bool:
