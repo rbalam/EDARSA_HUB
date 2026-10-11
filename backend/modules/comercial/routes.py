@@ -171,6 +171,24 @@ from core.system_type_utils import (
 # Router - los endpoints serán migrados incrementalmente
 router = APIRouter(tags=["comercial"])
 
+
+def _dashboard_unit_resolution_sucursal(server: Dict, sucursal: str):
+    """Normaliza el scope usado solo para resolver la unidad canónica.
+
+    SoftRestaurant identifica una unidad por server_id en este flujo. El
+    parametro `sucursal` del frontend contiene el codigo visible de unidad
+    (CIENFUEGOS/ESTELAR/130MID), no `sucursal_origen_id`; pasarlo al resolver
+    provoca un falso no-match y hace caer "Hoy" a fecha calendario.
+    ManagementPro conserva su sucursal real cuando viene informada.
+    """
+    if is_softrestaurant_system(server.get("system_type")):
+        return None
+
+    value = str(sucursal or "").strip()
+    if value.upper() in {"", "DEFAULT", "ALL", "TODAS", "TODOS"}:
+        return None
+    return value
+
 # ============================================================================
 # FASE A-P0: GUARD RAIL PARA ENDPOINTS LIVE LEGACY
 # ============================================================================
@@ -4391,15 +4409,10 @@ async def comercial_dashboard(
             # CANONICO: "Hoy" comercial significa FechaOperacion activa de la
             # unidad, no fecha calendario. El sincronizador protegido
             # sync_comercial_abiertas_v2 persiste exactamente esta fecha.
-            sucursal_operativa = str(sucursal or "").strip()
-            if sucursal_operativa.upper() in {
-                "",
-                "DEFAULT",
-                "ALL",
-                "TODAS",
-                "TODOS",
-            }:
-                sucursal_operativa = None
+            sucursal_operativa = _dashboard_unit_resolution_sucursal(
+                server,
+                sucursal,
+            )
 
             unidad_operativa = resolve_unidad_by_server_sucursal(
                 server_id,
@@ -4528,15 +4541,10 @@ async def comercial_dashboard(
                 get_ventas_dia_abiertas,
             )
 
-            sucursal_resolver = str(sucursal or "").strip()
-            if sucursal_resolver.upper() in {
-                "",
-                "DEFAULT",
-                "ALL",
-                "TODAS",
-                "TODOS",
-            }:
-                sucursal_resolver = None
+            sucursal_resolver = _dashboard_unit_resolution_sucursal(
+                server,
+                sucursal,
+            )
 
             unidad_hoy = resolve_unidad_by_server_sucursal(
                 server_id,

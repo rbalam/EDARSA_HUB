@@ -38,3 +38,27 @@ def test_comercial_hoy_comparisons_follow_operational_date():
 
     assert "fecha_operacion_dia - timedelta(days=1)" in block
     assert "fecha_operacion_dia.replace(" in block
+
+
+
+def test_softrestaurant_visible_unit_code_is_not_used_as_sucursal_origen_id():
+    text = ROUTES.read_text(encoding="utf-8")
+    helper_start = text.index("def _dashboard_unit_resolution_sucursal(")
+    helper_end = text.index("\n# =", helper_start)
+    helper = text[helper_start:helper_end]
+
+    assert 'if is_softrestaurant_system(server.get("system_type")):' in helper
+    assert "return None" in helper
+
+    block = _day_block()
+    assert "_dashboard_unit_resolution_sucursal(" in block
+
+
+def test_softrestaurant_snapshot_resolution_uses_same_canonical_scope():
+    text = ROUTES.read_text(encoding="utf-8")
+    start = text.index("# HOY - SOFTRESTAURANT:")
+    end = text.index("# FASE 3A.2: Migrado a helper centralizado", start)
+    block = text[start:end]
+
+    assert "sucursal_resolver = _dashboard_unit_resolution_sucursal(" in block
+    assert "resolve_unidad_by_server_sucursal(" in block
