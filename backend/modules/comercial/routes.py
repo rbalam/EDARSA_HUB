@@ -158,7 +158,7 @@ from modules.comercial_v2.repository_readonly import get_ventas_dia_abiertas, ge
 # =============================================================================
 from core.utils.operational_window import get_operational_window
 # FASE 3A.2: Import de utilidades de normalización de system_type
-from core.server_registry import list_unidades_negocio
+from core.server_registry import list_unidades_negocio, resolve_unidad_by_server_sucursal
 from core.system_type_utils import (
     normalize_system_type,
     is_mpro_system,
@@ -4388,16 +4388,73 @@ async def comercial_dashboard(
                 }
             
         elif periodo == "dia":
-            fecha_ini = hoy.strftime('%Y-%m-%d')
-            fecha_fin = hoy.strftime('%Y-%m-%d')
-            fecha_ini_ant = (hoy - timedelta(days=1)).strftime('%Y-%m-%d')
+            # CANONICO: "Hoy" comercial significa FechaOperacion activa de la
+            # unidad, no fecha calendario. El sincronizador protegido
+            # sync_comercial_abiertas_v2 persiste exactamente esta fecha.
+            sucursal_operativa = str(sucursal or "").strip()
+            if sucursal_operativa.upper() in {
+                "",
+                "DEFAULT",
+                "ALL",
+                "TODAS",
+                "TODOS",
+            }:
+                sucursal_operativa = None
+
+            unidad_operativa = resolve_unidad_by_server_sucursal(
+                server_id,
+                sucursal_operativa,
+            ) or {}
+            unidad_operativa_id = str(
+                unidad_operativa.get("codigo")
+                or unidad_operativa.get("id")
+                or ""
+            ).strip()
+
+            if unidad_operativa_id:
+                ventana_operativa = get_operational_window(
+                    unidad_operativa_id,
+                    hoy,
+                )
+                fecha_operacion_dia = ventana_operativa.fecha_operacion
+                logging.info(
+                    "[DASHBOARD-DIA-OPERATIVO] server=%s unidad=%s "
+                    "fecha_operacion=%s metodo=%s",
+                    str(server_id)[:8],
+                    unidad_operativa_id,
+                    fecha_operacion_dia,
+                    ventana_operativa.metodo_fecha_operacion,
+                )
+            else:
+                # Fallback conservador: no bloquear el dashboard si el catálogo
+                # de unidades está temporalmente incompleto.
+                fecha_operacion_dia = hoy.date()
+                logging.warning(
+                    "[DASHBOARD-DIA-OPERATIVO] No se resolvio unidad para "
+                    "server=%s sucursal=%s; usando fecha calendario=%s",
+                    str(server_id)[:8],
+                    sucursal_operativa,
+                    fecha_operacion_dia,
+                )
+
+            fecha_ini = fecha_operacion_dia.strftime('%Y-%m-%d')
+            fecha_fin = fecha_ini
+
+            fecha_ant = fecha_operacion_dia - timedelta(days=1)
+            fecha_ini_ant = fecha_ant.strftime('%Y-%m-%d')
             fecha_fin_ant = fecha_ini_ant
+
             try:
-                fecha_ini_ano_ant = hoy.replace(year=hoy.year - 1).strftime('%Y-%m-%d')
-                fecha_fin_ano_ant = fecha_ini_ano_ant
+                fecha_ano_ant = fecha_operacion_dia.replace(
+                    year=fecha_operacion_dia.year - 1
+                )
             except ValueError:
-                fecha_ini_ano_ant = f"{hoy.year - 1}-{str(hoy.month).zfill(2)}-28"
-                fecha_fin_ano_ant = fecha_ini_ano_ant
+                fecha_ano_ant = fecha_operacion_dia.replace(
+                    year=fecha_operacion_dia.year - 1,
+                    day=28,
+                )
+            fecha_ini_ano_ant = fecha_ano_ant.strftime('%Y-%m-%d')
+            fecha_fin_ano_ant = fecha_ini_ano_ant
         elif periodo == "semana":
             inicio_semana = hoy - timedelta(days=hoy.weekday())
             fecha_ini = inicio_semana.strftime('%Y-%m-%d')
@@ -4467,7 +4524,6 @@ async def comercial_dashboard(
             # get_ventas_dia_abiertas() aplica el overlay atomico de
             # detalle_abiertas_json y evita sumar cheques + tempcheques.
             from datetime import date as _date
-            from core.server_registry import resolve_unidad_by_server_sucursal
             from modules.comercial_v2.repository_readonly import (
                 get_ventas_dia_abiertas,
             )
