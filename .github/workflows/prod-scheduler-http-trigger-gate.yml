@@ -63,7 +63,11 @@ jobs:
 
       - name: Assert protected synchronizer absent from hotfix diff
         run: |
-          git diff --name-only 98bc2df0e1b1bc8ff69fc1fc544b5ad75358df15...HEAD > /tmp/http-trigger-files.txt
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --name-only "${{ github.event.pull_request.base.sha }}"..."${{ github.event.pull_request.head.sha }}" > /tmp/http-trigger-files.txt
+          else
+            git diff --name-only 98bc2df0e1b1bc8ff69fc1fc544b5ad75358df15...HEAD > /tmp/http-trigger-files.txt
+          fi
           cat /tmp/http-trigger-files.txt
           ! grep -Fx "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py" /tmp/http-trigger-files.txt
 
