@@ -166,6 +166,12 @@ async def health_check():
     """
     return {"status": "operativo", "sistema": "EDARSA HUB", "version": "1.0"}
 
+
+@app.get("/health")
+async def root_health_check():
+    """Alias de salud para probes de infraestructura."""
+    return {"status": "operativo", "sistema": "EDARSA HUB", "version": "1.0"}
+
 # ==========================================
 # ENDPOINTS FALLBACK TABLERO EJECUTIVO (EDARSA HUB)
 # Garantizan respuesta aunque SQL Server esté caído
