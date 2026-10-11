@@ -4601,46 +4601,28 @@ async def comercial_dashboard(
                 or ""
             ).strip()
 
-            # Leer la fotografia del dia y seleccionar por server_id ya
-            # autorizado por RBAC. No depender del alias/codigo de sucursal del
-            # frontend, porque puede no coincidir con unidad_negocio_id y dejar
-            # el Comercial en cero aunque el Ejecutivo tenga snapshot.
+            # Leer la fotografia del dia por identidad de unidad canónica.
+            # IMPORTANTE: server_id es topologia tecnica, no identidad comercial.
+            # En MPRO el snapshot puede ser escrito por un API_LOCAL distinto al
+            # servidor canonico del modulo, por lo que filtrar primero por
+            # server_id deja fuera 130QRO/ORIGEN o puede cruzar unidades.
             filas_hoy = get_ventas_dia_abiertas(
                 _date.fromisoformat(fecha_ini),
                 None,
             )
-            server_id_norm = str(server_id or "").strip().lower()
+
+            codigo_norm = unidad_codigo_hoy.strip().lower()
             fila_hoy = next(
                 (
                     row for row in filas_hoy
-                    if str(row.get("server_id") or "").strip().lower()
-                    == server_id_norm
+                    if str(
+                        row.get("unidad_negocio_codigo")
+                        or row.get("unidad_negocio_id")
+                        or ""
+                    ).strip().lower() == codigo_norm
                 ),
                 None,
-            )
-
-            # Si existen varias unidades sobre el mismo servidor, refinar por
-            # codigo canonico cuando este disponible.
-            if fila_hoy and unidad_codigo_hoy:
-                candidatos = [
-                    row for row in filas_hoy
-                    if str(row.get("server_id") or "").strip().lower()
-                    == server_id_norm
-                ]
-                codigo_norm = unidad_codigo_hoy.strip().lower()
-                fila_codigo = next(
-                    (
-                        row for row in candidatos
-                        if str(
-                            row.get("unidad_negocio_codigo")
-                            or row.get("unidad_negocio_id")
-                            or ""
-                        ).strip().lower() == codigo_norm
-                    ),
-                    None,
-                )
-                if fila_codigo:
-                    fila_hoy = fila_codigo
+            ) if codigo_norm else None
 
             if fila_hoy:
                 ventas_hoy = float(fila_hoy.get("total_estimado_dia") or 0)
