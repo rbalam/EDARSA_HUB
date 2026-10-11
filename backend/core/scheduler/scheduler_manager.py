@@ -1805,28 +1805,47 @@ class SchedulerManager:
                 bos_direction_config.interval_seconds,
             )
     
-    async def start(self):
-        """Inicia el scheduler."""
+    async def start(self, exclude_job_ids=None):
+        """Inicia el scheduler con opcion de excluir owners externos."""
         if not self.config.enabled:
             logger.warning("Scheduler deshabilitado por configuración")
             return
-        
+
         if self._running:
             logger.warning("Scheduler ya está corriendo")
             return
-        
+
         # Asegurar índices
         lock_manager = get_lock_manager(self.db)
         await lock_manager.ensure_indexes()
-        
+
         job_logger = get_job_logger()
         await job_logger.ensure_indexes()
-        
+
         # Limpiar locks expirados
         await lock_manager.cleanup_expired()
-        
-        # Registrar jobs
+
+        # Registrar jobs usando el catalogo canonico existente.
         self.register_jobs()
+
+        excluded = {
+            str(job_id).strip()
+            for job_id in (exclude_job_ids or set())
+            if str(job_id).strip()
+        }
+
+        for job_id in sorted(excluded):
+            if self._scheduler.get_job(job_id) is not None:
+                self._scheduler.remove_job(job_id)
+            self._jobs.pop(job_id, None)
+
+        self._excluded_job_ids = excluded
+
+        if excluded:
+            logger.warning(
+                "Scheduler runtime acotado: jobs con owner externo excluidos=%s",
+                sorted(excluded),
+            )
 
         # Restaurar pausas administrativas persistentes antes de iniciar.
         # Fail-closed: si SQL no puede entregar el estado persistente,
@@ -1907,7 +1926,10 @@ class SchedulerManager:
             "enabled": self.config.enabled,
             "timezone": self.config.timezone,
             "jobs": jobs_status,
-            "jobs_count": len(jobs_status)
+            "jobs_count": len(jobs_status),
+            "excluded_external_owner_jobs": sorted(
+                getattr(self, "_excluded_job_ids", set())
+            ),
         }
     
     def get_job_info(self, job_id: str) -> Optional[Dict]:
@@ -2121,14 +2143,10 @@ def get_scheduler_manager(db=None) -> SchedulerManager:
     return _scheduler_manager
 
 
-async def start_scheduler(db) -> SchedulerManager:
-    """
-    Inicia el scheduler.
-    
-    Acepta db=None para modo SQL-only.
-    """
+async def start_scheduler(db, exclude_job_ids=None) -> SchedulerManager:
+    """Inicia el scheduler y permite excluir jobs con owner externo."""
     manager = get_scheduler_manager(db)
-    await manager.start()
+    await manager.start(exclude_job_ids=exclude_job_ids)
     return manager
 
 
