@@ -101,3 +101,30 @@ def test_hoy_source_contract_is_engine_agnostic():
     assert "unidad_codigo_hoy" in block
     assert '"source_type": (' in block
     assert '"EDARSAHUB_SNAPSHOT_DIA"' in block
+
+
+def test_hoy_snapshot_matches_by_canonical_unit_not_server_topology():
+    text = ROUTES.read_text(encoding="utf-8")
+    start = text.index("# HOY - CANONICO, ATOMICO Y TRANSVERSAL:")
+    end = text.index("# FASE 3A.2: Migrado a helper centralizado", start)
+    block = text[start:end]
+
+    assert "unidad_codigo_hoy" in block
+    assert "unidad_negocio_codigo" in block
+    assert "codigo_norm" in block
+
+    # La identidad comercial no puede depender del server_id porque MPRO puede
+    # escribir el snapshot mediante un API_LOCAL distinto al servidor canónico.
+    assert "server_id_norm" not in block
+    assert "candidatos = [" not in block
+
+
+def test_hoy_snapshot_does_not_pick_first_row_from_shared_mpro_server():
+    text = ROUTES.read_text(encoding="utf-8")
+    start = text.index("# HOY - CANONICO, ATOMICO Y TRANSVERSAL:")
+    end = text.index("# FASE 3A.2: Migrado a helper centralizado", start)
+    block = text[start:end]
+
+    assert "fila_hoy = next(" in block
+    assert "row.get(\"unidad_negocio_codigo\")" in block
+    assert "row.get(\"unidad_negocio_id\")" in block
