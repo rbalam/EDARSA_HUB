@@ -16824,8 +16824,9 @@ async def startup_scheduler():
     except Exception as e:
         logger.warning(f"Universal Worker startup self-heal no disponible: {e}")
 
-    # PREVIEW: restaurar exclusivamente la cadencia de Ventas del Dia.
-    # No arranca el scheduler completo y no altera el job protegido.
+    # PREVIEW: restaurar exclusivamente las cadencias comerciales certificadas.
+    # No arranca el scheduler completo, no crea doble owner y no altera la
+    # logica protegida de Ventas del Dia.
     try:
         from modules.scheduler_runtime.preview_sales_wake import (
             start_preview_sales_wake,
@@ -16839,6 +16840,22 @@ async def startup_scheduler():
     except Exception as e:
         logger.error(
             "Preview Ventas del Dia wake no disponible: %s",
+            e,
+        )
+
+    try:
+        from modules.scheduler_runtime.preview_closed_sales_wake import (
+            start_preview_closed_sales_wake,
+        )
+
+        preview_closed_sales_wake_state = start_preview_closed_sales_wake(db)
+        logger.warning(
+            "Preview Ventas Cerradas wake state=%s",
+            preview_closed_sales_wake_state,
+        )
+    except Exception as e:
+        logger.error(
+            "Preview Ventas Cerradas wake no disponible: %s",
             e,
         )
 
@@ -16886,6 +16903,18 @@ async def shutdown_scheduler():
     except Exception as e:
         logger.error(
             "Error deteniendo Preview Ventas del Dia wake: %s",
+            e,
+        )
+
+    try:
+        from modules.scheduler_runtime.preview_closed_sales_wake import (
+            stop_preview_closed_sales_wake,
+        )
+
+        await stop_preview_closed_sales_wake()
+    except Exception as e:
+        logger.error(
+            "Error deteniendo Preview Ventas Cerradas wake: %s",
             e,
         )
 
