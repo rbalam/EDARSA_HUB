@@ -97,10 +97,14 @@ def test_hoy_source_contract_is_engine_agnostic():
     end = text.index("# FASE 3A.2: Migrado a helper centralizado", start)
     block = text[start:end]
 
-    assert "server_id_norm" in block
     assert "unidad_codigo_hoy" in block
+    assert "unidad_negocio_codigo" in block
     assert '"source_type": (' in block
     assert '"EDARSAHUB_SNAPSHOT_DIA"' in block
+
+    # La identidad comercial es la unidad canónica; server_id describe
+    # topología técnica y no debe gobernar la selección del snapshot.
+    assert "server_id_norm" not in block
 
 
 def test_hoy_snapshot_matches_by_canonical_unit_not_server_topology():
