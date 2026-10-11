@@ -173,21 +173,66 @@ router = APIRouter(tags=["comercial"])
 
 
 def _dashboard_unit_resolution_sucursal(server: Dict, sucursal: str):
-    """Normaliza el scope usado solo para resolver la unidad canónica.
+    """Normaliza el scope para resolver la unidad canónica de cualquier motor.
 
-    SoftRestaurant identifica una unidad por server_id en este flujo. El
-    parametro `sucursal` del frontend contiene el codigo visible de unidad
-    (CIENFUEGOS/ESTELAR/130MID), no `sucursal_origen_id`; pasarlo al resolver
-    provoca un falso no-match y hace caer "Hoy" a fecha calendario.
-    ManagementPro conserva su sucursal real cuando viene informada.
+    Reglas transversales:
+    - SoftRestaurant resuelve por server_id porque su codigo visible de unidad
+      no representa sucursal_origen_id.
+    - ManagementPro puede recibir desde UI tanto sucursal_origen_id como el
+      codigo/nombre visible de la unidad. Se traduce dinamicamente usando
+      UnidadesService; no se mantienen mapas paralelos ni hardcodes por unidad.
+    - Si el servidor MPRO tiene una sola unidad activa, se usa su
+      sucursal_origen_id aunque el frontend no lo envie.
     """
     if is_softrestaurant_system(server.get("system_type")):
         return None
 
     value = str(sucursal or "").strip()
-    if value.upper() in {"", "DEFAULT", "ALL", "TODAS", "TODOS"}:
-        return None
-    return value
+    server_id_norm = str(server.get("id") or server.get("server_id") or "").strip().lower()
+
+    from core.unidades_service import UnidadesService
+
+    unidades_servidor = []
+    for unidad in UnidadesService.get_all() or []:
+        unidad_server = str(unidad.get("server_id") or "").strip().lower()
+        if server_id_norm and unidad_server != server_id_norm:
+            continue
+        unidades_servidor.append(unidad)
+
+    if value.upper() not in {"", "DEFAULT", "ALL", "TODAS", "TODOS"}:
+        value_norm = value.lower()
+
+        # Si ya viene el identificador de sucursal canónico, conservarlo.
+        for unidad in unidades_servidor:
+            sucursal_origen = str(unidad.get("sucursal_origen_id") or "").strip()
+            if sucursal_origen and sucursal_origen.lower() == value_norm:
+                return sucursal_origen
+
+        # Si viene codigo/nombre visible de unidad, traducirlo al identificador
+        # de sucursal de origen sin asumir nombres concretos.
+        for unidad in unidades_servidor:
+            aliases = {
+                str(unidad.get("codigo") or "").strip().lower(),
+                str(unidad.get("nombre") or "").strip().lower(),
+                str(unidad.get("unidad_negocio_codigo") or "").strip().lower(),
+                str(unidad.get("unidad_negocio_nombre") or "").strip().lower(),
+            }
+            if value_norm in aliases:
+                sucursal_origen = str(unidad.get("sucursal_origen_id") or "").strip()
+                return sucursal_origen or None
+
+        # Mantener el valor recibido para no alterar integraciones que ya
+        # entregan una sucursal válida no representada por alias.
+        return value
+
+    # Un único scope activo sobre el servidor no es ambiguo.
+    if len(unidades_servidor) == 1:
+        sucursal_origen = str(
+            unidades_servidor[0].get("sucursal_origen_id") or ""
+        ).strip()
+        return sucursal_origen or None
+
+    return None
 
 # ============================================================================
 # FASE A-P0: GUARD RAIL PARA ENDPOINTS LIVE LEGACY
@@ -4527,15 +4572,14 @@ async def comercial_dashboard(
         logging.info(f"Comparación mes ant: {fecha_ini_ant} a {fecha_fin_ant}")
         logging.info(f"Comparación año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant}")
 
-        # HOY - SOFTRESTAURANT:
-        # Aplicar el snapshot atomico compartido SOLO a SoftRestaurant.
-        # ManagementPro conserva su ruta canónica propia más abajo; no debe
-        # quedar interceptado por esta corrección específica de tempcheques.
-        if periodo == "dia" and is_softrestaurant_system(server.get('system_type')):
-            # VENTAS DEL DIA: usar exactamente la misma fotografia SQL que
-            # consume Tablero Ejecutivo. Para SoftRestaurant,
-            # get_ventas_dia_abiertas() aplica el overlay atomico de
-            # detalle_abiertas_json y evita sumar cheques + tempcheques.
+        # HOY - CANONICO, ATOMICO Y TRANSVERSAL:
+        # Todos los motores soportados leen la misma fotografia SQL que consume
+        # Tablero Ejecutivo. "Hoy" nunca debe caer a KPIs cerrados por motor.
+        if periodo == "dia" and is_supported_system_type(server.get('system_type')):
+            # VENTAS DEL DIA: usar exactamente la misma fotografia SQL
+            # Comercial_Ventas_Dia_Abiertas_v2 para SoftRestaurant y MPRO.
+            # get_ventas_dia_abiertas() aplica el overlay atomico del snapshot
+            # y evita mezclar fuentes cerradas/historicas con la operacion viva.
             from datetime import date as _date
             from modules.comercial_v2.repository_readonly import (
                 get_ventas_dia_abiertas,
