@@ -475,14 +475,14 @@ export default function KpiDrilldownDialog({
               <Receipt className="h-4 w-4 text-zinc-400 flex-shrink-0" />
               <span
                 className="font-mono text-xs font-medium underline decoration-dotted underline-offset-2 cursor-pointer"
-                onClick={() => {
+                onDoubleClick={() => {
                   if (item.ticket_pk) {
                     setTicketSeleccionado({
                       ticketPk: item.ticket_pk,
                     });
                   }
                 }}
-                title="Selecciona para abrir el ticket de venta"
+                title="Doble clic para abrir el ticket de venta"
               >
                 {item.numero_ticket}
               </span>
@@ -616,7 +616,7 @@ export default function KpiDrilldownDialog({
             </div>
 
             <p className="text-xs text-zinc-500 mb-2 px-1">
-              Selecciona un folio para abrir el ticket de venta.
+              Doble clic en un folio para abrir el ticket de venta.
             </p>
 
             <div className="flex-1 overflow-auto border rounded-lg">
