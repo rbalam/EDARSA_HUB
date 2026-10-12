@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-AYER-EDARSA-AUDIT-R2-CARLOS-20261012",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Auditar exclusivamente EDARSAHUB en READ_ONLY para determinar qué datos cerrados del 2026-10-11 existen para ORIGEN, 130QRO, 130MID, CIENFUEGOS y ESTELAR, junto con SyncLog y snapshots abiertos. No ejecutar re-sync, no escribir SQL, no modificar código y no tocar Producción.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "unidades_catalogo",
+          "sql": "SELECT TOP 20 * FROM dbo.Unidades_Negocio WHERE codigo IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN') ORDER BY codigo"
+        },
+        {
+          "name": "kpi_base_20261011",
+          "sql": "SELECT TOP 100 * FROM dbo.Comercial_KPIs_Diarios_v2 WHERE fecha_operacion = '2026-10-11' ORDER BY unidad_negocio_pk"
+        },
+        {
+          "name": "runtime_20261011",
+          "sql": "SELECT TOP 100 * FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE fecha_operacion = '2026-10-11' ORDER BY unidad_negocio_pk"
+        },
+        {
+          "name": "sync_log_covering_20261011",
+          "sql": "SELECT TOP 100 * FROM dbo.Comercial_SyncLog_v2 WHERE fecha_inicio <= '2026-10-11' AND fecha_fin >= '2026-10-11' ORDER BY created_at DESC"
+        },
+        {
+          "name": "snapshots_abiertas_20261011",
+          "sql": "SELECT TOP 100 * FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WHERE fecha_operacion = '2026-10-11' ORDER BY unidad_negocio_id, snapshot_timestamp DESC"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker - diagnostico ventas ayer"
+  },
+  "human_summary_language": "es"
+}
