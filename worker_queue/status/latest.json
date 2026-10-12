@@ -1,10 +1,10 @@
 {
   "ahead_count": 0,
-  "behind_count": 0,
+  "behind_count": 3,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "SYNC",
-  "development_sha": "92969853cca9b65b40e561093358959e03a2e124",
-  "generated_at_utc": "2026-10-12T17:54:03Z",
+  "convergence_status": "REMOTE_AHEAD_ONLY",
+  "development_sha": "d6f045cc2e2a5e66d203157c362c360a993968e2",
+  "generated_at_utc": "2026-10-12T17:55:20Z",
   "history": {
     "done_total_local": 1374,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3320,
+      "age_seconds": 3398,
       "job_id": "edarsahub-cienfuegos-20261011-sr-date-audit-r1-carlos-20261012",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 411,
+      "age_seconds": 489,
       "job_id": "edarsahub-cienfuegos-open-turn-edarsa-r1-20261012",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 403,
+      "age_seconds": 481,
       "job_id": "edarsahub-cienfuegos-open-turn-pos-r1-20261012",
       "reason": null,
       "state": "RESULT_READY"
@@ -44,12 +44,12 @@
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 3,
   "queue_running": 0,
-  "remote_development_sha": "92969853cca9b65b40e561093358959e03a2e124",
+  "remote_development_sha": "d6f045cc2e2a5e66d203157c362c360a993968e2",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-12T17:53:49Z",
-    "last_receive_utc": "2026-10-12T17:54:01Z",
+    "last_cycle_utc": "2026-10-12T17:55:20Z",
+    "last_receive_utc": "2026-10-12T17:55:15Z",
     "last_terminal_utc": "2026-10-12T17:47:19Z",
     "pid": "386121",
     "runtime_fingerprint": {
