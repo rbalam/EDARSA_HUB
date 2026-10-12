@@ -5,7 +5,7 @@ from modules.comercial_analytics.repository_operational import (
 )
 
 
-def test_current_operation_preserves_each_unit_operational_date():
+def test_common_date_prevents_mixed_operational_days():
     requested = []
 
     def resolver(unit_code):
@@ -59,12 +59,9 @@ def test_current_operation_preserves_each_unit_operational_date():
         ("2026-08-01", ("B",)),
     ]
 
-    assert result["fecha_operacion"] is None
-    assert result["fechas_operacion"] == [
-        "2026-08-01",
-        "2026-08-02",
-    ]
-    assert result["fecha_operacion_multiple"] is True
+    assert result["fecha_operacion"] == "2026-08-02"
+    assert result["fechas_operacion"] == ["2026-08-02"]
+    assert result["fecha_operacion_multiple"] is False
 
     by_unit = {
         item["unidad_negocio_id"]: item
@@ -74,32 +71,37 @@ def test_current_operation_preserves_each_unit_operational_date():
     assert by_unit["A"]["fecha_operacion"] == "2026-08-02"
     assert by_unit["A"]["fecha_operacion_resuelta"] == "2026-08-02"
     assert by_unit["A"]["fecha_operacion_desfasada"] is False
+    assert by_unit["A"]["cerradas"]["ventas"] == 100
+    assert by_unit["A"]["abiertas"]["ventas"] == 50
     assert by_unit["A"]["operacion_estimada"]["ventas"] == 150
 
-    assert by_unit["B"]["fecha_operacion"] == "2026-08-01"
+    assert by_unit["B"]["fecha_operacion"] == "2026-08-02"
     assert by_unit["B"]["fecha_operacion_resuelta"] == "2026-08-01"
-    assert by_unit["B"]["fecha_operacion_desfasada"] is False
-    assert by_unit["B"]["cerradas"]["ventas"] == 20
-    assert by_unit["B"]["abiertas"]["ventas"] == 10
-    assert by_unit["B"]["operacion_estimada"]["ventas"] == 30
+    assert by_unit["B"]["fecha_operacion_desfasada"] is True
+    assert by_unit["B"]["cerradas"]["ventas"] == 0
+    assert by_unit["B"]["abiertas"]["ventas"] == 0
+    assert by_unit["B"]["operacion_estimada"]["ventas"] == 0
+    assert by_unit["B"]["operacion_estimada"]["propinas"] == 0
+    assert by_unit["B"]["operacion_estimada"]["cheques"] == 0
+    assert by_unit["B"]["operacion_estimada"]["pax"] == 0
 
     assert result["totales"]["cerradas"] == {
-        "ventas": 120.0,
-        "propinas": 12.0,
-        "cheques": 3.0,
-        "pax": 5.0,
+        "ventas": 100.0,
+        "propinas": 10.0,
+        "cheques": 2.0,
+        "pax": 4.0,
     }
     assert result["totales"]["abiertas"] == {
-        "ventas": 60.0,
-        "propinas": 6.0,
-        "cheques": 2.0,
-        "pax": 3.0,
+        "ventas": 50.0,
+        "propinas": 5.0,
+        "cheques": 1.0,
+        "pax": 2.0,
     }
     assert result["totales"]["operacion_estimada"] == {
-        "ventas": 180.0,
-        "propinas": 18.0,
-        "cheques": 5.0,
-        "pax": 8.0,
+        "ventas": 150.0,
+        "propinas": 15.0,
+        "cheques": 3.0,
+        "pax": 6.0,
     }
 
 
@@ -242,5 +244,7 @@ def test_executive_current_day_uses_certified_comercial_sales_detail():
     # Se conserva la conciliacion de cuentas abiertas.
     assert "hasMissingOpen" in drill
 
-    # Ventas del Día conserva la fecha operativa propia de cada unidad.
+    # Una unidad neutralizada por fecha operativa rezagada no puede
+    # consultar el día anterior desde el drill-down de Ventas del Día.
     assert "fecha_operacion_desfasada" in drill
+    assert "currentOperationSuppressed" in drill
