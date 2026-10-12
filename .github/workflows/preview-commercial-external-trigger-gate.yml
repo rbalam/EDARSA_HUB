@@ -14,6 +14,8 @@ on:
       - "backend/tools/run_commercial_github_owner.py"
       - ".github/workflows/preview-commercial-external-trigger-gate.yml"
       - ".github/workflows/preview-commercial-external-owner.yml"
+      - ".github/workflows/commercial-open-sales-clock.yml"
+      - ".github/workflows/commercial-closed-sales-clock.yml"
   pull_request:
     branches:
       - Edarsahub_Desarrollo
@@ -26,6 +28,8 @@ on:
       - "backend/tools/run_commercial_github_owner.py"
       - ".github/workflows/preview-commercial-external-trigger-gate.yml"
       - ".github/workflows/preview-commercial-external-owner.yml"
+      - ".github/workflows/commercial-open-sales-clock.yml"
+      - ".github/workflows/commercial-closed-sales-clock.yml"
   workflow_dispatch:
 
 permissions:
@@ -101,6 +105,8 @@ jobs:
           allowed_exact = {
               ".github/workflows/preview-commercial-external-trigger-gate.yml",
               ".github/workflows/preview-commercial-external-owner.yml",
+              ".github/workflows/commercial-open-sales-clock.yml",
+              ".github/workflows/commercial-closed-sales-clock.yml",
               "backend/server.py",
               "backend/modules/scheduler_runtime/policy.py",
               "backend/tests/test_scheduler_runtime_policy.py",

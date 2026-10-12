@@ -1,9 +1,6 @@
 name: Commercial GitHub External Owner
 
 on:
-  schedule:
-    - cron: "2-59/5 * * * *"
-    - cron: "4,19,34,49 * * * *"
   workflow_dispatch:
     inputs:
       target:
@@ -24,7 +21,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: commercial-github-external-owner-${{ github.event.schedule || inputs.target || github.event_name }}
+  group: commercial-github-external-owner-${{ inputs.target || github.event_name }}
   cancel-in-progress: false
 
 env:
@@ -40,7 +37,7 @@ env:
 
 jobs:
   open-sales:
-    if: github.event_name == 'push' || github.event_name == 'schedule' && github.event.schedule == '2-59/5 * * * *' || github.event_name == 'workflow_dispatch' && inputs.target == 'open_sales'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' && inputs.target == 'open_sales'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -74,7 +71,7 @@ jobs:
           python tools/run_commercial_github_owner.py open_sales --require-executed
 
   closed-sales:
-    if: github.event_name == 'push' || github.event_name == 'schedule' && github.event.schedule == '4,19,34,49 * * * *' || github.event_name == 'workflow_dispatch' && inputs.target == 'closed_sales'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' && inputs.target == 'closed_sales'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
