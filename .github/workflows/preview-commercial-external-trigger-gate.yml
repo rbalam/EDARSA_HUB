@@ -1,0 +1,95 @@
+name: Preview Commercial External Trigger Gate
+
+on:
+  push:
+    branches:
+      - fix/preview-commercial-external-trigger-20261012
+    paths:
+      - "backend/modules/scheduler_trigger_preview/**"
+      - "backend/server.py"
+      - "backend/tests/test_preview_scheduler_http_trigger.py"
+      - ".github/workflows/preview-commercial-external-trigger-gate.yml"
+  pull_request:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - "backend/modules/scheduler_trigger_preview/**"
+      - "backend/server.py"
+      - "backend/tests/test_preview_scheduler_http_trigger.py"
+      - ".github/workflows/preview-commercial-external-trigger-gate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-atomic-transversal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Protect certified synchronizers and owners byte-for-byte
+        run: |
+          test "$(git hash-object backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py)" = "47e7e005cf3c382c546ffc017a28a5c6d87796bc"
+          test "$(git hash-object backend/core/scheduler/jobs/sync_comercial_v2_job.py)" = "da0173ac0b482ee3139e716c02f5235c8d747755"
+          test "$(git hash-object backend/modules/scheduler_runtime/preview_sales_wake.py)" = "c0c7c5e8c435993fe708d8fbb6894b80140fa257"
+          test "$(git hash-object backend/modules/scheduler_runtime/preview_closed_sales_wake.py)" = "97c54c5a430f721a7159de287a185c3b3d59fed6"
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-ci.txt
+          python -m pip install -r /tmp/requirements-ci.txt
+
+      - name: Compile trigger
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          python -m py_compile             backend/modules/scheduler_trigger_preview/routes.py             backend/modules/scheduler_runtime/policy.py
+
+      - name: Run trigger ownership contracts
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          python -m pytest -q --tb=short             backend/tests/test_preview_scheduler_http_trigger.py             backend/tests/test_preview_sales_wake.py             backend/tests/test_preview_closed_sales_wake.py             backend/tests/test_preview_scoped_scheduler.py             backend/tests/test_scheduler_runtime_policy.py
+
+      - name: Assert isolated change surface
+        run: |
+          git diff --name-only 6efee8520f6d09efe9d62609a8591f7d17d63540...HEAD > /tmp/preview-trigger-files.txt
+          cat /tmp/preview-trigger-files.txt
+          python - <<'PY'
+          from pathlib import Path
+
+          allowed_exact = {
+              ".github/workflows/preview-commercial-external-trigger-gate.yml",
+              "backend/server.py",
+              "backend/tests/test_preview_scheduler_http_trigger.py",
+          }
+          allowed_prefixes = (
+              "backend/modules/scheduler_trigger_preview/",
+          )
+
+          changed = [
+              line.strip()
+              for line in Path("/tmp/preview-trigger-files.txt").read_text().splitlines()
+              if line.strip()
+          ]
+          unexpected = [
+              path
+              for path in changed
+              if path not in allowed_exact
+              and not path.startswith(allowed_prefixes)
+          ]
+          if unexpected:
+              raise SystemExit(f"UNEXPECTED_CHANGE_SURFACE={unexpected}")
+          print("CANONICAL_ATOMIC_TRANSVERSAL_SURFACE=PASS")
+          PY
