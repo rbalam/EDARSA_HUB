@@ -1,0 +1,137 @@
+{
+  "base_sha": "108a794b483f12299c85a4b4b391a69aff04ea28",
+  "blockers": [],
+  "candidate_sha": "30c71486f6f65f123934febe36c7a5c4a92f5b8f",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-10-12T18:33:31Z",
+  "development_sha": "30c71486f6f65f123934febe36c7a5c4a92f5b8f",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/core/rbac_sql/service.py",
+    "backend/tests/test_rbac_sql_company_scope.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "USUARIOS-COMPANY-SCOPE-R4-20261012",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-10-12T18:33:46Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.rbac_sql",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.db"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "can_access_empresa",
+              "servidores_conexiones",
+              "sistema_sucursales",
+              "sistema_sucursalservidormapeo",
+              "unidades_negocio",
+              "usuario_empresasasignacion",
+              "usuario_servidoresasignacion",
+              "usuario_sucursalesasignacion"
+            ],
+            "path": "backend/core/rbac_sql/service.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACSQLService",
+              "_has_superadmin_role",
+              "build_context",
+              "can_access_empresa",
+              "can_access_permission",
+              "can_access_servidor",
+              "can_access_sucursal",
+              "can_access_unidad",
+              "can_access_unit_metadata",
+              "get_effective_permissions",
+              "get_empresas",
+              "get_permission_scope_by_code",
+              "get_roles",
+              "get_scope_assignment_state",
+              "get_servidores",
+              "get_sucursales",
+              "get_unidades"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_SucursalServidorMapeo",
+              "Sistema_Sucursales",
+              "Unidades_Negocio",
+              "Usuario_Acciones",
+              "Usuario_EmpresasAsignacion",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion",
+              "Usuario_ServidoresAsignacion",
+              "Usuario_SucursalesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.rbac_sql",
+              "core.rbac_sql.service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "can_access_empresa",
+              "servidores_conexiones",
+              "sistema_empresasmongomap",
+              "sistema_sucursales",
+              "sistema_sucursalservidormapeo",
+              "unidades_negocio",
+              "usuario_empresasasignacion",
+              "usuario_servidoresasignacion",
+              "usuario_sucursalesasignacion"
+            ],
+            "path": "backend/tests/test_rbac_sql_company_scope.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "fake_fetch_all",
+              "test_can_access_empresa_keeps_superadmin_rule",
+              "test_can_access_empresa_uses_effective_company_scope",
+              "test_get_empresas_does_not_use_legacy_mongo_mapping",
+              "test_get_empresas_uses_canonical_server_branch_scope"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 2,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-12T18:33:24Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
