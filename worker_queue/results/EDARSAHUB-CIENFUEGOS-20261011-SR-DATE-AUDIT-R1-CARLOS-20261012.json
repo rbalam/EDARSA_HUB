@@ -1,0 +1,112 @@
+{
+  "base_sha": "a09fe7bc9bf81bb87a395c7f20cc16b74de4d631",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-12T16:58:42Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-CIENFUEGOS-20261011-SR-DATE-AUDIT-R1-CARLOS-20261012",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-12T16:59:02Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_cheque",
+              "cheques",
+              "total",
+              "propina",
+              "pax"
+            ],
+            "name": "cienfuegos_por_cheques_fecha_20261011",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-10-11",
+                4,
+                "2035.0000",
+                "0.0000",
+                "4"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_apertura_turno",
+              "cheques",
+              "total",
+              "propina",
+              "pax"
+            ],
+            "name": "cienfuegos_por_turno_apertura_20261011",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_cheque",
+              "fecha_apertura_turno",
+              "estado",
+              "cheques",
+              "total",
+              "propina",
+              "pax"
+            ],
+            "name": "cienfuegos_cruce_fecha_turno_20261010_12",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "2026-10-10",
+                "2026-10-09",
+                "CERRADA",
+                8,
+                "8535.0000",
+                "1147.2500",
+                "10"
+              ],
+              [
+                "2026-10-10",
+                "2026-10-10",
+                "CERRADA",
+                66,
+                "326194.0000",
+                "28048.7300",
+                "1220"
+              ],
+              [
+                "2026-10-11",
+                "2026-10-10",
+                "CERRADA",
+                4,
+                "2035.0000",
+                "0.0000",
+                "4"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-12T16:58:40Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
