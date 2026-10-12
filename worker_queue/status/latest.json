@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "92969853cca9b65b40e561093358959e03a2e124",
-  "generated_at_utc": "2026-10-12T17:29:18Z",
+  "generated_at_utc": "2026-10-12T17:30:35Z",
   "history": {
     "done_total_local": 1372,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1836,
+      "age_seconds": 1913,
       "job_id": "edarsahub-cienfuegos-20261011-sr-date-audit-r1-carlos-20261012",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3210,
+      "age_seconds": 3287,
       "job_id": "edarsahub-comercial-ayer-diag-r1-carlos-20261012",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3092,
+      "age_seconds": 3169,
       "job_id": "edarsahub-comercial-ayer-edarsa-audit-r2-carlos-20261012",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-12T17:29:08Z",
-    "last_receive_utc": "2026-10-12T17:29:14Z",
+    "last_cycle_utc": "2026-10-12T17:30:28Z",
+    "last_receive_utc": "2026-10-12T17:30:35Z",
     "last_terminal_utc": "2026-10-12T16:58:42Z",
     "pid": "386121",
     "runtime_fingerprint": {
