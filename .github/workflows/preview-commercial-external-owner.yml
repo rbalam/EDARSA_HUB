@@ -14,6 +14,11 @@ on:
         options:
           - open_sales
           - closed_sales
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - ".github/workflows/preview-commercial-external-owner.yml"
 
 permissions:
   contents: read
@@ -29,7 +34,7 @@ env:
 
 jobs:
   open-sales:
-    if: github.event_name == 'schedule' && github.event.schedule == '*/5 * * * *' || github.event_name == 'workflow_dispatch' && inputs.target == 'open_sales'
+    if: github.event_name == 'push' || github.event_name == 'schedule' && github.event.schedule == '*/5 * * * *' || github.event_name == 'workflow_dispatch' && inputs.target == 'open_sales'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -74,7 +79,7 @@ jobs:
           test "$HTTP_CODE" -lt 300
 
   closed-sales:
-    if: github.event_name == 'schedule' && github.event.schedule == '2,17,32,47 * * * *' || github.event_name == 'workflow_dispatch' && inputs.target == 'closed_sales'
+    if: github.event_name == 'push' || github.event_name == 'schedule' && github.event.schedule == '2,17,32,47 * * * *' || github.event_name == 'workflow_dispatch' && inputs.target == 'closed_sales'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
