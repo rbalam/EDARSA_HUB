@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-AYER-DIAG-R1-CARLOS-20261012",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Diagnosticar en modo estrictamente READ_ONLY por qué el Tablero Ejecutivo muestra ventas del 2026-10-11 únicamente para ORIGEN y muestra cero para 130MID, 130QRO, CIENFUEGOS y posiblemente ESTELAR. Comparar la evidencia persistida en EDARSAHUB, el Runtime V2, Comercial_SyncLog_v2, el catálogo canónico y las fuentes POS. No modificar sincronizadores, no escribir SQL, no tocar sync_comercial_abiertas_v2, no ejecutar re-sync y no tocar Producción.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "catalogo_unidades_comercial",
+          "sql": "SELECT id, codigo, nombre, server_id, sucursal_origen_id, system_type, activo FROM dbo.Unidades_Negocio WHERE codigo IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN') ORDER BY codigo"
+        },
+        {
+          "name": "kpi_base_20261011",
+          "sql": "SELECT CONVERT(varchar(36), k.unidad_negocio_pk) AS unidad_negocio_pk, k.unidad_negocio_id, k.unidad_negocio_nombre, k.server_id, k.sucursal_id, k.sistema_origen, k.fecha_operacion, k.ventas_total, k.tickets_total, k.pax_total, k.activo, k.es_demo, k.fecha_sincronizacion, k.hash_origen FROM dbo.Comercial_KPIs_Diarios_v2 k WHERE k.fecha_operacion = '2026-10-11' ORDER BY k.unidad_negocio_id"
+        },
+        {
+          "name": "runtime_20261011",
+          "sql": "SELECT * FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE fecha_operacion = '2026-10-11' ORDER BY unidad_negocio_pk"
+        },
+        {
+          "name": "sync_log_20261011_20261012",
+          "sql": "SELECT TOP 100 sl.created_at, sl.run_id, sl.run_type, CONVERT(varchar(36), sl.unidad_negocio_pk) AS unidad_negocio_pk, u.codigo, u.nombre, u.system_type, u.sucursal_origen_id, sl.fecha_inicio, sl.fecha_fin, sl.status, sl.records_processed, sl.records_inserted, sl.records_updated, sl.records_skipped, sl.records_errored, sl.source_connection_status, sl.error_message, sl.duration_seconds FROM dbo.Comercial_SyncLog_v2 sl LEFT JOIN dbo.Unidades_Negocio u ON CONVERT(varchar(36), u.id) = CONVERT(varchar(36), sl.unidad_negocio_pk) WHERE sl.created_at >= '2026-10-11T00:00:00' ORDER BY sl.created_at DESC"
+        },
+        {
+          "name": "snapshots_abiertas_20261011_20261012",
+          "sql": "SELECT a.unidad_negocio_id, a.unidad_negocio_nombre, a.server_id, a.sucursal_id, a.sistema_origen, a.fecha_operacion, a.ventas_abiertas, a.ventas_cerradas_dia, a.total_estimado_dia, a.tickets_abiertos, a.tickets_cerrados_dia, a.pax_abiertos, a.pax_cerrados_dia, a.snapshot_timestamp, a.sync_run_id, a.fecha_ultima_actualizacion FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 a WHERE a.fecha_operacion >= '2026-10-11' AND a.fecha_operacion <= '2026-10-12' AND a.unidad_negocio_id IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN') ORDER BY a.fecha_operacion DESC, a.unidad_negocio_id, a.snapshot_timestamp DESC"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "130MID",
+        "CIENFUEGOS",
+        "ESTELAR"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "softrestaurant_source_sales_20261011_20261012",
+          "sql": "SELECT CONVERT(date, tr.apertura) AS apertura_fecha, SUM(ISNULL(ch.total,0)) AS ventas, COUNT(DISTINCT ch.folio) AS cheques, SUM(ISNULL(ch.nopersonas,0)) AS pax FROM cheques ch INNER JOIN turnos tr ON tr.idturno = ch.idturno WHERE tr.apertura >= '2026-10-11T00:00:00' AND tr.apertura < '2026-10-13T00:00:00' AND ch.cancelado = 0 GROUP BY CONVERT(date, tr.apertura) ORDER BY apertura_fecha"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "130QRO",
+        "ORIGEN"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "mpro_source_sales_20261010_20261012",
+          "sql": "SELECT ve.Sc_Cve_Sucursal, CONVERT(date, ve.Vn_Fecha) AS fecha, SUM(ISNULL(ve.Vn_Precio_Neto_Importe,0)) AS ventas, COUNT(DISTINCT ve.Vn_Folio) AS cheques FROM Venta_Encabezado ve WHERE ve.Vn_Fecha >= '2026-10-10T00:00:00' AND ve.Vn_Fecha < '2026-10-13T00:00:00' AND ISNULL(ve.Es_Cve_Estado,'') IN ('AC','FA') GROUP BY ve.Sc_Cve_Sucursal, CONVERT(date, ve.Vn_Fecha) ORDER BY ve.Sc_Cve_Sucursal, fecha"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker - diagnostico ventas de ayer Tablero Ejecutivo"
+  },
+  "human_summary_language": "es"
+}
