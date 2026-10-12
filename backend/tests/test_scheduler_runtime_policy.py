@@ -9,6 +9,7 @@ _ENV_KEYS = (
     "ENVIRONMENT",
     "EDARSA_RUNTIME_ROLE",
     "EDARSA_RUNTIME_ROLE_REQUIRED",
+    "EDARSA_PREVIEW_COMMERCIAL_INTERNAL_OWNER_ENABLED",
     "SCHEDULER_ENABLED",
 )
 
@@ -93,3 +94,47 @@ def test_invalid_runtime_role_fails_closed(monkeypatch):
 
     with pytest.raises(RuntimeError, match="INVALID_EDARSA_RUNTIME_ROLE"):
         policy.runtime_role()
+
+
+def test_preview_commercial_internal_owner_defaults_off_after_cutover(monkeypatch):
+    _clear(monkeypatch)
+    monkeypatch.setenv("EDARSA_ENV", "PREVIEW")
+    monkeypatch.setenv("EDARSA_RUNTIME_ROLE", policy.PREVIEW_WEB)
+
+    assert policy.should_start_preview_commercial_internal_owner() is False
+
+
+def test_preview_commercial_internal_owner_is_explicit_rollback_only(monkeypatch):
+    _clear(monkeypatch)
+    monkeypatch.setenv("EDARSA_ENV", "PREVIEW")
+    monkeypatch.setenv("EDARSA_RUNTIME_ROLE", policy.PREVIEW_WEB)
+    monkeypatch.setenv(
+        "EDARSA_PREVIEW_COMMERCIAL_INTERNAL_OWNER_ENABLED",
+        "true",
+    )
+
+    assert policy.should_start_preview_commercial_internal_owner() is True
+
+
+@pytest.mark.parametrize(
+    "environment,role",
+    [
+        ("PRODUCTION", policy.PRODUCTION_WEB),
+        ("PRODUCTION", policy.PRODUCTION_SCHEDULER),
+        ("DEVELOPMENT", policy.PREVIEW_WEB),
+    ],
+)
+def test_preview_commercial_internal_owner_never_crosses_runtime_boundary(
+    monkeypatch,
+    environment,
+    role,
+):
+    _clear(monkeypatch)
+    monkeypatch.setenv("EDARSA_ENV", environment)
+    monkeypatch.setenv("EDARSA_RUNTIME_ROLE", role)
+    monkeypatch.setenv(
+        "EDARSA_PREVIEW_COMMERCIAL_INTERNAL_OWNER_ENABLED",
+        "true",
+    )
+
+    assert policy.should_start_preview_commercial_internal_owner() is False
