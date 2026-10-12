@@ -3,20 +3,20 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "108a794b483f12299c85a4b4b391a69aff04ea28",
-  "generated_at_utc": "2026-10-12T18:32:53Z",
+  "development_sha": "30c71486f6f65f123934febe36c7a5c4a92f5b8f",
+  "generated_at_utc": "2026-10-12T18:34:13Z",
   "history": {
-    "done_total_local": 1378,
+    "done_total_local": 1379,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1204,
-    "results_total_local": 2369
+    "results_total_local": 2370
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 455,
+      "age_seconds": 536,
       "job_id": "SERVIDORES-CONEXIONES-API-EMPRESAID-CANONICAL-MAPPING-AUDIT-READONLY-SQL-R1-20261012",
       "reasons": [
         "INVALID_TARGET_REPO",
@@ -26,43 +26,49 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 279,
+      "age_seconds": 360,
       "job_id": "SERVIDORES-CONEXIONES-API-EMPRESAID-CANONICAL-MAPPING-AUDIT-READONLY-SQL-R1B-20261012",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 652,
+      "age_seconds": 42,
+      "job_id": "USUARIOS-COMPANY-SCOPE-R4-20261012",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 733,
       "job_id": "USUARIOS-SERVIDORES-CORPORATE-MAPPING-SCHEMA-AUDIT-R3C-20261012",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 998,
+      "age_seconds": 1079,
       "job_id": "USUARIOS-SERVIDORES-CORPORATE-SCOPE-DATA-AUDIT-R3B-20261012",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 381,
+      "age_seconds": 462,
       "job_id": "USUARIOS-SERVIDORES-CORPORATE-SCOPE-DATA-AUDIT-R3D-20261012",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2741,
+      "age_seconds": 2822,
       "job_id": "edarsahub-cienfuegos-open-turn-edarsa-r1-20261012",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2733,
+      "age_seconds": 2814,
       "job_id": "edarsahub-cienfuegos-open-turn-pos-r1-20261012",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "108a794b483f12299c85a4b4b391a69aff04ea28",
+  "local_development_sha": "30c71486f6f65f123934febe36c7a5c4a92f5b8f",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -70,21 +76,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 7,
   "queue_running": 0,
-  "remote_development_sha": "108a794b483f12299c85a4b4b391a69aff04ea28",
+  "remote_development_sha": "30c71486f6f65f123934febe36c7a5c4a92f5b8f",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-12T18:32:46Z",
-    "last_receive_utc": "2026-10-12T18:32:41Z",
-    "last_terminal_utc": "2026-10-12T18:28:13Z",
+    "last_cycle_utc": "2026-10-12T18:34:04Z",
+    "last_receive_utc": "2026-10-12T18:34:10Z",
+    "last_terminal_utc": "2026-10-12T18:33:31Z",
     "pid": "386121",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "6c1233dbc0beba1383034f88dcb52bf9525e0084",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "108a794b483f12299c85a4b4b391a69aff04ea28",
+      "development_sha": "30c71486f6f65f123934febe36c7a5c4a92f5b8f",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
