@@ -1,0 +1,93 @@
+name: Commercial Owner Lock Diagnostic
+
+on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - ".github/workflows/commercial-owner-lock-diagnostic.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose-locks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "HRLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install SQL client
+        run: python -m pip install pymssql==2.3.13
+
+      - name: Inspect commercial owner locks
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$EDARSAHUB_SQL_PASSWORD"
+          python - <<'PY'
+          import json
+          import os
+          import pymssql
+
+          targets = (
+              "preview_sync_comercial_abiertas_v2_wake_owner",
+              "preview_sync_comercial_v2_wake_owner",
+          )
+
+          conn = pymssql.connect(
+              server=os.environ["EDARSAHUB_SQL_HOST"],
+              port=int(os.environ["EDARSAHUB_SQL_PORT"]),
+              user=os.environ["EDARSAHUB_SQL_USER"],
+              password=os.environ["EDARSAHUB_SQL_PASSWORD"],
+              database=os.environ["EDARSAHUB_SQL_DATABASE"],
+              login_timeout=10,
+              timeout=30,
+              tds_version="7.0",
+              as_dict=True,
+          )
+          cur = conn.cursor(as_dict=True)
+          placeholders = ",".join(["%s"] * len(targets))
+          cur.execute(
+              f"""
+              SELECT
+                  JobName,
+                  OwnerID,
+                  AcquiredAt,
+                  HeartbeatAt,
+                  LockUntil,
+                  SYSUTCDATETIME() AS ServerUtcNow,
+                  CASE WHEN LockUntil > SYSUTCDATETIME() THEN 1 ELSE 0 END AS IsActive
+              FROM dbo.Scheduler_DistributedLocks
+              WHERE JobName IN ({placeholders})
+              ORDER BY JobName
+              """,
+              targets,
+          )
+          rows = cur.fetchall() or []
+          output = []
+          for row in rows:
+              output.append({
+                  "job_name": row["JobName"],
+                  "owner": row["OwnerID"],
+                  "acquired_at": str(row["AcquiredAt"]),
+                  "heartbeat_at": str(row["HeartbeatAt"]),
+                  "lock_until": str(row["LockUntil"]),
+                  "server_utc_now": str(row["ServerUtcNow"]),
+                  "is_active": bool(row["IsActive"]),
+              })
+          print(json.dumps(output, ensure_ascii=False))
+          conn.close()
+          PY
