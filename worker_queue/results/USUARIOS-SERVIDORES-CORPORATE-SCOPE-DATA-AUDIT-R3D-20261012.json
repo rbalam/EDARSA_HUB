@@ -1,0 +1,660 @@
+{
+  "base_sha": "108a794b483f12299c85a4b4b391a69aff04ea28",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-12T18:26:31Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "USUARIOS-SERVIDORES-CORPORATE-SCOPE-DATA-AUDIT-R3D-20261012",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-12T18:26:33Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "ServidorID",
+              "ServidorNombre",
+              "system_type",
+              "tipo_conexion",
+              "EmpresaID",
+              "empresa_id",
+              "activo",
+              "visible_en_operaciones",
+              "visible_en_listado"
+            ],
+            "name": "server_company_snapshot",
+            "row_count_returned": 15,
+            "rows": [
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "130° MERIDA",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                5,
+                null,
+                true,
+                true,
+                true
+              ],
+              [
+                "72F6E9A7-8EA2-4EB2-802E-4EE31753435E",
+                "130° QRO LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                2,
+                "",
+                true,
+                true,
+                true
+              ],
+              [
+                "B597D88A-AB37-4B4E-897B-EFE68C9B3732",
+                "API ManagmentPro",
+                "MPRO",
+                "API_LOCAL",
+                null,
+                "",
+                true,
+                true,
+                true
+              ],
+              [
+                "EEC6423D-546B-41E9-AE70-C9D105D6B351",
+                "CHAPUR 58",
+                "MPRO",
+                "DATA_SOURCE",
+                null,
+                null,
+                true,
+                true,
+                true
+              ],
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "CHAPUR BACKOFFICE",
+                "ENTERPRISE",
+                "API_LOCAL",
+                null,
+                "",
+                true,
+                false,
+                true
+              ],
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                "API_LOCAL",
+                null,
+                "",
+                true,
+                true,
+                true
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "CIENFUEGOS",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                3,
+                null,
+                true,
+                true,
+                true
+              ],
+              [
+                "31D62F39-632B-4684-B735-256BD9293A8F",
+                "CIENFUEGOS NOMINPAQ",
+                "SOFTRESTAURANT_PRO",
+                "API_LOCAL",
+                null,
+                "",
+                true,
+                false,
+                true
+              ],
+              [
+                "6D859026-710A-4920-9A44-6DA98FABC690",
+                "CIENFUEGOS TABLAJERIA",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                3,
+                null,
+                true,
+                false,
+                true
+              ],
+              [
+                "F8A9049A-96E8-4210-84AE-595FFA2822FA",
+                "EDARSA HUB",
+                "EDARSA_HUB",
+                "CORE",
+                null,
+                null,
+                true,
+                true,
+                true
+              ],
+              [
+                "2BEAD18C-73C9-4D86-AF92-2355940274F7",
+                "GARIBALDI",
+                "SOFTRESTAURANT_PRO",
+                "API_LOCAL",
+                null,
+                "",
+                true,
+                true,
+                true
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "LA ESTELAR",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                4,
+                null,
+                true,
+                true,
+                true
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "ManagmentPro",
+                "MPRO",
+                "DATA_SOURCE",
+                null,
+                null,
+                true,
+                true,
+                true
+              ],
+              [
+                "D1D8C70F-C3D0-4407-AE50-F09E8E5992EE",
+                "MPRO TABLAJERIA",
+                "MPRO",
+                "DATA_SOURCE",
+                null,
+                null,
+                true,
+                false,
+                true
+              ],
+              [
+                "817A0AA8-6170-4738-A8F6-A72AC36BA0DF",
+                "ORIGEN LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                1,
+                "",
+                true,
+                false,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "MapeoID",
+              "ServidorID",
+              "SucursalOrigenID",
+              "SucursalID",
+              "CodigoSucursal",
+              "NombreSucursal",
+              "EmpresaID",
+              "CodigoEmpresa",
+              "NombreEmpresa",
+              "MapeoActivo",
+              "SucursalActiva",
+              "EmpresaActiva"
+            ],
+            "name": "branch_server_company_map",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                5,
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                null,
+                5,
+                "130_MERIDA",
+                "130° MERIDA",
+                5,
+                "130MID",
+                "130 MID",
+                true,
+                true,
+                true
+              ],
+              [
+                3,
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                null,
+                3,
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                3,
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                true,
+                true,
+                true
+              ],
+              [
+                2,
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "0021",
+                2,
+                "130_QUERETARO",
+                "130° QUERETARO",
+                2,
+                "130QRO",
+                "130 QRO",
+                true,
+                true,
+                true
+              ],
+              [
+                1,
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "0023",
+                1,
+                "ORIGEN",
+                "ORIGEN",
+                1,
+                "ORIGEN",
+                "ORIGEN",
+                true,
+                true,
+                true
+              ],
+              [
+                4,
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                null,
+                4,
+                "LA_ESTELAR",
+                "LA ESTELAR",
+                4,
+                "ESTELAR",
+                "LA ESTELAR",
+                true,
+                true,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocioID",
+              "UnidadCodigo",
+              "UnidadNombre",
+              "UnidadServerID",
+              "sucursal_origen_id",
+              "ServidorNombre",
+              "ServerEmpresaID",
+              "MappedSucursalID",
+              "MappedSucursalCodigo",
+              "BranchEmpresaID",
+              "ResolvedEmpresaID",
+              "ResolutionStatus"
+            ],
+            "name": "unit_company_resolution",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "130MID",
+                "130° MERIDA",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                null,
+                "130° MERIDA",
+                5,
+                null,
+                null,
+                null,
+                5,
+                "RESOLVED"
+              ],
+              [
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                null,
+                "CIENFUEGOS",
+                3,
+                null,
+                null,
+                null,
+                3,
+                "RESOLVED"
+              ],
+              [
+                "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+                "ESTELAR",
+                "LA ESTELAR",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                null,
+                "LA ESTELAR",
+                4,
+                null,
+                null,
+                null,
+                4,
+                "RESOLVED"
+              ],
+              [
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "130QRO",
+                "130° QUERETARO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0021",
+                "ManagmentPro",
+                null,
+                2,
+                "130_QUERETARO",
+                2,
+                2,
+                "RESOLVED"
+              ],
+              [
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "ORIGEN",
+                "ORIGEN",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0023",
+                "ManagmentPro",
+                null,
+                1,
+                "ORIGEN",
+                1,
+                1,
+                "RESOLVED"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "NombreCompleto",
+              "AssignedServers",
+              "AssignedBranches",
+              "ExplicitEmpresas",
+              "ResolvedUnits",
+              "DerivedEmpresas",
+              "ScopeStatus"
+            ],
+            "name": "user_company_scope_gap",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                11,
+                "carlos@alpuntoycoma.mx",
+                "Carlos Alberto Aguirre de Leon",
+                5,
+                2,
+                0,
+                5,
+                5,
+                "DERIVABLE_BUT_LOGIN_COMPANY_EMPTY"
+              ],
+              [
+                3,
+                "carlosruz@edarsa.com.mx",
+                "Carlos Ruz",
+                12,
+                1,
+                0,
+                3,
+                3,
+                "DERIVABLE_BUT_LOGIN_COMPANY_EMPTY"
+              ],
+              [
+                6,
+                "almacen@cienfuegos.mx",
+                "Cristina Chi",
+                1,
+                1,
+                0,
+                1,
+                1,
+                "DERIVABLE_BUT_LOGIN_COMPANY_EMPTY"
+              ],
+              [
+                9,
+                "david.ricardez@cienfuegos.mx",
+                "David Ricaldes Mendes",
+                8,
+                1,
+                0,
+                3,
+                3,
+                "DERIVABLE_BUT_LOGIN_COMPANY_EMPTY"
+              ],
+              [
+                27,
+                "sys-sched-alertas@edarsahub.internal",
+                "Scheduler Alertas",
+                3,
+                2,
+                0,
+                5,
+                5,
+                "DERIVABLE_BUT_LOGIN_COMPANY_EMPTY"
+              ],
+              [
+                38,
+                "administracion@laestelar.mx",
+                "Tesorero Estelar",
+                1,
+                0,
+                0,
+                1,
+                1,
+                "DERIVABLE_BUT_LOGIN_COMPANY_EMPTY"
+              ],
+              [
+                5,
+                "auditoria@edarsa.com.mx",
+                "William Chuc",
+                4,
+                1,
+                0,
+                2,
+                2,
+                "DERIVABLE_BUT_LOGIN_COMPANY_EMPTY"
+              ],
+              [
+                28,
+                "aenriquez080@gmail.com",
+                "Allen Enriquez Toral",
+                1,
+                0,
+                0,
+                0,
+                0,
+                "SCOPE_NOT_DERIVABLE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "ServidorID",
+              "SucursalCodigo",
+              "MatchesActiveUnit",
+              "MatchesCanonicalBranchMap"
+            ],
+            "name": "branch_assignment_alignment",
+            "row_count_returned": 20,
+            "rows": [
+              [
+                3,
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "default",
+                0,
+                0
+              ],
+              [
+                3,
+                "72F6E9A7-8EA2-4EB2-802E-4EE31753435E",
+                "default",
+                0,
+                0
+              ],
+              [
+                3,
+                "F8A9049A-96E8-4210-84AE-595FFA2822FA",
+                "default",
+                0,
+                0
+              ],
+              [
+                3,
+                "6D859026-710A-4920-9A44-6DA98FABC690",
+                "default",
+                0,
+                0
+              ],
+              [
+                3,
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "default",
+                0,
+                0
+              ],
+              [
+                3,
+                "817A0AA8-6170-4738-A8F6-A72AC36BA0DF",
+                "default",
+                0,
+                0
+              ],
+              [
+                3,
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "default",
+                0,
+                0
+              ],
+              [
+                3,
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "default",
+                0,
+                0
+              ],
+              [
+                3,
+                "B597D88A-AB37-4B4E-897B-EFE68C9B3732",
+                "default",
+                0,
+                0
+              ],
+              [
+                3,
+                "D1D8C70F-C3D0-4407-AE50-F09E8E5992EE",
+                "default",
+                0,
+                0
+              ],
+              [
+                5,
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "default",
+                0,
+                0
+              ],
+              [
+                5,
+                "72F6E9A7-8EA2-4EB2-802E-4EE31753435E",
+                "default",
+                0,
+                0
+              ],
+              [
+                5,
+                "817A0AA8-6170-4738-A8F6-A72AC36BA0DF",
+                "default",
+                0,
+                0
+              ],
+              [
+                5,
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "default",
+                0,
+                0
+              ],
+              [
+                6,
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "default",
+                0,
+                0
+              ],
+              [
+                9,
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "default",
+                0,
+                0
+              ],
+              [
+                11,
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "0021",
+                1,
+                1
+              ],
+              [
+                11,
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "0023",
+                1,
+                1
+              ],
+              [
+                27,
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "0021",
+                1,
+                1
+              ],
+              [
+                27,
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "0023",
+                1,
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-12T18:26:30Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
