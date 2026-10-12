@@ -1,4 +1,5 @@
 name: Preview Commercial External Owner
+# Sleep probe R3: trigger-only diagnostic; no business logic change.
 
 on:
   schedule:
