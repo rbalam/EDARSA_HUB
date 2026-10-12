@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-CIENFUEGOS-OPEN-TURN-POS-R1-20261012",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "READ_ONLY: revisar tempcheques y turnos recientes de CIENFUEGOS SoftRestaurant para identificar la fecha operativa real del turno aun no cortado. No escribir, no resincronizar, no tocar Produccion.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "CIENFUEGOS"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "tempcheques_cienfuegos_resumen",
+          "sql": "SELECT CONVERT(date,fecha) AS fecha, COUNT(DISTINCT folio) AS cheques, SUM(CASE WHEN ISNULL(total,0)>=ISNULL(propina,0) THEN ISNULL(total,0)-ISNULL(propina,0) ELSE ISNULL(total,0) END) AS ventas_sin_propina, SUM(ISNULL(propina,0)) AS propina, SUM(ISNULL(nopersonas,1)) AS pax, MIN(fecha) AS primera_cuenta, MAX(fecha) AS ultima_cuenta, MIN(cierre) AS primer_cierre_cuenta, MAX(cierre) AS ultimo_cierre_cuenta FROM tempcheques WHERE ISNULL(cancelado,0)=0 GROUP BY CONVERT(date,fecha) ORDER BY fecha DESC"
+        },
+        {
+          "name": "turnos_cienfuegos_recientes",
+          "sql": "SELECT TOP 20 * FROM turnos ORDER BY apertura DESC"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0"
+  },
+  "human_summary_language": "es"
+}
