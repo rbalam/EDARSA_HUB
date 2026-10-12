@@ -71,6 +71,32 @@ def _sql_quote(value) -> str:
     return "'" + str(value).replace("'", "''") + "'"
 
 
+def _range_requires_current_day_exclusion(
+    fecha_fin: date,
+    *,
+    today: Optional[date] = None,
+) -> bool:
+    """Decide si un rango puede contener la operación vigente.
+
+    Un rango que termina antes del día civil actual de México es histórico y
+    nunca debe perder su último día por la presencia de snapshots abiertos
+    rezagados. La exclusión del día operativo solo aplica a rangos que alcanzan
+    hoy o el futuro.
+
+    Esto separa dos contratos que antes estaban acoplados:
+    - fuente cerrada persistida;
+    - exclusión de la operación vigente.
+    """
+    if today is None:
+        try:
+            from core.utils.operational_window import get_mexico_now
+            today = get_mexico_now().date()
+        except Exception:
+            today = datetime.now().date()
+
+    return fecha_fin >= today
+
+
 def _unidad_filter_runtime(unidades_permitidas: Optional[List[str]]) -> Optional[str]:
     """
     Filtro canónico de unidad para vw_Comercial_KPIs_Diarios_v2_Runtime.
@@ -274,7 +300,10 @@ def get_kpis_diarios_agregados(
     if unidad_filter:
         where_clauses.append(unidad_filter)
 
-    if excluir_dia_operativo_actual:
+    if (
+        excluir_dia_operativo_actual
+        and _range_requires_current_day_exclusion(fecha_fin)
+    ):
         where_clauses.append(
             runtime_dia_operativo_actual_predicate("k", "excluir")
         )
@@ -340,7 +369,10 @@ def get_kpis_por_unidad(
     if unidad_filter:
         where_clauses.append(unidad_filter)
 
-    if excluir_dia_operativo_actual:
+    if (
+        excluir_dia_operativo_actual
+        and _range_requires_current_day_exclusion(fecha_fin)
+    ):
         where_clauses.append(
             runtime_dia_operativo_actual_predicate("k", "excluir")
         )
