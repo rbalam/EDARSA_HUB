@@ -1,0 +1,66 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-CHAPUR-SOFTRESTAURANT-ENTERPRISE-SCOPE-AUDIT-READONLY-SQL-R1-20261012",
+  "mode": "READ_ONLY_SQL",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Auditar exclusivamente en EDARSAHUB SQL las conexiones CHAPUR BACKOFFICE y CHAPUR NORTE para determinar su identidad técnica, posible respaldo SoftRestaurant Enterprise, relación servidor-sucursal-empresa y cardinalidad de sucursales. No inferir por nombre, no mutar datos, no tocar Producción ni consultar secretos.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS",
+    "chat": "Conexiones y Comunicaciones / Menu Servidores 2"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "chapur_connections_metadata",
+          "sql": "SELECT CONVERT(nvarchar(100),id) AS connection_id,nombre,system_type,tipo_conexion,host,port,database_name,api_url,activo,visible_en_operaciones,visible_en_listado,EmpresaID,empresa_id,sucursales,sistema_version_id FROM dbo.Servidores_Conexiones WHERE id IN ('8cbdcc89-6495-49c3-be9c-a965db82c77f','d8b2d1eb-2e1f-4e43-b7d9-822bf671e315') ORDER BY nombre"
+        },
+        {
+          "name": "chapur_sucursal_mapeo",
+          "sql": "SELECT CONVERT(nvarchar(100),sc.id) AS connection_id,sc.nombre,m.MapeoID,m.SucursalID,m.SucursalOrigenID,m.Activo AS mapping_activo,s.CodigoSucursal,s.NombreSucursal,s.EmpresaID,e.CodigoEmpresa,e.NombreEmpresa,e.NombreComercial,e.Activo AS empresa_activa FROM dbo.Servidores_Conexiones sc LEFT JOIN dbo.Sistema_SucursalServidorMapeo m ON m.ServidorID=sc.id LEFT JOIN dbo.Sistema_Sucursales s ON s.SucursalID=m.SucursalID LEFT JOIN dbo.Sistema_Empresas e ON e.EmpresaID=s.EmpresaID WHERE sc.id IN ('8cbdcc89-6495-49c3-be9c-a965db82c77f','d8b2d1eb-2e1f-4e43-b7d9-822bf671e315') ORDER BY sc.nombre,m.Activo DESC,m.SucursalID"
+        },
+        {
+          "name": "chapur_unidades_directas",
+          "sql": "SELECT CONVERT(nvarchar(100),sc.id) AS connection_id,sc.nombre AS connection_name,u.id AS unidad_id,u.codigo AS unidad_codigo,u.nombre AS unidad_nombre,u.server_id,u.sucursal_origen_id,u.system_type,u.activo FROM dbo.Servidores_Conexiones sc LEFT JOIN dbo.Unidades_Negocio u ON LOWER(CONVERT(nvarchar(100),u.server_id))=LOWER(CONVERT(nvarchar(100),sc.id)) WHERE sc.id IN ('8cbdcc89-6495-49c3-be9c-a965db82c77f','d8b2d1eb-2e1f-4e43-b7d9-822bf671e315') ORDER BY sc.nombre,u.codigo"
+        },
+        {
+          "name": "system_version_schema",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME LIKE '%Sistema%Version%' OR TABLE_NAME LIKE '%Version%Sistema%' ORDER BY TABLE_SCHEMA,TABLE_NAME,ORDINAL_POSITION"
+        },
+        {
+          "name": "chapur_related_catalog_rows",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Sistema_Sucursales','Sistema_Empresas','Sistema_SucursalServidorMapeo','Unidades_Negocio','Servidores_Conexiones') ORDER BY TABLE_NAME,ORDINAL_POSITION"
+        }
+      ]
+    }
+  ],
+  "acceptance_criteria": [
+    "READ_ONLY_COMPLETE",
+    "CERTIFIED_READ_ONLY",
+    "production_touched=false",
+    "No DDL or DML",
+    "No secrets exposed",
+    "CHAPUR connections reported separately",
+    "Sucursal cardinality evidenced without name inference"
+  ]
+}
