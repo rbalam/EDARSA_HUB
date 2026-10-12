@@ -16840,38 +16840,38 @@ async def startup_scheduler():
     except Exception as e:
         logger.warning(f"Universal Worker startup self-heal no disponible: {e}")
 
-    # PREVIEW: restaurar exclusivamente las cadencias comerciales certificadas.
-    # No arranca el scheduler completo, no crea doble owner y no altera la
-    # logica protegida de Ventas del Dia.
+    # PREVIEW commercial ownership cutover:
+    # GitHub Actions is the default external owner. The legacy internal wakes
+    # remain available only through an explicit rollback flag.
     try:
-        from modules.scheduler_runtime.preview_sales_wake import (
-            start_preview_sales_wake,
+        from modules.scheduler_runtime.policy import (
+            should_start_preview_commercial_internal_owner,
         )
 
-        preview_sales_wake_state = start_preview_sales_wake(db)
-        logger.warning(
-            "Preview Ventas del Dia wake state=%s",
-            preview_sales_wake_state,
-        )
+        if should_start_preview_commercial_internal_owner():
+            from modules.scheduler_runtime.preview_sales_wake import (
+                start_preview_sales_wake,
+            )
+            from modules.scheduler_runtime.preview_closed_sales_wake import (
+                start_preview_closed_sales_wake,
+            )
+
+            preview_sales_wake_state = start_preview_sales_wake(db)
+            preview_closed_sales_wake_state = start_preview_closed_sales_wake(db)
+            logger.warning(
+                "Preview commercial internal owner enabled "
+                "open=%s closed=%s",
+                preview_sales_wake_state,
+                preview_closed_sales_wake_state,
+            )
+        else:
+            logger.warning(
+                "Preview commercial internal owner disabled; "
+                "external owner is authoritative"
+            )
     except Exception as e:
         logger.error(
-            "Preview Ventas del Dia wake no disponible: %s",
-            e,
-        )
-
-    try:
-        from modules.scheduler_runtime.preview_closed_sales_wake import (
-            start_preview_closed_sales_wake,
-        )
-
-        preview_closed_sales_wake_state = start_preview_closed_sales_wake(db)
-        logger.warning(
-            "Preview Ventas Cerradas wake state=%s",
-            preview_closed_sales_wake_state,
-        )
-    except Exception as e:
-        logger.error(
-            "Preview Ventas Cerradas wake no disponible: %s",
+            "Preview commercial owner policy unavailable: %s",
             e,
         )
 
