@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "USUARIOS-COMPANY-SCOPE-POSTCHECK-R5-20261012",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "20. Seguridad / Usuarios Produccion"
+  },
+  "objective": "Certificar en solo lectura que el R4 de alcance efectivo de empresas permanece integrado en Edarsahub_Desarrollo, que las pruebas RBAC relevantes pasan y que no hubo regresion del contrato servidor/sucursal/empresa.",
+  "mode": "READ_ONLY",
+  "quality_gate": "POSTCHECK_REQUIRED",
+  "constraints": [
+    "NO_PRODUCTION",
+    "NO_DML",
+    "NO_DDL",
+    "NO_REPO_MUTATION",
+    "NO_MONGO_AS_SOURCE_OF_TRUTH",
+    "NO_TOUCH_SERVIDORES_MENU"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/rbac_sql/service.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_rbac_sql_company_scope.py",
+        "backend/tests/test_rbac_sql_scope.py",
+        "backend/tests/test_server_sucursales_rbac_canonical.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/rbac_sql/service.py",
+          "backend/core/access_context/sql_context.py",
+          "backend/core/user_access_context.py",
+          "backend/tests/test_rbac_sql_company_scope.py",
+          "backend/tests/test_rbac_sql_scope.py",
+          "backend/tests/test_server_sucursales_rbac_canonical.py"
+        ],
+        "search_terms": [
+          "get_empresas",
+          "can_access_empresa",
+          "Usuario_EmpresasAsignacion",
+          "Usuario_ServidoresAsignacion",
+          "Usuario_SucursalesAsignacion",
+          "Servidores_Conexiones",
+          "Sistema_SucursalServidorMapeo",
+          "Sistema_Sucursales",
+          "Unidades_Negocio",
+          "Sistema_EmpresasMongoMap"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "deliverables": [
+    "CURRENT_DEVELOPMENT_SHA",
+    "R4_INTEGRATION_POSTCHECK",
+    "TEST_RESULTS",
+    "NO_REGRESSION_CONFIRMATION",
+    "NO_PRODUCTION_NO_DML_NO_DDL_CONFIRMATION"
+  ]
+}
