@@ -61,7 +61,7 @@ EXPECTED_WORKFLOW_REF = (
     f"{EXPECTED_REPOSITORY}/.github/workflows/"
     f"preview-commercial-external-owner.yml@{EXPECTED_REF}"
 )
-ALLOWED_EVENTS = {"schedule", "workflow_dispatch"}
+ALLOWED_EVENTS = {"schedule", "workflow_dispatch", "push"}
 
 _jwks_client = PyJWKClient(
     OIDC_JWKS_URL,
