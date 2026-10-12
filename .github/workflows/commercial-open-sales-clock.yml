@@ -3,6 +3,11 @@ name: Commercial Open Sales Clock
 on:
   schedule:
     - cron: "*/5 * * * *"
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - ".github/workflows/commercial-open-sales-clock.yml"
   workflow_dispatch:
 
 permissions:
