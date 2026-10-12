@@ -1,0 +1,62 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-CHAPUR-SYNCED-SOURCE-SCOPE-DISCOVERY-READONLY-SQL-R1-20261012",
+  "mode": "READ_ONLY_SQL",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Descubrir exclusivamente en EDARSAHUB SQL evidencia YA SINCRONIZADA o materializada para CHAPUR, sin abrir conexiones LIVE al origen. Identificar la versión de sistema asociada a las conexiones CHAPUR, tablas canónicas/staging/sync que puedan contener ServerID, SistemaVersionID, SucursalID o SucursalOrigenID, y cualquier relación persistida utilizable para reconstruir el scope multi-sucursal de SoftRestaurant Enterprise. No DML, no red remota, no secretos, no Producción.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS",
+    "chat": "Conexiones y Comunicaciones / Menu Servidores 2"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "chapur_system_version",
+          "sql": "SELECT sv.sistema_version_id,sv.tipo_sistema,sv.nombre_sistema,sv.version_sistema,sv.descripcion,sv.proveedor,sv.motor_base_datos,sv.version_base_datos,sv.es_version_default,sv.activo FROM dbo.Sistema_VersionesSistemas sv WHERE sv.sistema_version_id='0d8e323a-df7d-4efe-b6d2-e3974128e127'"
+        },
+        {
+          "name": "sync_scope_candidate_tables",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE COLUMN_NAME IN ('ServerID','ServidorID','SistemaVersionID','sistema_version_id','SucursalID','SucursalOrigenID','UnidadNegocioID','unidad_negocio_id','FuenteOrigen','fuente_origen','FuenteSistema','SistemaOrigen') ORDER BY TABLE_SCHEMA,TABLE_NAME,ORDINAL_POSITION"
+        },
+        {
+          "name": "sync_named_candidate_tables",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' AND (TABLE_NAME LIKE '%Sync%' OR TABLE_NAME LIKE '%Histor%' OR TABLE_NAME LIKE '%Stage%' OR TABLE_NAME LIKE '%Staging%' OR TABLE_NAME LIKE '%Snapshot%' OR TABLE_NAME LIKE '%Import%' OR TABLE_NAME LIKE '%Replica%' OR TABLE_NAME LIKE '%Sucursal%' OR TABLE_NAME LIKE '%Servidor%') ORDER BY TABLE_SCHEMA,TABLE_NAME"
+        },
+        {
+          "name": "chapur_registry_snapshot",
+          "sql": "SELECT CONVERT(nvarchar(100),id) AS connection_id,nombre,system_type,tipo_conexion,database_name,api_url,activo,EmpresaID,sistema_version_id FROM dbo.Servidores_Conexiones WHERE id IN ('8cbdcc89-6495-49c3-be9c-a965db82c77f','d8b2d1eb-2e1f-4e43-b7d9-822bf671e315') ORDER BY nombre"
+        }
+      ]
+    }
+  ],
+  "acceptance_criteria": [
+    "READ_ONLY_COMPLETE",
+    "CERTIFIED_READ_ONLY",
+    "production_touched=false",
+    "No DDL or DML",
+    "No remote connectivity attempted",
+    "No secrets exposed",
+    "Only synchronized/materialized EDARSAHUB evidence used"
+  ]
+}
