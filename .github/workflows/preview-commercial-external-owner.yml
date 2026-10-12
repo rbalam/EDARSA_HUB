@@ -1,10 +1,6 @@
-name: Preview Commercial External Owner
-# Sleep probe R3: trigger-only diagnostic; no business logic change.
+name: Commercial GitHub External Owner Canary
 
 on:
-  schedule:
-    - cron: "2-59/5 * * * *"
-    - cron: "4,19,34,49 * * * *"
   workflow_dispatch:
     inputs:
       target:
@@ -23,103 +19,222 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 concurrency:
-  group: preview-commercial-external-owner-${{ github.event.schedule || inputs.target || 'manual' }}
+  group: commercial-github-external-owner-canary-${{ github.event_name }}-${{ inputs.target || 'push' }}
   cancel-in-progress: false
 
 env:
-  OIDC_AUDIENCE: edarsahub-preview-commercial-scheduler
-  RUNTIME_PROFILE: ops/runtime/profiles/development.json
+  EDARSA_ENV: DEVELOPMENT
+  SCHEDULER_SYNC_COMERCIAL_ABIERTAS_V2_ENABLED: "true"
+  SCHEDULER_SYNC_COMERCIAL_V2_ENABLED: "true"
+  EDARSAHUB_SQL_HOST: "54.39.104.176"
+  EDARSAHUB_SQL_PORT: "1433"
+  EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+  EDARSAHUB_SQL_USER: "HRLectura"
+  EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+  SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
 
 jobs:
   open-sales:
-    if: github.event_name == 'push' || github.event_name == 'schedule' && github.event.schedule == '2-59/5 * * * *' || github.event_name == 'workflow_dispatch' && inputs.target == 'open_sales'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' && inputs.target == 'open_sales'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
-      - name: Resolve canonical Preview URL
-        id: runtime
-        run: |
-          set -euo pipefail
-          BASE_URL="$(python - <<'PY'
-          import json
-          from pathlib import Path
-          profile = json.loads(Path("ops/runtime/profiles/development.json").read_text())
-          print(str(profile["base_url"]).rstrip("/"))
-          PY
-          )"
-          test -n "$BASE_URL"
-          echo "base_url=$BASE_URL" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
 
-      - name: Mint GitHub OIDC token
-        id: oidc
-        env:
-          AUDIENCE: ${{ env.OIDC_AUDIENCE }}
+      - name: Install backend runtime dependencies
         run: |
           set -euo pipefail
-          RESPONSE="$(curl --silent --show-error --fail-with-body             --header "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN"             "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${AUDIENCE}")"
-          TOKEN="$(python -c 'import json,sys; print(json.load(sys.stdin)["value"])' <<<"$RESPONSE")"
-          test -n "$TOKEN"
-          echo "::add-mask::$TOKEN"
-          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-commercial-owner.txt
+          python -m pip install -r /tmp/requirements-commercial-owner.txt
 
-      - name: Canary Ventas del Dia
-        env:
-          BASE_URL: ${{ steps.runtime.outputs.base_url }}
-          OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+      - name: Validate external owner secrets
         run: |
           set -euo pipefail
-          URL="${BASE_URL%/}/api/internal/preview-scheduler-trigger/sync-comercial-abiertas-v2"
-          HTTP_CODE="$(curl --silent --show-error --output /tmp/response.json --write-out '%{http_code}'             --connect-timeout 30 --max-time 540             --request POST             --header "Authorization: Bearer $OIDC_TOKEN"             "$URL")"
-          cat /tmp/response.json
-          test "$HTTP_CODE" -ge 200
-          test "$HTTP_CODE" -lt 300
+          test -n "$EDARSAHUB_SQL_PASSWORD"
+          test -n "$SERVER_SECRET_KEY"
+
+      - name: Run canonical Ventas del Dia
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          set -euo pipefail
+          python tools/run_commercial_github_owner.py open_sales --require-executed
 
   closed-sales:
-    if: github.event_name == 'push' || github.event_name == 'schedule' && github.event.schedule == '4,19,34,49 * * * *' || github.event_name == 'workflow_dispatch' && inputs.target == 'closed_sales'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' && inputs.target == 'closed_sales'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
-      - name: Resolve canonical Preview URL
-        id: runtime
-        run: |
-          set -euo pipefail
-          BASE_URL="$(python - <<'PY'
-          import json
-          from pathlib import Path
-          profile = json.loads(Path("ops/runtime/profiles/development.json").read_text())
-          print(str(profile["base_url"]).rstrip("/"))
-          PY
-          )"
-          test -n "$BASE_URL"
-          echo "base_url=$BASE_URL" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
 
-      - name: Mint GitHub OIDC token
-        id: oidc
-        env:
-          AUDIENCE: ${{ env.OIDC_AUDIENCE }}
+      - name: Install backend runtime dependencies
         run: |
           set -euo pipefail
-          RESPONSE="$(curl --silent --show-error --fail-with-body             --header "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN"             "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${AUDIENCE}")"
-          TOKEN="$(python -c 'import json,sys; print(json.load(sys.stdin)["value"])' <<<"$RESPONSE")"
-          test -n "$TOKEN"
-          echo "::add-mask::$TOKEN"
-          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-commercial-owner.txt
+          python -m pip install -r /tmp/requirements-commercial-owner.txt
 
-      - name: Canary Ventas Cerradas
-        env:
-          BASE_URL: ${{ steps.runtime.outputs.base_url }}
-          OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+      - name: Validate external owner secrets
         run: |
           set -euo pipefail
-          URL="${BASE_URL%/}/api/internal/preview-scheduler-trigger/sync-comercial-v2"
-          HTTP_CODE="$(curl --silent --show-error --output /tmp/response.json --write-out '%{http_code}'             --connect-timeout 30 --max-time 840             --request POST             --header "Authorization: Bearer $OIDC_TOKEN"             "$URL")"
-          cat /tmp/response.json
-          test "$HTTP_CODE" -ge 200
-          test "$HTTP_CODE" -lt 300
+          test -n "$EDARSAHUB_SQL_PASSWORD"
+          test -n "$SERVER_SECRET_KEY"
+
+      - name: Run canonical Ventas Cerradas
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          set -euo pipefail
+          python tools/run_commercial_github_owner.py closed_sales
+
+# =============================================================================
+# LEGACY PREVIEW HTTP OWNER - NON-EXECUTABLE AUDIT CONTEXT
+# =============================================================================
+# Retained intentionally for repository artifact history and rollback analysis.
+# Every line below is commented. It MUST NOT be treated as active workflow
+# configuration. The active owner above runs inside GitHub Actions and does not
+# call Emergent Preview.
+#
+# name: Preview Commercial External Owner
+# # Sleep probe R3: trigger-only diagnostic; no business logic change.
+# 
+# on:
+#   schedule:
+#     - cron: "2-59/5 * * * *"
+#     - cron: "4,19,34,49 * * * *"
+#   workflow_dispatch:
+#     inputs:
+#       target:
+#         description: "Synchronizer to trigger"
+#         required: true
+#         default: "open_sales"
+#         type: choice
+#         options:
+#           - open_sales
+#           - closed_sales
+#   push:
+#     branches:
+#       - Edarsahub_Desarrollo
+#     paths:
+#       - ".github/workflows/preview-commercial-external-owner.yml"
+# 
+# permissions:
+#   contents: read
+#   id-token: write
+# 
+# concurrency:
+#   group: preview-commercial-external-owner-${{ github.event.schedule || inputs.target || 'manual' }}
+#   cancel-in-progress: false
+# 
+# env:
+#   OIDC_AUDIENCE: edarsahub-preview-commercial-scheduler
+#   RUNTIME_PROFILE: ops/runtime/profiles/development.json
+# 
+# jobs:
+#   open-sales:
+#     if: github.event_name == 'push' || github.event_name == 'schedule' && github.event.schedule == '2-59/5 * * * *' || github.event_name == 'workflow_dispatch' && inputs.target == 'open_sales'
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 10
+#     steps:
+#       - uses: actions/checkout@v4
+# 
+#       - name: Resolve canonical Preview URL
+#         id: runtime
+#         run: |
+#           set -euo pipefail
+#           BASE_URL="$(python - <<'PY'
+#           import json
+#           from pathlib import Path
+#           profile = json.loads(Path("ops/runtime/profiles/development.json").read_text())
+#           print(str(profile["base_url"]).rstrip("/"))
+#           PY
+#           )"
+#           test -n "$BASE_URL"
+#           echo "base_url=$BASE_URL" >> "$GITHUB_OUTPUT"
+# 
+#       - name: Mint GitHub OIDC token
+#         id: oidc
+#         env:
+#           AUDIENCE: ${{ env.OIDC_AUDIENCE }}
+#         run: |
+#           set -euo pipefail
+#           RESPONSE="$(curl --silent --show-error --fail-with-body             --header "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN"             "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${AUDIENCE}")"
+#           TOKEN="$(python -c 'import json,sys; print(json.load(sys.stdin)["value"])' <<<"$RESPONSE")"
+#           test -n "$TOKEN"
+#           echo "::add-mask::$TOKEN"
+#           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+# 
+#       - name: Canary Ventas del Dia
+#         env:
+#           BASE_URL: ${{ steps.runtime.outputs.base_url }}
+#           OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+#         run: |
+#           set -euo pipefail
+#           URL="${BASE_URL%/}/api/internal/preview-scheduler-trigger/sync-comercial-abiertas-v2"
+#           HTTP_CODE="$(curl --silent --show-error --output /tmp/response.json --write-out '%{http_code}'             --connect-timeout 30 --max-time 540             --request POST             --header "Authorization: Bearer $OIDC_TOKEN"             "$URL")"
+#           cat /tmp/response.json
+#           test "$HTTP_CODE" -ge 200
+#           test "$HTTP_CODE" -lt 300
+# 
+#   closed-sales:
+#     if: github.event_name == 'push' || github.event_name == 'schedule' && github.event.schedule == '4,19,34,49 * * * *' || github.event_name == 'workflow_dispatch' && inputs.target == 'closed_sales'
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 15
+#     steps:
+#       - uses: actions/checkout@v4
+# 
+#       - name: Resolve canonical Preview URL
+#         id: runtime
+#         run: |
+#           set -euo pipefail
+#           BASE_URL="$(python - <<'PY'
+#           import json
+#           from pathlib import Path
+#           profile = json.loads(Path("ops/runtime/profiles/development.json").read_text())
+#           print(str(profile["base_url"]).rstrip("/"))
+#           PY
+#           )"
+#           test -n "$BASE_URL"
+#           echo "base_url=$BASE_URL" >> "$GITHUB_OUTPUT"
+# 
+#       - name: Mint GitHub OIDC token
+#         id: oidc
+#         env:
+#           AUDIENCE: ${{ env.OIDC_AUDIENCE }}
+#         run: |
+#           set -euo pipefail
+#           RESPONSE="$(curl --silent --show-error --fail-with-body             --header "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN"             "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${AUDIENCE}")"
+#           TOKEN="$(python -c 'import json,sys; print(json.load(sys.stdin)["value"])' <<<"$RESPONSE")"
+#           test -n "$TOKEN"
+#           echo "::add-mask::$TOKEN"
+#           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+# 
+#       - name: Canary Ventas Cerradas
+#         env:
+#           BASE_URL: ${{ steps.runtime.outputs.base_url }}
+#           OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+#         run: |
+#           set -euo pipefail
+#           URL="${BASE_URL%/}/api/internal/preview-scheduler-trigger/sync-comercial-v2"
+#           HTTP_CODE="$(curl --silent --show-error --output /tmp/response.json --write-out '%{http_code}'             --connect-timeout 30 --max-time 840             --request POST             --header "Authorization: Bearer $OIDC_TOKEN"             "$URL")"
+#           cat /tmp/response.json
+#           test "$HTTP_CODE" -ge 200
+#           test "$HTTP_CODE" -lt 300
+# 
