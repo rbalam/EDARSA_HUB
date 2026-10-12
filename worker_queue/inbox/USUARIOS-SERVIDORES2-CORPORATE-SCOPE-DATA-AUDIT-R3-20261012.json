@@ -1,0 +1,65 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "USUARIOS-SERVIDORES2-CORPORATE-SCOPE-DATA-AUDIT-R3-20261012",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "20. Seguridad / Usuarios Produccion"
+  },
+  "objective": "Auditar en SQL real la cobertura del contrato corporativo Menu Servidores 2 y medir por que usuarios con servidores/sucursales asignados no obtienen empresas en login. Solo SELECT/WITH, sin cambios.",
+  "mode": "READ_ONLY_SQL",
+  "quality_gate": "AUDIT_REQUIRED",
+  "constraints": [
+    "NO_PRODUCTION",
+    "NO_DML",
+    "NO_DDL",
+    "NO_SECRET_OUTPUT",
+    "SQL_SERVER_CANONICAL",
+    "NO_MONGO_AS_SOURCE_OF_TRUTH",
+    "NO_INFER_COMPANY_FROM_SERVER_NAME",
+    "NO_HARDCODE_ASSIGNMENTS"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "scope_table_columns",
+          "sql": "SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Servidores_Conexiones','Unidades_Negocio','Usuario_ServidoresAsignacion','Usuario_SucursalesAsignacion','Usuario_EmpresasAsignacion') ORDER BY TABLE_NAME,ORDINAL_POSITION"
+        },
+        {
+          "name": "active_server_unit_company_coverage",
+          "sql": "SELECT CAST(s.id AS NVARCHAR(100)) AS ServidorID,s.nombre AS ServidorNombre,s.empresa_id AS ServerEmpresaID,COUNT(u.id) AS ActiveUnits,SUM(CASE WHEN u.empresa_id IS NULL THEN 1 ELSE 0 END) AS UnitsWithoutEmpresa,COUNT(DISTINCT u.empresa_id) AS DistinctUnitEmpresas FROM dbo.Servidores_Conexiones s LEFT JOIN dbo.Unidades_Negocio u ON u.server_id=s.id AND ISNULL(u.activo,0)=1 WHERE ISNULL(s.activo,1)=1 GROUP BY s.id,s.nombre,s.empresa_id ORDER BY s.nombre"
+        },
+        {
+          "name": "user_scope_resolution_summary",
+          "sql": "WITH ActiveUnits AS (SELECT u.id AS UnidadNegocioID,u.server_id AS ServidorID,NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(100),u.sucursal_origen_id))), '') AS SucursalOrigenID,u.empresa_id AS EmpresaID,COUNT_BIG(*) OVER(PARTITION BY u.server_id) AS ActiveUnitsOnServer FROM dbo.Unidades_Negocio u WHERE ISNULL(u.activo,0)=1), ExplicitScope AS (SELECT usa.UsuarioID,usa.ServidorID,CAST(NULL AS NVARCHAR(100)) AS SucursalCodigo,CAST('SERVER' AS VARCHAR(10)) AS ScopeType FROM dbo.Usuario_ServidoresAsignacion usa WHERE ISNULL(usa.Activo,1)=1 UNION ALL SELECT usa.UsuarioID,usa.ServidorID,NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(100),usa.SucursalCodigo))), '') AS SucursalCodigo,CAST('BRANCH' AS VARCHAR(10)) AS ScopeType FROM dbo.Usuario_SucursalesAsignacion usa WHERE ISNULL(usa.Activo,1)=1), ResolvedUnits AS (SELECT DISTINCT es.UsuarioID,au.UnidadNegocioID,au.EmpresaID FROM ActiveUnits au INNER JOIN ExplicitScope es ON au.ServidorID=es.ServidorID AND ((au.ActiveUnitsOnServer=1) OR (au.ActiveUnitsOnServer>1 AND es.ScopeType='BRANCH' AND au.SucursalOrigenID IS NOT NULL AND es.SucursalCodigo IS NOT NULL AND UPPER(LTRIM(RTRIM(au.SucursalOrigenID)))=UPPER(LTRIM(RTRIM(es.SucursalCodigo)))))) SELECT uc.UsuarioID,uc.Email,uc.NombreCompleto,COUNT(DISTINCT us.ServidorID) AS AssignedServers,COUNT(DISTINCT ue.EmpresaID) AS ExplicitEmpresas,COUNT(DISTINCT ru.UnidadNegocioID) AS ResolvedUnits,COUNT(DISTINCT ru.EmpresaID) AS DerivedEmpresas FROM dbo.Usuario_Catalogo uc LEFT JOIN dbo.Usuario_ServidoresAsignacion us ON us.UsuarioID=uc.UsuarioID AND ISNULL(us.Activo,1)=1 LEFT JOIN dbo.Usuario_EmpresasAsignacion ue ON ue.UsuarioID=uc.UsuarioID AND ISNULL(ue.Activo,1)=1 LEFT JOIN ResolvedUnits ru ON ru.UsuarioID=uc.UsuarioID WHERE ISNULL(uc.Activo,1)=1 GROUP BY uc.UsuarioID,uc.Email,uc.NombreCompleto HAVING COUNT(DISTINCT us.ServidorID)>0 ORDER BY DerivedEmpresas,ExplicitEmpresas,uc.NombreCompleto"
+        },
+        {
+          "name": "users_with_server_scope_but_no_company_scope",
+          "sql": "WITH ActiveUnits AS (SELECT u.id AS UnidadNegocioID,u.server_id AS ServidorID,NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(100),u.sucursal_origen_id))), '') AS SucursalOrigenID,u.empresa_id AS EmpresaID,COUNT_BIG(*) OVER(PARTITION BY u.server_id) AS ActiveUnitsOnServer FROM dbo.Unidades_Negocio u WHERE ISNULL(u.activo,0)=1), ExplicitScope AS (SELECT usa.UsuarioID,usa.ServidorID,CAST(NULL AS NVARCHAR(100)) AS SucursalCodigo,CAST('SERVER' AS VARCHAR(10)) AS ScopeType FROM dbo.Usuario_ServidoresAsignacion usa WHERE ISNULL(usa.Activo,1)=1 UNION ALL SELECT usa.UsuarioID,usa.ServidorID,NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(100),usa.SucursalCodigo))), '') AS SucursalCodigo,CAST('BRANCH' AS VARCHAR(10)) AS ScopeType FROM dbo.Usuario_SucursalesAsignacion usa WHERE ISNULL(usa.Activo,1)=1), Resolved AS (SELECT DISTINCT es.UsuarioID,au.EmpresaID FROM ActiveUnits au INNER JOIN ExplicitScope es ON au.ServidorID=es.ServidorID AND ((au.ActiveUnitsOnServer=1) OR (au.ActiveUnitsOnServer>1 AND es.ScopeType='BRANCH' AND au.SucursalOrigenID IS NOT NULL AND es.SucursalCodigo IS NOT NULL AND UPPER(LTRIM(RTRIM(au.SucursalOrigenID)))=UPPER(LTRIM(RTRIM(es.SucursalCodigo)))))) SELECT uc.UsuarioID,uc.Email,uc.NombreCompleto,COUNT(DISTINCT us.ServidorID) AS AssignedServers,COUNT(DISTINCT ue.EmpresaID) AS ExplicitEmpresas,COUNT(DISTINCT r.EmpresaID) AS DerivedEmpresas FROM dbo.Usuario_Catalogo uc INNER JOIN dbo.Usuario_ServidoresAsignacion us ON us.UsuarioID=uc.UsuarioID AND ISNULL(us.Activo,1)=1 LEFT JOIN dbo.Usuario_EmpresasAsignacion ue ON ue.UsuarioID=uc.UsuarioID AND ISNULL(ue.Activo,1)=1 LEFT JOIN Resolved r ON r.UsuarioID=uc.UsuarioID WHERE ISNULL(uc.Activo,1)=1 GROUP BY uc.UsuarioID,uc.Email,uc.NombreCompleto HAVING COUNT(DISTINCT ue.EmpresaID)=0 OR COUNT(DISTINCT r.EmpresaID)=0 ORDER BY uc.NombreCompleto"
+        },
+        {
+          "name": "unresolved_assigned_servers",
+          "sql": "WITH ActiveUnits AS (SELECT u.server_id AS ServidorID,COUNT(*) AS ActiveUnits,COUNT(DISTINCT u.empresa_id) AS Empresas,MAX(CASE WHEN u.empresa_id IS NULL THEN 1 ELSE 0 END) AS HasNullEmpresa FROM dbo.Unidades_Negocio u WHERE ISNULL(u.activo,0)=1 GROUP BY u.server_id) SELECT CAST(s.id AS NVARCHAR(100)) AS ServidorID,s.nombre AS ServidorNombre,s.empresa_id AS ServerEmpresaID,ISNULL(au.ActiveUnits,0) AS ActiveUnits,ISNULL(au.Empresas,0) AS EmpresasFromUnits,ISNULL(au.HasNullEmpresa,0) AS HasNullEmpresa,COUNT(DISTINCT usa.UsuarioID) AS AssignedUsers FROM dbo.Servidores_Conexiones s INNER JOIN dbo.Usuario_ServidoresAsignacion usa ON usa.ServidorID=s.id AND ISNULL(usa.Activo,1)=1 LEFT JOIN ActiveUnits au ON au.ServidorID=s.id WHERE ISNULL(s.activo,1)=1 GROUP BY s.id,s.nombre,s.empresa_id,au.ActiveUnits,au.Empresas,au.HasNullEmpresa HAVING ISNULL(au.ActiveUnits,0)=0 OR ISNULL(au.Empresas,0)=0 OR ISNULL(au.HasNullEmpresa,0)=1 ORDER BY s.nombre"
+        }
+      ]
+    }
+  ],
+  "deliverables": [
+    "ACTUAL_SQL_SCHEMA",
+    "SERVER_UNIT_COMPANY_COVERAGE",
+    "USER_SCOPE_RESOLUTION_SUMMARY",
+    "USERS_WITH_MISSING_COMPANY_CONTEXT",
+    "UNRESOLVED_SERVER_RELATIONS",
+    "R4_DECISION",
+    "NO_PRODUCTION_NO_DML_NO_DDL_CONFIRMATION"
+  ]
+}
