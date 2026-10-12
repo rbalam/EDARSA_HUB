@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-CIENFUEGOS-20261011-SR-DATE-AUDIT-R1-CARLOS-20261012",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Auditar exclusivamente la fuente SoftRestaurant de CIENFUEGOS para 2026-10-11 en READ_ONLY y comparar pertenencia temporal por cheques.fecha vs turnos.apertura. Determinar por qué Comercial_KPIs_Diarios_v2 tiene 0 mientras Comercial_Ventas_Dia_Abiertas_v2 reporta operación. No escribir, no ejecutar re-sync, no modificar sync_comercial_abiertas_v2 y no tocar Producción.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "CIENFUEGOS"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "cienfuegos_por_cheques_fecha_20261011",
+          "sql": "SELECT CONVERT(date,ch.fecha) AS fecha_cheque, COUNT(DISTINCT ch.folio) AS cheques, SUM(ISNULL(ch.total,0)) AS total, SUM(ISNULL(ch.propina,0)) AS propina, SUM(ISNULL(ch.nopersonas,0)) AS pax FROM cheques ch WHERE ch.fecha >= '2026-10-11T00:00:00' AND ch.fecha < '2026-10-12T00:00:00' AND ISNULL(ch.cancelado,0)=0 GROUP BY CONVERT(date,ch.fecha) ORDER BY fecha_cheque"
+        },
+        {
+          "name": "cienfuegos_por_turno_apertura_20261011",
+          "sql": "SELECT CONVERT(date,tr.apertura) AS fecha_apertura_turno, COUNT(DISTINCT ch.folio) AS cheques, SUM(ISNULL(ch.total,0)) AS total, SUM(ISNULL(ch.propina,0)) AS propina, SUM(ISNULL(ch.nopersonas,0)) AS pax FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE tr.apertura >= '2026-10-11T00:00:00' AND tr.apertura < '2026-10-12T00:00:00' AND ISNULL(ch.cancelado,0)=0 GROUP BY CONVERT(date,tr.apertura) ORDER BY fecha_apertura_turno"
+        },
+        {
+          "name": "cienfuegos_cruce_fecha_turno_20261010_12",
+          "sql": "SELECT CONVERT(date,ch.fecha) AS fecha_cheque, CONVERT(date,tr.apertura) AS fecha_apertura_turno, CASE WHEN ch.cierre IS NULL THEN 'ABIERTA' ELSE 'CERRADA' END AS estado, COUNT(DISTINCT ch.folio) AS cheques, SUM(ISNULL(ch.total,0)) AS total, SUM(ISNULL(ch.propina,0)) AS propina, SUM(ISNULL(ch.nopersonas,0)) AS pax FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE ch.fecha >= '2026-10-10T00:00:00' AND ch.fecha < '2026-10-13T00:00:00' AND ISNULL(ch.cancelado,0)=0 GROUP BY CONVERT(date,ch.fecha), CONVERT(date,tr.apertura), CASE WHEN ch.cierre IS NULL THEN 'ABIERTA' ELSE 'CERRADA' END ORDER BY fecha_cheque, fecha_apertura_turno, estado"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker - CIENFUEGOS 11 oct diagnostico"
+  },
+  "human_summary_language": "es"
+}
