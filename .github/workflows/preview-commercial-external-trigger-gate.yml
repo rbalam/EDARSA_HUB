@@ -8,6 +8,8 @@ on:
     paths:
       - "backend/modules/scheduler_trigger_preview/**"
       - "backend/server.py"
+      - "backend/modules/scheduler_runtime/policy.py"
+      - "backend/tests/test_scheduler_runtime_policy.py"
       - "backend/tests/test_preview_scheduler_http_trigger.py"
       - "backend/tools/run_commercial_github_owner.py"
       - ".github/workflows/preview-commercial-external-trigger-gate.yml"
@@ -18,6 +20,8 @@ on:
     paths:
       - "backend/modules/scheduler_trigger_preview/**"
       - "backend/server.py"
+      - "backend/modules/scheduler_runtime/policy.py"
+      - "backend/tests/test_scheduler_runtime_policy.py"
       - "backend/tests/test_preview_scheduler_http_trigger.py"
       - "backend/tools/run_commercial_github_owner.py"
       - ".github/workflows/preview-commercial-external-trigger-gate.yml"
@@ -98,6 +102,8 @@ jobs:
               ".github/workflows/preview-commercial-external-trigger-gate.yml",
               ".github/workflows/preview-commercial-external-owner.yml",
               "backend/server.py",
+              "backend/modules/scheduler_runtime/policy.py",
+              "backend/tests/test_scheduler_runtime_policy.py",
               "backend/tests/test_preview_scheduler_http_trigger.py",
               "backend/tools/run_commercial_github_owner.py",
           }

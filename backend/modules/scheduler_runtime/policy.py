@@ -13,6 +13,9 @@ from typing import Dict
 
 ROLE_ENV = "EDARSA_RUNTIME_ROLE"
 ROLE_REQUIRED_ENV = "EDARSA_RUNTIME_ROLE_REQUIRED"
+PREVIEW_COMMERCIAL_INTERNAL_OWNER_ENV = (
+    "EDARSA_PREVIEW_COMMERCIAL_INTERNAL_OWNER_ENABLED"
+)
 
 LEGACY_EMBEDDED = "LEGACY_EMBEDDED"
 PREVIEW_WEB = "PREVIEW_WEB"
@@ -85,10 +88,32 @@ def runtime_policy_snapshot() -> Dict[str, object]:
         "role_required": required,
         "role_explicit": explicitly_configured,
         "scheduler_enabled": scheduler_enabled(),
+        "preview_commercial_internal_owner_enabled": (
+            should_start_preview_commercial_internal_owner()
+        ),
         "legacy_fallback_active": (
             role == LEGACY_EMBEDDED and not explicitly_configured
         ),
     }
+
+
+def should_start_preview_commercial_internal_owner() -> bool:
+    """Whether PREVIEW_WEB may own the two commercial wake loops.
+
+    External ownership is the default after cutover. The internal Preview
+    owner remains available only as an explicit rollback switch.
+    """
+    try:
+        return (
+            runtime_environment() == "PREVIEW"
+            and runtime_role() == PREVIEW_WEB
+            and _truthy(
+                PREVIEW_COMMERCIAL_INTERNAL_OWNER_ENV,
+                "false",
+            )
+        )
+    except RuntimeError:
+        return False
 
 
 def should_start_embedded_scheduler() -> bool:
