@@ -1,0 +1,74 @@
+name: Preview Commercial External Owner
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+    - cron: "2,17,32,47 * * * *"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Synchronizer to trigger"
+        required: true
+        default: "open_sales"
+        type: choice
+        options:
+          - open_sales
+          - closed_sales
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-commercial-external-owner-${{ github.event.schedule || inputs.target || 'manual' }}
+  cancel-in-progress: false
+
+jobs:
+  open-sales:
+    if: github.event_name == 'schedule' && github.event.schedule == '*/5 * * * *' || github.event_name == 'workflow_dispatch' && inputs.target == 'open_sales'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Validate protected configuration
+        env:
+          BASE_URL: ${{ secrets.EDARSA_PREVIEW_BASE_URL }}
+          TRIGGER_KEY: ${{ secrets.EDARSA_PREVIEW_SCHEDULER_TRIGGER_KEY }}
+        run: |
+          test -n "$BASE_URL"
+          test -n "$TRIGGER_KEY"
+
+      - name: Wake and run Ventas del Dia
+        env:
+          BASE_URL: ${{ secrets.EDARSA_PREVIEW_BASE_URL }}
+          TRIGGER_KEY: ${{ secrets.EDARSA_PREVIEW_SCHEDULER_TRIGGER_KEY }}
+        run: |
+          set -euo pipefail
+          URL="${BASE_URL%/}/api/internal/preview-scheduler-trigger/sync-comercial-abiertas-v2"
+          HTTP_CODE="$(curl --silent --show-error --output /tmp/response.json --write-out '%{http_code}'             --connect-timeout 30 --max-time 540             --request POST             --header "Authorization: Bearer $TRIGGER_KEY"             "$URL")"
+          cat /tmp/response.json
+          test "$HTTP_CODE" -ge 200
+          test "$HTTP_CODE" -lt 300
+
+  closed-sales:
+    if: github.event_name == 'schedule' && github.event.schedule == '2,17,32,47 * * * *' || github.event_name == 'workflow_dispatch' && inputs.target == 'closed_sales'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Validate protected configuration
+        env:
+          BASE_URL: ${{ secrets.EDARSA_PREVIEW_BASE_URL }}
+          TRIGGER_KEY: ${{ secrets.EDARSA_PREVIEW_SCHEDULER_TRIGGER_KEY }}
+        run: |
+          test -n "$BASE_URL"
+          test -n "$TRIGGER_KEY"
+
+      - name: Wake and run Ventas Cerradas
+        env:
+          BASE_URL: ${{ secrets.EDARSA_PREVIEW_BASE_URL }}
+          TRIGGER_KEY: ${{ secrets.EDARSA_PREVIEW_SCHEDULER_TRIGGER_KEY }}
+        run: |
+          set -euo pipefail
+          URL="${BASE_URL%/}/api/internal/preview-scheduler-trigger/sync-comercial-v2"
+          HTTP_CODE="$(curl --silent --show-error --output /tmp/response.json --write-out '%{http_code}'             --connect-timeout 30 --max-time 840             --request POST             --header "Authorization: Bearer $TRIGGER_KEY"             "$URL")"
+          cat /tmp/response.json
+          test "$HTTP_CODE" -ge 200
+          test "$HTTP_CODE" -lt 300
