@@ -16810,6 +16810,22 @@ except Exception as e:
     logger.warning(f"Error registrando SQL Compat Bridge router: {e}")
 
 
+# =============================================================================
+# PREVIEW - TRIGGER HTTP EXTERNO PARA SINCRONIZADORES COMERCIALES
+# =============================================================================
+try:
+    from modules.scheduler_trigger_preview.routes import (
+        router as preview_scheduler_trigger_router,
+    )
+    app.include_router(preview_scheduler_trigger_router)
+    logger.info("Preview commercial scheduler HTTP trigger router registrado")
+except Exception as e:
+    logger.warning(
+        "Error registrando Preview commercial scheduler HTTP trigger router: %s",
+        e,
+    )
+
+
 # UNIVERSAL WORKER: el router se registra una sola vez arriba.
 # El arranque del backend actua como frontera local de auto-recuperacion del Worker.
 
