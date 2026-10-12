@@ -9,6 +9,7 @@ on:
       - "backend/server.py"
       - "backend/tests/test_preview_scheduler_http_trigger.py"
       - ".github/workflows/preview-commercial-external-trigger-gate.yml"
+      - ".github/workflows/preview-commercial-external-owner.yml"
   pull_request:
     branches:
       - Edarsahub_Desarrollo
@@ -17,6 +18,7 @@ on:
       - "backend/server.py"
       - "backend/tests/test_preview_scheduler_http_trigger.py"
       - ".github/workflows/preview-commercial-external-trigger-gate.yml"
+      - ".github/workflows/preview-commercial-external-owner.yml"
   workflow_dispatch:
 
 permissions:
@@ -71,6 +73,7 @@ jobs:
 
           allowed_exact = {
               ".github/workflows/preview-commercial-external-trigger-gate.yml",
+              ".github/workflows/preview-commercial-external-owner.yml",
               "backend/server.py",
               "backend/tests/test_preview_scheduler_http_trigger.py",
           }
