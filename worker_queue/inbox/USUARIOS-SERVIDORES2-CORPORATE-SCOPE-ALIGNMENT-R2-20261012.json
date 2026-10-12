@@ -1,0 +1,111 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "USUARIOS-SERVIDORES2-CORPORATE-SCOPE-ALIGNMENT-R2-20261012",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "20. Seguridad / Usuarios Produccion"
+  },
+  "objective": "Alinear el contrato de alcance de usuarios/login con la arquitectura vigente de Menu Servidores 2 / Conexiones y Comunicaciones, usando relaciones corporativas canonicas Empresa -> Unidad de Negocio -> Sucursal -> Servidor y evitando derivaciones por nombre, alias o fallback legacy.",
+  "mode": "READ_ONLY",
+  "quality_gate": "AUDIT_REQUIRED",
+  "constraints": [
+    "NO_PRODUCTION",
+    "NO_DML",
+    "NO_DDL",
+    "NO_MONGO_AS_SOURCE_OF_TRUTH",
+    "SQL_SERVER_CANONICAL",
+    "NO_HARDCODE_NAMES_IDS_OR_UUIDS",
+    "NO_INFER_COMPANY_FROM_SERVER_NAME",
+    "NO_DUPLICATE_CATALOGS",
+    "NO_PARALLEL_SERVER_REGISTRY",
+    "UNRESOLVED_RELATION_EQUALS_HOMOLOGACION_PENDIENTE"
+  ],
+  "scheduling": {
+    "project_id": "EDARSAHUB",
+    "bounded_context": "AUTH_SCOPE_X_SERVIDORES2",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "AUTH_RBAC",
+      "USER_ACCESS_CONTEXT",
+      "SERVIDORES_CONEXIONES",
+      "CORPORATE_IDENTITY"
+    ]
+  },
+  "scope": {
+    "repo": "rbalam/EDARSA_HUB",
+    "branch": "Edarsahub_Desarrollo",
+    "paths_to_audit": [
+      "frontend/src/pages/Usuarios.js",
+      "frontend/src/pages/Servidores.js",
+      "backend/core/user_access_context.py",
+      "backend/core/access_context/sql_context.py",
+      "backend/core/auth/user_repository_sql.py",
+      "backend/core/corporate_identity_resolver.py",
+      "backend/core/server_registry.py",
+      "backend/core/connection_resolver.py",
+      "backend/modules/auth/routes.py",
+      "backend/modules/admin_sql/routes.py",
+      "docs/SERVIDORES/SERVIDORES_INTEGRACIONES_GATE5A_CONSUMER_AUDIT.md"
+    ]
+  },
+  "instructions": "EDARSAHUB BOS - ALIGNMENT USUARIOS x MENU SERVIDORES 2\n\nContexto aprobado:\n- Servidores_Conexiones es la fuente SQL canonica de conexiones.\n- server_registry / resolvers existentes se reutilizan; no crear otro registry/resolver.\n- Servidores.js debe migrar/consolidarse hacia una fachada administrativa unica.\n- El alcance corporativo no puede resolverse por nombre de servidor, alias, UUID hardcodeado o fallback improvisado.\n- Regla de Menu Servidores 2: Servidores_Conexiones -> relacion oficial -> Empresa/Unidad canonica -> EmpresaID. Si no existe relacion suficiente, clasificar HOMOLOGACION_PENDIENTE; no inventar/asignar.\n- La alta/edicion de servidor debe quedar vinculada al catalogo maestro corporativo (Empresa / Unidad de Negocio / Sucursal segun corresponda) antes de que RBAC derive alcance de usuario.\n\nProblema a resolver:\nUsuarios muestran servidores/sucursales/almacenes seleccionados en el modal de Usuarios, pero despues del login no visualizan empresas/unidades permitidas.\n\nAuditar extremo a extremo:\n1. Menu Servidores 2: como se persisten EmpresaID, UnidadNegocioID, SucursalID y relaciones oficiales por ConexionID/ServidorID.\n2. Usuarios: PUT /users/{id}/permissions y tablas Usuario_ServidoresAsignacion / Usuario_SucursalesAsignacion / Usuario_AlmacenesAsignacion.\n3. Contexto login: build_user_access_context_sql / resolve_user_access_context.\n4. Determinar si el scope de empresas/unidades debe derivarse de las relaciones corporativas del servidor seleccionado o persistirse adicionalmente en Usuario_EmpresasAsignacion / tabla canonica equivalente.\n5. Evitar Sistema_EmpresasMongoMap como nueva fuente de autorizacion.\n6. Validar SUPERADMIN por regla canonica separada; usuarios no globales deben recibir solo alcance derivado de relaciones validas.\n7. Servidores sin relacion corporativa suficiente deben quedar HOMOLOGACION_PENDIENTE y no otorgar empresa por inferencia.\n\nEntregar:\n- contrato canonico unico Empresa -> Unidad -> Sucursal -> Servidor -> Usuario;\n- tablas y columnas rectoras actuales;\n- drift exacto entre Usuarios y Servidores 2;\n- endpoints/funciones que requieren cambio;\n- lista de servidores/conexiones que no pueden producir scope por falta de homologacion;\n- propuesta R3 quirurgica, separando cambios de repo de cualquier migracion de datos;\n- pruebas E2E requeridas login -> /auth/me/context -> empresas/unidades/servidores;\n- confirmacion NO DML, NO DDL, NO Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/Usuarios.js",
+          "frontend/src/pages/Servidores.js",
+          "backend/core/user_access_context.py",
+          "backend/core/access_context/sql_context.py",
+          "backend/core/auth/user_repository_sql.py",
+          "backend/core/corporate_identity_resolver.py",
+          "backend/core/server_registry.py",
+          "backend/core/connection_resolver.py",
+          "backend/modules/auth/routes.py",
+          "backend/modules/admin_sql/routes.py",
+          "docs/SERVIDORES/SERVIDORES_INTEGRACIONES_GATE5A_CONSUMER_AUDIT.md"
+        ],
+        "search_terms": [
+          "Servidores_Conexiones",
+          "EmpresaID",
+          "UnidadNegocioID",
+          "SucursalID",
+          "Usuario_ServidoresAsignacion",
+          "Usuario_SucursalesAsignacion",
+          "Usuario_AlmacenesAsignacion",
+          "Usuario_EmpresasAsignacion",
+          "allowed_servers",
+          "empresas_permitidas",
+          "unidades_negocio",
+          "Sistema_EmpresasMongoMap",
+          "HOMOLOGACION_PENDIENTE",
+          "server_registry",
+          "connection_resolver"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [],
+        "max_results": 2000
+      }
+    }
+  ],
+  "deliverables": [
+    "CANONICAL_CORPORATE_SCOPE_CONTRACT",
+    "SERVIDORES2_ALIGNMENT_MATRIX",
+    "USERS_LOGIN_DRIFT_ROOT_CAUSE",
+    "UNRESOLVED_SERVER_RELATIONS",
+    "R3_SURGICAL_CHANGE_PLAN",
+    "E2E_TEST_PLAN",
+    "NO_PRODUCTION_NO_DML_NO_DDL_CONFIRMATION"
+  ]
+}
