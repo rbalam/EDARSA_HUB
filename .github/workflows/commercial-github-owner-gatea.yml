@@ -1,0 +1,59 @@
+name: Commercial GitHub Owner Gate A
+
+on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - "backend/tools/run_commercial_github_owner.py"
+      - ".github/workflows/commercial-github-owner-gatea.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: commercial-github-owner-gatea
+  cancel-in-progress: false
+
+jobs:
+  canary-open-sales:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EDARSA_ENV: DEVELOPMENT
+      SCHEDULER_SYNC_COMERCIAL_ABIERTAS_V2_ENABLED: "true"
+      SCHEDULER_SYNC_COMERCIAL_V2_ENABLED: "true"
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "HRLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+      SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install minimal runtime dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install             APScheduler==3.11.2             pymssql==2.3.13             cryptography==46.0.5             requests==2.32.5             pytz==2026.2             pydantic==2.12.5             python-dotenv==1.2.1             email-validator==2.3.0             passlib==1.7.4             bcrypt==4.1.3             python-jose==3.5.0
+
+      - name: Validate required secrets
+        run: |
+          set -euo pipefail
+          test -n "$EDARSAHUB_SQL_PASSWORD"
+          test -n "$SERVER_SECRET_KEY"
+
+      - name: Run canonical open-sales owner canary
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          set -euo pipefail
+          python tools/run_commercial_github_owner.py open_sales --require-executed
