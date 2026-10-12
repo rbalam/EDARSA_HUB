@@ -303,3 +303,27 @@ def test_trigger_module_does_not_import_business_jobs_directly():
     assert "core.scheduler.jobs.sync_comercial_abiertas_v2_job" not in source
     assert "core.scheduler.jobs.sync_comercial_v2_job" not in source
     assert "EDARSA_PREVIEW_SCHEDULER_TRIGGER_KEY" not in source
+
+
+def test_decode_accepts_push_event(monkeypatch):
+    claims = _valid_claims()
+    claims["event_name"] = "push"
+
+    class FakeKey:
+        key = "fake"
+
+    monkeypatch.setattr(
+        routes._jwks_client,
+        "get_signing_key_from_jwt",
+        lambda token: FakeKey(),
+    )
+    monkeypatch.setattr(
+        routes.jwt,
+        "decode",
+        lambda *args, **kwargs: claims,
+    )
+
+    decoded = routes._decode_github_oidc("token")
+
+    assert decoded["event_name"] == "push"
+    assert "push" in routes.ALLOWED_EVENTS
