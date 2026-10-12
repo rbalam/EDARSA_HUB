@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "USUARIOS-SERVIDORES-CORPORATE-MAPPING-SCHEMA-AUDIT-R3C-20261012",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "20. Seguridad / Usuarios Produccion"
+  },
+  "objective": "Descubrir el esquema SQL real de las tablas corporativas que pueden vincular Empresa, Unidad de Negocio, Sucursal y Servidor, para completar la alineacion entre Usuarios y el menu Servidores sin asumir columnas inexistentes.",
+  "mode": "READ_ONLY_SQL",
+  "quality_gate": "AUDIT_REQUIRED",
+  "constraints": [
+    "NO_PRODUCTION",
+    "NO_DML",
+    "NO_DDL",
+    "NO_SECRET_OUTPUT",
+    "SQL_SERVER_CANONICAL",
+    "NO_MONGO_AS_SOURCE_OF_TRUTH",
+    "NO_INFER_RELATION_BY_NAME"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "corporate_mapping_schema_probe",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Sistema_Empresas','Sistema_UnidadesNegocioPerfilDigital','Sistema_Sucursales','Sistema_SucursalServidorMapeo','Unidades_Negocio','Servidores_Conexiones') ORDER BY TABLE_NAME,ORDINAL_POSITION"
+        }
+      ]
+    }
+  ],
+  "deliverables": [
+    "CORPORATE_MAPPING_SCHEMA",
+    "CANONICAL_RELATION_CANDIDATES",
+    "R3D_DATA_AUDIT_PLAN",
+    "NO_PRODUCTION_NO_DML_NO_DDL_CONFIRMATION"
+  ]
+}
