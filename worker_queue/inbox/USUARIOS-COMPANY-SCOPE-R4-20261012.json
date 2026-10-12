@@ -1,0 +1,100 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "USUARIOS-COMPANY-SCOPE-R4-20261012",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "20. Seguridad / Usuarios Produccion"
+  },
+  "objective": "Corregir en Desarrollo el contexto de empresas de login para usuarios con alcance servidor/sucursal canonicamente resoluble, sin crear asignaciones manuales por usuario y sin tocar el menu Servidores.",
+  "mode": "DEVELOPMENT_REPO_CHANGE",
+  "quality_gate": "TESTS_REQUIRED",
+  "constraints": [
+    "NO_PRODUCTION",
+    "NO_DML",
+    "NO_DDL",
+    "NO_MONGO_AS_SOURCE_OF_TRUTH",
+    "NO_HARDCODE_USER_IDS_EMAILS_COMPANY_IDS_SERVER_IDS",
+    "NO_INFER_COMPANY_FROM_NAMES",
+    "NO_WRITE_USUARIO_EMPRESAS_ASIGNACION",
+    "DO_NOT_TOUCH_SERVIDORES_MENU",
+    "DO_NOT_TOUCH_SERVER_REGISTRY",
+    "PRESERVE_EXPLICIT_COMPANY_ASSIGNMENTS",
+    "SHARED_SERVER_REQUIRES_EXACT_BRANCH"
+  ],
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/rbac_sql/service.py",
+      "old": "    @staticmethod\n    def get_empresas(usuario_id):\n        return fetch_all_dict(\"\"\"\n            SELECT EmpresaID\n            FROM dbo.Usuario_EmpresasAsignacion\n            WHERE UsuarioID = %s\n              AND ISNULL(Activo, 1) = 1\n        \"\"\", [usuario_id])",
+      "new": "    @staticmethod\n    def get_empresas(usuario_id):\n        \"\"\"\n        Devuelve el alcance efectivo de empresas.\n\n        Conserva las asignaciones explicitas y agrega empresas derivadas\n        exclusivamente desde el mismo scope canonico servidor/sucursal que\n        resuelve unidades. No infiere por nombres, aliases ni MongoDB.\n\n        Politica:\n        - servidor con una sola unidad activa: la asignacion del servidor o\n          de su sucursal puede proyectar la empresa canonica del servidor;\n        - servidor compartido: exige sucursal exacta y toma la EmpresaID de\n          Sistema_Sucursales;\n        - relaciones incompletas no conceden empresa.\n        \"\"\"\n        return fetch_all_dict(\"\"\"\n            WITH UnitBase AS (\n                SELECT\n                    TRY_CONVERT(\n                        UNIQUEIDENTIFIER,\n                        u.server_id\n                    ) AS ServidorID,\n                    NULLIF(\n                        LTRIM(RTRIM(\n                            TRY_CONVERT(\n                                NVARCHAR(100),\n                                u.sucursal_origen_id\n                            )\n                        )),\n                        ''\n                    ) AS SucursalOrigenID,\n                    COUNT_BIG(*) OVER (\n                        PARTITION BY u.server_id\n                    ) AS ActiveUnitsOnServer\n                FROM dbo.Unidades_Negocio AS u\n                WHERE ISNULL(u.activo, 0) = 1\n            ),\n            ActiveUnits AS (\n                SELECT\n                    ub.ServidorID,\n                    ub.SucursalOrigenID,\n                    ub.ActiveUnitsOnServer,\n                    s.EmpresaID AS ServerEmpresaID,\n                    ss.EmpresaID AS BranchEmpresaID\n                FROM UnitBase AS ub\n                INNER JOIN dbo.Servidores_Conexiones AS s\n                    ON s.id = ub.ServidorID\n                   AND ISNULL(s.activo, 1) = 1\n                LEFT JOIN dbo.Sistema_SucursalServidorMapeo AS sm\n                    ON sm.ServidorID = s.id\n                   AND ISNULL(sm.Activo, 1) = 1\n                   AND ub.SucursalOrigenID IS NOT NULL\n                   AND UPPER(\n                        LTRIM(RTRIM(\n                            ISNULL(sm.SucursalOrigenID, '')\n                        ))\n                   ) = UPPER(\n                        LTRIM(RTRIM(\n                            ub.SucursalOrigenID\n                        ))\n                   )\n                LEFT JOIN dbo.Sistema_Sucursales AS ss\n                    ON ss.SucursalID = sm.SucursalID\n                   AND ISNULL(ss.Activo, 1) = 1\n            ),\n            ExplicitScope AS (\n                SELECT\n                    usa.UsuarioID,\n                    usa.ServidorID,\n                    CAST(NULL AS NVARCHAR(100)) AS SucursalCodigo,\n                    CAST('SERVER' AS VARCHAR(10)) AS ScopeType\n                FROM dbo.Usuario_ServidoresAsignacion AS usa\n                WHERE usa.UsuarioID = %s\n                  AND ISNULL(usa.Activo, 1) = 1\n\n                UNION ALL\n\n                SELECT\n                    usa.UsuarioID,\n                    usa.ServidorID,\n                    NULLIF(\n                        LTRIM(RTRIM(\n                            TRY_CONVERT(\n                                NVARCHAR(100),\n                                usa.SucursalCodigo\n                            )\n                        )),\n                        ''\n                    ) AS SucursalCodigo,\n                    CAST('BRANCH' AS VARCHAR(10)) AS ScopeType\n                FROM dbo.Usuario_SucursalesAsignacion AS usa\n                WHERE usa.UsuarioID = %s\n                  AND ISNULL(usa.Activo, 1) = 1\n            ),\n            DerivedCompanies AS (\n                SELECT DISTINCT\n                    CASE\n                        WHEN au.ActiveUnitsOnServer > 1\n                            THEN au.BranchEmpresaID\n                        ELSE COALESCE(\n                            au.BranchEmpresaID,\n                            au.ServerEmpresaID\n                        )\n                    END AS EmpresaID\n                FROM ActiveUnits AS au\n                INNER JOIN ExplicitScope AS es\n                    ON es.ServidorID = au.ServidorID\n                   AND (\n                        au.ActiveUnitsOnServer = 1\n                        OR (\n                            au.ActiveUnitsOnServer > 1\n                            AND es.ScopeType = 'BRANCH'\n                            AND au.SucursalOrigenID IS NOT NULL\n                            AND es.SucursalCodigo IS NOT NULL\n                            AND UPPER(\n                                LTRIM(RTRIM(\n                                    au.SucursalOrigenID\n                                ))\n                            ) = UPPER(\n                                LTRIM(RTRIM(\n                                    es.SucursalCodigo\n                                ))\n                            )\n                        )\n                   )\n            ),\n            ExplicitCompanies AS (\n                SELECT EmpresaID\n                FROM dbo.Usuario_EmpresasAsignacion\n                WHERE UsuarioID = %s\n                  AND ISNULL(Activo, 1) = 1\n            )\n            SELECT DISTINCT EmpresaID\n            FROM (\n                SELECT EmpresaID\n                FROM ExplicitCompanies\n\n                UNION ALL\n\n                SELECT EmpresaID\n                FROM DerivedCompanies\n            ) AS EffectiveCompanies\n            WHERE EmpresaID IS NOT NULL\n            ORDER BY EmpresaID\n        \"\"\", [usuario_id, usuario_id, usuario_id])",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/rbac_sql/service.py",
+      "old": "        return bool(fetch_one_dict(\"\"\"\n            SELECT TOP 1 1 AS permitido\n            FROM dbo.Usuario_EmpresasAsignacion\n            WHERE UsuarioID = %s\n              AND EmpresaID = %s\n              AND ISNULL(Activo, 1) = 1\n        \"\"\", [usuario_id, empresa_id]))",
+      "new": "        for row in RBACSQLService.get_empresas(usuario_id) or []:\n            resolved = str(\n                row.get(\"EmpresaID\") or \"\"\n            ).strip()\n\n            if resolved and resolved == empresa_id_text:\n                return True\n\n        return False",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_rbac_sql_company_scope.py",
+      "content": "from core.rbac_sql import service as service_module\nfrom core.rbac_sql.service import RBACSQLService\n\n\ndef test_get_empresas_uses_canonical_server_branch_scope(monkeypatch):\n    captured = {}\n\n    def fake_fetch_all(sql, params):\n        captured[\"sql\"] = sql\n        captured[\"params\"] = params\n        return [{\"EmpresaID\": 2}, {\"EmpresaID\": 5}]\n\n    monkeypatch.setattr(\n        service_module,\n        \"fetch_all_dict\",\n        fake_fetch_all,\n    )\n\n    result = RBACSQLService.get_empresas(9)\n\n    assert result == [\n        {\"EmpresaID\": 2},\n        {\"EmpresaID\": 5},\n    ]\n    assert captured[\"params\"] == [9, 9, 9]\n\n    sql = captured[\"sql\"]\n    assert \"Usuario_EmpresasAsignacion\" in sql\n    assert \"Usuario_ServidoresAsignacion\" in sql\n    assert \"Usuario_SucursalesAsignacion\" in sql\n    assert \"Unidades_Negocio\" in sql\n    assert \"Servidores_Conexiones\" in sql\n    assert \"Sistema_SucursalServidorMapeo\" in sql\n    assert \"Sistema_Sucursales\" in sql\n    assert \"ActiveUnitsOnServer > 1\" in sql\n    assert \"SucursalCodigo\" in sql\n    assert \"EmpresaID IS NOT NULL\" in sql\n\n\ndef test_get_empresas_does_not_use_legacy_mongo_mapping(monkeypatch):\n    captured = {}\n\n    def fake_fetch_all(sql, params):\n        captured[\"sql\"] = sql\n        return []\n\n    monkeypatch.setattr(\n        service_module,\n        \"fetch_all_dict\",\n        fake_fetch_all,\n    )\n\n    assert RBACSQLService.get_empresas(28) == []\n\n    assert \"Sistema_EmpresasMongoMap\" not in captured[\"sql\"]\n    assert \"MongoUUID\" not in captured[\"sql\"]\n\n\ndef test_can_access_empresa_uses_effective_company_scope(monkeypatch):\n    monkeypatch.setattr(\n        RBACSQLService,\n        \"_has_superadmin_role\",\n        staticmethod(lambda usuario_id: False),\n    )\n    monkeypatch.setattr(\n        RBACSQLService,\n        \"get_empresas\",\n        staticmethod(\n            lambda usuario_id: [\n                {\"EmpresaID\": 2},\n                {\"EmpresaID\": 5},\n            ]\n        ),\n    )\n\n    assert RBACSQLService.can_access_empresa(9, 2) is True\n    assert RBACSQLService.can_access_empresa(9, 5) is True\n    assert RBACSQLService.can_access_empresa(9, 4) is False\n\n\ndef test_can_access_empresa_keeps_superadmin_rule(monkeypatch):\n    monkeypatch.setattr(\n        RBACSQLService,\n        \"_has_superadmin_role\",\n        staticmethod(lambda usuario_id: True),\n    )\n\n    assert RBACSQLService.can_access_empresa(3, 5) is True\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/rbac_sql/service.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_rbac_sql_company_scope.py",
+        "backend/tests/test_rbac_sql_scope.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/rbac_sql/service.py",
+          "backend/tests/test_rbac_sql_company_scope.py"
+        ],
+        "search_terms": [
+          "Usuario_EmpresasAsignacion",
+          "Usuario_ServidoresAsignacion",
+          "Usuario_SucursalesAsignacion",
+          "Unidades_Negocio",
+          "Servidores_Conexiones",
+          "Sistema_SucursalServidorMapeo",
+          "Sistema_Sucursales",
+          "Sistema_EmpresasMongoMap",
+          "can_access_empresa"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "deliverables": [
+    "EXACT_DIFF",
+    "TEST_RESULTS",
+    "FILES_CHANGED",
+    "AUTH_SCOPE_BEHAVIOR",
+    "SERVIDORES_MENU_NO_CONFLICT_CONFIRMATION",
+    "NO_PRODUCTION_NO_DML_NO_DDL_CONFIRMATION"
+  ]
+}
