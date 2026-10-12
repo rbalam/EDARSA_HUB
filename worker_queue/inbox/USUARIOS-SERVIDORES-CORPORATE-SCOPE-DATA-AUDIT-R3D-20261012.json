@@ -1,0 +1,65 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "USUARIOS-SERVIDORES-CORPORATE-SCOPE-DATA-AUDIT-R3D-20261012",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "20. Seguridad / Usuarios Produccion"
+  },
+  "objective": "Medir con SQL real la relacion Empresa-Sucursal-Servidor-Unidad y detectar usuarios cuyo alcance de servidor/sucursal es valido pero cuyo contexto de empresa queda vacio en login. Solo lectura; usar el esquema certificado por R3B/R3C.",
+  "mode": "READ_ONLY_SQL",
+  "quality_gate": "AUDIT_REQUIRED",
+  "constraints": [
+    "NO_PRODUCTION",
+    "NO_DML",
+    "NO_DDL",
+    "NO_SECRET_OUTPUT",
+    "SQL_SERVER_CANONICAL",
+    "NO_MONGO_AS_SOURCE_OF_TRUTH",
+    "NO_INFER_COMPANY_FROM_NAMES",
+    "NO_WRITE_USUARIO_EMPRESAS_ASIGNACION"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "server_company_snapshot",
+          "sql": "SELECT CAST(id AS NVARCHAR(100)) AS ServidorID,nombre AS ServidorNombre,system_type,tipo_conexion,EmpresaID,empresa_id,activo,visible_en_operaciones,visible_en_listado FROM dbo.Servidores_Conexiones WHERE ISNULL(activo,1)=1 ORDER BY nombre"
+        },
+        {
+          "name": "branch_server_company_map",
+          "sql": "SELECT m.MapeoID,CAST(m.ServidorID AS NVARCHAR(100)) AS ServidorID,m.SucursalOrigenID,m.SucursalID,s.CodigoSucursal,s.NombreSucursal,s.EmpresaID,e.CodigoEmpresa,e.NombreEmpresa,ISNULL(m.Activo,1) AS MapeoActivo,ISNULL(s.Activo,1) AS SucursalActiva,ISNULL(e.Activo,1) AS EmpresaActiva FROM dbo.Sistema_SucursalServidorMapeo m INNER JOIN dbo.Sistema_Sucursales s ON s.SucursalID=m.SucursalID LEFT JOIN dbo.Sistema_Empresas e ON e.EmpresaID=s.EmpresaID WHERE ISNULL(m.Activo,1)=1 ORDER BY m.ServidorID,m.SucursalOrigenID"
+        },
+        {
+          "name": "unit_company_resolution",
+          "sql": "SELECT CAST(u.id AS NVARCHAR(100)) AS UnidadNegocioID,u.codigo AS UnidadCodigo,u.nombre AS UnidadNombre,u.server_id AS UnidadServerID,u.sucursal_origen_id,s.nombre AS ServidorNombre,s.EmpresaID AS ServerEmpresaID,m.SucursalID AS MappedSucursalID,ss.CodigoSucursal AS MappedSucursalCodigo,ss.EmpresaID AS BranchEmpresaID,CASE WHEN m.SucursalID IS NOT NULL THEN ss.EmpresaID ELSE s.EmpresaID END AS ResolvedEmpresaID,CASE WHEN TRY_CONVERT(uniqueidentifier,u.server_id) IS NULL THEN 'INVALID_SERVER_ID' WHEN s.id IS NULL THEN 'SERVER_NOT_FOUND' WHEN u.sucursal_origen_id IS NOT NULL AND m.SucursalID IS NULL THEN 'BRANCH_MAPPING_MISSING' WHEN m.SucursalID IS NOT NULL AND ss.EmpresaID IS NULL THEN 'BRANCH_WITHOUT_COMPANY' WHEN m.SucursalID IS NULL AND s.EmpresaID IS NULL THEN 'COMPANY_UNRESOLVED' WHEN m.SucursalID IS NOT NULL AND s.EmpresaID IS NOT NULL AND ss.EmpresaID<>s.EmpresaID THEN 'SERVER_BRANCH_COMPANY_CONFLICT' ELSE 'RESOLVED' END AS ResolutionStatus FROM dbo.Unidades_Negocio u LEFT JOIN dbo.Servidores_Conexiones s ON s.id=TRY_CONVERT(uniqueidentifier,u.server_id) LEFT JOIN dbo.Sistema_SucursalServidorMapeo m ON m.ServidorID=s.id AND ISNULL(m.Activo,1)=1 AND u.sucursal_origen_id IS NOT NULL AND UPPER(LTRIM(RTRIM(ISNULL(m.SucursalOrigenID,''))))=UPPER(LTRIM(RTRIM(ISNULL(u.sucursal_origen_id,'')))) LEFT JOIN dbo.Sistema_Sucursales ss ON ss.SucursalID=m.SucursalID AND ISNULL(ss.Activo,1)=1 WHERE ISNULL(u.activo,0)=1 ORDER BY s.nombre,u.codigo"
+        },
+        {
+          "name": "user_company_scope_gap",
+          "sql": "WITH ActiveUnits AS (SELECT u.id AS UnidadNegocioID,TRY_CONVERT(uniqueidentifier,u.server_id) AS ServidorID,NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(100),u.sucursal_origen_id))), '') AS SucursalOrigenID,s.EmpresaID AS ServerEmpresaID,sm.SucursalID,ss.EmpresaID AS BranchEmpresaID,COUNT_BIG(*) OVER(PARTITION BY TRY_CONVERT(uniqueidentifier,u.server_id)) AS ActiveUnitsOnServer FROM dbo.Unidades_Negocio u LEFT JOIN dbo.Servidores_Conexiones s ON s.id=TRY_CONVERT(uniqueidentifier,u.server_id) LEFT JOIN dbo.Sistema_SucursalServidorMapeo sm ON sm.ServidorID=s.id AND ISNULL(sm.Activo,1)=1 AND u.sucursal_origen_id IS NOT NULL AND UPPER(LTRIM(RTRIM(ISNULL(sm.SucursalOrigenID,''))))=UPPER(LTRIM(RTRIM(ISNULL(u.sucursal_origen_id,'')))) LEFT JOIN dbo.Sistema_Sucursales ss ON ss.SucursalID=sm.SucursalID AND ISNULL(ss.Activo,1)=1 WHERE ISNULL(u.activo,0)=1), ExplicitScope AS (SELECT usa.UsuarioID,usa.ServidorID,CAST(NULL AS NVARCHAR(100)) AS SucursalCodigo,CAST('SERVER' AS VARCHAR(10)) AS ScopeType FROM dbo.Usuario_ServidoresAsignacion usa WHERE ISNULL(usa.Activo,1)=1 UNION ALL SELECT usa.UsuarioID,usa.ServidorID,NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(100),usa.SucursalCodigo))), '') AS SucursalCodigo,CAST('BRANCH' AS VARCHAR(10)) AS ScopeType FROM dbo.Usuario_SucursalesAsignacion usa WHERE ISNULL(usa.Activo,1)=1), ResolvedScope AS (SELECT DISTINCT es.UsuarioID,au.UnidadNegocioID,CASE WHEN au.ActiveUnitsOnServer>1 THEN au.BranchEmpresaID ELSE COALESCE(au.BranchEmpresaID,au.ServerEmpresaID) END AS DerivedEmpresaID FROM ExplicitScope es INNER JOIN ActiveUnits au ON au.ServidorID=es.ServidorID AND ((au.ActiveUnitsOnServer=1) OR (au.ActiveUnitsOnServer>1 AND es.ScopeType='BRANCH' AND au.SucursalOrigenID IS NOT NULL AND es.SucursalCodigo IS NOT NULL AND UPPER(LTRIM(RTRIM(au.SucursalOrigenID)))=UPPER(LTRIM(RTRIM(es.SucursalCodigo)))))) SELECT uc.UsuarioID,uc.Email,uc.NombreCompleto,COUNT(DISTINCT us.ServidorID) AS AssignedServers,COUNT(DISTINCT ubr.SucursalCodigo) AS AssignedBranches,COUNT(DISTINCT ue.EmpresaID) AS ExplicitEmpresas,COUNT(DISTINCT rs.UnidadNegocioID) AS ResolvedUnits,COUNT(DISTINCT rs.DerivedEmpresaID) AS DerivedEmpresas,CASE WHEN COUNT(DISTINCT us.ServidorID)>0 AND COUNT(DISTINCT ue.EmpresaID)=0 AND COUNT(DISTINCT rs.DerivedEmpresaID)>0 THEN 'DERIVABLE_BUT_LOGIN_COMPANY_EMPTY' WHEN COUNT(DISTINCT us.ServidorID)>0 AND COUNT(DISTINCT rs.DerivedEmpresaID)=0 THEN 'SCOPE_NOT_DERIVABLE' WHEN COUNT(DISTINCT ue.EmpresaID)>0 THEN 'EXPLICIT_COMPANY_SCOPE' ELSE 'NO_SCOPE' END AS ScopeStatus FROM dbo.Usuario_Catalogo uc LEFT JOIN dbo.Usuario_ServidoresAsignacion us ON us.UsuarioID=uc.UsuarioID AND ISNULL(us.Activo,1)=1 LEFT JOIN dbo.Usuario_SucursalesAsignacion ubr ON ubr.UsuarioID=uc.UsuarioID AND ISNULL(ubr.Activo,1)=1 LEFT JOIN dbo.Usuario_EmpresasAsignacion ue ON ue.UsuarioID=uc.UsuarioID AND ISNULL(ue.Activo,1)=1 LEFT JOIN ResolvedScope rs ON rs.UsuarioID=uc.UsuarioID WHERE ISNULL(uc.Activo,1)=1 GROUP BY uc.UsuarioID,uc.Email,uc.NombreCompleto HAVING COUNT(DISTINCT us.ServidorID)>0 OR COUNT(DISTINCT ubr.SucursalCodigo)>0 OR COUNT(DISTINCT ue.EmpresaID)>0 ORDER BY ScopeStatus,uc.NombreCompleto"
+        },
+        {
+          "name": "branch_assignment_alignment",
+          "sql": "SELECT usa.UsuarioID,CAST(usa.ServidorID AS NVARCHAR(100)) AS ServidorID,usa.SucursalCodigo,CASE WHEN EXISTS(SELECT 1 FROM dbo.Unidades_Negocio u WHERE ISNULL(u.activo,0)=1 AND TRY_CONVERT(uniqueidentifier,u.server_id)=usa.ServidorID AND UPPER(LTRIM(RTRIM(ISNULL(u.sucursal_origen_id,''))))=UPPER(LTRIM(RTRIM(ISNULL(usa.SucursalCodigo,''))))) THEN 1 ELSE 0 END AS MatchesActiveUnit,CASE WHEN EXISTS(SELECT 1 FROM dbo.Sistema_SucursalServidorMapeo m WHERE ISNULL(m.Activo,1)=1 AND m.ServidorID=usa.ServidorID AND UPPER(LTRIM(RTRIM(ISNULL(m.SucursalOrigenID,''))))=UPPER(LTRIM(RTRIM(ISNULL(usa.SucursalCodigo,''))))) THEN 1 ELSE 0 END AS MatchesCanonicalBranchMap FROM dbo.Usuario_SucursalesAsignacion usa WHERE ISNULL(usa.Activo,1)=1 ORDER BY usa.UsuarioID,usa.ServidorID,usa.SucursalCodigo"
+        }
+      ]
+    }
+  ],
+  "deliverables": [
+    "SERVER_COMPANY_COVERAGE",
+    "BRANCH_SERVER_COMPANY_MAP",
+    "UNIT_COMPANY_RESOLUTION",
+    "USERS_WITH_DERIVABLE_BUT_EMPTY_COMPANY_CONTEXT",
+    "UNRESOLVED_SCOPE_CASES",
+    "R4_CHANGE_DECISION",
+    "NO_PRODUCTION_NO_DML_NO_DDL_CONFIRMATION"
+  ]
+}
