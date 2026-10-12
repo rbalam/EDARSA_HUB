@@ -30,12 +30,150 @@ class RBACSQLService:
 
     @staticmethod
     def get_empresas(usuario_id):
+        """
+        Devuelve el alcance efectivo de empresas.
+
+        Conserva las asignaciones explicitas y agrega empresas derivadas
+        exclusivamente desde el mismo scope canonico servidor/sucursal que
+        resuelve unidades. No infiere por nombres, aliases ni MongoDB.
+
+        Politica:
+        - servidor con una sola unidad activa: la asignacion del servidor o
+          de su sucursal puede proyectar la empresa canonica del servidor;
+        - servidor compartido: exige sucursal exacta y toma la EmpresaID de
+          Sistema_Sucursales;
+        - relaciones incompletas no conceden empresa.
+        """
         return fetch_all_dict("""
-            SELECT EmpresaID
-            FROM dbo.Usuario_EmpresasAsignacion
-            WHERE UsuarioID = %s
-              AND ISNULL(Activo, 1) = 1
-        """, [usuario_id])
+            WITH UnitBase AS (
+                SELECT
+                    TRY_CONVERT(
+                        UNIQUEIDENTIFIER,
+                        u.server_id
+                    ) AS ServidorID,
+                    NULLIF(
+                        LTRIM(RTRIM(
+                            TRY_CONVERT(
+                                NVARCHAR(100),
+                                u.sucursal_origen_id
+                            )
+                        )),
+                        ''
+                    ) AS SucursalOrigenID,
+                    COUNT_BIG(*) OVER (
+                        PARTITION BY u.server_id
+                    ) AS ActiveUnitsOnServer
+                FROM dbo.Unidades_Negocio AS u
+                WHERE ISNULL(u.activo, 0) = 1
+            ),
+            ActiveUnits AS (
+                SELECT
+                    ub.ServidorID,
+                    ub.SucursalOrigenID,
+                    ub.ActiveUnitsOnServer,
+                    s.EmpresaID AS ServerEmpresaID,
+                    ss.EmpresaID AS BranchEmpresaID
+                FROM UnitBase AS ub
+                INNER JOIN dbo.Servidores_Conexiones AS s
+                    ON s.id = ub.ServidorID
+                   AND ISNULL(s.activo, 1) = 1
+                LEFT JOIN dbo.Sistema_SucursalServidorMapeo AS sm
+                    ON sm.ServidorID = s.id
+                   AND ISNULL(sm.Activo, 1) = 1
+                   AND ub.SucursalOrigenID IS NOT NULL
+                   AND UPPER(
+                        LTRIM(RTRIM(
+                            ISNULL(sm.SucursalOrigenID, '')
+                        ))
+                   ) = UPPER(
+                        LTRIM(RTRIM(
+                            ub.SucursalOrigenID
+                        ))
+                   )
+                LEFT JOIN dbo.Sistema_Sucursales AS ss
+                    ON ss.SucursalID = sm.SucursalID
+                   AND ISNULL(ss.Activo, 1) = 1
+            ),
+            ExplicitScope AS (
+                SELECT
+                    usa.UsuarioID,
+                    usa.ServidorID,
+                    CAST(NULL AS NVARCHAR(100)) AS SucursalCodigo,
+                    CAST('SERVER' AS VARCHAR(10)) AS ScopeType
+                FROM dbo.Usuario_ServidoresAsignacion AS usa
+                WHERE usa.UsuarioID = %s
+                  AND ISNULL(usa.Activo, 1) = 1
+
+                UNION ALL
+
+                SELECT
+                    usa.UsuarioID,
+                    usa.ServidorID,
+                    NULLIF(
+                        LTRIM(RTRIM(
+                            TRY_CONVERT(
+                                NVARCHAR(100),
+                                usa.SucursalCodigo
+                            )
+                        )),
+                        ''
+                    ) AS SucursalCodigo,
+                    CAST('BRANCH' AS VARCHAR(10)) AS ScopeType
+                FROM dbo.Usuario_SucursalesAsignacion AS usa
+                WHERE usa.UsuarioID = %s
+                  AND ISNULL(usa.Activo, 1) = 1
+            ),
+            DerivedCompanies AS (
+                SELECT DISTINCT
+                    CASE
+                        WHEN au.ActiveUnitsOnServer > 1
+                            THEN au.BranchEmpresaID
+                        ELSE COALESCE(
+                            au.BranchEmpresaID,
+                            au.ServerEmpresaID
+                        )
+                    END AS EmpresaID
+                FROM ActiveUnits AS au
+                INNER JOIN ExplicitScope AS es
+                    ON es.ServidorID = au.ServidorID
+                   AND (
+                        au.ActiveUnitsOnServer = 1
+                        OR (
+                            au.ActiveUnitsOnServer > 1
+                            AND es.ScopeType = 'BRANCH'
+                            AND au.SucursalOrigenID IS NOT NULL
+                            AND es.SucursalCodigo IS NOT NULL
+                            AND UPPER(
+                                LTRIM(RTRIM(
+                                    au.SucursalOrigenID
+                                ))
+                            ) = UPPER(
+                                LTRIM(RTRIM(
+                                    es.SucursalCodigo
+                                ))
+                            )
+                        )
+                   )
+            ),
+            ExplicitCompanies AS (
+                SELECT EmpresaID
+                FROM dbo.Usuario_EmpresasAsignacion
+                WHERE UsuarioID = %s
+                  AND ISNULL(Activo, 1) = 1
+            )
+            SELECT DISTINCT EmpresaID
+            FROM (
+                SELECT EmpresaID
+                FROM ExplicitCompanies
+
+                UNION ALL
+
+                SELECT EmpresaID
+                FROM DerivedCompanies
+            ) AS EffectiveCompanies
+            WHERE EmpresaID IS NOT NULL
+            ORDER BY EmpresaID
+        """, [usuario_id, usuario_id, usuario_id])
 
     @staticmethod
     def get_sucursales(usuario_id):
@@ -220,13 +358,15 @@ class RBACSQLService:
         if RBACSQLService._has_superadmin_role(usuario_id):
             return True
 
-        return bool(fetch_one_dict("""
-            SELECT TOP 1 1 AS permitido
-            FROM dbo.Usuario_EmpresasAsignacion
-            WHERE UsuarioID = %s
-              AND EmpresaID = %s
-              AND ISNULL(Activo, 1) = 1
-        """, [usuario_id, empresa_id]))
+        for row in RBACSQLService.get_empresas(usuario_id) or []:
+            resolved = str(
+                row.get("EmpresaID") or ""
+            ).strip()
+
+            if resolved and resolved == empresa_id_text:
+                return True
+
+        return False
 
     @staticmethod
     def can_access_sucursal(usuario_id, servidor_id, sucursal_codigo):
