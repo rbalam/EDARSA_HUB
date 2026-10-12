@@ -5,7 +5,9 @@ Objetivo:
   del ciclo de vida visual de Emergent Preview;
 - reutilizar SchedulerManager.run_job_now(...) sin duplicar logica de negocio;
 - reutilizar los mismos owner locks de los wakes certificados para que el
-  canario sea seguro mientras PREVIEW_WEB siga abierto.
+  canario sea seguro mientras PREVIEW_WEB siga abierto;
+- autenticar exclusivamente GitHub Actions mediante OIDC, sin secreto
+  compartido persistente.
 
 Este modulo NO importa los jobs de negocio protegidos.
 """
@@ -13,12 +15,13 @@ Este modulo NO importa los jobs de negocio protegidos.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-import hmac
 import logging
 import os
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Header, HTTPException
+import jwt
+from jwt import PyJWKClient
 
 from modules.scheduler_runtime.policy import (
     PREVIEW_WEB,
@@ -47,8 +50,24 @@ router = APIRouter(
     tags=["Internal Preview Scheduler Trigger"],
 )
 
-TOKEN_ENV = "EDARSA_PREVIEW_SCHEDULER_TRIGGER_KEY"
 ENABLED_ENV = "EDARSA_PREVIEW_SCHEDULER_TRIGGER_ENABLED"
+
+OIDC_ISSUER = "https://token.actions.githubusercontent.com"
+OIDC_JWKS_URL = f"{OIDC_ISSUER}/.well-known/jwks"
+OIDC_AUDIENCE = "edarsahub-preview-commercial-scheduler"
+EXPECTED_REPOSITORY = "rbalam/EDARSA_HUB"
+EXPECTED_REF = "refs/heads/Edarsahub_Desarrollo"
+EXPECTED_WORKFLOW_REF = (
+    f"{EXPECTED_REPOSITORY}/.github/workflows/"
+    f"preview-commercial-external-owner.yml@{EXPECTED_REF}"
+)
+ALLOWED_EVENTS = {"schedule", "workflow_dispatch"}
+
+_jwks_client = PyJWKClient(
+    OIDC_JWKS_URL,
+    cache_keys=True,
+    lifespan=3600,
+)
 
 
 def _truthy_env(name: str, default: str = "false") -> bool:
@@ -60,22 +79,88 @@ def _truthy_env(name: str, default: str = "false") -> bool:
     }
 
 
-def _extract_token(
-    authorization: Optional[str],
-    x_edarsa_scheduler_key: Optional[str],
-) -> str:
+def _extract_bearer_token(authorization: Optional[str]) -> str:
     header = str(authorization or "").strip()
-    if header:
-        scheme, separator, token = header.partition(" ")
-        if separator and scheme.lower() == "bearer" and token.strip():
-            return token.strip()
+    if not header:
+        return ""
 
-    return str(x_edarsa_scheduler_key or "").strip()
+    scheme, separator, token = header.partition(" ")
+    if not separator or scheme.lower() != "bearer":
+        return ""
+
+    return token.strip()
+
+
+def _decode_github_oidc(token: str) -> Dict[str, Any]:
+    try:
+        signing_key = _jwks_client.get_signing_key_from_jwt(token)
+        claims = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["RS256"],
+            audience=OIDC_AUDIENCE,
+            issuer=OIDC_ISSUER,
+            options={
+                "require": [
+                    "exp",
+                    "iat",
+                    "iss",
+                    "aud",
+                    "sub",
+                    "repository",
+                    "ref",
+                    "workflow_ref",
+                    "event_name",
+                ]
+            },
+        )
+    except Exception as exc:
+        logger.warning(
+            "Preview scheduler GitHub OIDC verification failed: %s",
+            type(exc).__name__,
+        )
+        raise HTTPException(
+            status_code=401,
+            detail="PREVIEW_SCHEDULER_TRIGGER_INVALID_OIDC",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+
+    if claims.get("repository") != EXPECTED_REPOSITORY:
+        raise HTTPException(
+            status_code=403,
+            detail="PREVIEW_SCHEDULER_TRIGGER_WRONG_REPOSITORY",
+        )
+
+    if claims.get("ref") != EXPECTED_REF:
+        raise HTTPException(
+            status_code=403,
+            detail="PREVIEW_SCHEDULER_TRIGGER_WRONG_REF",
+        )
+
+    if claims.get("workflow_ref") != EXPECTED_WORKFLOW_REF:
+        raise HTTPException(
+            status_code=403,
+            detail="PREVIEW_SCHEDULER_TRIGGER_WRONG_WORKFLOW",
+        )
+
+    if claims.get("event_name") not in ALLOWED_EVENTS:
+        raise HTTPException(
+            status_code=403,
+            detail="PREVIEW_SCHEDULER_TRIGGER_WRONG_EVENT",
+        )
+
+    expected_subject_prefix = f"repo:{EXPECTED_REPOSITORY}:"
+    if not str(claims.get("sub") or "").startswith(expected_subject_prefix):
+        raise HTTPException(
+            status_code=403,
+            detail="PREVIEW_SCHEDULER_TRIGGER_WRONG_SUBJECT",
+        )
+
+    return claims
 
 
 def _authorize_trigger(
     authorization: Optional[str],
-    x_edarsa_scheduler_key: Optional[str],
 ) -> Dict[str, Any]:
     if runtime_environment() != "PREVIEW":
         raise HTTPException(
@@ -97,32 +182,30 @@ def _authorize_trigger(
             detail="PREVIEW_SCHEDULER_TRIGGER_PREVIEW_WEB_ONLY",
         )
 
-    if not _truthy_env(ENABLED_ENV):
+    # OIDC estricto es el control primario. Este flag queda solo como kill switch.
+    if not _truthy_env(ENABLED_ENV, "true"):
         raise HTTPException(
             status_code=503,
             detail="PREVIEW_SCHEDULER_TRIGGER_DISABLED",
         )
 
-    expected = str(os.environ.get(TOKEN_ENV) or "").strip()
-    if not expected:
-        raise HTTPException(
-            status_code=503,
-            detail="PREVIEW_SCHEDULER_TRIGGER_NOT_CONFIGURED",
-        )
-
-    provided = _extract_token(
-        authorization,
-        x_edarsa_scheduler_key,
-    )
-
-    if not provided or not hmac.compare_digest(provided, expected):
+    token = _extract_bearer_token(authorization)
+    if not token:
         raise HTTPException(
             status_code=401,
-            detail="PREVIEW_SCHEDULER_TRIGGER_UNAUTHORIZED",
+            detail="PREVIEW_SCHEDULER_TRIGGER_OIDC_REQUIRED",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    return runtime_policy_snapshot()
+    claims = _decode_github_oidc(token)
+
+    policy = runtime_policy_snapshot()
+    policy["oidc_repository"] = claims.get("repository")
+    policy["oidc_ref"] = claims.get("ref")
+    policy["oidc_workflow_ref"] = claims.get("workflow_ref")
+    policy["oidc_event_name"] = claims.get("event_name")
+    policy["oidc_run_id"] = claims.get("run_id")
+    return policy
 
 
 def _closed_sales_administratively_paused() -> bool:
@@ -187,6 +270,7 @@ async def _run_canonical_job(
             "owner_lock_id": owner_lock_id,
             "environment": policy.get("environment"),
             "runtime_role": policy.get("role"),
+            "auth": "github_oidc",
         }
 
     try:
@@ -201,6 +285,7 @@ async def _run_canonical_job(
                 "owner_lock_id": owner_lock_id,
                 "environment": policy.get("environment"),
                 "runtime_role": policy.get("role"),
+                "auth": "github_oidc",
             }
 
         from core.mongo_stub import get_stub_database
@@ -214,10 +299,11 @@ async def _run_canonical_job(
 
         logger.warning(
             "Preview external scheduler trigger completed "
-            "job=%s status=%s runtime_role=%s",
+            "job=%s status=%s runtime_role=%s oidc_run_id=%s",
             job_id,
             status,
             policy.get("role"),
+            policy.get("oidc_run_id"),
         )
 
         return {
@@ -228,6 +314,7 @@ async def _run_canonical_job(
             "triggered_at_utc": datetime.now(timezone.utc).isoformat(),
             "environment": policy.get("environment"),
             "runtime_role": policy.get("role"),
+            "auth": "github_oidc",
         }
     finally:
         try:
@@ -244,15 +331,8 @@ async def _run_canonical_job(
 @router.get("/health")
 async def preview_scheduler_trigger_health(
     authorization: Optional[str] = Header(default=None),
-    x_edarsa_scheduler_key: Optional[str] = Header(
-        default=None,
-        alias="X-EDARSA-Scheduler-Key",
-    ),
 ):
-    policy = _authorize_trigger(
-        authorization,
-        x_edarsa_scheduler_key,
-    )
+    policy = _authorize_trigger(authorization)
 
     return {
         "status": "ready",
@@ -260,6 +340,9 @@ async def preview_scheduler_trigger_health(
         "environment": policy.get("environment"),
         "runtime_role": policy.get("role"),
         "trigger_enabled": True,
+        "auth": "github_oidc",
+        "oidc_repository": policy.get("oidc_repository"),
+        "oidc_ref": policy.get("oidc_ref"),
         "jobs": [
             {
                 "job_id": OPEN_JOB_ID,
@@ -276,15 +359,8 @@ async def preview_scheduler_trigger_health(
 @router.post("/sync-comercial-abiertas-v2")
 async def trigger_sync_comercial_abiertas_v2(
     authorization: Optional[str] = Header(default=None),
-    x_edarsa_scheduler_key: Optional[str] = Header(
-        default=None,
-        alias="X-EDARSA-Scheduler-Key",
-    ),
 ):
-    policy = _authorize_trigger(
-        authorization,
-        x_edarsa_scheduler_key,
-    )
+    policy = _authorize_trigger(authorization)
 
     return await _run_canonical_job(
         job_id=OPEN_JOB_ID,
@@ -298,15 +374,8 @@ async def trigger_sync_comercial_abiertas_v2(
 @router.post("/sync-comercial-v2")
 async def trigger_sync_comercial_v2(
     authorization: Optional[str] = Header(default=None),
-    x_edarsa_scheduler_key: Optional[str] = Header(
-        default=None,
-        alias="X-EDARSA-Scheduler-Key",
-    ),
 ):
-    policy = _authorize_trigger(
-        authorization,
-        x_edarsa_scheduler_key,
-    )
+    policy = _authorize_trigger(authorization)
 
     return await _run_canonical_job(
         job_id=CLOSED_JOB_ID,
