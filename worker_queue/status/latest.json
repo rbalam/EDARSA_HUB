@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "30c71486f6f65f123934febe36c7a5c4a92f5b8f",
-  "generated_at_utc": "2026-10-12T19:31:35Z",
+  "generated_at_utc": "2026-10-12T19:32:50Z",
   "history": {
     "done_total_local": 1382,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3355,
+      "age_seconds": 3430,
       "job_id": "SERVIDORES-CHAPUR-SOFTRESTAURANT-ENTERPRISE-SCOPE-AUDIT-READONLY-SQL-R1-20261012",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2358,
+      "age_seconds": 2433,
       "job_id": "SERVIDORES-CHAPUR-SYNCED-SOURCE-SCOPE-DISCOVERY-READONLY-SQL-R1-20261012",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2801,
+      "age_seconds": 2875,
       "job_id": "USUARIOS-COMPANY-SCOPE-POSTCHECK-R5-20261012",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3484,
+      "age_seconds": 3558,
       "job_id": "USUARIOS-COMPANY-SCOPE-R4-20261012",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,8 +54,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-12T19:31:30Z",
-    "last_receive_utc": "2026-10-12T19:31:35Z",
+    "last_cycle_utc": "2026-10-12T19:32:43Z",
+    "last_receive_utc": "2026-10-12T19:32:48Z",
     "last_terminal_utc": "2026-10-12T18:52:17Z",
     "pid": "547",
     "runtime_fingerprint": {
