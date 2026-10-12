@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "92969853cca9b65b40e561093358959e03a2e124",
-  "generated_at_utc": "2026-10-12T17:21:17Z",
+  "generated_at_utc": "2026-10-12T17:22:41Z",
   "history": {
     "done_total_local": 1372,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3149,
+      "age_seconds": 3232,
       "job_id": "USUARIOS-SERVIDORES2-CORPORATE-SCOPE-DATA-AUDIT-R3-20261012",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1355,
+      "age_seconds": 1439,
       "job_id": "edarsahub-cienfuegos-20261011-sr-date-audit-r1-carlos-20261012",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2729,
+      "age_seconds": 2813,
       "job_id": "edarsahub-comercial-ayer-diag-r1-carlos-20261012",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2611,
+      "age_seconds": 2695,
       "job_id": "edarsahub-comercial-ayer-edarsa-audit-r2-carlos-20261012",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,8 +54,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-12T17:21:11Z",
-    "last_receive_utc": "2026-10-12T17:21:06Z",
+    "last_cycle_utc": "2026-10-12T17:22:30Z",
+    "last_receive_utc": "2026-10-12T17:22:39Z",
     "last_terminal_utc": "2026-10-12T16:58:42Z",
     "pid": "386121",
     "runtime_fingerprint": {
