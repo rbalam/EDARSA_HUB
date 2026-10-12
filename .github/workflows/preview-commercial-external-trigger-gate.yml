@@ -3,6 +3,7 @@ name: Preview Commercial External Trigger Gate
 on:
   push:
     branches:
+      - Edarsahub_Desarrollo
       - fix/preview-commercial-external-trigger-20261012
     paths:
       - "backend/modules/scheduler_trigger_preview/**"
@@ -65,8 +66,25 @@ jobs:
           python -m pytest -q --tb=short             backend/tests/test_preview_scheduler_http_trigger.py             backend/tests/test_preview_sales_wake.py             backend/tests/test_preview_closed_sales_wake.py             backend/tests/test_preview_scoped_scheduler.py             backend/tests/test_scheduler_runtime_policy.py
 
       - name: Assert isolated change surface
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
         run: |
-          git diff --name-only 6efee8520f6d09efe9d62609a8591f7d17d63540...HEAD > /tmp/preview-trigger-files.txt
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" = "pull_request" ] && [ -n "${PR_BASE_SHA:-}" ]; then
+            BASE_SHA="$PR_BASE_SHA"
+          elif [ "$EVENT_NAME" = "push" ] \
+            && [ -n "${PUSH_BEFORE_SHA:-}" ] \
+            && [ "$PUSH_BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
+            BASE_SHA="$PUSH_BEFORE_SHA"
+          else
+            BASE_SHA="$(git rev-parse HEAD^)"
+          fi
+
+          echo "CHANGE_SURFACE_BASE_SHA=$BASE_SHA"
+          git diff --name-only "$BASE_SHA"...HEAD > /tmp/preview-trigger-files.txt
           cat /tmp/preview-trigger-files.txt
           python - <<'PY'
           from pathlib import Path
