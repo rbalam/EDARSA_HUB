@@ -1,0 +1,32 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-CIENFUEGOS-OPEN-TURN-EDARSA-R1-20261012",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "READ_ONLY: revisar configuracion de turnos de CIENFUEGOS y ultimo snapshot de Ventas del Dia en EDARSAHUB. No escribir, no resincronizar, no tocar Produccion.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "turnos_cienfuegos",
+          "sql": "SELECT unidad_negocio_id, turno_codigo, turno_nombre, CAST(hora_inicio AS varchar(8)) AS hora_inicio, CAST(hora_fin AS varchar(8)) AS hora_fin, cruza_medianoche, aplica_ventas_dia, es_turno_principal, orden, activo FROM dbo.Sistema_TurnosOperativosUnidad WHERE unidad_negocio_id='CIENFUEGOS' ORDER BY orden"
+        },
+        {
+          "name": "snapshot_cienfuegos",
+          "sql": "SELECT TOP 20 * FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WHERE unidad_negocio_id='CIENFUEGOS' ORDER BY snapshot_timestamp DESC"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0"
+  },
+  "human_summary_language": "es"
+}
