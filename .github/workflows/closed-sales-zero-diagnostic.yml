@@ -43,7 +43,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ! grep -Eq 'INSERT INTO|UPDATE dbo|DELETE FROM|upsert_|sync_.*\(' backend/tools/diag_closed_sales_zero.py
+          ! grep -Eqi '\bINSERT\b|\bUPDATE\b|\bDELETE\b|\bMERGE\b|\bTRUNCATE\b' backend/tools/diag_closed_sales_zero.py
       - name: Run read-only diagnostic
         shell: bash
         working-directory: backend
