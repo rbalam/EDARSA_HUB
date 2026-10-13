@@ -1,0 +1,378 @@
+{
+  "base_sha": "cce390cbc3f3a92b68a1b408538a083031680e8a",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-13T23:12:08Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES-CHAPUR-ENTERPRISE-SCOPE-WRITER-CONSTRAINTS-READONLY-SQL-R1-20261013",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-13T23:13:02Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "TABLE_NAME",
+              "COLUMN_NAME",
+              "DATA_TYPE",
+              "IS_NULLABLE",
+              "CHARACTER_MAXIMUM_LENGTH",
+              "ORDINAL_POSITION"
+            ],
+            "name": "columns_contract",
+            "row_count_returned": 22,
+            "rows": [
+              [
+                "Sistema_IdentificadoresExternos",
+                "IdentificadorExternoID",
+                "bigint",
+                "NO",
+                null,
+                1
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "UnidadNegocioID",
+                "uniqueidentifier",
+                "YES",
+                null,
+                2
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "SistemaTipoID",
+                "int",
+                "NO",
+                null,
+                3
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "SistemaVersionID",
+                "uniqueidentifier",
+                "YES",
+                null,
+                4
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "ConexionID",
+                "uniqueidentifier",
+                "YES",
+                null,
+                5
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "TipoIdentificador",
+                "nvarchar",
+                "NO",
+                80,
+                6
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "ValorExterno",
+                "nvarchar",
+                "NO",
+                300,
+                7
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "Activo",
+                "bit",
+                "NO",
+                null,
+                8
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "FechaAlta",
+                "datetime2",
+                "NO",
+                null,
+                9
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "FechaModificacion",
+                "datetime2",
+                "YES",
+                null,
+                10
+              ],
+              [
+                "Sistema_SucursalServidorMapeo",
+                "MapeoID",
+                "int",
+                "NO",
+                null,
+                1
+              ],
+              [
+                "Sistema_SucursalServidorMapeo",
+                "SucursalID",
+                "int",
+                "NO",
+                null,
+                2
+              ],
+              [
+                "Sistema_SucursalServidorMapeo",
+                "ServidorID",
+                "uniqueidentifier",
+                "NO",
+                null,
+                3
+              ],
+              [
+                "Sistema_SucursalServidorMapeo",
+                "SucursalOrigenID",
+                "varchar",
+                "YES",
+                100,
+                4
+              ],
+              [
+                "Sistema_SucursalServidorMapeo",
+                "MongoSucursalUUID",
+                "varchar",
+                "YES",
+                36,
+                5
+              ],
+              [
+                "Sistema_SucursalServidorMapeo",
+                "MongoServidorUUID",
+                "varchar",
+                "YES",
+                36,
+                6
+              ],
+              [
+                "Sistema_SucursalServidorMapeo",
+                "FuenteMigracion",
+                "varchar",
+                "YES",
+                50,
+                7
+              ],
+              [
+                "Sistema_SucursalServidorMapeo",
+                "Activo",
+                "bit",
+                "NO",
+                null,
+                8
+              ],
+              [
+                "Sistema_SucursalServidorMapeo",
+                "FechaCreacion",
+                "datetime2",
+                "NO",
+                null,
+                9
+              ],
+              [
+                "Sistema_SucursalServidorMapeo",
+                "FechaModificacion",
+                "datetime2",
+                "YES",
+                null,
+                10
+              ],
+              [
+                "Sistema_SucursalServidorMapeo",
+                "CreatedBy",
+                "varchar",
+                "YES",
+                100,
+                11
+              ],
+              [
+                "Sistema_SucursalServidorMapeo",
+                "Observaciones",
+                "nvarchar",
+                "YES",
+                500,
+                12
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "index_name",
+              "is_unique",
+              "is_primary_key",
+              "column_name",
+              "key_ordinal"
+            ],
+            "name": "indexes_contract",
+            "row_count_returned": 11,
+            "rows": [
+              [
+                "Sistema_IdentificadoresExternos",
+                "IX_Sistema_IdentificadoresExternos_Conexion",
+                false,
+                false,
+                "ConexionID",
+                1
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "IX_Sistema_IdentificadoresExternos_Conexion",
+                false,
+                false,
+                "SistemaTipoID",
+                2
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "IX_Sistema_IdentificadoresExternos_Conexion",
+                false,
+                false,
+                "Activo",
+                3
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "IX_Sistema_IdentificadoresExternos_UnidadSistema",
+                false,
+                false,
+                "UnidadNegocioID",
+                1
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "IX_Sistema_IdentificadoresExternos_UnidadSistema",
+                false,
+                false,
+                "SistemaTipoID",
+                2
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "IX_Sistema_IdentificadoresExternos_UnidadSistema",
+                false,
+                false,
+                "Activo",
+                3
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "PK_Sistema_IdentificadoresExternos",
+                true,
+                true,
+                "IdentificadorExternoID",
+                1
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "UQ_Sistema_IdentificadoresExternos_Valor",
+                true,
+                false,
+                "SistemaTipoID",
+                1
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "UQ_Sistema_IdentificadoresExternos_Valor",
+                true,
+                false,
+                "TipoIdentificador",
+                2
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "UQ_Sistema_IdentificadoresExternos_Valor",
+                true,
+                false,
+                "ValorExterno",
+                3
+              ],
+              [
+                "Sistema_SucursalServidorMapeo",
+                "PK__Sistema___CC527B086B87FE62",
+                true,
+                true,
+                "MapeoID",
+                1
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "fk_name",
+              "parent_column",
+              "referenced_table",
+              "referenced_column"
+            ],
+            "name": "foreign_keys_contract",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "Sistema_IdentificadoresExternos",
+                "FK_Sistema_IdentificadoresExternos_Conexion",
+                "ConexionID",
+                "Servidores_Conexiones",
+                "id"
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "FK_Sistema_IdentificadoresExternos_Sistema",
+                "SistemaTipoID",
+                "Sistema_Tipos",
+                "SistemaTipoID"
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "FK_Sistema_IdentificadoresExternos_Unidad",
+                "UnidadNegocioID",
+                "Unidades_Negocio",
+                "id"
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "FK_Sistema_IdentificadoresExternos_Version",
+                "SistemaVersionID",
+                "Sistema_VersionesSistemas",
+                "sistema_version_id"
+              ],
+              [
+                "Sistema_SucursalServidorMapeo",
+                "FK__Sistema_S__Sucur__26B08FFB",
+                "SucursalID",
+                "Sistema_Sucursales",
+                "SucursalID"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-13T23:12:05Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
