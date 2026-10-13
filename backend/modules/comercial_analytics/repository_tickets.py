@@ -327,13 +327,11 @@ def _list_current_day_with_comercial_merge(
             "fecha": str(row.get("fecha_hora") or operation_date),
             "folios": 1,
             "pax": int(row.get("pax") or 0),
-            "total_venta": (
-                float(row.get("ventas_sin_propina") or 0)
-                + float(row.get("propina") or 0)
+            "total_venta": float(
+                row.get("ventas_sin_propina") or 0
             ),
-            "importe": (
-                float(row.get("ventas_sin_propina") or 0)
-                + float(row.get("propina") or 0)
+            "importe": float(
+                row.get("ventas_sin_propina") or 0
             ),
             "num_productos": int(row.get("lineas") or 0),
             "expandible": False,
