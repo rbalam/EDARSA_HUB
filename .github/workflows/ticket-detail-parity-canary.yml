@@ -1,0 +1,92 @@
+name: Ticket Detail Parity Canary
+
+on:
+  push:
+    branches:
+      - fix/comercial-ticket-detail-contract-20261013
+    paths:
+      - ".github/workflows/ticket-detail-parity-canary.yml"
+      - "backend/modules/comercial/ticket_service.py"
+      - "backend/modules/comercial_analytics/repository_tickets.py"
+      - "backend/tests/test_comercial_ticket_detail_parity_20261013.py"
+      - "backend/tests/test_comercial_day_ticket_atomic_identity_r47.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  EDARSA_ENV: DEVELOPMENT
+  EDARSAHUB_SQL_HOST: "54.39.104.176"
+  EDARSAHUB_SQL_PORT: "1433"
+  EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+  EDARSAHUB_SQL_USER: "HRLectura"
+  EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+  SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-ticket-parity.txt
+          python -m pip install -r /tmp/requirements-ticket-parity.txt
+
+      - name: Run focused regression tests
+        shell: bash
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            modules/comercial/ticket_service.py \
+            modules/comercial_analytics/repository_tickets.py
+          python -m pytest -q \
+            tests/test_comercial_ticket_detail_parity_20261013.py \
+            tests/test_comercial_day_ticket_atomic_identity_r47.py \
+            tests/test_comercial_mpro_daily_snapshot_priority_r19.py \
+            tests/test_tabeje_comercial_parity_r17.py
+
+      - name: Read-only real data parity canary
+        shell: bash
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from modules.comercial_analytics.repository_tickets import summarize_current_day_tickets
+
+          expected = {
+              "130QRO": {"ventas": 84508.0, "pax": 43, "cheques": 17},
+              "CIENFUEGOS": {"ventas": 109620.0, "pax": 76, "cheques": 22},
+          }
+
+          for unit, target in expected.items():
+              result = summarize_current_day_tickets(
+                  operation_date="2026-10-12",
+                  unit_code=unit,
+              )
+              print(
+                  "TICKET_PARITY_" + unit + "="
+                  + json.dumps(result, default=str, ensure_ascii=False)
+              )
+
+              assert int(result["cheques"]) == target["cheques"], (unit, result)
+              assert int(result["pax"]) == target["pax"], (unit, result)
+              assert abs(float(result["ventas"]) - target["ventas"]) < 0.01, (unit, result)
+
+          print("TICKET_DETAIL_PARITY_CANARY=PASS")
+          PY
