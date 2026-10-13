@@ -132,11 +132,23 @@ def load_open_snapshot_lines(
 
 
 def _snapshot_display_folio(row: Dict[str, Any]) -> str:
-    """Folio visible estable: numcheque 0/NULL no identifica una cuenta."""
+    """Folio visible/atómico compatible con el detalle canónico.
+
+    SoftRestaurant conserva numcheque cuando existe. Para MPRO cerrado,
+    folio puede ser Vn_Documento mientras el detalle histórico usa
+    Vn_Folio; folio_origen es la identidad que permite deduplicar ambos.
+    """
     folio = str(row.get("folio") or "").strip()
     folio_origen = str(row.get("folio_origen") or "").strip()
+    sistema = str(row.get("sistema_origen") or "").strip().upper()
+    estado = str(row.get("estado_ticket") or "").strip().upper()
+
+    if sistema == "MPRO" and estado == "CERRADA" and folio_origen:
+        return folio_origen
+
     if folio in {"", "0"}:
         return folio_origen or folio
+
     return folio
 
 
@@ -149,8 +161,16 @@ def _snapshot_ticket_identity(row: Dict[str, Any]) -> str:
 
 
 def _snapshot_sales_amount(row: Dict[str, Any]) -> float:
-    """Venta visible bruta del ticket; incluye propina cuando el origen la incluye."""
-    return _money(row.get("total_ticket"))
+    """Venta comparable con KPI: la propina se conserva separada."""
+    total = _money(row.get("total_ticket"))
+    sistema = str(row.get("sistema_origen") or "").strip().upper()
+
+    if sistema == "SOFTRESTAURANT":
+        propina = max(0.0, _money(row.get("propina")))
+        if total >= propina:
+            return total - propina
+
+    return total
 
 def merge_open_snapshot_tickets(
     items: List[Dict[str, Any]],
