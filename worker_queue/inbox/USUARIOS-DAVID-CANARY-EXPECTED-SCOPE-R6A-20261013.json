@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "USUARIOS-DAVID-CANARY-EXPECTED-SCOPE-R6A-20261013",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "20. Seguridad / Usuarios Produccion"
+  },
+  "objective": "Obtener en solo lectura el conjunto exacto de EmpresaID derivables para david.ricardez@cienfuegos.mx usando el contrato canonico servidor/sucursal/unidad, como expected set del canary funcional posterior a R4.",
+  "mode": "READ_ONLY_SQL",
+  "quality_gate": "AUDIT_REQUIRED",
+  "constraints": [
+    "NO_PRODUCTION",
+    "NO_DML",
+    "NO_DDL",
+    "NO_SECRET_OUTPUT",
+    "NO_MONGO_AS_SOURCE_OF_TRUTH",
+    "NO_INFER_COMPANY_FROM_NAMES"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "david_effective_company_expected_set",
+          "sql": "WITH TargetUser AS (SELECT UsuarioID FROM dbo.Usuario_Catalogo WHERE Email='david.ricardez@cienfuegos.mx' AND ISNULL(Activo,1)=1), UnitBase AS (SELECT TRY_CONVERT(uniqueidentifier,u.server_id) AS ServidorID,NULLIF(LTRIM(RTRIM(CONVERT(nvarchar(100),u.sucursal_origen_id))), '') AS SucursalOrigenID,COUNT_BIG(*) OVER(PARTITION BY u.server_id) AS ActiveUnitsOnServer FROM dbo.Unidades_Negocio u WHERE ISNULL(u.activo,0)=1), ActiveUnits AS (SELECT ub.ServidorID,ub.SucursalOrigenID,ub.ActiveUnitsOnServer,s.EmpresaID AS ServerEmpresaID,ss.EmpresaID AS BranchEmpresaID FROM UnitBase ub INNER JOIN dbo.Servidores_Conexiones s ON s.id=ub.ServidorID AND ISNULL(s.activo,1)=1 LEFT JOIN dbo.Sistema_SucursalServidorMapeo sm ON sm.ServidorID=s.id AND ISNULL(sm.Activo,1)=1 AND ub.SucursalOrigenID IS NOT NULL AND UPPER(LTRIM(RTRIM(ISNULL(sm.SucursalOrigenID,''))))=UPPER(LTRIM(RTRIM(ub.SucursalOrigenID))) LEFT JOIN dbo.Sistema_Sucursales ss ON ss.SucursalID=sm.SucursalID AND ISNULL(ss.Activo,1)=1), ExplicitScope AS (SELECT usa.UsuarioID,usa.ServidorID,CAST(NULL AS nvarchar(100)) AS SucursalCodigo,CAST('SERVER' AS varchar(10)) AS ScopeType FROM dbo.Usuario_ServidoresAsignacion usa INNER JOIN TargetUser t ON t.UsuarioID=usa.UsuarioID WHERE ISNULL(usa.Activo,1)=1 UNION ALL SELECT usa.UsuarioID,usa.ServidorID,NULLIF(LTRIM(RTRIM(CONVERT(nvarchar(100),usa.SucursalCodigo))), '') AS SucursalCodigo,CAST('BRANCH' AS varchar(10)) AS ScopeType FROM dbo.Usuario_SucursalesAsignacion usa INNER JOIN TargetUser t ON t.UsuarioID=usa.UsuarioID WHERE ISNULL(usa.Activo,1)=1), Derived AS (SELECT DISTINCT CASE WHEN au.ActiveUnitsOnServer>1 THEN au.BranchEmpresaID ELSE COALESCE(au.BranchEmpresaID,au.ServerEmpresaID) END AS EmpresaID FROM ExplicitScope es INNER JOIN ActiveUnits au ON au.ServidorID=es.ServidorID AND (au.ActiveUnitsOnServer=1 OR (au.ActiveUnitsOnServer>1 AND es.ScopeType='BRANCH' AND au.SucursalOrigenID IS NOT NULL AND es.SucursalCodigo IS NOT NULL AND UPPER(LTRIM(RTRIM(au.SucursalOrigenID)))=UPPER(LTRIM(RTRIM(es.SucursalCodigo)))))) SELECT d.EmpresaID,e.CodigoEmpresa,e.NombreEmpresa FROM Derived d LEFT JOIN dbo.Sistema_Empresas e ON e.EmpresaID=d.EmpresaID WHERE d.EmpresaID IS NOT NULL ORDER BY d.EmpresaID"
+        }
+      ]
+    }
+  ],
+  "deliverables": [
+    "DAVID_EXPECTED_EMPRESA_IDS",
+    "CANARY_EXPECTED_SET",
+    "NO_PRODUCTION_NO_DML_NO_DDL_CONFIRMATION"
+  ]
+}
