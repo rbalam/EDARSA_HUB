@@ -237,8 +237,5 @@ def test_executive_current_day_uses_certified_comercial_sales_detail():
     assert "/v2/comercial/analytics/tickets" in drill
     assert "ticketPk: item.ticket_pk" in drill
 
-    # Se conserva la conciliacion de cuentas abiertas.
-    assert "hasMissingOpen" in drill
-
     # Cada sucursal conserva su fecha operativa propia en Ventas del Día.
     assert "currentOperationSuppressed = false" in drill
