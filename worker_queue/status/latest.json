@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "d759215e856be48c3e1d3bbb4ee26324871bf44f",
-  "generated_at_utc": "2026-10-13T18:14:30Z",
+  "generated_at_utc": "2026-10-13T18:15:50Z",
   "history": {
     "done_total_local": 1388,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2168,
+      "age_seconds": 2249,
       "job_id": "SERVIDORES-CHAPUR-SYNCED-SALES-EVIDENCE-READONLY-SQL-R2D-20261013",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2533,
+      "age_seconds": 2614,
       "job_id": "SERVIDORES-CHAPUR-SYNCED-SALES-SCHEMA-READONLY-SQL-R2C2-20261013",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2195,
+      "age_seconds": 2276,
       "job_id": "USUARIOS-DAVID-AUTH-CONTEXT-CANARY-R6B-20261013",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-13T18:14:17Z",
-    "last_receive_utc": "2026-10-13T18:14:25Z",
+    "last_cycle_utc": "2026-10-13T18:15:45Z",
+    "last_receive_utc": "2026-10-13T18:15:40Z",
     "last_terminal_utc": "2026-10-13T17:38:21Z",
     "pid": "68219",
     "runtime_fingerprint": {
