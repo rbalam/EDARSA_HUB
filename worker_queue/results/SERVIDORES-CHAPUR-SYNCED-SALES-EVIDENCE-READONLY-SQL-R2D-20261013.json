@@ -1,0 +1,116 @@
+{
+  "base_sha": "d759215e856be48c3e1d3bbb4ee26324871bf44f",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-13T17:38:21Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES-CHAPUR-SYNCED-SALES-EVIDENCE-READONLY-SQL-R2D-20261013",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-13T17:39:17Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "SyncControlID",
+              "SyncRunID",
+              "SyncType",
+              "ServerID",
+              "EmpresaID",
+              "UnidadNegocioID",
+              "SucursalID",
+              "SucursalOrigenID",
+              "SistemaTipoID",
+              "SistemaCapacidadID",
+              "SistemaVersionID",
+              "Status",
+              "StartedAtMexico",
+              "FinishedAtMexico",
+              "StartedAtUTC",
+              "FinishedAtUTC",
+              "CodigoSync",
+              "WorkerJobID"
+            ],
+            "name": "chapur_sync_control_ejecuciones",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "SyncVentaHistoricaID",
+              "ServerID",
+              "EmpresaID",
+              "SucursalID",
+              "UnidadNegocioID",
+              "SystemType",
+              "FechaOperacion",
+              "SourceStatus",
+              "SourceType",
+              "SyncedAtMexico",
+              "SyncRunID"
+            ],
+            "name": "chapur_sync_historicas",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "EmpresaID",
+              "SucursalID",
+              "UnidadNegocioID",
+              "SystemType",
+              "PrimeraFecha",
+              "UltimaFecha",
+              "Filas"
+            ],
+            "name": "chapur_sync_porhora_distinct_scope",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "EmpresaID",
+              "SucursalID",
+              "UnidadNegocioID",
+              "SystemType",
+              "CodigoEmpresa",
+              "NombreEmpresa",
+              "NombreComercial",
+              "CodigoSucursal",
+              "NombreSucursal",
+              "UnidadCodigo",
+              "UnidadNombre"
+            ],
+            "name": "chapur_scope_crosswalk_catalog",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-13T17:38:20Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
