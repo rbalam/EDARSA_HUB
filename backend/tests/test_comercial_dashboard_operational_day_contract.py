@@ -71,9 +71,9 @@ def test_hoy_snapshot_is_transversal_for_all_supported_systems():
     block = text[start:end]
 
     assert 'if periodo == "dia" and is_supported_system_type(' in block
-    assert "get_ventas_dia_abiertas(" in block
-    assert "Comercial_Ventas_Dia_Abiertas_v2" in block
-    assert "SOLO a SoftRestaurant" not in block
+    assert "_dashboard_current_operation_kpis(" in block
+    assert "OPERACION_EN_CURSO_CANONICA" in block
+    assert "get_ventas_dia_abiertas(" not in block
     assert "get_dashboard_kpis_from_edarsahub(" not in block
 
 
@@ -109,18 +109,14 @@ def test_hoy_source_contract_is_engine_agnostic():
 
 def test_hoy_snapshot_matches_by_canonical_unit_not_server_topology():
     text = ROUTES.read_text(encoding="utf-8")
-    start = text.index("# HOY - CANONICO, ATOMICO Y TRANSVERSAL:")
-    end = text.index("# FASE 3A.2: Migrado a helper centralizado", start)
-    block = text[start:end]
+    helper_start = text.index("def _dashboard_current_operation_item(")
+    helper_end = text.index("def _dashboard_current_operation_kpis(", helper_start)
+    helper = text[helper_start:helper_end]
 
-    assert "unidad_codigo_hoy" in block
-    assert "unidad_negocio_codigo" in block
-    assert "codigo_norm" in block
-
-    # La identidad comercial no puede depender del server_id porque MPRO puede
-    # escribir el snapshot mediante un API_LOCAL distinto al servidor canónico.
-    assert "server_id_norm" not in block
-    assert "candidatos = [" not in block
+    assert "resolve_unidad_by_server_sucursal(" in helper
+    assert "_dashboard_unit_resolution_sucursal(" in helper
+    assert "build_current_operation(" in helper
+    assert "candidatos = [" not in helper
 
 
 def test_hoy_snapshot_does_not_pick_first_row_from_shared_mpro_server():
@@ -129,6 +125,5 @@ def test_hoy_snapshot_does_not_pick_first_row_from_shared_mpro_server():
     end = text.index("# FASE 3A.2: Migrado a helper centralizado", start)
     block = text[start:end]
 
-    assert "fila_hoy = next(" in block
-    assert "row.get(\"unidad_negocio_codigo\")" in block
-    assert "row.get(\"unidad_negocio_id\")" in block
+    assert "fila_hoy = next(" not in block
+    assert "_dashboard_current_operation_kpis(" in block
