@@ -44,6 +44,7 @@ from .mappers import (
 from core.unidades_service import UnidadesService
 from .mpro_closed_api import (
     resolve_mpro_closed_api,
+    build_mpro_closed_sales_query,
     execute_mpro_select_via_api,
 )
 from .repository_comercial_edarsahub import (
@@ -855,12 +856,13 @@ def sync_mpro_ventas_cerradas(
             )
             return result
 
-        # La API local exige que la consulta comience con SELECT.
-        # Esta consulta es SELECT puro y mantiene el contrato histórico del mapper.
-        query = QUERY_MPRO_VENTAS_CERRADAS.format(
-            fecha_inicio=fecha_inicio.isoformat(),
-            fecha_fin=fecha_fin.isoformat(),
-            sucursal_id=api_sucursal_id
+        # La consulta se construye por unidad porque ORIGEN y 130QRO
+        # no comparten el mismo esquema operativo de ventas cerradas.
+        query = build_mpro_closed_sales_query(
+            api_config.get("unidad_codigo"),
+            api_sucursal_id,
+            fecha_inicio,
+            fecha_fin,
         )
 
         rows, conn_status = execute_mpro_select_via_api(
