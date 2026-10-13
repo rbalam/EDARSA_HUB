@@ -460,13 +460,17 @@ def get_kpis_mensuales(
 
 
 def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Dict[str, Any]:
-    """Hace que Ventas del Dia use una sola fotografia para KPI y detalle.
+    """Reconcilia el detalle abierto SR sin borrar la porcion cerrada.
 
-    Para SoftRestaurant durante la jornada activa, detalle_abiertas_json proviene
-    de tempcheques/tempcheqdet y es el conjunto atomico autoritativo. El agregado
-    persistido puede contener tempcheques + cheques y duplicar cuentas que ya
-    siguen presentes en tempcheques. Este overlay es SOLO de lectura: no modifica
-    sync_comercial_abiertas_v2 ni escribe SQL.
+    detalle_abiertas_json proviene de tempcheques y se usa unicamente
+    para reconstruir la porcion abierta de la operacion. El encabezado del
+    sincronizador ya separa venta sin propina, propina y ventas cerradas.
+
+    Reglas:
+    - total_ticket del detalle incluye propina; la venta abierta canonica es
+      max(total_ticket - propina, 0).
+    - Nunca se ponen a cero ventas_cerradas_dia ni sus KPIs asociados.
+    - total_estimado_dia = abiertas + cerradas.
     """
     sistema = str(row.get("sistema_origen") or "").strip().upper()
     raw = row.get("detalle_abiertas_json")
@@ -485,6 +489,7 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
     for item in items:
         if not isinstance(item, dict):
             continue
+
         identity = str(
             item.get("folio_origen")
             or item.get("folio")
@@ -497,6 +502,7 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
             identity,
             {"total": 0.0, "pax": 0, "propina": 0.0},
         )
+
         try:
             current["total"] = max(
                 float(current["total"] or 0),
@@ -504,6 +510,7 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
             )
         except (TypeError, ValueError):
             pass
+
         try:
             current["pax"] = max(
                 int(current["pax"] or 0),
@@ -511,6 +518,7 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
             )
         except (TypeError, ValueError):
             pass
+
         try:
             current["propina"] = max(
                 float(current["propina"] or 0),
@@ -522,25 +530,50 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
     if not tickets:
         return row
 
-    ventas = round(sum(t["total"] for t in tickets.values()), 2)
-    pax = sum(t["pax"] for t in tickets.values())
-    propinas = round(sum(t["propina"] for t in tickets.values()), 2)
-    cheques = len(tickets)
+    ventas_abiertas = round(
+        sum(
+            max(
+                float(ticket["total"] or 0)
+                - float(ticket["propina"] or 0),
+                0.0,
+            )
+            for ticket in tickets.values()
+        ),
+        2,
+    )
+    pax_abiertos = sum(ticket["pax"] for ticket in tickets.values())
+    propinas_abiertas = round(
+        sum(ticket["propina"] for ticket in tickets.values()),
+        2,
+    )
+    tickets_abiertos = len(tickets)
 
-    row["ventas_abiertas"] = ventas
-    row["tickets_abiertos"] = cheques
-    row["pax_abiertos"] = pax
-    row["propinas_abiertas"] = propinas
+    ventas_cerradas = float(row.get("ventas_cerradas_dia") or 0)
+    tickets_cerrados = int(row.get("tickets_cerrados_dia") or 0)
+    pax_cerrados = int(row.get("pax_cerrados_dia") or 0)
+    propinas_cerradas = float(row.get("propinas_cerradas_dia") or 0)
 
-    # Durante la operacion activa el snapshot tempcheques ya contiene la
-    # fotografia completa que debe mostrarse. No sumar cheques otra vez.
-    row["ventas_cerradas_dia"] = 0
-    row["tickets_cerrados_dia"] = 0
-    row["pax_cerrados_dia"] = 0
-    row["propinas_cerradas_dia"] = 0
-    row["total_estimado_dia"] = ventas
-    row["propinas_total"] = propinas
-    row["_ventas_dia_source"] = "DETALLE_ABIERTAS_JSON_ATOMICO"
+    row["ventas_abiertas"] = ventas_abiertas
+    row["tickets_abiertos"] = tickets_abiertos
+    row["pax_abiertos"] = pax_abiertos
+    row["propinas_abiertas"] = propinas_abiertas
+
+    row["ventas_cerradas_dia"] = ventas_cerradas
+    row["tickets_cerrados_dia"] = tickets_cerrados
+    row["pax_cerrados_dia"] = pax_cerrados
+    row["propinas_cerradas_dia"] = propinas_cerradas
+
+    row["total_estimado_dia"] = round(
+        ventas_abiertas + ventas_cerradas,
+        2,
+    )
+    row["propinas_total"] = round(
+        propinas_abiertas + propinas_cerradas,
+        2,
+    )
+    row["_ventas_dia_source"] = (
+        "DETALLE_ABIERTAS_JSON_MAS_CERRADAS_ENCABEZADO"
+    )
     return row
 
 def get_ventas_dia_abiertas(

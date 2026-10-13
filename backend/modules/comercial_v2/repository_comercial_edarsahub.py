@@ -557,7 +557,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
     # Verificar si existe y obtener valores actuales
     check_query = f"""
     SELECT id, total_estimado_dia, fecha_operacion, sync_run_id
-    FROM Comercial_Ventas_Dia_Abiertas_v2
+    FROM dbo.Comercial_Ventas_Dia_Abiertas_v2
     WHERE unidad_negocio_id = '{unidad_codigo}'
       AND sucursal_id = '{ventas.sucursal_id}'
     """
@@ -598,7 +598,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
             )
 
         update_query = f"""
-        UPDATE Comercial_Ventas_Dia_Abiertas_v2 SET
+        UPDATE dbo.Comercial_Ventas_Dia_Abiertas_v2 SET
             server_id = '{ventas.server_id}',
             snapshot_timestamp = '{ventas.snapshot_timestamp.isoformat()}',
             fecha_operacion = '{ventas.fecha_operacion.isoformat()}',
@@ -623,7 +623,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
     else:
         new_id = str(uuid.uuid4())
         insert_query = f"""
-        INSERT INTO Comercial_Ventas_Dia_Abiertas_v2 (
+        INSERT INTO dbo.Comercial_Ventas_Dia_Abiertas_v2 (
             id, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
             sucursal_nombre, sistema_origen, snapshot_timestamp, fecha_operacion,
             ventas_abiertas, tickets_abiertos, pax_abiertos,
