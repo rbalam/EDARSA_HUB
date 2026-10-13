@@ -1,0 +1,53 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-CHAPUR-SYNCED-SUCURSAL-CONTRACT-SCHEMA-READONLY-SQL-R2-20261013",
+  "mode": "READ_ONLY_SQL",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Descubrir exclusivamente el esquema SQL real de las tablas persistidas candidatas para scope multi-sucursal CHAPUR, sin abrir conexiones LIVE: Sistema_SucursalServidorConfig, Sistema_ServidorSucursalesConfig, Sistema_ServidoresSucursalesConfig, Sistema_IdentificadoresExternos, Sistema_SyncPOS_Config y Sistema_SyncPOS_EstadoUnidad. No consultar secretos ni mutar datos.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS",
+    "chat": "Conexiones y Comunicaciones / Menu Servidores 2"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "chapur_candidate_table_schema",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Sistema_SucursalServidorConfig','Sistema_ServidorSucursalesConfig','Sistema_ServidoresSucursalesConfig','Sistema_IdentificadoresExternos','Sistema_SyncPOS_Config','Sistema_SyncPOS_EstadoUnidad') ORDER BY TABLE_NAME,ORDINAL_POSITION"
+        },
+        {
+          "name": "chapur_candidate_table_counts",
+          "sql": "SELECT t.name AS table_name, SUM(p.rows) AS approximate_rows FROM sys.tables t JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name IN ('Sistema_SucursalServidorConfig','Sistema_ServidorSucursalesConfig','Sistema_ServidoresSucursalesConfig','Sistema_IdentificadoresExternos','Sistema_SyncPOS_Config','Sistema_SyncPOS_EstadoUnidad') GROUP BY t.name ORDER BY t.name"
+        }
+      ]
+    }
+  ],
+  "acceptance_criteria": [
+    "READ_ONLY_COMPLETE",
+    "CERTIFIED_READ_ONLY",
+    "production_touched=false",
+    "No DDL or DML",
+    "No remote connectivity attempted",
+    "Schema-only evidence for CHAPUR candidate persisted tables"
+  ]
+}
