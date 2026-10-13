@@ -56,7 +56,7 @@ def test_soft_snapshot_display_folio_prefers_numcheque_when_nonzero():
     assert ticket_service._snapshot_ticket_identity(row) == "SOFTRESTAURANT:2"
 
 
-def test_soft_snapshot_replaces_same_day_closed_rows_while_active(monkeypatch):
+def test_soft_snapshot_preserves_closed_and_adds_open_while_active(monkeypatch):
     rows = [
         {
             "folio": "103994",
@@ -87,9 +87,13 @@ def test_soft_snapshot_replaces_same_day_closed_rows_while_active(monkeypatch):
     }]
 
     result = ticket_service.merge_open_snapshot_tickets(
-        closed, "CIENFUEGOS", "DEFAULT", "2026-10-08"
+        closed, "ANY_SOFTRESTAURANT_UNIT", "DEFAULT", "2026-10-08"
     )
 
-    assert len(result) == 1
-    assert result[0]["folio"] == "103994"
-    assert result[0]["total_venta"] == 1300.0
+    by_folio = {str(item["folio"]): item for item in result}
+
+    assert set(by_folio) == {"900001", "103994"}
+    assert by_folio["900001"]["total_venta"] == 9999
+    assert by_folio["900001"]["pax"] == 10
+    assert by_folio["103994"]["total_venta"] == 1300.0
+    assert by_folio["103994"]["pax"] == 3
