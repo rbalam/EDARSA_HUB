@@ -1,0 +1,62 @@
+{
+  "base_sha": "df1ddf1b2f0130607215a3e6f7c204cac0a3051d",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-13T16:42:49Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "USUARIOS-DAVID-CANARY-EXPECTED-SCOPE-R6A-20261013",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-13T16:43:52Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "EmpresaID",
+              "CodigoEmpresa",
+              "NombreEmpresa"
+            ],
+            "name": "david_effective_company_expected_set",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                3,
+                "CIENFUEGOS",
+                "CIENFUEGOS"
+              ],
+              [
+                4,
+                "ESTELAR",
+                "LA ESTELAR"
+              ],
+              [
+                5,
+                "130MID",
+                "130 MID"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-13T16:42:46Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
