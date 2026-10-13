@@ -6,6 +6,9 @@ on:
       - worker-v1-2/mpro-closed-api-isolation-20261013
     paths:
       - ".github/workflows/mpro-closed-local-api-canary.yml"
+      - "backend/tools/canary_mpro_closed_local_api.py"
+      - "backend/modules/comercial_v2/mpro_closed_api.py"
+      - "backend/modules/comercial_v2/ticket_snapshot.py"
   workflow_dispatch:
 
 permissions:
