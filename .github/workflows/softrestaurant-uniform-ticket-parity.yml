@@ -1,4 +1,5 @@
 name: SoftRestaurant Uniform Ticket Parity
+# Run validates the same SoftRestaurant contract for 130MID, CIENFUEGOS and ESTELAR.
 
 on:
   push:
@@ -83,7 +84,6 @@ jobs:
                       ISNULL(total_estimado_dia,0) AS ventas,
                       ISNULL(tickets_abiertos,0) + ISNULL(tickets_cerrados_dia,0) AS cheques,
                       ISNULL(pax_abiertos,0) + ISNULL(pax_cerrados_dia,0) AS pax,
-                      source_status,
                       snapshot_timestamp
                   FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK)
                   WHERE unidad_negocio_id = %s
