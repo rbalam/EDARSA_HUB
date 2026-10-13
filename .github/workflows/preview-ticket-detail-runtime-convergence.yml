@@ -1,0 +1,53 @@
+name: Preview Ticket Detail Runtime Convergence
+
+on:
+  push:
+    branches:
+      - diag/preview-ticket-detail-runtime-20261013
+    paths:
+      - ".github/workflows/preview-ticket-detail-runtime-convergence.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Probe and safely converge Preview runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUNTIME_URL='https://erp-crm-enterprise-1.preview.emergentagent.com'
+          DEV_SHA="$(git ls-remote origin refs/heads/Edarsahub_Desarrollo | awk '{print $1}')"
+          MIRROR_SHA="$(git ls-remote origin refs/heads/mirror/emergent-live | awk '{print $1}')"
+          QUEUE_SHA="$(git ls-remote origin refs/heads/worker/requests | awk '{print $1}')"
+
+          echo "DEV_SHA=$DEV_SHA"
+          echo "MIRROR_SHA=$MIRROR_SHA"
+          echo "QUEUE_SHA=$QUEUE_SHA"
+
+          probe() {
+            local label="$1"
+            local out="/tmp/wake-${label}.json"
+            local code
+            code="$(curl --silent --show-error --location               --connect-timeout 5 --max-time 30               --output "$out" --write-out '%{http_code}'               --request POST "$RUNTIME_URL/api/internal/worker/wake"               --header "X-Worker-Queue-Sha: $QUEUE_SHA"               --header 'Content-Type: application/json'               --data '{}' || true)"
+            echo "${label}_HTTP=$code"
+            echo "${label}_BODY_BEGIN"
+            cat "$out" 2>/dev/null || true
+            echo
+            echo "${label}_BODY_END"
+          }
+
+          probe FIRST
+          sleep 25
+          QUEUE_SHA="$(git ls-remote origin refs/heads/worker/requests | awk '{print $1}')"
+          probe SECOND
+
+          echo "PRODUCTION_TOUCHED=NO"
