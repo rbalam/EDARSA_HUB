@@ -8,6 +8,7 @@ on:
       - ".github/workflows/softrestaurant-uniform-ticket-parity.yml"
       - "backend/modules/comercial/ticket_service.py"
       - "backend/tests/test_softrestaurant_engine_uniformity_20261013.py"
+      - "backend/tests/test_comercial_day_ticket_atomic_identity_r47.py"
   workflow_dispatch:
 
 permissions:
