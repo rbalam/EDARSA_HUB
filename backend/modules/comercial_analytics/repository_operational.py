@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any, Callable, Iterable
 
-from core.utils.operational_window import get_fecha_operacion_now
+from core.utils.operational_window import get_fecha_operacion_now, get_operational_window
 from modules.comercial_v2.repository_readonly import (
     get_ventas_dia_abiertas,
 )
@@ -12,6 +12,7 @@ from .operational_service import build_operational_snapshot
 
 
 OperationalDateResolver = Callable[[str], date]
+OperationalContextResolver = Callable[[str], dict[str, Any]]
 OpenSalesReader = Callable[[date, list[str]], list[dict[str, Any]]]
 
 
@@ -43,51 +44,120 @@ def _normalize_date(value: Any) -> date:
         ) from exc
 
 
-def resolve_current_operational_date(unit_code: str) -> date:
-    """Resuelve la fecha operativa vigente sin fallback.
+def resolve_current_operational_context(unit_code: str) -> dict[str, Any]:
+    """Resuelve fecha + estado de ventana para la operación en curso.
 
-    Está prohibido sustituirla por:
-    - MAX(fecha_operacion) de SQL;
-    - la última fecha sincronizada;
-    - fecha civil local;
-    - fecha UTC.
+    La fecha operativa por sí sola no alcanza para decidir qué debe mostrarse
+    en Ventas del Día. También se necesita saber si estamos realmente dentro
+    de un turno que cruza medianoche o solamente antes del primer turno.
     """
     code = _required(unit_code, "unidad_negocio_id")
 
-    attempts = (
-        lambda: get_fecha_operacion_now(code),
-        lambda: get_fecha_operacion_now(
-            unidad_negocio_id=code,
+    try:
+        window = get_operational_window(code)
+    except Exception as exc:
+        raise OperationalDateResolutionError(
+            f"No fue posible resolver contexto operativo para {code}"
+        ) from exc
+
+    return {
+        "fecha_operacion": _normalize_date(window.fecha_operacion),
+        "metodo_fecha_operacion": str(
+            getattr(window, "metodo_fecha_operacion", "") or ""
         ),
-        lambda: get_fecha_operacion_now(
-            unidad_negocio_pk=code,
+        "turno_operativo_codigo": str(
+            getattr(window, "turno_operativo_codigo", "") or ""
         ),
-    )
+        "timestamp_consulta": getattr(window, "timestamp_consulta", None),
+    }
 
-    last_type_error: TypeError | None = None
+def resolve_current_operational_date(unit_code: str) -> date:
+    """Compatibilidad: devuelve sólo la fecha del contexto operativo."""
+    return resolve_current_operational_context(unit_code)["fecha_operacion"]
 
-    for attempt in attempts:
-        try:
-            result = attempt()
-        except TypeError as exc:
-            last_type_error = exc
-            continue
-        except Exception as exc:
-            raise OperationalDateResolutionError(
-                f"No fue posible resolver fecha_operacion para {code}"
-            ) from exc
 
-        if result is None:
-            raise OperationalDateResolutionError(
-                f"El motor no devolvió fecha_operacion para {code}"
+def _zero_closed_portion(row: dict[str, Any], policy: str) -> dict[str, Any]:
+    result = dict(row)
+    result["ventas_cerradas_dia"] = 0
+    result["propinas_cerradas_dia"] = 0
+    result["tickets_cerrados_dia"] = 0
+    result["pax_cerrados_dia"] = 0
+    result["total_estimado_dia"] = result.get("ventas_abiertas") or 0
+    result["propinas_total"] = result.get("propinas_abiertas") or 0
+    result["current_display_policy"] = policy
+    return result
+
+
+def _apply_current_display_policy(
+    source_row: dict[str, Any] | None,
+    *,
+    operation_date: date,
+    operation_context: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    """Evita arrastrar cierres históricos a Ventas del Día.
+
+    La fecha operativa puede ser ayer por diseño. Eso NO implica que la venta
+    cerrada de ayer siga siendo operación vigente:
+
+    - SoftRestaurant: si ya existe porción en ``cheques`` para una fecha
+      anterior, esa porción ya pasó por corte y pertenece al histórico. Sólo
+      ``tempcheques`` puede seguir visible como arrastre abierto.
+    - MPRO: antes del primer turno, las ventas cerradas de la fecha anterior
+      son históricas. Durante un turno activo que cruza medianoche sí forman
+      parte de la operación vigente.
+    """
+    if not source_row or not operation_context:
+        return source_row
+
+    timestamp = operation_context.get("timestamp_consulta")
+    if not isinstance(timestamp, datetime):
+        return source_row
+
+    if operation_date >= timestamp.date():
+        result = dict(source_row)
+        result["current_display_policy"] = "CURRENT_OPERATION_DATE"
+        return result
+
+    sistema = str(source_row.get("sistema_origen") or "").strip().upper()
+    metodo = str(
+        operation_context.get("metodo_fecha_operacion") or ""
+    ).strip().upper()
+
+    if "SOFT" in sistema:
+        cut_detected = (
+            float(source_row.get("ventas_cerradas_dia") or 0) != 0
+            or int(source_row.get("tickets_cerrados_dia") or 0) != 0
+        )
+        if cut_detected:
+            return _zero_closed_portion(
+                source_row,
+                "SOFT_PREVIOUS_DATE_AFTER_CUT_OPEN_ONLY",
             )
 
-        return _normalize_date(result)
+        result = dict(source_row)
+        result["current_display_policy"] = (
+            "SOFT_PREVIOUS_DATE_UNCUT"
+        )
+        return result
 
-    raise OperationalDateResolutionError(
-        f"Firma no compatible de get_fecha_operacion_now para {code}"
-    ) from last_type_error
+    if "MPRO" in sistema:
+        before_first_turn = (
+            metodo.startswith("ANTES_PRIMER_TURNO")
+            or metodo == "FALLBACK_ENTRE_TURNOS"
+        )
+        if before_first_turn:
+            return _zero_closed_portion(
+                source_row,
+                "MPRO_PREVIOUS_DATE_BEFORE_FIRST_TURN_OPEN_ONLY",
+            )
 
+        result = dict(source_row)
+        result["current_display_policy"] = (
+            "MPRO_PREVIOUS_DATE_ACTIVE_WINDOW"
+        )
+        return result
+
+    return source_row
 
 def _snapshot_rows(
     source_row: dict[str, Any] | None,
@@ -122,6 +192,7 @@ def build_current_operation(
     *,
     allowed_unit_codes: Iterable[Any],
     date_resolver: OperationalDateResolver | None = None,
+    operation_context_resolver: OperationalContextResolver | None = None,
     sales_reader: OpenSalesReader | None = None,
     generated_at: datetime | None = None,
 ) -> dict[str, Any]:
@@ -131,6 +202,7 @@ def build_current_operation(
     snapshot para esa fecha devuelve ceros. Nunca se consulta otra fecha.
     """
     resolver = date_resolver or resolve_current_operational_date
+    context_resolver = operation_context_resolver
     reader = sales_reader or get_ventas_dia_abiertas
 
     unit_codes = sorted({
@@ -171,10 +243,24 @@ def build_current_operation(
     effective_dates: set[str] = set()
 
     for unit_code in unit_codes:
+        operation_context = None
         try:
-            operation_date = _normalize_date(
-                resolver(unit_code)
-            )
+            if context_resolver is not None:
+                operation_context = context_resolver(unit_code)
+                operation_date = _normalize_date(
+                    operation_context.get("fecha_operacion")
+                )
+            elif date_resolver is None:
+                operation_context = resolve_current_operational_context(
+                    unit_code
+                )
+                operation_date = _normalize_date(
+                    operation_context.get("fecha_operacion")
+                )
+            else:
+                operation_date = _normalize_date(
+                    resolver(unit_code)
+                )
         except Exception as exc:
             unresolved_units.append({
                 "unidad_negocio_id": unit_code,
@@ -195,6 +281,11 @@ def build_current_operation(
         ]
 
         source_row = exact_rows[0] if exact_rows else None
+        source_row = _apply_current_display_policy(
+            source_row,
+            operation_date=operation_date,
+            operation_context=operation_context,
+        )
         closed_rows, open_rows = _snapshot_rows(
             source_row,
             unit_code=unit_code,
@@ -226,6 +317,17 @@ def build_current_operation(
             item["sucursal_id"] = source_row.get("sucursal_id")
             item["sucursal_nombre"] = source_row.get("sucursal_nombre")
             item["sistema_origen"] = source_row.get("sistema_origen")
+            item["current_display_policy"] = source_row.get(
+                "current_display_policy"
+            )
+
+        if operation_context:
+            item["metodo_fecha_operacion"] = operation_context.get(
+                "metodo_fecha_operacion"
+            )
+            item["turno_operativo_codigo"] = operation_context.get(
+                "turno_operativo_codigo"
+            )
 
         effective_dates.add(item["fecha_operacion"])
         items.append(item)
