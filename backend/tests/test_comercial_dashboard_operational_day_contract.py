@@ -56,12 +56,13 @@ def test_softrestaurant_visible_unit_code_is_not_used_as_sucursal_origen_id():
 
 def test_softrestaurant_snapshot_resolution_uses_same_canonical_scope():
     text = ROUTES.read_text(encoding="utf-8")
-    start = text.index("# HOY - CANONICO, ATOMICO Y TRANSVERSAL:")
-    end = text.index("# FASE 3A.2: Migrado a helper centralizado", start)
-    block = text[start:end]
+    helper_start = text.index("def _dashboard_current_operation_item(")
+    helper_end = text.index("def _dashboard_current_operation_kpis(", helper_start)
+    helper = text[helper_start:helper_end]
 
-    assert "sucursal_resolver = _dashboard_unit_resolution_sucursal(" in block
-    assert "resolve_unidad_by_server_sucursal(" in block
+    assert "_dashboard_unit_resolution_sucursal(" in helper
+    assert "resolve_unidad_by_server_sucursal(" in helper
+    assert "build_current_operation(" in helper
 
 
 def test_hoy_snapshot_is_transversal_for_all_supported_systems():
@@ -97,14 +98,16 @@ def test_hoy_source_contract_is_engine_agnostic():
     end = text.index("# FASE 3A.2: Migrado a helper centralizado", start)
     block = text[start:end]
 
-    assert "unidad_codigo_hoy" in block
-    assert "unidad_negocio_codigo" in block
-    assert '"source_type": (' in block
-    assert '"EDARSAHUB_SNAPSHOT_DIA"' in block
+    assert "_dashboard_current_operation_kpis(" in block
+    assert '"source_type": "OPERACION_EN_CURSO_CANONICA"' in block
+    assert "get_ventas_dia_abiertas(" not in block
+    assert "EDARSAHUB_SNAPSHOT_DIA" not in block
 
-    # La identidad comercial es la unidad canónica; server_id describe
-    # topología técnica y no debe gobernar la selección del snapshot.
+    # La identidad comercial se resuelve en el adaptador canónico común;
+    # el bloque de UI no vuelve a distinguir motores ni topología técnica.
     assert "server_id_norm" not in block
+    assert "is_softrestaurant_system(" not in block
+    assert "is_mpro_system(" not in block
 
 
 def test_hoy_snapshot_matches_by_canonical_unit_not_server_topology():
