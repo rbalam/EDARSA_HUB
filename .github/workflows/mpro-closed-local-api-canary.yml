@@ -1,0 +1,62 @@
+name: MPRO Closed Local API Read-Only Canary
+
+on:
+  push:
+    branches:
+      - worker-v1-2/mpro-closed-api-isolation-20261013
+    paths:
+      - ".github/workflows/mpro-closed-local-api-canary.yml"
+      - "backend/tools/canary_mpro_closed_local_api.py"
+      - "backend/modules/comercial_v2/mpro_closed_api.py"
+      - "backend/modules/comercial_v2/ticket_snapshot.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  EDARSA_ENV: DEVELOPMENT
+  EDARSAHUB_SQL_HOST: "54.39.104.176"
+  EDARSAHUB_SQL_PORT: "1433"
+  EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+  EDARSAHUB_SQL_USER: "HRLectura"
+  EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+  SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+
+jobs:
+  read-only-local-api-canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-canary.txt
+          python -m pip install -r /tmp/requirements-canary.txt
+
+      - name: Validate read-only canary contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$EDARSAHUB_SQL_PASSWORD"
+          test -n "$SERVER_SECRET_KEY"
+          ! grep -Eq 'upsert_|INSERT INTO|UPDATE dbo|DELETE FROM|sync_mpro_ventas_cerradas\(' backend/tools/canary_mpro_closed_local_api.py
+
+      - name: Run ORIGEN and 130QRO read-only local API canary
+        shell: bash
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          set -euo pipefail
+          python tools/canary_mpro_closed_local_api.py
