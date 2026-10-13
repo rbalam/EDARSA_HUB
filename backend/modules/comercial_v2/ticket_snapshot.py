@@ -296,88 +296,6 @@ ORDER BY c.Co_Folio, producto_codigo
 # - CANONICAL_VENTA_ENCABEZADO -> esta consulta.
 # - PROVISIONAL_COMANDA -> QUERY_MPRO_DETALLE_CERRADAS_PROVISIONALES.
 QUERY_MPRO_DETALLE_CERRADAS_CANONICAS = """
-WITH h AS (
-    SELECT
-        ve.Vn_Folio,
-        ve.Vn_Documento,
-        ve.Vn_Fecha,
-        ve.Sc_Cve_Sucursal,
-        ve.Vn_Cve_Vendedor,
-        CAST(
-            ISNULL(ve.Vn_Precio_Neto_Importe, 0)
-            AS decimal(18,4)
-        ) AS total_header,
-        ISNULL(c.Co_Personas, 0) AS pax,
-        ISNULL(c.Co_Propina, 0) AS propina,
-        NULLIF(
-            LTRIM(RTRIM(CONVERT(varchar(100), c.Co_Referencia))),
-            ''
-        ) AS mesa,
-        NULLIF(
-            LTRIM(RTRIM(CONVERT(varchar(200), vnd.Vn_Descripcion))),
-            ''
-        ) AS vendedor_nombre
-    FROM Venta_Encabezado ve
-    LEFT JOIN Comanda c
-        ON c.Co_Folio = ve.Vn_Documento
-       AND c.Sc_Cve_Sucursal = ve.Sc_Cve_Sucursal
-    LEFT JOIN Vendedor vnd
-        ON vnd.Vn_Cve_Vendedor = ve.Vn_Cve_Vendedor
-    WHERE CAST(ve.Vn_Fecha AS date) = '{fecha_operacion}'
-      AND ve.Sc_Cve_Sucursal = '{sucursal_id}'
-      AND ve.Es_Cve_Estado IN ('AC', 'FA')
-      AND ve.Fecha_Baja IS NULL
-),
-t AS (
-    SELECT
-        Vn_Documento,
-        MIN(Vn_Fecha) AS fecha_hora,
-        MAX(pax) AS pax,
-        MAX(propina) AS propina,
-        MAX(CONVERT(varchar(100), Vn_Cve_Vendedor)) AS vendedor_id,
-        MAX(vendedor_nombre) AS vendedor_nombre,
-        MAX(mesa) AS mesa,
-        SUM(total_header) AS total_ticket
-    FROM h
-    GROUP BY Vn_Documento
-),
-l AS (
-    SELECT
-        h.Vn_Documento,
-        h.Vn_Folio AS venta_folio,
-        d.Vn_ID AS venta_partida_id,
-        MAX(CONVERT(varchar(64), h.Vn_Folio)) AS folio_origen,
-        COALESCE(
-            NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),
-            'SIN_CODIGO'
-        ) AS producto_codigo,
-        COALESCE(
-            MAX(CONVERT(varchar(300), d.Vn_Concepto)),
-            'VENTA SIN DETALLE DE PRODUCTO'
-        ) AS producto_nombre,
-        MAX(CASE WHEN d.Vn_Folio IS NULL THEN 0 ELSE 1 END) AS tiene_detalle,
-        SUM(
-            CAST(ISNULL(d.Vn_Cantidad_1, 0) AS decimal(18,4))
-        ) AS cantidad,
-        SUM(
-            CAST(ISNULL(d.Vn_Precio_Lista_Importe, 0) AS decimal(18,4))
-        ) AS importe_bruto,
-        SUM(
-            CAST(ISNULL(d.Vn_Descuento_Importe, 0) AS decimal(18,4))
-        ) AS descuento_producto
-    FROM h
-    LEFT JOIN Venta d
-        ON d.Vn_Folio = h.Vn_Folio
-       AND d.Sc_Cve_Sucursal = h.Sc_Cve_Sucursal
-    GROUP BY
-        h.Vn_Documento,
-        h.Vn_Folio,
-        d.Vn_ID,
-        COALESCE(
-            NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),
-            'SIN_CODIGO'
-        )
-)
 SELECT
     CONCAT(l.venta_folio,':',l.venta_partida_id) AS partida_origen_id,
     cd2.Cd_Key AS partida_key,
@@ -487,8 +405,99 @@ SELECT
     END AS importe_neto_producto,
     CAST(0 AS decimal(18,4)) AS descuento_encabezado_reportado,
     CAST(0 AS decimal(18,4)) AS descuento_total_reportado
-FROM t
-INNER JOIN l
+FROM (
+    SELECT
+        h.Vn_Documento,
+        MIN(h.Vn_Fecha) AS fecha_hora,
+        MAX(h.pax) AS pax,
+        MAX(h.propina) AS propina,
+        MAX(CONVERT(varchar(100), h.Vn_Cve_Vendedor)) AS vendedor_id,
+        MAX(h.vendedor_nombre) AS vendedor_nombre,
+        MAX(h.mesa) AS mesa,
+        SUM(h.total_header) AS total_ticket
+    FROM (
+        SELECT
+            ve.Vn_Folio,
+            ve.Vn_Documento,
+            ve.Vn_Fecha,
+            ve.Sc_Cve_Sucursal,
+            ve.Vn_Cve_Vendedor,
+            CAST(
+                ISNULL(ve.Vn_Precio_Neto_Importe, 0)
+                AS decimal(18,4)
+            ) AS total_header,
+            ISNULL(c.Co_Personas, 0) AS pax,
+            ISNULL(c.Co_Propina, 0) AS propina,
+            NULLIF(
+                LTRIM(RTRIM(CONVERT(varchar(100), c.Co_Referencia))),
+                ''
+            ) AS mesa,
+            NULLIF(
+                LTRIM(RTRIM(CONVERT(varchar(200), vnd.Vn_Descripcion))),
+                ''
+            ) AS vendedor_nombre
+        FROM Venta_Encabezado ve
+        LEFT JOIN Comanda c
+            ON c.Co_Folio = ve.Vn_Documento
+           AND c.Sc_Cve_Sucursal = ve.Sc_Cve_Sucursal
+        LEFT JOIN Vendedor vnd
+            ON vnd.Vn_Cve_Vendedor = ve.Vn_Cve_Vendedor
+        WHERE CAST(ve.Vn_Fecha AS date) = '{fecha_operacion}'
+          AND ve.Sc_Cve_Sucursal = '{sucursal_id}'
+          AND ve.Es_Cve_Estado IN ('AC', 'FA')
+          AND ve.Fecha_Baja IS NULL
+    ) AS h
+    GROUP BY h.Vn_Documento
+) AS t
+INNER JOIN (
+    SELECT
+        h.Vn_Documento,
+        h.Vn_Folio AS venta_folio,
+        d.Vn_ID AS venta_partida_id,
+        MAX(CONVERT(varchar(64), h.Vn_Folio)) AS folio_origen,
+        COALESCE(
+            NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),
+            'SIN_CODIGO'
+        ) AS producto_codigo,
+        COALESCE(
+            MAX(CONVERT(varchar(300), d.Vn_Concepto)),
+            'VENTA SIN DETALLE DE PRODUCTO'
+        ) AS producto_nombre,
+        MAX(CASE WHEN d.Vn_Folio IS NULL THEN 0 ELSE 1 END) AS tiene_detalle,
+        SUM(
+            CAST(ISNULL(d.Vn_Cantidad_1, 0) AS decimal(18,4))
+        ) AS cantidad,
+        SUM(
+            CAST(ISNULL(d.Vn_Precio_Lista_Importe, 0) AS decimal(18,4))
+        ) AS importe_bruto,
+        SUM(
+            CAST(ISNULL(d.Vn_Descuento_Importe, 0) AS decimal(18,4))
+        ) AS descuento_producto
+    FROM (
+        SELECT
+            ve.Vn_Folio,
+            ve.Vn_Documento,
+            ve.Vn_Fecha,
+            ve.Sc_Cve_Sucursal,
+            ve.Vn_Cve_Vendedor
+        FROM Venta_Encabezado ve
+        WHERE CAST(ve.Vn_Fecha AS date) = '{fecha_operacion}'
+          AND ve.Sc_Cve_Sucursal = '{sucursal_id}'
+          AND ve.Es_Cve_Estado IN ('AC', 'FA')
+          AND ve.Fecha_Baja IS NULL
+    ) AS h
+    LEFT JOIN Venta d
+        ON d.Vn_Folio = h.Vn_Folio
+       AND d.Sc_Cve_Sucursal = h.Sc_Cve_Sucursal
+    GROUP BY
+        h.Vn_Documento,
+        h.Vn_Folio,
+        d.Vn_ID,
+        COALESCE(
+            NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''),
+            'SIN_CODIGO'
+        )
+) AS l
     ON l.Vn_Documento = t.Vn_Documento
 LEFT JOIN Comanda c2 ON c2.Co_Folio=t.Vn_Documento
 LEFT JOIN Cliente cl ON cl.Cl_Cve_Cliente=c2.Cl_Cve_Cliente
