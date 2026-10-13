@@ -1,0 +1,62 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-CHAPUR-SYNCED-SUCURSAL-EVIDENCE-READONLY-SQL-R2B-20261013",
+  "mode": "READ_ONLY_SQL",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Auditar exclusivamente evidencia SQL ya persistida para CHAPUR en tablas relacionales de sucursal-servidor, sin LIVE, sin Mongo operativo y sin leer PayloadMongo. Determinar si las 7 filas de Sistema_ServidorSucursalesConfig corresponden a CHAPUR, identificar SucursalID/SucursalCodigo/ServidorID y cruzarlas con Sistema_SucursalServidorMapeo, Sistema_Sucursales y Empresa. No DML, no Produccion.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS",
+    "chat": "Conexiones y Comunicaciones / Menu Servidores 2"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 200,
+      "queries": [
+        {
+          "name": "servidor_sucursales_config_all_relational",
+          "sql": "SELECT ConfigID,CONVERT(nvarchar(100),ServidorID) AS ServidorID,SucursalNombre,SucursalCodigo,SucursalID,VisibleEnOperaciones,VisibleEnComercial,FuenteMigracion,Activo,FechaCreacion,FechaModificacion,CreatedBy,UpdatedBy FROM dbo.Sistema_ServidorSucursalesConfig ORDER BY ServidorID,SucursalID,SucursalCodigo"
+        },
+        {
+          "name": "chapur_servidor_sucursales_config",
+          "sql": "SELECT ConfigID,CONVERT(nvarchar(100),ServidorID) AS ServidorID,SucursalNombre,SucursalCodigo,SucursalID,VisibleEnOperaciones,VisibleEnComercial,FuenteMigracion,Activo FROM dbo.Sistema_ServidorSucursalesConfig WHERE ServidorID IN ('8cbdcc89-6495-49c3-be9c-a965db82c77f','d8b2d1eb-2e1f-4e43-b7d9-822bf671e315') ORDER BY ServidorID,SucursalID,SucursalCodigo"
+        },
+        {
+          "name": "chapur_canonical_mapeo",
+          "sql": "SELECT m.MapeoID,CONVERT(nvarchar(100),m.ServidorID) AS ServidorID,m.SucursalID,m.SucursalOrigenID,m.Activo AS MapeoActivo,s.CodigoSucursal,s.NombreSucursal,s.EmpresaID,e.CodigoEmpresa,e.NombreEmpresa,e.NombreComercial FROM dbo.Sistema_SucursalServidorMapeo m LEFT JOIN dbo.Sistema_Sucursales s ON s.SucursalID=m.SucursalID LEFT JOIN dbo.Sistema_Empresas e ON e.EmpresaID=s.EmpresaID WHERE m.ServidorID IN ('8cbdcc89-6495-49c3-be9c-a965db82c77f','d8b2d1eb-2e1f-4e43-b7d9-822bf671e315') ORDER BY m.ServidorID,m.SucursalID"
+        },
+        {
+          "name": "config_to_canonical_crosswalk",
+          "sql": "SELECT c.ConfigID,CONVERT(nvarchar(100),c.ServidorID) AS ServidorID,c.SucursalCodigo AS ConfigSucursalCodigo,c.SucursalNombre AS ConfigSucursalNombre,c.SucursalID AS ConfigSucursalID,s.SucursalID AS CanonicalSucursalID,s.CodigoSucursal,s.NombreSucursal,s.EmpresaID,e.CodigoEmpresa,e.NombreEmpresa FROM dbo.Sistema_ServidorSucursalesConfig c LEFT JOIN dbo.Sistema_Sucursales s ON s.SucursalID=c.SucursalID LEFT JOIN dbo.Sistema_Empresas e ON e.EmpresaID=s.EmpresaID WHERE c.ServidorID IN ('8cbdcc89-6495-49c3-be9c-a965db82c77f','d8b2d1eb-2e1f-4e43-b7d9-822bf671e315') ORDER BY c.ServidorID,c.SucursalID"
+        }
+      ]
+    }
+  ],
+  "acceptance_criteria": [
+    "READ_ONLY_COMPLETE",
+    "CERTIFIED_READ_ONLY",
+    "production_touched=false",
+    "No DDL or DML",
+    "No remote connectivity attempted",
+    "No PayloadMongo selected",
+    "CHAPUR rows identified only by ServidorID evidence"
+  ]
+}
