@@ -23,6 +23,7 @@ env:
   EDARSAHUB_SQL_USER: "HRLectura"
   EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
   SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+  JWT_SECRET: ticket-parity-${{ github.run_id }}-${{ github.sha }}
 
 jobs:
   parity:
