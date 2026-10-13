@@ -1,0 +1,33 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-CHAPUR-SYNCED-SALES-SCHEMA-READONLY-SQL-R2C2-20261013",
+  "mode": "READ_ONLY_SQL",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "human_summary_language": "es",
+  "objective": "Certificar esquema SQL persistido de Sync_Ventas_Historicas, Sync_Ventas_PorHora, Sync_Mesas y Sync_Control_Ejecuciones para evidencia CHAPUR. Sin LIVE, sin DML, sin Produccion.",
+  "production_allowed": false,
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "candidate_schema",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE,ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Sync_Ventas_Historicas','Sync_Ventas_PorHora','Sync_Mesas','Sync_Control_Ejecuciones') ORDER BY TABLE_NAME,ORDINAL_POSITION"
+        },
+        {
+          "name": "candidate_counts",
+          "sql": "SELECT t.name AS table_name,SUM(p.rows) AS approximate_rows FROM sys.tables t JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name IN ('Sync_Ventas_Historicas','Sync_Ventas_PorHora','Sync_Mesas','Sync_Control_Ejecuciones') GROUP BY t.name ORDER BY t.name"
+        }
+      ]
+    }
+  ],
+  "acceptance_criteria": [
+    "READ_ONLY_COMPLETE",
+    "CERTIFIED_READ_ONLY",
+    "production_touched=false"
+  ]
+}
