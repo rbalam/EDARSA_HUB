@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-CHAPUR-ENTERPRISE-SUCURSAL-CANONICAL-ADAPTER-DESIGN-R1-20261013",
+  "mode": "READ_ONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "human_summary_language": "es",
+  "objective": "Diseñar y auditar sin mutaciones la extensión canónica de integrations_runtime para SoftRestaurant Enterprise multisucursal. Debe reutilizar Servidores_Conexiones, Sistema_SucursalServidorMapeo, Sistema_Sucursales, Sistema_Empresas, Sistema_IdentificadoresExternos, Sync_Control_Ejecuciones y RBAC existentes. Identificar punto de integración exacto para materializar sucursales CHAPUR mediante sync programado/no-LIVE de UI, sin tablas paralelas, sin hardcode, sin Mongo operativo, sin crecer core y sin Produccion.",
+  "production_allowed": false,
+  "actions": [],
+  "checks": [
+    {
+      "type": "repo_readonly_audit",
+      "paths": [
+        "backend/modules/integrations_runtime",
+        "backend/core/system_capability_resolver.py",
+        "backend/modules/api_connections",
+        "backend/core/connection_resolver.py",
+        "backend/core/context_resolver.py",
+        "backend/modules/comercial",
+        "backend/core/scheduler/jobs",
+        "docs/SERVIDORES/SERVIDORES_INTEGRACIONES_GATE5C_RUNTIME_ADOPTION.md",
+        "docs/API_CONNECTIONS_ARCHITECTURE_CORRECTION_REPORT.md"
+      ]
+    }
+  ],
+  "acceptance_criteria": [
+    "READ_ONLY_COMPLETE",
+    "production_touched=false",
+    "No DDL or DML",
+    "No LIVE source query",
+    "No parallel registry or mapping table proposed",
+    "Design names exact bounded-context files and reuse existing canonical writers/resolvers",
+    "Define atomic flow Enterprise source sync -> external identifier -> canonical sucursal mapping -> unit/company scope"
+  ]
+}
