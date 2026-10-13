@@ -31,23 +31,34 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Capture cycle start
+        id: clock
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "started_epoch=$(date +%s)" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/requirements.txt
+
       - name: Install backend runtime dependencies
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
           grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-commercial-owner.txt
           python -m pip install -r /tmp/requirements-commercial-owner.txt
+
       - name: Validate external owner secrets
         run: |
           set -euo pipefail
           test -n "$EDARSAHUB_SQL_PASSWORD"
           test -n "$SERVER_SECRET_KEY"
+
       - name: Run canonical Ventas del Dia
         working-directory: backend
         env:
@@ -56,17 +67,36 @@ jobs:
           set -euo pipefail
           python tools/run_commercial_github_owner.py open_sales --require-executed
 
-      - name: Relay canary once through workflow_dispatch
-        if: ${{ always() && github.event_name == 'push' }}
+      - name: Relay next open-sales cycle at 5 minutes
+        if: ${{ always() && vars.EDARSA_COMMERCIAL_RELAY_ENABLED != 'false' }}
         env:
           GH_TOKEN: ${{ github.token }}
+          STARTED_EPOCH: ${{ steps.clock.outputs.started_epoch }}
         run: |
           set -euo pipefail
-          sleep 60
-          curl --silent --show-error --fail-with-body \
-            --request POST \
-            --header "Authorization: Bearer ${GH_TOKEN}" \
-            --header "Accept: application/vnd.github+json" \
-            --header "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/commercial-open-sales-clock.yml/dispatches" \
-            --data '{"ref":"Edarsahub_Desarrollo"}'
+          now="$(date +%s)"
+          target="$((STARTED_EPOCH + 300))"
+          wait_seconds="$((target - now))"
+          if [ "$wait_seconds" -gt 0 ]; then
+            echo "OPEN_SALES_RELAY_WAIT_SECONDS=$wait_seconds"
+            sleep "$wait_seconds"
+          fi
+
+          payload='{"ref":"Edarsahub_Desarrollo"}'
+          for attempt in 1 2 3; do
+            if curl --silent --show-error --fail-with-body \
+              --request POST \
+              --header "Authorization: Bearer ${GH_TOKEN}" \
+              --header "Accept: application/vnd.github+json" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/commercial-open-sales-clock.yml/dispatches" \
+              --data "$payload"; then
+              echo "OPEN_SALES_RELAY=DISPATCHED"
+              exit 0
+            fi
+            echo "OPEN_SALES_RELAY_RETRY=$attempt"
+            sleep "$((attempt * 5))"
+          done
+
+          echo "OPEN_SALES_RELAY=FAILED"
+          exit 1
