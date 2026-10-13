@@ -1,0 +1,8 @@
+{
+  "schema": "edarsahub.worker-runtime-recovery-trigger.v1",
+  "existing_job_id": "USUARIOS-DAVID-CANARY-EXPECTED-SCOPE-R6A-20261013",
+  "queue_branch": "worker/requests",
+  "queue_head_before_wake": "ba61dd325cbbaad44aefb80dd95a6d865521bef9",
+  "reason": "Wake control-plane only for existing R6A request. Do not duplicate or modify the functional job. Preserve any healthy active job, prefer R6A when available, do not touch Edarsahub_Desarrollo or Production.",
+  "production_touched": false
+}
