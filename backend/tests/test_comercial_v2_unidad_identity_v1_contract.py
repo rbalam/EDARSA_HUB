@@ -17,6 +17,12 @@ SYNC = (
       "sync_comercial_edarsahub.py"
 )
 
+MPRO_CLOSED_API = (
+    ROOT
+    / "backend/modules/comercial_v2/"
+      "mpro_closed_api.py"
+)
+
 JOB = (
     ROOT
     / "backend/core/scheduler/jobs/"
@@ -271,8 +277,13 @@ def test_queries_comerciales_usan_fecha_sql_112():
     assert old_start not in text
     assert old_end not in text
 
-    assert text.count(new_start) >= 2
-    assert text.count(new_end) >= 2
+    assert text.count(new_start) >= 1
+    assert text.count(new_end) >= 1
+
+    mpro_text = MPRO_CLOSED_API.read_text(encoding="utf-8")
+    assert 'strftime("%Y%m%d")' in mpro_text
+    assert "CONVERT(datetime, '{inicio}', 112)" in mpro_text
+    assert "CONVERT(datetime, '{fin}', 112)" in mpro_text
 
 
 # V1.0-VENTAS-DIA-SIN-PROPINA-DATE112
