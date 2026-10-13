@@ -1,0 +1,54 @@
+name: Closed Sales Zero Read-Only Diagnostic
+
+on:
+  push:
+    branches:
+      - diag/closed-sales-zero-20261013
+    paths:
+      - ".github/workflows/closed-sales-zero-diagnostic.yml"
+      - "backend/tools/diag_closed_sales_zero.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  EDARSA_ENV: DEVELOPMENT
+  EDARSAHUB_SQL_HOST: "54.39.104.176"
+  EDARSAHUB_SQL_PORT: "1433"
+  EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+  EDARSAHUB_SQL_USER: "HRLectura"
+  EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+  SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+
+jobs:
+  read-only-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-diag.txt
+          python -m pip install -r /tmp/requirements-diag.txt
+      - name: Guard read-only contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -Eq 'INSERT INTO|UPDATE dbo|DELETE FROM|upsert_|sync_.*\(' backend/tools/diag_closed_sales_zero.py
+      - name: Run read-only diagnostic
+        shell: bash
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          set -euo pipefail
+          python tools/diag_closed_sales_zero.py
