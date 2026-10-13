@@ -76,6 +76,8 @@ def test_ventas_abiertas_escribe_codigo_legacy():
         "WHERE unidad_negocio_id = '{unidad_codigo}'"
         in block
     )
+    assert "FROM dbo.Comercial_Ventas_Dia_Abiertas_v2" in block
+    assert "UPDATE dbo.Comercial_Ventas_Dia_Abiertas_v2 SET" in block
     assert (
         "WHERE unidad_negocio_id = "
         "'{ventas.unidad_negocio_pk}'"
@@ -85,7 +87,7 @@ def test_ventas_abiertas_escribe_codigo_legacy():
     assert re.search(
         r"""
         INSERT\s+INTO\s+
-        Comercial_Ventas_Dia_Abiertas_v2
+        dbo\.Comercial_Ventas_Dia_Abiertas_v2
         .*?
         VALUES\s*\(
         \s*'\{new_id\}',
