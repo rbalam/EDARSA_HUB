@@ -1,0 +1,24 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-CHAPUR-ENTERPRISE-SUCURSAL-CANONICAL-ADAPTER-DESIGN-R1B-20261013",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Auditar y diseñar, sin mutaciones, la extensión canónica existente para SoftRestaurant Enterprise multisucursal CHAPUR. Reutilizar contratos existentes de conexiones, mapeo sucursal-servidor, sucursales, empresas, identificadores externos, ledger y RBAC. Definir archivos bounded-context exactos y flujo de materialización programada de sucursales sin consultas LIVE desde UI, sin tablas paralelas, sin hardcode, sin Mongo operativo, sin crecer core y sin Produccion. No implementar.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "acceptance_criteria": [
+    "READ_ONLY_COMPLETE",
+    "production_touched=false",
+    "No implementation",
+    "No DDL or DML",
+    "No LIVE source query",
+    "No parallel registry or mapping table"
+  ]
+}
