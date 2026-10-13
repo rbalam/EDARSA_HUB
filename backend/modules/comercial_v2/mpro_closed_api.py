@@ -235,11 +235,23 @@ def execute_mpro_select_via_api(
         return [], ConnectionStatus.OFFLINE
 
     if response.status_code != 200:
+        response_detail = ""
+        try:
+            payload_error = response.json()
+            response_detail = str(
+                payload_error.get("detail")
+                or payload_error.get("error")
+                or payload_error
+            )
+        except Exception:
+            response_detail = str(response.text or "")
+
         logger.error(
-            "[MPRO_CLOSED_API] HTTP %s unidad=%s servidor=%s",
+            "[MPRO_CLOSED_API] HTTP %s unidad=%s servidor=%s detail=%s",
             response.status_code,
             (api_config or {}).get("unidad_codigo"),
             (api_config or {}).get("server_name"),
+            response_detail[:800],
         )
         return [], ConnectionStatus.OFFLINE
 
