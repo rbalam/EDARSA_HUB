@@ -124,6 +124,73 @@ def resolve_mpro_closed_api(
     }
 
 
+def build_mpro_closed_sales_query(
+    unidad_codigo: str,
+    sucursal_id: str,
+    fecha_inicio,
+    fecha_fin,
+) -> str:
+    """Build the unit-specific closed-sales SELECT for MPRO local APIs."""
+
+    codigo = str(unidad_codigo or "").strip().upper()
+    sucursal = str(sucursal_id or "").strip()
+    inicio = fecha_inicio.isoformat()
+    fin = fecha_fin.isoformat()
+
+    if codigo == "ORIGEN":
+        return f"""
+SELECT
+    ve.Vn_Fecha AS fecha_hora,
+    ve.Vn_Folio AS Vn_Folio,
+    ve.Vn_Precio_Neto_Importe AS Vn_Precio_Neto_Importe,
+    ISNULL(c.Co_Propina, 0) AS propinas,
+    ISNULL(c.Co_Personas, 0) AS total_personas
+FROM Venta_Encabezado AS ve
+LEFT JOIN Comanda AS c
+    ON c.Co_Folio = ve.Vn_Documento
+   AND c.Sc_Cve_Sucursal = ve.Sc_Cve_Sucursal
+WHERE ve.Vn_Fecha >= CONVERT(datetime, '{inicio}', 23)
+  AND ve.Vn_Fecha < DATEADD(day, 1, CONVERT(datetime, '{fin}', 23))
+  AND ve.Sc_Cve_Sucursal = '{sucursal}'
+  AND ISNULL(ve.Es_Cve_Estado, '') IN ('AC', 'FA')
+  AND ve.Fecha_Baja IS NULL
+ORDER BY ve.Vn_Fecha
+"""
+
+    if codigo == "130QRO":
+        return f"""
+SELECT
+    ticket.fecha_hora,
+    ticket.Vn_Folio,
+    ticket.Vn_Precio_Neto_Importe,
+    ticket.propinas,
+    ticket.total_personas
+FROM (
+    SELECT
+        MAX(c.Co_Fecha) AS fecha_hora,
+        c.Co_Folio AS Vn_Folio,
+        SUM(ISNULL(cd.Cd_Importe, 0)) AS Vn_Precio_Neto_Importe,
+        MAX(ISNULL(c.Co_Propina, 0)) AS propinas,
+        MAX(ISNULL(c.Co_Personas, 0)) AS total_personas
+    FROM Comanda AS c
+    INNER JOIN Comanda_Detalle AS cd
+        ON cd.Co_Folio = c.Co_Folio
+    WHERE c.Co_Fecha >= CONVERT(datetime, '{inicio}', 23)
+      AND c.Co_Fecha < DATEADD(day, 1, CONVERT(datetime, '{fin}', 23))
+      AND c.Sc_Cve_Sucursal = '{sucursal}'
+      AND c.Es_Cve_Estado = 'PA'
+      AND cd.Es_Cve_Estado = 'AC'
+      AND cd.Fecha_Baja IS NULL
+    GROUP BY c.Co_Folio
+) AS ticket
+ORDER BY ticket.fecha_hora
+"""
+
+    raise ValueError(
+        f"Unsupported MPRO closed-sales unit: {codigo or 'EMPTY'}"
+    )
+
+
 def execute_mpro_select_via_api(
     api_config: Dict[str, Any],
     query: str,
