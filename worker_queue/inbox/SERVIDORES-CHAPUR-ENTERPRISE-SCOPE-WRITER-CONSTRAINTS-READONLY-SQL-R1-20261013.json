@@ -1,0 +1,32 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-CHAPUR-ENTERPRISE-SCOPE-WRITER-CONSTRAINTS-READONLY-SQL-R1-20261013",
+  "mode": "READ_ONLY_SQL",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "human_summary_language": "es",
+  "objective": "Certificar constraints SQL de Sistema_IdentificadoresExternos y Sistema_SucursalServidorMapeo para writers idempotentes de scope Enterprise CHAPUR. Solo lectura; sin LIVE ni Produccion.",
+  "production_allowed": false,
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "columns_contract",
+          "sql": "SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE,IS_NULLABLE,CHARACTER_MAXIMUM_LENGTH,ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Sistema_IdentificadoresExternos','Sistema_SucursalServidorMapeo') ORDER BY TABLE_NAME,ORDINAL_POSITION"
+        },
+        {
+          "name": "indexes_contract",
+          "sql": "SELECT t.name AS table_name,i.name AS index_name,i.is_unique,i.is_primary_key,c.name AS column_name,ic.key_ordinal FROM sys.tables t JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=t.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE t.name IN ('Sistema_IdentificadoresExternos','Sistema_SucursalServidorMapeo') AND i.is_hypothetical=0 ORDER BY t.name,i.name,ic.key_ordinal"
+        },
+        {
+          "name": "foreign_keys_contract",
+          "sql": "SELECT OBJECT_NAME(fk.parent_object_id) AS table_name,fk.name AS fk_name,pc.name AS parent_column,OBJECT_NAME(fk.referenced_object_id) AS referenced_table,rc.name AS referenced_column FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fk.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.columns rc ON rc.object_id=fk.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE OBJECT_NAME(fk.parent_object_id) IN ('Sistema_IdentificadoresExternos','Sistema_SucursalServidorMapeo') ORDER BY table_name,fk.name,fkc.constraint_column_id"
+        }
+      ]
+    }
+  ]
+}
