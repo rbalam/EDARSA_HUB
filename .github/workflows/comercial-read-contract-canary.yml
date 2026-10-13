@@ -1,0 +1,79 @@
+name: Comercial Read Contract Canary
+
+on:
+  push:
+    branches:
+      - fix/comercial-read-contract-zero-20261013
+    paths:
+      - ".github/workflows/comercial-read-contract-canary.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  EDARSA_ENV: DEVELOPMENT
+  EDARSAHUB_SQL_HOST: "54.39.104.176"
+  EDARSAHUB_SQL_PORT: "1433"
+  EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+  EDARSAHUB_SQL_USER: "HRLectura"
+  EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+  SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+
+jobs:
+  contract-and-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install backend dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-contract.txt
+          python -m pip install -r /tmp/requirements-contract.txt
+      - name: Run focused regression tests
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          python -m pytest -q             tests/test_comercial_operacion_en_curso_repository.py             tests/test_comercial_v2_unidad_identity_v1_contract.py
+      - name: Read-only current-operation canary
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from modules.comercial_analytics.repository_operational import build_current_operation
+
+          result = build_current_operation(
+              allowed_unit_codes=[
+                  "130MID",
+                  "CIENFUEGOS",
+                  "ESTELAR",
+                  "ORIGEN",
+                  "130QRO",
+              ]
+          )
+
+          print("CANARY_CURRENT_OPERATION=" + json.dumps(result, default=str, ensure_ascii=False))
+
+          by_unit = {x["unidad_negocio_id"]: x for x in result["items"]}
+
+          assert result["fecha_operacion_multiple"] is True
+          assert by_unit["CIENFUEGOS"]["fecha_operacion"] == "2026-10-12"
+          assert float(by_unit["CIENFUEGOS"]["operacion_estimada"]["ventas"]) > 0
+          assert by_unit["ORIGEN"]["fecha_operacion"] == "2026-10-13"
+
+          for code in ("130MID", "130QRO", "ESTELAR"):
+              assert by_unit[code]["fecha_operacion"] == "2026-10-12"
+              assert float(by_unit[code]["operacion_estimada"]["ventas"]) > 0
+
+          print("CANARY_RESULT=PASS_PER_UNIT_OPERATION_DATE")
+          PY
