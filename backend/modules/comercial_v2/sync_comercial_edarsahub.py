@@ -42,6 +42,10 @@ from .mappers import (
     map_mpro_ventas_abiertas
 )
 from core.unidades_service import UnidadesService
+from .mpro_closed_api import (
+    resolve_mpro_closed_api,
+    execute_mpro_select_via_api,
+)
 from .repository_comercial_edarsahub import (
     EDARSAHUB_CONFIG,
     get_unidades_negocio_config,
@@ -831,26 +835,41 @@ def sync_mpro_ventas_cerradas(
     )
     
     try:
-        # Obtener configuración del servidor
-        server_config = get_server_connection_config(
-            config.server_id,
-            config.unidad_negocio_pk,
-        )
-        if not server_config:
-            result.error_message = f"No se encontró configuración para server_id {config.server_id}"
+        # REGLA CANÓNICA MPRO CERRADAS:
+        # ORIGEN/130QRO se resuelven por la relación de API local de la unidad.
+        # No se permite fallback silencioso al servidor MPRO compartido/CENTRAL2020.
+        api_config = resolve_mpro_closed_api(config.unidad_negocio_pk)
+        if not api_config:
+            result.error_message = (
+                "No se encontró API local canónica para ventas cerradas MPRO "
+                f"(unidad_negocio_pk={config.unidad_negocio_pk})"
+            )
             return result
-        
-        # Ejecutar query con sucursal específica
+
+        api_sucursal_id = str(api_config.get("sucursal_id") or "").strip()
+        requested_sucursal_id = str(sucursal_id or "").strip()
+        if not api_sucursal_id or api_sucursal_id != requested_sucursal_id:
+            result.error_message = (
+                "La sucursal de la API local no coincide con la unidad canónica: "
+                f"api={api_sucursal_id or 'EMPTY'}, requested={requested_sucursal_id or 'EMPTY'}"
+            )
+            return result
+
+        # La API local exige que la consulta comience con SELECT.
+        # Esta consulta es SELECT puro y mantiene el contrato histórico del mapper.
         query = QUERY_MPRO_VENTAS_CERRADAS.format(
             fecha_inicio=fecha_inicio.isoformat(),
             fecha_fin=fecha_fin.isoformat(),
-            sucursal_id=sucursal_id
+            sucursal_id=api_sucursal_id
+        )
+
+        rows, conn_status = execute_mpro_select_via_api(
+            api_config,
+            query,
         )
         
-        rows, conn_status = execute_query_on_server(server_config, query)
-        
         if conn_status != ConnectionStatus.ONLINE:
-            result.error_message = f"Conexión fallida: {conn_status}"
+            result.error_message = f"Conexión API local fallida: {conn_status}"
             log = SyncLogV2(
                 run_id=run_id,
                 run_type=SyncRunType.INCREMENTAL,
