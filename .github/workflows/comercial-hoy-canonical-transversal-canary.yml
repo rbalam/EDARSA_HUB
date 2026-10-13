@@ -1,0 +1,88 @@
+name: Comercial Hoy Canonical Transversal Canary
+
+on:
+  push:
+    branches:
+      - fix/comercial-dashboard-current-operation-canonical-20261013
+    paths:
+      - ".github/workflows/comercial-hoy-canonical-transversal-canary.yml"
+      - "backend/modules/comercial/routes.py"
+      - "backend/tests/test_comercial_dashboard_operational_day_contract.py"
+      - "backend/tests/test_comercial_hoy_canonical_transversal_contract.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  EDARSA_ENV: DEVELOPMENT
+  EDARSAHUB_SQL_HOST: "54.39.104.176"
+  EDARSAHUB_SQL_PORT: "1433"
+  EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+  EDARSAHUB_SQL_USER: "HRLectura"
+  EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+  SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+
+jobs:
+  canonical-transversal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-comercial-hoy.txt
+          python -m pip install -r /tmp/requirements-comercial-hoy.txt
+
+      - name: Compile and run contract tests
+        shell: bash
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          python -m py_compile modules/comercial/routes.py
+          python -m pytest -q \
+            tests/test_comercial_dashboard_operational_day_contract.py \
+            tests/test_comercial_hoy_canonical_transversal_contract.py \
+            tests/test_comercial_operacion_en_curso_repository.py
+
+      - name: Read-only parity canary
+        shell: bash
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from modules.comercial_analytics.repository_operational import build_current_operation
+
+          result = build_current_operation(
+              allowed_unit_codes=[
+                  "130MID",
+                  "CIENFUEGOS",
+                  "ESTELAR",
+                  "ORIGEN",
+                  "130QRO",
+              ]
+          )
+          print("CANONICAL_CURRENT_OPERATION=" + json.dumps(result, default=str, ensure_ascii=False))
+
+          by_unit = {x["unidad_negocio_id"]: x for x in result["items"]}
+
+          assert float(by_unit["130QRO"]["operacion_estimada"]["ventas"]) == 0.0
+          assert float(by_unit["ESTELAR"]["operacion_estimada"]["ventas"]) == 0.0
+          assert float(by_unit["130MID"]["operacion_estimada"]["ventas"]) >= 0.0
+          assert float(by_unit["CIENFUEGOS"]["operacion_estimada"]["ventas"]) >= 0.0
+          assert float(by_unit["ORIGEN"]["operacion_estimada"]["ventas"]) >= 0.0
+
+          print("CANONICAL_TRANSVERSAL_CANARY=PASS")
+          PY
