@@ -134,8 +134,8 @@ def build_mpro_closed_sales_query(
 
     codigo = str(unidad_codigo or "").strip().upper()
     sucursal = str(sucursal_id or "").strip()
-    inicio = fecha_inicio.isoformat()
-    fin = fecha_fin.isoformat()
+    inicio = fecha_inicio.strftime("%Y%m%d")
+    fin = fecha_fin.strftime("%Y%m%d")
 
     if codigo == "ORIGEN":
         return f"""
@@ -149,8 +149,8 @@ FROM Venta_Encabezado AS ve
 LEFT JOIN Comanda AS c
     ON c.Co_Folio = ve.Vn_Documento
    AND c.Sc_Cve_Sucursal = ve.Sc_Cve_Sucursal
-WHERE ve.Vn_Fecha >= CONVERT(datetime, '{inicio}', 23)
-  AND ve.Vn_Fecha < DATEADD(day, 1, CONVERT(datetime, '{fin}', 23))
+WHERE ve.Vn_Fecha >= CONVERT(datetime, '{inicio}', 112)
+  AND ve.Vn_Fecha < DATEADD(day, 1, CONVERT(datetime, '{fin}', 112))
   AND ve.Sc_Cve_Sucursal = '{sucursal}'
   AND ISNULL(ve.Es_Cve_Estado, '') IN ('AC', 'FA')
   AND ve.Fecha_Baja IS NULL
@@ -175,8 +175,8 @@ FROM (
     FROM Comanda AS c
     INNER JOIN Comanda_Detalle AS cd
         ON cd.Co_Folio = c.Co_Folio
-    WHERE c.Co_Fecha >= CONVERT(datetime, '{inicio}', 23)
-      AND c.Co_Fecha < DATEADD(day, 1, CONVERT(datetime, '{fin}', 23))
+    WHERE c.Co_Fecha >= CONVERT(datetime, '{inicio}', 112)
+      AND c.Co_Fecha < DATEADD(day, 1, CONVERT(datetime, '{fin}', 112))
       AND c.Sc_Cve_Sucursal = '{sucursal}'
       AND c.Es_Cve_Estado = 'PA'
       AND cd.Es_Cve_Estado = 'AC'
