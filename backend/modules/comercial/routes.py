@@ -157,6 +157,9 @@ from modules.comercial_v2.repository_readonly import get_ventas_dia_abiertas, ge
 # REGLA: El tablero debe mostrar FechaOperacion activa, NO fecha calendario
 # =============================================================================
 from core.utils.operational_window import get_operational_window
+from modules.comercial_analytics.repository_operational import (
+    build_current_operation,
+)
 # FASE 3A.2: Import de utilidades de normalización de system_type
 from core.server_registry import list_unidades_negocio, resolve_unidad_by_server_sucursal
 from core.system_type_utils import (
@@ -233,6 +236,57 @@ def _dashboard_unit_resolution_sucursal(server: Dict, sucursal: str):
         return sucursal_origen or None
 
     return None
+
+
+def _dashboard_current_operation_item(server: Dict, sucursal: str) -> Dict:
+    """Fuente canónica única para cualquier pantalla Comercial en modo Hoy.
+
+    Resuelve la unidad visible y delega TODA la semántica de fecha operativa,
+    corte y arrastre de cuentas abiertas a build_current_operation(). Ningún
+    consumidor de UI debe reinterpretar Comercial_Ventas_Dia_Abiertas_v2.
+    """
+    server_id = str(server.get("id") or server.get("server_id") or "").strip()
+    sucursal_resolver = _dashboard_unit_resolution_sucursal(server, sucursal)
+
+    unidad = resolve_unidad_by_server_sucursal(
+        server_id,
+        sucursal_resolver,
+    ) or {}
+
+    unidad_codigo = str(
+        unidad.get("codigo")
+        or unidad.get("unidad_negocio_id")
+        or unidad.get("unidad_negocio_pk")
+        or ""
+    ).strip()
+
+    if not unidad_codigo:
+        return {}
+
+    payload = build_current_operation(
+        allowed_unit_codes=[unidad_codigo],
+    )
+    items = payload.get("items") or []
+    return items[0] if items else {}
+
+
+def _dashboard_current_operation_kpis(server: Dict, sucursal: str) -> Dict:
+    """Adapta el contrato canónico de operación vigente a KPIs del Comercial."""
+    item = _dashboard_current_operation_item(server, sucursal)
+    operation = item.get("operacion_estimada") or {}
+
+    ventas = float(operation.get("ventas") or 0)
+    cheques = int(operation.get("cheques") or 0)
+    pax = int(operation.get("pax") or 0)
+
+    return {
+        "item": item,
+        "ventas": ventas,
+        "cheques": cheques,
+        "pax": pax,
+        "ticket_promedio": ventas / cheques if cheques > 0 else 0,
+        "pax_promedio": ventas / pax if pax > 0 else 0,
+    }
 
 # ============================================================================
 # FASE A-P0: GUARD RAIL PARA ENDPOINTS LIVE LEGACY
@@ -3003,40 +3057,20 @@ async def comercial_ventas_tiempo(
                     "ventas": float(r['ventas'] or 0)
                 })
             
-            # Calcular totales del día actual (si hay datos de hoy) desde fuente canónica
-            hoy_str = hoy.strftime('%Y-%m-%d')
-            cursor_hoy = None
-            ventas_hoy = 0
-            cheques_hoy = 0
-            pax_hoy = 0
-            fuente_pax_hoy = "SIN_DATOS_CANONICOS_DIA"
+            # KPIs de "Hoy": mismo contrato canónico que Tablero Ejecutivo
+            # y Dashboard Comercial. Las series por hora/día siguen siendo
+            # históricas desde Sync_Ventas_PorHora, pero los cards "Hoy" no
+            # pueden reinterpretar el snapshot crudo.
+            current = _dashboard_current_operation_kpis(
+                server,
+                sucursal,
+            )
+            current_item = current.get("item") or {}
+            ventas_hoy = float(current.get("ventas") or 0)
+            cheques_hoy = int(current.get("cheques") or 0)
+            pax_hoy = int(current.get("pax") or 0)
+            fuente_pax_hoy = "OPERACION_EN_CURSO_CANONICA"
 
-            try:
-                conn_hoy = get_edarsahub_pymssql_connection(timeout=10, login_timeout=10)  # noqa: F821
-                cursor_hoy = conn_hoy.cursor(as_dict=True)
-
-                # Intentar leer desde Comercial_Ventas_Dia_Abiertas_v2 (canónica)
-                cursor_hoy.execute("""
-                    SELECT 
-                        SUM(ISNULL(ventas_abiertas, 0) + ISNULL(ventas_cerradas_dia, 0)) as ventas,
-                        SUM(ISNULL(tickets_abiertos, 0) + ISNULL(tickets_cerrados_dia, 0)) as tickets,
-                        SUM(ISNULL(pax_abiertos, 0) + ISNULL(pax_cerrados_dia, 0)) as pax
-                    FROM Comercial_Ventas_Dia_Abiertas_v2
-                    WHERE server_id = %s
-                      AND fecha_operacion = %s
-                """, (server_id, hoy_str))
-
-                hoy_data = cursor_hoy.fetchone()
-                conn_hoy.close()
-
-                if hoy_data and (hoy_data['ventas'] is not None or hoy_data['tickets'] is not None or hoy_data['pax'] is not None):
-                    ventas_hoy = float(hoy_data['ventas'] or 0)
-                    cheques_hoy = int(hoy_data['tickets'] or 0)
-                    pax_hoy = int(hoy_data['pax'] or 0)
-                    fuente_pax_hoy = "EDARSAHUB_SQL_CANONICA_DIA"
-            except Exception as e:
-                logging.error(f"Error consultando Comercial_Ventas_Dia_Abiertas_v2: {e}")
-            
             # Determinar source_type
             if is_stale:
                 source_status = "STALE_EDARSAHUB_SQL"
@@ -3061,7 +3095,9 @@ async def comercial_ventas_tiempo(
                 "pax_hoy": pax_hoy,
                 "ventas_hoy": ventas_hoy,
                 "cheques_hoy": cheques_hoy,
-                "fuente_pax_hoy": fuente_pax_hoy
+                "fuente_pax_hoy": fuente_pax_hoy,
+                "fecha_operacion_hoy": current_item.get("fecha_operacion"),
+                "current_display_policy": current_item.get("current_display_policy")
             }
             
         except Exception as e:
@@ -3387,11 +3423,23 @@ async def comercial_detalle_ventas_agrupado(
         )) if meses else [hoy.month]
         lista_meses = [m for m in lista_meses if 1 <= m <= 12] or [hoy.month]
 
+        current_detail_item = {}
         if periodo == "dia":
-            fecha_ini_dt = hoy_inicio
-            fecha_fin_excl_dt = hoy_inicio + timedelta(days=1)
-            lista_anios = [hoy.year]
-            lista_meses = [hoy.month]
+            current_detail_item = _dashboard_current_operation_item(
+                server,
+                sucursal,
+            )
+            fecha_operacion_text = str(
+                current_detail_item.get("fecha_operacion")
+                or hoy.strftime("%Y-%m-%d")
+            )[:10]
+            fecha_ini_dt = datetime.strptime(
+                fecha_operacion_text,
+                "%Y-%m-%d",
+            )
+            fecha_fin_excl_dt = fecha_ini_dt + timedelta(days=1)
+            lista_anios = [fecha_ini_dt.year]
+            lista_meses = [fecha_ini_dt.month]
         elif periodo == "semana":
             fecha_ini_dt = hoy_inicio - timedelta(days=hoy.weekday())
             fecha_fin_excl_dt = hoy_inicio + timedelta(days=1)
@@ -3456,6 +3504,19 @@ async def comercial_detalle_ventas_agrupado(
             AND YEAR(fecha_operacion) IN ({anios_sql})
             AND MONTH(fecha_operacion) IN ({meses_sql})
             """
+
+        if periodo == "dia":
+            display_policy = str(
+                current_detail_item.get("current_display_policy") or ""
+            )
+            if display_policy in {
+                "SOFT_PREVIOUS_DATE_AFTER_CUT_OPEN_ONLY",
+                "MPRO_PREVIOUS_DATE_BEFORE_FIRST_TURN_OPEN_ONLY",
+            }:
+                # Cerradas de la fecha anterior ya son histórico; el detalle
+                # de Hoy debe quedar sólo con las cuentas abiertas que se
+                # agregan mediante merge_open_snapshot_tickets().
+                filtro_base += " AND 1 = 0"
 
         def cte_para(filtro_sql: str) -> str:
             return f"""
@@ -3670,6 +3731,10 @@ async def comercial_detalle_ventas_agrupado(
                 "total_venta": total_venta_periodo,
             },
             "servidor": server.get("name"), "unidad": unidad_nombre,
+            "current_display_policy": (
+                current_detail_item.get("current_display_policy")
+                if periodo == "dia" else None
+            ),
         }
     except HTTPException:
         raise
@@ -4573,126 +4638,50 @@ async def comercial_dashboard(
         logging.info(f"Comparación año ant: {fecha_ini_ano_ant} a {fecha_fin_ano_ant}")
 
         # HOY - CANONICO, ATOMICO Y TRANSVERSAL:
-        # Todos los motores soportados leen la misma fotografia SQL que consume
-        # Tablero Ejecutivo. "Hoy" nunca debe caer a KPIs cerrados por motor.
+        # Dashboard Comercial y Tablero Ejecutivo consumen el mismo contrato
+        # de operación vigente. No leer ni reinterpretar el snapshot crudo aquí.
         if periodo == "dia" and is_supported_system_type(server.get('system_type')):
-            # VENTAS DEL DIA: usar exactamente la misma fotografia SQL
-            # Comercial_Ventas_Dia_Abiertas_v2 para SoftRestaurant y MPRO.
-            # get_ventas_dia_abiertas() aplica el overlay atomico del snapshot
-            # y evita mezclar fuentes cerradas/historicas con la operacion viva.
-            from datetime import date as _date
-            from modules.comercial_v2.repository_readonly import (
-                get_ventas_dia_abiertas,
-            )
-
-            sucursal_resolver = _dashboard_unit_resolution_sucursal(
+            current = _dashboard_current_operation_kpis(
                 server,
                 sucursal,
             )
-
-            unidad_hoy = resolve_unidad_by_server_sucursal(
-                server_id,
-                sucursal_resolver,
-            ) or {}
-            unidad_codigo_hoy = str(
-                unidad_hoy.get("codigo")
-                or unidad_hoy.get("unidad_negocio_id")
-                or unidad_hoy.get("unidad_negocio_pk")
-                or ""
-            ).strip()
-
-            # Leer la fotografia del dia por identidad de unidad canónica.
-            # IMPORTANTE: server_id es topologia tecnica, no identidad comercial.
-            # En MPRO el snapshot puede ser escrito por un API_LOCAL distinto al
-            # servidor canonico del modulo, por lo que filtrar primero por
-            # server_id deja fuera 130QRO/ORIGEN o puede cruzar unidades.
-            filas_hoy = get_ventas_dia_abiertas(
-                _date.fromisoformat(fecha_ini),
-                None,
-            )
-
-            codigo_norm = unidad_codigo_hoy.strip().lower()
-            fila_hoy = next(
-                (
-                    row for row in filas_hoy
-                    if str(
-                        row.get("unidad_negocio_codigo")
-                        or row.get("unidad_negocio_id")
-                        or ""
-                    ).strip().lower() == codigo_norm
-                ),
-                None,
-            ) if codigo_norm else None
-
-            if fila_hoy:
-                ventas_hoy = float(fila_hoy.get("total_estimado_dia") or 0)
-                pax_hoy = (
-                    int(fila_hoy.get("pax_abiertos") or 0)
-                    + int(fila_hoy.get("pax_cerrados_dia") or 0)
-                )
-                cheques_hoy = (
-                    int(fila_hoy.get("tickets_abiertos") or 0)
-                    + int(fila_hoy.get("tickets_cerrados_dia") or 0)
-                )
-                ticket_promedio_hoy = (
-                    ventas_hoy / cheques_hoy if cheques_hoy > 0 else 0
-                )
-                pax_promedio_hoy = (
-                    ventas_hoy / pax_hoy if pax_hoy > 0 else 0
-                )
-                return {
-                    "source_status": "SUCCESS",
-                    "source_message": "Datos de Hoy desde snapshot atomico compartido",
-                    "source_type": (
-                        fila_hoy.get("_ventas_dia_source")
-                        or "EDARSAHUB_SNAPSHOT_DIA"
-                    ),
-                    "server_name": server.get("name", "Desconocido"),
-                    "server_type": server.get("system_type", "Desconocido"),
-                    "fecha_inicio": fecha_ini,
-                    "fecha_fin": fecha_fin,
-                    "snapshot_timestamp": (
-                        str(fila_hoy.get("snapshot_timestamp") or "")
-                    ),
-                    "sync_run_id": fila_hoy.get("sync_run_id"),
-                    "kpis": {
-                        "ventas_periodo": ventas_hoy,
-                        "ticket_promedio": ticket_promedio_hoy,
-                        "cheques_total": cheques_hoy,
-                        "pax_total": pax_hoy,
-                        "pax_promedio": pax_promedio_hoy,
-                        "consumo_persona": pax_promedio_hoy,
-                        "mesas_atendidas": cheques_hoy,
-                        "rotacion_mesas": 0,
-                        "venta_por_hora": 0,
-                    },
-                    "comparativo": {
-                        "vs_periodo_anterior": None,
-                        "vs_ano_anterior": None,
-                        "vs_presupuesto": None,
-                        "tipo_comparacion": tipo_comparacion,
-                        "ventas_anterior": None,
-                        "ventas_ano_anterior": None,
-                    },
-                    "alertas": [],
-                }
+            item = current.get("item") or {}
 
             return {
-                "source_status": "NO_DATA",
-                "source_message": "Sin snapshot de Ventas del Dia para la unidad/fecha",
-                "source_type": "EDARSAHUB_SNAPSHOT_DIA",
+                "source_status": (
+                    "SUCCESS"
+                    if item else "NO_DATA"
+                ),
+                "source_message": (
+                    "Datos de Hoy desde contrato canónico de operación en curso"
+                    if item
+                    else "Sin operación vigente para la unidad"
+                ),
+                "source_type": "OPERACION_EN_CURSO_CANONICA",
                 "server_name": server.get("name", "Desconocido"),
                 "server_type": server.get("system_type", "Desconocido"),
-                "fecha_inicio": fecha_ini,
-                "fecha_fin": fecha_fin,
+                "fecha_inicio": item.get("fecha_operacion"),
+                "fecha_fin": item.get("fecha_operacion"),
+                "current_display_policy": item.get(
+                    "current_display_policy"
+                ),
+                "metodo_fecha_operacion": item.get(
+                    "metodo_fecha_operacion"
+                ),
                 "kpis": {
-                    "ventas_periodo": 0,
-                    "ticket_promedio": 0,
-                    "cheques_total": 0,
-                    "pax_total": 0,
-                    "pax_promedio": 0,
-                    "consumo_persona": 0,
-                    "mesas_atendidas": 0,
+                    "ventas_periodo": current.get("ventas", 0),
+                    "ticket_promedio": current.get(
+                        "ticket_promedio", 0
+                    ),
+                    "cheques_total": current.get("cheques", 0),
+                    "pax_total": current.get("pax", 0),
+                    "pax_promedio": current.get(
+                        "pax_promedio", 0
+                    ),
+                    "consumo_persona": current.get(
+                        "pax_promedio", 0
+                    ),
+                    "mesas_atendidas": current.get("cheques", 0),
                     "rotacion_mesas": 0,
                     "venta_por_hora": 0,
                 },
