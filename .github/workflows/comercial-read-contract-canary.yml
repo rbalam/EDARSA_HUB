@@ -6,6 +6,11 @@ on:
       - fix/comercial-read-contract-zero-20261013
     paths:
       - ".github/workflows/comercial-read-contract-canary.yml"
+      - "backend/modules/comercial_analytics/repository_operational.py"
+      - "backend/modules/comercial_v2/repository_comercial_edarsahub.py"
+      - "frontend/src/components/comercial/KpiDrilldownDialog.jsx"
+      - "backend/tests/test_comercial_operacion_en_curso_repository.py"
+      - "backend/tests/test_comercial_v2_unidad_identity_v1_contract.py"
   workflow_dispatch:
 
 permissions:
