@@ -1,0 +1,89 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "USUARIOS-DAVID-AUTH-CONTEXT-CANARY-R6B-20261013",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "20. Seguridad / Usuarios Produccion"
+  },
+  "objective": "Certificar en solo lectura la cadena funcional de codigo que entrega /api/auth/me/access-context para David Ricaldes, usando el resolver SQL canonico integrado en R4 y validando que el usuario activo exista. No autenticar con contrasena, no modificar datos y no tocar Produccion.",
+  "mode": "READ_ONLY",
+  "quality_gate": "AUDIT_REQUIRED",
+  "constraints": [
+    "NO_PRODUCTION",
+    "NO_DML",
+    "NO_DDL",
+    "NO_SECRET_OUTPUT",
+    "NO_PASSWORD_USE",
+    "NO_USER_IMPERSONATION",
+    "NO_MONGO_AS_AUTHORIZATION_SOURCE",
+    "NO_SCOPE_BROADENING"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/rbac_sql/service.py",
+        "backend/core/user_access_context.py",
+        "backend/modules/auth/routes.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_rbac_sql_company_scope.py",
+        "backend/tests/test_rbac_sql_scope.py",
+        "backend/tests/test_user_access_context_permisos_rbac_canonico.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/auth/routes.py",
+          "backend/core/user_access_context.py",
+          "backend/core/rbac_sql/service.py"
+        ],
+        "search_terms": [
+          "/auth/me/access-context",
+          "resolve_user_access_context",
+          "build_user_access_context_sql",
+          "RBACSQLService.get_effective_permissions",
+          "Usuario_EmpresasAsignacion",
+          "Usuario_ServidoresAsignacion",
+          "Usuario_SucursalesAsignacion",
+          "Sistema_SucursalServidorMapeo",
+          "Sistema_Sucursales"
+        ],
+        "max_results": 40
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "david_active_identity",
+          "sql": "SELECT UsuarioID, PublicUUID, Email, Activo FROM dbo.Usuario_Catalogo WHERE Email='david.ricardez@cienfuegos.mx'"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "deliverables": [
+    "AUTH_ACCESS_CONTEXT_ROUTE_PRESENT",
+    "CANONICAL_RESOLVER_CHAIN_PRESENT",
+    "DAVID_ACTIVE_IDENTITY",
+    "R4_SCOPE_TESTS_PASS",
+    "NO_PRODUCTION_NO_DML_NO_DDL_CONFIRMATION",
+    "LIMITATION_NO_PASSWORD_LOGIN_E2E"
+  ]
+}
