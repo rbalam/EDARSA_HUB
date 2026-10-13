@@ -239,3 +239,149 @@ def test_executive_current_day_uses_certified_comercial_sales_detail():
 
     # Cada sucursal conserva su fecha operativa propia en Ventas del Día.
     assert "currentOperationSuppressed = false" in drill
+
+
+def test_previous_mpro_before_first_turn_does_not_replay_closed_sales():
+    result = build_current_operation(
+        allowed_unit_codes=["130QRO"],
+        operation_context_resolver=lambda unit: {
+            "fecha_operacion": date(2026, 10, 12),
+            "metodo_fecha_operacion": "ANTES_PRIMER_TURNO_CRUZA",
+            "turno_operativo_codigo": "FUERA_HORARIO",
+            "timestamp_consulta": __import__("datetime").datetime(
+                2026, 10, 13, 10, 49
+            ),
+        },
+        sales_reader=lambda operation_date, units: [{
+            "unidad_negocio_id": "130QRO",
+            "fecha_operacion": "2026-10-12",
+            "sistema_origen": "MPRO",
+            "ventas_abiertas": 0,
+            "propinas_abiertas": 0,
+            "tickets_abiertos": 0,
+            "pax_abiertos": 0,
+            "ventas_cerradas_dia": 84508,
+            "propinas_cerradas_dia": 10190,
+            "tickets_cerrados_dia": 17,
+            "pax_cerrados_dia": 43,
+        }],
+    )
+
+    item = result["items"][0]
+
+    assert item["fecha_operacion"] == "2026-10-12"
+    assert item["cerradas"]["ventas"] == 0
+    assert item["abiertas"]["ventas"] == 0
+    assert item["operacion_estimada"]["ventas"] == 0
+    assert item["current_display_policy"] == (
+        "MPRO_PREVIOUS_DATE_BEFORE_FIRST_TURN_OPEN_ONLY"
+    )
+
+
+def test_previous_softrestaurant_after_cut_keeps_only_open_remainder():
+    result = build_current_operation(
+        allowed_unit_codes=["130MID"],
+        operation_context_resolver=lambda unit: {
+            "fecha_operacion": date(2026, 10, 12),
+            "metodo_fecha_operacion": "TURNO_CRUZA_MEDIANOCHE_MADRUGADA",
+            "turno_operativo_codigo": "CENA",
+            "timestamp_consulta": __import__("datetime").datetime(
+                2026, 10, 13, 10, 49
+            ),
+        },
+        sales_reader=lambda operation_date, units: [{
+            "unidad_negocio_id": "130MID",
+            "fecha_operacion": "2026-10-12",
+            "sistema_origen": "SOFTRESTAURANT",
+            "ventas_abiertas": 260,
+            "propinas_abiertas": 0,
+            "tickets_abiertos": 2,
+            "pax_abiertos": 3,
+            "ventas_cerradas_dia": 124671.20,
+            "propinas_cerradas_dia": 8372.80,
+            "tickets_cerrados_dia": 24,
+            "pax_cerrados_dia": 68,
+        }],
+    )
+
+    item = result["items"][0]
+
+    assert item["cerradas"]["ventas"] == 0
+    assert item["abiertas"]["ventas"] == 260
+    assert item["operacion_estimada"]["ventas"] == 260
+    assert item["operacion_estimada"]["cheques"] == 2
+    assert item["operacion_estimada"]["pax"] == 3
+    assert item["current_display_policy"] == (
+        "SOFT_PREVIOUS_DATE_AFTER_CUT_OPEN_ONLY"
+    )
+
+
+def test_previous_softrestaurant_without_cut_remains_current_operation():
+    result = build_current_operation(
+        allowed_unit_codes=["CIENFUEGOS"],
+        operation_context_resolver=lambda unit: {
+            "fecha_operacion": date(2026, 10, 12),
+            "metodo_fecha_operacion": "TURNO_CRUZA_MEDIANOCHE_MADRUGADA",
+            "turno_operativo_codigo": "CENA",
+            "timestamp_consulta": __import__("datetime").datetime(
+                2026, 10, 13, 10, 49
+            ),
+        },
+        sales_reader=lambda operation_date, units: [{
+            "unidad_negocio_id": "CIENFUEGOS",
+            "fecha_operacion": "2026-10-12",
+            "sistema_origen": "SOFTRESTAURANT",
+            "ventas_abiertas": 101517.70,
+            "propinas_abiertas": 10382.30,
+            "tickets_abiertos": 22,
+            "pax_abiertos": 76,
+            "ventas_cerradas_dia": 0,
+            "propinas_cerradas_dia": 0,
+            "tickets_cerrados_dia": 0,
+            "pax_cerrados_dia": 0,
+        }],
+    )
+
+    item = result["items"][0]
+
+    assert item["cerradas"]["ventas"] == 0
+    assert item["abiertas"]["ventas"] == 101517.70
+    assert item["operacion_estimada"]["ventas"] == 101517.70
+    assert item["operacion_estimada"]["cheques"] == 22
+    assert item["operacion_estimada"]["pax"] == 76
+    assert item["current_display_policy"] == (
+        "SOFT_PREVIOUS_DATE_UNCUT"
+    )
+
+
+def test_current_date_operation_keeps_open_and_closed_portions():
+    result = build_current_operation(
+        allowed_unit_codes=["ORIGEN"],
+        operation_context_resolver=lambda unit: {
+            "fecha_operacion": date(2026, 10, 13),
+            "metodo_fecha_operacion": "TURNO_ACTIVO",
+            "turno_operativo_codigo": "DESAYUNO",
+            "timestamp_consulta": __import__("datetime").datetime(
+                2026, 10, 13, 10, 49
+            ),
+        },
+        sales_reader=lambda operation_date, units: [{
+            "unidad_negocio_id": "ORIGEN",
+            "fecha_operacion": "2026-10-13",
+            "sistema_origen": "MPRO",
+            "ventas_abiertas": 5540,
+            "propinas_abiertas": 0,
+            "tickets_abiertos": 4,
+            "pax_abiertos": 12,
+            "ventas_cerradas_dia": 0,
+            "propinas_cerradas_dia": 0,
+            "tickets_cerrados_dia": 0,
+            "pax_cerrados_dia": 0,
+        }],
+    )
+
+    item = result["items"][0]
+
+    assert item["abiertas"]["ventas"] == 5540
+    assert item["operacion_estimada"]["ventas"] == 5540
+    assert item["current_display_policy"] == "CURRENT_OPERATION_DATE"
