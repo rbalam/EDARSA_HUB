@@ -1,0 +1,8 @@
+{
+  "schema": "edarsahub.worker-runtime-recovery-trigger.v1",
+  "existing_job_id": "SERVIDORES-CHAPUR-SYNCED-SUCURSAL-CONTRACT-SCHEMA-READONLY-SQL-R2-20261013",
+  "queue_branch": "worker/requests",
+  "queue_head_before_wake": "60b27d68bec6fb43c820a9dab5f5b9c5257f53ab",
+  "reason": "Wake control-plane only for existing CHAPUR R2 READ_ONLY request. Do not duplicate or modify the functional job. Preserve any healthy active job; prefer this existing R2 when available. No LIVE source connectivity. Do not touch Edarsahub_Desarrollo or Production.",
+  "production_touched": false
+}
