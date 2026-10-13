@@ -8,9 +8,11 @@ on:
       - ".github/workflows/comercial-read-contract-canary.yml"
       - "backend/modules/comercial_analytics/repository_operational.py"
       - "backend/modules/comercial_v2/repository_comercial_edarsahub.py"
+      - "backend/modules/comercial_v2/repository_readonly.py"
       - "frontend/src/components/comercial/KpiDrilldownDialog.jsx"
       - "backend/tests/test_comercial_operacion_en_curso_repository.py"
       - "backend/tests/test_comercial_v2_unidad_identity_v1_contract.py"
+      - "backend/tests/test_softrestaurant_intraday_overlay_contract.py"
   workflow_dispatch:
 
 permissions:
@@ -46,7 +48,8 @@ jobs:
         working-directory: backend
         run: |
           set -euo pipefail
-          python -m pytest -q             tests/test_comercial_operacion_en_curso_repository.py             tests/test_comercial_v2_unidad_identity_v1_contract.py
+          python -m pytest -q             tests/test_comercial_operacion_en_curso_repository.py             tests/test_comercial_v2_unidad_identity_v1_contract.py \
+            tests/test_softrestaurant_intraday_overlay_contract.py
       - name: Read-only current-operation canary
         working-directory: backend
         env:
