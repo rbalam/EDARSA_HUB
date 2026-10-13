@@ -1,0 +1,41 @@
+name: Ticket Detail Parity Diagnostic
+on:
+  push:
+    branches:
+      - fix/ticket-detail-parity-20261013
+    paths:
+      - ".github/workflows/ticket-detail-parity-diagnostic.yml"
+      - "backend/tools/diag_ticket_detail_parity.py"
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  EDARSA_ENV: DEVELOPMENT
+  EDARSAHUB_SQL_HOST: "54.39.104.176"
+  EDARSAHUB_SQL_PORT: "1433"
+  EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+  EDARSAHUB_SQL_USER: "HRLectura"
+  EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+  SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/req.txt
+          python -m pip install -r /tmp/req.txt
+      - name: Run read-only diagnostic
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: python tools/diag_ticket_detail_parity.py
