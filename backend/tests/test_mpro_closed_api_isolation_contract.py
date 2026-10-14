@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-ROOT = Path("/app/backend")
+ROOT = Path(__file__).resolve().parents[1]
 API_MODULE = ROOT / "modules/comercial_v2/mpro_closed_api.py"
 SYNC_MODULE = ROOT / "modules/comercial_v2/sync_comercial_edarsahub.py"
 PROTECTED_JOB = ROOT / "core/scheduler/jobs/sync_comercial_abiertas_v2_job.py"
