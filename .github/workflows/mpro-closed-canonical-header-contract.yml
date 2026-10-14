@@ -1,0 +1,118 @@
+name: "MPRO Closed Canonical Header Contract"
+
+on:
+  push:
+    branches:
+      - fix/mpro-closed-canonical-header-20261014
+    paths:
+      - ".github/workflows/mpro-closed-canonical-header-contract.yml"
+      - "backend/modules/comercial_v2/mpro_closed_api.py"
+      - "backend/modules/comercial_v2/sync_comercial_edarsahub.py"
+      - "backend/tests/test_mpro_closed_api_isolation_contract.py"
+      - "backend/tests/test_mpro_closed_transversal_consumers_20261014.py"
+  pull_request:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - "backend/modules/comercial_v2/mpro_closed_api.py"
+      - "backend/modules/comercial_v2/sync_comercial_edarsahub.py"
+      - "backend/tests/test_mpro_closed_api_isolation_contract.py"
+      - "backend/tests/test_mpro_closed_transversal_consumers_20261014.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  EDARSA_ENV: DEVELOPMENT
+  EDARSAHUB_SQL_HOST: "54.39.104.176"
+  EDARSAHUB_SQL_PORT: "1433"
+  EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+  EDARSAHUB_SQL_USER: "HRLectura"
+  EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+  SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install backend runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/req-mpro-closed.txt
+          python -m pip install -r /tmp/req-mpro-closed.txt
+      - name: Compile changed modules
+        shell: bash
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          python -m py_compile modules/comercial_v2/mpro_closed_api.py modules/comercial_v2/sync_comercial_edarsahub.py
+      - name: Run atomic and transversal tests
+        shell: bash
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          python -m pytest -q \
+            tests/test_mpro_closed_api_isolation_contract.py \
+            tests/test_mpro_closed_transversal_consumers_20261014.py \
+            tests/test_comercial_ticket_detail_parity_20261013.py
+      - name: Read-only real parity canary for ORIGEN and 130QRO
+        shell: bash
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from datetime import date
+          from decimal import Decimal
+
+          from core.unidades_service import UnidadesService
+          from modules.comercial_v2.mpro_closed_api import (
+              resolve_mpro_closed_api,
+              build_mpro_closed_sales_query,
+              execute_mpro_select_via_api,
+          )
+
+          checks = {
+              "130QRO": ("2026-10-01", "2026-10-12", Decimal("1732143.00")),
+              "ORIGEN": ("2026-10-01", "2026-10-12", Decimal("845982.00")),
+          }
+
+          for code, (fi, ff, expected) in checks.items():
+              unit = UnidadesService.get_by_codigo(code)
+              assert unit, code
+              api = resolve_mpro_closed_api(unit["unidad_negocio_pk"])
+              assert api, code
+              query = build_mpro_closed_sales_query(
+                  code,
+                  api["sucursal_id"],
+                  date.fromisoformat(fi),
+                  date.fromisoformat(ff),
+              )
+              rows, status = execute_mpro_select_via_api(api, query)
+              assert str(getattr(status, "value", status)).upper() == "ONLINE", (code, status)
+              total = sum(
+                  (Decimal(str(r.get("Vn_Precio_Neto_Importe") or 0)) for r in rows or []),
+                  Decimal("0"),
+              ).quantize(Decimal("0.01"))
+              print("MPRO_CLOSED_CANARY_" + code + "=" + json.dumps({
+                  "sucursal": api["sucursal_id"],
+                  "tickets": len(rows or []),
+                  "total": str(total),
+                  "expected": str(expected),
+              }, ensure_ascii=False))
+              assert total == expected, (code, total, expected)
+
+          print("MPRO_CLOSED_CANONICAL_HEADER_CONTRACT=PASS")
+          PY
