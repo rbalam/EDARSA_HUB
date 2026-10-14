@@ -17,6 +17,60 @@ AUTHORIZED_LOCAL_AHEAD_EMAILS = {
     "worker@edarsahub.local",
 }
 MAX_AUTHORIZED_LOCAL_AHEAD_COMMITS = 20
+PLATFORM_MANAGED_SYSTEM_DEPS = ".emergent/system_deps.txt"
+
+def _expected_platform_system_deps_drift(repo: Path) -> bool:
+    path = repo / PLATFORM_MANAGED_SYSTEM_DEPS
+    if not path.is_file():
+        return False
+    try:
+        if path.read_bytes() != b"":
+            return False
+    except OSError:
+        return False
+    canonical = _run(
+        repo,
+        "show",
+        f"HEAD:{PLATFORM_MANAGED_SYSTEM_DEPS}",
+        check=False,
+    )
+    if canonical.returncode != 0 or canonical.stdout.strip() != "git":
+        return False
+    staged = _run(
+        repo,
+        "diff",
+        "--cached",
+        "--quiet",
+        "--",
+        PLATFORM_MANAGED_SYSTEM_DEPS,
+        check=False,
+    )
+    if staged.returncode != 0:
+        return False
+    unstaged = _run(
+        repo,
+        "diff",
+        "--quiet",
+        "--",
+        PLATFORM_MANAGED_SYSTEM_DEPS,
+        check=False,
+    )
+    return unstaged.returncode == 1
+
+def _effective_status_lines(repo: Path) -> list[str]:
+    lines = _run(
+        repo,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+    ).stdout.splitlines()
+    if _expected_platform_system_deps_drift(repo):
+        lines = [
+            line
+            for line in lines
+            if line != " M .emergent/system_deps.txt"
+        ]
+    return lines
 
 class GitGuardError(RuntimeError):
     def __init__(self, code: str, evidence: dict[str, Any] | None = None):
@@ -37,12 +91,23 @@ def _git_dir(repo: Path) -> Path:
 
 def _status_counts(repo: Path) -> dict[str, Any]:
     staged = unstaged = untracked = 0
-    for line in _run(repo, "status", "--porcelain=v1", "--untracked-files=all").stdout.splitlines():
-        if line.startswith("??"): untracked += 1; continue
+    ignored_platform_drift = _expected_platform_system_deps_drift(repo)
+    for line in _effective_status_lines(repo):
+        if line.startswith("??"):
+            untracked += 1
+            continue
         if len(line) >= 2:
-            if line[0] != " ": staged += 1
-            if line[1] != " ": unstaged += 1
-    return {"worktree_dirty": bool(staged or unstaged or untracked), "staged_count": staged, "unstaged_count": unstaged, "untracked_count": untracked}
+            if line[0] != " ":
+                staged += 1
+            if line[1] != " ":
+                unstaged += 1
+    return {
+        "worktree_dirty": bool(staged or unstaged or untracked),
+        "staged_count": staged,
+        "unstaged_count": unstaged,
+        "untracked_count": untracked,
+        "platform_managed_system_deps_drift_ignored": ignored_platform_drift,
+    }
 
 def inspect_repository(repo: Path, *, fetch: bool = True) -> dict[str, Any]:
     repo = repo.resolve()
