@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "9a9913697414fc548b702f80bf789a6cdd369ca0",
-  "generated_at_utc": "2026-10-14T23:45:18Z",
+  "generated_at_utc": "2026-10-14T23:46:41Z",
   "history": {
     "done_total_local": 1409,
     "pending_total_local": 0,
@@ -16,37 +16,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1021,
+      "age_seconds": 1104,
       "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-OCT2026-COVERAGE-R7-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 602,
+      "age_seconds": 685,
       "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-BATCH-PENDING-DIAG-R9-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 296,
+      "age_seconds": 379,
       "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-BATCH-STEP-DIAG-R10-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2556,
+      "age_seconds": 2639,
       "job_id": "EDARSAHUB-RESYNC-RESTORE-COMERCIAL-RANGE-CARD-AUDIT-R2-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2217,
+      "age_seconds": 2300,
       "job_id": "EDARSAHUB-SYNC-HISTORICAL-CANONICAL-COMPATIBILITY-FIX-R1-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 295,
+      "age_seconds": 378,
       "job_id": "EDARSAHUB-SYNC-HISTORICAL-CANONICAL-COMPATIBILITY-FIX-R2-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,8 +66,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-14T23:45:12Z",
-    "last_receive_utc": "2026-10-14T23:45:07Z",
+    "last_cycle_utc": "2026-10-14T23:46:28Z",
+    "last_receive_utc": "2026-10-14T23:46:39Z",
     "last_terminal_utc": "2026-10-14T23:40:22Z",
     "pid": "938370",
     "runtime_fingerprint": {
