@@ -1,0 +1,32 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-INTEGRATIONS-RUNTIME-EXTERNAL-IDS-WRITER-R1-20261013",
+  "mode": "MUTATION",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "human_summary_language": "es",
+  "objective": "Implementar helper reusable e idempotente de Sistema_IdentificadoresExternos dentro de integrations_runtime. No CHAPUR LIVE, no datos reales, no schema, no Produccion.",
+  "production_allowed": false,
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/integrations_runtime/external_ids.py",
+      "content": "from __future__ import annotations\n\nfrom typing import Optional\nfrom uuid import UUID\n\n\nclass ExternalIdentifierConflict(ValueError):\n    pass\n\n\ndef _uuid(value: Optional[str]) -> Optional[str]:\n    if value is None:\n        return None\n    try:\n        return str(UUID(str(value)))\n    except (ValueError, TypeError, AttributeError) as exc:\n        raise ValueError(\"UUID canonico invalido\") from exc\n\n\ndef ensure_external_identifier(cursor, *, sistema_tipo_id: int, tipo_identificador: str, valor_externo: str, unidad_negocio_id: Optional[str] = None, sistema_version_id: Optional[str] = None, conexion_id: Optional[str] = None) -> int:\n    tipo = str(tipo_identificador or \"\").strip()[:80]\n    valor = str(valor_externo or \"\").strip()[:300]\n    if not tipo or not valor:\n        raise ValueError(\"TipoIdentificador y ValorExterno son requeridos\")\n    unidad = _uuid(unidad_negocio_id)\n    version = _uuid(sistema_version_id)\n    conexion = _uuid(conexion_id)\n    cursor.execute(\"SELECT IdentificadorExternoID, UnidadNegocioID, SistemaVersionID, ConexionID FROM dbo.Sistema_IdentificadoresExternos WITH (UPDLOCK, HOLDLOCK) WHERE SistemaTipoID=%s AND TipoIdentificador=%s AND ValorExterno=%s\", (int(sistema_tipo_id), tipo, valor))\n    row = cursor.fetchone()\n    if row:\n        existing = tuple(str(x).lower() if x is not None else None for x in row[1:4])\n        requested = tuple(x.lower() if x is not None else None for x in (unidad, version, conexion))\n        if existing != requested:\n            raise ExternalIdentifierConflict(\"Identificador externo ya ligado a otro scope canonico\")\n        return int(row[0])\n    cursor.execute(\"INSERT INTO dbo.Sistema_IdentificadoresExternos (UnidadNegocioID,SistemaTipoID,SistemaVersionID,ConexionID,TipoIdentificador,ValorExterno,Activo,FechaAlta) OUTPUT INSERTED.IdentificadorExternoID VALUES (%s,%s,%s,%s,%s,%s,1,SYSUTCDATETIME())\", (unidad, int(sistema_tipo_id), version, conexion, tipo, valor))\n    inserted = cursor.fetchone()\n    if not inserted:\n        raise RuntimeError(\"No se pudo materializar identificador externo\")\n    return int(inserted[0])\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/integrations_runtime/__init__.py",
+      "old_text": "from .health import persist_connection_health\nfrom .sync_ledger import enrich_sync_start, mark_sync_finished\n\n__all__ = [\"persist_connection_health\", \"enrich_sync_start\", \"mark_sync_finished\"]",
+      "new_text": "from .external_ids import ExternalIdentifierConflict, ensure_external_identifier\nfrom .health import persist_connection_health\nfrom .sync_ledger import enrich_sync_start, mark_sync_finished\n\n__all__ = [\n    \"ExternalIdentifierConflict\",\n    \"ensure_external_identifier\",\n    \"persist_connection_health\",\n    \"enrich_sync_start\",\n    \"mark_sync_finished\",\n]"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "path": "backend/modules/integrations_runtime/external_ids.py"
+    }
+  ]
+}
