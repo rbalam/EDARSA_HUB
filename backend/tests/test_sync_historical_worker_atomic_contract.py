@@ -12,7 +12,10 @@ DISPATCHER = ROOT.parent / "tools/mirror_sync/universal_job_dispatcher.py"
 
 def test_atomic_executor_is_closed_registry_and_reuses_official_handler():
     text = EXECUTOR.read_text(encoding="utf-8")
-    assert registered_atomic_handlers() == ("comercial_ventas_cerradas",)
+    assert registered_atomic_handlers() == (
+        "comercial_ventas_cerradas",
+        "comercial_ventas_detalle",
+    )
     assert "_ejecutar_sync_real" in text
     assert "_ejecutar_dry_run" in text
     assert "eval(" not in text

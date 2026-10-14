@@ -364,8 +364,16 @@ async def _execute_comercial_ventas_cerradas(context: Mapping[str, Any]) -> Dict
     )
 
 
+async def _execute_comercial_ventas_detalle(context: Mapping[str, Any]) -> Dict[str, Any]:
+    """Adapter historico aislado para detalle; no usa sincronizadores protegidos."""
+    from .comercial_detail_adapter import execute_comercial_ventas_detalle
+
+    return await execute_comercial_ventas_detalle(context)
+
+
 _ATOMIC_ADAPTERS: Dict[str, AtomicAdapter] = {
     "comercial_ventas_cerradas": _execute_comercial_ventas_cerradas,
+    "comercial_ventas_detalle": _execute_comercial_ventas_detalle,
 }
 
 

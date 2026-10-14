@@ -318,7 +318,22 @@ def build_historical_plan(
             "SYSTEM_ID",
         )
 
-        expanded = _expand_dependencies(system_code, capabilities, registry_map)
+        # La seleccion es transversal. Una capability puede aplicar a una parte
+        # de los sistemas/sucursales seleccionados sin bloquear las unidades validas.
+        # Las dependencias de una capability elegible siguen siendo fail-closed.
+        eligible_selected = [
+            capability_key
+            for capability_key in capabilities
+            if (system_code, capability_key) in registry_map
+        ]
+        if not eligible_selected:
+            continue
+
+        expanded = _expand_dependencies(
+            system_code,
+            eligible_selected,
+            registry_map,
+        )
         for capability in expanded:
             category_key = _clean(capability.get("category_key"))
             entity_key = _clean(capability.get("entity_key"))

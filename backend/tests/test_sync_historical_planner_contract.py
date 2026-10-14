@@ -110,10 +110,10 @@ def test_dependency_is_added_before_selected_capability():
     assert len({u.atomic_key for u in plan.atomic_units}) == 4
 
 
-def test_unit_cannot_execute_capability_for_another_system():
+def test_fully_incompatible_selection_fails_closed_with_empty_plan():
     with pytest.raises(
         HistoricalPlanError,
-        match="CAPABILITY_NOT_ELIGIBLE",
+        match="PLAN_EMPTY",
     ):
         build_historical_plan(
             start=date(2026, 1, 1),

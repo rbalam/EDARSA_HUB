@@ -200,12 +200,10 @@ def get_catalog_payload() -> Dict[str, Any]:
             or item.get("grupo")
             or "Otros"
         ).strip()
-        category_key = str(item.get("category_key") or "").strip()
-        display_category_key = (
-            category_key
-            if category_key
-            else "GROUP::" + category_name.upper()
-        )
+        # La tarjeta visual representa el modulo/grupo canonico. CategoriaCodigo
+        # sigue perteneciendo a cada capability para planning/ejecucion, pero no
+        # debe fragmentar un mismo modulo en dos tarjetas con el mismo nombre.
+        display_category_key = "GROUP::" + category_name.upper()
 
         category = categories.setdefault(
             display_category_key,

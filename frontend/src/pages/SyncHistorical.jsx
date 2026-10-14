@@ -337,7 +337,7 @@ export default function SyncHistorical() {
       : eligibleSystems.length > 0;
     return executionEnabled
       && effectiveSystems.length > 0
-      && effectiveSystems.every((system) => eligibleSystems.includes(system));
+      && effectiveSystems.some((system) => eligibleSystems.includes(system));
   }, [effectiveSystems]);
 
   const selectableCapabilityKeys = useMemo(
@@ -769,8 +769,14 @@ export default function SyncHistorical() {
                         const selectableNow = isCapabilitySelectable(capability);
                         const checked = capabilities.includes(capability.key);
                         const eligibleSystems = capability.eligible_systems || capability.systems || [];
-                        const selectedCompatibilityMissing = effectiveSystems.length > 0
-                          && !effectiveSystems.every((system) => eligibleSystems.includes(system));
+                        const compatibleSelectedSystems = effectiveSystems.filter(
+                          (system) => eligibleSystems.includes(system)
+                        );
+                        const partiallyCompatible = selectableNow
+                          && compatibleSelectedSystems.length > 0
+                          && compatibleSelectedSystems.length < effectiveSystems.length;
+                        const noCompatibleSelectedSystem = effectiveSystems.length > 0
+                          && compatibleSelectedSystems.length === 0;
 
                         return (
                           <label
@@ -809,10 +815,16 @@ export default function SyncHistorical() {
                                   </span>
                                 )}
                               </span>
+                              {partiallyCompatible && (
+                                <span className="mt-1 block text-[10px] font-medium text-blue-700">
+                                  Compatible con {compatibleSelectedSystems.length} de {effectiveSystems.length} sistema(s);
+                                  el planner ejecutará solo las sucursales válidas.
+                                </span>
+                              )}
                               {!selectableNow && (
                                 <span className="mt-1 block text-[10px] font-medium text-amber-700">
-                                  {selectedCompatibilityMissing
-                                    ? 'No compatible con toda la selección'
+                                  {noCompatibleSelectedSystem && eligibleSystems.length > 0
+                                    ? 'No compatible con los sistemas seleccionados'
                                     : 'Pendiente de certificación histórica'}
                                 </span>
                               )}
