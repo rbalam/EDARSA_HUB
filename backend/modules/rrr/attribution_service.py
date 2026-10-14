@@ -3,7 +3,8 @@ import json
 from typing import Any, Dict, Optional
 
 from core.corporate_filters.service import CorporateFilterService
-from core.server_registry import get_server_connection_info
+from core.unidades_service import UnidadesService
+from core.empresa_resolver import resolve_empresa_by_alias
 from core.sql_first.db import get_sql_connection
 
 from .schemas import AttributionTransactionRequest
@@ -51,21 +52,26 @@ def _stable_payload_hash(payload: AttributionTransactionRequest) -> str:
 
 
 def _resolve_org(payload: AttributionTransactionRequest) -> Dict[str, Any]:
-    server = get_server_connection_info(payload.server_id)
-    if not server:
-        raise AttributionOrgScopeError("server_id no registrado")
-
     unit = CorporateFilterService.resolver_unidad(payload.unit_source_id)
     unidad_pk = unit.get("pk")
     if not unidad_pk:
         raise AttributionOrgScopeError("unidad no resoluble canonicamente")
 
-    empresa_id = server.get("empresa_id") or server.get("EmpresaID")
-    if empresa_id is None:
-        raise AttributionOrgScopeError("empresa no resoluble desde server_id")
+    unidad = UnidadesService.get_by_pk(unidad_pk)
+    if not unidad:
+        raise AttributionOrgScopeError("unidad canonica no encontrada")
+
+    unidad_server_id = str(unidad.get("server_id") or "").strip()
+    payload_server_id = str(payload.server_id or "").strip()
+    if not unidad_server_id or unidad_server_id != payload_server_id:
+        raise AttributionOrgScopeError("server_id no corresponde a la unidad canonica")
+
+    empresa = resolve_empresa_by_alias(unidad.get("codigo"))
+    if not empresa:
+        raise AttributionOrgScopeError("empresa no resoluble desde la unidad canonica")
 
     return {
-        "empresa_id": int(empresa_id),
+        "empresa_id": int(empresa.empresa_id),
         "unidad_negocio_id": str(unidad_pk),
     }
 
