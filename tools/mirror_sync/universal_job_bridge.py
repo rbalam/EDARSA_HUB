@@ -652,9 +652,27 @@ def _read_json_file(path: Path) -> dict[str, Any]:
 _SLOT_ALREADY_CLAIMED_BLOCKER = (
     "dispatcher_exception:SlotRuntimeError:SLOT_ALREADY_CLAIMED"
 )
+_NEEDS_FAST_FORWARD_REFRESH_BLOCKER = (
+    "dispatcher_exception:RuntimeError:NEEDS_FAST_FORWARD_REFRESH"
+)
+_PREEXECUTION_INFRASTRUCTURE_RETRY_CONTRACT = {
+    "BLOCKED": {_SLOT_ALREADY_CLAIMED_BLOCKER},
+    "GIT_DIVERGENCE_BLOCKED": {_NEEDS_FAST_FORWARD_REFRESH_BLOCKER},
+}
 
 
-def slot_claim_retry_decision(name: str) -> dict[str, Any]:
+def _preexecution_retry_history_matches(name: str) -> list[Path]:
+    stem = Path(name).stem
+    return sorted(
+        REJECTED_HISTORY.glob(
+            f"{stem}.*.preexecution-retry.json"
+        )
+    )
+
+
+def preexecution_infrastructure_retry_decision(
+    name: str,
+) -> dict[str, Any]:
     result_path = RESULTS / name
     if not result_path.is_file():
         return {
@@ -663,35 +681,97 @@ def slot_claim_retry_decision(name: str) -> dict[str, Any]:
         }
 
     result = _read_json_file(result_path)
-    allowed = (
-        result.get("status") == "BLOCKED"
-        and result.get("certification") == "NOT_CERTIFIED"
+    blockers = result.get("blockers")
+    status = str(result.get("status") or "").strip()
+    allowed_blockers = _PREEXECUTION_INFRASTRUCTURE_RETRY_CONTRACT.get(
+        status,
+        set(),
+    )
+    history = _preexecution_retry_history_matches(name)
+
+    retryable_shape = (
+        result.get("certification") == "NOT_CERTIFIED"
         and result.get("percent_complete") == 0
         and result.get("production_touched") is False
-        and result.get("blockers") == [
-            _SLOT_ALREADY_CLAIMED_BLOCKER
-        ]
+        and isinstance(blockers, list)
+        and len(blockers) == 1
+        and blockers[0] in allowed_blockers
     )
+    allowed = retryable_shape and not history
 
     return {
         "present": True,
         "allowed": allowed,
         "result_path": str(result_path),
-        "blockers": result.get("blockers"),
+        "status": status,
+        "blockers": blockers,
+        "retry_history": [str(path) for path in history],
+        "reason": (
+            "PREEXECUTION_INFRASTRUCTURE_RETRY_ALLOWED"
+            if allowed
+            else (
+                "PREEXECUTION_INFRASTRUCTURE_RETRY_LIMIT_REACHED"
+                if retryable_shape and history
+                else "RESULT_TERMINAL"
+            )
+        ),
     }
+
+
+def archive_preexecution_retry_evidence(
+    name: str,
+    decision: dict[str, Any],
+) -> Path:
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    archive = (
+        REJECTED_HISTORY
+        / f"{Path(name).stem}.{stamp}.preexecution-retry.json"
+    )
+    payload = {
+        "schema": "edarsahub.worker-preexecution-retry-evidence.v1",
+        "job_id": Path(name).stem,
+        "retry_count": 1,
+        "previous_result": _read_json_file(RESULTS / name),
+        "previous_rejection": (
+            _read_json_file(REJECTED / name)
+            if (REJECTED / name).is_file()
+            else None
+        ),
+        "previous_rejection_raw": (
+            (REJECTED / f"{name}.raw").read_text(
+                encoding="utf-8",
+                errors="replace",
+            )
+            if (REJECTED / f"{name}.raw").is_file()
+            else None
+        ),
+        "decision": {
+            "status": decision.get("status"),
+            "blockers": decision.get("blockers"),
+            "reason": decision.get("reason"),
+        },
+        "archived_at_utc": datetime.now(timezone.utc).isoformat(),
+        "production_touched": False,
+    }
+    archive.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return archive
 
 
 def already_claimed(name: str) -> bool:
     # worker_queue/inbox is immutable audit history. PENDING, PROCESSING and
-    # DONE remain terminal/active claims. RESULTS is terminal except for the
-    # single pre-execution infrastructure block explicitly allowed below.
+    # DONE remain terminal/active claims. RESULTS is terminal except for a
+    # single bounded retry of an explicitly allowlisted pre-execution
+    # infrastructure blocker.
     if any(
         (folder / name).exists()
         for folder in (PENDING, PROCESSING, DONE)
     ):
         return True
 
-    result_retry = slot_claim_retry_decision(name)
+    result_retry = preexecution_infrastructure_retry_decision(name)
     if result_retry["present"]:
         return not result_retry["allowed"]
 
@@ -773,7 +853,7 @@ def receive() -> int:
     accepted = rejected = skipped = 0
     for path in queue_files():
         name = Path(path).name
-        result_retry = slot_claim_retry_decision(name)
+        result_retry = preexecution_infrastructure_retry_decision(name)
         if already_claimed(name):
             skipped += 1
             continue
@@ -843,10 +923,17 @@ def receive() -> int:
             "job": job,
         }
         if result_retry.get("allowed"):
-            envelope["_worker_slot_claim_retry"] = {
+            retry_archive = archive_preexecution_retry_evidence(
+                name,
+                result_retry,
+            )
+            envelope["_worker_preexecution_retry"] = {
                 "same_job_id": True,
+                "retry_count": 1,
                 "previous_result_path": result_retry.get("result_path"),
+                "previous_status": result_retry.get("status"),
                 "previous_blockers": result_retry.get("blockers"),
+                "archived_evidence": str(retry_archive),
                 "evidence_preserved": True,
             }
         if retry_decision.get("present"):
