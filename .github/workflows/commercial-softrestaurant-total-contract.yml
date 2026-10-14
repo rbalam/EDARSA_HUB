@@ -1,0 +1,157 @@
+name: "Commercial SoftRestaurant Total Contract #1"
+
+on:
+  push:
+    branches:
+      - fix/softrestaurant-pos-total-contract-20261013
+    paths:
+      - ".github/workflows/commercial-softrestaurant-total-contract.yml"
+      - "backend/modules/comercial_v2/ticket_contract.py"
+      - "backend/modules/comercial/ticket_service.py"
+      - "backend/modules/comercial_v2/repository_readonly.py"
+      - "backend/modules/comercial_analytics/repository_tickets.py"
+      - "backend/tests/test_current_day_canonical_kpi_parity_r48.py"
+      - "backend/tests/test_softrestaurant_intraday_overlay_contract.py"
+      - "backend/tests/test_comercial_ticket_numcheque_date_contract.py"
+      - "backend/tests/test_softrestaurant_engine_uniformity_20261013.py"
+      - "backend/tests/test_comercial_ticket_detail_parity_20261013.py"
+      - "backend/tests/test_comercial_day_ticket_atomic_identity_r47.py"
+      - "backend/tests/test_tabeje_comercial_parity_r17.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  EDARSA_ENV: DEVELOPMENT
+  EDARSAHUB_SQL_HOST: "54.39.104.176"
+  EDARSAHUB_SQL_PORT: "1433"
+  EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+  EDARSAHUB_SQL_USER: "HRLectura"
+  EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+  SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+  JWT_SECRET: soft-total-${{ github.run_id }}-${{ github.sha }}
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/req-soft-total.txt
+          python -m pip install -r /tmp/req-soft-total.txt
+
+      - name: Compile shared read contract
+        shell: bash
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            modules/comercial_v2/ticket_contract.py \
+            modules/comercial/ticket_service.py \
+            modules/comercial_v2/repository_readonly.py \
+            modules/comercial_analytics/repository_tickets.py
+
+      - name: Run atomic and transversal regressions
+        shell: bash
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          python -m pytest -q \
+            tests/test_current_day_canonical_kpi_parity_r48.py \
+            tests/test_softrestaurant_intraday_overlay_contract.py \
+            tests/test_comercial_ticket_numcheque_date_contract.py \
+            tests/test_softrestaurant_engine_uniformity_20261013.py \
+            tests/test_comercial_ticket_detail_parity_20261013.py \
+            tests/test_comercial_day_ticket_atomic_identity_r47.py \
+            tests/test_tabeje_comercial_parity_r17.py
+
+      - name: Real SoftRestaurant TOTAL parity canary
+        shell: bash
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from core.db import execute_sql_query_params
+          from core.server_registry import EDARSAHUB_CONFIG
+          from modules.comercial.ticket_service import (
+              _snapshot_sales_amount,
+              load_open_snapshot_lines,
+          )
+          from modules.comercial_analytics.repository_tickets import (
+              summarize_current_day_tickets,
+          )
+
+          cfg = EDARSAHUB_CONFIG
+          units = ("130MID", "CIENFUEGOS", "ESTELAR")
+
+          def query(sql, params):
+              return execute_sql_query_params(
+                  cfg["host"], cfg["port"], cfg["database"],
+                  cfg["username"], cfg["password"], sql, params
+              ) or []
+
+          for unit in units:
+              rows = query(
+                  """
+                  SELECT TOP 1
+                      fecha_operacion,
+                      ISNULL(total_estimado_dia,0) AS ventas,
+                      ISNULL(propinas_total,0) AS propinas,
+                      ISNULL(tickets_abiertos,0) + ISNULL(tickets_cerrados_dia,0) AS cheques,
+                      ISNULL(pax_abiertos,0) + ISNULL(pax_cerrados_dia,0) AS pax,
+                      snapshot_timestamp
+                  FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK)
+                  WHERE unidad_negocio_id = %s
+                  ORDER BY snapshot_timestamp DESC, fecha_ultima_actualizacion DESC
+                  """,
+                  (unit,),
+              )
+              assert rows, unit
+              header = rows[0]
+              fecha = str(header["fecha_operacion"])[:10]
+
+              snapshot = load_open_snapshot_lines(unit, "", fecha)
+              for item in snapshot:
+                  if str(item.get("sistema_origen") or "").strip().upper() == "SOFTRESTAURANT":
+                      total = float(item.get("total_ticket") or 0)
+                      assert abs(_snapshot_sales_amount(item) - total) < 0.01, (unit, item)
+
+              detail = summarize_current_day_tickets(
+                  operation_date=fecha,
+                  unit_code=unit,
+              )
+
+              print(
+                  "SOFT_TOTAL_PARITY_" + unit + "="
+                  + json.dumps({
+                      "header": header,
+                      "detail": {
+                          "ventas": detail["ventas"],
+                          "cheques": detail["cheques"],
+                          "pax": detail["pax"],
+                      },
+                  }, default=str, ensure_ascii=False)
+              )
+
+              assert abs(float(detail["ventas"]) - float(header["ventas"])) < 0.01, (unit, header, detail)
+              assert int(detail["cheques"]) == int(header["cheques"]), (unit, header, detail)
+              assert int(detail["pax"]) == int(header["pax"]), (unit, header, detail)
+
+          print("COMMERCIAL_SOFTRESTAURANT_TOTAL_CONTRACT_1=PASS")
+          PY
