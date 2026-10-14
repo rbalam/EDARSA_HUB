@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-DIAG-R3-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "8b7ef2b57a3406be7daa2616729634bb138b2a53",
+  "production_allowed": false,
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "objective": "Sincronizador: diagnóstico DRY_RUN exclusivo para CIENFUEGOS del 2026-10-13. R1/R2 fueron bloqueados únicamente por CONCURRENT_SCOPE_CONFLICT mientras otro job avanzó el HEAD. Ejecutar ahora sobre el SHA actual y determinar por qué DETALLE_ISCAM queda bloqueado contra Runtime V2, reportando ventas/tickets/PAX Runtime vs POS, deltas y código de error. No escribir datos ni tocar Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "fecha_inicio": "2026-10-13",
+  "fecha_fin": "2026-10-14",
+  "dry_run": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_20261013_runtime_existing_detail",
+          "sql": "SELECT TOP 1 fecha_operacion, ventas_total, tickets_total, pax_total FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE fecha_operacion='2026-10-13' AND (CONVERT(varchar(100), unidad_negocio_id)='CIENFUEGOS' OR CONVERT(varchar(100), unidad_codigo)='CIENFUEGOS' OR CONVERT(varchar(200), unidad_negocio_nombre)='CIENFUEGOS')"
+        }
+      ]
+    }
+  ]
+}
