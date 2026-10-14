@@ -177,6 +177,56 @@ async def list_connections(
     health_map = repository.get_latest_health_map(ids)
     enrichment = repository.get_connection_enrichment(ids)
 
+    # Scope canonico existente: no duplicamos SQL ni reglas de resolucion.
+    from modules.sync_historicos.catalog_service import planner_inputs
+
+    _, unit_contexts = planner_inputs()
+    scope_by_connection: Dict[str, Dict] = {}
+    for unit in unit_contexts:
+        key = _id_key(unit.get("connection_id"))
+        if not key:
+            continue
+        scope = scope_by_connection.setdefault(
+            key,
+            {
+                "unidad_negocio_ids": [],
+                "unidades_negocio": [],
+                "sucursales": [],
+                "empresa_ids": [],
+            },
+        )
+
+        unit_id = unit.get("unit_id")
+        if unit_id and unit_id not in scope["unidad_negocio_ids"]:
+            scope["unidad_negocio_ids"].append(unit_id)
+            scope["unidades_negocio"].append(
+                {
+                    "id": unit_id,
+                    "codigo": unit.get("unit_code"),
+                    "nombre": unit.get("unit_name"),
+                    "sucursal_origen_id": unit.get("branch_origin_id"),
+                }
+            )
+
+        branch_id = unit.get("branch_id")
+        if branch_id is not None and all(
+            branch.get("id") != branch_id
+            for branch in scope["sucursales"]
+        ):
+            scope["sucursales"].append(
+                {
+                    "id": branch_id,
+                    "codigo": unit.get("branch_code"),
+                    "nombre": unit.get("branch_name"),
+                    "sucursal_origen_id": unit.get("branch_origin_id"),
+                    "empresa_id": unit.get("company_id"),
+                }
+            )
+
+        company_id = unit.get("company_id")
+        if company_id is not None and company_id not in scope["empresa_ids"]:
+            scope["empresa_ids"].append(company_id)
+
     for item in items:
         lookup_key = _id_key(item.get("id"))
         extra = enrichment.get(lookup_key, {})
@@ -187,6 +237,24 @@ async def list_connections(
             or extra.get("empresa_id")
             or item["scope"].get("empresa_id")
         )
+
+        canonical_scope = scope_by_connection.get(lookup_key)
+        if canonical_scope:
+            item["scope"]["unidad_negocio_ids"] = canonical_scope[
+                "unidad_negocio_ids"
+            ]
+            item["scope"]["unidades_negocio"] = canonical_scope[
+                "unidades_negocio"
+            ]
+            item["scope"]["sucursales"] = canonical_scope["sucursales"]
+            item["scope"]["empresa_ids"] = canonical_scope["empresa_ids"]
+            item["scope"]["unit_mapping_status"] = "MAPPED"
+        else:
+            item["scope"]["unidad_negocio_ids"] = []
+            item["scope"]["unidades_negocio"] = []
+            item["scope"]["empresa_ids"] = []
+            item["scope"]["unit_mapping_status"] = "UNMAPPED"
+
         _attach_health(item, health_map.get(lookup_key))
 
     if connection_type:
