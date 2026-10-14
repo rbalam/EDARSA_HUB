@@ -26,15 +26,16 @@ def test_closed_sales_has_no_central2020_fallback():
     assert "fallback" not in text.lower()
 
 
-def test_unit_queries_are_distinct_and_select_only():
+def test_mpro_units_share_final_header_authority_and_select_only():
     text = _text(API_MODULE)
 
-    assert 'if codigo == "ORIGEN":' in text
+    assert 'codigo not in {"ORIGEN", "130QRO"}' in text
     assert "FROM Venta_Encabezado AS ve" in text
-    assert 'if codigo == "130QRO":' in text
-    assert "FROM Comanda AS c" in text
-    assert "INNER JOIN Comanda_Detalle AS cd" in text
-    assert "c.Es_Cve_Estado = 'PA'" in text
+    assert "ve.Vn_Precio_Neto_Importe AS Vn_Precio_Neto_Importe" in text
+    assert "ve.Sc_Cve_Sucursal = '{sucursal}'" in text
+    assert "ISNULL(ve.Vn_Tabla, '') = 'Comanda'" in text
+    assert "FROM Comanda AS c" not in text
+    assert "INNER JOIN Comanda_Detalle AS cd" not in text
     assert 'startswith("SELECT")' in text
 
 
