@@ -1,0 +1,74 @@
+{
+  "base_sha": "9a9913697414fc548b702f80bf789a6cdd369ca0",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-14T23:40:21Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-BATCH-STEP-DIAG-R10-CARLOS-20261014",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-14T23:41:31Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "step_status",
+              "attempts",
+              "step_error",
+              "dry_success",
+              "dry_header_success",
+              "dry_detail_success",
+              "dry_warning",
+              "dry_error",
+              "real_success",
+              "real_header_success",
+              "real_detail_success",
+              "real_payments_success",
+              "real_warning",
+              "real_error"
+            ],
+            "name": "batch_step_diagnostic",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "PENDING_RECOVERY",
+                "1",
+                "ENTRYPOINT_RC_5",
+                "true",
+                "true",
+                "true",
+                "",
+                "",
+                "true",
+                "true",
+                "false",
+                null,
+                "",
+                "ENTRYPOINT_RC_5"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-14T23:40:19Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
