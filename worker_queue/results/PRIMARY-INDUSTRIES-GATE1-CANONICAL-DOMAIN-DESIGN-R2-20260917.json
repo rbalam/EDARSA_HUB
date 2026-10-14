@@ -1,22 +1,29 @@
 {
+  "base_sha": "3f23bbc76904e4e8b50ae88344cae0d8f409d223",
   "blockers": [
-    "dispatcher_exception:RuntimeError:NEEDS_FAST_FORWARD_REFRESH"
+    "slot_release_failed:SlotRuntimeError:SLOT_NOT_FOUND"
   ],
-  "certification": "NOT_CERTIFIED",
-  "completed_at_utc": "2026-09-18T03:15:24Z",
+  "candidate_sha": "432e3409ffc43f92dc89f8bc10a832b6024891c5",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-10-14T16:33:24Z",
+  "development_sha": "432e3409ffc43f92dc89f8bc10a832b6024891c5",
   "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/ARCHITECTURE/PRIMARY_INDUSTRIES_GATE1_CANONICAL_DOMAIN_DESIGN.md"
+  ],
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "PRIMARY-INDUSTRIES-GATE1-CANONICAL-DOMAIN-DESIGN-R2-20260917",
-  "percent_complete": 0,
+  "percent_complete": 95,
   "production_touched": false,
-  "published_at_utc": "2026-09-18T03:15:46Z",
+  "published_at_utc": "2026-10-14T18:27:27Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
   "source_repo": "rbalam/EDARSA_HUB",
-  "started_at_utc": "2026-09-18T03:15:24Z",
-  "status": "GIT_DIVERGENCE_BLOCKED",
-  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
-  "work_completion": "NOT_CERTIFIED"
+  "started_at_utc": "2026-10-14T16:33:17Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
 }
