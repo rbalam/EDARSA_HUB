@@ -6,7 +6,13 @@ import json
 from typing import Any, Dict, List, Optional
 
 from .service import _query_edarsahub_tablero
-from modules.comercial_v2.ticket_contract import FIELDS, fields_from, header_from, discount_comment
+from modules.comercial_v2.ticket_contract import (
+    FIELDS,
+    discount_comment,
+    fields_from,
+    header_from,
+    visible_sale_from_pos_total,
+)
 
 
 def _safe_sql(value: Any) -> str:
@@ -161,16 +167,8 @@ def _snapshot_ticket_identity(row: Dict[str, Any]) -> str:
 
 
 def _snapshot_sales_amount(row: Dict[str, Any]) -> float:
-    """Venta comparable con KPI: la propina se conserva separada."""
-    total = _money(row.get("total_ticket"))
-    sistema = str(row.get("sistema_origen") or "").strip().upper()
-
-    if sistema == "SOFTRESTAURANT":
-        propina = max(0.0, _money(row.get("propina")))
-        if total >= propina:
-            return total - propina
-
-    return total
+    """Venta visible canónica: TOTAL del POS; propina siempre separada."""
+    return visible_sale_from_pos_total(row.get("total_ticket"))
 
 def merge_open_snapshot_tickets(
     items: List[Dict[str, Any]],
