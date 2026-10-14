@@ -61,6 +61,20 @@ FIELD_TYPES = {'partida_origen_id': 'nvarchar(100)',
  'cliente_longitud': 'nvarchar(max)'}
 FIELDS = tuple(FIELD_TYPES)
 
+
+def visible_sale_from_pos_total(value):
+    """Venta visible canónica cuando la fuente entrega TOTAL del POS.
+
+    SoftRestaurant expone la propina en una columna independiente; por contrato,
+    TOTAL/total_ticket ya es la venta que debe mostrarse. Nunca se suma ni se
+    resta propina sobre este valor. La misma regla mantiene MPRO sin cambios.
+    """
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def fields_from(row):
     return {field: row.get(field) for field in FIELDS}
 
