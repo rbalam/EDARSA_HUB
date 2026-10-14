@@ -4,59 +4,59 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
-  "generated_at_utc": "2026-10-14T23:02:24Z",
+  "generated_at_utc": "2026-10-14T23:03:47Z",
   "history": {
     "done_total_local": 1406,
     "pending_total_local": 0,
-    "processing_total_local": 1,
-    "rejected_total_local": 1224,
-    "results_total_local": 2408
+    "processing_total_local": 0,
+    "rejected_total_local": 1225,
+    "results_total_local": 2409
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1327,
+      "age_seconds": 64,
+      "job_id": "EDARSAHUB-RESYNC-RESTORE-COMERCIAL-RANGE-CARD-AUDIT-R2-CARLOS-20261014",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1410,
       "job_id": "EDARSAHUB-RESYNC-RESTORE-COMERCIAL-RANGE-CARD-R1-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2826,
+      "age_seconds": 2910,
       "job_id": "EDARSAHUB-SYNC-HISTORICAL-COMPATIBILITY-AUDIT-R1-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1767,
+      "age_seconds": 1850,
       "job_id": "EDARSAHUB-SYNC-HISTORICAL-COMPATIBILITY-AUDIT-R2-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 58,
-      "job_id": "EDARSAHUB-RESYNC-RESTORE-COMERCIAL-RANGE-CARD-AUDIT-R2-CARLOS-20261014",
-      "reason": null,
-      "state": "RUNNING"
     }
   ],
   "local_development_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
-  "queue_running": 1,
+  "queue_result_ready_recent": 4,
+  "queue_running": 0,
   "remote_development_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
   "runtime": {
-    "current_job_id": "EDARSAHUB-RESYNC-RESTORE-COMERCIAL-RANGE-CARD-AUDIT-R2-CARLOS-20261014",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-14T23:02:07Z",
-    "last_receive_utc": "2026-10-14T23:02:23Z",
-    "last_terminal_utc": "2026-10-14T22:40:16Z",
+    "last_cycle_utc": "2026-10-14T23:03:32Z",
+    "last_receive_utc": "2026-10-14T23:03:44Z",
+    "last_terminal_utc": "2026-10-14T23:02:42Z",
     "pid": "664815",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "007da57a0c9aeec8412a797df9af562fa0b55afc",
