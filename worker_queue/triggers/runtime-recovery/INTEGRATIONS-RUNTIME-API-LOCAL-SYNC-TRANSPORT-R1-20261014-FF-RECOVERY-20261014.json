@@ -1,0 +1,12 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Recover canonical Universal Worker runtime convergence for existing INTEGRATIONS-RUNTIME-API-LOCAL-SYNC-TRANSPORT-R1-20261014 after terminal GIT_DIVERGENCE_BLOCKED with NEEDS_FAST_FORWARD_REFRESH. Current Preview evidence: branch Edarsahub_Desarrollo, local 8be01623e6b5e549888b62dfaf74388e2ae0e110, remote Development and mirror both 6500d41cf6a725065b619e5380d0256e8ee37dce, topology REMOTE_AHEAD_ONLY by 2, no writer lock, and only platform-managed .emergent/system_deps.txt drift. Use the authoritative wake/runtime recovery flow, fast-forward only, preserve or canonically handle platform-managed drift, fail closed on any other dirty state, wrong branch, divergence, or non-fast-forward. Then consume the existing R1 without modifying or cloning the functional request. Do not create R1B. Do not touch Production.",
+  "existing_job_id": "INTEGRATIONS-RUNTIME-API-LOCAL-SYNC-TRANSPORT-R1-20261014",
+  "expected_local_head": "8be01623e6b5e549888b62dfaf74388e2ae0e110",
+  "expected_remote_head": "6500d41cf6a725065b619e5380d0256e8ee37dce",
+  "expected_classification": "REMOTE_AHEAD_ONLY",
+  "allowed_platform_managed_drift": [
+    ".emergent/system_deps.txt"
+  ],
+  "production_touched": false
+}
