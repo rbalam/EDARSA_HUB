@@ -389,6 +389,74 @@ def generic_readonly_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
     return {"checks": sanitized}
 
 
+PLATFORM_MANAGED_SYSTEM_DEPS = ".emergent/system_deps.txt"
+
+
+def dev_mirror_effectively_converged(
+    development_head: str,
+    mirror_head: str,
+) -> bool:
+    """Accept exact convergence or the single platform-managed Preview drift.
+
+    Emergent materializes system dependencies into the runtime and snapshots
+    .emergent/system_deps.txt as empty on mirror/emergent-live. DEV must retain
+    git canonically so future Preview images keep installing the executable.
+    No other DEV/MIRROR drift is certification-equivalent.
+    """
+    if development_head == mirror_head:
+        return True
+
+    ancestry = git(
+        "merge-base",
+        "--is-ancestor",
+        development_head,
+        mirror_head,
+        check=False,
+    )
+    if ancestry.returncode != 0:
+        return False
+
+    changed = git(
+        "diff",
+        "--name-only",
+        development_head,
+        mirror_head,
+        "--",
+        check=False,
+    )
+    if changed.returncode != 0:
+        return False
+
+    paths = [
+        line.strip()
+        for line in changed.stdout.splitlines()
+        if line.strip()
+    ]
+    if paths != [PLATFORM_MANAGED_SYSTEM_DEPS]:
+        return False
+
+    development_value = git(
+        "show",
+        f"{development_head}:{PLATFORM_MANAGED_SYSTEM_DEPS}",
+        check=False,
+    )
+    if (
+        development_value.returncode != 0
+        or development_value.stdout.strip() != "git"
+    ):
+        return False
+
+    mirror_value = git(
+        "show",
+        f"{mirror_head}:{PLATFORM_MANAGED_SYSTEM_DEPS}",
+        check=False,
+    )
+    if mirror_value.returncode != 0:
+        return False
+
+    return mirror_value.stdout == ""
+
+
 def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
     source_sha = result.get("development_sha")
 
@@ -603,7 +671,10 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
         f"{REMOTE}/{MIRROR_BRANCH}",
     ).stdout.strip()
 
-    if development_head != mirror_head:
+    if not dev_mirror_effectively_converged(
+        development_head,
+        mirror_head,
+    ):
         return pending
 
     ancestry = git(
@@ -645,7 +716,7 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
         "certified_source_sha": source_sha,
         "converged_head": development_head,
         "certification_basis":
-            "SHA_BOUND_ATTESTATION_PLUS_DESCENDANT_CONVERGENCE",
+            "SHA_BOUND_ATTESTATION_PLUS_EFFECTIVE_DESCENDANT_CONVERGENCE",
     }
 
 
