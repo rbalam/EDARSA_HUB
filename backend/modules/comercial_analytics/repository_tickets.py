@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from modules.comercial_v2.ticket_contract import FIELDS, fields_from, header_from, discount_comment
+from core.commercial_sales_contract import fiscal_breakdown
 
 from datetime import date, datetime
 from typing import Any, Callable, Iterable
@@ -284,7 +285,7 @@ def _list_current_day_with_comercial_merge(
             MIN(d.fecha_hora) AS fecha_hora,
             MAX(ISNULL(d.pax, 0)) AS pax,
             COUNT(*) AS lineas,
-            SUM(ISNULL(d.importe_neto, 0)) AS ventas_sin_propina,
+            SUM(ISNULL(d.importe_neto, 0)) AS ventas_total_ticket,
             MAX(ISNULL(d.propina, 0)) AS propina
         FROM {DETAIL_TABLE} AS d
         WHERE
@@ -328,7 +329,7 @@ def _list_current_day_with_comercial_merge(
             "folios": 1,
             "pax": int(row.get("pax") or 0),
             "total_venta": float(
-                row.get("ventas_sin_propina") or 0
+                row.get("ventas_total_ticket") or 0
             ),
             "importe": float(
                 row.get("ventas_sin_propina") or 0
@@ -1076,6 +1077,7 @@ def get_ticket_detail(
         sum(line["propina"] for line in lines),
         2,
     )
+    fiscal_subtotal, fiscal_tax = fiscal_breakdown(total)
     pax = max(
         [line["pax"] for line in lines],
         default=0,
@@ -1100,9 +1102,10 @@ def get_ticket_detail(
             "estado": "CERRADA",
             "pax": pax,
             "lineas": len(lines),
-            "subtotal": subtotal,
+            "subtotal": fiscal_subtotal,
+            "subtotal_productos": subtotal,
             "descuento": descuento,
-            "impuesto": None,
+            "impuesto": fiscal_tax,
             "ventas": total,
             "total": total,
             "propina": propina,
