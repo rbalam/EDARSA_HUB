@@ -1,0 +1,197 @@
+name: "Diagnose 130QRO Closed Sales Parity"
+
+on:
+  push:
+    branches:
+      - diag/130qro-closed-parity-20261014
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  EDARSA_ENV: DEVELOPMENT
+  EDARSAHUB_SQL_HOST: "54.39.104.176"
+  EDARSAHUB_SQL_PORT: "1433"
+  EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+  EDARSAHUB_SQL_USER: "HRLectura"
+  EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+  SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install backend runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/req-diag.txt
+          python -m pip install -r /tmp/req-diag.txt
+      - name: Run read-only 130QRO parity diagnosis
+        shell: bash
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from datetime import date
+          from decimal import Decimal
+
+          from core.unidades_service import UnidadesService
+          from core.db import execute_sql_query_params
+          from core.server_registry import EDARSAHUB_CONFIG
+          from modules.comercial_v2.mpro_closed_api import (
+              resolve_mpro_closed_api,
+              execute_mpro_select_via_api,
+          )
+
+          cfg = EDARSAHUB_CONFIG
+          start = "20261001"
+          end = "20261012"
+          code = "130QRO"
+
+          unit = UnidadesService.get_by_codigo(code)
+          assert unit, "130QRO no resuelta"
+          api = resolve_mpro_closed_api(unit["unidad_negocio_pk"])
+          assert api, "API local 130QRO no resuelta"
+          suc = api["sucursal_id"]
+
+          q = f"""
+          SELECT
+              CAST(c.Co_Fecha AS date) AS fecha,
+              c.Co_Folio AS folio,
+              SUM(ISNULL(cd.Cd_Importe,0)) AS comanda_total,
+              MAX(ISNULL(c.Co_Propina,0)) AS propina,
+              MAX(ISNULL(c.Co_Personas,0)) AS pax
+          FROM Comanda c
+          INNER JOIN Comanda_Detalle cd
+              ON cd.Co_Folio = c.Co_Folio
+          WHERE c.Co_Fecha >= CONVERT(datetime, '{start}',112)
+            AND c.Co_Fecha < DATEADD(day,1,CONVERT(datetime,'{end}',112))
+            AND c.Sc_Cve_Sucursal = '{suc}'
+            AND c.Es_Cve_Estado = 'PA'
+            AND cd.Es_Cve_Estado = 'AC'
+            AND cd.Fecha_Baja IS NULL
+          GROUP BY CAST(c.Co_Fecha AS date), c.Co_Folio
+          ORDER BY fecha, folio
+          """
+          comanda_rows, st = execute_mpro_select_via_api(api, q)
+          assert str(getattr(st,"value",st)).upper()=="ONLINE", st
+
+          q2 = f"""
+          SELECT
+              CAST(ve.Vn_Fecha AS date) AS fecha,
+              ve.Vn_Documento AS documento,
+              ve.Vn_Folio AS venta_folio,
+              SUM(ISNULL(ve.Vn_Precio_Neto_Importe,0)) AS venta_total
+          FROM Venta_Encabezado ve
+          WHERE ve.Vn_Fecha >= CONVERT(datetime, '{start}',112)
+            AND ve.Vn_Fecha < DATEADD(day,1,CONVERT(datetime,'{end}',112))
+            AND ve.Sc_Cve_Sucursal = '{suc}'
+            AND ISNULL(ve.Vn_Tabla,'') = 'Comanda'
+            AND ISNULL(ve.Es_Cve_Estado,'') IN ('AC','FA')
+            AND ve.Fecha_Baja IS NULL
+          GROUP BY CAST(ve.Vn_Fecha AS date), ve.Vn_Documento, ve.Vn_Folio
+          ORDER BY fecha, documento, venta_folio
+          """
+          venta_rows, st2 = execute_mpro_select_via_api(api, q2)
+          assert str(getattr(st2,"value",st2)).upper()=="ONLINE", st2
+
+          comanda = {}
+          for r in comanda_rows or []:
+              key=str(r.get("folio") or "").strip()
+              comanda[key]={
+                  "fecha":str(r.get("fecha"))[:10],
+                  "comanda":Decimal(str(r.get("comanda_total") or 0)),
+                  "pax":int(r.get("pax") or 0),
+              }
+
+          venta = {}
+          for r in venta_rows or []:
+              key=str(r.get("documento") or "").strip()
+              item=venta.setdefault(key, {"fecha":str(r.get("fecha"))[:10], "venta":Decimal("0"), "folios":[]})
+              item["venta"] += Decimal(str(r.get("venta_total") or 0))
+              item["folios"].append(str(r.get("venta_folio") or ""))
+
+          all_keys=sorted(set(comanda)|set(venta))
+          diffs=[]
+          daily={}
+          for k in all_keys:
+              c=comanda.get(k,{"comanda":Decimal("0"),"fecha":venta.get(k,{}).get("fecha")})
+              v=venta.get(k,{"venta":Decimal("0"),"fecha":comanda.get(k,{}).get("fecha")})
+              d=c["comanda"]-v["venta"]
+              fecha=c.get("fecha") or v.get("fecha")
+              day=daily.setdefault(fecha,{"comanda":Decimal("0"),"venta":Decimal("0"),"delta":Decimal("0"),"tickets_comanda":0,"tickets_venta":0})
+              if k in comanda:
+                  day["comanda"] += c["comanda"]; day["tickets_comanda"] += 1
+              if k in venta:
+                  day["venta"] += v["venta"]; day["tickets_venta"] += 1
+              day["delta"] += d
+              if abs(d) > Decimal("0.005"):
+                  diffs.append({
+                      "folio":k,
+                      "fecha":fecha,
+                      "comanda":str(c["comanda"]),
+                      "venta":str(v["venta"]),
+                      "delta":str(d),
+                      "venta_folios":v.get("folios",[]),
+                  })
+
+          central = execute_sql_query_params(
+              cfg["host"],cfg["port"],cfg["database"],cfg["username"],cfg["password"],
+              """
+              SELECT
+                  SUM(CAST(k.ventas_total AS decimal(18,4))) AS dashboard_total,
+                  SUM(CAST(k.tickets_total AS bigint)) AS tickets,
+                  SUM(CAST(k.pax_total AS bigint)) AS pax
+              FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime k
+              WHERE k.unidad_negocio_id=%s
+                AND k.fecha_operacion >= %s
+                AND k.fecha_operacion < %s
+              """,
+              (code,"2026-10-01","2026-10-13"),
+          ) or []
+
+          detail = execute_sql_query_params(
+              cfg["host"],cfg["port"],cfg["database"],cfg["username"],cfg["password"],
+              """
+              SELECT
+                  SUM(CAST(d.importe_neto AS decimal(18,4))) AS detail_total,
+                  COUNT(DISTINCT d.numero_ticket) AS tickets,
+                  SUM(CASE WHEN rn=1 THEN CAST(ISNULL(d.pax,0) AS bigint) ELSE 0 END) AS pax
+              FROM (
+                  SELECT d.*,
+                         ROW_NUMBER() OVER (PARTITION BY d.unidad_negocio_id,d.fecha_operacion,d.numero_ticket ORDER BY d.id) rn
+                  FROM dbo.Comercial_Inteligencia_VentasDetalleProducto d
+                  WHERE d.unidad_negocio_id=%s
+                    AND d.fecha_operacion >= %s
+                    AND d.fecha_operacion < %s
+                    AND ISNULL(d.activo,1)=1
+                    AND ISNULL(d.es_kpi_valido,1)=1
+                    AND ISNULL(d.cancelado_origen,0)=0
+              ) d
+              """,
+              (code,"2026-10-01","2026-10-13"),
+          ) or []
+
+          print("SUMMARY="+json.dumps({
+              "comanda_total":str(sum((x["comanda"] for x in daily.values()),Decimal("0"))),
+              "venta_total":str(sum((x["venta"] for x in daily.values()),Decimal("0"))),
+              "delta":str(sum((x["delta"] for x in daily.values()),Decimal("0"))),
+              "dashboard":central[0] if central else {},
+              "detail":detail[0] if detail else {},
+          },default=str,ensure_ascii=False))
+          print("DAILY="+json.dumps({k:{kk:str(vv) for kk,vv in v.items()} for k,v in sorted(daily.items())},ensure_ascii=False))
+          print("DIFFS="+json.dumps(diffs,ensure_ascii=False))
+          PY
