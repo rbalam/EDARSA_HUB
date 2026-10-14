@@ -348,12 +348,80 @@ def test_bridge_slot_claim_block_reenters_same_job_and_preserves_evidence(
     assert pending.is_file()
     envelope = json.loads(pending.read_text(encoding="utf-8"))
     assert envelope["job"]["job_id"] == "INGRESS-SLOT-BLOCKED"
-    assert envelope["_worker_slot_claim_retry"]["same_job_id"] is True
-    assert envelope["_worker_slot_claim_retry"]["evidence_preserved"] is True
+    assert envelope["_worker_preexecution_retry"]["same_job_id"] is True
+    assert envelope["_worker_preexecution_retry"]["retry_count"] == 1
+    assert envelope["_worker_preexecution_retry"]["evidence_preserved"] is True
+    archive = Path(
+        envelope["_worker_preexecution_retry"]["archived_evidence"]
+    )
+    assert archive.is_file()
 
     assert result_path.read_bytes() == result_before
     assert rejected_path.read_bytes() == rejected_before
     assert rejected_raw.read_bytes() == rejected_raw_before
+
+
+def test_bridge_git_divergence_preexecution_block_reenters_same_job_once(
+    tmp_path,
+    monkeypatch,
+):
+    bridge = _bridge_redirect_state(tmp_path, monkeypatch)
+    name = "INGRESS-GIT-DIVERGENCE.json"
+    _write_bridge_result(
+        bridge,
+        name,
+        status="GIT_DIVERGENCE_BLOCKED",
+        blockers=[
+            "dispatcher_exception:RuntimeError:NEEDS_FAST_FORWARD_REFRESH"
+        ],
+    )
+    job = _bridge_readonly_job("INGRESS-GIT-DIVERGENCE")
+    raw = json.dumps(job)
+    monkeypatch.setattr(
+        bridge,
+        "queue_files",
+        lambda: ["worker_queue/inbox/" + name],
+    )
+    monkeypatch.setattr(bridge, "read_remote", lambda path: raw)
+
+    first = bridge.preexecution_infrastructure_retry_decision(name)
+    assert first["allowed"] is True
+    assert bridge.receive() == 0
+    envelope = json.loads(
+        (bridge.PENDING / name).read_text(encoding="utf-8")
+    )
+    assert envelope["_worker_preexecution_retry"]["same_job_id"] is True
+    assert envelope["_worker_preexecution_retry"]["previous_status"] == (
+        "GIT_DIVERGENCE_BLOCKED"
+    )
+
+    (bridge.PENDING / name).unlink()
+    second = bridge.preexecution_infrastructure_retry_decision(name)
+    assert second["allowed"] is False
+    assert second["reason"] == (
+        "PREEXECUTION_INFRASTRUCTURE_RETRY_LIMIT_REACHED"
+    )
+    assert bridge.already_claimed(name) is True
+
+
+def test_bridge_other_git_divergence_blocker_remains_terminal(
+    tmp_path,
+    monkeypatch,
+):
+    bridge = _bridge_redirect_state(tmp_path, monkeypatch)
+    name = "INGRESS-GIT-DIVERGENCE-OTHER.json"
+    _write_bridge_result(
+        bridge,
+        name,
+        status="GIT_DIVERGENCE_BLOCKED",
+        blockers=[
+            "dispatcher_exception:RuntimeError:OTHER_DIVERGENCE"
+        ],
+    )
+    decision = bridge.preexecution_infrastructure_retry_decision(name)
+    assert decision["allowed"] is False
+    assert decision["reason"] == "RESULT_TERMINAL"
+    assert bridge.already_claimed(name) is True
 
 
 def test_bridge_certified_result_remains_terminal(
