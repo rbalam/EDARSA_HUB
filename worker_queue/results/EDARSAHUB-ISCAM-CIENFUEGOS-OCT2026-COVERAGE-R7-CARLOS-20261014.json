@@ -1,0 +1,262 @@
+{
+  "base_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-14T23:28:17Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-OCT2026-COVERAGE-R7-CARLOS-20261014",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-14T23:28:42Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_runtime",
+              "tickets_runtime",
+              "pax_runtime",
+              "ventas_detalle",
+              "tickets_detalle",
+              "pax_detalle",
+              "delta_venta",
+              "delta_tickets",
+              "delta_pax",
+              "estado"
+            ],
+            "name": "iscam_octubre_cienfuegos_runtime_vs_detalle",
+            "row_count_returned": 13,
+            "rows": [
+              [
+                "2026-10-01",
+                "179340.0000",
+                "48",
+                "129",
+                "179340.0000",
+                48,
+                "129",
+                "0.00",
+                "0",
+                "0",
+                "OK"
+              ],
+              [
+                "2026-10-02",
+                "183429.0000",
+                "56",
+                "160",
+                "183429.0000",
+                56,
+                "160",
+                "0.00",
+                "0",
+                "0",
+                "OK"
+              ],
+              [
+                "2026-10-03",
+                "259785.0000",
+                "62",
+                "184",
+                "259785.0000",
+                62,
+                "184",
+                "0.00",
+                "0",
+                "0",
+                "OK"
+              ],
+              [
+                "2026-10-04",
+                "130835.0000",
+                "29",
+                "103",
+                "130835.0000",
+                29,
+                "103",
+                "0.00",
+                "0",
+                "0",
+                "OK"
+              ],
+              [
+                "2026-10-05",
+                "108520.0000",
+                "24",
+                "91",
+                "108520.0000",
+                24,
+                "91",
+                "0.00",
+                "0",
+                "0",
+                "OK"
+              ],
+              [
+                "2026-10-06",
+                "76461.0000",
+                "28",
+                "69",
+                "76461.0000",
+                28,
+                "69",
+                "0.00",
+                "0",
+                "0",
+                "OK"
+              ],
+              [
+                "2026-10-07",
+                "139222.0000",
+                "41",
+                "105",
+                "139222.0000",
+                41,
+                "105",
+                "0.00",
+                "0",
+                "0",
+                "OK"
+              ],
+              [
+                "2026-10-08",
+                "142993.0000",
+                "40",
+                "137",
+                "142993.0000",
+                40,
+                "137",
+                "0.00",
+                "0",
+                "0",
+                "OK"
+              ],
+              [
+                "2026-10-09",
+                "267653.0000",
+                "73",
+                "211",
+                "267653.0000",
+                73,
+                "211",
+                "0.00",
+                "0",
+                "0",
+                "OK"
+              ],
+              [
+                "2026-10-10",
+                "328229.0000",
+                "70",
+                "1224",
+                "328229.0000",
+                70,
+                "1224",
+                "0.00",
+                "0",
+                "0",
+                "OK"
+              ],
+              [
+                "2026-10-11",
+                "98014.0000",
+                "18",
+                "70",
+                "98014.0000",
+                18,
+                "70",
+                "0.00",
+                "0",
+                "0",
+                "OK"
+              ],
+              [
+                "2026-10-12",
+                "109620.0000",
+                "22",
+                "76",
+                "109620.0000",
+                22,
+                "76",
+                "0.00",
+                "0",
+                "0",
+                "OK"
+              ],
+              [
+                "2026-10-13",
+                "147424.0000",
+                "36",
+                "105",
+                "18377.0000",
+                1,
+                "1",
+                "129047.00",
+                "35",
+                "104",
+                "MISMATCH"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_runtime",
+              "ventas_detalle",
+              "tickets_runtime",
+              "tickets_detalle",
+              "pax_runtime",
+              "pax_detalle"
+            ],
+            "name": "iscam_octubre_cienfuegos_problem_dates",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-10-13",
+                "147424.0000",
+                "18377.0000",
+                "36",
+                1,
+                "105",
+                "1"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "latest_canonical_date"
+            ],
+            "name": "iscam_octubre_cienfuegos_latest_header",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-10-13"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-14T23:28:16Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
