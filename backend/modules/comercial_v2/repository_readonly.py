@@ -33,6 +33,7 @@ import logging
 from core.db import execute_sql_query
 from core.sql_first.db import get_sql_connection
 from core.kpis_canonicos.service import runtime_dia_operativo_actual_predicate
+from modules.comercial_v2.ticket_contract import visible_sale_from_pos_total
 
 logger = logging.getLogger(__name__)
 
@@ -464,11 +465,11 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
 
     detalle_abiertas_json proviene de tempcheques y se usa unicamente
     para reconstruir la porcion abierta de la operacion. El encabezado del
-    sincronizador ya separa venta sin propina, propina y ventas cerradas.
+    sincronizador ya separa venta TOTAL, propina y ventas cerradas.
 
     Reglas:
-    - total_ticket del detalle incluye propina; la venta abierta canonica es
-      max(total_ticket - propina, 0).
+    - total_ticket proviene de la columna TOTAL del POS y es la venta visible.
+    - propina se conserva separada y nunca se suma ni se resta de total_ticket.
     - Nunca se ponen a cero ventas_cerradas_dia ni sus KPIs asociados.
     - total_estimado_dia = abiertas + cerradas.
     """
@@ -532,11 +533,7 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
 
     ventas_abiertas = round(
         sum(
-            max(
-                float(ticket["total"] or 0)
-                - float(ticket["propina"] or 0),
-                0.0,
-            )
+            visible_sale_from_pos_total(ticket["total"])
             for ticket in tickets.values()
         ),
         2,
