@@ -77,11 +77,19 @@ PY2
 }
 WORKER_SERVICE="edarsahub-universal-worker"
 INSTALLER="$APP/tools/bootstrap/install_bootstrap_watchdog.sh"
+SAFETY_GUARD="$APP/tools/mirror_sync/shared_app_safety_guard.sh"
 PREFERRED_JOB_ID="${1:-}"
 
 log(){ printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 
 cd "$APP"
+
+test -r "$SAFETY_GUARD" || {
+  echo "PREVIEW_RUNTIME_RECOVERY=SAFETY_GUARD_MISSING"
+  echo "PRODUCTION_TOUCHED=NO"
+  exit 79
+}
+. "$SAFETY_GUARD"
 
 ENV_NAME="$(printf '%s' "${EDARSA_ENV:-${APP_ENV:-${ENVIRONMENT:-PREVIEW}}}" | tr '[:lower:]' '[:upper:]')"
 case "$ENV_NAME" in
@@ -100,11 +108,14 @@ if [ "$BRANCH" != "$DEV_BRANCH" ]; then
   exit 81
 fi
 
-if [ -n "$(git status --porcelain=v1 --untracked-files=all)" ]; then
+if [ -n "$(edarsahub_effective_status)" ]; then
   echo "PREVIEW_RUNTIME_RECOVERY=DEFERRED_LOCAL_DIRTY"
   echo "LOCAL_WORK_PRESERVATION_REQUIRED=YES"
   echo "PRODUCTION_TOUCHED=NO"
   exit 82
+fi
+if edarsahub_expected_platform_system_deps_drift; then
+  echo "PLATFORM_MANAGED_SYSTEM_DEPS_DRIFT=IGNORED_EXPECTED_EMPTY_RUNTIME"
 fi
 
 if [ -n "$PREFERRED_JOB_ID" ] && ! [[ "$PREFERRED_JOB_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$ ]]; then

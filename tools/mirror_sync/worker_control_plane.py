@@ -83,6 +83,57 @@ BOOTSTRAP_STATE = Path(
 CONTROL_PLANE_RUNTIME_MARKER = (
     BOOTSTRAP_STATE / "control_plane_active_runtime.json"
 )
+PLATFORM_MANAGED_SYSTEM_DEPS = ".emergent/system_deps.txt"
+
+def expected_platform_system_deps_drift() -> bool:
+    current = ROOT / PLATFORM_MANAGED_SYSTEM_DEPS
+    try:
+        if not current.is_file() or current.read_bytes() != b"":
+            return False
+    except OSError:
+        return False
+
+    canonical = run(
+        ["git", "show", f"HEAD:{PLATFORM_MANAGED_SYSTEM_DEPS}"],
+        timeout=20,
+    )
+    if canonical.returncode != 0 or canonical.stdout.strip() != "git":
+        return False
+
+    staged = run(
+        [
+            "git", "diff", "--cached", "--quiet", "--",
+            PLATFORM_MANAGED_SYSTEM_DEPS,
+        ],
+        timeout=20,
+    )
+    if staged.returncode != 0:
+        return False
+
+    unstaged = run(
+        [
+            "git", "diff", "--quiet", "--",
+            PLATFORM_MANAGED_SYSTEM_DEPS,
+        ],
+        timeout=20,
+    )
+    return unstaged.returncode == 1
+
+def effective_git_status() -> str:
+    proc = run(
+        ["git", "status", "--porcelain=v1", "--untracked-files=all"],
+        timeout=20,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError("GIT_STATUS_FAILED")
+    lines = proc.stdout.splitlines()
+    if expected_platform_system_deps_drift():
+        lines = [
+            line for line in lines
+            if line != " M .emergent/system_deps.txt"
+        ]
+    return "\n".join(lines).strip()
+
 CONTROL_PLANE_IDENTITY_PATHS = (
     "tools/mirror_sync/worker_control_plane.py",
     "tools/mirror_sync/worker_maintenance_runtime.py",
@@ -301,10 +352,7 @@ def preserve_and_fast_forward() -> dict[str, Any]:
         if local_ahead != 0 or remote_ahead <= 0:
             return {"ff": "SKIP_NON_FF", "local_ahead": local_ahead, "remote_ahead": remote_ahead}
 
-        dirty = run(
-            ["git", "status", "--porcelain=v1", "--untracked-files=all"],
-            timeout=20,
-        ).stdout.strip()
+        dirty = effective_git_status()
         stash_ref = None
         if dirty:
             audit("FAST_FORWARD_DEFERRED_LOCAL_DIRTY")

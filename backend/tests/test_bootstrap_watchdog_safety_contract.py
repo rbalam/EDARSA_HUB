@@ -96,7 +96,9 @@ def test_mirror_enable_requires_health_gate_before_clearing_kill_switch():
     assert "DEFERRED_LOCAL_DIRTY" in text
     assert '"HEAD...origin/$DEV_BRANCH"' in text
     assert 'rm -f "$PERSISTENT_STOP" "$TEMP_STOP"' in text
-    assert text.index('git status --porcelain=v1 --untracked-files=all') < text.index('rm -f "$PERSISTENT_STOP" "$TEMP_STOP"')
+    assert 'SAFETY_GUARD="$APP/tools/mirror_sync/shared_app_safety_guard.sh"' in text
+    assert 'STATUS="$(edarsahub_effective_status)"' in text
+    assert text.index('STATUS="$(edarsahub_effective_status)"') < text.index('rm -f "$PERSISTENT_STOP" "$TEMP_STOP"')
     assert "MIRROR_SYNC_HEALTH_GATE=PASS" in text
 
 

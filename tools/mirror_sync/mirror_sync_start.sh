@@ -8,12 +8,19 @@ STATE_DIR="$APP/.git/mirror-sync"
 ENABLE_FLAG="$STATE_DIR/ENABLED"
 PERSISTENT_STOP="$STATE_DIR/STOP"
 SYNC_PAUSE="$APP/.git/EDARSAHUB_SYNC_PAUSED"
+SAFETY_GUARD="$APP/tools/mirror_sync/shared_app_safety_guard.sh"
 
 TEMP_DIR="/tmp/edarsahub-mirror-sync"
 TEMP_STOP="$TEMP_DIR/STOP"
 
 cd "$APP"
 mkdir -p "$STATE_DIR" "$TEMP_DIR"
+
+test -r "$SAFETY_GUARD" || {
+  echo "MIRROR_SYNC_ENABLE=BLOCKED_SAFETY_GUARD_MISSING"
+  exit 79
+}
+. "$SAFETY_GUARD"
 
 ENV_NAME="$(printf '%s' "${EDARSA_ENV:-${APP_ENV:-${ENVIRONMENT:-PREVIEW}}}" | tr '[:lower:]' '[:upper:]')"
 case "$ENV_NAME" in
@@ -37,7 +44,7 @@ if [ -e "$SYNC_PAUSE" ]; then
   exit 82
 fi
 
-STATUS="$(git status --porcelain=v1 --untracked-files=all)"
+STATUS="$(edarsahub_effective_status)"
 if [ -n "$STATUS" ]; then
   echo "MIRROR_SYNC_ENABLE=DEFERRED_LOCAL_DIRTY"
   printf '%s\n' "$STATUS"

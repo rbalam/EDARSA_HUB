@@ -51,6 +51,57 @@ CONTROL_PLANE_MAX_RESTART_ATTEMPTS = int(
         "2",
     )
 )
+PLATFORM_MANAGED_SYSTEM_DEPS = ".emergent/system_deps.txt"
+
+def expected_platform_system_deps_drift() -> bool:
+    current = APP / PLATFORM_MANAGED_SYSTEM_DEPS
+    try:
+        if not current.is_file() or current.read_bytes() != b"":
+            return False
+    except OSError:
+        return False
+
+    canonical = run(
+        ["git", "show", f"HEAD:{PLATFORM_MANAGED_SYSTEM_DEPS}"],
+        timeout=20,
+    )
+    if canonical.returncode != 0 or canonical.stdout.strip() != "git":
+        return False
+
+    staged = run(
+        [
+            "git", "diff", "--cached", "--quiet", "--",
+            PLATFORM_MANAGED_SYSTEM_DEPS,
+        ],
+        timeout=20,
+    )
+    if staged.returncode != 0:
+        return False
+
+    unstaged = run(
+        [
+            "git", "diff", "--quiet", "--",
+            PLATFORM_MANAGED_SYSTEM_DEPS,
+        ],
+        timeout=20,
+    )
+    return unstaged.returncode == 1
+
+def effective_git_status() -> str:
+    proc = run(
+        ["git", "status", "--porcelain=v1", "--untracked-files=all"],
+        timeout=20,
+    )
+    if proc.returncode != 0:
+        return "__STATUS_FAILED__"
+    lines = proc.stdout.splitlines()
+    if expected_platform_system_deps_drift():
+        lines = [
+            line for line in lines
+            if line != " M .emergent/system_deps.txt"
+        ]
+    return "\n".join(lines).strip()
+
 CONTROL_PLANE_IDENTITY_PATHS = (
     "tools/mirror_sync/worker_control_plane.py",
     "tools/mirror_sync/worker_maintenance_runtime.py",
@@ -201,8 +252,10 @@ def mirror_authorization() -> dict:
         return {"authorized": False, "state": "PERSISTENT_KILL_SWITCH"}
     if not MIRROR_ENABLE.exists():
         return {"authorized": False, "state": "EXPLICIT_ENABLE_REQUIRED"}
-    dirty = run(["git", "status", "--porcelain=v1", "--untracked-files=all"], timeout=20)
-    if dirty.stdout.strip():
+    effective_dirty = effective_git_status()
+    if effective_dirty == "__STATUS_FAILED__":
+        return {"authorized": False, "state": "WORKTREE_STATUS_FAILED"}
+    if effective_dirty:
         return {"authorized": False, "state": "DEFERRED_LOCAL_DIRTY"}
     return {"authorized": True, "state": "AUTHORIZED"}
 
@@ -283,20 +336,12 @@ def control_plane_repo_is_canonical() -> tuple[bool, str]:
     if branch != DEV:
         return False, "WRONG_BRANCH"
 
-    dirty = run(
-        [
-            "git",
-            "status",
-            "--porcelain=v1",
-            "--untracked-files=all",
-        ],
-        timeout=20,
-    )
+    effective_dirty = effective_git_status()
 
-    if dirty.returncode != 0:
+    if effective_dirty == "__STATUS_FAILED__":
         return False, "STATUS_FAILED"
 
-    if dirty.stdout.strip():
+    if effective_dirty:
         return False, "LOCAL_WORK_DIRTY"
 
     local = run(
@@ -542,8 +587,10 @@ def safe_fast_forward() -> dict:
         return {"state": "NON_FF", "local_ahead": left, "remote_ahead": right}
 
     # Re-check immediately before mutation. Never stash/reset/clean/restore.
-    dirty = run(["git", "status", "--porcelain=v1", "--untracked-files=all"], timeout=20)
-    if dirty.stdout.strip():
+    effective_dirty = effective_git_status()
+    if effective_dirty == "__STATUS_FAILED__":
+        return {"state": "WORKTREE_STATUS_FAILED", "local": local, "remote": remote}
+    if effective_dirty:
         audit("FAST_FORWARD_DEFERRED", reason="LOCAL_WORK_DIRTY", local=local, remote=remote)
         return {"state": "DEFERRED_LOCAL_DIRTY", "local": local, "remote": remote, "preserved": True}
 
