@@ -14,6 +14,7 @@ import threading
 from typing import Dict, List, Optional, Iterable
 
 from core.db import execute_sql_query_params
+from core.commercial_sales_contract import runtime_visible_sales_sql
 from core.server_registry import EDARSAHUB_CONFIG
 from core.unidades_service import UnidadesService
 
@@ -197,10 +198,11 @@ class KPIsCanonicosService:
             corte_dia_operativo,
         )
         filtro_corte_sql = f"AND {filtro_corte}" if filtro_corte else ""
+        visible_sales_sql = runtime_visible_sales_sql("k")
         sql = f"""
             SELECT CONVERT(varchar(36), k.unidad_negocio_pk) AS unidad_pk,
-                   SUM(CAST(k.ventas_total AS float))       AS ventas,
-                   SUM(CAST(k.propinas_total AS float))     AS propinas,
+                   SUM(CAST(({visible_sales_sql}) AS float)) AS ventas,
+                   SUM(CAST(k.propinas_total AS float))      AS propinas,
                    SUM(CAST(k.tickets_total AS float))      AS cheques,
                    SUM(CAST(k.pax_total AS float))          AS pax,
                    COUNT(DISTINCT k.fecha_operacion)        AS dias
