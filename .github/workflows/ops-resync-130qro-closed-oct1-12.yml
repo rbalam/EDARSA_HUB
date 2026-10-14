@@ -1,0 +1,123 @@
+name: "Ops Resync 130QRO Closed Oct 1-12"
+
+on:
+  push:
+    branches:
+      - ops/resync-130qro-closed-oct1-12-20261014
+
+permissions:
+  contents: read
+
+env:
+  EDARSA_ENV: DEVELOPMENT
+  EDARSAHUB_SQL_HOST: "54.39.104.176"
+  EDARSAHUB_SQL_PORT: "1433"
+  EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+  EDARSAHUB_SQL_USER: "HRLectura"
+  EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+  SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+
+jobs:
+  resync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/req-ops-resync.txt
+          python -m pip install -r /tmp/req-ops-resync.txt
+
+      - name: Resync 130QRO closed header only
+        shell: bash
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          set -euo pipefail
+          python scripts/sync_comercial_v2_header_worker.py \
+            --unidad 130QRO \
+            --fecha-inicio 2026-10-01 \
+            --fecha-fin 2026-10-12 \
+            --run-id FIX-MPRO-CLOSED-130QRO-20261014
+
+      - name: Verify dashboard-detail parity and ORIGEN no-regression
+        shell: bash
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from decimal import Decimal
+          from core.db import execute_sql_query_params
+          from core.server_registry import EDARSAHUB_CONFIG
+
+          cfg = EDARSAHUB_CONFIG
+
+          def q(sql, params):
+              return execute_sql_query_params(
+                  cfg["host"], cfg["port"], cfg["database"],
+                  cfg["username"], cfg["password"], sql, params
+              ) or []
+
+          def dashboard_total(unit):
+              rows = q(
+                  """
+                  SELECT
+                      SUM(CAST(k.ventas_total AS decimal(18,4))) AS ventas,
+                      SUM(CAST(k.tickets_total AS bigint)) AS tickets,
+                      SUM(CAST(k.pax_total AS bigint)) AS pax
+                  FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime k
+                  WHERE k.unidad_negocio_id=%s
+                    AND k.fecha_operacion >= %s
+                    AND k.fecha_operacion < %s
+                  """,
+                  (unit, "2026-10-01", "2026-10-13"),
+              )
+              return rows[0] if rows else {}
+
+          def detail_total(unit):
+              rows = q(
+                  """
+                  SELECT
+                      SUM(CAST(d.importe_neto AS decimal(18,4))) AS ventas,
+                      COUNT(DISTINCT d.numero_ticket) AS tickets
+                  FROM dbo.Comercial_Inteligencia_VentasDetalleProducto d
+                  WHERE d.unidad_negocio_id=%s
+                    AND d.fecha_operacion >= %s
+                    AND d.fecha_operacion < %s
+                    AND ISNULL(d.activo,1)=1
+                    AND ISNULL(d.es_kpi_valido,1)=1
+                    AND ISNULL(d.cancelado_origen,0)=0
+                  """,
+                  (unit, "2026-10-01", "2026-10-13"),
+              )
+              return rows[0] if rows else {}
+
+          qro_dash = dashboard_total("130QRO")
+          qro_detail = detail_total("130QRO")
+          origen_dash = dashboard_total("ORIGEN")
+
+          print("QRO_DASH=" + json.dumps(qro_dash, default=str, ensure_ascii=False))
+          print("QRO_DETAIL=" + json.dumps(qro_detail, default=str, ensure_ascii=False))
+          print("ORIGEN_DASH=" + json.dumps(origen_dash, default=str, ensure_ascii=False))
+
+          assert Decimal(str(qro_dash.get("ventas") or 0)).quantize(Decimal("0.01")) == Decimal("1732143.00")
+          assert Decimal(str(qro_detail.get("ventas") or 0)).quantize(Decimal("0.01")) == Decimal("1732143.00")
+          assert int(qro_dash.get("tickets") or 0) == 344
+          assert int(qro_detail.get("tickets") or 0) == 344
+          assert Decimal(str(origen_dash.get("ventas") or 0)).quantize(Decimal("0.01")) == Decimal("845981.72")
+
+          print("OPS_RESYNC_130QRO_CLOSED_OCT1_12=PASS")
+          PY
