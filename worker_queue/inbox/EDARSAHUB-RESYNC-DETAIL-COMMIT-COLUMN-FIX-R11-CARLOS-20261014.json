@@ -1,0 +1,76 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RESYNC-DETAIL-COMMIT-COLUMN-FIX-R11-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9a9913697414fc548b702f80bf789a6cdd369ca0",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir de forma canónica y transversal la regresión del COMMIT de detalle de ventas. El contrato ticket_contract.FIELDS incluye ticket_subtotal, ticket_impuesto y ticket_total, pero el INSERT de dbo.Comercial_Inteligencia_VentasDetalleProducto omite esas tres columnas mientras sí envía sus valores, provocando fallo sólo en REAL/COMMIT y PENDING_RECOVERY en todas las sucursales. Agregar únicamente esas tres columnas en el orden canónico después de ticket_impresiones. No tocar extracción POS, headers, sync_comercial_abiertas_v2, otras tablas ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "            ticket_impreso,\n            ticket_impresiones,\n            ticket_comentario,",
+      "new": "            ticket_impreso,\n            ticket_impresiones,\n            ticket_subtotal,\n            ticket_impuesto,\n            ticket_total,\n            ticket_comentario,",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/scripts/backfill_detalle_producto_pendientes.py",
+        "backend/scripts/resync_comercial_range_worker.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_detail_parity_backfill_r33.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "detalle_ticket_totals_columns_exist",
+          "sql": "SELECT name FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto') AND name IN ('ticket_subtotal','ticket_impuesto','ticket_total') ORDER BY name"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial_v2/ticket_contract.py",
+          "backend/scripts/poblar_ventas_detalle_producto_canonico.py"
+        ],
+        "search_terms": [
+          "ticket_subtotal",
+          "ticket_impuesto",
+          "ticket_total",
+          "FIELDS",
+          "INSERT INTO"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
