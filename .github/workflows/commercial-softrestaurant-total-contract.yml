@@ -17,6 +17,21 @@ on:
       - "backend/tests/test_comercial_ticket_detail_parity_20261013.py"
       - "backend/tests/test_comercial_day_ticket_atomic_identity_r47.py"
       - "backend/tests/test_tabeje_comercial_parity_r17.py"
+  pull_request:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - "backend/modules/comercial_v2/ticket_contract.py"
+      - "backend/modules/comercial/ticket_service.py"
+      - "backend/modules/comercial_v2/repository_readonly.py"
+      - "backend/modules/comercial_analytics/repository_tickets.py"
+      - "backend/tests/test_current_day_canonical_kpi_parity_r48.py"
+      - "backend/tests/test_softrestaurant_intraday_overlay_contract.py"
+      - "backend/tests/test_comercial_ticket_numcheque_date_contract.py"
+      - "backend/tests/test_softrestaurant_engine_uniformity_20261013.py"
+      - "backend/tests/test_comercial_ticket_detail_parity_20261013.py"
+      - "backend/tests/test_comercial_day_ticket_atomic_identity_r47.py"
+      - "backend/tests/test_tabeje_comercial_parity_r17.py"
   workflow_dispatch:
 
 permissions:
