@@ -1,0 +1,68 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "INTEGRATIONS-RUNTIME-API-LOCAL-SYNC-TRANSPORT-R1-20261014",
+  "mode": "MUTATION",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "human_summary_language": "es",
+  "objective": "Implementar un transport transversal API_LOCAL exclusivo para procesos de sincronizacion. Debe resolver configuracion y secretos por server_registry desde EDARSAHUB SQL, exigir API_LOCAL activo, validar SQL con read_only_sql canonico y ejecutar GET ?sql=... con X-API-Key y timeout. Sin loggear secretos, sin logica CHAPUR/MPRO, sin LIVE en pruebas, sin Produccion, sin tablas nuevas.",
+  "production_allowed": false,
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/integrations_runtime/api_local_sync.py",
+      "content": "from __future__ import annotations\n\nfrom dataclasses import dataclass, field\nfrom typing import Any, Dict, List\n\nimport requests\n\nfrom core.server_registry import get_decrypted_credentials, get_server_by_id\nfrom .read_only_sql import validate_readonly_sql\n\n\nclass ApiLocalSyncError(RuntimeError):\n    \"\"\"Fallo controlado del transport API_LOCAL de sincronizacion.\"\"\"\n\n\n@dataclass(frozen=True)\nclass ApiLocalSyncConfig:\n    server_id: str\n    server_name: str\n    api_url: str\n    api_key: str = field(repr=False)\n    system_type: str = \"\"\n    config_origin: str = \"\"\n\n\nasync def resolve_api_local_sync_config(server_id: str) -> ApiLocalSyncConfig:\n    \"\"\"Resuelve una conexion API_LOCAL exclusivamente desde EDARSAHUB SQL.\n\n    El helper no abre conexiones remotas. Solo resuelve configuracion canonica\n    y secretos internos mediante server_registry.\n    \"\"\"\n    server = await get_server_by_id(\n        str(server_id),\n        prefer_sql=True,\n        allow_mongo_fallback=False,\n        mask_secrets=False,\n    )\n    if not server:\n        raise ApiLocalSyncError(\"API_LOCAL_SERVER_NOT_FOUND\")\n\n    if str(server.get(\"tipo_conexion\") or \"\").strip().upper() != \"API_LOCAL\":\n        raise ApiLocalSyncError(\"API_LOCAL_CONNECTION_TYPE_REQUIRED\")\n\n    if not bool(server.get(\"active\")):\n        raise ApiLocalSyncError(\"API_LOCAL_SERVER_INACTIVE\")\n\n    credentials = get_decrypted_credentials(server)\n    api_url = str(credentials.get(\"api_url\") or \"\").strip()\n    if not api_url:\n        raise ApiLocalSyncError(\"API_LOCAL_URL_REQUIRED\")\n\n    api_key = str(credentials.get(\"api_key\") or \"\").strip()\n    if not api_key:\n        raise ApiLocalSyncError(\"API_LOCAL_KEY_REQUIRED\")\n\n    return ApiLocalSyncConfig(\n        server_id=str(server.get(\"id\") or server_id),\n        server_name=str(server.get(\"name\") or \"\"),\n        api_url=api_url,\n        api_key=api_key,\n        system_type=str(server.get(\"system_type\") or \"\"),\n        config_origin=str(server.get(\"config_origin\") or \"\"),\n    )\n\n\ndef execute_api_local_readonly(\n    config: ApiLocalSyncConfig,\n    sql: str,\n    *,\n    timeout_seconds: int = 30,\n    request_get=requests.get,\n) -> List[Dict[str, Any]]:\n    \"\"\"Ejecuta una unica consulta READ_ONLY mediante el contrato API_LOCAL.\n\n    Esta funcion esta destinada exclusivamente a jobs de sincronizacion.\n    No persiste resultados y no controla transacciones EDARSAHUB.\n    \"\"\"\n    query = validate_readonly_sql(sql)\n\n    try:\n        timeout = int(timeout_seconds)\n    except (TypeError, ValueError) as exc:\n        raise ValueError(\"API_LOCAL_TIMEOUT_INVALID\") from exc\n    if timeout <= 0 or timeout > 300:\n        raise ValueError(\"API_LOCAL_TIMEOUT_INVALID\")\n\n    try:\n        response = request_get(\n            config.api_url,\n            params={\"sql\": query},\n            headers={\"X-API-Key\": config.api_key},\n            timeout=timeout,\n        )\n    except requests.exceptions.Timeout as exc:\n        raise ApiLocalSyncError(\"API_LOCAL_TIMEOUT\") from exc\n    except requests.exceptions.RequestException as exc:\n        raise ApiLocalSyncError(\"API_LOCAL_OFFLINE\") from exc\n\n    if int(getattr(response, \"status_code\", 0) or 0) != 200:\n        raise ApiLocalSyncError(\n            f\"API_LOCAL_HTTP_{int(getattr(response, 'status_code', 0) or 0)}\"\n        )\n\n    try:\n        payload = response.json()\n    except ValueError as exc:\n        raise ApiLocalSyncError(\"API_LOCAL_INVALID_JSON\") from exc\n\n    if isinstance(payload, dict):\n        rows = payload.get(\"data\", [])\n    elif isinstance(payload, list):\n        rows = payload\n    else:\n        raise ApiLocalSyncError(\"API_LOCAL_INVALID_PAYLOAD\")\n\n    if rows is None:\n        rows = []\n    if not isinstance(rows, list):\n        raise ApiLocalSyncError(\"API_LOCAL_INVALID_DATA\")\n\n    if not all(isinstance(row, dict) for row in rows):\n        raise ApiLocalSyncError(\"API_LOCAL_ROWS_MUST_BE_OBJECTS\")\n\n    return rows\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/integrations_runtime/__init__.py",
+      "old": "from .external_ids import ExternalIdentifierConflict, ensure_external_identifier\nfrom .health import persist_connection_health\n",
+      "new": "from .api_local_sync import (\n    ApiLocalSyncConfig,\n    ApiLocalSyncError,\n    execute_api_local_readonly,\n    resolve_api_local_sync_config,\n)\nfrom .external_ids import ExternalIdentifierConflict, ensure_external_identifier\nfrom .health import persist_connection_health\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/integrations_runtime/__init__.py",
+      "old": "__all__ = [\n    \"ExternalIdentifierConflict\",\n",
+      "new": "__all__ = [\n    \"ApiLocalSyncConfig\",\n    \"ApiLocalSyncError\",\n    \"execute_api_local_readonly\",\n    \"resolve_api_local_sync_config\",\n    \"ExternalIdentifierConflict\",\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_integrations_runtime_api_local_sync.py",
+      "content": "import asyncio\n\nimport pytest\nimport requests\n\nimport modules.integrations_runtime.api_local_sync as transport\n\n\nclass FakeResponse:\n    def __init__(self, status_code=200, payload=None):\n        self.status_code = status_code\n        self._payload = payload\n\n    def json(self):\n        if isinstance(self._payload, Exception):\n            raise self._payload\n        return self._payload\n\n\ndef test_execute_readonly_select_contract():\n    calls = []\n\n    def fake_get(url, *, params, headers, timeout):\n        calls.append((url, params, headers, timeout))\n        return FakeResponse(200, {\"data\": [{\"SucursalID\": \"01\"}]})\n\n    cfg = transport.ApiLocalSyncConfig(\n        server_id=\"srv\",\n        server_name=\"Enterprise\",\n        api_url=\"http://internal/query\",\n        api_key=\"secret-value\",\n    )\n\n    rows = transport.execute_api_local_readonly(\n        cfg,\n        \"SELECT SucursalID FROM dbo.Sucursales\",\n        timeout_seconds=20,\n        request_get=fake_get,\n    )\n\n    assert rows == [{\"SucursalID\": \"01\"}]\n    assert calls == [(\n        \"http://internal/query\",\n        {\"sql\": \"SELECT SucursalID FROM dbo.Sucursales\"},\n        {\"X-API-Key\": \"secret-value\"},\n        20,\n    )]\n\n\n@pytest.mark.parametrize(\n    \"sql\",\n    [\n        \"UPDATE dbo.X SET a=1\",\n        \"DELETE FROM dbo.X\",\n        \"SELECT * INTO dbo.Y FROM dbo.X\",\n        \"SELECT 1; SELECT 2\",\n    ],\n)\ndef test_transport_rejects_non_read_only_sql_before_http(sql):\n    touched = False\n\n    def fake_get(*args, **kwargs):\n        nonlocal touched\n        touched = True\n        raise AssertionError(\"HTTP must not be called\")\n\n    cfg = transport.ApiLocalSyncConfig(\n        server_id=\"srv\",\n        server_name=\"Enterprise\",\n        api_url=\"http://internal/query\",\n        api_key=\"secret-value\",\n    )\n\n    with pytest.raises(ValueError):\n        transport.execute_api_local_readonly(\n            cfg,\n            sql,\n            request_get=fake_get,\n        )\n    assert touched is False\n\n\ndef test_transport_fail_closed_on_timeout():\n    def fake_get(*args, **kwargs):\n        raise requests.exceptions.Timeout()\n\n    cfg = transport.ApiLocalSyncConfig(\n        server_id=\"srv\",\n        server_name=\"Enterprise\",\n        api_url=\"http://internal/query\",\n        api_key=\"secret-value\",\n    )\n\n    with pytest.raises(transport.ApiLocalSyncError, match=\"API_LOCAL_TIMEOUT\"):\n        transport.execute_api_local_readonly(\n            cfg,\n            \"SELECT 1\",\n            request_get=fake_get,\n        )\n\n\ndef test_transport_rejects_invalid_payload():\n    cfg = transport.ApiLocalSyncConfig(\n        server_id=\"srv\",\n        server_name=\"Enterprise\",\n        api_url=\"http://internal/query\",\n        api_key=\"secret-value\",\n    )\n\n    with pytest.raises(transport.ApiLocalSyncError, match=\"API_LOCAL_INVALID_DATA\"):\n        transport.execute_api_local_readonly(\n            cfg,\n            \"SELECT 1\",\n            request_get=lambda *a, **k: FakeResponse(200, {\"data\": {\"x\": 1}}),\n        )\n\n\ndef test_config_repr_does_not_expose_api_key():\n    cfg = transport.ApiLocalSyncConfig(\n        server_id=\"srv\",\n        server_name=\"Enterprise\",\n        api_url=\"http://internal/query\",\n        api_key=\"do-not-print-me\",\n    )\n    assert \"do-not-print-me\" not in repr(cfg)\n\n\ndef test_resolver_uses_canonical_registry_and_decryption(monkeypatch):\n    async def fake_get_server_by_id(*args, **kwargs):\n        assert kwargs[\"prefer_sql\"] is True\n        assert kwargs[\"allow_mongo_fallback\"] is False\n        assert kwargs[\"mask_secrets\"] is False\n        return {\n            \"id\": \"srv\",\n            \"name\": \"CHAPUR\",\n            \"tipo_conexion\": \"API_LOCAL\",\n            \"active\": True,\n            \"system_type\": \"ENTERPRISE\",\n            \"config_origin\": \"EDARSAHUB_SQL\",\n        }\n\n    monkeypatch.setattr(transport, \"get_server_by_id\", fake_get_server_by_id)\n    monkeypatch.setattr(\n        transport,\n        \"get_decrypted_credentials\",\n        lambda server: {\n            \"api_url\": \"http://internal/query\",\n            \"api_key\": \"secret-value\",\n        },\n    )\n\n    cfg = asyncio.run(transport.resolve_api_local_sync_config(\"srv\"))\n\n    assert cfg.server_id == \"srv\"\n    assert cfg.system_type == \"ENTERPRISE\"\n    assert cfg.config_origin == \"EDARSAHUB_SQL\"\n\n\ndef test_resolver_rejects_non_api_local(monkeypatch):\n    async def fake_get_server_by_id(*args, **kwargs):\n        return {\n            \"id\": \"srv\",\n            \"tipo_conexion\": \"DATA_SOURCE\",\n            \"active\": True,\n        }\n\n    monkeypatch.setattr(transport, \"get_server_by_id\", fake_get_server_by_id)\n\n    with pytest.raises(\n        transport.ApiLocalSyncError,\n        match=\"API_LOCAL_CONNECTION_TYPE_REQUIRED\",\n    ):\n        asyncio.run(transport.resolve_api_local_sync_config(\"srv\"))\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/integrations_runtime/api_local_sync.py",
+        "backend/modules/integrations_runtime/__init__.py",
+        "backend/tests/test_integrations_runtime_api_local_sync.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_integrations_runtime_api_local_sync.py"
+      ]
+    }
+  ],
+  "acceptance_criteria": [
+    "Transport lives in integrations_runtime, not core",
+    "Uses canonical server_registry and canonical secret decryption",
+    "Rejects non API_LOCAL connections",
+    "Uses canonical READ_ONLY SQL validator",
+    "Only GET query contract with X-API-Key",
+    "No secret values in repr or logs",
+    "No CHAPUR or MPRO business logic",
+    "No LIVE connectivity in tests",
+    "No Mongo fallback",
+    "No Production",
+    "No schema changes"
+  ]
+}
