@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -77,6 +78,7 @@ const splitDailyDateRange = (start, end) => {
 };
 
 export default function ResyncPanel() {
+  const navigate = useNavigate();
   const [options, setOptions] = useState({ tipos_sync: [], unidades: [], grupos: [] });
   const [loadingOptions, setLoadingOptions] = useState(true);
 
@@ -306,13 +308,27 @@ export default function ResyncPanel() {
     <div className="space-y-6" data-testid="resync-panel">
       <Card data-testid="resync-form-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <RefreshCw className="w-5 h-5" /> Re-sincronización Manual
-          </CardTitle>
-          <CardDescription>
-            Selecciona una o varias sincronizaciones (individual o por grupo).
-            <strong className="text-amber-600 ml-1">Ejecuta DRY RUN primero.</strong>
-          </CardDescription>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <RefreshCw className="w-5 h-5" /> Re-sincronización Manual
+              </CardTitle>
+              <CardDescription>
+                Selecciona una o varias sincronizaciones (individual o por grupo).
+                <strong className="text-amber-600 ml-1">Ejecuta DRY RUN primero.</strong>
+              </CardDescription>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/sync-historical')}
+              className="shrink-0 border-blue-200 text-blue-700 hover:bg-blue-50"
+              data-testid="open-sync-historical-from-resync"
+            >
+              <Database className="w-4 h-4 mr-2" />
+              Sincronización Histórica
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-5">
           {/* Catálogo agrupado */}
