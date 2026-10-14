@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "153fd3821f7759b8ce59123c18c0a033451f0552",
-  "generated_at_utc": "2026-10-14T15:53:22Z",
+  "generated_at_utc": "2026-10-14T15:54:54Z",
   "history": {
     "done_total_local": 1399,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3460,
+      "age_seconds": 3552,
       "job_id": "INTEGRATIONS-RUNTIME-API-LOCAL-SYNC-TRANSPORT-R1-20261014",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,8 +36,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-14T15:53:15Z",
-    "last_receive_utc": "2026-10-14T15:53:10Z",
+    "last_cycle_utc": "2026-10-14T15:54:45Z",
+    "last_receive_utc": "2026-10-14T15:54:40Z",
     "last_terminal_utc": "2026-10-14T14:55:41Z",
     "pid": "2228",
     "runtime_fingerprint": {
