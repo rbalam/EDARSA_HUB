@@ -3905,12 +3905,11 @@ async def get_unidades_negocio(
         logging.info(f"[UNIDADES_NEGOCIO] Obtenidas {len(unidades_sql)} unidades desde EDARSAHUB SQL")
 
         # ============================================================================
-        # APLICAR RBAC: Filtrar por permisos del usuario
+        # APLICAR RBAC: Filtrar por scope canónico SQL
         # ============================================================================
         user_role = (current_user.get('role') or '').strip()
 
-        # SuperAdministrador y Administrador ven todas las unidades
-        # (se aceptan tanto los nombres visibles como los códigos canónicos RBAC)
+        # SuperAdministrador y Administrador conservan acceso global.
         is_admin_global = (
             user_role in ['SuperAdministrador', 'Administrador']
             or user_role.upper() in ['SUPERADMIN', 'ADMIN', 'ADMINISTRADOR']
@@ -3918,19 +3917,31 @@ async def get_unidades_negocio(
         if is_admin_global:
             unidades_filtradas = unidades_sql
         else:
-            # Otros roles: filtrar por empresas permitidas
-            empresas_permitidas = await get_user_empresas_permitidas(current_user)
-            allowed_servers = set(current_user.get('allowed_servers', []))
+            from core.auth.sql_user_identity import resolve_sql_usuario_id
+            from core.rbac_sql.service import RBACSQLService
 
-            # Filtrar unidades cuyos server_id estén en allowed_servers
-            # o cuyo ID esté en empresas_permitidas (para compatibilidad)
+            usuario_id = resolve_sql_usuario_id(current_user)
+            unidades_scope = (
+                RBACSQLService.get_unidades(usuario_id)
+                if usuario_id
+                else []
+            )
+            unidades_ids = {
+                str(row.get('UnidadNegocioID') or '').strip().lower()
+                for row in (unidades_scope or [])
+                if str(row.get('UnidadNegocioID') or '').strip()
+            }
+
             unidades_filtradas = [
                 u for u in unidades_sql
-                if u.get('server_id') in allowed_servers or u.get('id') in empresas_permitidas
+                if str(u.get('id') or '').strip().lower() in unidades_ids
             ]
 
             if not unidades_filtradas:
-                logging.warning(f"[UNIDADES_NEGOCIO] Usuario {current_user.get('email')} sin unidades permitidas")
+                logging.warning(
+                    f"[UNIDADES_NEGOCIO] Usuario {current_user.get('email')} "
+                    "sin unidades efectivas en RBAC canónico"
+                )
 
         # ============================================================================
         # CONSTRUIR RESPUESTA
