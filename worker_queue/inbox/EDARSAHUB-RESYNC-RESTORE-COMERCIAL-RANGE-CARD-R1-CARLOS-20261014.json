@@ -1,0 +1,67 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RESYNC-RESTORE-COMERCIAL-RANGE-CARD-R1-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "81c0289820758dedb50237b7e48f04c87ee7e9e6",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Sincronizador: restaurar en Re-sync Manual el panel previamente certificado 'Re-sincronización Comercial por rango' (ComercialRangeResyncCard) que se perdió visualmente durante un re-deploy. El componente y backend ya existen y no deben modificarse. Reinsertar únicamente su import y render dentro de ResyncPanel. Mantener intacto el botón/módulo nuevo 'Sincronización Histórica'. No tocar lógica de negocio, sync_comercial_abiertas_v2 ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/admin/ResyncPanel.jsx",
+      "old": "} from 'lucide-react';\n\nconst formatDateTime",
+      "new": "} from 'lucide-react';\nimport ComercialRangeResyncCard from './ComercialRangeResyncCard';\n\nconst formatDateTime",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/admin/ResyncPanel.jsx",
+      "old": "  return (\n    <div className=\"space-y-6\" data-testid=\"resync-panel\">\n      <Card data-testid=\"resync-form-card\">",
+      "new": "  return (\n    <div className=\"space-y-6\" data-testid=\"resync-panel\">\n      <ComercialRangeResyncCard options={options} onFinished={fetchHistory} />\n      <Card data-testid=\"resync-form-card\">",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/components/admin/ResyncPanel.jsx",
+          "frontend/src/components/admin/ComercialRangeResyncCard.jsx",
+          "backend/modules/comercial/resync_batch_jobs.py",
+          "backend/api/admin_scheduler_resync.py"
+        ],
+        "search_terms": [
+          "ComercialRangeResyncCard",
+          "Re-sincronización Comercial por rango",
+          "Detener de manera segura",
+          "Reanudar desde checkpoint",
+          "Seleccionar todas",
+          "Sincronización Histórica"
+        ],
+        "include_patterns": [
+          "*.jsx",
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 120
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
