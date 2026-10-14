@@ -545,10 +545,21 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
     )
     tickets_abiertos = len(tickets)
 
-    ventas_cerradas = float(row.get("ventas_cerradas_dia") or 0)
+    ventas_cerradas_legacy = float(
+        row.get("ventas_cerradas_dia") or 0
+    )
     tickets_cerrados = int(row.get("tickets_cerrados_dia") or 0)
     pax_cerrados = int(row.get("pax_cerrados_dia") or 0)
     propinas_cerradas = float(row.get("propinas_cerradas_dia") or 0)
+
+    # Compatibilidad con el writer protegido sync_comercial_abiertas_v2:
+    # hoy persiste la porcion cerrada SR como total - propina. El contrato
+    # visible es cheques.total, por lo que la lectura canonica recompone
+    # exclusivamente esa porcion legacy sumando la propina separada.
+    ventas_cerradas = round(
+        ventas_cerradas_legacy + propinas_cerradas,
+        2,
+    )
 
     row["ventas_abiertas"] = ventas_abiertas
     row["tickets_abiertos"] = tickets_abiertos
@@ -569,7 +580,7 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
         2,
     )
     row["_ventas_dia_source"] = (
-        "DETALLE_ABIERTAS_JSON_MAS_CERRADAS_ENCABEZADO"
+        "DETALLE_ABIERTAS_JSON_MAS_CERRADAS_TOTAL_POS_COMPAT"
     )
     return row
 
