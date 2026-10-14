@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "8e05d95bb4337f510a93fa87da9698feaf1406a8",
-  "generated_at_utc": "2026-10-14T18:12:39Z",
+  "generated_at_utc": "2026-10-14T18:14:02Z",
   "history": {
     "done_total_local": 1403,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1188,
+      "age_seconds": 1271,
       "job_id": "EDARSAHUB-HISTORICAL-RESYNC-ENTRYPOINT-R1-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1185,
+      "age_seconds": 1268,
       "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-DIAG-R1-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1184,
+      "age_seconds": 1266,
       "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-DIAG-R2-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 746,
+      "age_seconds": 829,
       "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-DIAG-R3-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,8 +54,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-14T18:12:30Z",
-    "last_receive_utc": "2026-10-14T18:12:25Z",
+    "last_cycle_utc": "2026-10-14T18:13:58Z",
+    "last_receive_utc": "2026-10-14T18:13:53Z",
     "last_terminal_utc": "2026-10-14T18:00:12Z",
     "pid": "87074",
     "runtime_fingerprint": {
