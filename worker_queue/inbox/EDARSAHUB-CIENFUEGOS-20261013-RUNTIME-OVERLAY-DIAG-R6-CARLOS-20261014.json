@@ -1,0 +1,42 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-CIENFUEGOS-20261013-RUNTIME-OVERLAY-DIAG-R6-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "81c0289820758dedb50237b7e48f04c87ee7e9e6",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Sincronizador: diagnosticar CIENFUEGOS 2026-10-13 comparando tabla base Comercial_KPIs_Diarios_v2, vista vw_Comercial_KPIs_Diarios_v2_Runtime y snapshot Comercial_Ventas_Dia_Abiertas_v2. El R5 hizo SKIP aunque el origen oficial trae 147424/36/105; determinar si Runtime está siendo sobrescrito por overlay histórico de ventas abiertas. Solo lectura; no modificar datos ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_unit",
+          "sql": "SELECT TOP 5 id, codigo, nombre, sucursal_origen_id FROM dbo.Unidades_Negocio WHERE UPPER(codigo)='CIENFUEGOS' OR UPPER(nombre)='CIENFUEGOS'"
+        },
+        {
+          "name": "cienfuegos_base_kpi_20261013",
+          "sql": "SELECT k.id,k.unidad_negocio_pk,k.unidad_negocio_id,k.sucursal_id,k.fecha_operacion,k.ventas_total,k.ventas_sin_propina,k.propinas_total,k.tickets_total,k.pax_total,k.hash_origen,k.fuente_original,k.sync_run_id,k.version,k.fecha_ultima_actualizacion FROM dbo.Comercial_KPIs_Diarios_v2 k WHERE k.fecha_operacion='2026-10-13' AND (UPPER(CONVERT(varchar(100),k.unidad_negocio_id))='CIENFUEGOS' OR k.unidad_negocio_pk IN (SELECT id FROM dbo.Unidades_Negocio WHERE UPPER(codigo)='CIENFUEGOS'))"
+        },
+        {
+          "name": "cienfuegos_runtime_20261013",
+          "sql": "SELECT r.unidad_negocio_pk,r.unidad_negocio_id,r.sucursal_id,r.fecha_operacion,r.ventas_total,r.ventas_sin_propina,r.propinas_total,r.tickets_total,r.pax_total,r.fuente_original FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime r WHERE r.fecha_operacion='2026-10-13' AND (UPPER(CONVERT(varchar(100),r.unidad_negocio_id))='CIENFUEGOS' OR r.unidad_negocio_pk IN (SELECT id FROM dbo.Unidades_Negocio WHERE UPPER(codigo)='CIENFUEGOS'))"
+        },
+        {
+          "name": "cienfuegos_open_snapshot_20261013",
+          "sql": "SELECT TOP 10 id,unidad_negocio_id,sucursal_id,fecha_operacion,snapshot_timestamp,ventas_abiertas,tickets_abiertos,pax_abiertos,ventas_cerradas_dia,tickets_cerrados_dia,pax_cerrados_dia,total_estimado_dia,propinas_total,fuente_original,sync_run_id,fecha_ultima_actualizacion FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WHERE fecha_operacion='2026-10-13' AND UPPER(CONVERT(varchar(100),unidad_negocio_id))='CIENFUEGOS' ORDER BY snapshot_timestamp DESC"
+        }
+      ]
+    }
+  ]
+}
