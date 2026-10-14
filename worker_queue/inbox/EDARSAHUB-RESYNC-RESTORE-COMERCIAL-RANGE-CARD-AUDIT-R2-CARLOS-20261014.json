@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RESYNC-RESTORE-COMERCIAL-RANGE-CARD-AUDIT-R2-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
+  "production_allowed": false,
+  "mode": "FRONTEND_BUILD_CERTIFICATION",
+  "objective": "Sincronizador: certificar sin mutación la restauración ya aplicada del panel ComercialRangeResyncCard dentro de Re-sync Manual. Validar build frontend y contrato visual: import y render del componente, selección múltiple, avance, detención segura y reanudar; mantener intacto el botón Sincronización Histórica. No tocar Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/components/admin/ResyncPanel.jsx",
+          "frontend/src/components/admin/ComercialRangeResyncCard.jsx"
+        ],
+        "search_terms": [
+          "ComercialRangeResyncCard",
+          "Re-sincronización Comercial por rango",
+          "Detener de manera segura",
+          "Reanudar desde checkpoint",
+          "Seleccionar todas",
+          "Sincronización Histórica"
+        ],
+        "include_patterns": [
+          "*.jsx"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
