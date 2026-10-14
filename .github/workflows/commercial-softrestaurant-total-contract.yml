@@ -108,6 +108,9 @@ jobs:
               _snapshot_sales_amount,
               load_open_snapshot_lines,
           )
+          from modules.comercial_v2.repository_readonly import (
+              get_ventas_dia_abiertas,
+          )
           from modules.comercial_analytics.repository_tickets import (
               summarize_current_day_tickets,
           )
@@ -122,24 +125,32 @@ jobs:
               ) or []
 
           for unit in units:
-              rows = query(
+              raw_rows = query(
                   """
-                  SELECT TOP 1
-                      fecha_operacion,
-                      ISNULL(total_estimado_dia,0) AS ventas,
-                      ISNULL(propinas_total,0) AS propinas,
-                      ISNULL(tickets_abiertos,0) + ISNULL(tickets_cerrados_dia,0) AS cheques,
-                      ISNULL(pax_abiertos,0) + ISNULL(pax_cerrados_dia,0) AS pax,
-                      snapshot_timestamp
+                  SELECT TOP 1 fecha_operacion
                   FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK)
                   WHERE unidad_negocio_id = %s
                   ORDER BY snapshot_timestamp DESC, fecha_ultima_actualizacion DESC
                   """,
                   (unit,),
               )
-              assert rows, unit
-              header = rows[0]
-              fecha = str(header["fecha_operacion"])[:10]
+              assert raw_rows, unit
+              fecha = str(raw_rows[0]["fecha_operacion"])[:10]
+              visible_rows = get_ventas_dia_abiertas(
+                  __import__("datetime").date.fromisoformat(fecha),
+                  [unit],
+              )
+              assert visible_rows, unit
+              visible = visible_rows[0]
+              header = {
+                  "fecha_operacion": fecha,
+                  "ventas": visible["total_estimado_dia"],
+                  "propinas": visible["propinas_total"],
+                  "cheques": int(visible["tickets_abiertos"] or 0)
+                      + int(visible["tickets_cerrados_dia"] or 0),
+                  "pax": int(visible["pax_abiertos"] or 0)
+                      + int(visible["pax_cerrados_dia"] or 0),
+              }
 
               snapshot = load_open_snapshot_lines(unit, "", fecha)
               for item in snapshot:
