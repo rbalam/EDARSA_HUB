@@ -3,66 +3,66 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "81c0289820758dedb50237b7e48f04c87ee7e9e6",
-  "generated_at_utc": "2026-10-14T22:39:16Z",
+  "development_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
+  "generated_at_utc": "2026-10-14T22:40:42Z",
   "history": {
     "done_total_local": 1406,
     "pending_total_local": 0,
-    "processing_total_local": 1,
-    "rejected_total_local": 1223,
-    "results_total_local": 2407
+    "processing_total_local": 0,
+    "rejected_total_local": 1224,
+    "results_total_local": 2408
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3345,
+      "age_seconds": 3431,
       "job_id": "EDARSAHUB-CIENFUEGOS-20261013-RUNTIME-OVERLAY-DIAG-R6-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1439,
+      "age_seconds": 25,
+      "job_id": "EDARSAHUB-RESYNC-RESTORE-COMERCIAL-RANGE-CARD-R1-CARLOS-20261014",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1525,
       "job_id": "EDARSAHUB-SYNC-HISTORICAL-COMPATIBILITY-AUDIT-R1-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 379,
+      "age_seconds": 465,
       "job_id": "EDARSAHUB-SYNC-HISTORICAL-COMPATIBILITY-AUDIT-R2-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 105,
-      "job_id": "EDARSAHUB-RESYNC-RESTORE-COMERCIAL-RANGE-CARD-R1-CARLOS-20261014",
-      "reason": null,
-      "state": "RUNNING"
     }
   ],
-  "local_development_sha": "81c0289820758dedb50237b7e48f04c87ee7e9e6",
+  "local_development_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
-  "queue_running": 1,
-  "remote_development_sha": "81c0289820758dedb50237b7e48f04c87ee7e9e6",
+  "queue_result_ready_recent": 4,
+  "queue_running": 0,
+  "remote_development_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
   "runtime": {
-    "current_job_id": "EDARSAHUB-RESYNC-RESTORE-COMERCIAL-RANGE-CARD-R1-CARLOS-20261014",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-14T22:39:03Z",
-    "last_receive_utc": "2026-10-14T22:39:15Z",
-    "last_terminal_utc": "2026-10-14T22:32:57Z",
-    "pid": "74369",
+    "last_cycle_utc": "2026-10-14T22:40:35Z",
+    "last_receive_utc": "2026-10-14T22:40:30Z",
+    "last_terminal_utc": "2026-10-14T22:40:16Z",
+    "pid": "664815",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "007da57a0c9aeec8412a797df9af562fa0b55afc",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "81c0289820758dedb50237b7e48f04c87ee7e9e6",
+      "development_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
