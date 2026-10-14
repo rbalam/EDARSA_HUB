@@ -1,0 +1,64 @@
+{
+  "base_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-14T23:35:15Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-BATCH-PENDING-DIAG-R9-CARLOS-20261014",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-14T23:36:04Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "ResyncLogID",
+              "Estado",
+              "Mensaje",
+              "RegistrosAfectados",
+              "FechaEjecucion",
+              "current_phase",
+              "failed_steps",
+              "successful_steps",
+              "percent_complete"
+            ],
+            "name": "latest_batch_state",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "535",
+                "JOB_PARTIAL",
+                "Proceso terminado con 1 bloque(s) pendiente(s).",
+                0,
+                "2026-10-14 23:32:31.1160236",
+                "DONE",
+                "1",
+                "0",
+                "100.0"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-14T23:35:15Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
