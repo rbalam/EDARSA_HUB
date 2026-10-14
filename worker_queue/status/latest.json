@@ -1,10 +1,10 @@
 {
   "ahead_count": 0,
-  "behind_count": 2,
+  "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "REMOTE_AHEAD_ONLY",
-  "development_sha": "6500d41cf6a725065b619e5380d0256e8ee37dce",
-  "generated_at_utc": "2026-10-14T15:17:50Z",
+  "convergence_status": "SYNC",
+  "development_sha": "153fd3821f7759b8ce59123c18c0a033451f0552",
+  "generated_at_utc": "2026-10-14T15:45:52Z",
   "history": {
     "done_total_local": 1399,
     "pending_total_local": 0,
@@ -16,19 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1328,
+      "age_seconds": 3011,
       "job_id": "INTEGRATIONS-RUNTIME-API-LOCAL-SYNC-TRANSPORT-R1-20261014",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1953,
-      "job_id": "SEGURIDAD-SAFARI-PASSWORD-AUTOFILL-FIX-R8B-R3-20261014",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "8be01623e6b5e549888b62dfaf74388e2ae0e110",
+  "local_development_sha": "153fd3821f7759b8ce59123c18c0a033451f0552",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -36,21 +30,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 1,
   "queue_running": 0,
-  "remote_development_sha": "6500d41cf6a725065b619e5380d0256e8ee37dce",
+  "remote_development_sha": "153fd3821f7759b8ce59123c18c0a033451f0552",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-14T15:17:43Z",
-    "last_receive_utc": "2026-10-14T15:17:38Z",
+    "last_cycle_utc": "2026-10-14T15:45:36Z",
+    "last_receive_utc": "2026-10-14T15:45:31Z",
     "last_terminal_utc": "2026-10-14T14:55:41Z",
-    "pid": "790",
+    "pid": "2228",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "693302e31d231c7ea48c2b9285fd0ede74768b48",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "8be01623e6b5e549888b62dfaf74388e2ae0e110",
+      "development_sha": "153fd3821f7759b8ce59123c18c0a033451f0552",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
