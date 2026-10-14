@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-BATCH-STEP-DIAG-R10-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar en solo lectura el paso pendiente del job comercial_range_batch ResyncLogID 535 para CIENFUEGOS 2026-10-13. Extraer únicamente campos de estado/diagnóstico del step: status, attempts, error_message, dry_run success/header/detail/warning/error y real success/header/detail/payments/warning/error. No modificar datos ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "batch_step_diagnostic",
+          "sql": "SELECT\n        JSON_VALUE(Payload,'$.steps.\"CIENFUEGOS|2026-10-13|2026-10-13\".status') AS step_status,\n        JSON_VALUE(Payload,'$.steps.\"CIENFUEGOS|2026-10-13|2026-10-13\".attempts') AS attempts,\n        JSON_VALUE(Payload,'$.steps.\"CIENFUEGOS|2026-10-13|2026-10-13\".error_message') AS step_error,\n        JSON_VALUE(Payload,'$.steps.\"CIENFUEGOS|2026-10-13|2026-10-13\".dry_run.success') AS dry_success,\n        JSON_VALUE(Payload,'$.steps.\"CIENFUEGOS|2026-10-13|2026-10-13\".dry_run.header_success') AS dry_header_success,\n        JSON_VALUE(Payload,'$.steps.\"CIENFUEGOS|2026-10-13|2026-10-13\".dry_run.detail_success') AS dry_detail_success,\n        JSON_VALUE(Payload,'$.steps.\"CIENFUEGOS|2026-10-13|2026-10-13\".dry_run.warning_message') AS dry_warning,\n        JSON_VALUE(Payload,'$.steps.\"CIENFUEGOS|2026-10-13|2026-10-13\".dry_run.error_message') AS dry_error,\n        JSON_VALUE(Payload,'$.steps.\"CIENFUEGOS|2026-10-13|2026-10-13\".real.success') AS real_success,\n        JSON_VALUE(Payload,'$.steps.\"CIENFUEGOS|2026-10-13|2026-10-13\".real.header_success') AS real_header_success,\n        JSON_VALUE(Payload,'$.steps.\"CIENFUEGOS|2026-10-13|2026-10-13\".real.detail_success') AS real_detail_success,\n        JSON_VALUE(Payload,'$.steps.\"CIENFUEGOS|2026-10-13|2026-10-13\".real.payments_success') AS real_payments_success,\n        JSON_VALUE(Payload,'$.steps.\"CIENFUEGOS|2026-10-13|2026-10-13\".real.warning_message') AS real_warning,\n        JSON_VALUE(Payload,'$.steps.\"CIENFUEGOS|2026-10-13|2026-10-13\".real.error_message') AS real_error\n      FROM dbo.Sistema_Sync_ResyncLog\n      WHERE ResyncLogID=535 AND TipoSync='comercial_range_batch'"
+        }
+      ]
+    }
+  ]
+}
