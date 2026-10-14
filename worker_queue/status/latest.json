@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "4f57793dd920be6123a2e6f34c3a6cd489795e86",
-  "generated_at_utc": "2026-10-14T17:07:52Z",
+  "generated_at_utc": "2026-10-14T17:09:12Z",
   "history": {
     "done_total_local": 1403,
     "pending_total_local": 0,
@@ -16,235 +16,235 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2180,
+      "age_seconds": 2261,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE1-CANONICAL-DOMAIN-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2178,
+      "age_seconds": 2259,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-CONTRACT-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2175,
+      "age_seconds": 2256,
       "job_id": "BOS-V1-GATE-E-EXECUTIVE-BOS-DESIGN-CONTRACT-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2173,
+      "age_seconds": 2253,
       "job_id": "CAVAS-GATE12M-PERSONA-LINK-E2E-CANARY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2170,
+      "age_seconds": 2251,
       "job_id": "CAVAS-GATE12N-UAT-CONTROLLED-EXECUTION-R2-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2167,
+      "age_seconds": 2248,
       "job_id": "CAVAS-GATE13B-E2E-CONTROLLED-UAT-R2B-INSTRUMENTED-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2164,
+      "age_seconds": 2245,
       "job_id": "EDARSA-LOGISTICS-GATE2-DATA-INTEGRATION-ARCHITECTURE-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2159,
+      "age_seconds": 2239,
       "job_id": "EDARSAHUB-COMERCIAL-ACTIVE-DRILLDOWN-ROUTE-FIX-R4-CARLOS-20260930T0110Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2154,
+      "age_seconds": 2235,
       "job_id": "EDARSAHUB-COMERCIAL-ACTIVE-DRILLDOWN-ROUTE-FIX-R4-RETRY1-CARLOS-20260930T1559Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2151,
+      "age_seconds": 2232,
       "job_id": "EDARSAHUB-IA-GLOBAL-AUTH-DATA-R3-CARLOS-20261008T1816",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2149,
+      "age_seconds": 2229,
       "job_id": "EDARSAHUB-IA-GLOBAL-AUTH-DATA-R4-CARLOS-20261008T1902",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2146,
+      "age_seconds": 2226,
       "job_id": "EDARSAHUB-IA-GLOBAL-RBAC-DATA-SCOPE-R14-CARLOS-20261009T1325",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2143,
+      "age_seconds": 2224,
       "job_id": "EDARSAHUB-IA-MARKDOWN-PARSER-R8-CARLOS-20261008T2254",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2141,
+      "age_seconds": 2221,
       "job_id": "EDARSAHUB-IA-VISUAL-RENDER-R5-CARLOS-20261008T1938",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2130,
+      "age_seconds": 2211,
       "job_id": "EDARSAHUB-INVENTARIOS-UI-WARNING-R6-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2127,
+      "age_seconds": 2208,
       "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-DRIVER-COMPAT-SUMMARY-R8B-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2124,
+      "age_seconds": 2205,
       "job_id": "EDARSAHUB-ISCAM-MPRO-ZEROGROSS-FALLBACK-FIX-R15-CARLOS-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2121,
+      "age_seconds": 2202,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R2-20260921T154300Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2118,
+      "age_seconds": 2199,
       "job_id": "EDARSAHUB-SERVICES-GATE3B-PHYSICAL-SCHEMA-DDL-DOSSIER-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2114,
+      "age_seconds": 2195,
       "job_id": "EDARSAHUB-SINCRONIZADOR-MPRO-DESCUENTO-IMPORTE-R1-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2110,
+      "age_seconds": 2190,
       "job_id": "EDARSAHUB-TABLERO-VENTAS-DIA-DRILLDOWN-DATE-FIX-R29-CARLOS-20261008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2106,
+      "age_seconds": 2187,
       "job_id": "EDARSAHUB-WORKER-ISCAM-BACKFILL-SUMMARY-R92B-CARLOS-20260919T001000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2103,
+      "age_seconds": 2183,
       "job_id": "GATE5D-DEDICATED-MIGRATION-WRITER-CONTRACT-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2085,
+      "age_seconds": 2166,
       "job_id": "INTEGRATIONS-RUNTIME-API-LOCAL-SYNC-TRANSPORT-R1-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2082,
+      "age_seconds": 2162,
       "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6D-CARLOS-20260930T0158Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2079,
+      "age_seconds": 2160,
       "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6E-CARLOS-20260930T1615Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2077,
+      "age_seconds": 2157,
       "job_id": "MEJORA-TABEJE-VENTAS-DIA-PARIDAD-COMERCIAL-R17-CARLOS-20261001T2344Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2067,
+      "age_seconds": 2148,
       "job_id": "PRIMARY-INDUSTRIES-GATE1-CANONICAL-DOMAIN-DESIGN-R2-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2070,
+      "age_seconds": 2151,
       "job_id": "PRIMARY-INDUSTRIES-GATE1-CANONICAL-DOMAIN-DESIGN-R4-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2068,
+      "age_seconds": 2149,
       "job_id": "RRHH-CUSTODIA-GATE3-MINIMAL-DDL-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2066,
+      "age_seconds": 2146,
       "job_id": "RRHH-CUSTODIA-GATE3-MINIMAL-DDL-DESIGN-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2063,
+      "age_seconds": 2144,
       "job_id": "RRHH-CUSTODIA-GATE3-MINIMAL-DDL-DESIGN-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2060,
+      "age_seconds": 2141,
       "job_id": "RRHH-CUSTODIA-GATE3-MINIMAL-DDL-DESIGN-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2051,
+      "age_seconds": 2131,
       "job_id": "RRR-GATE4E-R10-R6-R1-RUNTIME-ORG-RESOLUTION-FIX-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2048,
+      "age_seconds": 2129,
       "job_id": "RRR-GATE4E-R10-R7-RUNTIME-ORG-RESOLUTION-FIX-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2046,
+      "age_seconds": 2126,
       "job_id": "RRR-GATE4E-R7-MINIMAL-ATTRIBUTION-ADAPTER-DESIGN-V1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2043,
+      "age_seconds": 2124,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927-RETRY4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2038,
+      "age_seconds": 2119,
       "job_id": "UNIVERSAL-WORKER-COMBINED-READ-ONLY-AUDIT-CONTRACT-V1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2034,
+      "age_seconds": 2115,
       "job_id": "UNIVERSAL-WORKER-D2-RUNTIME-CONVERGENCE-GUARD-D2.1-IMPLEMENTATION-R1-RETRY1",
       "reason": null,
       "state": "RESULT_READY"
@@ -264,8 +264,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-14T17:07:49Z",
-    "last_receive_utc": "2026-10-14T17:07:44Z",
+    "last_cycle_utc": "2026-10-14T17:09:00Z",
+    "last_receive_utc": "2026-10-14T17:09:09Z",
     "last_terminal_utc": "2026-10-14T16:33:57Z",
     "pid": "757",
     "runtime_fingerprint": {
