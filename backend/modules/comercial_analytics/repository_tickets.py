@@ -1060,8 +1060,22 @@ def get_ticket_detail(
         })
 
     first = rows[0]
+    persisted_subtotal = max(
+        (float(row.get("ticket_subtotal") or 0) for row in rows),
+        default=0.0,
+    )
+    persisted_impuesto = max(
+        (float(row.get("ticket_impuesto") or 0) for row in rows),
+        default=0.0,
+    )
+    persisted_total = max(
+        (float(row.get("ticket_total") or 0) for row in rows),
+        default=0.0,
+    )
     subtotal = round(
-        sum(line["importe_bruto"] for line in lines),
+        persisted_subtotal
+        if persisted_subtotal > 0.005
+        else sum(line["importe_bruto"] for line in lines),
         2,
     )
     descuento = round(
@@ -1069,8 +1083,15 @@ def get_ticket_detail(
         2,
     )
     total = round(
-        sum(line["importe"] for line in lines),
+        persisted_total
+        if persisted_total > 0.005
+        else sum(line["importe"] for line in lines),
         2,
+    )
+    impuesto = (
+        round(persisted_impuesto, 2)
+        if persisted_impuesto > 0.005
+        else None
     )
     propina = round(
         sum(line["propina"] for line in lines),
@@ -1102,7 +1123,7 @@ def get_ticket_detail(
             "lineas": len(lines),
             "subtotal": subtotal,
             "descuento": descuento,
-            "impuesto": None,
+            "impuesto": impuesto,
             "ventas": total,
             "total": total,
             "propina": propina,
