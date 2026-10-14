@@ -1,0 +1,64 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-RESULT-CERTIFICATION-FAIRNESS-R1-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "base_sha": "a5fbb2a180a0f942809082f67e07625e1dd151c4",
+  "objective": "Corregir de forma canonica y acotada la inanicion del publicador de resultados del Worker: las evidencias ya publicadas como PENDING_AUDIT_EVIDENCE deben revisarse antes que resultados nuevos para permitir su segunda pasada de certificacion a CERTIFIED/100 cuando la attestation y la convergencia ya existen. Mantener el limite por lote y el orden reciente para resultados nuevos. No tocar Produccion ni sincronizadores de Ventas del Dia/Ventas Cerradas, incluido sync_comercial_abiertas_v2.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Sincronizacion Historica RESYNC"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_SYNC_HISTORICAL",
+    "bounded_context": "WORKER_RESULT_CERTIFICATION_FAIRNESS",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [
+      "worker:result-publisher"
+    ],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "old": "def publishable_paths() -> list[Path]:\n    \"\"\"Return terminal artifacts with recent dispatcher results taking precedence.\"\"\"\n    by_name = {path.name: path for path in REJECTED.glob(\"*.json\")}\n    by_name.update({path.name: path for path in RESULTS.glob(\"*.json\")})\n    return sorted(\n        by_name.values(),\n        key=lambda path: (path.stat().st_mtime_ns, path.name),\n        reverse=True,\n    )\n",
+      "new": "def publishable_paths() -> list[Path]:\n    \"\"\"Return terminal artifacts without starving certification promotions.\n\n    A mutation result needs two publication passes: the first publishes\n    PENDING_AUDIT_EVIDENCE and creates the SHA-bound attestation; a later pass\n    can promote it to CERTIFIED once DEV/MIRROR preserve the job artifacts.\n    Prioritize those pending markers so sustained arrival of newer results\n    cannot keep an older successful job at 95% indefinitely. Fresh results\n    keep their existing newest-first order.\n    \"\"\"\n    by_name = {path.name: path for path in REJECTED.glob(\"*.json\")}\n    by_name.update({path.name: path for path in RESULTS.glob(\"*.json\")})\n\n    def priority(path: Path) -> tuple[int, int, str]:\n        marker = PUBLISHED / path.name\n        pending_audit = False\n        if marker.is_file():\n            marker_text = marker.read_text(\n                encoding=\"utf-8\",\n                errors=\"replace\",\n            )\n            pending_audit = (\n                \"certification=PENDING_AUDIT_EVIDENCE\"\n                in marker_text\n            )\n\n        mtime = path.stat().st_mtime_ns\n        if pending_audit:\n            return (0, mtime, path.name)\n        return (1, -mtime, path.name)\n\n    return sorted(by_name.values(), key=priority)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_result_publisher_batch_contract.py",
+      "old": "def test_certified_markers_are_skipped_before_attempt_budget():\n    text = PUB.read_text(encoding=\"utf-8\")\n\n    assert 'marker = PUBLISHED / path.name' in text\n    assert '\"certification=CERTIFIED\"' in text\n",
+      "new": "def test_certified_markers_are_skipped_before_attempt_budget():\n    text = PUB.read_text(encoding=\"utf-8\")\n\n    assert 'marker = PUBLISHED / path.name' in text\n    assert '\"certification=CERTIFIED\"' in text\n\n\ndef test_pending_audit_promotions_are_prioritized_before_fresh_results():\n    text = PUB.read_text(encoding=\"utf-8\")\n\n    assert \"without starving certification promotions\" in text\n    assert '\"certification=PENDING_AUDIT_EVIDENCE\"' in text\n    assert \"return (0, mtime, path.name)\" in text\n    assert \"return (1, -mtime, path.name)\" in text\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_result_publisher.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_result_publisher_batch_contract.py",
+        "backend/tests/test_universal_job_result_lineage_certification.py"
+      ]
+    }
+  ]
+}
