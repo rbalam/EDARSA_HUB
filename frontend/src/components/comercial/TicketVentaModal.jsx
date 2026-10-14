@@ -248,7 +248,7 @@ export default function TicketVentaModal({
               )}
               {ticket.impuesto != null && (
                 <div className="flex justify-between">
-                  <span>IMPUESTO</span>
+                  <span>IMPUESTOS</span>
                   <span>{money(ticket.impuesto)}</span>
                 </div>
               )}
