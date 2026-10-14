@@ -95,9 +95,18 @@ def test_watchdog_convergence_requires_canonical_development():
 
     assert '"branch",' in block
     assert '"--show-current",' in block
-    assert '"status",' in block
-    assert '"--porcelain=v1"' in block
+    assert "_effective_runtime_status()" in block
+    assert "WORKTREE_STATUS_FAILED" in block
     assert '"rev-parse",' in block
+    helper = ROUTE.split(
+        "def _effective_runtime_status()",
+        1,
+    )[1].split(
+        "def _converge_development_if_safe()",
+        1,
+    )[0]
+    assert '"status",' in helper
+    assert '"--porcelain=v1"' in helper
     assert 'f"origin/{DEV_BRANCH}"' in block
     assert "DEVELOPMENT_NOT_CONVERGED" in block
     assert "WORKTREE_DIRTY" in block
