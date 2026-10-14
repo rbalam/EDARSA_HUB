@@ -27,5 +27,5 @@ def test_snapshot_merge_preserves_internal_identity_for_zero_numcheque():
     assert 'if folio in {"", "0"}' in service
     assert "def _snapshot_ticket_identity" in service
     assert "def _snapshot_sales_amount" in service
-    assert 'return _money(row.get("total_ticket"))' in service
+    assert 'visible_sale_from_pos_total(row.get("total_ticket"))' in service
     assert "return total - propina" not in service

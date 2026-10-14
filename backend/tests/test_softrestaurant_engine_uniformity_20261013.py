@@ -50,7 +50,7 @@ def test_softrestaurant_mixed_keeps_closed_and_adds_open(monkeypatch):
     assert set(by_folio) == {"100", "200"}
     assert by_folio["100"]["total_venta"] == 18377
     assert by_folio["100"]["pax"] == 1
-    assert by_folio["200"]["total_venta"] == 2000
+    assert by_folio["200"]["total_venta"] == 2200
     assert by_folio["200"]["pax"] == 2
 
 

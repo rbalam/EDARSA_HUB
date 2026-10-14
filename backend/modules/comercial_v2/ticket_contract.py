@@ -28,6 +28,9 @@ FIELD_TYPES = {'partida_origen_id': 'nvarchar(100)',
  'ticket_pagado': 'bit',
  'ticket_impreso': 'bit',
  'ticket_impresiones': 'int',
+ 'ticket_subtotal': 'decimal(18,4)',
+ 'ticket_impuesto': 'decimal(18,4)',
+ 'ticket_total': 'decimal(18,4)',
  'ticket_comentario': 'nvarchar(max)',
  'ticket_comentario_descuento': 'nvarchar(max)',
  'ticket_fecha_alta': 'datetime2',
@@ -60,6 +63,20 @@ FIELD_TYPES = {'partida_origen_id': 'nvarchar(100)',
  'cliente_latitud': 'nvarchar(max)',
  'cliente_longitud': 'nvarchar(max)'}
 FIELDS = tuple(FIELD_TYPES)
+
+
+def visible_sale_from_pos_total(value):
+    """Venta visible canónica cuando la fuente entrega TOTAL del POS.
+
+    SoftRestaurant expone la propina en una columna independiente; por contrato,
+    TOTAL/total_ticket ya es la venta que debe mostrarse. Nunca se suma ni se
+    resta propina sobre este valor. La misma regla mantiene MPRO sin cambios.
+    """
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
 
 def fields_from(row):
     return {field: row.get(field) for field in FIELDS}
@@ -121,6 +138,9 @@ SR_EXPRESSIONS = {'partida_origen_id': 'CONVERT(nvarchar(100), d.movimiento)',
  'ticket_pagado': 'h.pagado',
  'ticket_impreso': 'h.impreso',
  'ticket_impresiones': 'h.impresiones',
+ 'ticket_subtotal': 'h.subtotal',
+ 'ticket_impuesto': 'h.totalimpuesto1',
+ 'ticket_total': 'h.total',
  'ticket_comentario': 'NULL',
  'ticket_comentario_descuento': 'h.comentariodescuento',
  'ticket_fecha_alta': 'NULL',
@@ -179,6 +199,9 @@ MPRO_EXPRESSIONS = {'partida_origen_id': 'CONVERT(nvarchar(100), d.Cd_Id)',
  'ticket_pagado': 'NULL',
  'ticket_impreso': 'NULL',
  'ticket_impresiones': 'NULL',
+ 'ticket_subtotal': 'h.Vn_Precio_Descontado_Importe',
+ 'ticket_impuesto': 'h.Vn_Impuesto_Importe',
+ 'ticket_total': 'h.Vn_Precio_Neto_Importe',
  'ticket_comentario': 'h.Co_Comentario',
  'ticket_comentario_descuento': 'NULL',
  'ticket_fecha_alta': 'h.Fecha_Alta',

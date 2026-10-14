@@ -6,7 +6,13 @@ import json
 from typing import Any, Dict, List, Optional
 
 from .service import _query_edarsahub_tablero
-from modules.comercial_v2.ticket_contract import FIELDS, fields_from, header_from, discount_comment
+from modules.comercial_v2.ticket_contract import (
+    FIELDS,
+    discount_comment,
+    fields_from,
+    header_from,
+    visible_sale_from_pos_total,
+)
 
 
 def _safe_sql(value: Any) -> str:
@@ -161,16 +167,8 @@ def _snapshot_ticket_identity(row: Dict[str, Any]) -> str:
 
 
 def _snapshot_sales_amount(row: Dict[str, Any]) -> float:
-    """Venta comparable con KPI: la propina se conserva separada."""
-    total = _money(row.get("total_ticket"))
-    sistema = str(row.get("sistema_origen") or "").strip().upper()
-
-    if sistema == "SOFTRESTAURANT":
-        propina = max(0.0, _money(row.get("propina")))
-        if total >= propina:
-            return total - propina
-
-    return total
+    """Venta visible canónica: TOTAL del POS; propina siempre separada."""
+    return visible_sale_from_pos_total(row.get("total_ticket"))
 
 def merge_open_snapshot_tickets(
     items: List[Dict[str, Any]],
@@ -383,11 +381,36 @@ def build_ticket_venta(
     )
 
     if closed_rows:
-        total = sum(_money(row.get("importe_neto")) for row in closed_rows)
-        subtotal = sum(
-            _money(row.get("importe_bruto"))
-            for row in closed_rows
-            if _real_product_row(row)
+        persisted_total = max(
+            (_money(row.get("ticket_total")) for row in closed_rows),
+            default=0.0,
+        )
+        persisted_subtotal = max(
+            (_money(row.get("ticket_subtotal")) for row in closed_rows),
+            default=0.0,
+        )
+        persisted_impuesto = max(
+            (_money(row.get("ticket_impuesto")) for row in closed_rows),
+            default=0.0,
+        )
+        total = (
+            persisted_total
+            if persisted_total > 0.005
+            else sum(_money(row.get("importe_neto")) for row in closed_rows)
+        )
+        subtotal = (
+            persisted_subtotal
+            if persisted_subtotal > 0.005
+            else sum(
+                _money(row.get("importe_bruto"))
+                for row in closed_rows
+                if _real_product_row(row)
+            )
+        )
+        impuesto = (
+            persisted_impuesto
+            if persisted_impuesto > 0.005
+            else None
         )
         descuento = sum(_money(row.get("descuento")) for row in closed_rows)
         propina = sum(_money(row.get("propina")) for row in closed_rows)
@@ -469,7 +492,7 @@ def build_ticket_venta(
                 "descuento_productos": descuento_productos,
                 "descuento_cuenta": descuento_cuenta,
                 "descuento": descuento,
-                "impuesto": None,
+                "impuesto": impuesto,
                 "total": total,
                 "propina": propina,
             },
@@ -495,7 +518,28 @@ def build_ticket_venta(
         None,
     )
 
-    subtotal = sum(_money(row.get("importe_bruto")) for row in snapshot_rows)
+    persisted_subtotal = max(
+        (_money(row.get("ticket_subtotal")) for row in snapshot_rows),
+        default=0.0,
+    )
+    persisted_impuesto = max(
+        (_money(row.get("ticket_impuesto")) for row in snapshot_rows),
+        default=0.0,
+    )
+    persisted_total = max(
+        (_money(row.get("ticket_total")) for row in snapshot_rows),
+        default=0.0,
+    )
+    subtotal = (
+        persisted_subtotal
+        if persisted_subtotal > 0.005
+        else sum(_money(row.get("importe_bruto")) for row in snapshot_rows)
+    )
+    impuesto = (
+        persisted_impuesto
+        if persisted_impuesto > 0.005
+        else None
+    )
     descuento_productos = sum(
         max(0.0, _money(row.get("descuento_producto")))
         for row in snapshot_rows
@@ -504,9 +548,13 @@ def build_ticket_venta(
         _snapshot_line_net_amount(row)
         for row in snapshot_rows
     )
-    total = max(
-        (_snapshot_sales_amount(row) for row in snapshot_rows),
-        default=0,
+    total = (
+        persisted_total
+        if persisted_total > 0.005
+        else max(
+            (_snapshot_sales_amount(row) for row in snapshot_rows),
+            default=0,
+        )
     )
     propina = max(
         (_money(row.get("propina")) for row in snapshot_rows),
@@ -575,7 +623,7 @@ def build_ticket_venta(
             "descuento_productos": descuento_productos,
             "descuento_cuenta": descuento_cuenta,
             "descuento": descuento,
-            "impuesto": None,
+            "impuesto": impuesto,
             "total": total,
             "propina": propina,
         },

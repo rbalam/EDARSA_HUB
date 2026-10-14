@@ -33,6 +33,7 @@ import logging
 from core.db import execute_sql_query
 from core.sql_first.db import get_sql_connection
 from core.kpis_canonicos.service import runtime_dia_operativo_actual_predicate
+from modules.comercial_v2.ticket_contract import visible_sale_from_pos_total
 
 logger = logging.getLogger(__name__)
 
@@ -464,11 +465,11 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
 
     detalle_abiertas_json proviene de tempcheques y se usa unicamente
     para reconstruir la porcion abierta de la operacion. El encabezado del
-    sincronizador ya separa venta sin propina, propina y ventas cerradas.
+    sincronizador ya separa venta TOTAL, propina y ventas cerradas.
 
     Reglas:
-    - total_ticket del detalle incluye propina; la venta abierta canonica es
-      max(total_ticket - propina, 0).
+    - total_ticket proviene de la columna TOTAL del POS y es la venta visible.
+    - propina se conserva separada y nunca se suma ni se resta de total_ticket.
     - Nunca se ponen a cero ventas_cerradas_dia ni sus KPIs asociados.
     - total_estimado_dia = abiertas + cerradas.
     """
@@ -532,11 +533,7 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
 
     ventas_abiertas = round(
         sum(
-            max(
-                float(ticket["total"] or 0)
-                - float(ticket["propina"] or 0),
-                0.0,
-            )
+            visible_sale_from_pos_total(ticket["total"])
             for ticket in tickets.values()
         ),
         2,
@@ -548,10 +545,21 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
     )
     tickets_abiertos = len(tickets)
 
-    ventas_cerradas = float(row.get("ventas_cerradas_dia") or 0)
+    ventas_cerradas_legacy = float(
+        row.get("ventas_cerradas_dia") or 0
+    )
     tickets_cerrados = int(row.get("tickets_cerrados_dia") or 0)
     pax_cerrados = int(row.get("pax_cerrados_dia") or 0)
     propinas_cerradas = float(row.get("propinas_cerradas_dia") or 0)
+
+    # Compatibilidad con el writer protegido sync_comercial_abiertas_v2:
+    # hoy persiste la porcion cerrada SR como total - propina. El contrato
+    # visible es cheques.total, por lo que la lectura canonica recompone
+    # exclusivamente esa porcion legacy sumando la propina separada.
+    ventas_cerradas = round(
+        ventas_cerradas_legacy + propinas_cerradas,
+        2,
+    )
 
     row["ventas_abiertas"] = ventas_abiertas
     row["tickets_abiertos"] = tickets_abiertos
@@ -572,7 +580,7 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
         2,
     )
     row["_ventas_dia_source"] = (
-        "DETALLE_ABIERTAS_JSON_MAS_CERRADAS_ENCABEZADO"
+        "DETALLE_ABIERTAS_JSON_MAS_CERRADAS_TOTAL_POS_COMPAT"
     )
     return row
 
