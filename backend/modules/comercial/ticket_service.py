@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from .service import _query_edarsahub_tablero
 from modules.comercial_v2.ticket_contract import FIELDS, fields_from, header_from, discount_comment
+from core.commercial_sales_contract import fiscal_breakdown, ticket_visible_total
 
 
 def _safe_sql(value: Any) -> str:
@@ -161,16 +162,11 @@ def _snapshot_ticket_identity(row: Dict[str, Any]) -> str:
 
 
 def _snapshot_sales_amount(row: Dict[str, Any]) -> float:
-    """Venta comparable con KPI: la propina se conserva separada."""
-    total = _money(row.get("total_ticket"))
-    sistema = str(row.get("sistema_origen") or "").strip().upper()
-
-    if sistema == "SOFTRESTAURANT":
-        propina = max(0.0, _money(row.get("propina")))
-        if total >= propina:
-            return total - propina
-
-    return total
+    """Venta visible del ticket por contrato transversal de motor."""
+    return ticket_visible_total(
+        row.get("total_ticket"),
+        row.get("sistema_origen"),
+    )
 
 def merge_open_snapshot_tickets(
     items: List[Dict[str, Any]],
@@ -435,6 +431,7 @@ def build_ticket_venta(
                 "importe_neto": total,
             }]
         descuento_cuenta = max(0.0, descuento - descuento_productos)
+        fiscal_subtotal, fiscal_tax = fiscal_breakdown(total)
         vendedor = next(
             (
                 str(row.get("vendedor_nombre") or "").strip()
@@ -465,11 +462,12 @@ def build_ticket_venta(
                 "mesa": mesa,
                 "estado": "CERRADA",
                 "items": items,
-                "subtotal": subtotal,
+                "subtotal": fiscal_subtotal,
+                "subtotal_productos": subtotal,
                 "descuento_productos": descuento_productos,
                 "descuento_cuenta": descuento_cuenta,
                 "descuento": descuento,
-                "impuesto": None,
+                "impuesto": fiscal_tax,
                 "total": total,
                 "propina": propina,
             },
@@ -515,6 +513,19 @@ def build_ticket_venta(
     pax = max(
         (_integer(row.get("pax")) for row in snapshot_rows),
         default=0,
+    )
+    subtotal_source = max(
+        (_money(row.get("subtotal_sin_impuestos")) for row in snapshot_rows),
+        default=0,
+    )
+    tax_source = max(
+        (_money(row.get("impuesto_ticket")) for row in snapshot_rows),
+        default=0,
+    )
+    fiscal_subtotal, fiscal_tax = fiscal_breakdown(
+        total,
+        subtotal_source=subtotal_source,
+        tax_source=tax_source,
     )
 
     # El encabezado final es autoritativo. Cualquier reducción adicional
@@ -571,11 +582,12 @@ def build_ticket_venta(
                 }
                 for row in snapshot_rows
             ],
-            "subtotal": subtotal,
+            "subtotal": fiscal_subtotal,
+            "subtotal_productos": subtotal,
             "descuento_productos": descuento_productos,
             "descuento_cuenta": descuento_cuenta,
             "descuento": descuento,
-            "impuesto": None,
+            "impuesto": fiscal_tax,
             "total": total,
             "propina": propina,
         },
