@@ -33,6 +33,7 @@ import logging
 from core.db import execute_sql_query
 from core.sql_first.db import get_sql_connection
 from core.kpis_canonicos.service import runtime_dia_operativo_actual_predicate
+from core.commercial_sales_contract import snapshot_visible_sales
 
 logger = logging.getLogger(__name__)
 
@@ -474,17 +475,38 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
     - total_estimado_dia = abiertas visibles + cerradas visibles.
     """
     sistema = str(row.get("sistema_origen") or "").strip().upper()
-    raw = row.get("detalle_abiertas_json")
-    if "SOFT" not in sistema or not raw:
+    if "SOFT" not in sistema:
         return row
 
+    propinas_abiertas_persistidas = float(
+        row.get("propinas_abiertas") or 0
+    )
+    propinas_cerradas = float(
+        row.get("propinas_cerradas_dia") or 0
+    )
+    ventas_abiertas = snapshot_visible_sales(
+        row.get("ventas_abiertas"),
+        propinas_abiertas_persistidas,
+        sistema,
+    )
+    ventas_cerradas = snapshot_visible_sales(
+        row.get("ventas_cerradas_dia"),
+        propinas_cerradas,
+        sistema,
+    )
+
+    raw = row.get("detalle_abiertas_json")
     try:
-        items = json.loads(raw) if isinstance(raw, str) else raw
+        items = (
+            json.loads(raw)
+            if isinstance(raw, str) and raw
+            else raw
+        )
     except (TypeError, ValueError):
-        return row
+        items = None
 
     if not isinstance(items, list):
-        return row
+        items = []
 
     tickets: Dict[str, Dict[str, Any]] = {}
     for item in items:
@@ -528,16 +550,14 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
         except (TypeError, ValueError):
             pass
 
-    if not tickets:
-        return row
-
-    ventas_abiertas = round(
-        sum(
-            max(float(ticket["total"] or 0), 0.0)
-            for ticket in tickets.values()
-        ),
-        2,
-    )
+    if tickets:
+        ventas_abiertas = round(
+            sum(
+                max(float(ticket["total"] or 0), 0.0)
+                for ticket in tickets.values()
+            ),
+            2,
+        )
     pax_abiertos = sum(ticket["pax"] for ticket in tickets.values())
     propinas_abiertas = round(
         sum(ticket["propina"] for ticket in tickets.values()),
@@ -545,16 +565,8 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
     )
     tickets_abiertos = len(tickets)
 
-    ventas_cerradas_persistidas = float(
-        row.get("ventas_cerradas_dia") or 0
-    )
     tickets_cerrados = int(row.get("tickets_cerrados_dia") or 0)
     pax_cerrados = int(row.get("pax_cerrados_dia") or 0)
-    propinas_cerradas = float(row.get("propinas_cerradas_dia") or 0)
-    ventas_cerradas = round(
-        ventas_cerradas_persistidas + propinas_cerradas,
-        2,
-    )
 
     row["ventas_abiertas"] = ventas_abiertas
     row["tickets_abiertos"] = tickets_abiertos
