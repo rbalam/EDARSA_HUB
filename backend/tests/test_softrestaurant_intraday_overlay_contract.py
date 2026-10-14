@@ -32,7 +32,7 @@ def test_softrestaurant_open_detail_keeps_pos_total_and_separates_tip():
     assert result["pax_abiertos"] == 76
 
 
-def test_softrestaurant_open_detail_preserves_closed_portion():
+def test_softrestaurant_open_detail_restores_legacy_closed_pos_total():
     row = {
         "sistema_origen": "SOFTRESTAURANT",
         "ventas_cerradas_dia": 133109.0,
@@ -62,12 +62,12 @@ def test_softrestaurant_open_detail_preserves_closed_portion():
     assert result["tickets_abiertos"] == 2
     assert result["pax_abiertos"] == 5
 
-    assert result["ventas_cerradas_dia"] == 133109.0
+    assert result["ventas_cerradas_dia"] == 145109.0
     assert result["tickets_cerrados_dia"] == 26
     assert result["pax_cerrados_dia"] == 70
     assert result["propinas_cerradas_dia"] == 12000.0
 
-    assert result["total_estimado_dia"] == 133639.0
+    assert result["total_estimado_dia"] == 145639.0
     assert result["propinas_total"] == 12070.0
 
 
