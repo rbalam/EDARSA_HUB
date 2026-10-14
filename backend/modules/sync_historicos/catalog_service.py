@@ -69,6 +69,20 @@ def _unit_rows() -> List[Dict[str, Any]]:
     )
 
 
+def _system_type_rows() -> List[Dict[str, Any]]:
+    return _rows(
+        """
+        SELECT
+            SistemaTipoID AS system_id,
+            UPPER(LTRIM(RTRIM(CodigoSistema))) AS system_code,
+            NombreSistema AS system_name
+        FROM dbo.Sistema_Tipos
+        WHERE ISNULL(Activo,1)=1
+        ORDER BY NombreSistema, CodigoSistema
+        """
+    )
+
+
 def _internal_catalog() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     registry = get_historical_registry(
         incluir_inactivos=False,
@@ -76,7 +90,7 @@ def _internal_catalog() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     )
     supported_systems = {
         str(item.get("system_code") or "").upper(): item
-        for item in registry
+        for item in _system_type_rows()
         if item.get("system_code")
     }
 
@@ -154,59 +168,136 @@ def planner_inputs():
 def get_catalog_payload() -> Dict[str, Any]:
     registry, units = _internal_catalog()
 
-    systems: Dict[str, Dict[str, Any]] = {}
-    categories: Dict[str, Dict[str, Any]] = {}
-    capability_systems: Dict[str, set] = defaultdict(set)
+    declared_registry = [
+        item
+        for item in get_historical_registry(
+            incluir_inactivos=True,
+            incluir_incompletos=True,
+        )
+        if bool(item.get("enabled"))
+        and bool(item.get("supports_historical"))
+    ]
 
-    for item in registry:
-        system_code = str(item.get("system_code") or "").upper()
-        systems.setdefault(
-            system_code,
-            {
-                "id": item.get("system_id"),
-                "code": system_code,
-                "name": item.get("system_name"),
-            },
+    systems = {
+        str(item.get("system_code") or "").upper(): {
+            "id": item.get("system_id"),
+            "code": str(item.get("system_code") or "").upper(),
+            "name": item.get("system_name"),
+        }
+        for item in _system_type_rows()
+        if item.get("system_code")
+    }
+
+    categories: Dict[str, Dict[str, Any]] = {}
+
+    for item in declared_registry:
+        cap_key = str(item.get("capability_key") or "").strip()
+        if not cap_key:
+            continue
+
+        category_name = str(
+            item.get("category_name")
+            or item.get("grupo")
+            or "Otros"
+        ).strip()
+        category_key = str(item.get("category_key") or "").strip()
+        display_category_key = (
+            category_key
+            if category_key
+            else "GROUP::" + category_name.upper()
         )
 
-        category_key = str(item.get("category_key") or "")
         category = categories.setdefault(
-            category_key,
+            display_category_key,
             {
-                "key": category_key,
-                "name": item.get("category_name"),
+                "key": display_category_key,
+                "name": category_name,
+                "order": int(item.get("execution_order") or 100),
                 "capabilities": {},
             },
         )
-        cap_key = str(item.get("capability_key") or "")
+        category["order"] = min(
+            int(category.get("order") or 100),
+            int(item.get("execution_order") or 100),
+        )
+
         cap = category["capabilities"].setdefault(
             cap_key,
             {
                 "key": cap_key,
                 "display_name": item.get("display_name"),
+                "description": item.get("descripcion") or "",
                 "entity_key": item.get("entity_key"),
+                "table_name": item.get("tabla_destino"),
+                "execution_order": int(item.get("execution_order") or 100),
                 "supports_resume": bool(item.get("supports_resume")),
                 "supports_safe_stop": bool(item.get("supports_safe_stop")),
-                "systems": [],
+                "supports_incremental": bool(item.get("supports_incremental")),
+                "supports_full_sync": bool(item.get("supports_full_sync")),
+                "supports_dry_run": bool(item.get("permite_dry_run")),
+                "requires_date_range": bool(item.get("requiere_rango_fechas")),
+                "max_range_days": int(item.get("rango_max_dias") or 0),
+                "chunk_unit": (item.get("metadata") or {}).get("chunk_unit"),
+                "atomic_boundary": (item.get("metadata") or {}).get(
+                    "atomic_boundary"
+                ),
+                "version": item.get("version"),
+                "declared_systems": set(),
+                "eligible_systems": set(),
+                "incomplete_reasons": set(),
             },
         )
-        capability_systems[cap_key].add(system_code)
-        cap["systems"] = sorted(capability_systems[cap_key])
+
+        system_code = str(item.get("system_code") or "").strip().upper()
+        if system_code:
+            cap["declared_systems"].add(system_code)
+            if item.get("eligible_for_historical"):
+                cap["eligible_systems"].add(system_code)
+
+        if not item.get("eligible_for_historical"):
+            cap["incomplete_reasons"].update(
+                str(reason)
+                for reason in (item.get("incomplete_reasons") or [])
+                if reason
+            )
 
     category_list = []
+    executable_capabilities = 0
+    declared_capabilities = 0
+
     for category in categories.values():
-        caps = sorted(
-            category["capabilities"].values(),
-            key=lambda value: value["display_name"] or value["key"],
+        capabilities = []
+        for cap in category["capabilities"].values():
+            cap["declared_systems"] = sorted(cap["declared_systems"])
+            cap["eligible_systems"] = sorted(cap["eligible_systems"])
+            cap["incomplete_reasons"] = sorted(cap["incomplete_reasons"])
+            cap["execution_enabled"] = bool(cap["eligible_systems"])
+            if cap["execution_enabled"]:
+                executable_capabilities += 1
+            declared_capabilities += 1
+            capabilities.append(cap)
+
+        capabilities.sort(
+            key=lambda value: (
+                int(value.get("execution_order") or 100),
+                value.get("display_name") or value.get("key"),
+            )
         )
         category_list.append(
             {
                 "key": category["key"],
                 "name": category["name"],
-                "capabilities": caps,
+                "order": category["order"],
+                "capabilities": capabilities,
             }
         )
-    category_list.sort(key=lambda value: value["name"] or value["key"])
+
+    category_list.sort(
+        key=lambda value: (
+            int(value.get("order") or 100),
+            value.get("name") or value.get("key"),
+        )
+    )
 
     safe_units = [
         {
@@ -242,5 +333,7 @@ def get_catalog_payload() -> Dict[str, Any]:
             "systems": len(systems),
             "units": len(safe_units),
             "capability_bindings": len(registry),
+            "declared_capabilities": declared_capabilities,
+            "executable_capabilities": executable_capabilities,
         },
     }

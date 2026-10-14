@@ -92,3 +92,20 @@ def test_health_is_attached_only_from_canonical_evidence():
     assert result["health"]["status"] == "CONNECTED"
     assert result["health"]["has_evidence"] is True
     assert result["health"]["source"] == "dbo.Servidores_ConexionEstado"
+
+
+
+def test_canonical_scope_contract_is_not_hardcoded():
+    result = _normalize_connection(
+        {
+            "id": "44444444-4444-4444-4444-444444444444",
+            "nombre": "Chapur Enterprise",
+            "tipo_conexion": "DATA_SOURCE",
+            "system_type": "SOFTRESTAURANT",
+            "activo": True,
+        },
+        "server_registry",
+    )
+    assert result["scope"]["unidad_negocio_ids"] == []
+    assert result["scope"]["unit_mapping_status"] == "NOT_EXPLICIT_IN_CONNECTION_CONTRACT"
+    assert result["scope"]["source"] == "dbo.Servidores_Conexiones"

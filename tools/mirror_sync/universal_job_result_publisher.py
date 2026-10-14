@@ -389,6 +389,49 @@ def generic_readonly_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
     return {"checks": sanitized}
 
 
+def branches_preserve_job_artifacts(
+    source_sha: str,
+    development_head: str,
+    mirror_head: str,
+    files_changed: list[str],
+) -> bool:
+    """Certify the job artifacts, not global branch SHA identity.
+
+    Both DEV and MIRROR must descend from the job source SHA and must preserve
+    every file changed by that job byte-for-byte relative to source_sha.
+    Unrelated later commits or platform-managed mirror metadata do not block
+    certification of this job; any mutation of a job-owned artifact fails
+    closed.
+    """
+    if not files_changed:
+        return False
+
+    for head in (development_head, mirror_head):
+        ancestry = git(
+            "merge-base",
+            "--is-ancestor",
+            source_sha,
+            head,
+            check=False,
+        )
+        if ancestry.returncode != 0:
+            return False
+
+        artifact_check = git(
+            "diff",
+            "--quiet",
+            source_sha,
+            head,
+            "--",
+            *files_changed,
+            check=False,
+        )
+        if artifact_check.returncode != 0:
+            return False
+
+    return True
+
+
 def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
     source_sha = result.get("development_sha")
 
@@ -603,38 +646,18 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
         f"{REMOTE}/{MIRROR_BRANCH}",
     ).stdout.strip()
 
-    if development_head != mirror_head:
-        return pending
-
-    ancestry = git(
-        "merge-base",
-        "--is-ancestor",
-        source_sha,
-        development_head,
-        check=False,
-    )
-    if ancestry.returncode != 0:
-        return pending
-
     files_changed = [
         str(value)
         for value in (result.get("files_changed") or [])
         if isinstance(value, str) and value
     ]
 
-    if not files_changed:
-        return pending
-
-    artifact_check = git(
-        "diff",
-        "--quiet",
+    if not branches_preserve_job_artifacts(
         source_sha,
         development_head,
-        "--",
-        *files_changed,
-        check=False,
-    )
-    if artifact_check.returncode != 0:
+        mirror_head,
+        files_changed,
+    ):
         return pending
 
     return {
@@ -645,7 +668,7 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
         "certified_source_sha": source_sha,
         "converged_head": development_head,
         "certification_basis":
-            "SHA_BOUND_ATTESTATION_PLUS_DESCENDANT_CONVERGENCE",
+            "SHA_BOUND_ATTESTATION_PLUS_ARTIFACT_CONVERGENCE",
     }
 
 
@@ -892,13 +915,19 @@ def marker_satisfied(marker: Path, public: dict[str, Any]) -> bool:
 
     desired = public.get("certification")
 
-    # Todo resultado ya publicado es terminal para el publisher, salvo
-    # promociones desde evidencia previa no certificada a una certificacion
-    # terminal valida del mismo contrato.
-    if desired not in {"CERTIFIED", "CERTIFIED_OPERATIONAL", "CERTIFIED_READ_ONLY"}:
-        return True
+    # A stale NOT_CERTIFIED marker must not suppress a newer local result.
+    # PENDING_AUDIT_EVIDENCE is a real promotion step because publishing it
+    # creates the SHA-bound attestation required for the final certification.
+    promotable = {
+        "PENDING_AUDIT_EVIDENCE",
+        "CERTIFIED",
+        "CERTIFIED_OPERATIONAL",
+        "CERTIFIED_READ_ONLY",
+    }
+    if desired in promotable:
+        return f"certification={desired}" in marker_text
 
-    return f"certification={desired}" in marker_text
+    return True
 
 
 
@@ -1148,14 +1177,37 @@ def publish_one(path: Path) -> bool:
     )
 
 def publishable_paths() -> list[Path]:
-    """Return terminal artifacts with recent dispatcher results taking precedence."""
+    """Return terminal artifacts without starving certification promotions.
+
+    A mutation result needs two publication passes: the first publishes
+    PENDING_AUDIT_EVIDENCE and creates the SHA-bound attestation; a later pass
+    can promote it to CERTIFIED once DEV/MIRROR preserve the job artifacts.
+    Prioritize those pending markers so sustained arrival of newer results
+    cannot keep an older successful job at 95% indefinitely. Fresh results
+    keep their existing newest-first order.
+    """
     by_name = {path.name: path for path in REJECTED.glob("*.json")}
     by_name.update({path.name: path for path in RESULTS.glob("*.json")})
-    return sorted(
-        by_name.values(),
-        key=lambda path: (path.stat().st_mtime_ns, path.name),
-        reverse=True,
-    )
+
+    def priority(path: Path) -> tuple[int, int, str]:
+        marker = PUBLISHED / path.name
+        pending_audit = False
+        if marker.is_file():
+            marker_text = marker.read_text(
+                encoding="utf-8",
+                errors="replace",
+            )
+            pending_audit = (
+                "certification=PENDING_AUDIT_EVIDENCE"
+                in marker_text
+            )
+
+        mtime = path.stat().st_mtime_ns
+        if pending_audit:
+            return (0, mtime, path.name)
+        return (1, -mtime, path.name)
+
+    return sorted(by_name.values(), key=priority)
 
 
 def main() -> int:

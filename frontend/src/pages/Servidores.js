@@ -251,13 +251,8 @@ const Servidores = () => {
       }
     } catch (error) {
       console.error('Error cargando tipos de sistema:', error);
-      // Fallback final a valores hardcodeados (último recurso)
-      setTiposSistema([
-        { Codigo: 'MPRO', Descripcion: 'ManagementPro (MPRO)' },
-        { Codigo: 'SOFTRESTAURANT', Descripcion: 'SoftRestaurant' },
-        { Codigo: 'API_LOCAL', Descripcion: 'API Local (Enterprise)' },
-        { Codigo: 'OTRO', Descripcion: 'Otro' }
-      ]);
+      // Fail closed: el catalogo canonico es la unica autoridad.
+      setTiposSistema([]);
     } finally {
       setLoadingTiposSistema(false);
     }
@@ -709,8 +704,7 @@ const Servidores = () => {
   });
 
   useEffect(() => {
-    loadServers();
-    loadApiConnections();  // Cargar conexiones API desde backend
+    loadServers();         // Inventario canonico SQL + API_LOCAL
     loadTiposSistema();    // Cargar tipos de sistema desde catálogo
     loadVtigerConnections(); // Cargar conexiones Vtiger
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -857,12 +851,48 @@ const Servidores = () => {
 
   const loadServers = async () => {
     try {
-      const response = await api.get('/servers');
-      setServers(response.data);
+      // Lectura canonica unificada. Los writers legacy se conservan sin cambios.
+      const response = await api.get('/integrations-center/connections', {
+        params: { include_inactive: true }
+      });
+      const connections = response.data?.data || [];
+
+      const sqlConnections = connections
+        .filter(conn => String(conn.connection_type || '').toUpperCase() === 'DATA_SOURCE')
+        .map(conn => ({
+          ...conn,
+          nombre: conn.name,
+          tipo_conexion: conn.connection_type,
+          activo: conn.active,
+          visible_en_operaciones: conn.visible,
+          database: conn.database_name,
+          EmpresaID: conn.scope?.empresa_id,
+          sucursales: conn.scope?.sucursales || []
+        }));
+
+      const localApis = connections
+        .filter(conn => String(conn.connection_type || '').toUpperCase() === 'API_LOCAL')
+        .map(conn => ({
+          ...conn,
+          name: conn.name,
+          tipo: conn.system_type,
+          activo: conn.active,
+          visible_en_operaciones: conn.visible,
+          url: conn.api_url,
+          servidor_padre: conn.host,
+          sucursales: conn.scope?.sucursales || []
+        }));
+
+      setServers(sqlConnections);
+      setApiConnections(localApis);
     } catch (error) {
-      toast.error('Error al cargar servidores');
+      console.error('Error cargando inventario canonico de conexiones:', error);
+      setServers([]);
+      setApiConnections([]);
+      toast.error('Error al cargar conexiones');
     } finally {
       setLoading(false);
+      setLoadingApis(false);
     }
   };
 
@@ -1212,25 +1242,66 @@ const Servidores = () => {
     setEditingServer(null);
   };
 
-  // Función para abrir el diálogo de edición con los datos del servidor
-  const openEditDialog = (server) => {
-    setFormData({
-      name: server.name || '',
-      host: server.host || '',
-      port: server.port || 1433,
-      database: server.database || '',
-      username: server.username || '',
-      password: '', // No mostramos la contraseña por seguridad
-      system_type: server.system_type || 'MPRO',
-      date_calculation_method: server.date_calculation_method || 'inventory_dates',
-      sucursales: server.sucursales || [],
-      tipos_movimiento: server.tipos_movimiento || [],
-      categorias: server.categorias || [],
-      departamentos: server.departamentos || []
-    });
-    setEditingServer(server);
-    setConnectionValid(false);
-    setDialogOpen(true);
+  // Edición: hidratar detalle desde el contrato legacy por ID.
+  // La membresía del inventario sigue siendo integrations-center.
+  const openEditDialog = async (server) => {
+    try {
+      const response = await api.get(`/servers/${server.id}`);
+      const detail = response.data || {};
+      setFormData({
+        name: detail.name || '',
+        host: detail.host || '',
+        port: detail.port || 1433,
+        database: detail.database || detail.database_name || '',
+        username: detail.username || '',
+        password: '',
+        system_type: detail.system_type || 'MPRO',
+        date_calculation_method: detail.date_calculation_method || 'inventory_dates',
+        sucursales: detail.sucursales || [],
+        tipos_movimiento: detail.tipos_movimiento || [],
+        categorias: detail.categorias || [],
+        departamentos: detail.departamentos || [],
+        visible_en_operaciones: detail.visible_en_operaciones !== false
+      });
+      setEditingServer({ ...server, ...detail });
+      setConnectionValid(false);
+      setDialogOpen(true);
+    } catch (error) {
+      console.error('Error cargando detalle del servidor:', error);
+      toast.error('No se pudo cargar el detalle del servidor');
+    }
+  };
+
+  const openEditApi = async (apiConn) => {
+    try {
+      const response = await api.get(`/api-connections/${apiConn.id}`);
+      const detail = response.data?.data || {};
+      setEditingApi({ ...apiConn, ...detail });
+      setApiFormData({
+        name: detail.name || apiConn.name || '',
+        url: detail.url || apiConn.url || '',
+        api_key: '',
+        tipo: detail.tipo || apiConn.tipo || '',
+        servidor_padre: detail.servidor_padre || apiConn.servidor_padre || '',
+        servidor_padre_id: detail.servidor_padre_id || '',
+        sucursal_destino: detail.sucursal_destino || apiConn.sucursal_destino || '',
+        hora_replica: detail.hora_replica || apiConn.hora_replica || '04:00',
+        solo_ventas_dia: detail.solo_ventas_dia ?? true,
+        activo: detail.activo !== false,
+        visible_en_operaciones: detail.visible_en_operaciones === true
+      });
+      setQueryTestData({
+        tipo_uso: detail.tipo_uso || 'Otro',
+        nombre_consulta: detail.nombre_consulta || '',
+        sql_query: detail.sql_query || DEFAULT_SQL_QUERY,
+        timeout: 30
+      });
+      setQueryTestResult(null);
+      setApiDialogOpen(true);
+    } catch (error) {
+      console.error('Error cargando detalle de la conexión API:', error);
+      toast.error('No se pudo cargar el detalle de la conexión API');
+    }
   };
 
   const getFilterCount = (server) => {
@@ -1422,21 +1493,7 @@ const Servidores = () => {
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 w-7 p-0"
-                                onClick={() => {
-                                  setEditingServer(server);
-                                  setFormData({
-                                    name: server.name || '',
-                                    host: server.host || '',
-                                    port: server.port || 1433,
-                                    database: server.database || '',
-                                    username: server.username || '',
-                                    password: '',
-                                    system_type: server.system_type || '',
-                                    activo: server.activo !== false,
-                                    visible_en_operaciones: server.visible_en_operaciones || false
-                                  });
-                                  setDialogOpen(true);
-                                }}
+                                onClick={() => openEditDialog(server)}
                                 title="Editar servidor"
                               >
                                 <Edit className="h-3 w-3" />
@@ -1841,29 +1898,7 @@ const Servidores = () => {
                               variant="ghost"
                               size="sm"
                               className="h-7 w-7 p-0"
-                              onClick={() => {
-                                setEditingApi(apiConn);
-                                setApiFormData({
-                                  name: apiConn.name,
-                                  url: apiConn.url,
-                                  api_key: '',
-                                  tipo: apiConn.tipo,
-                                  servidor_padre: apiConn.servidor_padre,
-                                  sucursal_destino: apiConn.sucursal_destino,
-                                  hora_replica: apiConn.hora_replica,
-                                  solo_ventas_dia: apiConn.solo_ventas_dia,
-                                  activo: apiConn.activo,
-                                  visible_en_operaciones: apiConn.visible_en_operaciones
-                                });
-                                setQueryTestData({
-                                  tipo_uso: apiConn.tipo_uso || 'Otro',
-                                  nombre_consulta: apiConn.nombre_consulta || '',
-                                  sql_query: apiConn.sql_query || DEFAULT_SQL_QUERY,
-                                  timeout: 30
-                                });
-                                setQueryTestResult(null);
-                                setApiDialogOpen(true);
-                              }}
+                              onClick={() => openEditApi(apiConn)}
                               title="Editar conexión"
                             >
                               <Edit className="h-3 w-3" />
@@ -2119,31 +2154,7 @@ const Servidores = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => {
-                          setEditingApi(apiConn);
-                          setApiFormData({
-                            name: apiConn.name,
-                            url: apiConn.url,
-                            api_key: '',
-                            tipo: apiConn.tipo,
-                            servidor_padre: apiConn.servidor_padre,
-                            sucursal_destino: apiConn.sucursal_destino,
-                            hora_replica: apiConn.hora_replica,
-                            solo_ventas_dia: apiConn.solo_ventas_dia,
-                            activo: apiConn.activo,
-                            visible_en_operaciones: apiConn.visible_en_operaciones
-                          });
-                          // Resetear sección de consulta de prueba
-                          // En edición: si tiene consulta guardada, cargarla; si no, sugerir la default
-                          setQueryTestData({
-                            tipo_uso: apiConn.tipo_uso || 'Otro',
-                            nombre_consulta: apiConn.nombre_consulta || '',
-                            sql_query: apiConn.sql_query || DEFAULT_SQL_QUERY,
-                            timeout: 30
-                          });
-                          setQueryTestResult(null);
-                          setApiDialogOpen(true);
-                        }}
+                        onClick={() => openEditApi(apiConn)}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -2181,7 +2192,7 @@ const Servidores = () => {
                           if (window.confirm('¿Eliminar esta conexión API?')) {
                             try {
                               await api.delete(`/api-connections/${apiConn.id}`);
-                              await loadApiConnections();  // Recargar lista
+                              await loadServers();  // Recargar inventario canonico
                               toast.success('Conexión eliminada');
                             } catch (error) {
                               console.error('Error eliminando conexión:', error);
@@ -2838,14 +2849,14 @@ const Servidores = () => {
                     // Actualizar conexión existente
                     const response = await api.put(`/api-connections/${editingApi.id}`, apiFormData);
                     if (response.data.success) {
-                      await loadApiConnections();  // Recargar lista
+                      await loadServers();  // Recargar inventario canonico
                       toast.success('Conexión actualizada');
                     }
                   } else {
                     // Crear nueva conexión
                     const response = await api.post('/api-connections', apiFormData);
                     if (response.data.success) {
-                      await loadApiConnections();  // Recargar lista
+                      await loadServers();  // Recargar inventario canonico
                       toast.success('Conexión agregada');
                     }
                   }
