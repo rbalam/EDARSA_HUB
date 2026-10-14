@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "704c61673046c23404418343451490e190756b34",
-  "generated_at_utc": "2026-10-14T18:18:26Z",
+  "generated_at_utc": "2026-10-14T18:19:44Z",
   "history": {
     "done_total_local": 1403,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1535,
+      "age_seconds": 1613,
       "job_id": "EDARSAHUB-HISTORICAL-RESYNC-ENTRYPOINT-R1-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1532,
+      "age_seconds": 1610,
       "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-DIAG-R1-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1531,
+      "age_seconds": 1608,
       "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-DIAG-R2-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1093,
+      "age_seconds": 1171,
       "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-DIAG-R3-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,12 +54,12 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-14T18:18:22Z",
-    "last_receive_utc": "2026-10-14T18:18:17Z",
+    "last_cycle_utc": "2026-10-14T18:19:37Z",
+    "last_receive_utc": "2026-10-14T18:19:32Z",
     "last_terminal_utc": "2026-10-14T18:00:12Z",
-    "pid": "119612",
+    "pid": "139959",
     "runtime_fingerprint": {
-      "active_worker_code_tree_sha": "664cefcf633483a803b4a8214ab5056fc6c6c8ec",
+      "active_worker_code_tree_sha": "a25115acf74243942059b732c7f3bc3314214141",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
       "development_sha": "704c61673046c23404418343451490e190756b34",
@@ -76,7 +76,7 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": false,
+      "worker_code_tree_aligned": true,
       "worker_code_tree_sha": "a25115acf74243942059b732c7f3bc3314214141"
     }
   },
