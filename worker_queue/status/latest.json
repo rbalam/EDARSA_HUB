@@ -1,10 +1,10 @@
 {
   "ahead_count": 1,
-  "behind_count": 0,
+  "behind_count": 2,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "LOCAL_AHEAD_ONLY",
-  "development_sha": "153fd3821f7759b8ce59123c18c0a033451f0552",
-  "generated_at_utc": "2026-10-14T16:09:40Z",
+  "convergence_status": "DIVERGED",
+  "development_sha": "083f3bbf486ed13d17b6982c3ea37a368abbd5cf",
+  "generated_at_utc": "2026-10-14T16:11:04Z",
   "history": {
     "done_total_local": 1399,
     "pending_total_local": 0,
@@ -25,12 +25,12 @@
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 0,
   "queue_running": 0,
-  "remote_development_sha": "153fd3821f7759b8ce59123c18c0a033451f0552",
+  "remote_development_sha": "083f3bbf486ed13d17b6982c3ea37a368abbd5cf",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-14T16:09:28Z",
-    "last_receive_utc": "2026-10-14T16:09:39Z",
+    "last_cycle_utc": "2026-10-14T16:11:00Z",
+    "last_receive_utc": "2026-10-14T16:10:55Z",
     "last_terminal_utc": "2026-10-14T14:55:41Z",
     "pid": "46767",
     "runtime_fingerprint": {
