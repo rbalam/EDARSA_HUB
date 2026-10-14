@@ -467,10 +467,11 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
     sincronizador ya separa venta sin propina, propina y ventas cerradas.
 
     Reglas:
-    - total_ticket del detalle incluye propina; la venta abierta canonica es
-      max(total_ticket - propina, 0).
-    - Nunca se ponen a cero ventas_cerradas_dia ni sus KPIs asociados.
-    - total_estimado_dia = abiertas + cerradas.
+    - total_ticket del detalle SoftRestaurant corresponde a la columna total
+      del POS y se conserva completo; propina es una metrica separada.
+    - El scheduler legacy persiste abiertas/cerradas restando propina. Esta
+      capa recompone la venta visible sin modificar el scheduler protegido.
+    - total_estimado_dia = abiertas visibles + cerradas visibles.
     """
     sistema = str(row.get("sistema_origen") or "").strip().upper()
     raw = row.get("detalle_abiertas_json")
@@ -532,11 +533,7 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
 
     ventas_abiertas = round(
         sum(
-            max(
-                float(ticket["total"] or 0)
-                - float(ticket["propina"] or 0),
-                0.0,
-            )
+            max(float(ticket["total"] or 0), 0.0)
             for ticket in tickets.values()
         ),
         2,
@@ -548,10 +545,16 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
     )
     tickets_abiertos = len(tickets)
 
-    ventas_cerradas = float(row.get("ventas_cerradas_dia") or 0)
+    ventas_cerradas_persistidas = float(
+        row.get("ventas_cerradas_dia") or 0
+    )
     tickets_cerrados = int(row.get("tickets_cerrados_dia") or 0)
     pax_cerrados = int(row.get("pax_cerrados_dia") or 0)
     propinas_cerradas = float(row.get("propinas_cerradas_dia") or 0)
+    ventas_cerradas = round(
+        ventas_cerradas_persistidas + propinas_cerradas,
+        2,
+    )
 
     row["ventas_abiertas"] = ventas_abiertas
     row["tickets_abiertos"] = tickets_abiertos
@@ -572,7 +575,7 @@ def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Di
         2,
     )
     row["_ventas_dia_source"] = (
-        "DETALLE_ABIERTAS_JSON_MAS_CERRADAS_ENCABEZADO"
+        "SOFTRESTAURANT_TOTAL_POS_MAS_CERRADAS_RECONSTRUIDAS"
     )
     return row
 
