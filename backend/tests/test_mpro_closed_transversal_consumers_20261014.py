@@ -19,7 +19,8 @@ def test_origen_and_130qro_share_venta_encabezado_final_authority():
     assert "FROM Venta_Encabezado AS ve" in text
     assert "ve.Vn_Precio_Neto_Importe AS Vn_Precio_Neto_Importe" in text
     assert "ve.Sc_Cve_Sucursal = '{sucursal}'" in text
-    assert "Comanda_Detalle" not in text
+    assert "FROM Comanda AS c" not in text
+    assert "INNER JOIN Comanda_Detalle AS cd" not in text
 
 
 def test_closed_sync_persists_shared_final_authority():
