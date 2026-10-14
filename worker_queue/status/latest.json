@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "13322dd02b9ce17b54c837b6919c50bc68404fad",
-  "generated_at_utc": "2026-10-14T04:59:12Z",
+  "generated_at_utc": "2026-10-14T05:00:32Z",
   "history": {
     "done_total_local": 1399,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3078,
+      "age_seconds": 3158,
       "job_id": "CORE-SQL-FIRST-READONLY-VALIDATOR-CANONICAL-R1-20261014",
       "reasons": [
         "ACTION_1_CORE_GROWTH_FORBIDDEN"
@@ -25,49 +25,49 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2278,
+      "age_seconds": 2357,
       "job_id": "INTEGRATIONS-RUNTIME-READONLY-VALIDATOR-CANONICAL-R1B-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1481,
+      "age_seconds": 1561,
       "job_id": "SEGURIDAD-SAFARI-PASSWORD-AUTOFILL-AUDIT-R8A-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 719,
+      "age_seconds": 799,
       "job_id": "SEGURIDAD-SAFARI-PASSWORD-AUTOFILL-FIX-R8B-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 340,
+      "age_seconds": 420,
       "job_id": "SEGURIDAD-SAFARI-PASSWORD-AUTOFILL-FIX-R8B-R2-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3515,
+      "age_seconds": 3594,
       "job_id": "SERVIDORES-CHAPUR-ENTERPRISE-PERSISTED-API-CONFIG-READONLY-SQL-R1-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2404,
+      "age_seconds": 2484,
       "job_id": "USUARIOS-DAVID-UNIDADES-SUCURSALES-POSTCHECK-R7D-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3370,
+      "age_seconds": 3450,
       "job_id": "USUARIOS-DAVID-UNIDADES-SUCURSALES-R7C-R2-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2783,
+      "age_seconds": 2863,
       "job_id": "USUARIOS-DAVID-UNIDADES-SUCURSALES-R7C-R3-20261014",
       "reason": null,
       "state": "RESULT_READY"
@@ -87,8 +87,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-14T04:59:08Z",
-    "last_receive_utc": "2026-10-14T04:59:03Z",
+    "last_cycle_utc": "2026-10-14T05:00:21Z",
+    "last_receive_utc": "2026-10-14T05:00:29Z",
     "last_terminal_utc": "2026-10-14T04:53:31Z",
     "pid": "465",
     "runtime_fingerprint": {
