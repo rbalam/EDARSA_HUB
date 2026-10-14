@@ -3,20 +3,20 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "2f52fe3e870400c25818c12480a66255e9ab5bd0",
-  "generated_at_utc": "2026-10-14T03:32:47Z",
+  "development_sha": "8b9d09f89d7de2166bd34ab3ed3319d43373a536",
+  "generated_at_utc": "2026-10-14T03:34:13Z",
   "history": {
-    "done_total_local": 1393,
+    "done_total_local": 1394,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1207,
-    "results_total_local": 2384
+    "rejected_total_local": 1208,
+    "results_total_local": 2385
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2431,
+      "age_seconds": 2517,
       "job_id": "SERVIDORES-INTEGRATIONS-RUNTIME-EXTERNAL-IDS-WRITER-R1-20261013",
       "reasons": [
         "ACTION_2_SOURCE_SHA256_REQUIRED_OR_INVALID",
@@ -27,47 +27,63 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2123,
+      "age_seconds": 24,
+      "job_id": "USUARIOS-DAVID-UNIDADES-SUCURSALES-R7C-20261014",
+      "reasons": [
+        "ACTION_1_SOURCE_SHA256_REQUIRED_OR_INVALID",
+        "ACTION_1_REPLACEMENT_REQUIRED"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 2209,
       "job_id": "SERVIDORES-INTEGRATIONS-RUNTIME-EXTERNAL-IDS-WRITER-R1B-20261013",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 647,
+      "age_seconds": 62,
+      "job_id": "SERVIDORES-INTEGRATIONS-RUNTIME-SCOPE-MATERIALIZER-R1-20261014",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 733,
       "job_id": "SERVIDORES-INTEGRATIONS-RUNTIME-SUCURSAL-SCOPE-WRITER-R1-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 549,
+      "age_seconds": 635,
       "job_id": "USUARIOS-DAVID-UNIDADES-SUCURSALES-R7B-20261014",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "2f52fe3e870400c25818c12480a66255e9ab5bd0",
+  "local_development_sha": "8b9d09f89d7de2166bd34ab3ed3319d43373a536",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 3,
+  "queue_rejected_recent": 2,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
-  "remote_development_sha": "2f52fe3e870400c25818c12480a66255e9ab5bd0",
+  "remote_development_sha": "8b9d09f89d7de2166bd34ab3ed3319d43373a536",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-14T03:32:41Z",
-    "last_receive_utc": "2026-10-14T03:32:35Z",
-    "last_terminal_utc": "2026-10-14T03:23:38Z",
-    "pid": "313929",
+    "last_cycle_utc": "2026-10-14T03:34:06Z",
+    "last_receive_utc": "2026-10-14T03:34:01Z",
+    "last_terminal_utc": "2026-10-14T03:33:10Z",
+    "pid": "357041",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "693302e31d231c7ea48c2b9285fd0ede74768b48",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "2f52fe3e870400c25818c12480a66255e9ab5bd0",
+      "development_sha": "8b9d09f89d7de2166bd34ab3ed3319d43373a536",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
