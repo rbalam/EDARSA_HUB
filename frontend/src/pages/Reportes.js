@@ -945,6 +945,7 @@ const Reportes = () => {
         setInventarios(allInventarios);
       } catch (error) {
         logger.error('Error cargando inventarios:', error);
+        toast.error('No se pudieron actualizar los inventarios. Se conserva la ultima lista cargada; puede estar desactualizada.');
         // Mantener la última lista válida ante un fallo transitorio.
       }
     };
@@ -1164,6 +1165,7 @@ const Reportes = () => {
       setInventarios(inventariosOrdenados);
     } catch (error) {
       logger.error('Error al cargar inventarios:', error);
+      toast.error('No se pudieron actualizar los inventarios. Se conserva la ultima lista cargada; puede estar desactualizada.');
       // Mantener la última lista válida ante un fallo transitorio.
     }
   };
