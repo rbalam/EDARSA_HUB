@@ -86,7 +86,7 @@ jobs:
 
           checks = {
               "130QRO": ("2026-10-01", "2026-10-12", Decimal("1732143.00")),
-              "ORIGEN": ("2026-10-01", "2026-10-12", Decimal("845982.00")),
+              "ORIGEN": ("2026-10-01", "2026-10-12", None),
           }
 
           for code, (fi, ff, expected) in checks.items():
@@ -106,13 +106,53 @@ jobs:
                   (Decimal(str(r.get("Vn_Precio_Neto_Importe") or 0)) for r in rows or []),
                   Decimal("0"),
               ).quantize(Decimal("0.01"))
-              print("MPRO_CLOSED_CANARY_" + code + "=" + json.dumps({
+              payload = {
                   "sucursal": api["sucursal_id"],
                   "tickets": len(rows or []),
                   "total": str(total),
-                  "expected": str(expected),
-              }, ensure_ascii=False))
-              assert total == expected, (code, total, expected)
+              }
+
+              if code == "130QRO":
+                  payload["expected"] = str(expected)
+                  assert total == expected, (code, total, expected)
+              else:
+                  # ORIGEN must remain byte-for-byte equivalent in business
+                  # semantics to the legacy certified query. The UI rounds
+                  # 845981.72 to 845982, so compare source totals, not display.
+                  inicio = date.fromisoformat(fi).strftime("%Y%m%d")
+                  fin = date.fromisoformat(ff).strftime("%Y%m%d")
+                  legacy_query = f"""
+                  SELECT
+                      ve.Vn_Fecha AS fecha_hora,
+                      ve.Vn_Folio AS Vn_Folio,
+                      ve.Vn_Precio_Neto_Importe AS Vn_Precio_Neto_Importe,
+                      ISNULL(c.Co_Propina, 0) AS propinas,
+                      ISNULL(c.Co_Personas, 0) AS total_personas
+                  FROM Venta_Encabezado AS ve
+                  LEFT JOIN Comanda AS c
+                      ON c.Co_Folio = ve.Vn_Documento
+                     AND c.Sc_Cve_Sucursal = ve.Sc_Cve_Sucursal
+                  WHERE ve.Vn_Fecha >= CONVERT(datetime, '{inicio}', 112)
+                    AND ve.Vn_Fecha < DATEADD(day, 1, CONVERT(datetime, '{fin}', 112))
+                    AND ve.Sc_Cve_Sucursal = '{api["sucursal_id"]}'
+                    AND ISNULL(ve.Es_Cve_Estado, '') IN ('AC', 'FA')
+                    AND ve.Fecha_Baja IS NULL
+                  ORDER BY ve.Vn_Fecha
+                  """
+                  legacy_rows, legacy_status = execute_mpro_select_via_api(
+                      api, legacy_query
+                  )
+                  assert str(getattr(legacy_status, "value", legacy_status)).upper() == "ONLINE"
+                  legacy_total = sum(
+                      (Decimal(str(r.get("Vn_Precio_Neto_Importe") or 0)) for r in legacy_rows or []),
+                      Decimal("0"),
+                  ).quantize(Decimal("0.01"))
+                  payload["legacy_total"] = str(legacy_total)
+                  assert total == legacy_total, (code, total, legacy_total)
+
+              print("MPRO_CLOSED_CANARY_" + code + "=" + json.dumps(
+                  payload, ensure_ascii=False
+              ))
 
           print("MPRO_CLOSED_CANONICAL_HEADER_CONTRACT=PASS")
           PY
