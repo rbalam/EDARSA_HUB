@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-INTEGRATIONS-RUNTIME-SCOPE-MATERIALIZER-R1-20261014",
+  "mode": "MUTATION",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "human_summary_language": "es",
+  "objective": "Implementar orquestador atomico reusable en integrations_runtime que combine ensure_external_identifier y ensure_sucursal_server_mapping en una sola transaccion EDARSAHUB. La conexion debe ser provista por el caller mediante el circuito canonico; el orquestador no abre conexiones externas ni agrega SQL. Commit solo si ambos writers terminan; rollback ante cualquier error; cerrar cursor sin cerrar la conexion del caller. Sin CHAPUR LIVE, sin datos reales, sin cambios de schema y sin Produccion.",
+  "production_allowed": false,
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/integrations_runtime/scope_materializer.py",
+      "content": "from __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom typing import Optional\n\nfrom .external_ids import ensure_external_identifier\nfrom .sucursal_scope import ensure_sucursal_server_mapping\n\n\n@dataclass(frozen=True)\nclass MaterializedSucursalScope:\n    external_identifier_id: int\n    mapping_id: int\n\n\ndef materialize_external_sucursal_scope_atomic(\n    connection,\n    *,\n    sistema_tipo_id: int,\n    tipo_identificador: str,\n    valor_externo: str,\n    servidor_id: str,\n    sucursal_id: int,\n    sucursal_origen_id: str,\n    unidad_negocio_id: Optional[str] = None,\n    sistema_version_id: Optional[str] = None,\n    created_by: Optional[str] = None,\n) -> MaterializedSucursalScope:\n    \"\"\"Materializa identidad externa y mapping de sucursal atomicamente.\n\n    La conexion EDARSAHUB debe ser provista por el caller mediante el helper\n    canonico correspondiente y con capacidad de escritura autorizada.\n\n    Este orquestador no abre conexiones, no consulta sistemas externos y no\n    contiene SQL propio. Ambos writers usan el mismo cursor/transaccion.\n    \"\"\"\n    if connection is None:\n        raise ValueError(\"Conexion EDARSAHUB requerida\")\n\n    cursor = connection.cursor()\n    try:\n        external_identifier_id = ensure_external_identifier(\n            cursor,\n            sistema_tipo_id=sistema_tipo_id,\n            tipo_identificador=tipo_identificador,\n            valor_externo=valor_externo,\n            unidad_negocio_id=unidad_negocio_id,\n            sistema_version_id=sistema_version_id,\n            conexion_id=servidor_id,\n        )\n\n        mapping_id = ensure_sucursal_server_mapping(\n            cursor,\n            servidor_id=servidor_id,\n            sucursal_id=sucursal_id,\n            sucursal_origen_id=sucursal_origen_id,\n            created_by=created_by,\n        )\n\n        connection.commit()\n\n        return MaterializedSucursalScope(\n            external_identifier_id=int(external_identifier_id),\n            mapping_id=int(mapping_id),\n        )\n    except Exception:\n        connection.rollback()\n        raise\n    finally:\n        close = getattr(cursor, \"close\", None)\n        if callable(close):\n            close()\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_integrations_runtime_scope_materializer.py",
+      "content": "from unittest.mock import patch\n\nfrom backend.modules.integrations_runtime.scope_materializer import (\n    MaterializedSucursalScope,\n    materialize_external_sucursal_scope_atomic,\n)\n\n\nSERVER_ID = \"11111111-1111-1111-1111-111111111111\"\n\n\nclass FakeCursor:\n    def __init__(self):\n        self.closed = False\n\n    def close(self):\n        self.closed = True\n\n\nclass FakeConnection:\n    def __init__(self):\n        self.cursor_value = FakeCursor()\n        self.commits = 0\n        self.rollbacks = 0\n\n    def cursor(self):\n        return self.cursor_value\n\n    def commit(self):\n        self.commits += 1\n\n    def rollback(self):\n        self.rollbacks += 1\n\n\ndef call_subject(connection):\n    return materialize_external_sucursal_scope_atomic(\n        connection,\n        sistema_tipo_id=2,\n        tipo_identificador=\"SUCURSAL_ORIGEN\",\n        valor_externo=\"NORTE\",\n        servidor_id=SERVER_ID,\n        sucursal_id=7,\n        sucursal_origen_id=\"NORTE\",\n        unidad_negocio_id=\"22222222-2222-2222-2222-222222222222\",\n        sistema_version_id=\"33333333-3333-3333-3333-333333333333\",\n        created_by=\"worker\",\n    )\n\n\ndef test_commits_once_after_both_writers_succeed():\n    connection = FakeConnection()\n\n    with patch(\n        \"backend.modules.integrations_runtime.scope_materializer.ensure_external_identifier\",\n        return_value=41,\n    ) as external_writer, patch(\n        \"backend.modules.integrations_runtime.scope_materializer.ensure_sucursal_server_mapping\",\n        return_value=52,\n    ) as mapping_writer:\n        result = call_subject(connection)\n\n    assert result == MaterializedSucursalScope(\n        external_identifier_id=41,\n        mapping_id=52,\n    )\n    assert connection.commits == 1\n    assert connection.rollbacks == 0\n    assert connection.cursor_value.closed is True\n    assert external_writer.call_args.kwargs[\"conexion_id\"] == SERVER_ID\n    assert mapping_writer.call_args.kwargs[\"servidor_id\"] == SERVER_ID\n\n\ndef test_rolls_back_when_external_identifier_fails():\n    connection = FakeConnection()\n\n    with patch(\n        \"backend.modules.integrations_runtime.scope_materializer.ensure_external_identifier\",\n        side_effect=ValueError(\"conflict\"),\n    ), patch(\n        \"backend.modules.integrations_runtime.scope_materializer.ensure_sucursal_server_mapping\",\n    ) as mapping_writer:\n        try:\n            call_subject(connection)\n        except ValueError:\n            pass\n        else:\n            raise AssertionError(\"expected ValueError\")\n\n    assert connection.commits == 0\n    assert connection.rollbacks == 1\n    assert connection.cursor_value.closed is True\n    mapping_writer.assert_not_called()\n\n\ndef test_rolls_back_when_mapping_fails_after_external_writer():\n    connection = FakeConnection()\n\n    with patch(\n        \"backend.modules.integrations_runtime.scope_materializer.ensure_external_identifier\",\n        return_value=41,\n    ), patch(\n        \"backend.modules.integrations_runtime.scope_materializer.ensure_sucursal_server_mapping\",\n        side_effect=ValueError(\"mapping conflict\"),\n    ):\n        try:\n            call_subject(connection)\n        except ValueError:\n            pass\n        else:\n            raise AssertionError(\"expected ValueError\")\n\n    assert connection.commits == 0\n    assert connection.rollbacks == 1\n    assert connection.cursor_value.closed is True\n\n\ndef test_connection_is_required():\n    try:\n        call_subject(None)\n    except ValueError as exc:\n        assert \"Conexion EDARSAHUB requerida\" in str(exc)\n    else:\n        raise AssertionError(\"expected ValueError\")\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/integrations_runtime/__init__.py",
+      "old": "from .sucursal_scope import SucursalScopeConflict, ensure_sucursal_server_mapping\nfrom .sync_ledger import enrich_sync_start, mark_sync_finished\n\n__all__ = [\n    \"ExternalIdentifierConflict\",\n    \"ensure_external_identifier\",\n    \"SucursalScopeConflict\",\n    \"ensure_sucursal_server_mapping\",\n    \"persist_connection_health\",\n    \"enrich_sync_start\",\n    \"mark_sync_finished\",\n]",
+      "new": "from .sucursal_scope import SucursalScopeConflict, ensure_sucursal_server_mapping\nfrom .scope_materializer import (\n    MaterializedSucursalScope,\n    materialize_external_sucursal_scope_atomic,\n)\nfrom .sync_ledger import enrich_sync_start, mark_sync_finished\n\n__all__ = [\n    \"ExternalIdentifierConflict\",\n    \"ensure_external_identifier\",\n    \"SucursalScopeConflict\",\n    \"ensure_sucursal_server_mapping\",\n    \"MaterializedSucursalScope\",\n    \"materialize_external_sucursal_scope_atomic\",\n    \"persist_connection_health\",\n    \"enrich_sync_start\",\n    \"mark_sync_finished\",\n]",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/integrations_runtime/scope_materializer.py",
+        "backend/modules/integrations_runtime/__init__.py",
+        "backend/tests/test_integrations_runtime_scope_materializer.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_integrations_runtime_scope_materializer.py",
+        "backend/tests/test_integrations_runtime_sucursal_scope.py"
+      ]
+    }
+  ],
+  "acceptance_criteria": [
+    "No SQL added in scope_materializer",
+    "No connection opened by scope_materializer",
+    "Commit exactly once only after both writers succeed",
+    "Rollback on any writer failure",
+    "Caller connection remains open",
+    "No CHAPUR LIVE connectivity",
+    "No real data mutation during tests",
+    "No schema changes",
+    "No Production"
+  ]
+}
