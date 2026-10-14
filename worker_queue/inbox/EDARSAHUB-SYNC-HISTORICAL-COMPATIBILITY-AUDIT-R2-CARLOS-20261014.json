@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-COMPATIBILITY-AUDIT-R2-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Reintentar la auditoria READ_ONLY_SQL de compatibilidad historica corrigiendo la consulta R1 para usar solo columnas confirmadas en dbo.Sistema_Capacidades. Obtener evidencia exacta para corregir categorias duplicadas y bindings faltantes sin inventar compatibilidad. No modificar datos ni codigo. No tocar sincronizadores existentes de Ventas del Dia, Ventas Cerradas ni sync_comercial_abiertas_v2.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Sincronizacion Historica"
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "historical_catalog_bindings",
+          "sql": "SELECT sc.Codigo, sc.Nombre, sc.Grupo, sc.CategoriaCodigo, sc.EntidadCodigo, sc.TablaDestino, sc.Handler, sc.HandlerImplementado, sc.PermiteResync, sc.Activo AS SyncActivo, link.SyncCapacidadID, link.Activo AS VinculoActivo, cap.SistemaCapacidadID, cap.CodigoCapacidad, cap.Descripcion AS CapacidadDescripcion, cap.Activo AS CapacidadActiva, st.SistemaTipoID, st.CodigoSistema, st.NombreSistema, st.Activo AS SistemaActivo FROM dbo.Sistema_Sync_Catalogo sc LEFT JOIN dbo.Sistema_Sync_Capacidades link ON link.CodigoSync=sc.Codigo LEFT JOIN dbo.Sistema_Capacidades cap ON cap.SistemaCapacidadID=link.SistemaCapacidadID LEFT JOIN dbo.Sistema_Tipos st ON st.SistemaTipoID=cap.SistemaTipoID WHERE sc.Codigo IN ('comercial_ventas_detalle','comercial_ventas_cerradas','catalogo_productos','catalogo_proveedores','catalogo_filtros','inventarios_requisiciones','inventarios_fisicos') ORDER BY sc.Grupo, sc.Orden, sc.Codigo, st.CodigoSistema"
+        },
+        {
+          "name": "historical_system_capabilities",
+          "sql": "SELECT st.SistemaTipoID, st.CodigoSistema, st.NombreSistema, cap.SistemaCapacidadID, cap.CodigoCapacidad, cap.Descripcion, cap.RequiereSqlDirecto, cap.RequiereApiLocal, cap.Activo AS CapacidadActiva, st.Activo AS SistemaActivo FROM dbo.Sistema_Capacidades cap JOIN dbo.Sistema_Tipos st ON st.SistemaTipoID=cap.SistemaTipoID WHERE cap.CodigoCapacidad LIKE 'SYNC%' ORDER BY st.CodigoSistema, cap.CodigoCapacidad"
+        },
+        {
+          "name": "historical_category_shape",
+          "sql": "SELECT sc.Grupo, sc.CategoriaCodigo, COUNT(1) AS Filas, SUM(CASE WHEN ISNULL(sc.HandlerImplementado,0)=1 THEN 1 ELSE 0 END) AS HandlersImplementados FROM dbo.Sistema_Sync_Catalogo sc WHERE ISNULL(sc.Activo,1)=1 AND ISNULL(sc.PermiteResync,0)=1 GROUP BY sc.Grupo, sc.CategoriaCodigo ORDER BY sc.Grupo, sc.CategoriaCodigo"
+        }
+      ]
+    }
+  ]
+}
