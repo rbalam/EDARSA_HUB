@@ -251,13 +251,8 @@ const Servidores = () => {
       }
     } catch (error) {
       console.error('Error cargando tipos de sistema:', error);
-      // Fallback final a valores hardcodeados (último recurso)
-      setTiposSistema([
-        { Codigo: 'MPRO', Descripcion: 'ManagementPro (MPRO)' },
-        { Codigo: 'SOFTRESTAURANT', Descripcion: 'SoftRestaurant' },
-        { Codigo: 'API_LOCAL', Descripcion: 'API Local (Enterprise)' },
-        { Codigo: 'OTRO', Descripcion: 'Otro' }
-      ]);
+      // Fail closed: el catalogo canonico es la unica autoridad.
+      setTiposSistema([]);
     } finally {
       setLoadingTiposSistema(false);
     }
@@ -709,8 +704,7 @@ const Servidores = () => {
   });
 
   useEffect(() => {
-    loadServers();
-    loadApiConnections();  // Cargar conexiones API desde backend
+    loadServers();         // Inventario canonico SQL + API_LOCAL
     loadTiposSistema();    // Cargar tipos de sistema desde catálogo
     loadVtigerConnections(); // Cargar conexiones Vtiger
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -857,12 +851,48 @@ const Servidores = () => {
 
   const loadServers = async () => {
     try {
-      const response = await api.get('/servers');
-      setServers(response.data);
+      // Lectura canonica unificada. Los writers legacy se conservan sin cambios.
+      const response = await api.get('/integrations-center/connections', {
+        params: { include_inactive: true }
+      });
+      const connections = response.data?.data || [];
+
+      const sqlConnections = connections
+        .filter(conn => String(conn.connection_type || '').toUpperCase() === 'DATA_SOURCE')
+        .map(conn => ({
+          ...conn,
+          nombre: conn.name,
+          tipo_conexion: conn.connection_type,
+          activo: conn.active,
+          visible_en_operaciones: conn.visible,
+          database: conn.database_name,
+          EmpresaID: conn.scope?.empresa_id,
+          sucursales: conn.scope?.sucursales || []
+        }));
+
+      const localApis = connections
+        .filter(conn => String(conn.connection_type || '').toUpperCase() === 'API_LOCAL')
+        .map(conn => ({
+          ...conn,
+          name: conn.name,
+          tipo: conn.system_type,
+          activo: conn.active,
+          visible_en_operaciones: conn.visible,
+          url: conn.api_url,
+          servidor_padre: conn.host,
+          sucursales: conn.scope?.sucursales || []
+        }));
+
+      setServers(sqlConnections);
+      setApiConnections(localApis);
     } catch (error) {
-      toast.error('Error al cargar servidores');
+      console.error('Error cargando inventario canonico de conexiones:', error);
+      setServers([]);
+      setApiConnections([]);
+      toast.error('Error al cargar conexiones');
     } finally {
       setLoading(false);
+      setLoadingApis(false);
     }
   };
 
