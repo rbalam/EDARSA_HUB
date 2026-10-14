@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-BATCH-PENDING-DIAG-R9-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar en solo lectura el último comercial_range_batch de CIENFUEGOS para 2026-10-13 que terminó con 1 bloque pendiente. Identificar estado del job, fase final, failed_steps y mensaje. No modificar datos ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "latest_batch_state",
+          "sql": "SELECT TOP 1 ResyncLogID,Estado,Mensaje,RegistrosAfectados,FechaEjecucion,JSON_VALUE(Payload,'$.current_phase') AS current_phase,JSON_VALUE(Payload,'$.failed_steps') AS failed_steps,JSON_VALUE(Payload,'$.successful_steps') AS successful_steps,JSON_VALUE(Payload,'$.percent_complete') AS percent_complete FROM dbo.Sistema_Sync_ResyncLog WHERE TipoSync='comercial_range_batch' AND UnidadCodigo LIKE '%CIENFUEGOS%' ORDER BY ResyncLogID DESC"
+        }
+      ]
+    }
+  ]
+}
