@@ -1,0 +1,92 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "USUARIOS-DAVID-UNIDADES-SUCURSALES-R7C-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "20. Seguridad / Usuarios Produccion"
+  },
+  "objective": "Corregir en Desarrollo el endpoint /api/unidades-negocio para que usuarios no administradores consuman el scope canonico de RBACSQLService y no dependan de allowed_servers legacy del payload autenticado. Debe devolver solamente unidades efectivas autorizadas y construir la sucursal visible de cada unidad desde Unidades_Negocio, preservando el aislamiento de servidores compartidos. Agregar pruebas que cubran a un usuario restringido tipo David sin ampliar scope. No tocar Produccion.",
+  "mode": "DEVELOPMENT_REPO_CHANGE",
+  "quality_gate": "AUDIT_REQUIRED",
+  "constraints": [
+    "NO_PRODUCTION",
+    "NO_DML",
+    "NO_DDL",
+    "NO_PERMISSION_WRITES",
+    "NO_MONGO_AS_AUTHORIZATION_SOURCE",
+    "NO_SCOPE_BROADENING",
+    "PRESERVE_SUPERADMIN_ADMIN_BEHAVIOR",
+    "SHARED_SERVER_REQUIRES_CANONICAL_UNIT_SCOPE",
+    "NO_MANUAL_USER_ASSIGNMENTS"
+  ],
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/server.py",
+      "old_text": "        # ============================================================================\n        # APLICAR RBAC: Filtrar por permisos del usuario\n        # ============================================================================\n        user_role = (current_user.get('role') or '').strip()\n\n        # SuperAdministrador y Administrador ven todas las unidades\n        # (se aceptan tanto los nombres visibles como los códigos canónicos RBAC)\n        is_admin_global = (\n            user_role in ['SuperAdministrador', 'Administrador']\n            or user_role.upper() in ['SUPERADMIN', 'ADMIN', 'ADMINISTRADOR']\n        )\n        if is_admin_global:\n            unidades_filtradas = unidades_sql\n        else:\n            # Otros roles: filtrar por empresas permitidas\n            empresas_permitidas = await get_user_empresas_permitidas(current_user)\n            allowed_servers = set(current_user.get('allowed_servers', []))\n\n            # Filtrar unidades cuyos server_id estén en allowed_servers\n            # o cuyo ID esté en empresas_permitidas (para compatibilidad)\n            unidades_filtradas = [\n                u for u in unidades_sql\n                if u.get('server_id') in allowed_servers or u.get('id') in empresas_permitidas\n            ]\n\n            if not unidades_filtradas:\n                logging.warning(f\"[UNIDADES_NEGOCIO] Usuario {current_user.get('email')} sin unidades permitidas\")\n",
+      "new_text": "        # ============================================================================\n        # APLICAR RBAC: Filtrar por scope canónico SQL\n        # ============================================================================\n        user_role = (current_user.get('role') or '').strip()\n\n        # SuperAdministrador y Administrador conservan acceso global.\n        is_admin_global = (\n            user_role in ['SuperAdministrador', 'Administrador']\n            or user_role.upper() in ['SUPERADMIN', 'ADMIN', 'ADMINISTRADOR']\n        )\n        if is_admin_global:\n            unidades_filtradas = unidades_sql\n        else:\n            from core.auth.sql_user_identity import resolve_sql_usuario_id\n            from core.rbac_sql.service import RBACSQLService\n\n            usuario_id = resolve_sql_usuario_id(current_user)\n            unidades_scope = (\n                RBACSQLService.get_unidades(usuario_id)\n                if usuario_id\n                else []\n            )\n            unidades_ids = {\n                str(row.get('UnidadNegocioID') or '').strip().lower()\n                for row in (unidades_scope or [])\n                if str(row.get('UnidadNegocioID') or '').strip()\n            }\n\n            unidades_filtradas = [\n                u for u in unidades_sql\n                if str(u.get('id') or '').strip().lower() in unidades_ids\n            ]\n\n            if not unidades_filtradas:\n                logging.warning(\n                    f\"[UNIDADES_NEGOCIO] Usuario {current_user.get('email')} \"\n                    \"sin unidades efectivas en RBAC canónico\"\n                )\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_unidades_negocio_rbac_canonical.py",
+      "content": "from pathlib import Path\n\n\nSERVER = Path(__file__).parents[1] / \"server.py\"\n\n\ndef _source():\n    return SERVER.read_text(encoding=\"utf-8\")\n\n\ndef test_unidades_negocio_no_usa_allowed_servers_legacy():\n    src = _source()\n    marker = '@api_router.get(\"/unidades-negocio\")'\n    start = src.index(marker)\n    end = src.index('# =============', start + len(marker))\n    block = src[start:end]\n\n    assert \"current_user.get('allowed_servers'\" not in block\n    assert \"RBACSQLService.get_unidades\" in block\n    assert \"resolve_sql_usuario_id\" in block\n\n\ndef test_unidades_negocio_filtra_por_unidad_canonica():\n    src = _source()\n    marker = '@api_router.get(\"/unidades-negocio\")'\n    start = src.index(marker)\n    end = src.index('# =============', start + len(marker))\n    block = src[start:end]\n\n    assert \"UnidadNegocioID\" in block\n    assert \"u.get('id')\" in block\n    assert \"unidades_ids\" in block\n\n\ndef test_unidades_negocio_preserva_sucursal_de_unidad():\n    src = _source()\n    marker = '@api_router.get(\"/unidades-negocio\")'\n    start = src.index(marker)\n    end = src.index('# =============', start + len(marker))\n    block = src[start:end]\n\n    assert '\"sucursales\": [{' in block\n    assert \"sucursal_origen_id or u.get('codigo')\" in block\n\n\ndef test_unidades_negocio_preserva_admin_global():\n    src = _source()\n    marker = '@api_router.get(\"/unidades-negocio\")'\n    start = src.index(marker)\n    end = src.index('# =============', start + len(marker))\n    block = src[start:end]\n\n    assert \"is_admin_global\" in block\n    assert \"unidades_filtradas = unidades_sql\" in block\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/server.py",
+        "backend/tests/test_unidades_negocio_rbac_canonical.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_unidades_negocio_rbac_canonical.py",
+        "backend/tests/test_rbac_sql_scope.py",
+        "backend/tests/test_rbac_sql_company_scope.py",
+        "backend/tests/test_rbac_sql_sucursales_schema_real.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/server.py",
+          "backend/core/auth/sql_user_identity.py",
+          "backend/core/rbac_sql/service.py",
+          "frontend/src/services/unidadesNegocioService.js",
+          "frontend/src/pages/Comercial.js",
+          "backend/tests/test_unidades_negocio_rbac_canonical.py"
+        ],
+        "search_terms": [
+          "unidades-negocio",
+          "resolve_sql_usuario_id",
+          "RBACSQLService.get_unidades",
+          "UnidadNegocioID",
+          "sucursales",
+          "selectedSucursal"
+        ],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "deliverables": [
+    "UNIDADES_NEGOCIO_CANONICAL_RBAC_FIX",
+    "LEGACY_ALLOWED_SERVERS_REMOVED_FROM_ENDPOINT",
+    "CANONICAL_UNIT_SCOPE_FILTER",
+    "SUCURSAL_FROM_CANONICAL_UNIT_PRESERVED",
+    "REGRESSION_TESTS",
+    "NO_PRODUCTION_CONFIRMATION"
+  ]
+}
