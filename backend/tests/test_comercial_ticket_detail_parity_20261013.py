@@ -48,7 +48,7 @@ def test_mpro_closed_snapshot_uses_origin_folio_for_atomic_identity(monkeypatch)
     assert result[0]["total_venta"] == 2870.0
 
 
-def test_softrestaurant_snapshot_sale_excludes_tip():
+def test_softrestaurant_snapshot_sale_keeps_pos_total_and_separates_tip():
     row = {
         "folio": "104262",
         "folio_origen": "104262",
@@ -58,7 +58,7 @@ def test_softrestaurant_snapshot_sale_excludes_tip():
         "propina": 936.30,
     }
 
-    assert ticket_service._snapshot_sales_amount(row) == 6242.0
+    assert ticket_service._snapshot_sales_amount(row) == 7178.30
 
 
 def test_mpro_snapshot_sale_does_not_subtract_tip():
