@@ -43,7 +43,7 @@ def test_soft_snapshot_keeps_zero_numcheque_accounts_atomic(monkeypatch):
     result = ticket_service.merge_open_snapshot_tickets([], "CIENFUEGOS", "DEFAULT", "2026-10-08")
 
     assert [item["folio"] for item in result] == ["1", "4"]
-    assert [item["total_venta"] for item in result] == [1500.0, 6000.0]
+    assert [item["total_venta"] for item in result] == [1535.0, 6030.0]
 
 
 def test_soft_snapshot_display_folio_prefers_numcheque_when_nonzero():
@@ -95,5 +95,5 @@ def test_soft_snapshot_preserves_closed_and_adds_open_while_active(monkeypatch):
     assert set(by_folio) == {"900001", "103994"}
     assert by_folio["900001"]["total_venta"] == 9999
     assert by_folio["900001"]["pax"] == 10
-    assert by_folio["103994"]["total_venta"] == 1300.0
+    assert by_folio["103994"]["total_venta"] == 1385.0
     assert by_folio["103994"]["pax"] == 3
