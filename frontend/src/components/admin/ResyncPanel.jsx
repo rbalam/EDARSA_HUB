@@ -34,6 +34,7 @@ import {
   RefreshCw, CheckCircle2, XCircle, AlertTriangle, Loader2, Database, Server,
   Play, History, Layers, Link2, Lock, Clock,
 } from 'lucide-react';
+import ComercialRangeResyncCard from './ComercialRangeResyncCard';
 
 const formatDateTime = (isoString) => {
   if (!isoString) return '-';
@@ -306,6 +307,7 @@ export default function ResyncPanel() {
 
   return (
     <div className="space-y-6" data-testid="resync-panel">
+      <ComercialRangeResyncCard options={options} onFinished={fetchHistory} />
       <Card data-testid="resync-form-card">
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
