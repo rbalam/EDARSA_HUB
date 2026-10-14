@@ -61,7 +61,62 @@ _JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 WORKER_TREE_STATE = RUNTIME_DIR / "active_worker_code_tree_sha"
 WORKER_CODE_TREE_SPEC = "HEAD:tools/mirror_sync"
 GIT_GUARD_PATH = REPO_ROOT / "tools" / "mirror_sync" / "git_divergence_guard.py"
-WAKE_ROUTE_VERSION = "r34-startup-selfheal"
+WAKE_ROUTE_VERSION = "r35-platform-managed-drift"
+PLATFORM_MANAGED_SYSTEM_DEPS = ".emergent/system_deps.txt"
+
+def _expected_platform_system_deps_drift() -> bool:
+    current = REPO_ROOT / PLATFORM_MANAGED_SYSTEM_DEPS
+    try:
+        if not current.is_file() or current.read_bytes() != b"":
+            return False
+    except OSError:
+        return False
+
+    canonical = _runtime_git(
+        "show",
+        f"HEAD:{PLATFORM_MANAGED_SYSTEM_DEPS}",
+    )
+    if canonical.returncode != 0 or canonical.stdout.strip() != "git":
+        return False
+
+    staged = _runtime_git(
+        "diff",
+        "--cached",
+        "--quiet",
+        "--",
+        PLATFORM_MANAGED_SYSTEM_DEPS,
+    )
+    if staged.returncode != 0:
+        return False
+
+    unstaged = _runtime_git(
+        "diff",
+        "--quiet",
+        "--",
+        PLATFORM_MANAGED_SYSTEM_DEPS,
+    )
+    return unstaged.returncode == 1
+
+def _effective_runtime_status() -> str:
+    dirty = _runtime_git(
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+    )
+    if dirty.returncode != 0:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="worker runtime worktree status unavailable",
+        )
+
+    lines = dirty.stdout.splitlines()
+    if _expected_platform_system_deps_drift():
+        lines = [
+            line
+            for line in lines
+            if line != " M .emergent/system_deps.txt"
+        ]
+    return "\n".join(lines).strip()
 # Runtime reload marker: ISCAM R18 recovery after public wake 502/404; no functional change.
 _SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
@@ -187,11 +242,11 @@ def _converge_development_if_safe() -> dict[str, str]:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"worker runtime convergence blocked: wrong branch {branch}")
     if _runtime_git("merge-base", "--is-ancestor", local, remote).returncode != 0:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="worker runtime convergence blocked: non-fast-forward")
-    dirty = _runtime_git("status", "--porcelain=v1", "--untracked-files=all")
-    if dirty.returncode != 0:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime worktree status unavailable")
-    if dirty.stdout.strip():
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="worker runtime convergence blocked: local worktree dirty")
+    if _effective_runtime_status():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="worker runtime convergence blocked: local worktree dirty",
+        )
     if not GIT_GUARD_PATH.is_file():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -472,16 +527,12 @@ def _watchdog_repo_is_canonical() -> tuple[bool, str]:
     if branch != DEV_BRANCH:
         return False, "WRONG_BRANCH"
 
-    dirty = _runtime_git(
-        "status",
-        "--porcelain=v1",
-        "--untracked-files=all",
-    )
-
-    if dirty.returncode != 0:
+    try:
+        effective_dirty = _effective_runtime_status()
+    except HTTPException:
         return False, "WORKTREE_STATUS_FAILED"
 
-    if dirty.stdout.strip():
+    if effective_dirty:
         return False, "WORKTREE_DIRTY"
 
     local = _runtime_git(
