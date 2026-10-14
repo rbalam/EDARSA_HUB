@@ -130,15 +130,25 @@ def build_mpro_closed_sales_query(
     fecha_inicio,
     fecha_fin,
 ) -> str:
-    """Build the unit-specific closed-sales SELECT for MPRO local APIs."""
+    """Build the canonical final closed-sales SELECT for MPRO local APIs.
+
+    ORIGEN and 130QRO share the same final accounting authority:
+    Venta_Encabezado.Vn_Precio_Neto_Importe.  Comanda/Comanda_Detalle may be
+    used only by the isolated intraday provisional path while the final header
+    is not yet available; it is never authoritative for persisted closed KPIs.
+    """
 
     codigo = str(unidad_codigo or "").strip().upper()
     sucursal = str(sucursal_id or "").strip()
     inicio = fecha_inicio.strftime("%Y%m%d")
     fin = fecha_fin.strftime("%Y%m%d")
 
-    if codigo == "ORIGEN":
-        return f"""
+    if codigo not in {"ORIGEN", "130QRO"}:
+        raise ValueError(
+            f"Unsupported MPRO closed-sales unit: {codigo or 'EMPTY'}"
+        )
+
+    return f"""
 SELECT
     ve.Vn_Fecha AS fecha_hora,
     ve.Vn_Folio AS Vn_Folio,
@@ -152,43 +162,11 @@ LEFT JOIN Comanda AS c
 WHERE ve.Vn_Fecha >= CONVERT(datetime, '{inicio}', 112)
   AND ve.Vn_Fecha < DATEADD(day, 1, CONVERT(datetime, '{fin}', 112))
   AND ve.Sc_Cve_Sucursal = '{sucursal}'
+  AND ISNULL(ve.Vn_Tabla, '') = 'Comanda'
   AND ISNULL(ve.Es_Cve_Estado, '') IN ('AC', 'FA')
   AND ve.Fecha_Baja IS NULL
 ORDER BY ve.Vn_Fecha
 """
-
-    if codigo == "130QRO":
-        return f"""
-SELECT
-    ticket.fecha_hora,
-    ticket.Vn_Folio,
-    ticket.Vn_Precio_Neto_Importe,
-    ticket.propinas,
-    ticket.total_personas
-FROM (
-    SELECT
-        MAX(c.Co_Fecha) AS fecha_hora,
-        c.Co_Folio AS Vn_Folio,
-        SUM(ISNULL(cd.Cd_Importe, 0)) AS Vn_Precio_Neto_Importe,
-        MAX(ISNULL(c.Co_Propina, 0)) AS propinas,
-        MAX(ISNULL(c.Co_Personas, 0)) AS total_personas
-    FROM Comanda AS c
-    INNER JOIN Comanda_Detalle AS cd
-        ON cd.Co_Folio = c.Co_Folio
-    WHERE c.Co_Fecha >= CONVERT(datetime, '{inicio}', 112)
-      AND c.Co_Fecha < DATEADD(day, 1, CONVERT(datetime, '{fin}', 112))
-      AND c.Sc_Cve_Sucursal = '{sucursal}'
-      AND c.Es_Cve_Estado = 'PA'
-      AND cd.Es_Cve_Estado = 'AC'
-      AND cd.Fecha_Baja IS NULL
-    GROUP BY c.Co_Folio
-) AS ticket
-ORDER BY ticket.fecha_hora
-"""
-
-    raise ValueError(
-        f"Unsupported MPRO closed-sales unit: {codigo or 'EMPTY'}"
-    )
 
 
 def execute_mpro_select_via_api(
