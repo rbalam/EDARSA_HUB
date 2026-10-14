@@ -94,6 +94,8 @@ SELECT
     MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), m.nombre))), '')) AS vendedor_nombre,
     MAX(NULLIF(LTRIM(RTRIM(CONVERT(varchar(100), ch.mesa))), '')) AS mesa,
     MAX(ISNULL(ch.total, 0)) AS total_ticket,
+    MAX(ISNULL(ch.subtotal, 0)) AS subtotal_sin_impuestos,
+    MAX(ISNULL(ch.totalimpuesto1, 0)) AS impuesto_ticket,
     MAX(ISNULL(ch.descuentoimporte, 0)) AS descuento_encabezado_reportado,
     MAX(ISNULL(ch.totaldescuentos, 0)) AS descuento_total_reportado,
     COALESCE(
@@ -1085,6 +1087,10 @@ def serialize_open_detail_rows(rows: List[Dict[str, Any]]) -> str:
             "vendedor_nombre": str(row.get("vendedor_nombre") or "").strip() or None,
             "mesa": str(row.get("mesa") or "").strip() or None,
             "total_ticket": _number(row.get("total_ticket")),
+            "subtotal_sin_impuestos": _number(
+                row.get("subtotal_sin_impuestos")
+            ),
+            "impuesto_ticket": _number(row.get("impuesto_ticket")),
             "producto_codigo": str(row.get("producto_codigo") or "SIN_CODIGO"),
             "producto_nombre": str(
                 row.get("producto_nombre") or "VENTA SIN DETALLE DE PRODUCTO"
