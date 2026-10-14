@@ -1,0 +1,72 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "INTEGRATIONS-RUNTIME-READONLY-VALIDATOR-CANONICAL-R1B-20261014",
+  "mode": "MUTATION",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "human_summary_language": "es",
+  "objective": "Canonizar validacion SQL READ_ONLY dentro de integrations_runtime y reutilizarla desde Worker SQL audit y universal_query. Eliminar duplicacion de reglas sin crecer core. Sin LIVE, sin runtime DML, sin Produccion.",
+  "production_allowed": false,
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/integrations_runtime/read_only_sql.py",
+      "content": "from __future__ import annotations\n\nimport re\n\n\nFORBIDDEN_SQL = re.compile(\n    r\"\\b(\"\n    r\"insert|update|delete|merge|exec(?:ute)?|create|alter|drop|truncate|\"\n    r\"grant|revoke|deny|backup|restore|dbcc|use|waitfor|kill|reconfigure|\"\n    r\"openrowset|opendatasource|bulk|shutdown\"\n    r\")\\b\",\n    re.IGNORECASE,\n)\nSELECT_INTO = re.compile(r\"\\bselect\\b[\\s\\S]*?\\binto\\b\", re.IGNORECASE)\nXP_OR_SP = re.compile(r\"\\b(?:xp_|sp_)[A-Za-z0-9_]*\\b\", re.IGNORECASE)\n\n\ndef _strip_literals_and_comments(sql: str) -> str:\n    text = re.sub(r\"/\\*.*?\\*/\", \" \", sql, flags=re.DOTALL)\n    text = re.sub(r\"--[^\\n\\r]*\", \" \", text)\n    text = re.sub(r\"N?'(?:''|[^'])*'\", \"''\", text)\n    return text\n\n\ndef validate_readonly_sql(sql: str) -> str:\n    if not isinstance(sql, str) or not sql.strip():\n        raise ValueError(\"SQL_REQUIRED\")\n\n    normalized = _strip_literals_and_comments(sql).strip()\n    body = normalized[:-1].rstrip() if normalized.endswith(\";\") else normalized\n\n    if \";\" in body:\n        raise ValueError(\"MULTI_STATEMENT_FORBIDDEN\")\n\n    first = re.match(r\"^([A-Za-z]+)\", body)\n    if not first or first.group(1).upper() not in {\"SELECT\", \"WITH\"}:\n        raise ValueError(\"ONLY_SELECT_OR_WITH_ALLOWED\")\n\n    if FORBIDDEN_SQL.search(body) or XP_OR_SP.search(body):\n        raise ValueError(\"DML_DDL_OR_CONTROL_FORBIDDEN\")\n\n    if SELECT_INTO.search(body):\n        raise ValueError(\"SELECT_INTO_FORBIDDEN\")\n\n    return sql.strip()\n\n\ndef validate_readonly_sql_result(sql: str) -> tuple[bool, str]:\n    try:\n        validate_readonly_sql(sql)\n        return True, \"\"\n    except ValueError as exc:\n        return False, str(exc)\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/sql_readonly_audit.py",
+      "old": "FORBIDDEN = re.compile(r'\\b(insert|update|delete|merge|exec(?:ute)?|create|alter|drop|truncate|grant|revoke|deny|backup|restore|dbcc|use|waitfor|kill)\\b', re.I)\nSELECT_INTO = re.compile(r'\\bselect\\b[\\s\\S]*?\\binto\\b', re.I)\n\ndef _strip_literals_and_comments(sql: str) -> str:\n    text = re.sub(r'/\\*.*?\\*/', ' ', sql, flags=re.S)\n    text = re.sub(r'--[^\\n\\r]*', ' ', text)\n    text = re.sub(r\"N?'(?:''|[^'])*'\", \"''\", text)\n    return text\n\ndef validate_readonly_sql(sql: str) -> str:\n    if not isinstance(sql, str) or not sql.strip():\n        raise ValueError('SQL_REQUIRED')\n    normalized = _strip_literals_and_comments(sql).strip()\n    body = normalized[:-1].rstrip() if normalized.endswith(';') else normalized\n    if ';' in body:\n        raise ValueError('MULTI_STATEMENT_FORBIDDEN')\n    first = re.match(r'^([A-Za-z]+)', body)\n    if not first or first.group(1).upper() not in {'SELECT', 'WITH'}:\n        raise ValueError('ONLY_SELECT_OR_WITH_ALLOWED')\n    if FORBIDDEN.search(body):\n        raise ValueError('DML_DDL_OR_CONTROL_FORBIDDEN')\n    if SELECT_INTO.search(body):\n        raise ValueError('SELECT_INTO_FORBIDDEN')\n    return sql.strip()\n",
+      "new": "from modules.integrations_runtime.read_only_sql import validate_readonly_sql\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/universal_query/routes.py",
+      "old": "BLOCKED_SQL_KEYWORDS = [\n    'DELETE', 'DROP', 'TRUNCATE', 'ALTER', 'UPDATE', \n    'INSERT', 'MERGE', 'EXEC', 'EXECUTE', 'CREATE',\n    'GRANT', 'REVOKE', 'DENY', 'BACKUP', 'RESTORE',\n    'SHUTDOWN', 'KILL', 'RECONFIGURE', 'DBCC', 'OPENROWSET',\n    'OPENDATASOURCE', 'BULK', 'XP_', 'SP_'\n]\n",
+      "new": "",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/universal_query/routes.py",
+      "old": "def validate_sql_query(sql: str) -> tuple:\n    \"\"\"\n    Valida que la consulta SQL sea de solo lectura.\n    NO valida estructura de columnas ni dominio.\n    Completamente agnóstico.\n    \"\"\"\n    if not sql or not sql.strip():\n        return False, \"La consulta SQL no puede estar vacía\"\n    \n    sql_upper = sql.upper().strip()\n    \n    # Debe comenzar con SELECT o WITH (para CTEs)\n    if not sql_upper.startswith('SELECT') and not sql_upper.startswith('WITH'):\n        return False, \"Solo se permiten consultas SELECT (lectura)\"\n    \n    # Verificar keywords bloqueados\n    for keyword in BLOCKED_SQL_KEYWORDS:\n        # Buscar keyword como palabra completa\n        if re.search(rf'\\b{keyword}\\b', sql_upper):\n            return False, f\"Operación no permitida: {keyword}\"\n    \n    return True, \"\"\n",
+      "new": "def validate_sql_query(sql: str) -> tuple:\n    \"\"\"Compatibilidad sobre el validador SQL READ_ONLY canónico.\"\"\"\n    from modules.integrations_runtime.read_only_sql import validate_readonly_sql_result\n\n    return validate_readonly_sql_result(sql)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_integrations_runtime_read_only_sql.py",
+      "content": "import pytest\n\nfrom modules.integrations_runtime.read_only_sql import (\n    validate_readonly_sql,\n    validate_readonly_sql_result,\n)\n\n\n@pytest.mark.parametrize(\n    \"sql\",\n    [\n        \"SELECT 1\",\n        \"SELECT TOP 10 * FROM dbo.Tabla\",\n        \"WITH x AS (SELECT 1 AS n) SELECT n FROM x\",\n        \"SELECT 'update delete drop' AS texto\",\n        \"SELECT 1 -- update dbo.X\",\n    ],\n)\ndef test_allows_read_only_sql(sql):\n    assert validate_readonly_sql(sql) == sql.strip()\n\n\n@pytest.mark.parametrize(\n    \"sql\",\n    [\n        \"\",\n        \"UPDATE dbo.X SET a=1\",\n        \"DELETE FROM dbo.X\",\n        \"SELECT * INTO dbo.Y FROM dbo.X\",\n        \"SELECT 1; SELECT 2\",\n        \"EXEC dbo.proc\",\n        \"SELECT * FROM OPENROWSET('x','y','z')\",\n        \"SELECT dbo.xp_cmdshell('dir')\",\n    ],\n)\ndef test_rejects_non_read_only_sql(sql):\n    with pytest.raises(ValueError):\n        validate_readonly_sql(sql)\n\n\ndef test_compatibility_result_contract():\n    assert validate_readonly_sql_result(\"SELECT 1\") == (True, \"\")\n    ok, error = validate_readonly_sql_result(\"DROP TABLE dbo.X\")\n    assert ok is False\n    assert error\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/integrations_runtime/read_only_sql.py",
+        "tools/mirror_sync/sql_readonly_audit.py",
+        "backend/modules/universal_query/routes.py",
+        "backend/tests/test_integrations_runtime_read_only_sql.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_integrations_runtime_read_only_sql.py"
+      ]
+    }
+  ],
+  "acceptance_criteria": [
+    "No core growth",
+    "Single canonical READ_ONLY validator in integrations_runtime",
+    "Worker audit reuses canonical validator",
+    "Universal query reuses canonical validator",
+    "No LIVE connectivity",
+    "No Production",
+    "No runtime DML"
+  ]
+}
