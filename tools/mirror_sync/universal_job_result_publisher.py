@@ -1177,14 +1177,37 @@ def publish_one(path: Path) -> bool:
     )
 
 def publishable_paths() -> list[Path]:
-    """Return terminal artifacts with recent dispatcher results taking precedence."""
+    """Return terminal artifacts without starving certification promotions.
+
+    A mutation result needs two publication passes: the first publishes
+    PENDING_AUDIT_EVIDENCE and creates the SHA-bound attestation; a later pass
+    can promote it to CERTIFIED once DEV/MIRROR preserve the job artifacts.
+    Prioritize those pending markers so sustained arrival of newer results
+    cannot keep an older successful job at 95% indefinitely. Fresh results
+    keep their existing newest-first order.
+    """
     by_name = {path.name: path for path in REJECTED.glob("*.json")}
     by_name.update({path.name: path for path in RESULTS.glob("*.json")})
-    return sorted(
-        by_name.values(),
-        key=lambda path: (path.stat().st_mtime_ns, path.name),
-        reverse=True,
-    )
+
+    def priority(path: Path) -> tuple[int, int, str]:
+        marker = PUBLISHED / path.name
+        pending_audit = False
+        if marker.is_file():
+            marker_text = marker.read_text(
+                encoding="utf-8",
+                errors="replace",
+            )
+            pending_audit = (
+                "certification=PENDING_AUDIT_EVIDENCE"
+                in marker_text
+            )
+
+        mtime = path.stat().st_mtime_ns
+        if pending_audit:
+            return (0, mtime, path.name)
+        return (1, -mtime, path.name)
+
+    return sorted(by_name.values(), key=priority)
 
 
 def main() -> int:
