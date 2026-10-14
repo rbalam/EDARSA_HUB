@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "USUARIOS-DAVID-UNIDADES-SUCURSALES-R7B-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "20. Seguridad / Usuarios Produccion"
+  },
+  "objective": "Auditar por Universal Worker por que David tiene empresas efectivas pero las pantallas Tablero Ejecutivo y Comercial no muestran unidades de negocio o sucursales. Revisar exclusivamente la cadena RBAC de sucursales/unidades y sus consumidores frontend. No modificar datos ni Produccion.",
+  "mode": "READ_ONLY",
+  "quality_gate": "AUDIT_REQUIRED",
+  "constraints": [
+    "NO_PRODUCTION",
+    "NO_DML",
+    "NO_DDL",
+    "NO_SECRET_OUTPUT",
+    "NO_PERMISSION_WRITES",
+    "NO_MONGO_AS_AUTHORIZATION_SOURCE",
+    "NO_SCOPE_BROADENING"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/rbac_sql/service.py",
+          "backend/core/user_access_context.py",
+          "backend/modules/auth/routes.py",
+          "backend/core/unidades_service.py",
+          "backend/core/server_registry.py",
+          "backend/server.py",
+          "frontend/src/services/unidadesNegocioService.js",
+          "frontend/src/pages/Comercial.js"
+        ],
+        "search_terms": [
+          "get_sucursales",
+          "get_unidades",
+          "build_context",
+          "sucursales_por_server",
+          "unidades-negocio",
+          "fetchUnidadesNegocio",
+          "unidad.sucursales",
+          "selectedSucursal"
+        ],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/rbac_sql/service.py",
+        "backend/core/user_access_context.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_rbac_sql_sucursales_schema_real.py",
+        "backend/tests/test_rbac_sql_scope.py",
+        "backend/tests/test_rbac_sql_company_scope.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "deliverables": [
+    "DAVID_UNITS_BRANCHES_ROOT_CAUSE",
+    "RBAC_SUCURSALES_CONTRACT",
+    "UNIDADES_NEGOCIO_CONSUMER_CHAIN",
+    "MINIMUM_SAFE_FIX_DECISION",
+    "NO_PRODUCTION_CONFIRMATION"
+  ]
+}
