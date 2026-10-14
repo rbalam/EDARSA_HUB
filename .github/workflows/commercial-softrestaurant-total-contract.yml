@@ -1,0 +1,32 @@
+name: Commercial SoftRestaurant Total Contract
+
+on:
+  push:
+    branches:
+      - fix/preview-managed-system-deps-drift-20261013
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/req-commercial-total.txt
+          python -m pip install -r /tmp/req-commercial-total.txt
+
+      - name: Run transversal commercial contract
+        working-directory: backend
+        run: |
+          python -m pytest -q             tests/test_softrestaurant_total_transversal_contract_20261013.py             tests/test_current_day_canonical_kpi_parity_r48.py             tests/test_comercial_ticket_detail_parity_20261013.py             tests/test_softrestaurant_engine_uniformity_20261013.py             tests/test_comercial_day_ticket_atomic_identity_r47.py
