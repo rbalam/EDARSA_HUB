@@ -42,9 +42,8 @@ def test_softrestaurant_snapshot_sale_keeps_propina_inside_visible_total():
     assert ticket_service._snapshot_sales_amount(row) == 1385.0
 
 
-def test_current_day_closed_ticket_adds_propina_once_contract():
+def test_current_day_closed_ticket_uses_header_total_without_tip_subtraction():
     text = Path(repo.__file__).read_text(encoding="utf-8")
-    assert "SUM(ISNULL(d.importe_neto, 0)) AS ventas_sin_propina" in text
+    assert "SUM(ISNULL(d.importe_neto, 0)) AS ventas_total_ticket" in text
     assert "MAX(ISNULL(d.propina, 0)) AS propina" in text
-    assert 'float(row.get("ventas_sin_propina") or 0)' in text
-    assert '+ float(row.get("propina") or 0)' in text
+    assert 'float(row.get("ventas_total_ticket") or 0)' in text
