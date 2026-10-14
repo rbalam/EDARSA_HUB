@@ -1,0 +1,26 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-REAL-R4-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "8b7ef2b57a3406be7daa2616729634bb138b2a53",
+  "production_allowed": false,
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "objective": "Sincronizador: ejecutar re-sincronización REAL exclusivamente para CIENFUEGOS del 2026-10-13. El DRY RUN certificado detectó que el origen oficial SoftRestaurant tiene ventas=147424.00, tickets=36, pax=105, mientras Runtime V2 tiene ventas=134056.13, tickets=35, pax=104. Actualizar primero HEADER_KPI mediante el handler oficial y después ejecutar DETALLE_ISCAM force-refresh y Pagos por Ticket. Certificar que el bloque queda conciliado. No tocar Producción ni otras fechas/unidades.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "fecha_inicio": "2026-10-13",
+  "fecha_fin": "2026-10-13",
+  "dry_run": false,
+  "confirm_comercial_range_resync": true,
+  "audit_profile": "closed_ticket_metadata"
+}
