@@ -1,0 +1,100 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "USUARIOS-DAVID-UNIDADES-SUCURSALES-POSTCHECK-R7D-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "20. Seguridad / Usuarios Produccion"
+  },
+  "objective": "Certificar en solo lectura el fix integrado R7C-R3 de /api/unidades-negocio. Validar código, pruebas y datos canónicos de David UsuarioID 9. Confirmar que sus unidades efectivas se derivan con la misma política RBAC de RBACSQLService.get_unidades y que cada unidad puede proyectar una sucursal visible para frontend mediante sucursal_origen_id o codigo, sin usar allowed_servers legacy, sin ampliar scope y sin tocar Produccion.",
+  "mode": "READ_ONLY",
+  "quality_gate": "AUDIT_REQUIRED",
+  "constraints": [
+    "NO_PRODUCTION",
+    "NO_DML",
+    "NO_DDL",
+    "NO_PERMISSION_WRITES",
+    "NO_MONGO_AS_AUTHORIZATION_SOURCE",
+    "NO_SCOPE_BROADENING",
+    "DAVID_USUARIO_ID_9_ONLY"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/server.py",
+        "backend/tests/test_unidades_negocio_rbac_canonical.py",
+        "backend/core/rbac_sql/service.py",
+        "backend/core/auth/sql_user_identity.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_unidades_negocio_rbac_canonical.py",
+        "backend/tests/test_rbac_sql_scope.py",
+        "backend/tests/test_rbac_sql_company_scope.py",
+        "backend/tests/test_rbac_sql_sucursales_schema_real.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "david_effective_units_with_frontend_branch_projection",
+          "sql": "WITH ActiveUnits AS (SELECT TRY_CONVERT(NVARCHAR(100),u.id) AS UnidadNegocioID,TRY_CONVERT(NVARCHAR(100),u.server_id) AS ServidorID,NULLIF(LTRIM(RTRIM(TRY_CONVERT(NVARCHAR(100),u.sucursal_origen_id))),'') AS SucursalOrigenID,COUNT_BIG(*) OVER (PARTITION BY u.server_id) AS ActiveUnitsOnServer FROM dbo.Unidades_Negocio u WHERE ISNULL(u.activo,0)=1),ExplicitScope AS (SELECT usa.UsuarioID,TRY_CONVERT(NVARCHAR(100),usa.ServidorID) AS ServidorID,CAST(NULL AS NVARCHAR(100)) AS SucursalCodigo,CAST('SERVER' AS VARCHAR(10)) AS ScopeType FROM dbo.Usuario_ServidoresAsignacion usa WHERE usa.UsuarioID=9 AND ISNULL(usa.Activo,1)=1 UNION ALL SELECT usa.UsuarioID,TRY_CONVERT(NVARCHAR(100),usa.ServidorID) AS ServidorID,NULLIF(LTRIM(RTRIM(TRY_CONVERT(NVARCHAR(100),usa.SucursalCodigo))),'') AS SucursalCodigo,CAST('BRANCH' AS VARCHAR(10)) AS ScopeType FROM dbo.Usuario_SucursalesAsignacion usa WHERE usa.UsuarioID=9 AND ISNULL(usa.Activo,1)=1),EffectiveUnits AS (SELECT DISTINCT au.UnidadNegocioID FROM ActiveUnits au INNER JOIN ExplicitScope es ON LOWER(au.ServidorID)=LOWER(es.ServidorID) AND ((au.ActiveUnitsOnServer=1 AND es.ScopeType='SERVER') OR (au.ActiveUnitsOnServer=1 AND es.ScopeType='BRANCH') OR (au.ActiveUnitsOnServer>1 AND es.ScopeType='BRANCH' AND au.SucursalOrigenID IS NOT NULL AND es.SucursalCodigo IS NOT NULL AND UPPER(LTRIM(RTRIM(au.SucursalOrigenID)))=UPPER(LTRIM(RTRIM(es.SucursalCodigo))))) WHERE au.UnidadNegocioID IS NOT NULL) SELECT CAST(u.id AS NVARCHAR(100)) AS UnidadNegocioID,u.codigo AS UnidadCodigo,u.nombre AS UnidadNombre,CAST(u.server_id AS NVARCHAR(100)) AS ServidorID,u.sucursal_origen_id,COALESCE(NULLIF(LTRIM(RTRIM(TRY_CONVERT(NVARCHAR(100),u.sucursal_origen_id))),''),u.codigo) AS FrontendSucursalID,sc.nombre AS ServidorNombre FROM EffectiveUnits eu INNER JOIN dbo.Unidades_Negocio u ON LOWER(CAST(u.id AS NVARCHAR(100)))=LOWER(eu.UnidadNegocioID) LEFT JOIN dbo.Servidores_Conexiones sc ON TRY_CONVERT(uniqueidentifier,u.server_id)=sc.id ORDER BY u.codigo"
+        },
+        {
+          "name": "david_explicit_branch_assignments",
+          "sql": "SELECT CAST(ServidorID AS NVARCHAR(100)) AS ServidorID,SucursalCodigo,Activo FROM dbo.Usuario_SucursalesAsignacion WHERE UsuarioID=9 AND ISNULL(Activo,1)=1 ORDER BY ServidorID,SucursalCodigo"
+        },
+        {
+          "name": "david_identity_postcheck",
+          "sql": "SELECT UsuarioID,Email,NombreCompleto,Activo FROM dbo.Usuario_Catalogo WHERE UsuarioID=9"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/server.py",
+          "backend/core/rbac_sql/service.py",
+          "backend/core/auth/sql_user_identity.py",
+          "backend/tests/test_unidades_negocio_rbac_canonical.py",
+          "frontend/src/services/unidadesNegocioService.js",
+          "frontend/src/pages/Comercial.js"
+        ],
+        "search_terms": [
+          "get_unidades_negocio",
+          "RBACSQLService.get_unidades",
+          "resolve_sql_usuario_id",
+          "allowed_servers",
+          "UnidadNegocioID",
+          "\"sucursales\"",
+          "sucursal_origen_id",
+          "fetchUnidadesNegocio"
+        ],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "deliverables": [
+    "R7C_R3_INTEGRATED_CODE_POSTCHECK",
+    "DAVID_EFFECTIVE_UNITS",
+    "DAVID_FRONTEND_BRANCH_PROJECTION",
+    "LEGACY_ALLOWED_SERVERS_NOT_USED_BY_ENDPOINT",
+    "REGRESSION_TESTS_PASS",
+    "NO_PRODUCTION_CONFIRMATION"
+  ]
+}
