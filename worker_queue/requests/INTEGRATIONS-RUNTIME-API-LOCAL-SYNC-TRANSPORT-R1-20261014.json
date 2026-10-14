@@ -1,0 +1,64 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "INTEGRATIONS-RUNTIME-API-LOCAL-SYNC-TRANSPORT-R1-20261014",
+  "created_at_utc": "2026-10-14T15:00:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6500d41cf6a725065b619e5380d0256e8ee37dce",
+  "objective": "Implementar en integrations_runtime un transporte canonico API_LOCAL exclusivamente para sincronizacion controlada. Resolver desde server_registry/EDARSAHUB SQL, exigir API_LOCAL, validar SQL con el validador READ_ONLY certificado, timeout acotado y parsing fail-closed. Sin CHAPUR LIVE en pruebas, sin logica CHAPUR/MPRO, sin conexiones paralelas, sin core y sin Produccion.",
+  "acceptance": [
+    "transporte generico API_LOCAL sync-only",
+    "resolucion canonica server_registry",
+    "solo SELECT/WITH",
+    "tests mockeados sin red",
+    "production_touched=false"
+  ],
+  "constraints": [
+    "EDARSAHUB SQL es fuente canonica",
+    "no MongoDB",
+    "no backend/core",
+    "no Produccion",
+    "no tablas ni migraciones",
+    "no exponer credenciales"
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "MUTATION",
+  "allowed_paths": [
+    "backend/modules/integrations_runtime/api_local_transport.py",
+    "backend/tests/test_integrations_runtime_api_local_transport.py"
+  ],
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/integrations_runtime/api_local_transport.py",
+      "content": "\"\"\"Canonical API_LOCAL transport for controlled synchronization only.\"\"\"\n\nfrom __future__ import annotations\n\nfrom typing import Any\n\nimport requests\n\nfrom core.server_registry import get_server_by_id, get_server_connection_info\nfrom modules.integrations_runtime.read_only_sql import validate_readonly_sql\n\n\nclass ApiLocalTransportError(RuntimeError):\n    def __init__(self, code: str, *, status_code: int | None = None):\n        super().__init__(code)\n        self.code = code\n        self.status_code = status_code\n\n\nasync def resolve_api_local_sync_connection(server_id: str) -> dict[str, Any]:\n    normalized_id = str(server_id or \"\").strip()\n    if not normalized_id:\n        raise ApiLocalTransportError(\"SERVER_ID_REQUIRED\")\n\n    server = await get_server_by_id(normalized_id, mask_secrets=False)\n    if not server:\n        raise ApiLocalTransportError(\"API_LOCAL_CONNECTION_NOT_FOUND\")\n    if str(server.get(\"tipo_conexion\") or \"\").strip().upper() != \"API_LOCAL\":\n        raise ApiLocalTransportError(\"CONNECTION_TYPE_NOT_API_LOCAL\")\n\n    connection = await get_server_connection_info(normalized_id)\n    if not connection:\n        raise ApiLocalTransportError(\"API_LOCAL_CONNECTION_NOT_FOUND\")\n    if not str(connection.get(\"api_url\") or \"\").strip():\n        raise ApiLocalTransportError(\"API_LOCAL_URL_REQUIRED\")\n    return connection\n\n\nasync def execute_api_local_readonly(\n    server_id: str,\n    sql: str,\n    *,\n    timeout_seconds: int = 30,\n) -> list[dict[str, Any]]:\n    query = validate_readonly_sql(sql)\n    if not isinstance(timeout_seconds, int) or not 1 <= timeout_seconds <= 120:\n        raise ApiLocalTransportError(\"INVALID_TIMEOUT\")\n\n    connection = await resolve_api_local_sync_connection(server_id)\n    headers: dict[str, str] = {}\n    credential = connection.get(\"api_key\")\n    if credential:\n        headers[\"X-API-Key\"] = str(credential)\n\n    try:\n        response = requests.get(\n            str(connection[\"api_url\"]),\n            params={\"sql\": query},\n            headers=headers,\n            timeout=timeout_seconds,\n        )\n    except requests.Timeout as exc:\n        raise ApiLocalTransportError(\"API_LOCAL_TIMEOUT\") from exc\n    except requests.RequestException as exc:\n        raise ApiLocalTransportError(\"API_LOCAL_UNAVAILABLE\") from exc\n\n    if response.status_code != 200:\n        raise ApiLocalTransportError(\n            \"API_LOCAL_HTTP_ERROR\",\n            status_code=response.status_code,\n        )\n\n    try:\n        payload = response.json()\n    except ValueError as exc:\n        raise ApiLocalTransportError(\"API_LOCAL_INVALID_JSON\") from exc\n\n    if isinstance(payload, dict):\n        rows = payload.get(\"data\")\n    elif isinstance(payload, list):\n        rows = payload\n    else:\n        raise ApiLocalTransportError(\"API_LOCAL_INVALID_RESPONSE\")\n\n    if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):\n        raise ApiLocalTransportError(\"API_LOCAL_INVALID_ROWS\")\n    return rows\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_integrations_runtime_api_local_transport.py",
+      "content": "from __future__ import annotations\n\nfrom types import SimpleNamespace\n\nimport pytest\n\nfrom modules.integrations_runtime import api_local_transport as transport\n\n\n@pytest.mark.asyncio\nasync def test_rejects_mutation_before_connection_resolution(monkeypatch):\n    async def forbidden(*args, **kwargs):\n        raise AssertionError(\"connection must not be resolved\")\n    monkeypatch.setattr(transport, \"get_server_by_id\", forbidden)\n    with pytest.raises(ValueError, match=\"ONLY_SELECT_OR_WITH_ALLOWED\"):\n        await transport.execute_api_local_readonly(\"server-1\", \"DELETE FROM dbo.T\")\n\n\n@pytest.mark.asyncio\nasync def test_rejects_non_api_local_connection(monkeypatch):\n    async def fake_server(*args, **kwargs):\n        return {\"tipo_conexion\": \"DATA_SOURCE\"}\n    monkeypatch.setattr(transport, \"get_server_by_id\", fake_server)\n    with pytest.raises(transport.ApiLocalTransportError, match=\"CONNECTION_TYPE_NOT_API_LOCAL\"):\n        await transport.resolve_api_local_sync_connection(\"server-1\")\n\n\n@pytest.mark.asyncio\nasync def test_executes_select_with_canonical_credentials(monkeypatch):\n    async def fake_server(*args, **kwargs):\n        return {\"tipo_conexion\": \"API_LOCAL\"}\n    async def fake_connection(*args, **kwargs):\n        return {\"api_url\": \"http://source.invalid/query\", \"api_key\": \"opaque\"}\n    calls = {}\n    def fake_get(url, *, params, headers, timeout):\n        calls.update(url=url, params=params, headers=headers, timeout=timeout)\n        return SimpleNamespace(status_code=200, json=lambda: {\"data\": [{\"SucursalID\": \"01\"}]})\n    monkeypatch.setattr(transport, \"get_server_by_id\", fake_server)\n    monkeypatch.setattr(transport, \"get_server_connection_info\", fake_connection)\n    monkeypatch.setattr(transport.requests, \"get\", fake_get)\n    rows = await transport.execute_api_local_readonly(\n        \"server-1\", \"SELECT SucursalID FROM Sucursales\", timeout_seconds=17\n    )\n    assert rows == [{\"SucursalID\": \"01\"}]\n    assert calls[\"headers\"] == {\"X-API-Key\": \"opaque\"}\n    assert calls[\"timeout\"] == 17\n\n\n@pytest.mark.asyncio\nasync def test_invalid_rows_fail_closed(monkeypatch):\n    async def fake_server(*args, **kwargs):\n        return {\"tipo_conexion\": \"API_LOCAL\"}\n    async def fake_connection(*args, **kwargs):\n        return {\"api_url\": \"http://source.invalid/query\", \"api_key\": None}\n    def fake_get(*args, **kwargs):\n        return SimpleNamespace(status_code=200, json=lambda: {\"data\": {\"not\": \"a-list\"}})\n    monkeypatch.setattr(transport, \"get_server_by_id\", fake_server)\n    monkeypatch.setattr(transport, \"get_server_connection_info\", fake_connection)\n    monkeypatch.setattr(transport.requests, \"get\", fake_get)\n    with pytest.raises(transport.ApiLocalTransportError, match=\"API_LOCAL_INVALID_ROWS\"):\n        await transport.execute_api_local_readonly(\n            \"server-1\", \"WITH x AS (SELECT 1 AS n) SELECT n FROM x\"\n        )\n\n\n@pytest.mark.asyncio\nasync def test_timeout_is_bounded_before_connection_resolution(monkeypatch):\n    async def forbidden(*args, **kwargs):\n        raise AssertionError(\"connection must not be resolved\")\n    monkeypatch.setattr(transport, \"get_server_by_id\", forbidden)\n    with pytest.raises(transport.ApiLocalTransportError, match=\"INVALID_TIMEOUT\"):\n        await transport.execute_api_local_readonly(\"server-1\", \"SELECT 1\", timeout_seconds=121)\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/integrations_runtime/api_local_transport.py",
+        "backend/tests/test_integrations_runtime_api_local_transport.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_integrations_runtime_api_local_transport.py",
+        "backend/tests/test_integrations_runtime_read_only_sql.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
