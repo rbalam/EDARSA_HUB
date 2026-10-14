@@ -1,0 +1,73 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-HISTORICAL-RESYNC-ENTRYPOINT-R1-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "base_sha": "a1d524b6b8f0406173dfc5732ff03678aaa03939",
+  "objective": "Agregar de forma aditiva el boton 'Sincronizacion Historica' dentro del panel Re-sync Manual para abrir el modulo canonico /sync-historical. No modificar, refactorizar ni alterar ningun sincronizador existente de Ventas del Dia ni Ventas Cerradas, incluyendo sync_comercial_abiertas_v2 y los handlers productivos de Comercial V2. Limitar el cambio al frontend de RESYNC y a una prueba contractual del nuevo acceso. Produccion prohibida.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Sincronizacion Historica RESYNC"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_SYNC_HISTORICAL",
+    "bounded_context": "RESYNC_HISTORICAL_ENTRYPOINT",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [
+      "frontend:resync-panel"
+    ],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/admin/ResyncPanel.jsx",
+      "old": "import { useState, useEffect, useCallback, useMemo } from 'react';\nimport api from '../../lib/api';",
+      "new": "import { useState, useEffect, useCallback, useMemo } from 'react';\nimport { useNavigate } from 'react-router-dom';\nimport api from '../../lib/api';",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/admin/ResyncPanel.jsx",
+      "old": "export default function ResyncPanel() {\n  const [options, setOptions] = useState({ tipos_sync: [], unidades: [], grupos: [] });",
+      "new": "export default function ResyncPanel() {\n  const navigate = useNavigate();\n  const [options, setOptions] = useState({ tipos_sync: [], unidades: [], grupos: [] });",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/admin/ResyncPanel.jsx",
+      "old": "        <CardHeader>\n          <CardTitle className=\"flex items-center gap-2\">\n            <RefreshCw className=\"w-5 h-5\" /> Re-sincronización Manual\n          </CardTitle>\n          <CardDescription>\n            Selecciona una o varias sincronizaciones (individual o por grupo).\n            <strong className=\"text-amber-600 ml-1\">Ejecuta DRY RUN primero.</strong>\n          </CardDescription>\n        </CardHeader>",
+      "new": "        <CardHeader>\n          <div className=\"flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between\">\n            <div>\n              <CardTitle className=\"flex items-center gap-2\">\n                <RefreshCw className=\"w-5 h-5\" /> Re-sincronización Manual\n              </CardTitle>\n              <CardDescription>\n                Selecciona una o varias sincronizaciones (individual o por grupo).\n                <strong className=\"text-amber-600 ml-1\">Ejecuta DRY RUN primero.</strong>\n              </CardDescription>\n            </div>\n            <Button\n              type=\"button\"\n              variant=\"outline\"\n              onClick={() => navigate('/sync-historical')}\n              className=\"shrink-0 border-blue-200 text-blue-700 hover:bg-blue-50\"\n              data-testid=\"open-sync-historical-from-resync\"\n            >\n              <Database className=\"w-4 h-4 mr-2\" />\n              Sincronización Histórica\n            </Button>\n          </div>\n        </CardHeader>",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_sync_historical_resync_entrypoint_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nPANEL = ROOT / \"frontend\" / \"src\" / \"components\" / \"admin\" / \"ResyncPanel.jsx\"\n\n\ndef test_resync_exposes_historical_sync_entrypoint_without_replacing_manual_resync():\n    text = PANEL.read_text(encoding=\"utf-8\")\n    assert \"Re-sincronización Manual\" in text\n    assert \"Sincronización Histórica\" in text\n    assert \"navigate('/sync-historical')\" in text\n    assert 'data-testid=\"open-sync-historical-from-resync\"' in text\n\n\ndef test_historical_entrypoint_change_does_not_reference_protected_open_sales_job():\n    text = PANEL.read_text(encoding=\"utf-8\")\n    assert \"sync_comercial_abiertas_v2\" not in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_sync_historical_resync_entrypoint_contract.py"
+      ]
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    }
+  ]
+}
