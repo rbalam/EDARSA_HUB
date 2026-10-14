@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "a1d524b6b8f0406173dfc5732ff03678aaa03939",
-  "generated_at_utc": "2026-10-14T17:50:34Z",
+  "generated_at_utc": "2026-10-14T17:52:02Z",
   "history": {
     "done_total_local": 1403,
     "pending_total_local": 2,
@@ -12,30 +12,30 @@
     "rejected_total_local": 1214,
     "results_total_local": 2395
   },
-  "intake_sla_breached": false,
+  "intake_sla_breached": true,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 26,
+      "age_seconds": 114,
       "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-DIAG-R1-CARLOS-20261014",
       "reason": null,
       "state": "PENDING"
     },
     {
-      "age_seconds": 26,
+      "age_seconds": 114,
       "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-DIAG-R2-CARLOS-20261014",
       "reason": null,
       "state": "PENDING"
     },
     {
-      "age_seconds": 31,
+      "age_seconds": 119,
       "job_id": "EDARSAHUB-HISTORICAL-RESYNC-ENTRYPOINT-R1-CARLOS-20261014",
       "reason": null,
       "state": "RUNNING"
     }
   ],
   "local_development_sha": "a1d524b6b8f0406173dfc5732ff03678aaa03939",
-  "oldest_pending_age_seconds": 26,
+  "oldest_pending_age_seconds": 114,
   "production_touched": false,
   "queue_blocked": 0,
   "queue_depth": 3,
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-HISTORICAL-RESYNC-ENTRYPOINT-R1-CARLOS-20261014",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-14T17:50:26Z",
-    "last_receive_utc": "2026-10-14T17:50:21Z",
+    "last_cycle_utc": "2026-10-14T17:51:57Z",
+    "last_receive_utc": "2026-10-14T17:51:52Z",
     "last_terminal_utc": "2026-10-14T16:33:57Z",
     "pid": "575",
     "runtime_fingerprint": {
