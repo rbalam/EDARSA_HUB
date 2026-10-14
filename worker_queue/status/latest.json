@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "REMOTE_AHEAD_ONLY",
   "development_sha": "ea5fa4ffc269b987a5546f00cb1199395a57c260",
-  "generated_at_utc": "2026-10-14T00:05:43Z",
+  "generated_at_utc": "2026-10-14T00:06:59Z",
   "history": {
     "done_total_local": 1390,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3215,
+      "age_seconds": 3290,
       "job_id": "SERVIDORES-CHAPUR-ENTERPRISE-SCOPE-WRITER-CONSTRAINTS-READONLY-SQL-R1-20261013",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,8 +36,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-14T00:05:31Z",
-    "last_receive_utc": "2026-10-14T00:05:41Z",
+    "last_cycle_utc": "2026-10-14T00:06:57Z",
+    "last_receive_utc": "2026-10-14T00:06:52Z",
     "last_terminal_utc": "2026-10-13T23:12:08Z",
     "pid": "430",
     "runtime_fingerprint": {
