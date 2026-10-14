@@ -3,20 +3,20 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "5514e7bcf82b752f9c5455ca163bf77e17ca9662",
-  "generated_at_utc": "2026-10-14T04:20:59Z",
+  "development_sha": "13322dd02b9ce17b54c837b6919c50bc68404fad",
+  "generated_at_utc": "2026-10-14T04:22:19Z",
   "history": {
-    "done_total_local": 1397,
+    "done_total_local": 1398,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1210,
-    "results_total_local": 2389
+    "results_total_local": 2390
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 785,
+      "age_seconds": 865,
       "job_id": "CORE-SQL-FIRST-READONLY-VALIDATOR-CANONICAL-R1-20261014",
       "reasons": [
         "ACTION_1_CORE_GROWTH_FORBIDDEN"
@@ -25,7 +25,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2830,
+      "age_seconds": 2910,
       "job_id": "USUARIOS-DAVID-UNIDADES-SUCURSALES-R7C-20261014",
       "reasons": [
         "ACTION_1_SOURCE_SHA256_REQUIRED_OR_INVALID",
@@ -35,49 +35,49 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1222,
+      "age_seconds": 64,
+      "job_id": "INTEGRATIONS-RUNTIME-READONLY-VALIDATOR-CANONICAL-R1B-20261014",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1301,
       "job_id": "SERVIDORES-CHAPUR-ENTERPRISE-PERSISTED-API-CONFIG-READONLY-SQL-R1-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2869,
+      "age_seconds": 2948,
       "job_id": "SERVIDORES-INTEGRATIONS-RUNTIME-SCOPE-MATERIALIZER-R1-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3539,
-      "job_id": "SERVIDORES-INTEGRATIONS-RUNTIME-SUCURSAL-SCOPE-WRITER-R1-20261014",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 111,
+      "age_seconds": 191,
       "job_id": "USUARIOS-DAVID-UNIDADES-SUCURSALES-POSTCHECK-R7D-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3441,
+      "age_seconds": 3521,
       "job_id": "USUARIOS-DAVID-UNIDADES-SUCURSALES-R7B-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1077,
+      "age_seconds": 1156,
       "job_id": "USUARIOS-DAVID-UNIDADES-SUCURSALES-R7C-R2-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 490,
+      "age_seconds": 569,
       "job_id": "USUARIOS-DAVID-UNIDADES-SUCURSALES-R7C-R3-20261014",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "5514e7bcf82b752f9c5455ca163bf77e17ca9662",
+  "local_development_sha": "13322dd02b9ce17b54c837b6919c50bc68404fad",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -87,19 +87,19 @@
   "queue_rejected_recent": 2,
   "queue_result_ready_recent": 7,
   "queue_running": 0,
-  "remote_development_sha": "5514e7bcf82b752f9c5455ca163bf77e17ca9662",
+  "remote_development_sha": "13322dd02b9ce17b54c837b6919c50bc68404fad",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-14T04:20:49Z",
-    "last_receive_utc": "2026-10-14T04:20:56Z",
-    "last_terminal_utc": "2026-10-14T04:19:08Z",
+    "last_cycle_utc": "2026-10-14T04:22:08Z",
+    "last_receive_utc": "2026-10-14T04:22:14Z",
+    "last_terminal_utc": "2026-10-14T04:21:14Z",
     "pid": "15664",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "693302e31d231c7ea48c2b9285fd0ede74768b48",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "5514e7bcf82b752f9c5455ca163bf77e17ca9662",
+      "development_sha": "13322dd02b9ce17b54c837b6919c50bc68404fad",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
@@ -113,8 +113,8 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": true,
-      "worker_code_tree_sha": "693302e31d231c7ea48c2b9285fd0ede74768b48"
+      "worker_code_tree_aligned": false,
+      "worker_code_tree_sha": "8ca16a5a9e462761e9c1438375c2f451a5bf6cc2"
     }
   },
   "schema": "edarsahub.worker-health.v3",
