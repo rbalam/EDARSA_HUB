@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
-  "generated_at_utc": "2026-10-14T22:56:40Z",
+  "generated_at_utc": "2026-10-14T22:57:55Z",
   "history": {
     "done_total_local": 1406,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 983,
+      "age_seconds": 1058,
       "job_id": "EDARSAHUB-RESYNC-RESTORE-COMERCIAL-RANGE-CARD-R1-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2482,
+      "age_seconds": 2558,
       "job_id": "EDARSAHUB-SYNC-HISTORICAL-COMPATIBILITY-AUDIT-R1-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1422,
+      "age_seconds": 1498,
       "job_id": "EDARSAHUB-SYNC-HISTORICAL-COMPATIBILITY-AUDIT-R2-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-14T22:56:31Z",
-    "last_receive_utc": "2026-10-14T22:56:38Z",
+    "last_cycle_utc": "2026-10-14T22:57:47Z",
+    "last_receive_utc": "2026-10-14T22:57:51Z",
     "last_terminal_utc": "2026-10-14T22:40:16Z",
     "pid": "664815",
     "runtime_fingerprint": {
