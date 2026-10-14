@@ -5,7 +5,7 @@ from modules.comercial_v2.repository_readonly import (
 )
 
 
-def test_softrestaurant_open_detail_excludes_tip_from_sales():
+def test_softrestaurant_open_detail_keeps_pos_total_and_separates_tip():
     row = {
         "sistema_origen": "SOFTRESTAURANT",
         "ventas_cerradas_dia": 0,
@@ -24,9 +24,9 @@ def test_softrestaurant_open_detail_excludes_tip_from_sales():
 
     result = _overlay_softrestaurant_intraday_from_detail_json(row)
 
-    assert result["ventas_abiertas"] == 101517.7
+    assert result["ventas_abiertas"] == 111900.0
     assert result["propinas_abiertas"] == 10382.3
-    assert result["total_estimado_dia"] == 101517.7
+    assert result["total_estimado_dia"] == 111900.0
     assert result["propinas_total"] == 10382.3
     assert result["tickets_abiertos"] == 1
     assert result["pax_abiertos"] == 76
@@ -57,7 +57,7 @@ def test_softrestaurant_open_detail_preserves_closed_portion():
 
     result = _overlay_softrestaurant_intraday_from_detail_json(row)
 
-    assert result["ventas_abiertas"] == 460.0
+    assert result["ventas_abiertas"] == 530.0
     assert result["propinas_abiertas"] == 70.0
     assert result["tickets_abiertos"] == 2
     assert result["pax_abiertos"] == 5
@@ -67,7 +67,7 @@ def test_softrestaurant_open_detail_preserves_closed_portion():
     assert result["pax_cerrados_dia"] == 70
     assert result["propinas_cerradas_dia"] == 12000.0
 
-    assert result["total_estimado_dia"] == 133569.0
+    assert result["total_estimado_dia"] == 133639.0
     assert result["propinas_total"] == 12070.0
 
 
