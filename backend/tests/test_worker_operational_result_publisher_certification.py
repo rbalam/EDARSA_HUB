@@ -58,3 +58,22 @@ def test_marker_allows_operational_repromotion(tmp_path):
     assert publisher.marker_satisfied(marker, {'certification': 'CERTIFIED_OPERATIONAL'}) is False
     marker.write_text('certification=CERTIFIED_OPERATIONAL\n', encoding='utf-8')
     assert publisher.marker_satisfied(marker, {'certification': 'CERTIFIED_OPERATIONAL'}) is True
+
+
+def test_marker_allows_pending_audit_promotion_from_stale_not_certified(tmp_path):
+    publisher = load_publisher()
+    marker = tmp_path / 'result.marker'
+    marker.write_text('certification=NOT_CERTIFIED\n', encoding='utf-8')
+    assert publisher.marker_satisfied(
+        marker,
+        {'certification': 'PENDING_AUDIT_EVIDENCE'},
+    ) is False
+
+    marker.write_text(
+        'certification=PENDING_AUDIT_EVIDENCE\n',
+        encoding='utf-8',
+    )
+    assert publisher.marker_satisfied(
+        marker,
+        {'certification': 'PENDING_AUDIT_EVIDENCE'},
+    ) is True
