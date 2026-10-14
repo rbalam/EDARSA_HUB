@@ -1,0 +1,26 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-REAL-R5-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ca45ff4571e4dad62f5159803961b3c25bce8b12",
+  "production_allowed": false,
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "objective": "Sincronizador: reintento REAL exclusivo para CIENFUEGOS del 2026-10-13. R4 fue bloqueado antes de ejecutar únicamente por CONCURRENT_SCOPE_CONFLICT. Ejecutar ahora sobre el SHA actual. El DRY RUN certificado detectó origen SoftRestaurant ventas=147424.00, tickets=36, pax=105 vs Runtime V2 ventas=134056.13, tickets=35, pax=104. Actualizar HEADER_KPI mediante handler oficial, después DETALLE_ISCAM force-refresh y Pagos por Ticket, y certificar conciliación. No tocar Producción ni otras fechas/unidades.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "fecha_inicio": "2026-10-13",
+  "fecha_fin": "2026-10-13",
+  "dry_run": false,
+  "confirm_comercial_range_resync": true,
+  "audit_profile": "closed_ticket_metadata"
+}
