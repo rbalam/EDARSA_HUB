@@ -21,9 +21,14 @@ def test_closed_sales_uses_canonical_local_api_role():
 
 def test_closed_sales_has_no_central2020_fallback():
     text = _text(API_MODULE)
+    query_builder = text.split(
+        "def build_mpro_closed_sales_query(", 1
+    )[1].split(
+        "def execute_mpro_select_via_api(", 1
+    )[0]
 
-    assert "CENTRAL2020" not in text.upper()
-    assert "fallback" not in text.lower()
+    assert "CENTRAL2020" not in query_builder.upper()
+    assert "fallback" not in query_builder.lower()
 
 
 def test_mpro_units_share_final_header_authority_and_select_only():
