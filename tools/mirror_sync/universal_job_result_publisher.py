@@ -389,72 +389,47 @@ def generic_readonly_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
     return {"checks": sanitized}
 
 
-PLATFORM_MANAGED_SYSTEM_DEPS = ".emergent/system_deps.txt"
-
-
-def dev_mirror_effectively_converged(
+def branches_preserve_job_artifacts(
+    source_sha: str,
     development_head: str,
     mirror_head: str,
+    files_changed: list[str],
 ) -> bool:
-    """Accept exact convergence or the single platform-managed Preview drift.
+    """Certify the job artifacts, not global branch SHA identity.
 
-    Emergent materializes system dependencies into the runtime and snapshots
-    .emergent/system_deps.txt as empty on mirror/emergent-live. DEV must retain
-    git canonically so future Preview images keep installing the executable.
-    No other DEV/MIRROR drift is certification-equivalent.
+    Both DEV and MIRROR must descend from the job source SHA and must preserve
+    every file changed by that job byte-for-byte relative to source_sha.
+    Unrelated later commits or platform-managed mirror metadata do not block
+    certification of this job; any mutation of a job-owned artifact fails
+    closed.
     """
-    if development_head == mirror_head:
-        return True
-
-    ancestry = git(
-        "merge-base",
-        "--is-ancestor",
-        development_head,
-        mirror_head,
-        check=False,
-    )
-    if ancestry.returncode != 0:
+    if not files_changed:
         return False
 
-    changed = git(
-        "diff",
-        "--name-only",
-        development_head,
-        mirror_head,
-        "--",
-        check=False,
-    )
-    if changed.returncode != 0:
-        return False
+    for head in (development_head, mirror_head):
+        ancestry = git(
+            "merge-base",
+            "--is-ancestor",
+            source_sha,
+            head,
+            check=False,
+        )
+        if ancestry.returncode != 0:
+            return False
 
-    paths = [
-        line.strip()
-        for line in changed.stdout.splitlines()
-        if line.strip()
-    ]
-    if paths != [PLATFORM_MANAGED_SYSTEM_DEPS]:
-        return False
+        artifact_check = git(
+            "diff",
+            "--quiet",
+            source_sha,
+            head,
+            "--",
+            *files_changed,
+            check=False,
+        )
+        if artifact_check.returncode != 0:
+            return False
 
-    development_value = git(
-        "show",
-        f"{development_head}:{PLATFORM_MANAGED_SYSTEM_DEPS}",
-        check=False,
-    )
-    if (
-        development_value.returncode != 0
-        or development_value.stdout.strip() != "git"
-    ):
-        return False
-
-    mirror_value = git(
-        "show",
-        f"{mirror_head}:{PLATFORM_MANAGED_SYSTEM_DEPS}",
-        check=False,
-    )
-    if mirror_value.returncode != 0:
-        return False
-
-    return mirror_value.stdout == ""
+    return True
 
 
 def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
@@ -671,41 +646,18 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
         f"{REMOTE}/{MIRROR_BRANCH}",
     ).stdout.strip()
 
-    if not dev_mirror_effectively_converged(
-        development_head,
-        mirror_head,
-    ):
-        return pending
-
-    ancestry = git(
-        "merge-base",
-        "--is-ancestor",
-        source_sha,
-        development_head,
-        check=False,
-    )
-    if ancestry.returncode != 0:
-        return pending
-
     files_changed = [
         str(value)
         for value in (result.get("files_changed") or [])
         if isinstance(value, str) and value
     ]
 
-    if not files_changed:
-        return pending
-
-    artifact_check = git(
-        "diff",
-        "--quiet",
+    if not branches_preserve_job_artifacts(
         source_sha,
         development_head,
-        "--",
-        *files_changed,
-        check=False,
-    )
-    if artifact_check.returncode != 0:
+        mirror_head,
+        files_changed,
+    ):
         return pending
 
     return {
@@ -716,7 +668,7 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
         "certified_source_sha": source_sha,
         "converged_head": development_head,
         "certification_basis":
-            "SHA_BOUND_ATTESTATION_PLUS_EFFECTIVE_DESCENDANT_CONVERGENCE",
+            "SHA_BOUND_ATTESTATION_PLUS_ARTIFACT_CONVERGENCE",
     }
 
 
@@ -963,13 +915,19 @@ def marker_satisfied(marker: Path, public: dict[str, Any]) -> bool:
 
     desired = public.get("certification")
 
-    # Todo resultado ya publicado es terminal para el publisher, salvo
-    # promociones desde evidencia previa no certificada a una certificacion
-    # terminal valida del mismo contrato.
-    if desired not in {"CERTIFIED", "CERTIFIED_OPERATIONAL", "CERTIFIED_READ_ONLY"}:
-        return True
+    # A stale NOT_CERTIFIED marker must not suppress a newer local result.
+    # PENDING_AUDIT_EVIDENCE is a real promotion step because publishing it
+    # creates the SHA-bound attestation required for the final certification.
+    promotable = {
+        "PENDING_AUDIT_EVIDENCE",
+        "CERTIFIED",
+        "CERTIFIED_OPERATIONAL",
+        "CERTIFIED_READ_ONLY",
+    }
+    if desired in promotable:
+        return f"certification={desired}" in marker_text
 
-    return f"certification={desired}" in marker_text
+    return True
 
 
 
