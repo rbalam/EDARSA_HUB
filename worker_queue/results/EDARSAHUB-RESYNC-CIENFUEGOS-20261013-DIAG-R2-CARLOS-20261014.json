@@ -1,0 +1,22 @@
+{
+  "blockers": [
+    "dispatcher_exception:RuntimeError:CONCURRENT_SCOPE_CONFLICT:expected=a1d524b6b8f0406173dfc5732ff03678aaa03939:actual=8b7ef2b57a3406be7daa2616729634bb138b2a53:paths="
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-14T17:52:55Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-DIAG-R2-CARLOS-20261014",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-14T17:53:47Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-14T17:52:55Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
