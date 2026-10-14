@@ -3,84 +3,78 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
-  "generated_at_utc": "2026-10-14T23:39:49Z",
+  "development_sha": "9a9913697414fc548b702f80bf789a6cdd369ca0",
+  "generated_at_utc": "2026-10-14T23:41:07Z",
   "history": {
-    "done_total_local": 1408,
-    "pending_total_local": 1,
-    "processing_total_local": 1,
-    "rejected_total_local": 1226,
-    "results_total_local": 2412
+    "done_total_local": 1409,
+    "pending_total_local": 0,
+    "processing_total_local": 0,
+    "rejected_total_local": 1227,
+    "results_total_local": 2414
   },
-  "intake_sla_breached": true,
+  "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 44,
-      "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-BATCH-STEP-DIAG-R10-CARLOS-20261014",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 692,
+      "age_seconds": 769,
       "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-OCT2026-COVERAGE-R7-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 273,
+      "age_seconds": 351,
       "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-BATCH-PENDING-DIAG-R9-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2226,
+      "age_seconds": 45,
+      "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-BATCH-STEP-DIAG-R10-CARLOS-20261014",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2304,
       "job_id": "EDARSAHUB-RESYNC-RESTORE-COMERCIAL-RANGE-CARD-AUDIT-R2-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3572,
-      "job_id": "EDARSAHUB-RESYNC-RESTORE-COMERCIAL-RANGE-CARD-R1-CARLOS-20261014",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1888,
+      "age_seconds": 1966,
       "job_id": "EDARSAHUB-SYNC-HISTORICAL-CANONICAL-COMPATIBILITY-FIX-R1-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 122,
+      "age_seconds": 44,
       "job_id": "EDARSAHUB-SYNC-HISTORICAL-CANONICAL-COMPATIBILITY-FIX-R2-CARLOS-20261014",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
-  "oldest_pending_age_seconds": 44,
+  "local_development_sha": "9a9913697414fc548b702f80bf789a6cdd369ca0",
+  "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 2,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
-  "queue_pending": 1,
+  "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 5,
-  "queue_running": 1,
-  "remote_development_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
+  "queue_result_ready_recent": 6,
+  "queue_running": 0,
+  "remote_development_sha": "9a9913697414fc548b702f80bf789a6cdd369ca0",
   "runtime": {
-    "current_job_id": "EDARSAHUB-SYNC-HISTORICAL-CANONICAL-COMPATIBILITY-FIX-R2-CARLOS-20261014",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-14T23:39:43Z",
-    "last_receive_utc": "2026-10-14T23:39:38Z",
-    "last_terminal_utc": "2026-10-14T23:35:15Z",
-    "pid": "664815",
+    "last_cycle_utc": "2026-10-14T23:41:06Z",
+    "last_receive_utc": "2026-10-14T23:41:01Z",
+    "last_terminal_utc": "2026-10-14T23:40:22Z",
+    "pid": "938370",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "007da57a0c9aeec8412a797df9af562fa0b55afc",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
+      "development_sha": "9a9913697414fc548b702f80bf789a6cdd369ca0",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
