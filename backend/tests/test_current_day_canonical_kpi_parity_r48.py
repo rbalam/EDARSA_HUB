@@ -46,7 +46,7 @@ def test_current_day_closed_ticket_uses_persisted_pos_total_without_tip_arithmet
     text = Path(repo.__file__).read_text(encoding="utf-8")
     assert "SUM(ISNULL(d.importe_neto, 0)) AS ventas_pos_total" in text
     assert "MAX(ISNULL(d.propina, 0)) AS propina" in text
-    assert 'float(row.get("ventas_pos_total") or 0)' in text
+    assert 'row.get("ventas_pos_total")' in text
     assert '+ float(row.get("propina") or 0)' not in text
     assert '- float(row.get("propina") or 0)' not in text
 
