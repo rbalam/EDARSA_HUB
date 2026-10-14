@@ -1,0 +1,133 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-CANONICAL-COMPATIBILITY-FIX-R2-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "base_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
+  "objective": "Corregir Sincronizacion Historica con evidencia SQL certificada: (1) unificar visualmente las capabilities bajo su Grupo canonico para eliminar el Comercial duplicado; CategoriaCodigo permanece por capability para planning. (2) permitir compatibilidad parcial atomica: una capability seleccionada se ejecuta solo para las sucursales/sistemas con binding valido, sin bloquear otras unidades; dependencias siguen fail-closed. (3) habilitar comercial_ventas_detalle como capability historica real para MPRO y SOFTRESTAURANT_PRO usando el backfill historico independiente de Sync_Sales y PosRuntimeResolver, sin reutilizar ni modificar sincronizadores protegidos de Ventas del Dia o Ventas Cerradas. Incluir migracion versionada pero NO aplicarla a Produccion. No tocar sync_comercial_abiertas_v2 ni logica/endpoints/cron/handlers de sincronizadores protegidos. R2 corrige la regresion de prueba del planner: cuando toda la seleccion es incompatible, el nuevo contrato atomico parcial debe fallar cerrado con PLAN_EMPTY; cuando solo una parte es compatible conserva las unidades validas. No cambia el alcance funcional de R1.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Sincronizacion Historica"
+  },
+  "human_summary_language": "es",
+  "scheduling": {
+    "project_id": "EDARSAHUB_SYNC_HISTORICAL",
+    "bounded_context": "SYNC_HISTORICAL_CANONICAL_COMPATIBILITY",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [
+      "frontend:sync-historical",
+      "backend:sync-historical",
+      "migration:sync-historical-detail"
+    ],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_historicos/catalog_service.py",
+      "old": "category_name = str(\n            item.get(\"category_name\")\n            or item.get(\"grupo\")\n            or \"Otros\"\n        ).strip()\n        category_key = str(item.get(\"category_key\") or \"\").strip()\n        display_category_key = (\n            category_key\n            if category_key\n            else \"GROUP::\" + category_name.upper()\n        )\n",
+      "new": "category_name = str(\n            item.get(\"category_name\")\n            or item.get(\"grupo\")\n            or \"Otros\"\n        ).strip()\n        # La tarjeta visual representa el modulo/grupo canonico. CategoriaCodigo\n        # sigue perteneciendo a cada capability para planning/ejecucion, pero no\n        # debe fragmentar un mismo modulo en dos tarjetas con el mismo nombre.\n        display_category_key = \"GROUP::\" + category_name.upper()\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/SyncHistorical.jsx",
+      "old": "const isCapabilitySelectable = useCallback((capability) => {\n    const eligibleSystems = capability?.eligible_systems || capability?.systems || [];\n    const executionEnabled = capability?.execution_enabled !== undefined\n      ? Boolean(capability.execution_enabled)\n      : eligibleSystems.length > 0;\n    return executionEnabled\n      && effectiveSystems.length > 0\n      && effectiveSystems.every((system) => eligibleSystems.includes(system));\n  }, [effectiveSystems]);\n",
+      "new": "const isCapabilitySelectable = useCallback((capability) => {\n    const eligibleSystems = capability?.eligible_systems || capability?.systems || [];\n    const executionEnabled = capability?.execution_enabled !== undefined\n      ? Boolean(capability.execution_enabled)\n      : eligibleSystems.length > 0;\n    return executionEnabled\n      && effectiveSystems.length > 0\n      && effectiveSystems.some((system) => eligibleSystems.includes(system));\n  }, [effectiveSystems]);\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/SyncHistorical.jsx",
+      "old": "const selectedCompatibilityMissing = effectiveSystems.length > 0\n                          && !effectiveSystems.every((system) => eligibleSystems.includes(system));\n\n                        return (\n",
+      "new": "const compatibleSelectedSystems = effectiveSystems.filter(\n                          (system) => eligibleSystems.includes(system)\n                        );\n                        const partiallyCompatible = selectableNow\n                          && compatibleSelectedSystems.length > 0\n                          && compatibleSelectedSystems.length < effectiveSystems.length;\n                        const noCompatibleSelectedSystem = effectiveSystems.length > 0\n                          && compatibleSelectedSystems.length === 0;\n\n                        return (\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/SyncHistorical.jsx",
+      "old": "                              {!selectableNow && (\n                                <span className=\"mt-1 block text-[10px] font-medium text-amber-700\">\n                                  {selectedCompatibilityMissing\n                                    ? 'No compatible con toda la selección'\n                                    : 'Pendiente de certificación histórica'}\n                                </span>\n                              )}\n",
+      "new": "                              {partiallyCompatible && (\n                                <span className=\"mt-1 block text-[10px] font-medium text-blue-700\">\n                                  Compatible con {compatibleSelectedSystems.length} de {effectiveSystems.length} sistema(s);\n                                  el planner ejecutará solo las sucursales válidas.\n                                </span>\n                              )}\n                              {!selectableNow && (\n                                <span className=\"mt-1 block text-[10px] font-medium text-amber-700\">\n                                  {noCompatibleSelectedSystem && eligibleSystems.length > 0\n                                    ? 'No compatible con los sistemas seleccionados'\n                                    : 'Pendiente de certificación histórica'}\n                                </span>\n                              )}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_historicos/planner.py",
+      "old": "        expanded = _expand_dependencies(system_code, capabilities, registry_map)\n        for capability in expanded:\n",
+      "new": "        # La seleccion es transversal. Una capability puede aplicar a una parte\n        # de los sistemas/sucursales seleccionados sin bloquear las unidades validas.\n        # Las dependencias de una capability elegible siguen siendo fail-closed.\n        eligible_selected = [\n            capability_key\n            for capability_key in capabilities\n            if (system_code, capability_key) in registry_map\n        ]\n        if not eligible_selected:\n            continue\n\n        expanded = _expand_dependencies(\n            system_code,\n            eligible_selected,\n            registry_map,\n        )\n        for capability in expanded:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_historicos/atomic_executor.py",
+      "old": "_ATOMIC_ADAPTERS: Dict[str, AtomicAdapter] = {\n    \"comercial_ventas_cerradas\": _execute_comercial_ventas_cerradas,\n}\n",
+      "new": "async def _execute_comercial_ventas_detalle(context: Mapping[str, Any]) -> Dict[str, Any]:\n    \"\"\"Adapter historico aislado para detalle; no usa sincronizadores protegidos.\"\"\"\n    from .comercial_detail_adapter import execute_comercial_ventas_detalle\n\n    return await execute_comercial_ventas_detalle(context)\n\n\n_ATOMIC_ADAPTERS: Dict[str, AtomicAdapter] = {\n    \"comercial_ventas_cerradas\": _execute_comercial_ventas_cerradas,\n    \"comercial_ventas_detalle\": _execute_comercial_ventas_detalle,\n}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_sync_historical_worker_atomic_contract.py",
+      "old": "    assert registered_atomic_handlers() == (\"comercial_ventas_cerradas\",)\n",
+      "new": "    assert registered_atomic_handlers() == (\n        \"comercial_ventas_cerradas\",\n        \"comercial_ventas_detalle\",\n    )\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/modules/sync_historicos/comercial_detail_adapter.py",
+      "content": "\"\"\"Adapter historico atomico para dbo.Sync_Sales.\n\nAislado de los sincronizadores protegidos de Ventas del Dia y Ventas Cerradas.\nResuelve el POS con PosRuntimeResolver y reutiliza unicamente el backfill historico\nexistente de Sync_Sales para extraccion/carga idempotente.\n\"\"\"\nfrom __future__ import annotations\n\nimport time\nfrom datetime import timedelta\nfrom typing import Any, Dict, Mapping\n\nfrom core.connections.pos_runtime_resolver import resolve_pos_runtime_context\nfrom core.system_type_utils import is_mpro_system, is_softrestaurant_system\n\n\ndef _runtime_config(runtime) -> Dict[str, Any]:\n    host = (\n        f\"{runtime.host}\\\\{runtime.instance}\"\n        if runtime.instance\n        else runtime.host\n    )\n    return {\n        \"host\": host,\n        \"port\": runtime.port,\n        \"database\": runtime.database,\n        \"username\": runtime.username,\n        \"password\": runtime.password,\n        \"system_type\": runtime.system_type,\n        \"sucursal_origen_id\": runtime.sucursal_origen_id,\n    }\n\n\nasync def execute_comercial_ventas_detalle(\n    context: Mapping[str, Any],\n) -> Dict[str, Any]:\n    from scripts import pilot_backfill_sync_sales as backfill\n\n    started = time.monotonic()\n    unit_code = str(context.get(\"UnidadCodigo\") or \"\").strip().upper()\n    if not unit_code:\n        return {\"success\": False, \"error_message\": \"UNIT_CODE_MISSING\"}\n\n    runtime = resolve_pos_runtime_context(unit_code)\n    expected_connection = str(context.get(\"ConexionID\") or \"\").strip().lower()\n    if str(runtime.server_id).strip().lower() != expected_connection:\n        return {\n            \"success\": False,\n            \"error_message\": \"UNIT_CONFIG_CONNECTION_MISMATCH\",\n        }\n\n    start = context.get(\"FechaInicio\")\n    end = context.get(\"FechaFin\")\n    if start is None or end is None:\n        return {\"success\": False, \"error_message\": \"DATE_RANGE_MISSING\"}\n\n    # El backfill historico usa fin exclusivo; la unidad atomica persiste fin\n    # inclusivo, por eso se avanza un dia sin ampliar el scope del bloque.\n    fi = start.isoformat()\n    ff = (end + timedelta(days=1)).isoformat()\n    cfg = _runtime_config(runtime)\n\n    if is_mpro_system(runtime.system_type):\n        rows = backfill.extract_mpro_twopass(cfg, fi, ff)\n    elif is_softrestaurant_system(runtime.system_type):\n        rows = backfill.extract_softrestaurant_twopass(cfg, fi, ff)\n    else:\n        return {\n            \"success\": False,\n            \"error_message\": \"SYSTEM_NOT_SUPPORTED_FOR_SALES_DETAIL\",\n        }\n\n    for row in rows:\n        row[\"UnidadNegocio\"] = unit_code\n\n    metrics = backfill.load_to_sync_sales(\n        rows,\n        unit_code,\n        fi,\n        ff,\n        bool(context.get(\"IsDryRun\")),\n    )\n    error = str(metrics.get(\"error\") or \"\").strip()\n    processed = int(metrics.get(\"tickets_extraidos\") or len(rows) or 0)\n    inserted = int(metrics.get(\"inserted\") or 0)\n\n    return {\n        \"success\": not bool(error),\n        \"records_processed\": processed,\n        \"records_inserted\": inserted,\n        \"records_updated\": 0,\n        \"records_errored\": 1 if error else 0,\n        \"duration_seconds\": int(max(0, time.monotonic() - started)),\n        \"warning_message\": (\n            f\"duplicados={int(metrics.get('tickets_duplicados') or 0)}\"\n        ),\n        \"error_message\": error or None,\n    }\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/database/migrations/20261014_001_sync_historical_comercial_detalle.sql",
+      "content": "SET NOCOUNT ON;\nSET XACT_ABORT ON;\n\nBEGIN TRY\n    BEGIN TRANSACTION;\n\n    IF OBJECT_ID('dbo.Sistema_Sync_Catalogo','U') IS NULL\n        THROW 51000, 'SYNC_HISTORICAL_DETAIL_MISSING_CATALOG', 1;\n    IF OBJECT_ID('dbo.Sistema_Sync_Capacidades','U') IS NULL\n        THROW 51000, 'SYNC_HISTORICAL_DETAIL_MISSING_BINDINGS', 1;\n\n    /*\n      Capability historica de detalle de ventas.\n      Aditiva: no modifica ni reutiliza los sincronizadores protegidos de\n      Ventas del Dia / Ventas Cerradas. El runtime atomico usa el backfill\n      historico de dbo.Sync_Sales.\n    */\n    UPDATE dbo.Sistema_Sync_Catalogo\n       SET CategoriaCodigo='VENTAS',\n           EntidadCodigo='VENTA_DETALLE',\n           CampoFecha='FechaHora',\n           ClaveNegocio=N'[\"UnidadNegocio\",\"NumeroTicket\",\"FechaHora\"]',\n           Handler='backfill_sync_sales',\n           HandlerImplementado=1,\n           SoportaIncremental=1,\n           SoportaFullSync=1,\n           SoportaResume=1,\n           SoportaSafeStop=1,\n           VersionContrato='historical-detail-v1',\n           MetadataJSON=N'{\"chunk_unit\":\"day\",\"max_attempts\":3,\"retry_backoff_seconds\":15,\"atomic_boundary\":\"unit-capability-day\"}'\n     WHERE Codigo='comercial_ventas_detalle'\n       AND ISNULL(Activo,1)=1\n       AND ISNULL(PermiteResync,0)=1;\n\n    IF @@ROWCOUNT <> 1\n        THROW 51000, 'SYNC_HISTORICAL_DETAIL_CATALOG_ROW_MISSING', 1;\n\n    INSERT INTO dbo.Sistema_Sync_Capacidades\n        (CodigoSync, SistemaCapacidadID, Obligatoria, Activo)\n    SELECT\n        'comercial_ventas_detalle',\n        cap.SistemaCapacidadID,\n        1,\n        1\n    FROM dbo.Sistema_Capacidades cap\n    JOIN dbo.Sistema_Tipos st\n      ON st.SistemaTipoID=cap.SistemaTipoID\n    WHERE cap.CodigoCapacidad='SYNC_VENTAS_HISTORICAS'\n      AND ISNULL(cap.Activo,1)=1\n      AND ISNULL(st.Activo,1)=1\n      AND st.CodigoSistema IN ('MPRO','SOFTRESTAURANT_PRO')\n      AND NOT EXISTS (\n          SELECT 1\n          FROM dbo.Sistema_Sync_Capacidades link\n          WHERE link.CodigoSync='comercial_ventas_detalle'\n            AND link.SistemaCapacidadID=cap.SistemaCapacidadID\n      );\n\n    IF (\n        SELECT COUNT(DISTINCT st.CodigoSistema)\n        FROM dbo.Sistema_Sync_Capacidades link\n        JOIN dbo.Sistema_Capacidades cap\n          ON cap.SistemaCapacidadID=link.SistemaCapacidadID\n        JOIN dbo.Sistema_Tipos st\n          ON st.SistemaTipoID=cap.SistemaTipoID\n        WHERE link.CodigoSync='comercial_ventas_detalle'\n          AND ISNULL(link.Activo,1)=1\n          AND cap.CodigoCapacidad='SYNC_VENTAS_HISTORICAS'\n          AND ISNULL(cap.Activo,1)=1\n          AND ISNULL(st.Activo,1)=1\n          AND st.CodigoSistema IN ('MPRO','SOFTRESTAURANT_PRO')\n    ) <> 2\n        THROW 51000, 'SYNC_HISTORICAL_DETAIL_BINDINGS_INCOMPLETE', 1;\n\n    COMMIT TRANSACTION;\nEND TRY\nBEGIN CATCH\n    IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;\n    THROW;\nEND CATCH;\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_sync_historical_canonical_compatibility_fix.py",
+      "content": "from datetime import date\nfrom pathlib import Path\n\nfrom modules.sync_historicos.planner import build_historical_plan\n\nROOT = Path(__file__).resolve().parents[1]\nFRONT = ROOT.parent / \"frontend/src/pages/SyncHistorical.jsx\"\nCATALOG = ROOT / \"modules/sync_historicos/catalog_service.py\"\nADAPTER = ROOT / \"modules/sync_historicos/comercial_detail_adapter.py\"\nMIGRATION = ROOT / \"database/migrations/20261014_001_sync_historical_comercial_detalle.sql\"\n\n\ndef _cap(system_code, system_id, capability_id):\n    return {\n        \"eligible_for_historical\": True,\n        \"system_code\": system_code,\n        \"system_id\": system_id,\n        \"system_capability_id\": capability_id,\n        \"capability_key\": \"comercial_ventas_detalle\",\n        \"category_key\": \"VENTAS\",\n        \"category_name\": \"Comercial\",\n        \"entity_key\": \"VENTA_DETALLE\",\n        \"handler\": \"backfill_sync_sales\",\n        \"date_field\": \"FechaHora\",\n        \"business_key\": [\"UnidadNegocio\", \"NumeroTicket\", \"FechaHora\"],\n        \"dependencias\": [],\n        \"execution_order\": 10,\n        \"supports_resume\": True,\n        \"supports_safe_stop\": True,\n        \"version\": \"historical-detail-v1\",\n        \"metadata\": {\n            \"chunk_unit\": \"day\",\n            \"max_attempts\": 3,\n            \"retry_backoff_seconds\": 15,\n        },\n    }\n\n\ndef _unit(code, system_code, system_id, suffix):\n    return {\n        \"unit_id\": f\"11111111-1111-1111-1111-{suffix}\",\n        \"unit_code\": code,\n        \"connection_id\": f\"22222222-2222-2222-2222-{suffix}\",\n        \"system_id\": system_id,\n        \"system_code\": system_code,\n        \"system_version_id\": None,\n        \"branch_id\": system_id,\n        \"branch_origin_id\": str(system_id),\n        \"company_id\": system_id,\n    }\n\n\ndef test_visual_grouping_uses_canonical_group_not_category_code():\n    text = CATALOG.read_text(encoding=\"utf-8\")\n    assert 'display_category_key = \"GROUP::\" + category_name.upper()' in text\n    assert \"if category_key\" not in text\n\n\ndef test_frontend_allows_partial_system_compatibility():\n    text = FRONT.read_text(encoding=\"utf-8\")\n    assert \"effectiveSystems.some\" in text\n    assert \"partiallyCompatible\" in text\n    assert \"planner ejecutará solo las sucursales válidas\" in text\n    assert \"No compatible con toda la selección\" not in text\n\n\ndef test_planner_keeps_only_valid_atomic_units_for_partial_compatibility():\n    plan = build_historical_plan(\n        start=date(2026, 1, 1),\n        end=date(2026, 1, 1),\n        selected_systems=[\"MPRO\", \"SOFTRESTAURANT_PRO\"],\n        selected_units=[\"MPRO-A\", \"SOFT-A\"],\n        selected_capabilities=[\"comercial_ventas_detalle\"],\n        registry=[_cap(\"MPRO\", 2, 21)],\n        unit_contexts=[\n            _unit(\"MPRO-A\", \"MPRO\", 2, \"000000000001\"),\n            _unit(\"SOFT-A\", \"SOFTRESTAURANT_PRO\", 1, \"000000000002\"),\n        ],\n        correlation_id=\"33333333-3333-3333-3333-333333333333\",\n    )\n    assert len(plan.atomic_units) == 1\n    assert plan.atomic_units[0].system_code == \"MPRO\"\n    assert plan.atomic_units[0].unit_code == \"MPRO-A\"\n\n\ndef test_detail_adapter_is_isolated_from_protected_sales_syncs():\n    text = ADAPTER.read_text(encoding=\"utf-8\").lower()\n    assert \"resolve_pos_runtime_context\" in text\n    assert \"pilot_backfill_sync_sales\" in text\n    assert \"sync_comercial_abiertas_v2\" not in text\n    assert \"sync_softrestaurant_ventas_cerradas\" not in text\n    assert \"sync_mpro_ventas_cerradas\" not in text\n    assert \"_ejecutar_sync_real\" not in text\n\n\ndef test_detail_migration_binds_both_current_systems_without_touching_protected_syncs():\n    text = MIGRATION.read_text(encoding=\"utf-8\")\n    assert \"comercial_ventas_detalle\" in text\n    assert \"SYNC_VENTAS_HISTORICAS\" in text\n    assert \"'MPRO','SOFTRESTAURANT_PRO'\" in text\n    lower = text.lower()\n    assert \"sync_comercial_abiertas_v2\" not in lower\n    assert \"sync_softrestaurant_ventas_cerradas\" not in lower\n    assert \"sync_mpro_ventas_cerradas\" not in lower\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_sync_historical_planner_contract.py",
+      "old": "def test_unit_cannot_execute_capability_for_another_system():\n    with pytest.raises(\n        HistoricalPlanError,\n        match=\"CAPABILITY_NOT_ELIGIBLE\",\n    ):\n        build_historical_plan(\n            start=date(2026, 1, 1),\n            end=date(2026, 1, 1),\n            selected_systems=[\"SOFTRESTAURANT\"],\n            selected_units=[\"UNIDAD-A\"],\n            selected_capabilities=[\"ventas_detalle\"],\n            registry=_registry(system_code=\"MPRO\"),\n            unit_contexts=[_unit(system_code=\"SOFTRESTAURANT\")],\n        )\n",
+      "new": "def test_fully_incompatible_selection_fails_closed_with_empty_plan():\n    with pytest.raises(\n        HistoricalPlanError,\n        match=\"PLAN_EMPTY\",\n    ):\n        build_historical_plan(\n            start=date(2026, 1, 1),\n            end=date(2026, 1, 1),\n            selected_systems=[\"SOFTRESTAURANT\"],\n            selected_units=[\"UNIDAD-A\"],\n            selected_capabilities=[\"ventas_detalle\"],\n            registry=_registry(system_code=\"MPRO\"),\n            unit_contexts=[_unit(system_code=\"SOFTRESTAURANT\")],\n        )\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/sync_historicos/catalog_service.py",
+        "backend/modules/sync_historicos/planner.py",
+        "backend/modules/sync_historicos/atomic_executor.py",
+        "backend/modules/sync_historicos/comercial_detail_adapter.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_sync_historical_planner_contract.py",
+        "backend/tests/test_sync_historical_capability_registry_contract.py",
+        "backend/tests/test_sync_historical_worker_atomic_contract.py",
+        "backend/tests/test_sync_historical_canonical_compatibility_fix.py",
+        "backend/tests/test_sync_historical_dashboard_contract.py"
+      ]
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    }
+  ]
+}
