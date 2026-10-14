@@ -1,0 +1,35 @@
+{
+  "base_sha": "8df05cfd06988187e30244d3edc193ba9c0b4518",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "candidate_sha": "b73bbfb5332d2e9617d3d249b79e001653cbb6ca",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-14T23:08:20Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/database/migrations/20261014_001_sync_historical_comercial_detalle.sql",
+    "backend/modules/sync_historicos/atomic_executor.py",
+    "backend/modules/sync_historicos/catalog_service.py",
+    "backend/modules/sync_historicos/comercial_detail_adapter.py",
+    "backend/modules/sync_historicos/planner.py",
+    "backend/tests/test_sync_historical_canonical_compatibility_fix.py",
+    "backend/tests/test_sync_historical_worker_atomic_contract.py",
+    "frontend/src/pages/SyncHistorical.jsx"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SYNC-HISTORICAL-CANONICAL-COMPATIBILITY-FIX-R1-CARLOS-20261014",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-10-14T23:08:42Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-14T23:08:16Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
