@@ -16,30 +16,7 @@ BACKEND = ROOT / 'backend'
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
-FORBIDDEN = re.compile(r'\b(insert|update|delete|merge|exec(?:ute)?|create|alter|drop|truncate|grant|revoke|deny|backup|restore|dbcc|use|waitfor|kill)\b', re.I)
-SELECT_INTO = re.compile(r'\bselect\b[\s\S]*?\binto\b', re.I)
-
-def _strip_literals_and_comments(sql: str) -> str:
-    text = re.sub(r'/\*.*?\*/', ' ', sql, flags=re.S)
-    text = re.sub(r'--[^\n\r]*', ' ', text)
-    text = re.sub(r"N?'(?:''|[^'])*'", "''", text)
-    return text
-
-def validate_readonly_sql(sql: str) -> str:
-    if not isinstance(sql, str) or not sql.strip():
-        raise ValueError('SQL_REQUIRED')
-    normalized = _strip_literals_and_comments(sql).strip()
-    body = normalized[:-1].rstrip() if normalized.endswith(';') else normalized
-    if ';' in body:
-        raise ValueError('MULTI_STATEMENT_FORBIDDEN')
-    first = re.match(r'^([A-Za-z]+)', body)
-    if not first or first.group(1).upper() not in {'SELECT', 'WITH'}:
-        raise ValueError('ONLY_SELECT_OR_WITH_ALLOWED')
-    if FORBIDDEN.search(body):
-        raise ValueError('DML_DDL_OR_CONTROL_FORBIDDEN')
-    if SELECT_INTO.search(body):
-        raise ValueError('SELECT_INTO_FORBIDDEN')
-    return sql.strip()
+from modules.integrations_runtime.read_only_sql import validate_readonly_sql
 
 def _json_value(value: Any) -> Any:
     if isinstance(value, (datetime, date)):

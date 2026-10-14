@@ -57,13 +57,6 @@ class UniversalQueryRequest(BaseModel):
 # CONSTANTES DE SEGURIDAD
 # ============================================================================
 
-BLOCKED_SQL_KEYWORDS = [
-    'DELETE', 'DROP', 'TRUNCATE', 'ALTER', 'UPDATE', 
-    'INSERT', 'MERGE', 'EXEC', 'EXECUTE', 'CREATE',
-    'GRANT', 'REVOKE', 'DENY', 'BACKUP', 'RESTORE',
-    'SHUTDOWN', 'KILL', 'RECONFIGURE', 'DBCC', 'OPENROWSET',
-    'OPENDATASOURCE', 'BULK', 'XP_', 'SP_'
-]
 
 SENSITIVE_HEADERS = [
     'authorization', 'api-key', 'x-api-key', 'token', 
@@ -77,27 +70,10 @@ ALLOWED_HTTP_METHODS = ['GET']  # Fase 1: solo GET
 # ============================================================================
 
 def validate_sql_query(sql: str) -> tuple:
-    """
-    Valida que la consulta SQL sea de solo lectura.
-    NO valida estructura de columnas ni dominio.
-    Completamente agnóstico.
-    """
-    if not sql or not sql.strip():
-        return False, "La consulta SQL no puede estar vacía"
-    
-    sql_upper = sql.upper().strip()
-    
-    # Debe comenzar con SELECT o WITH (para CTEs)
-    if not sql_upper.startswith('SELECT') and not sql_upper.startswith('WITH'):
-        return False, "Solo se permiten consultas SELECT (lectura)"
-    
-    # Verificar keywords bloqueados
-    for keyword in BLOCKED_SQL_KEYWORDS:
-        # Buscar keyword como palabra completa
-        if re.search(rf'\b{keyword}\b', sql_upper):
-            return False, f"Operación no permitida: {keyword}"
-    
-    return True, ""
+    """Compatibilidad sobre el validador SQL READ_ONLY canónico."""
+    from modules.integrations_runtime.read_only_sql import validate_readonly_sql_result
+
+    return validate_readonly_sql_result(sql)
 
 def mask_sensitive_headers(headers: Dict[str, str]) -> Dict[str, str]:
     """Enmascara valores de headers sensibles."""
