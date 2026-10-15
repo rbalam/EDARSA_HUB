@@ -1,0 +1,305 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RESYNC-TICKET-BLOCKER-FORCE-FLOW-R25-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b6936216f8475d1992f3750e1f69d29f3b170489",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Implementar en Re-sincronización Comercial por rango el manejo canónico de bloqueos por ticket: continuar procesando los demás días/bloques; mostrar ticket, fecha, total encabezado, total detalle, diferencia y motivo; permitir corrección forzada explícita sólo para el ticket certificado como force_allowed, con motivo/usuario/evidencia auditados; al reanudar, aplicar el bypass únicamente a ese ticket mientras el resto del bloque usa la lógica normal y vuelve a validarse contra Runtime. No tocar sync_comercial_abiertas_v2, MPRO, Producción ni reglas de encabezado.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:",
+      "new": "def _extract_soft(\n    cfg: Dict[str, Any],\n    dia: date,\n    forced_ticket_keys: Optional[Iterable[str]] = None,\n) -> List[Dict[str, Any]]:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "        return _soft_add_ticket_adjustments(rows)",
+      "new": "        return _soft_add_ticket_adjustments(\n            rows,\n            forced_ticket_keys=forced_ticket_keys,\n        )",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "SOFT_AJUSTE_ENCABEZADO = \"__ISCAM_AJUSTE_ENCABEZADO__\"\n\n\ndef _soft_add_ticket_adjustments(src_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:\n",
+      "new": "SOFT_AJUSTE_ENCABEZADO = \"__ISCAM_AJUSTE_ENCABEZADO__\"\n\n\nclass SoftTicketReconciliationError(RuntimeError):\n    \"\"\"Bloqueo auditable de conciliación de un ticket SoftRestaurant.\"\"\"\n\n    def __init__(self, blocker: Dict[str, Any]):\n        self.blocker = dict(blocker)\n        ticket = self.blocker.get(\"numero_ticket\") or self.blocker.get(\"ticket_key\")\n        super().__init__(\n            \"SoftRestaurant: ticket bloqueado por conciliación \"\n            f\"#{ticket}; encabezado={self.blocker.get('encabezado')}; \"\n            f\"detalle={self.blocker.get('detalle')}; \"\n            f\"diferencia={self.blocker.get('diferencia_detalle_menos_encabezado')}\"\n        )\n\n\ndef _soft_add_ticket_adjustments(\n    src_rows: List[Dict[str, Any]],\n    forced_ticket_keys: Optional[Iterable[str]] = None,\n) -> List[Dict[str, Any]]:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "    grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)\n",
+      "new": "    forced_keys = {\n        _s(value)\n        for value in (forced_ticket_keys or [])\n        if _s(value)\n    }\n    grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "        if header_total == Decimal(\"0\"):\n            raise RuntimeError(\n                f\"SoftRestaurant: diferencia no explicada en ticket {ticket_key}; \"\n                f\"productos={product_total}; encabezado={header_total}; delta={delta}; \"\n                f\"indicador_descuento_cortesia={discount_indicator}\"\n            )\n",
+      "new": "        if header_total == Decimal(\"0\"):\n            if ticket_key in forced_keys:\n                adjustment = dict(items[0])\n                adjustment[\"producto_codigo_fuente\"] = SOFT_AJUSTE_ENCABEZADO\n                adjustment[\"producto_nombre\"] = (\n                    \"AJUSTE FORZADO AUTORIZADO CONTRA ENCABEZADO DEL TICKET\"\n                )\n                adjustment[\"cantidad\"] = Decimal(\"0\")\n                adjustment[\"precio_unitario\"] = Decimal(\"0\")\n                adjustment[\"importe_bruto\"] = Decimal(\"0\")\n                adjustment[\"importe_neto\"] = delta\n                out.append(adjustment)\n                continue\n\n            numero_ticket = _s(items[0].get(\"numero_ticket\")) or ticket_key\n            folio_origen = _s(items[0].get(\"folio_origen\"))\n            raise SoftTicketReconciliationError({\n                \"ticket_key\": ticket_key,\n                \"id_transaccion\": ticket_key,\n                \"numero_ticket\": numero_ticket,\n                \"folio_origen\": folio_origen,\n                \"encabezado\": str(header_total),\n                \"detalle\": str(product_total),\n                \"diferencia_detalle_menos_encabezado\": str(\n                    product_total - header_total\n                ),\n                \"ajuste_requerido\": str(delta),\n                \"reason_code\": \"ZERO_HEADER_UNEXPLAINED_DETAIL\",\n                \"reason\": (\n                    \"El total del detalle no coincide con el total del encabezado \"\n                    \"del ticket y no corresponde a una regla automática certificada.\"\n                ),\n                \"force_allowed\": True,\n            })\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "            tickets[k] = {\n                \"venta\": _d(r.get(\"importe_neto_ticket\")),\n                \"pax\": int(_d(r.get(\"pax_ticket\"))),\n            }\n",
+      "new": "            tickets[k] = {\n                \"venta\": _d(r.get(\"importe_neto_ticket\")),\n                \"pax\": int(_d(r.get(\"pax_ticket\"))),\n                \"numero_ticket\": _s(r.get(\"numero_ticket\")),\n                \"folio_origen\": _s(r.get(\"folio_origen\")),\n            }\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "            diferencias.append({\n                \"id_transaccion\": key,\n                \"encabezado\": ticket[\"venta\"],\n                \"detalle\": detalle,\n                \"delta\": detalle - ticket[\"venta\"],\n            })\n",
+      "new": "            diferencias.append({\n                \"ticket_key\": key,\n                \"id_transaccion\": key,\n                \"numero_ticket\": ticket.get(\"numero_ticket\") or key,\n                \"folio_origen\": ticket.get(\"folio_origen\"),\n                \"encabezado\": ticket[\"venta\"],\n                \"detalle\": detalle,\n                \"diferencia_detalle_menos_encabezado\": detalle - ticket[\"venta\"],\n                \"delta\": detalle - ticket[\"venta\"],\n                \"reason_code\": \"DETAIL_HEADER_MISMATCH\",\n                \"reason\": (\n                    \"El total del detalle no coincide con el total del encabezado \"\n                    \"del ticket.\"\n                ),\n                \"force_allowed\": False,\n            })\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "    commit: bool = False,\n    excluir_abiertas: bool = True,\n) -> Dict[str, Any]:",
+      "new": "    commit: bool = False,\n    excluir_abiertas: bool = True,\n    forced_ticket_keys: Optional[Iterable[str]] = None,\n) -> Dict[str, Any]:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "    if sistema == SystemType.SOFTRESTAURANT.value:\n        src_rows = _extract_soft(cfg, dia)\n",
+      "new": "    if sistema == SystemType.SOFTRESTAURANT.value:\n        src_rows = _extract_soft(\n            cfg,\n            dia,\n            forced_ticket_keys=forced_ticket_keys,\n        )\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/backfill_detalle_producto_pendientes.py",
+      "old": "    force_refresh: bool = False,\n) -> Tuple[int, Dict[str, Any]]:",
+      "new": "    force_refresh: bool = False,\n    forced_tickets: Optional[Dict[str, List[str]]] = None,\n) -> Tuple[int, Dict[str, Any]]:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/backfill_detalle_producto_pendientes.py",
+      "old": "                    commit=commit,\n                    excluir_abiertas=True,\n                )\n            except Exception as exc:\n                result = {\n                    \"status\": \"ERROR\",\n                    \"unidad\": unidad_codigo,\n                    \"fecha_operacion\": dia,\n                    \"error_type\": type(exc).__name__,\n                    \"error_code\": _safe_error_code(exc),\n                    \"filas_insertadas\": 0,\n                }\n",
+      "new": "                    commit=commit,\n                    excluir_abiertas=True,\n                    forced_ticket_keys=(\n                        (forced_tickets or {}).get(dia.isoformat()) or []\n                    ),\n                )\n            except Exception as exc:\n                result = {\n                    \"status\": \"ERROR\",\n                    \"unidad\": unidad_codigo,\n                    \"fecha_operacion\": dia,\n                    \"error_type\": type(exc).__name__,\n                    \"error_code\": _safe_error_code(exc),\n                    \"error_message\": str(exc)[:500],\n                    \"filas_insertadas\": 0,\n                }\n                blocker = getattr(exc, \"blocker\", None)\n                if isinstance(blocker, dict):\n                    result[\"ticket_blockers\"] = [dict(blocker)]\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/backfill_detalle_producto_pendientes.py",
+      "old": "            if result.get(\"error_code\"):\n                item[\"error_code\"] = str(result[\"error_code\"])\n\n            unidad_resumen[\"dias\"].append(item)\n",
+      "new": "            if result.get(\"error_code\"):\n                item[\"error_code\"] = str(result[\"error_code\"])\n            if result.get(\"error_message\"):\n                item[\"error_message\"] = str(result[\"error_message\"])[:500]\n            ticket_blockers = (\n                result.get(\"ticket_blockers\")\n                or result.get(\"tickets_no_conciliados\")\n                or []\n            )\n            if ticket_blockers:\n                item[\"ticket_blockers\"] = ticket_blockers\n\n            unidad_resumen[\"dias\"].append(item)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "old": "class ComercialRangeBatchRequest(BaseModel):\n    \"\"\"Re-sincronización persistente Comercial por rango y unidades.\"\"\"\n    unidades: List[str] = Field(..., description=\"Una o varias unidades canónicas\")\n    fecha_inicio: date = Field(..., description=\"Fecha inicial inclusiva\")\n    fecha_fin: date = Field(..., description=\"Fecha final inclusiva\")\n    motivo: str = Field(..., min_length=10, description=\"Motivo auditable\")\n\n\nclass ResyncResponse(BaseModel):",
+      "new": "class ComercialRangeBatchRequest(BaseModel):\n    \"\"\"Re-sincronización persistente Comercial por rango y unidades.\"\"\"\n    unidades: List[str] = Field(..., description=\"Una o varias unidades canónicas\")\n    fecha_inicio: date = Field(..., description=\"Fecha inicial inclusiva\")\n    fecha_fin: date = Field(..., description=\"Fecha final inclusiva\")\n    motivo: str = Field(..., min_length=10, description=\"Motivo auditable\")\n\n\nclass ComercialRangeForceTicketRequest(BaseModel):\n    \"\"\"Autorización explícita para conciliar un ticket bloqueado.\"\"\"\n    unidad: str = Field(..., min_length=2)\n    fecha_operacion: date\n    ticket_key: str = Field(..., min_length=3)\n    motivo: str = Field(\n        ...,\n        min_length=10,\n        description=\"Motivo auditable de la corrección forzada\",\n    )\n\n\nclass ResyncResponse(BaseModel):",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "old": "def _ejecutar_backfill_detalle_iscam(\n    unidad_negocio_id: str,\n    fecha_inicio: date,\n    fecha_fin: date,\n    commit: bool,\n    force_refresh: bool = False,\n) -> Dict[str, Any]:",
+      "new": "def _ejecutar_backfill_detalle_iscam(\n    unidad_negocio_id: str,\n    fecha_inicio: date,\n    fecha_fin: date,\n    commit: bool,\n    force_refresh: bool = False,\n    forced_tickets: Optional[Dict[str, List[str]]] = None,\n) -> Dict[str, Any]:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "old": "        commit=commit,\n        force_refresh=force_refresh,\n    )\n    return {\n        'success': code == 0,\n        'exit_code': code,\n        'modo': 'REAL' if commit else 'DRY_RUN',\n        'resumen': resumen,\n        'error_message': None if code == 0 else 'El detalle ISCAM tiene días bloqueados que no conciliaron contra Runtime V2.',\n    }\n",
+      "new": "        commit=commit,\n        force_refresh=force_refresh,\n        forced_tickets=forced_tickets,\n    )\n    blockers = []\n    for unidad in resumen.get('unidades') or []:\n        for dia in unidad.get('dias') or []:\n            for blocker in dia.get('ticket_blockers') or []:\n                if not isinstance(blocker, dict):\n                    continue\n                blockers.append({\n                    'unidad': unidad.get('unidad'),\n                    'fecha_operacion': dia.get('fecha_operacion'),\n                    **blocker,\n                })\n    return {\n        'success': code == 0,\n        'exit_code': code,\n        'modo': 'REAL' if commit else 'DRY_RUN',\n        'resumen': resumen,\n        'blockers': blockers[:100],\n        'error_message': (\n            None\n            if code == 0\n            else 'El detalle ISCAM tiene días/tickets bloqueados que no conciliaron contra Runtime V2.'\n        ),\n    }\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "old": "async def _ejecutar_dry_run(\n    unidad_negocio_id: str,\n    unidad_config: Dict[str, Any],\n    fecha_inicio: date,\n    fecha_fin: date\n) -> Dict[str, Any]:",
+      "new": "async def _ejecutar_dry_run(\n    unidad_negocio_id: str,\n    unidad_config: Dict[str, Any],\n    fecha_inicio: date,\n    fecha_fin: date,\n    forced_tickets: Optional[Dict[str, List[str]]] = None,\n) -> Dict[str, Any]:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "old": "                unidad_negocio_id, fecha_inicio, fecha_fin, commit=False\n            )",
+      "new": "                unidad_negocio_id,\n                fecha_inicio,\n                fecha_fin,\n                commit=False,\n                forced_tickets=forced_tickets,\n            )",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "old": "async def _ejecutar_sync_real(\n    unidad_negocio_id: str,\n    unidad_config: Dict[str, Any],\n    fecha_inicio: date,\n    fecha_fin: date,\n    sync_run_id: str\n) -> Dict[str, Any]:",
+      "new": "async def _ejecutar_sync_real(\n    unidad_negocio_id: str,\n    unidad_config: Dict[str, Any],\n    fecha_inicio: date,\n    fecha_fin: date,\n    sync_run_id: str,\n    forced_tickets: Optional[Dict[str, List[str]]] = None,\n) -> Dict[str, Any]:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "old": "                    commit=True,\n                    force_refresh=True,\n                )",
+      "new": "                    commit=True,\n                    force_refresh=True,\n                    forced_tickets=forced_tickets,\n                )",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "old": "@router.post(\"/resync/comercial-range/jobs/{job_id}/cancel\", status_code=202)\ndef detener_comercial_range_job(",
+      "new": "@router.post(\"/resync/comercial-range/jobs/{job_id}/force-ticket\", status_code=202)\ndef forzar_ticket_comercial_range_job(\n    job_id: int,\n    body: ComercialRangeForceTicketRequest,\n    background_tasks: BackgroundTasks,\n    current_user: dict = Depends(require_explicit_permission(\"SCHEDULER_ADMIN\")),\n):\n    from modules.comercial.resync_batch_jobs import authorize_force_ticket, run_job\n    try:\n        payload = authorize_force_ticket(\n            job_id=job_id,\n            unit=body.unidad,\n            fecha_operacion=body.fecha_operacion,\n            ticket_key=body.ticket_key,\n            motivo=body.motivo,\n            requested_by=current_user.get(\"email\", \"unknown\"),\n        )\n    except ValueError as exc:\n        raise HTTPException(status_code=409, detail=str(exc))\n    background_tasks.add_task(run_job, int(job_id))\n    return {\"success\": True, **payload}\n\n\n@router.post(\"/resync/comercial-range/jobs/{job_id}/cancel\", status_code=202)\ndef detener_comercial_range_job(",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/resync_comercial_range_worker.py",
+      "old": "        \"warning\": str(result.get(\"warning_message\") or \"\")[:500],\n    }\n",
+      "new": "        \"warning\": str(result.get(\"warning_message\") or \"\")[:500],\n        \"detail_blockers\": (\n            (result.get(\"detalle_producto\") or {}).get(\"blockers\")\n            or []\n        )[:100],\n    }\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/resync_comercial_range_worker.py",
+      "old": "    parser.add_argument(\"--commit\", action=\"store_true\")\n    args = parser.parse_args()\n",
+      "new": "    parser.add_argument(\"--commit\", action=\"store_true\")\n    parser.add_argument(\"--forced-tickets-json\", default=\"{}\")\n    args = parser.parse_args()\n\n    try:\n        forced_tickets = json.loads(args.forced_tickets_json or \"{}\")\n    except json.JSONDecodeError:\n        forced_tickets = {}\n    if not isinstance(forced_tickets, dict):\n        forced_tickets = {}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/resync_comercial_range_worker.py",
+      "old": "        result = asyncio.run(_ejecutar_sync_real(unit, config, fi, ff, run_id))\n    else:\n        result = asyncio.run(_ejecutar_dry_run(unit, config, fi, ff))\n",
+      "new": "        result = asyncio.run(\n            _ejecutar_sync_real(\n                unit,\n                config,\n                fi,\n                ff,\n                run_id,\n                forced_tickets=forced_tickets,\n            )\n        )\n    else:\n        result = asyncio.run(\n            _ejecutar_dry_run(\n                unit,\n                config,\n                fi,\n                ff,\n                forced_tickets=forced_tickets,\n            )\n        )\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "        \"error_message\": str(result.get(\"error_message\") or \"\")[:500],\n    }\n",
+      "new": "        \"error_message\": str(result.get(\"error_message\") or \"\")[:500],\n        \"detail_blockers\": [\n            item\n            for item in (result.get(\"detail_blockers\") or [])\n            if isinstance(item, dict)\n        ][:100],\n    }\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "async def _run_entrypoint(job_id: int, payload: Dict[str, Any], unit: str, start: date, end: date, commit: bool) -> Dict[str, Any]:",
+      "new": "async def _run_entrypoint(\n    job_id: int,\n    payload: Dict[str, Any],\n    unit: str,\n    start: date,\n    end: date,\n    commit: bool,\n    forced_tickets: Optional[Dict[str, List[str]]] = None,\n) -> Dict[str, Any]:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "    if commit:\n        args.append(\"--commit\")\n",
+      "new": "    if commit:\n        args.append(\"--commit\")\n    if forced_tickets:\n        args.extend([\n            \"--forced-tickets-json\",\n            json.dumps(forced_tickets, ensure_ascii=False),\n        ])\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "def request_cancel(job_id: int, requested_by: str):\n",
+      "new": "def authorize_force_ticket(\n    job_id: int,\n    unit: str,\n    fecha_operacion: date,\n    ticket_key: str,\n    motivo: str,\n    requested_by: str,\n):\n    payload = get_job(job_id)\n    if not payload:\n        raise ValueError(\"Trabajo Comercial no encontrado\")\n    if payload.get(\"status\") not in RESUMABLE:\n        raise ValueError(\n            f\"La corrección forzada solo puede solicitarse desde un trabajo parcial; \"\n            f\"estado actual {payload.get('status')}\"\n        )\n\n    unit_code = str(unit or \"\").strip().upper()\n    ticket_id = str(ticket_key or \"\").strip()\n    reason = str(motivo or \"\").strip()\n    if len(reason) < 10:\n        raise ValueError(\n            \"El motivo de la corrección forzada debe tener al menos 10 caracteres\"\n        )\n\n    target_key = None\n    target_step = None\n    target_blocker = None\n    for key, step in (payload.get(\"steps\") or {}).items():\n        if str(step.get(\"unit\") or \"\").strip().upper() != unit_code:\n            continue\n        start = date.fromisoformat(str(step.get(\"fecha_inicio\")))\n        end = date.fromisoformat(str(step.get(\"fecha_fin\")))\n        if not (start <= fecha_operacion <= end):\n            continue\n        candidates = []\n        for phase in (\"real\", \"dry_run\"):\n            candidates.extend(\n                (step.get(phase) or {}).get(\"detail_blockers\") or []\n            )\n        for blocker in candidates:\n            if not isinstance(blocker, dict):\n                continue\n            blocker_key = str(\n                blocker.get(\"ticket_key\")\n                or blocker.get(\"id_transaccion\")\n                or \"\"\n            ).strip()\n            if (\n                blocker_key == ticket_id\n                and str(blocker.get(\"fecha_operacion\") or \"\")\n                == fecha_operacion.isoformat()\n            ):\n                target_key = key\n                target_step = step\n                target_blocker = blocker\n                break\n        if target_blocker:\n            break\n\n    if not target_step or not target_blocker:\n        raise ValueError(\n            \"El ticket solicitado no pertenece a los bloqueos certificados de este trabajo\"\n        )\n    if target_blocker.get(\"force_allowed\") is not True:\n        raise ValueError(\n            \"Este bloqueo no admite corrección forzada automática; requiere diagnóstico\"\n        )\n\n    forced = dict(target_step.get(\"forced_tickets\") or {})\n    day_key = fecha_operacion.isoformat()\n    day_tickets = list(forced.get(day_key) or [])\n    if ticket_id not in day_tickets:\n        day_tickets.append(ticket_id)\n    forced[day_key] = day_tickets\n    target_step[\"forced_tickets\"] = forced\n    target_step[\"status\"] = \"PENDING_RECOVERY\"\n    payload[\"steps\"][target_key] = target_step\n\n    payload.setdefault(\"force_audit\", []).append({\n        \"unit\": unit_code,\n        \"fecha_operacion\": day_key,\n        \"ticket_key\": ticket_id,\n        \"numero_ticket\": target_blocker.get(\"numero_ticket\"),\n        \"motivo\": reason,\n        \"requested_by\": requested_by,\n        \"requested_at_utc\": _now(),\n        \"blocker_snapshot\": target_blocker,\n    })\n    payload[\"current_phase\"] = \"QUEUED_FORCE_TICKET\"\n    _write(\n        job_id,\n        payload,\n        \"JOB_QUEUED\",\n        (\n            f\"Corrección forzada autorizada para {unit_code} ticket \"\n            f\"{target_blocker.get('numero_ticket') or ticket_id}.\"\n        ),\n    )\n    return _read(job_id)\n\n\ndef request_cancel(job_id: int, requested_by: str):\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "                        dry = await _run_entrypoint(job_id, payload, unit, start, end, commit=False)\n",
+      "new": "                        forced_tickets = step.get(\"forced_tickets\") or {}\n                        dry = await _run_entrypoint(\n                            job_id,\n                            payload,\n                            unit,\n                            start,\n                            end,\n                            commit=False,\n                            forced_tickets=forced_tickets,\n                        )\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/resync_batch_jobs.py",
+      "old": "                            real = await _run_entrypoint(job_id, payload, unit, start, end, commit=True)\n",
+      "new": "                            real = await _run_entrypoint(\n                                job_id,\n                                payload,\n                                unit,\n                                start,\n                                end,\n                                commit=True,\n                                forced_tickets=forced_tickets,\n                            )\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/admin/ComercialRangeResyncCard.jsx",
+      "old": "  const stopSafely=async()=>{",
+      "new": "  const forceTicket=async(blocker)=>{\n    if(!job?.job_id || !blocker?.ticket_key) return;\n    const motivo=window.prompt(\n      `Motivo para forzar la conciliación del ticket #${blocker.numero_ticket||blocker.ticket_key}:`\n    );\n    if(!motivo) return;\n    if(motivo.trim().length<10){\n      alert('El motivo debe tener al menos 10 caracteres.');\n      return;\n    }\n    setLoading(true);\n    try{\n      const r=await api.post(\n        `/admin/scheduler/resync/comercial-range/jobs/${job.job_id}/force-ticket`,\n        {\n          unidad:blocker.unidad,\n          fecha_operacion:blocker.fecha_operacion,\n          ticket_key:blocker.ticket_key,\n          motivo:motivo.trim(),\n        }\n      );\n      setJob(r.data);\n    }catch(e){alert(e.response?.data?.detail||e.message);}\n    finally{setLoading(false);}\n  };\n\n  const stopSafely=async()=>{",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/admin/ComercialRangeResyncCard.jsx",
+      "old": "  const pct=Number(job?.percent_complete||0);\n  const lastUpdateMs=job?.updated_at_utc?Date.now()-new Date(job.updated_at_utc).getTime():0;\n",
+      "new": "  const pct=Number(job?.percent_complete||0);\n  const blockers=Object.values(job?.steps||{}).flatMap(step=>{\n    const real=step?.real?.detail_blockers||[];\n    const dry=step?.dry_run?.detail_blockers||[];\n    const source=real.length?real:dry;\n    return source.map(item=>({\n      ...item,\n      unidad:item.unidad||step.unit,\n    }));\n  });\n  const lastUpdateMs=job?.updated_at_utc?Date.now()-new Date(job.updated_at_utc).getTime():0;\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/admin/ComercialRangeResyncCard.jsx",
+      "old": "        <div className=\"grid grid-cols-1 md:grid-cols-2 gap-2\">\n          {(job.units||[]).map(unit=>{const p=job.unit_progress?.[unit]||{};return <div key={unit} className=\"flex justify-between rounded-md border px-3 py-2 text-sm\">\n            <span className=\"font-medium\">{unit}</span><span>{p.pass||0}/{p.total||0} OK{(p.pending_recovery||0)>0?` · ${p.pending_recovery} pendiente(s)`:''}</span>\n          </div>})}\n        </div>\n",
+      "new": "        <div className=\"grid grid-cols-1 md:grid-cols-2 gap-2\">\n          {(job.units||[]).map(unit=>{const p=job.unit_progress?.[unit]||{};return <div key={unit} className=\"flex justify-between rounded-md border px-3 py-2 text-sm\">\n            <span className=\"font-medium\">{unit}</span><span>{p.pass||0}/{p.total||0} OK{(p.pending_recovery||0)>0?` · ${p.pending_recovery} pendiente(s)`:''}</span>\n          </div>})}\n        </div>\n        {blockers.length>0&&<div className=\"space-y-2\" data-testid=\"ticket-blockers\">\n          {blockers.map((b,idx)=><Alert key={`${b.unidad}-${b.fecha_operacion}-${b.ticket_key}-${idx}`} className=\"border-red-300 bg-red-50\">\n            <AlertTitle>\n              {b.unidad} · {b.fecha_operacion} · Ticket #{b.numero_ticket||b.ticket_key}\n            </AlertTitle>\n            <AlertDescription>\n              <div className=\"space-y-2\">\n                <div>\n                  Encabezado: <strong>{String(b.encabezado??'-')}</strong> · Detalle: <strong>{String(b.detalle??'-')}</strong> · Diferencia: <strong>{String(b.diferencia_detalle_menos_encabezado??b.delta??'-')}</strong>\n                </div>\n                <div>{b.reason||'El ticket no concilia y mantiene el día en estado parcial.'}</div>\n                {b.force_allowed===true&&job.status==='JOB_PARTIAL'&&<Button\n                  type=\"button\"\n                  size=\"sm\"\n                  variant=\"destructive\"\n                  disabled={loading}\n                  onClick={()=>forceTicket(b)}\n                >\n                  Solicitar sincronización forzada de este ticket\n                </Button>}\n              </div>\n            </AlertDescription>\n          </Alert>)}\n        </div>}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_resync_ticket_blocker_force_r25.py",
+      "content": "from decimal import Decimal\n\nimport pytest\n\nfrom scripts.poblar_ventas_detalle_producto_canonico import (\n    SOFT_AJUSTE_ENCABEZADO,\n    SoftTicketReconciliationError,\n    _soft_add_ticket_adjustments,\n)\n\n\ndef _row(ticket_key=\"SOFT:9001\", numero_ticket=\"7001\", detail=\"-2.00\"):\n    return {\n        \"id_transaccion\": ticket_key,\n        \"numero_ticket\": numero_ticket,\n        \"folio_origen\": ticket_key.split(\":\", 1)[-1],\n        \"importe_neto_ticket\": Decimal(\"0\"),\n        \"descuento_ticket\": Decimal(\"0\"),\n        \"importe_neto\": Decimal(detail),\n        \"importe_bruto\": Decimal(detail),\n        \"pax_ticket\": 1,\n        \"producto_codigo_fuente\": \"TEST\",\n        \"producto_nombre\": \"TEST\",\n        \"cantidad\": Decimal(\"1\"),\n        \"precio_unitario\": Decimal(detail),\n        \"es_kpi_valido\": 1,\n    }\n\n\ndef test_unexplained_zero_header_exposes_auditable_ticket_blocker():\n    with pytest.raises(SoftTicketReconciliationError) as caught:\n        _soft_add_ticket_adjustments([_row()])\n    blocker = caught.value.blocker\n    assert blocker[\"ticket_key\"] == \"SOFT:9001\"\n    assert blocker[\"numero_ticket\"] == \"7001\"\n    assert blocker[\"encabezado\"] == \"0\"\n    assert blocker[\"detalle\"] == \"-2.00\"\n    assert blocker[\"diferencia_detalle_menos_encabezado\"] == \"-2.00\"\n    assert blocker[\"force_allowed\"] is True\n\n\ndef test_explicit_authorization_closes_only_the_requested_ticket_to_header():\n    out = _soft_add_ticket_adjustments(\n        [_row()],\n        forced_ticket_keys={\"SOFT:9001\"},\n    )\n    assert len(out) == 2\n    assert out[0][\"importe_neto\"] == Decimal(\"-2.00\")\n    assert out[-1][\"producto_codigo_fuente\"] == SOFT_AJUSTE_ENCABEZADO\n    assert \"FORZADO AUTORIZADO\" in out[-1][\"producto_nombre\"]\n    assert out[-1][\"importe_neto\"] == Decimal(\"2.00\")\n    assert sum(row[\"importe_neto\"] for row in out) == Decimal(\"0.00\")\n\n\ndef test_force_is_scoped_to_exact_ticket_key():\n    with pytest.raises(SoftTicketReconciliationError):\n        _soft_add_ticket_adjustments(\n            [_row()],\n            forced_ticket_keys={\"SOFT:OTHER\"},\n        )\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/scripts/backfill_detalle_producto_pendientes.py",
+        "backend/api/admin_scheduler_resync.py",
+        "backend/scripts/resync_comercial_range_worker.py",
+        "backend/modules/comercial/resync_batch_jobs.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_resync_ticket_blocker_force_r25.py",
+        "backend/tests/test_iscam_soft_zero_compensated_rounding_r23.py",
+        "backend/tests/test_iscam_soft_microprice_zero_r32b.py",
+        "backend/tests/test_iscam_scheduler_definitive_fix_r80c.py",
+        "backend/tests/test_iscam_header_folio_parent_r92.py"
+      ]
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+          "backend/scripts/backfill_detalle_producto_pendientes.py",
+          "backend/api/admin_scheduler_resync.py",
+          "backend/scripts/resync_comercial_range_worker.py",
+          "backend/modules/comercial/resync_batch_jobs.py",
+          "frontend/src/components/admin/ComercialRangeResyncCard.jsx"
+        ],
+        "search_terms": [
+          "SoftTicketReconciliationError",
+          "ticket_blockers",
+          "force_allowed",
+          "authorize_force_ticket",
+          "forced-tickets-json",
+          "Solicitar sincronización forzada de este ticket",
+          "force_audit"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.jsx"
+        ],
+        "exclude_patterns": [],
+        "max_results": 180
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
