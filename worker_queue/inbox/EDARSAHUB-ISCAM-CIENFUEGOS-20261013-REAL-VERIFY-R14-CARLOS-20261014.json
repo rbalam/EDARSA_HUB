@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-20261013-REAL-VERIFY-R14-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
+  "production_allowed": false,
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "objective": "Validación REAL controlada posterior a R12+R13: reparar exclusivamente el detalle ISCAM de CIENFUEGOS para 2026-10-13 y certificar conciliación exacta contra Runtime V2. No tocar encabezado, otras fechas, otras unidades ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "fecha_inicio": "2026-10-13",
+  "fecha_fin": "2026-10-14",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_20261013_post_real",
+          "sql": "WITH r AS (SELECT SUM(CAST(ISNULL(ventas_total,0) AS decimal(18,4))) ventas,SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets,SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion='2026-10-13'), d AS (SELECT SUM(x.venta) ventas,COUNT(*) tickets,SUM(x.pax) pax FROM (SELECT numero_ticket,SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) venta,MAX(CAST(ISNULL(pax,0) AS bigint)) pax FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion='2026-10-13' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY numero_ticket) x) SELECT r.ventas AS runtime_ventas,d.ventas AS detalle_ventas,r.tickets AS runtime_tickets,d.tickets AS detalle_tickets,r.pax AS runtime_pax,d.pax AS detalle_pax,CAST(r.ventas-ISNULL(d.ventas,0) AS decimal(18,2)) AS delta_venta,r.tickets-ISNULL(d.tickets,0) AS delta_tickets,r.pax-ISNULL(d.pax,0) AS delta_pax FROM r CROSS JOIN d"
+        }
+      ]
+    }
+  ]
+}
