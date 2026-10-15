@@ -1,0 +1,40 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-20260204-ZERO-TICKET-DIAG-R22-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar los 5 tickets no cancelados con total cero de CIENFUEGOS 2026-02-04 que bloquean el extractor canónico de detalle. Medir por ticket total/subtotal/impuesto/cortesias/descuentos y suma de partidas según la misma fórmula del extractor, e identificar el residual exacto. Solo lectura; no modificar POS, EDARSAHUB ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "CIENFUEGOS"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "cienfuegos_zero_total_tickets_20260204",
+          "sql": "WITH z AS (\n          SELECT ch.folio,ch.numcheque,ch.fecha,ch.cierre,ch.idturno,\n                 CAST(ISNULL(ch.subtotal,0) AS decimal(18,4)) subtotal,\n                 CAST(ISNULL(ch.totalimpuesto1,0) AS decimal(18,4)) impuesto,\n                 CAST(ISNULL(ch.total,0) AS decimal(18,4)) total,\n                 CAST(ISNULL(ch.totalcortesias,0) AS decimal(18,4)) cortesias,\n                 CAST(ISNULL(ch.totaldescuentos,0) AS decimal(18,4)) descuentos,\n                 CAST(ISNULL(ch.nopersonas,0) AS bigint) pax,\n                 tr.apertura\n          FROM cheques ch WITH (NOLOCK)\n          INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno\n          WHERE tr.apertura>='2026-02-04' AND tr.apertura<'2026-02-05'\n            AND ISNULL(ch.cancelado,0)=0\n            AND ISNULL(ch.total,0)=0\n        ),\n        d AS (\n          SELECT dc.foliodet AS folio,\n                 COUNT(*) lineas,\n                 CAST(SUM(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0)) AS decimal(18,4)) bruto_partidas,\n                 CAST(SUM(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0)*(1-(ISNULL(dc.descuento,0)/100.0))) AS decimal(18,4)) neto_partidas,\n                 CAST(MIN(ISNULL(dc.precio,0)) AS decimal(18,6)) precio_min,\n                 CAST(MAX(ISNULL(dc.precio,0)) AS decimal(18,6)) precio_max\n          FROM cheqdet dc WITH (NOLOCK)\n          WHERE dc.foliodet IN (SELECT folio FROM z)\n          GROUP BY dc.foliodet\n        )\n        SELECT z.folio,z.numcheque,z.fecha,z.cierre,z.apertura,z.pax,\n               z.subtotal,z.impuesto,z.total,z.cortesias,z.descuentos,\n               ISNULL(d.lineas,0) lineas,\n               ISNULL(d.bruto_partidas,0) bruto_partidas,\n               ISNULL(d.neto_partidas,0) neto_partidas,\n               CAST(z.total-ISNULL(d.neto_partidas,0) AS decimal(18,4)) residual_header_menos_partidas,\n               d.precio_min,d.precio_max\n        FROM z LEFT JOIN d ON d.folio=z.folio\n        ORDER BY z.folio"
+        },
+        {
+          "name": "cienfuegos_zero_total_detail_lines_20260204",
+          "sql": "SELECT ch.folio,ch.numcheque,dc.movimiento,dc.idproducto,\n                    CAST(ISNULL(dc.cantidad,0) AS decimal(18,4)) cantidad,\n                    CAST(ISNULL(dc.precio,0) AS decimal(18,6)) precio,\n                    CAST(ISNULL(dc.descuento,0) AS decimal(18,4)) descuento_pct,\n                    CAST(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0)*(1-(ISNULL(dc.descuento,0)/100.0)) AS decimal(18,4)) neto_linea\n             FROM cheques ch WITH (NOLOCK)\n             INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno\n             LEFT JOIN cheqdet dc WITH (NOLOCK) ON dc.foliodet=ch.folio\n             WHERE tr.apertura>='2026-02-04' AND tr.apertura<'2026-02-05'\n               AND ISNULL(ch.cancelado,0)=0\n               AND ISNULL(ch.total,0)=0\n             ORDER BY ch.folio,dc.movimiento"
+        }
+      ]
+    }
+  ]
+}
