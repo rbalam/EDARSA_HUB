@@ -23,6 +23,7 @@ from core.server_registry import filter_servers_by_user_permissions, list_server
 
 from . import repository
 from .homologation import empty_connection_homologation
+from .homologation_repository import get_connection_homologation_map
 
 _SECRET_KEYS = {
     "password",
@@ -178,6 +179,7 @@ async def list_connections(
     ids = [item["id"] for item in items]
     health_map = repository.get_latest_health_map(ids)
     enrichment = repository.get_connection_enrichment(ids)
+    homologation_map = get_connection_homologation_map(ids)
 
     # Scope canonico existente: no duplicamos SQL ni reglas de resolucion.
     from modules.sync_historicos.catalog_service import planner_inputs
@@ -258,6 +260,9 @@ async def list_connections(
             item["scope"]["unit_mapping_status"] = "UNMAPPED"
 
         _attach_health(item, health_map.get(lookup_key))
+        persisted_homologation = homologation_map.get(lookup_key)
+        if persisted_homologation:
+            item["homologation"] = persisted_homologation
 
     if connection_type:
         wanted = connection_type.strip().upper()
