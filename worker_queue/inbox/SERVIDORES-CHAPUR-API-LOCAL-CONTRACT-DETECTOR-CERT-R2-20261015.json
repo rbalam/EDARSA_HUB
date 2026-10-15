@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-CHAPUR-API-LOCAL-CONTRACT-DETECTOR-CERT-R2-20261015",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Recertificar en modo READ_ONLY el detector canónico de contrato API_LOCAL para homologación CHAPUR/ENTERPRISE sobre la corrección que modela contract_version como metadata/capability canónica. Validar que el fingerprint excluye identidad física de instancia, preserva API_LOCAL_SQL_QUERY_V1 y cambia ante cambios reales del contrato. No abrir endpoints CHAPUR, no DDL, no writes, no Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/integrations_center/api_local_contract_detector.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_integrations_center_api_local_contract_detector.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/integrations_center/api_local_contract_detector.py",
+          "backend/tests/test_integrations_center_api_local_contract_detector.py"
+        ],
+        "search_terms": [
+          "API_LOCAL_SQL_QUERY_V1",
+          "CANONICAL_API_LOCAL_ADAPTER_CONTRACT",
+          "readonly_sql",
+          "schema_fingerprint",
+          "contract_version"
+        ],
+        "max_results": 80
+      }
+    }
+  ]
+}
