@@ -1,0 +1,13 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-CHAPUR-ENTERPRISE-CANONICAL-DISCOVERY-R1-20261015",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Descubrir desde EDARSAHUB, en solo lectura, la identidad y scope canonicos de CHAPUR / SoftRestaurant Enterprise. No abrir el servidor externo, no ejecutar DDL, no escribir datos y no tocar Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "audit_profile": "chapur_connection_discovery_v1",
+  "checks": []
+}
