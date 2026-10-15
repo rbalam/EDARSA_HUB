@@ -1,0 +1,178 @@
+{
+  "base_sha": "0d4b891a782f2597f03f460757f0d264182b9fba",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-15T23:26:01Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CXP-GATE3F-G-IDEMPOTENCY-MIGRATION-PREFLIGHT-READONLY-20261015",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-15T23:27:07Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "server_name",
+              "database_name",
+              "login_name",
+              "database_user"
+            ],
+            "name": "f3g_runtime_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "ns559627",
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "grupos_duplicados"
+            ],
+            "name": "f3g_active_queue_duplicates_by_decision",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_name",
+              "is_unique",
+              "is_primary_key",
+              "key_ordinal",
+              "column_name"
+            ],
+            "name": "f3g_queue_pk",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "PK_Finanzas_CxP_PagosOrigenQueue",
+                true,
+                true,
+                1,
+                "PagoOrigenQueueID"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total"
+            ],
+            "name": "f3g_pagos_rows",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "child_schema",
+              "child_table",
+              "fk_name"
+            ],
+            "name": "f3g_pagos_incoming_fks",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "dbo",
+                "COA_ExpedienteReferencias",
+                "FK_COA_ExpedienteReferencias_Pago"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "referenced_schema",
+              "referenced_table"
+            ],
+            "name": "f3g_queue_outgoing_fk_target",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "FK_Finanzas_CxP_PagosOrigenQueue_Decision",
+                "dbo",
+                "Finanzas_CxP_DecisionesPago"
+              ],
+              [
+                "FK_Finanzas_CxP_PagosOrigenQueue_UnidadNegocio",
+                "dbo",
+                "Unidades_Negocio"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_name"
+            ],
+            "name": "f3g_pagos_column_name_collision",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_name"
+            ],
+            "name": "f3g_queue_index_name_collision",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_name"
+            ],
+            "name": "f3g_pagos_index_name_collision",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "child_schema",
+              "child_table",
+              "fk_name"
+            ],
+            "name": "f3g_queue_incoming_fks",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-15T23:25:59Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
