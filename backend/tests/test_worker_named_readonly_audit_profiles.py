@@ -30,6 +30,8 @@ def test_chapur_profile_is_allowlisted_and_select_only():
     assert {q["name"] for q in check["queries"]} == {
         "chapur_enterprise_connections",
         "chapur_units",
+        "chapur_company_candidates",
+        "chapur_branch_candidates",
         "chapur_versions",
     }
     for query in check["queries"]:
