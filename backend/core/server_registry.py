@@ -985,7 +985,7 @@ async def create_server(
         payload.get('api_url', ''),
         api_key_to_store,  # FASE 3C: Cifrado
         True,  # activo
-        payload.get('visible_en_operaciones', True),
+        False,  # safe default: operational scope must be mapped before activation
         payload.get('visible_en_listado', True),
         payload.get('es_editable_ui', True),
         payload.get('es_eliminable_ui', True),
@@ -1153,6 +1153,20 @@ async def update_server(
             update_fields.append("api_key_encrypted = %s")
             update_values.append(encrypted_api)
     
+    # Guard canonico: una conexion solo puede activarse en Operaciones cuando
+    # existe al menos una Unidad de Negocio activa vinculada al servidor.
+    requested_operational_visibility = payload.get('visible_en_operaciones')
+    if requested_operational_visibility is True:
+        from core.connections.operational_scope import require_operational_mapping
+        try:
+            require_operational_mapping(server_id, True)
+        except ValueError as exc:
+            return {
+                'success': False,
+                'error': str(exc),
+                'sync_status': 'OPERATIONAL_SCOPE_REQUIRED'
+            }
+
     # Siempre actualizar timestamp
     update_fields.append("updated_at = %s")
     update_values.append(now)
