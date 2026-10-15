@@ -33,6 +33,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+try:
+    from tools.mirror_sync.readonly_audit_profiles import build_readonly_audit_checks, is_allowed_readonly_audit_profile
+except ModuleNotFoundError:
+    from readonly_audit_profiles import build_readonly_audit_checks, is_allowed_readonly_audit_profile
+
 from worker_concurrency import evaluate_scope_advance
 from worker_scheduling import normalize_metadata
 from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state
@@ -1136,7 +1141,14 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
         if mode == "READ_ONLY_SQL":
             if job.get("actions") not in (None, []):
                 raise RuntimeError("READ_ONLY_SQL_ACTIONS_FORBIDDEN")
+            audit_profile = str(job.get("audit_profile") or "").strip()
             checks = job.get("checks") or []
+            if audit_profile:
+                if not is_allowed_readonly_audit_profile(audit_profile):
+                    raise RuntimeError("READ_ONLY_SQL_AUDIT_PROFILE_INVALID")
+                if job.get("checks") not in (None, []):
+                    raise RuntimeError("READ_ONLY_SQL_AUDIT_PROFILE_WITH_INLINE_CHECKS_FORBIDDEN")
+                checks = build_readonly_audit_checks(audit_profile)
             if not checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
                 raise RuntimeError("READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED")
             check_results = []
