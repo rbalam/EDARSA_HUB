@@ -1,0 +1,35 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-INTEGRATIONS-HOMOLOGATION-H7-UI-CERT-R1-20261015",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Certificar H7 UI de homologación en Menú Servidores/Conexiones. Verificar que SQL y API muestran estado de homologación canónico, certificación reutilizada/revalidación, y que la UI no permite intentar habilitar visible_en_operaciones sin Unidad de Negocio y homologación CERTIFIED. No ejecutar DDL, no consultar CHAPUR/POS LIVE, no Producción.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/Servidores.js",
+          "backend/modules/integrations_center"
+        ],
+        "search_terms": [
+          "Homologación",
+          "REVALIDATION_REQUIRED",
+          "CERTIFIED",
+          "certification_source",
+          "isOperationallyEligible",
+          "Unidad de Negocio",
+          "homologation"
+        ],
+        "max_results": 100
+      }
+    }
+  ]
+}
