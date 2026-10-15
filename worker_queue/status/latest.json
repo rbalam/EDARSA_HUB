@@ -1,14 +1,14 @@
 {
-  "ahead_count": 1,
+  "ahead_count": 0,
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "LOCAL_AHEAD_ONLY",
-  "development_sha": "a9b7eecb233603b2c599da0239e9fe09137bcd1a",
-  "generated_at_utc": "2026-10-15T23:21:42Z",
+  "convergence_status": "SYNC",
+  "development_sha": "5240afd945673a0db4719b332317238c543b277c",
+  "generated_at_utc": "2026-10-15T23:23:03Z",
   "history": {
     "done_total_local": 1429,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 1241,
     "results_total_local": 2445
   },
@@ -16,52 +16,58 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1833,
+      "age_seconds": 1915,
       "job_id": "BOS-MCP-CLAUDE-GATEWAY-404-DIAGNOSTIC-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1086,
+      "age_seconds": 1167,
       "job_id": "BOS-MCP-CLAUDE-GATEWAY-ROUTER-REGISTER-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3399,
+      "age_seconds": 3480,
       "job_id": "SERVIDORES-CHAPUR-API-LOCAL-CONTRACT-DETECTOR-CERT-R2-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1703,
+      "age_seconds": 1785,
       "job_id": "SERVIDORES-CHAPUR-API-LOCAL-CONTRACT-DETECTOR-CERT-R3-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 944,
+      "age_seconds": 1026,
       "job_id": "SERVIDORES-OPERATIONAL-SCOPE-GUARD-CERT-R1-20261015",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 16,
+      "job_id": "BOS-MCP-WORKER-MCP-INIT-LAZY-IMPORT-R1",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "local_development_sha": "5240afd945673a0db4719b332317238c543b277c",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 5,
-  "queue_running": 0,
-  "remote_development_sha": "a9b7eecb233603b2c599da0239e9fe09137bcd1a",
+  "queue_running": 1,
+  "remote_development_sha": "5240afd945673a0db4719b332317238c543b277c",
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "BOS-MCP-WORKER-MCP-INIT-LAZY-IMPORT-R1",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-15T23:21:32Z",
-    "last_receive_utc": "2026-10-15T23:21:27Z",
+    "last_cycle_utc": "2026-10-15T23:22:58Z",
+    "last_receive_utc": "2026-10-15T23:22:53Z",
     "last_terminal_utc": "2026-10-15T23:05:57Z",
     "pid": "507",
     "runtime_fingerprint": {
