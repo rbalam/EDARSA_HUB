@@ -1,0 +1,54 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-130MID-FEB2026-LEGACY-DATE-RULE-AUDIT-R19-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Certificar si los 12 desajustes de 130MID febrero 2026 provienen de encabezados históricos generados con una regla antigua basada en cheques.fecha/corte horario, en vez de la regla canónica vigente turnos.apertura. Comparar tickets desplazados y configuración operativa. Solo lectura; no modificar datos ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "turnos_operativos_130mid",
+          "sql": "SELECT unidad_negocio_id,turno_codigo,turno_nombre,\n                      CAST(hora_inicio AS varchar(8)) AS hora_inicio,\n                      CAST(hora_fin AS varchar(8)) AS hora_fin,\n                      cruza_medianoche,aplica_ventas_dia,es_turno_principal,orden,activo\n               FROM dbo.Sistema_TurnosOperativosUnidad\n               WHERE unidad_negocio_id='130MID'\n               ORDER BY orden,turno_codigo"
+        },
+        {
+          "name": "runtime_130mid_feb",
+          "sql": "SELECT fecha_operacion,\n                      CAST(ventas_total AS decimal(18,2)) AS ventas_total,\n                      tickets_total,pax_total,sync_run_id\n               FROM dbo.Comercial_KPIs_Diarios_v2\n               WHERE unidad_negocio_id='130MID'\n                 AND fecha_operacion>='2026-02-01'\n                 AND fecha_operacion<'2026-03-01'\n               ORDER BY fecha_operacion"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "130MID"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "tickets_shifted_by_legacy_13h_rule",
+          "sql": "WITH x AS (\n            SELECT ch.folio,ch.numcheque,ch.fecha,tr.apertura,ch.cierre,\n                   CAST(ISNULL(ch.total,0) AS decimal(18,2)) AS total,\n                   CAST(ISNULL(ch.nopersonas,0) AS bigint) AS pax,\n                   CONVERT(date,tr.apertura) AS fecha_canonica,\n                   CASE\n                     WHEN CONVERT(time,ch.fecha)<'13:00:00'\n                       THEN DATEADD(day,-1,CONVERT(date,ch.fecha))\n                     ELSE CONVERT(date,ch.fecha)\n                   END AS fecha_legacy_13h\n            FROM cheques ch WITH (NOLOCK)\n            INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno\n            WHERE tr.apertura>='2026-02-01' AND tr.apertura<'2026-03-01'\n              AND ISNULL(ch.cancelado,0)=0\n          )\n          SELECT fecha_canonica,fecha_legacy_13h,\n                 COUNT(DISTINCT folio) AS tickets,\n                 SUM(total) AS venta,\n                 SUM(pax) AS pax\n          FROM x\n          WHERE fecha_canonica<>fecha_legacy_13h\n          GROUP BY fecha_canonica,fecha_legacy_13h\n          ORDER BY fecha_canonica,fecha_legacy_13h"
+        },
+        {
+          "name": "shifted_ticket_detail_problem_pairs",
+          "sql": "WITH x AS (\n            SELECT ch.folio,ch.numcheque,ch.fecha,tr.apertura,ch.cierre,\n                   CAST(ISNULL(ch.total,0) AS decimal(18,2)) AS total,\n                   CAST(ISNULL(ch.nopersonas,0) AS bigint) AS pax,\n                   CONVERT(date,tr.apertura) AS fecha_canonica,\n                   CASE\n                     WHEN CONVERT(time,ch.fecha)<'13:00:00'\n                       THEN DATEADD(day,-1,CONVERT(date,ch.fecha))\n                     ELSE CONVERT(date,ch.fecha)\n                   END AS fecha_legacy_13h\n            FROM cheques ch WITH (NOLOCK)\n            INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno\n            WHERE tr.apertura>='2026-02-01' AND tr.apertura<'2026-03-01'\n              AND ISNULL(ch.cancelado,0)=0\n          )\n          SELECT folio,numcheque,fecha,apertura,cierre,total,pax,fecha_canonica,fecha_legacy_13h\n          FROM x\n          WHERE fecha_canonica<>fecha_legacy_13h\n            AND (\n              fecha_canonica IN ('2026-02-03','2026-02-05','2026-02-11','2026-02-13','2026-02-14','2026-02-15','2026-02-16','2026-02-17','2026-02-20','2026-02-21','2026-02-22','2026-02-26')\n              OR fecha_legacy_13h IN ('2026-02-03','2026-02-05','2026-02-11','2026-02-13','2026-02-14','2026-02-15','2026-02-16','2026-02-17','2026-02-20','2026-02-21','2026-02-22','2026-02-26')\n            )\n          ORDER BY fecha_canonica,fecha,numcheque,folio"
+        }
+      ]
+    }
+  ]
+}
