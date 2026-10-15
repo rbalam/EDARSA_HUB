@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-20260204-DETAIL-DRY-R21-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
+  "production_allowed": false,
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "objective": "DRY RUN canónico exclusivo para CIENFUEGOS 2026-02-04. Confirmar que el extractor actual incluye los 5 tickets de importe cero omitidos en el detalle histórico y que ventas, tickets y PAX concilian exactamente contra Runtime V2. No escribir datos ni tocar Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "fecha_inicio": "2026-02-04",
+  "fecha_fin": "2026-02-05",
+  "dry_run": true,
+  "confirm_detail_backfill": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_20260204_current_detail",
+          "sql": "WITH r AS (\n        SELECT CAST(ventas_total AS decimal(18,2)) ventas,tickets_total tickets,pax_total pax\n        FROM dbo.Comercial_KPIs_Diarios_v2\n        WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion='2026-02-04'\n      ), d AS (\n        SELECT CAST(SUM(x.venta) AS decimal(18,2)) ventas,COUNT(*) tickets,SUM(x.pax) pax\n        FROM (\n          SELECT numero_ticket,\n                 SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) venta,\n                 MAX(CAST(ISNULL(pax,0) AS bigint)) pax\n          FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n          WHERE unidad_negocio_id='CIENFUEGOS'\n            AND fecha_operacion='2026-02-04'\n            AND ISNULL(activo,1)=1\n            AND ISNULL(es_kpi_valido,1)=1\n          GROUP BY numero_ticket\n        ) x\n      )\n      SELECT r.ventas runtime_ventas,d.ventas detalle_ventas,\n             r.tickets runtime_tickets,d.tickets detalle_tickets,\n             r.pax runtime_pax,d.pax detalle_pax\n      FROM r CROSS JOIN d"
+        }
+      ]
+    }
+  ]
+}
