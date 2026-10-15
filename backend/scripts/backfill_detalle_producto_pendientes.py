@@ -135,6 +135,7 @@ def ejecutar_backfill(
     unidades: Optional[List[str]] = None,
     commit: bool = False,
     force_refresh: bool = False,
+    forced_tickets: Optional[Dict[str, List[str]]] = None,
 ) -> Tuple[int, Dict[str, Any]]:
     if fecha_fin <= fecha_inicio:
         raise ValueError("fecha_fin debe ser mayor que fecha_inicio")
@@ -226,6 +227,9 @@ def ejecutar_backfill(
                     run_id=run_id,
                     commit=commit,
                     excluir_abiertas=True,
+                    forced_ticket_keys=(
+                        (forced_tickets or {}).get(dia.isoformat()) or []
+                    ),
                 )
             except Exception as exc:
                 result = {
@@ -234,8 +238,12 @@ def ejecutar_backfill(
                     "fecha_operacion": dia,
                     "error_type": type(exc).__name__,
                     "error_code": _safe_error_code(exc),
+                    "error_message": str(exc)[:500],
                     "filas_insertadas": 0,
                 }
+                blocker = getattr(exc, "blocker", None)
+                if isinstance(blocker, dict):
+                    result["ticket_blockers"] = [dict(blocker)]
 
             status = str(result.get("status") or "ERROR")
             item = {
@@ -256,6 +264,15 @@ def ejecutar_backfill(
                 item["error_type"] = str(result["error_type"])
             if result.get("error_code"):
                 item["error_code"] = str(result["error_code"])
+            if result.get("error_message"):
+                item["error_message"] = str(result["error_message"])[:500]
+            ticket_blockers = (
+                result.get("ticket_blockers")
+                or result.get("tickets_no_conciliados")
+                or []
+            )
+            if ticket_blockers:
+                item["ticket_blockers"] = ticket_blockers
 
             unidad_resumen["dias"].append(item)
 

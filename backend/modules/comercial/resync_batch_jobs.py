@@ -104,6 +104,11 @@ def _compact(result: Dict[str, Any]) -> Dict[str, Any]:
         "records_updated": int(result.get("records_updated") or 0),
         "warning_message": str(result.get("warning_message") or "")[:500],
         "error_message": str(result.get("error_message") or "")[:500],
+        "detail_blockers": [
+            item
+            for item in (result.get("detail_blockers") or [])
+            if isinstance(item, dict)
+        ][:100],
     }
 
 def _transient(result: Dict[str, Any]) -> bool:
@@ -133,7 +138,15 @@ async def _terminate_process(proc):
         await proc.wait()
 
 
-async def _run_entrypoint(job_id: int, payload: Dict[str, Any], unit: str, start: date, end: date, commit: bool) -> Dict[str, Any]:
+async def _run_entrypoint(
+    job_id: int,
+    payload: Dict[str, Any],
+    unit: str,
+    start: date,
+    end: date,
+    commit: bool,
+    forced_tickets: Optional[Dict[str, List[str]]] = None,
+) -> Dict[str, Any]:
     timeout_seconds = REAL_TIMEOUT_SECONDS if commit else DRY_TIMEOUT_SECONDS
     args = [
         sys.executable, str(ENTRYPOINT),
@@ -143,6 +156,11 @@ async def _run_entrypoint(job_id: int, payload: Dict[str, Any], unit: str, start
     ]
     if commit:
         args.append("--commit")
+    if forced_tickets:
+        args.extend([
+            "--forced-tickets-json",
+            json.dumps(forced_tickets, ensure_ascii=False),
+        ])
     backend_dir = str(ENTRYPOINT.parents[1])
     current_pythonpath = os.environ.get("PYTHONPATH", "")
     pythonpath = backend_dir if not current_pythonpath else backend_dir + os.pathsep + current_pythonpath
@@ -278,6 +296,108 @@ def queue_resume(job_id: int):
     return _read(job_id)
 
 
+def authorize_force_ticket(
+    job_id: int,
+    unit: str,
+    fecha_operacion: date,
+    ticket_key: str,
+    motivo: str,
+    requested_by: str,
+):
+    payload = get_job(job_id)
+    if not payload:
+        raise ValueError("Trabajo Comercial no encontrado")
+    if payload.get("status") not in RESUMABLE:
+        raise ValueError(
+            f"La corrección forzada solo puede solicitarse desde un trabajo parcial; "
+            f"estado actual {payload.get('status')}"
+        )
+
+    unit_code = str(unit or "").strip().upper()
+    ticket_id = str(ticket_key or "").strip()
+    reason = str(motivo or "").strip()
+    if len(reason) < 10:
+        raise ValueError(
+            "El motivo de la corrección forzada debe tener al menos 10 caracteres"
+        )
+
+    target_key = None
+    target_step = None
+    target_blocker = None
+    for key, step in (payload.get("steps") or {}).items():
+        if str(step.get("unit") or "").strip().upper() != unit_code:
+            continue
+        start = date.fromisoformat(str(step.get("fecha_inicio")))
+        end = date.fromisoformat(str(step.get("fecha_fin")))
+        if not (start <= fecha_operacion <= end):
+            continue
+        candidates = []
+        for phase in ("real", "dry_run"):
+            candidates.extend(
+                (step.get(phase) or {}).get("detail_blockers") or []
+            )
+        for blocker in candidates:
+            if not isinstance(blocker, dict):
+                continue
+            blocker_key = str(
+                blocker.get("ticket_key")
+                or blocker.get("id_transaccion")
+                or ""
+            ).strip()
+            if (
+                blocker_key == ticket_id
+                and str(blocker.get("fecha_operacion") or "")
+                == fecha_operacion.isoformat()
+            ):
+                target_key = key
+                target_step = step
+                target_blocker = blocker
+                break
+        if target_blocker:
+            break
+
+    if not target_step or not target_blocker:
+        raise ValueError(
+            "El ticket solicitado no pertenece a los bloqueos certificados de este trabajo"
+        )
+    if target_blocker.get("force_allowed") is not True:
+        raise ValueError(
+            "Este bloqueo no admite corrección forzada automática; requiere diagnóstico"
+        )
+
+    forced = dict(target_step.get("forced_tickets") or {})
+    day_key = fecha_operacion.isoformat()
+    day_tickets = list(forced.get(day_key) or [])
+    if ticket_id not in day_tickets:
+        day_tickets.append(ticket_id)
+    forced[day_key] = day_tickets
+    target_step["forced_tickets"] = forced
+    target_step["status"] = "PENDING_RECOVERY"
+    payload["steps"][target_key] = target_step
+
+    payload.setdefault("force_audit", []).append({
+        "unit": unit_code,
+        "fecha_operacion": day_key,
+        "ticket_key": ticket_id,
+        "numero_ticket": target_blocker.get("numero_ticket"),
+        "motivo": reason,
+        "requested_by": requested_by,
+        "requested_at_utc": _now(),
+        "blocker_snapshot": target_blocker,
+    })
+    payload["current_phase"] = "QUEUED_FORCE_TICKET"
+    _write(
+        job_id,
+        payload,
+        "JOB_QUEUED",
+        (
+            f"Corrección forzada autorizada para {unit_code} ticket "
+            f"{target_blocker.get('numero_ticket') or ticket_id}."
+        ),
+    )
+    return _read(job_id)
+
+
 def request_cancel(job_id: int, requested_by: str):
     payload = get_job(job_id)
     if not payload:
@@ -353,7 +473,16 @@ async def run_job(job_id: int):
                 else:
                     for attempt in range(1, MAX_ATTEMPTS + 1):
                         step["attempts"] = attempt
-                        dry = await _run_entrypoint(job_id, payload, unit, start, end, commit=False)
+                        forced_tickets = step.get("forced_tickets") or {}
+                        dry = await _run_entrypoint(
+                            job_id,
+                            payload,
+                            unit,
+                            start,
+                            end,
+                            commit=False,
+                            forced_tickets=forced_tickets,
+                        )
                         final_dry = _compact(dry)
                         if _cancel_requested(job_id):
                             _finish_cancelled(job_id, payload)
@@ -377,7 +506,15 @@ async def run_job(job_id: int):
                             heartbeat = True
                             payload["current_phase"] = "REAL"
                             _write(job_id, payload, "JOB_RUNNING", f"{unit}: re-sincronizando {start} a {end}.")
-                            real = await _run_entrypoint(job_id, payload, unit, start, end, commit=True)
+                            real = await _run_entrypoint(
+                                job_id,
+                                payload,
+                                unit,
+                                start,
+                                end,
+                                commit=True,
+                                forced_tickets=forced_tickets,
+                            )
                             final_real = _compact(real)
                         finally:
                             if heartbeat: await lock.stop_heartbeat_loop()

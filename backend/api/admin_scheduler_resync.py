@@ -130,6 +130,18 @@ class ComercialRangeBatchRequest(BaseModel):
     motivo: str = Field(..., min_length=10, description="Motivo auditable")
 
 
+class ComercialRangeForceTicketRequest(BaseModel):
+    """Autorización explícita para conciliar un ticket bloqueado."""
+    unidad: str = Field(..., min_length=2)
+    fecha_operacion: date
+    ticket_key: str = Field(..., min_length=3)
+    motivo: str = Field(
+        ...,
+        min_length=10,
+        description="Motivo auditable de la corrección forzada",
+    )
+
+
 class ResyncResponse(BaseModel):
     """Response de re-sync."""
     success: bool
@@ -1049,6 +1061,29 @@ def reanudar_comercial_range_job(
     return {"success": True, **payload}
 
 
+@router.post("/resync/comercial-range/jobs/{job_id}/force-ticket", status_code=202)
+def forzar_ticket_comercial_range_job(
+    job_id: int,
+    body: ComercialRangeForceTicketRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN")),
+):
+    from modules.comercial.resync_batch_jobs import authorize_force_ticket, run_job
+    try:
+        payload = authorize_force_ticket(
+            job_id=job_id,
+            unit=body.unidad,
+            fecha_operacion=body.fecha_operacion,
+            ticket_key=body.ticket_key,
+            motivo=body.motivo,
+            requested_by=current_user.get("email", "unknown"),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    background_tasks.add_task(run_job, int(job_id))
+    return {"success": True, **payload}
+
+
 @router.post("/resync/comercial-range/jobs/{job_id}/cancel", status_code=202)
 def detener_comercial_range_job(
     job_id: int,
@@ -1887,6 +1922,7 @@ def _ejecutar_backfill_detalle_iscam(
     fecha_fin: date,
     commit: bool,
     force_refresh: bool = False,
+    forced_tickets: Optional[Dict[str, List[str]]] = None,
 ) -> Dict[str, Any]:
     """Replica en el resync manual la fase de detalle del scheduler canónico."""
     from scripts.backfill_detalle_producto_pendientes import ejecutar_backfill
@@ -1897,13 +1933,30 @@ def _ejecutar_backfill_detalle_iscam(
         unidades=[unidad_negocio_id],
         commit=commit,
         force_refresh=force_refresh,
+        forced_tickets=forced_tickets,
     )
+    blockers = []
+    for unidad in resumen.get('unidades') or []:
+        for dia in unidad.get('dias') or []:
+            for blocker in dia.get('ticket_blockers') or []:
+                if not isinstance(blocker, dict):
+                    continue
+                blockers.append({
+                    'unidad': unidad.get('unidad'),
+                    'fecha_operacion': dia.get('fecha_operacion'),
+                    **blocker,
+                })
     return {
         'success': code == 0,
         'exit_code': code,
         'modo': 'REAL' if commit else 'DRY_RUN',
         'resumen': resumen,
-        'error_message': None if code == 0 else 'El detalle ISCAM tiene días bloqueados que no conciliaron contra Runtime V2.',
+        'blockers': blockers[:100],
+        'error_message': (
+            None
+            if code == 0
+            else 'El detalle ISCAM tiene días/tickets bloqueados que no conciliaron contra Runtime V2.'
+        ),
     }
 
 
@@ -1911,7 +1964,8 @@ async def _ejecutar_dry_run(
     unidad_negocio_id: str,
     unidad_config: Dict[str, Any],
     fecha_inicio: date,
-    fecha_fin: date
+    fecha_fin: date,
+    forced_tickets: Optional[Dict[str, List[str]]] = None,
 ) -> Dict[str, Any]:
     """
     Ejecuta simulación de sync (extrae datos pero NO escribe).
@@ -2070,7 +2124,11 @@ async def _ejecutar_dry_run(
         # servidor origen estuvo OFFLINE ni convertir un header valido en fallo.
         try:
             detalle_producto = _ejecutar_backfill_detalle_iscam(
-                unidad_negocio_id, fecha_inicio, fecha_fin, commit=False
+                unidad_negocio_id,
+                fecha_inicio,
+                fecha_fin,
+                commit=False,
+                forced_tickets=forced_tickets,
             )
         except Exception as detalle_exc:
             detalle_producto = {
@@ -2120,7 +2178,8 @@ async def _ejecutar_sync_real(
     unidad_config: Dict[str, Any],
     fecha_inicio: date,
     fecha_fin: date,
-    sync_run_id: str
+    sync_run_id: str,
+    forced_tickets: Optional[Dict[str, List[str]]] = None,
 ) -> Dict[str, Any]:
     """
     Ejecuta sync real usando el handler oficial.
@@ -2200,6 +2259,7 @@ async def _ejecutar_sync_real(
                     fecha_fin,
                     commit=True,
                     force_refresh=True,
+                    forced_tickets=forced_tickets,
                 )
             except Exception as detalle_exc:
                 detalle_producto = {

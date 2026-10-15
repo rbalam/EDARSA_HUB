@@ -65,6 +65,32 @@ export default function ComercialRangeResyncCard({ options, onFinished }) {
     finally{setLoading(false);}
   };
 
+  const forceTicket=async(blocker)=>{
+    if(!job?.job_id || !blocker?.ticket_key) return;
+    const motivo=window.prompt(
+      `Motivo para forzar la conciliación del ticket #${blocker.numero_ticket||blocker.ticket_key}:`
+    );
+    if(!motivo) return;
+    if(motivo.trim().length<10){
+      alert('El motivo debe tener al menos 10 caracteres.');
+      return;
+    }
+    setLoading(true);
+    try{
+      const r=await api.post(
+        `/admin/scheduler/resync/comercial-range/jobs/${job.job_id}/force-ticket`,
+        {
+          unidad:blocker.unidad,
+          fecha_operacion:blocker.fecha_operacion,
+          ticket_key:blocker.ticket_key,
+          motivo:motivo.trim(),
+        }
+      );
+      setJob(r.data);
+    }catch(e){alert(e.response?.data?.detail||e.message);}
+    finally{setLoading(false);}
+  };
+
   const stopSafely=async()=>{
     if(!job?.job_id) return;
     if(!window.confirm('¿Solicitar detención segura? La operación atómica actual terminará antes de detener el proceso y se conservará el checkpoint.')) return;
@@ -77,6 +103,15 @@ export default function ComercialRangeResyncCard({ options, onFinished }) {
   };
 
   const pct=Number(job?.percent_complete||0);
+  const blockers=Object.values(job?.steps||{}).flatMap(step=>{
+    const real=step?.real?.detail_blockers||[];
+    const dry=step?.dry_run?.detail_blockers||[];
+    const source=real.length?real:dry;
+    return source.map(item=>({
+      ...item,
+      unidad:item.unidad||step.unit,
+    }));
+  });
   const lastUpdateMs=job?.updated_at_utc?Date.now()-new Date(job.updated_at_utc).getTime():0;
   const stalled=ACTIVE.has(job?.status)&&lastUpdateMs>10*60*1000;
   return <Card data-testid="comercial-range-resync-card" className="border-sky-200">
@@ -147,6 +182,30 @@ export default function ComercialRangeResyncCard({ options, onFinished }) {
             <span className="font-medium">{unit}</span><span>{p.pass||0}/{p.total||0} OK{(p.pending_recovery||0)>0?` · ${p.pending_recovery} pendiente(s)`:''}</span>
           </div>})}
         </div>
+        {blockers.length>0&&<div className="space-y-2" data-testid="ticket-blockers">
+          {blockers.map((b,idx)=><Alert key={`${b.unidad}-${b.fecha_operacion}-${b.ticket_key}-${idx}`} className="border-red-300 bg-red-50">
+            <AlertTitle>
+              {b.unidad} · {b.fecha_operacion} · Ticket #{b.numero_ticket||b.ticket_key}
+            </AlertTitle>
+            <AlertDescription>
+              <div className="space-y-2">
+                <div>
+                  Encabezado: <strong>{String(b.encabezado??'-')}</strong> · Detalle: <strong>{String(b.detalle??'-')}</strong> · Diferencia: <strong>{String(b.diferencia_detalle_menos_encabezado??b.delta??'-')}</strong>
+                </div>
+                <div>{b.reason||'El ticket no concilia y mantiene el día en estado parcial.'}</div>
+                {b.force_allowed===true&&job.status==='JOB_PARTIAL'&&<Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  disabled={loading}
+                  onClick={()=>forceTicket(b)}
+                >
+                  Solicitar sincronización forzada de este ticket
+                </Button>}
+              </div>
+            </AlertDescription>
+          </Alert>)}
+        </div>}
         {job.status==='JOB_SUCCESS'&&<div className="flex items-center gap-2 text-emerald-700 text-sm"><CheckCircle2 className="w-4 h-4"/>Rango completado.</div>}
         {ACTIVE.has(job.status)&&job.status!=='JOB_CANCEL_REQUESTED'&&<Button variant="destructive" onClick={stopSafely} disabled={loading}>
           <Square className="w-4 h-4 mr-2"/>Detener de manera segura
