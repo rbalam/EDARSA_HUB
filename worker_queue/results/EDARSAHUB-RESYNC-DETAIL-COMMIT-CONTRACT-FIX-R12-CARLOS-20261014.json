@@ -1,0 +1,210 @@
+{
+  "base_sha": "9a9913697414fc548b702f80bf789a6cdd369ca0",
+  "blockers": [],
+  "candidate_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-10-15T00:06:26Z",
+  "development_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+    "backend/tests/test_detail_insert_contract_alignment.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-RESYNC-DETAIL-COMMIT-CONTRACT-FIX-R12-CARLOS-20261014",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-10-15T00:07:12Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.comercial_v2",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "ticket_impuesto",
+              "ticket_subtotal",
+              "ticket_total"
+            ],
+            "path": "backend/modules/comercial_v2/ticket_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "discount_comment",
+              "fields_from",
+              "header_from",
+              "visible_sale_from_pos_total"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "argparse",
+              "collections",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "json",
+              "modules.comercial_v2.ticket_contract",
+              "pymssql",
+              "sys",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "conn.autocommit(false)",
+              "delete from {destino}",
+              "insert_columns = base_columns + tuple(fields)",
+              "placeholders",
+              "ticket_impuesto",
+              "ticket_subtotal",
+              "ticket_total"
+            ],
+            "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_as_date",
+              "_cfg_values",
+              "_d",
+              "_daterange",
+              "_extract_mpro",
+              "_extract_soft",
+              "_first",
+              "_hash_row",
+              "_insert_rows",
+              "_int_eq",
+              "_load_runtime_rows",
+              "_materialize_rows",
+              "_money_eq",
+              "_mpro_operational_datetime_range",
+              "_mpro_row_es_kpi_valido",
+              "_object_columns",
+              "_parse_sql_server_host_port",
+              "_prorratear_mpro_por_ticket",
+              "_q4",
+              "_query_edarsahub_dicts",
+              "_row_unit_values",
+              "_runtime_for",
+              "_runtime_metrics",
+              "_s",
+              "_safe_print",
+              "_secret_value",
+              "_sistema",
+              "_soft_add_ticket_adjustments",
+              "_soft_operational_datetime_range",
+              "_table_has_col",
+              "_unidad_operativa_id_for_window",
+              "_validate",
+              "get_pos_config_for_unidad",
+              "get_pos_connection",
+              "get_unidades_negocio_pos",
+              "main",
+              "sync_detalle_producto_canonico_dia"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Servidores_Conexiones",
+              "Unidades_Negocio",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "conn.autocommit(false)",
+              "delete from {destino}",
+              "insert_columns = base_columns + tuple(fields)",
+              "placeholders",
+              "ticket_impuesto",
+              "ticket_subtotal",
+              "ticket_total"
+            ],
+            "path": "backend/tests/test_detail_insert_contract_alignment.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_detail_insert_keeps_atomic_delete_and_insert_transaction",
+              "test_detail_insert_uses_ticket_contract_columns_and_dynamic_placeholders"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 3,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "name"
+            ],
+            "name": "detail_ticket_totals_columns_exist",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-15T00:06:19Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
