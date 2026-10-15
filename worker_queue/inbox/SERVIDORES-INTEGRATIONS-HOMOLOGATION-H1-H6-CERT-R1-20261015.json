@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-INTEGRATIONS-HOMOLOGATION-H1-H6-CERT-R1-20261015",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Certificar en modo READ_ONLY la implementación H1-H6 de homologación de conexiones de EDARSAHUB: contrato y estados, fingerprint determinista, detector de contrato SQL Server basado en evidencia, binding Connection-HomologationProfile, persistencia propuesta no ejecutada, lectura HRLectura fail-closed y guard operacional por dominio. No ejecutar migraciones, no DDL, no consultar CHAPUR/POS LIVE, no modificar Producción.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/integrations_center/homologation.py",
+        "backend/modules/integrations_center/contract_detector.py",
+        "backend/modules/integrations_center/homologation_binding.py",
+        "backend/modules/integrations_center/homologation_repository.py",
+        "backend/modules/integrations_center/homologation_guard.py",
+        "backend/modules/integrations_center/service.py",
+        "backend/migrations/integrations_homologation_20261015.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_integrations_center_homologation.py",
+        "backend/tests/test_integrations_center_contract_detector.py",
+        "backend/tests/test_integrations_center_homologation_binding.py",
+        "backend/tests/test_integrations_center_homologation_guard.py",
+        "backend/tests/test_integrations_center_gate5b.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/integrations_center",
+          "backend/migrations/integrations_homologation_20261015.py"
+        ],
+        "search_terms": [
+          "Sistema_IntegracionHomologacionPerfil",
+          "Sistema_IntegracionHomologacionDominio",
+          "Sistema_IntegracionHomologacionBinding",
+          "NOT_ASSESSED",
+          "REVALIDATION_REQUIRED",
+          "CertificationSource.REUSED",
+          "fetch_all_dict_readonly",
+          "HOMOLOGATION_DOMAIN_NOT_CERTIFIED"
+        ],
+        "max_results": 100
+      }
+    }
+  ]
+}
