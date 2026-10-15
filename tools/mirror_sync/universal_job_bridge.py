@@ -26,6 +26,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+try:
+    from tools.mirror_sync.readonly_audit_profiles import build_readonly_audit_checks, is_allowed_readonly_audit_profile
+except ModuleNotFoundError:
+    from readonly_audit_profiles import build_readonly_audit_checks, is_allowed_readonly_audit_profile
+
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 STATE = ROOT / ".git" / "universal-worker-queue"
 PENDING = STATE / "pending"
@@ -352,6 +357,11 @@ def validate(job: Any) -> list[str]:
     if mode == "READ_ONLY_SQL":
         if actions not in (None, []):
             errors.append("READ_ONLY_SQL_ACTIONS_FORBIDDEN")
+        audit_profile = str(job.get("audit_profile") or "").strip()
+        if audit_profile and not is_allowed_readonly_audit_profile(audit_profile):
+            errors.append("READ_ONLY_SQL_AUDIT_PROFILE_INVALID")
+        if audit_profile and job.get("checks") not in (None, []):
+            errors.append("READ_ONLY_SQL_AUDIT_PROFILE_WITH_INLINE_CHECKS_FORBIDDEN")
     elif mode == READ_ONLY_MODE:
         if actions != []:
             errors.append("READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST")
@@ -526,7 +536,10 @@ def validate(job: Any) -> list[str]:
                 errors.extend(validate_action(action, index))
     checks = job.get("checks", [{"type": "git_diff_check"}])
     if mode == "READ_ONLY_SQL":
-        if not isinstance(checks, list) or not checks:
+        audit_profile = str(job.get("audit_profile") or "").strip()
+        if audit_profile:
+            checks = []
+        elif not isinstance(checks, list) or not checks:
             errors.append("READ_ONLY_SQL_CHECK_REQUIRED")
         elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
             errors.append("READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED")
