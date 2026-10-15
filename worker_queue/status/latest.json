@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "5b045feb6ed5ede56d3c0620a8e0d7ed693fa41c",
-  "generated_at_utc": "2026-10-15T23:47:53Z",
+  "generated_at_utc": "2026-10-15T23:49:22Z",
   "history": {
     "done_total_local": 1432,
     "pending_total_local": 0,
@@ -16,55 +16,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3404,
+      "age_seconds": 3494,
       "job_id": "BOS-MCP-CLAUDE-GATEWAY-404-DIAGNOSTIC-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2657,
+      "age_seconds": 2747,
       "job_id": "BOS-MCP-CLAUDE-GATEWAY-ROUTER-REGISTER-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1488,
+      "age_seconds": 1578,
       "job_id": "BOS-MCP-WORKER-MCP-INIT-LAZY-IMPORT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1459,
+      "age_seconds": 1549,
       "job_id": "BOS-TOAST-GATE4-ONBOARDING-CONTRACT-READONLY-R1-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1312,
+      "age_seconds": 1401,
       "job_id": "CXP-GATE3F-G-IDEMPOTENCY-MIGRATION-PREFLIGHT-READONLY-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3274,
+      "age_seconds": 3364,
       "job_id": "SERVIDORES-CHAPUR-API-LOCAL-CONTRACT-DETECTOR-CERT-R3-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1097,
+      "age_seconds": 1187,
       "job_id": "SERVIDORES-CHAPUR-CANONICAL-SCOPE-CANDIDATES-R1-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1391,
+      "age_seconds": 1481,
       "job_id": "SERVIDORES-CHAPUR-ENTERPRISE-CANONICAL-DISCOVERY-R2-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2515,
+      "age_seconds": 2605,
       "job_id": "SERVIDORES-OPERATIONAL-SCOPE-GUARD-CERT-R1-20261015",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,8 +84,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-15T23:47:41Z",
-    "last_receive_utc": "2026-10-15T23:47:51Z",
+    "last_cycle_utc": "2026-10-15T23:49:15Z",
+    "last_receive_utc": "2026-10-15T23:49:10Z",
     "last_terminal_utc": "2026-10-15T23:29:35Z",
     "pid": "67621",
     "runtime_fingerprint": {
