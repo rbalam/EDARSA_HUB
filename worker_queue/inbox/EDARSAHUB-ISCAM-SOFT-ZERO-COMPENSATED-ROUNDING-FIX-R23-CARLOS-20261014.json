@@ -1,0 +1,72 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-SOFT-ZERO-COMPENSATED-ROUNDING-FIX-R23-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir de forma canónica y transversal el detalle SoftRestaurant para tickets válidos con encabezado total 0 cuyas partidas positivas y negativas se compensan y dejan un residual técnico de redondeo <= 1.00. Agregar ajuste técnico al mismo folio en vez de bloquear el día. Mantener fail-closed para diferencias aisladas o >1.00. No tocar encabezado, sync_comercial_abiertas_v2, MPRO, otras tablas ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "        technical_microprice_zero = (\n            header_total == Decimal(\"0\")\n            and discount_indicator == Decimal(\"0\")\n            and product_total > Decimal(\"0\")\n            and product_total <= Decimal(\"0.50\")\n            and all(\n                Decimal(\"0\") <= _d(row.get(\"precio_unitario\")) <= Decimal(\"0.001\")\n                for row in items\n            )\n        )\n        if technical_microprice_zero:\n            adjustment = dict(items[0])\n            adjustment[\"producto_codigo_fuente\"] = SOFT_AJUSTE_ENCABEZADO\n            adjustment[\"producto_nombre\"] = \"AJUSTE DE CIERRE A CERO (MICROPRECIO TECNICO)\"\n            adjustment[\"cantidad\"] = Decimal(\"0\")\n            adjustment[\"precio_unitario\"] = Decimal(\"0\")\n            adjustment[\"importe_bruto\"] = Decimal(\"0\")\n            adjustment[\"importe_neto\"] = delta\n            out.append(adjustment)\n            continue\n\n        if header_total == Decimal(\"0\"):\n",
+      "new": "        technical_microprice_zero = (\n            header_total == Decimal(\"0\")\n            and discount_indicator == Decimal(\"0\")\n            and product_total > Decimal(\"0\")\n            and product_total <= Decimal(\"0.50\")\n            and all(\n                Decimal(\"0\") <= _d(row.get(\"precio_unitario\")) <= Decimal(\"0.001\")\n                for row in items\n            )\n        )\n        if technical_microprice_zero:\n            adjustment = dict(items[0])\n            adjustment[\"producto_codigo_fuente\"] = SOFT_AJUSTE_ENCABEZADO\n            adjustment[\"producto_nombre\"] = \"AJUSTE DE CIERRE A CERO (MICROPRECIO TECNICO)\"\n            adjustment[\"cantidad\"] = Decimal(\"0\")\n            adjustment[\"precio_unitario\"] = Decimal(\"0\")\n            adjustment[\"importe_bruto\"] = Decimal(\"0\")\n            adjustment[\"importe_neto\"] = delta\n            out.append(adjustment)\n            continue\n\n        line_nets = [_d(row.get(\"importe_neto\")) for row in items]\n        technical_compensated_rounding_zero = (\n            header_total == Decimal(\"0\")\n            and discount_indicator == Decimal(\"0\")\n            and abs(product_total) <= Decimal(\"1.00\")\n            and any(value > 0 for value in line_nets)\n            and any(value < 0 for value in line_nets)\n        )\n        if technical_compensated_rounding_zero:\n            adjustment = dict(items[0])\n            adjustment[\"producto_codigo_fuente\"] = SOFT_AJUSTE_ENCABEZADO\n            adjustment[\"producto_nombre\"] = (\n                \"AJUSTE DE CIERRE A CERO (REDONDEO PARTIDAS COMPENSADAS)\"\n            )\n            adjustment[\"cantidad\"] = Decimal(\"0\")\n            adjustment[\"precio_unitario\"] = Decimal(\"0\")\n            adjustment[\"importe_bruto\"] = Decimal(\"0\")\n            adjustment[\"importe_neto\"] = delta\n            out.append(adjustment)\n            continue\n\n        if header_total == Decimal(\"0\"):\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_soft_zero_compensated_rounding_r23.py",
+      "content": "from decimal import Decimal\n\nimport pytest\n\nfrom scripts.poblar_ventas_detalle_producto_canonico import (\n    SOFT_AJUSTE_ENCABEZADO,\n    _soft_add_ticket_adjustments,\n    _validate,\n)\n\n\ndef _row(ticket, detail, price):\n    return {\n        \"id_transaccion\": f\"SOFT:{ticket}\",\n        \"numero_ticket\": str(ticket),\n        \"folio_origen\": str(ticket),\n        \"importe_neto_ticket\": Decimal(\"0\"),\n        \"descuento_ticket\": Decimal(\"0\"),\n        \"importe_neto\": Decimal(str(detail)),\n        \"importe_bruto\": Decimal(str(detail)),\n        \"pax_ticket\": 1,\n        \"producto_codigo_fuente\": \"TEST\",\n        \"producto_nombre\": \"TEST\",\n        \"cantidad\": Decimal(\"1\"),\n        \"precio_unitario\": Decimal(str(price)),\n        \"es_kpi_valido\": 1,\n    }\n\n\n@pytest.mark.parametrize(\n    \"ticket,positive,negative\",\n    [\n        (\"94617\", \"2899.5000\", \"-2900.0000\"),\n        (\"94615\", \"1699.5000\", \"-1700.0000\"),\n        (\"94616\", \"1699.5000\", \"-1700.0000\"),\n        (\"94614\", \"3399.0000\", \"-3400.0000\"),\n    ],\n)\ndef test_zero_header_accepts_compensated_rounding_residual(ticket, positive, negative):\n    out = _soft_add_ticket_adjustments([\n        _row(ticket, positive, \"1500\"),\n        _row(ticket, negative, \"-1000\"),\n    ])\n\n    assert out[-1][\"producto_codigo_fuente\"] == SOFT_AJUSTE_ENCABEZADO\n    assert \"REDONDEO PARTIDAS COMPENSADAS\" in out[-1][\"producto_nombre\"]\n    assert sum(row[\"importe_neto\"] for row in out) == Decimal(\"0\")\n\n    result = _validate(out, {\"ventas\": Decimal(\"0\"), \"tickets\": 1, \"pax\": 1})\n    assert result[\"ok\"] is True\n\n\ndef test_zero_header_single_negative_residual_still_fails_closed():\n    with pytest.raises(RuntimeError, match=\"diferencia no explicada\"):\n        _soft_add_ticket_adjustments([\n            _row(\"single-negative\", \"-1.00\", \"-1.00\"),\n        ])\n\n\ndef test_zero_header_large_compensated_difference_still_fails_closed():\n    with pytest.raises(RuntimeError, match=\"diferencia no explicada\"):\n        _soft_add_ticket_adjustments([\n            _row(\"large-gap\", \"100.00\", \"100.00\"),\n            _row(\"large-gap\", \"-102.00\", \"-102.00\"),\n        ])\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_soft_zero_compensated_rounding_r23.py",
+        "backend/tests/test_iscam_soft_microprice_zero_r32b.py",
+        "backend/tests/test_iscam_scheduler_definitive_fix_r80c.py",
+        "backend/tests/test_iscam_header_folio_parent_r92.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+          "backend/tests/test_iscam_soft_zero_compensated_rounding_r23.py"
+        ],
+        "search_terms": [
+          "technical_compensated_rounding_zero",
+          "REDONDEO PARTIDAS COMPENSADAS",
+          "abs(product_total) <= Decimal(\"1.00\")",
+          "any(value > 0 for value in line_nets)",
+          "any(value < 0 for value in line_nets)"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 80
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
