@@ -4,55 +4,61 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
-  "generated_at_utc": "2026-10-15T00:13:03Z",
+  "generated_at_utc": "2026-10-15T00:14:25Z",
   "history": {
-    "done_total_local": 1411,
+    "done_total_local": 1412,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1228,
-    "results_total_local": 2417
+    "results_total_local": 2418
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2686,
+      "age_seconds": 43,
+      "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-20261013-REAL-VERIFY-R14-CARLOS-20261014",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2768,
       "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-OCT2026-COVERAGE-R7-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2267,
+      "age_seconds": 2349,
       "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-BATCH-PENDING-DIAG-R9-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1961,
+      "age_seconds": 2043,
       "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-BATCH-STEP-DIAG-R10-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1338,
+      "age_seconds": 1420,
       "job_id": "EDARSAHUB-RESYNC-DETAIL-COMMIT-COLUMN-FIX-R11-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 397,
+      "age_seconds": 479,
       "job_id": "EDARSAHUB-RESYNC-DETAIL-COMMIT-CONTRACT-FIX-R12-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1960,
+      "age_seconds": 2042,
       "job_id": "EDARSAHUB-SYNC-HISTORICAL-CANONICAL-COMPATIBILITY-FIX-R2-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 164,
+      "age_seconds": 247,
       "job_id": "EDARSAHUB-TICKET-FISCAL-COLUMNS-MIGRATION-R13-CARLOS-20261014",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,15 +72,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 7,
+  "queue_result_ready_recent": 8,
   "queue_running": 0,
   "remote_development_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-15T00:13:00Z",
-    "last_receive_utc": "2026-10-15T00:12:55Z",
-    "last_terminal_utc": "2026-10-15T00:10:18Z",
+    "last_cycle_utc": "2026-10-15T00:14:17Z",
+    "last_receive_utc": "2026-10-15T00:14:12Z",
+    "last_terminal_utc": "2026-10-15T00:13:41Z",
     "pid": "15252",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "007da57a0c9aeec8412a797df9af562fa0b55afc",
