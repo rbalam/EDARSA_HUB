@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "91e758e22788f09b5521ac582a41a7dfb78d0d86",
-  "generated_at_utc": "2026-10-15T21:56:13Z",
+  "generated_at_utc": "2026-10-15T21:57:32Z",
   "history": {
     "done_total_local": 1425,
     "pending_total_local": 0,
@@ -16,14 +16,8 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1823,
+      "age_seconds": 1901,
       "job_id": "SERVIDORES-CHAPUR-API-LOCAL-CONTRACT-DETECTOR-CERT-R1-20261015",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3561,
-      "job_id": "SERVIDORES-CHAPUR-ENTERPRISE-CANONICAL-DISCOVERY-R1-20261015",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -36,14 +30,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 1,
   "queue_running": 0,
   "remote_development_sha": "91e758e22788f09b5521ac582a41a7dfb78d0d86",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-15T21:56:12Z",
-    "last_receive_utc": "2026-10-15T21:56:07Z",
+    "last_cycle_utc": "2026-10-15T21:57:28Z",
+    "last_receive_utc": "2026-10-15T21:57:23Z",
     "last_terminal_utc": "2026-10-15T21:25:50Z",
     "pid": "635",
     "runtime_fingerprint": {
