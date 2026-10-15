@@ -30,7 +30,7 @@ def build_readonly_audit_checks(profile: str) -> List[Dict[str, Any]]:
                 "max_rows": 100,
                 "queries": [
                     {
-                        "name": "chapur_softrestaurant_connections",
+                        "name": "chapur_enterprise_connections",
                         "sql": (
                             "SELECT "
                             "CONVERT(varchar(36), sc.id) AS connection_id,"
@@ -39,7 +39,7 @@ def build_readonly_audit_checks(profile: str) -> List[Dict[str, Any]]:
                             "sc.activo,sc.visible_en_operaciones,sc.EmpresaID,sc.empresa_id "
                             "FROM dbo.Servidores_Conexiones sc "
                             "WHERE UPPER(ISNULL(sc.nombre,'')) LIKE '%CHAPUR%' "
-                            "OR UPPER(ISNULL(sc.system_type,''))='SOFTRESTAURANT' "
+                            "OR UPPER(ISNULL(sc.system_type,''))='ENTERPRISE' "
                             "ORDER BY sc.nombre"
                         ),
                     },
@@ -48,7 +48,7 @@ def build_readonly_audit_checks(profile: str) -> List[Dict[str, Any]]:
                         "sql": (
                             "SELECT "
                             "CONVERT(varchar(36), u.id) AS unidad_negocio_pk,"
-                            "u.unidad_negocio_id,u.nombre,"
+                            "u.codigo,u.nombre,u.sucursal_origen_id,u.system_type,"
                             "CONVERT(varchar(36), u.server_id) AS server_id,u.activo "
                             "FROM dbo.Unidades_Negocio u "
                             "WHERE UPPER(ISNULL(u.nombre,'')) LIKE '%CHAPUR%' "
@@ -56,7 +56,7 @@ def build_readonly_audit_checks(profile: str) -> List[Dict[str, Any]]:
                             "SELECT CONVERT(varchar(36), sc.id) "
                             "FROM dbo.Servidores_Conexiones sc "
                             "WHERE UPPER(ISNULL(sc.nombre,'')) LIKE '%CHAPUR%' "
-                            "OR UPPER(ISNULL(sc.system_type,''))='SOFTRESTAURANT'"
+                            "OR UPPER(ISNULL(sc.system_type,''))='ENTERPRISE'"
                             ") ORDER BY u.nombre"
                         ),
                     },
@@ -68,8 +68,8 @@ def build_readonly_audit_checks(profile: str) -> List[Dict[str, Any]]:
                             "v.tipo_sistema,v.nombre_sistema,v.version_sistema,"
                             "v.proveedor,v.motor_base_datos,v.es_version_default,v.activo "
                             "FROM dbo.Sistema_VersionesSistemas v "
-                            "WHERE UPPER(ISNULL(v.tipo_sistema,''))='SOFTRESTAURANT' "
-                            "OR UPPER(ISNULL(v.nombre_sistema,'')) LIKE '%SOFTRESTAURANT%' "
+                            "WHERE UPPER(ISNULL(v.tipo_sistema,''))='ENTERPRISE' "
+                            "OR UPPER(ISNULL(v.nombre_sistema,'')) LIKE '%ENTERPRISE%' "
                             "ORDER BY v.version_sistema"
                         ),
                     },
