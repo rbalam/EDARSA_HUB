@@ -1,0 +1,46 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-MCP-CLAUDE-GATEWAY-404-DIAGNOSTIC-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "source": "CHATGPT",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "chat": "MCP Claude gateway 404 diagnostic"
+  },
+  "objective": "Auditar exclusivamente el contrato de codigo del gateway MCP existente: determinar si backend/server.py registra modules.worker_mcp.gateway_router y mapear rutas /api/mcp, transporte MCP, upstream y flujo de autenticacion service credential/JWT. Entregar evidencia del repositorio y recomendaciones minimas; no afirmar estado del despliegue, no modificar archivos, credenciales ni produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/server.py",
+          "backend/modules/worker_mcp",
+          "backend/modules/worker_ingress"
+        ],
+        "search_terms": [
+          "worker_mcp",
+          "mcp_gateway",
+          "/api/mcp",
+          "streamable_http_app",
+          "exchange_service_credential",
+          "include_router",
+          "authorization",
+          "bearer"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "max_results": 150
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
