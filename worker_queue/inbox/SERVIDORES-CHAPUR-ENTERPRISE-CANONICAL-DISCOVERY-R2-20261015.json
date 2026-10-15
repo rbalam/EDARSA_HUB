@@ -1,0 +1,13 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-CHAPUR-ENTERPRISE-CANONICAL-DISCOVERY-R2-20261015",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Ejecutar discovery canonico READ_ONLY_SQL de CHAPUR usando exclusivamente el perfil nombrado corregido para ENTERPRISE/API_LOCAL. Obtener conexiones, Unidades de Negocio y version registrada sin SQL inline, sin secretos, sin endpoints LIVE y sin escrituras. La evidencia se usara para decidir el siguiente paso de scope; no activar Operaciones.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "audit_profile": "chapur_connection_discovery_v1",
+  "checks": []
+}
