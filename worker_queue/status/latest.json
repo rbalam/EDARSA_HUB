@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "888ec8fe06d8ef00f2d82217703ac9218da37e2f",
-  "generated_at_utc": "2026-10-15T21:05:00Z",
+  "generated_at_utc": "2026-10-15T21:06:27Z",
   "history": {
     "done_total_local": 1425,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 488,
+      "age_seconds": 576,
       "job_id": "SERVIDORES-CHAPUR-ENTERPRISE-CANONICAL-DISCOVERY-R1-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1107,
+      "age_seconds": 1195,
       "job_id": "SERVIDORES-INTEGRATIONS-HOMOLOGATION-H7-H8-CERT-R2-20261015",
       "reason": null,
       "state": "RESULT_READY"
@@ -42,8 +42,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-15T21:05:00Z",
-    "last_receive_utc": "2026-10-15T21:04:55Z",
+    "last_cycle_utc": "2026-10-15T21:06:25Z",
+    "last_receive_utc": "2026-10-15T21:06:20Z",
     "last_terminal_utc": "2026-10-15T20:56:51Z",
     "pid": "62630",
     "runtime_fingerprint": {
