@@ -59,6 +59,16 @@ class RBACContextService:
             if not unidad_activa and unidades:
                 unidad_activa = str(unidades[0]["UnidadNegocioID"]) if unidades[0]["UnidadNegocioID"] else None
 
+            # Fail closed: la unidad explicita debe figurar en las asignaciones activas.
+            if unidad_negocio_id is not None:
+                unidades_asignadas = {
+                    str(item['UnidadNegocioID'])
+                    for item in unidades
+                    if item.get('UnidadNegocioID') is not None
+                }
+                if str(unidad_negocio_id) not in unidades_asignadas:
+                    return None
+
             # roles contextuales activos para unidad elegida
             cur.execute("""
                 SELECT
