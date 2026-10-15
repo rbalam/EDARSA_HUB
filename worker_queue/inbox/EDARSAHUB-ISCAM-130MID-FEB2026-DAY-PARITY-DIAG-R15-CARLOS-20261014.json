@@ -1,0 +1,34 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-130MID-FEB2026-DAY-PARITY-DIAG-R15-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Auditar por día febrero 2026 de 130MID en Reportes ISCAM para identificar por qué algunos días sincronizan y 12 quedan pendientes. Comparar Runtime V2 contra Comercial_Inteligencia_VentasDetalleProducto por venta, tickets y PAX; identificar patrón diario y deltas acumulados. Solo lectura, no modificar datos ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "feb2026_130mid_daily_parity",
+          "sql": "WITH runtime AS (\n          SELECT CAST(fecha_operacion AS date) fecha_operacion,\n                 SUM(CAST(ISNULL(ventas_total,0) AS decimal(18,4))) ventas_runtime,\n                 SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets_runtime,\n                 SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax_runtime\n          FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n          WHERE unidad_negocio_id='130MID'\n            AND fecha_operacion>='2026-02-01' AND fecha_operacion<'2026-03-01'\n          GROUP BY CAST(fecha_operacion AS date)\n        ),\n        detalle_ticket AS (\n          SELECT CAST(fecha_operacion AS date) fecha_operacion,\n                 numero_ticket,\n                 SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) venta_ticket,\n                 MAX(CAST(ISNULL(pax,0) AS bigint)) pax_ticket\n          FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n          WHERE unidad_negocio_id='130MID'\n            AND fecha_operacion>='2026-02-01' AND fecha_operacion<'2026-03-01'\n            AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n          GROUP BY CAST(fecha_operacion AS date),numero_ticket\n        ),\n        detalle AS (\n          SELECT fecha_operacion,\n                 SUM(venta_ticket) ventas_detalle,\n                 COUNT(*) tickets_detalle,\n                 SUM(pax_ticket) pax_detalle\n          FROM detalle_ticket\n          GROUP BY fecha_operacion\n        )\n        SELECT r.fecha_operacion,\n               r.ventas_runtime,ISNULL(d.ventas_detalle,0) ventas_detalle,\n               CAST(r.ventas_runtime-ISNULL(d.ventas_detalle,0) AS decimal(18,2)) delta_venta,\n               r.tickets_runtime,ISNULL(d.tickets_detalle,0) tickets_detalle,\n               r.tickets_runtime-ISNULL(d.tickets_detalle,0) delta_tickets,\n               r.pax_runtime,ISNULL(d.pax_detalle,0) pax_detalle,\n               r.pax_runtime-ISNULL(d.pax_detalle,0) delta_pax,\n               CASE WHEN d.fecha_operacion IS NULL THEN 'MISSING_DETAIL'\n                    WHEN ABS(r.ventas_runtime-ISNULL(d.ventas_detalle,0))>0.05\n                      OR r.tickets_runtime<>ISNULL(d.tickets_detalle,0)\n                      OR r.pax_runtime<>ISNULL(d.pax_detalle,0)\n                    THEN 'MISMATCH'\n                    ELSE 'OK' END estado\n        FROM runtime r\n        LEFT JOIN detalle d ON d.fecha_operacion=r.fecha_operacion\n        ORDER BY r.fecha_operacion"
+        },
+        {
+          "name": "feb2026_130mid_problem_summary",
+          "sql": "WITH runtime AS (\n          SELECT CAST(fecha_operacion AS date) fecha_operacion,\n                 SUM(CAST(ISNULL(ventas_total,0) AS decimal(18,4))) ventas_runtime,\n                 SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets_runtime,\n                 SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax_runtime\n          FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n          WHERE unidad_negocio_id='130MID'\n            AND fecha_operacion>='2026-02-01' AND fecha_operacion<'2026-03-01'\n          GROUP BY CAST(fecha_operacion AS date)\n        ),\n        detalle_ticket AS (\n          SELECT CAST(fecha_operacion AS date) fecha_operacion,\n                 numero_ticket,\n                 SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) venta_ticket,\n                 MAX(CAST(ISNULL(pax,0) AS bigint)) pax_ticket\n          FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n          WHERE unidad_negocio_id='130MID'\n            AND fecha_operacion>='2026-02-01' AND fecha_operacion<'2026-03-01'\n            AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n          GROUP BY CAST(fecha_operacion AS date),numero_ticket\n        ),\n        detalle AS (\n          SELECT fecha_operacion,SUM(venta_ticket) ventas_detalle,COUNT(*) tickets_detalle,SUM(pax_ticket) pax_detalle\n          FROM detalle_ticket GROUP BY fecha_operacion\n        )\n        SELECT COUNT(*) dias_problematicos,\n               SUM(CAST(r.ventas_runtime-ISNULL(d.ventas_detalle,0) AS decimal(18,2))) delta_venta_total,\n               SUM(r.tickets_runtime-ISNULL(d.tickets_detalle,0)) delta_tickets_total,\n               SUM(r.pax_runtime-ISNULL(d.pax_detalle,0)) delta_pax_total\n        FROM runtime r LEFT JOIN detalle d ON d.fecha_operacion=r.fecha_operacion\n        WHERE d.fecha_operacion IS NULL\n           OR ABS(r.ventas_runtime-ISNULL(d.ventas_detalle,0))>0.05\n           OR r.tickets_runtime<>ISNULL(d.tickets_detalle,0)\n           OR r.pax_runtime<>ISNULL(d.pax_detalle,0)"
+        }
+      ]
+    }
+  ]
+}
