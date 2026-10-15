@@ -1,0 +1,33 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-TOAST-GATE4-ONBOARDING-CONTRACT-READONLY-R1-20261015",
+  "created_at_utc": "2026-10-15T23:22:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "5240afd945673a0db4719b332317238c543b277c",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Toast Gate4: auditar exclusivamente en SQL READ_ONLY indices, FK y defaults de tablas canonicas para diseñar alta de Toast; no insertar ni alterar datos, no credenciales, no llamadas externas, no Production, no tablas Toast ni robot paralelo.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "TOAST_GATE4_KEYS",
+          "sql": "SELECT t.name AS Tabla,i.name AS Indice,i.is_unique AS EsUnico,i.is_primary_key AS EsPK,c.name AS Columna,ic.key_ordinal AS Orden FROM sys.tables t JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE t.name IN ('Sistema_Tipos','Sistema_TiposVariantes','Sistema_VersionesSistemas','Sistema_Capacidades','Sistema_Sync_Catalogo','Sistema_Sync_Capacidades','Servidores_Conexiones','Sistema_IdentificadoresExternos') AND ic.key_ordinal>0 ORDER BY t.name,i.name,ic.key_ordinal;"
+        },
+        {
+          "name": "TOAST_GATE4_FK",
+          "sql": "SELECT OBJECT_NAME(f.parent_object_id) AS Tabla,f.name AS FK,COL_NAME(fc.parent_object_id,fc.parent_column_id) AS Columna,OBJECT_NAME(f.referenced_object_id) AS TablaReferenciada,COL_NAME(fc.referenced_object_id,fc.referenced_column_id) AS ColumnaReferenciada FROM sys.foreign_keys f JOIN sys.foreign_key_columns fc ON fc.constraint_object_id=f.object_id WHERE OBJECT_NAME(f.parent_object_id) IN ('Sistema_Tipos','Sistema_TiposVariantes','Sistema_VersionesSistemas','Sistema_Capacidades','Sistema_Sync_Catalogo','Sistema_Sync_Capacidades','Servidores_Conexiones','Sistema_IdentificadoresExternos') ORDER BY Tabla,FK;"
+        },
+        {
+          "name": "TOAST_GATE4_DEFAULTS",
+          "sql": "SELECT t.name AS Tabla,c.name AS Columna,c.is_nullable AS Nullable,c.is_identity AS IdentityCol,dc.definition AS DefaultSQL FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id LEFT JOIN sys.default_constraints dc ON dc.object_id=c.default_object_id WHERE t.name IN ('Sistema_Tipos','Sistema_TiposVariantes','Sistema_VersionesSistemas','Sistema_Capacidades','Sistema_Sync_Catalogo','Sistema_Sync_Capacidades','Servidores_Conexiones','Sistema_IdentificadoresExternos') ORDER BY t.name,c.column_id;"
+        }
+      ]
+    }
+  ]
+}
