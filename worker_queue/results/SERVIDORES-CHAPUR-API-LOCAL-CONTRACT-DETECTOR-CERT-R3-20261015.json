@@ -1,0 +1,113 @@
+{
+  "base_sha": "33d57960c8140c12dfdf210dbd987777920f01b6",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-15T22:53:18Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES-CHAPUR-API-LOCAL-CONTRACT-DETECTOR-CERT-R3-20261015",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-15T22:53:47Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "routes",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "__getattr__",
+              "integrations_center_router"
+            ],
+            "path": "backend/modules/integrations_center/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "__getattr__"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "homologation",
+              "typing",
+              "urllib.parse"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "api_local_sql_query_v1",
+              "readonly_sql",
+              "schema_fingerprint"
+            ],
+            "path": "backend/modules/integrations_center/api_local_contract_detector.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "api_local_contract_payload",
+              "detect_api_local_contract"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.integrations_center.api_local_contract_detector"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "readonly_sql",
+              "schema_fingerprint"
+            ],
+            "path": "backend/tests/test_integrations_center_api_local_contract_detector.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_api_local_contract_excludes_instance_identity",
+              "test_chapur_instances_reuse_same_api_local_contract_fingerprint",
+              "test_contract_declares_readonly_sql_transport_capability",
+              "test_endpoint_contract_path_change_changes_fingerprint"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 3,
+          "scanned_files": 4,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-15T22:53:17Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
