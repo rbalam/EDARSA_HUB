@@ -1,0 +1,434 @@
+{
+  "base_sha": "b6936216f8475d1992f3750e1f69d29f3b170489",
+  "blockers": [],
+  "candidate_sha": "d7a769c4dd721ad2fe66879a2e5e5e98f64712b2",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-10-15T04:10:34Z",
+  "development_sha": "d7a769c4dd721ad2fe66879a2e5e5e98f64712b2",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/api/admin_scheduler_resync.py",
+    "backend/modules/comercial/resync_batch_jobs.py",
+    "backend/scripts/backfill_detalle_producto_pendientes.py",
+    "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+    "backend/scripts/resync_comercial_range_worker.py",
+    "backend/tests/test_resync_ticket_blocker_force_r26.py",
+    "frontend/src/components/admin/ComercialRangeResyncCard.jsx"
+  ],
+  "frontend_build_evidence": {
+    "checks": [
+      {
+        "completed_at_utc": "2026-10-15T04:10:30Z",
+        "output_tail": "yarn run v1.22.22\n$ yarn validate:navigation && yarn install --frozen-lockfile --non-interactive --ignore-scripts --prefer-offline\n$ node scripts/validate_enterprise_navigation.js && node scripts/validate_executive_navigation.js\nENTERPRISE_NAVIGATION_GUARDIAN=PASS\nGROUPS=8\nMODULE_MAPPINGS=28\nMENU_MAPPINGS=74\nPLANNED_ITEMS=54\nREGISTERED_FUTURE_TABS=0\nNEW_BADGE_DAYS=30\nEXECUTIVE_NAVIGATION_GUARD=PASS\nMAIN_ROUTE=/tablero-ejecutivo\nMAIN_COMPONENT=TableroEjecutivo\nADMIN_ROUTE=/admin/dashboard-ejecutivo\nADMIN_COMPONENT=DashboardEjecutivo\nEXECUTIVE_TABS=comercial,finanzas,rh,bsc\nADMIN_ROUTE_IN_ENTERPRISE_MENU=NO\n[1/4] Resolving packages...\n[2/4] Fetching packages...\n[3/4] Linking dependencies...\nwarning \" > react-day-picker@8.10.1\" has incorrect peer dependency \"date-fns@^2.28.0 || ^3.0.0\".\nwarning \" > react-day-picker@8.10.1\" has incorrect peer dependency \"react@^16.8.0 || ^17.0.0 || ^18.0.0\".\nwarning \" > @babel/plugin-proposal-private-property-in-object@7.21.11\" has unmet peer dependency \"@babel/core@^7.0.0-0\".\nwarning \"react-scripts > eslint-config-react-app > eslint-plugin-flowtype@8.0.3\" has unmet peer dependency \"@babel/plugin-syntax-flow@^7.14.5\".\nwarning \"react-scripts > eslint-config-react-app > eslint-plugin-flowtype@8.0.3\" has unmet peer dependency \"@babel/plugin-transform-react-jsx@^7.14.9\".\nwarning \"react-scripts > react-dev-utils > fork-ts-checker-webpack-plugin@6.5.3\" has unmet peer dependency \"typescript@>= 2.7\".\nwarning \"react-scripts > eslint-config-react-app > @typescript-eslint/eslint-plugin > tsutils@3.21.0\" has unmet peer dependency \"typescript@>=2.8.0 || >= 3.2.0-dev || >= 3.3.0-dev || >= 3.4.0-dev || >= 3.5.0-dev || >= 3.6.0-dev || >= 3.6.0-beta || >= 3.7.0-dev || >= 3.7.0-beta\".\nwarning \" > recharts@3.6.0\" has unmet peer dependency \"react-is@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0\".\nwarning \"@craco/craco > cosmiconfig-typescript-loader@1.0.9\" has unmet peer dependency \"@types/node@*\".\nwarning \"@craco/craco > cosmiconfig-typescript-loader@1.0.9\" has unmet peer dependency \"typescript@>=3\".\nwarning \"@craco/craco > cosmiconfig-typescript-loader > ts-node@10.9.2\" has unmet peer dependency \"@types/node@*\".\nwarning \"@craco/craco > cosmiconfig-typescript-loader > ts-node@10.9.2\" has unmet peer dependency \"typescript@>=2.7\".\nwarning Workspaces can only be enabled in private projects.\nwarning Workspaces can only be enabled in private projects.\n[4/4] Building fresh packages...\nwarning Ignored scripts due to flag.\n$ DISABLE_ESLINT_PLUGIN=true CI=false craco build\nCannot find ESLint plugin (ESLintWebpackPlugin).\nCreating an optimized production build...\nBrowserslist: browsers data (caniuse-lite) is 10 months old. Please run:\n  npx update-browserslist-db@latest\n  Why you should do it regularly: https://github.com/browserslist/update-db#readme\nBrowserslist: browsers data (caniuse-lite) is 10 months old. Please run:\n  npx update-browserslist-db@latest\n  Why you should do it regularly: https://github.com/browserslist/update-db#readme\nCompiled successfully.\n\nFile sizes after gzip:\n\n  1.08 MB   build/static/js/main.de1d6aca.js\n  46.35 kB  build/static/js/239.e39fb35b.chunk.js\n  43.29 kB  build/static/js/455.ba0306d1.chunk.js\n  24.36 kB  build/static/css/main.b99bd751.css\n  8.73 kB   build/static/js/977.8591a78c.chunk.js\n\nThe bundle size is significantly larger than recommended.\nConsider reducing it with code splitting: https://goo.gl/9VhYWB\nYou can also analyze the project dependencies: https://goo.gl/LeUzfb\n\nThe project was built assuming it is hosted at /.\nYou can control this with the homepage field in your package.json.\n\nThe build folder is ready to be deployed.\nYou may serve it with a static server:\n\n  yarn global add serve\n  serve -s build\n\nFind out more about deployment here:\n\n  https://cra.link/deployment\n\nDone in 159.61s.",
+        "returncode": 0,
+        "started_at_utc": "2026-10-15T04:07:50Z",
+        "status": "PASS"
+      }
+    ]
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-RESYNC-TICKET-BLOCKER-FORCE-FLOW-R26-CARLOS-20261014",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-10-15T04:10:45Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "argparse",
+              "collections",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "json",
+              "modules.comercial_v2.ticket_contract",
+              "pymssql",
+              "sys",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "force_allowed",
+              "softticketreconciliationerror"
+            ],
+            "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "SoftTicketReconciliationError",
+              "__init__",
+              "_as_date",
+              "_cfg_values",
+              "_d",
+              "_daterange",
+              "_extract_mpro",
+              "_extract_soft",
+              "_first",
+              "_hash_row",
+              "_insert_rows",
+              "_int_eq",
+              "_load_runtime_rows",
+              "_materialize_rows",
+              "_money_eq",
+              "_mpro_operational_datetime_range",
+              "_mpro_row_es_kpi_valido",
+              "_object_columns",
+              "_parse_sql_server_host_port",
+              "_prorratear_mpro_por_ticket",
+              "_q4",
+              "_query_edarsahub_dicts",
+              "_row_unit_values",
+              "_runtime_for",
+              "_runtime_metrics",
+              "_s",
+              "_safe_print",
+              "_secret_value",
+              "_sistema",
+              "_soft_add_ticket_adjustments",
+              "_soft_operational_datetime_range",
+              "_table_has_col",
+              "_unidad_operativa_id_for_window",
+              "_validate",
+              "get_pos_config_for_unidad",
+              "get_pos_connection",
+              "get_unidades_negocio_pos",
+              "main",
+              "sync_detalle_producto_canonico_dia"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Servidores_Conexiones",
+              "Unidades_Negocio",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "argparse",
+              "datetime",
+              "decimal",
+              "scripts.poblar_ventas_detalle_producto_canonico",
+              "sys",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "ticket_blockers"
+            ],
+            "path": "backend/scripts/backfill_detalle_producto_pendientes.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_detalle_concilia",
+              "_detalle_existente",
+              "_safe_error_code",
+              "ejecutar_backfill",
+              "main"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.query_catalog",
+              "core.rbac.middleware",
+              "core.scheduler.jobs.inteligencia_comercial_enrich",
+              "core.scheduler.jobs.netpay_sync_job",
+              "core.scheduler.jobs.sync_compras_job",
+              "core.security",
+              "core.server_registry",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "fastapi",
+              "json",
+              "logging",
+              "modules.comercial.resync_batch_jobs",
+              "modules.comercial_v2.schemas",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "modules.compras.sync_service",
+              "modules.sistema.sync_catalogo_service",
+              "os",
+              "pydantic",
+              "pymssql",
+              "scripts.backfill_detalle_producto_pendientes",
+              "time",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "authorize_force_ticket",
+              "ticket_blockers"
+            ],
+            "path": "backend/api/admin_scheduler_resync.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/resync/catalogo",
+              "/resync/catalogo/{codigo}",
+              "/resync/catalogo/{codigo}/toggle",
+              "/resync/comercial-range/active",
+              "/resync/comercial-range/jobs",
+              "/resync/comercial-range/jobs/{job_id}",
+              "/resync/comercial-range/jobs/{job_id}/cancel",
+              "/resync/comercial-range/jobs/{job_id}/force-ticket",
+              "/resync/comercial-range/jobs/{job_id}/resume",
+              "/resync/execute",
+              "/resync/history",
+              "/resync/iscam-detail/active",
+              "/resync/iscam-detail/jobs",
+              "/resync/iscam-detail/jobs/{job_id}",
+              "/resync/options",
+              "/resync/resolve",
+              "/resync/retry-all",
+              "/resync/retry/{log_id}",
+              "/resync/validate"
+            ],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "ComercialRangeBatchRequest",
+              "ComercialRangeForceTicketRequest",
+              "IscamDetailBatchRequest",
+              "ResolveRequest",
+              "ResyncExecuteRequest",
+              "ResyncResponse",
+              "ResyncValidateRequest",
+              "RetryAllRequest",
+              "SyncTipoUpsert",
+              "_ejecutar_backfill_detalle_iscam",
+              "_ejecutar_dry_run",
+              "_ejecutar_resync_inventarios_fisicos",
+              "_ejecutar_sync_real",
+              "_execute_edarsahub_query",
+              "_get_edarsahub_config",
+              "_get_netpay_report_types",
+              "_get_tipo_sync_config",
+              "_get_unidad_config",
+              "_is_netpay_sync",
+              "_iscam_batch_create",
+              "_iscam_batch_day_outcome",
+              "_iscam_batch_find_active",
+              "_iscam_batch_is_transient",
+              "_iscam_batch_mark_stale",
+              "_iscam_batch_now_iso",
+              "_iscam_batch_payload_from_row",
+              "_iscam_batch_read",
+              "_iscam_batch_update",
+              "_parse_fecha",
+              "_registrar_en_bitacora",
+              "_registrar_resync_log",
+              "_run_iscam_detail_batch_job",
+              "_run_netpay_resync_background",
+              "_validar_conectividad",
+              "_validar_dias_existentes",
+              "_validar_rango",
+              "_verificar_syncs_recientes",
+              "actualizar_tipo_sync",
+              "crear_comercial_range_job",
+              "crear_iscam_detail_batch_job",
+              "crear_tipo_sync",
+              "detener_comercial_range_job",
+              "ejecutar_resync",
+              "forzar_ticket_comercial_range_job",
+              "listar_catalogo_sync",
+              "listar_resync_fallidos_pendientes",
+              "obtener_comercial_range_activo",
+              "obtener_comercial_range_job",
+              "obtener_historial_resync",
+              "obtener_iscam_detail_batch_activo",
+              "obtener_iscam_detail_batch_job",
+              "obtener_opciones_resync",
+              "reanudar_comercial_range_job",
+              "reintentar_resync_fallido",
+              "reintentar_todos_resync_fallidos",
+              "resolver_dependencias_sync",
+              "toggle_tipo_sync",
+              "validar_resync"
+            ],
+            "tables_referenced": [
+              "Sistema_Sync_Catalogo",
+              "Sistema_Sync_ResyncLog"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "api.admin_scheduler_resync",
+              "argparse",
+              "asyncio",
+              "datetime",
+              "json",
+              "sys",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "forced-tickets-json"
+            ],
+            "path": "backend/scripts/resync_comercial_range_worker.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_safe_summary",
+              "main"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "api.admin_scheduler_resync",
+              "asyncio",
+              "core.scheduler.locks",
+              "core.sql_first.db",
+              "datetime",
+              "json",
+              "os",
+              "pathlib",
+              "sys",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "authorize_force_ticket",
+              "force_allowed",
+              "force_audit",
+              "forced-tickets-json"
+            ],
+            "path": "backend/modules/comercial/resync_batch_jobs.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_blocks",
+              "_cancel_requested",
+              "_compact",
+              "_finish_cancelled",
+              "_key",
+              "_now",
+              "_read",
+              "_recount",
+              "_run_entrypoint",
+              "_summary_from_stdout",
+              "_terminate_process",
+              "_transient",
+              "_write",
+              "authorize_force_ticket",
+              "create_job",
+              "find_active",
+              "get_job",
+              "queue_resume",
+              "request_cancel",
+              "run_job"
+            ],
+            "tables_referenced": [
+              "Sistema_Sync_ResyncLog"
+            ]
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "force_allowed",
+              "solicitar sincronización forzada de este ticket"
+            ],
+            "path": "frontend/src/components/admin/ComercialRangeResyncCard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 6,
+          "scanned_files": 6,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-15T04:07:31Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
