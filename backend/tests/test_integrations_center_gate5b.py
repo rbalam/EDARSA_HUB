@@ -109,3 +109,21 @@ def test_canonical_scope_contract_is_not_hardcoded():
     assert result["scope"]["unidad_negocio_ids"] == []
     assert result["scope"]["unit_mapping_status"] == "NOT_EXPLICIT_IN_CONNECTION_CONTRACT"
     assert result["scope"]["source"] == "dbo.Servidores_Conexiones"
+
+
+
+def test_connection_homologation_is_fail_closed_by_default():
+    result = _normalize_connection(
+        {
+            "id": "55555555-5555-5555-5555-555555555555",
+            "nombre": "SoftRestaurant Enterprise",
+            "tipo_conexion": "DATA_SOURCE",
+            "system_type": "SOFTRESTAURANT",
+            "activo": True,
+        },
+        "server_registry",
+    )
+
+    assert result["homologation"]["status"] == "NOT_ASSESSED"
+    assert result["homologation"]["profile_id"] is None
+    assert result["homologation"]["certification_source"] is None
