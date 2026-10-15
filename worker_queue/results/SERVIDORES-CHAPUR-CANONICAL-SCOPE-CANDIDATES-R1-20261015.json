@@ -1,0 +1,157 @@
+{
+  "base_sha": "5b045feb6ed5ede56d3c0620a8e0d7ed693fa41c",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-15T23:29:35Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES-CHAPUR-CANONICAL-SCOPE-CANDIDATES-R1-20261015",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-15T23:30:45Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "connection_id",
+              "nombre",
+              "tipo_conexion",
+              "system_type",
+              "sistema_version_id",
+              "activo",
+              "visible_en_operaciones",
+              "EmpresaID",
+              "empresa_id"
+            ],
+            "name": "chapur_enterprise_connections",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "EEC6423D-546B-41E9-AE70-C9D105D6B351",
+                "CHAPUR 58",
+                "DATA_SOURCE",
+                "MPRO",
+                null,
+                true,
+                true,
+                null,
+                null
+              ],
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "CHAPUR BACKOFFICE",
+                "API_LOCAL",
+                "ENTERPRISE",
+                "0D8E323A-DF7D-4EFE-B6D2-E3974128E127",
+                true,
+                false,
+                null,
+                ""
+              ],
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "CHAPUR NORTE",
+                "API_LOCAL",
+                "ENTERPRISE",
+                "0D8E323A-DF7D-4EFE-B6D2-E3974128E127",
+                true,
+                true,
+                null,
+                ""
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_pk",
+              "codigo",
+              "nombre",
+              "sucursal_origen_id",
+              "system_type",
+              "server_id",
+              "activo"
+            ],
+            "name": "chapur_units",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EmpresaID",
+              "CodigoEmpresa",
+              "NombreEmpresa",
+              "NombreComercial",
+              "Activo"
+            ],
+            "name": "chapur_company_candidates",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "SucursalID",
+              "CodigoSucursal",
+              "NombreSucursal",
+              "EmpresaID",
+              "CodigoEmpresa",
+              "NombreEmpresa",
+              "NombreComercial",
+              "Activo"
+            ],
+            "name": "chapur_branch_candidates",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "sistema_version_id",
+              "tipo_sistema",
+              "nombre_sistema",
+              "version_sistema",
+              "proveedor",
+              "motor_base_datos",
+              "es_version_default",
+              "activo"
+            ],
+            "name": "chapur_versions",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0D8E323A-DF7D-4EFE-B6D2-E3974128E127",
+                "ENTERPRISE",
+                "ENTERPRISE",
+                "SIN_VERSION_DEFINIDA",
+                null,
+                "SQL Server",
+                true,
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-15T23:29:35Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
