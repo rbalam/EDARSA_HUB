@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "57108d070f2660f93b86faf52ad611d6bc8e0868",
-  "generated_at_utc": "2026-10-15T22:44:21Z",
+  "generated_at_utc": "2026-10-15T22:45:42Z",
   "history": {
     "done_total_local": 1425,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1158,
+      "age_seconds": 1239,
       "job_id": "SERVIDORES-CHAPUR-API-LOCAL-CONTRACT-DETECTOR-CERT-R2-20261015",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,8 +36,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-15T22:44:09Z",
-    "last_receive_utc": "2026-10-15T22:44:19Z",
+    "last_cycle_utc": "2026-10-15T22:45:34Z",
+    "last_receive_utc": "2026-10-15T22:45:29Z",
     "last_terminal_utc": "2026-10-15T22:25:03Z",
     "pid": "522",
     "runtime_fingerprint": {
