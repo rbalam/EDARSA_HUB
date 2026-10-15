@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-130MID-FEB2026-HEADER-SOURCE-AUDIT-R18-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Auditar la causa de los 12 días desfasados de 130MID febrero 2026 comparando Runtime V2 contra el POS SoftRestaurant actual por turnos.apertura, y revisar configuración operativa de la unidad. No modificar datos ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "130MID"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "soft_130mid_feb_by_turn_apertura",
+          "sql": "SELECT\n            CONVERT(date,tr.apertura) AS fecha_apertura,\n            SUM(CAST(ISNULL(ch.total,0) AS decimal(18,2))) AS venta,\n            COUNT(DISTINCT ch.folio) AS tickets,\n            SUM(CAST(ISNULL(ch.nopersonas,0) AS bigint)) AS pax,\n            MIN(tr.apertura) AS apertura_min,\n            MAX(tr.apertura) AS apertura_max\n          FROM cheques ch WITH (NOLOCK)\n          INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno\n          WHERE tr.apertura>='2026-02-01' AND tr.apertura<'2026-03-01'\n            AND ISNULL(ch.cancelado,0)=0\n          GROUP BY CONVERT(date,tr.apertura)\n          ORDER BY fecha_apertura"
+        },
+        {
+          "name": "soft_130mid_boundary_turns_16_17_21_22",
+          "sql": "SELECT\n            tr.idturno,\n            tr.apertura,\n            tr.cierre,\n            SUM(CAST(ISNULL(ch.total,0) AS decimal(18,2))) AS venta,\n            COUNT(DISTINCT ch.folio) AS tickets,\n            SUM(CAST(ISNULL(ch.nopersonas,0) AS bigint)) AS pax,\n            MIN(ch.fecha) AS cheque_fecha_min,\n            MAX(ch.fecha) AS cheque_fecha_max,\n            MIN(ch.cierre) AS cheque_cierre_min,\n            MAX(ch.cierre) AS cheque_cierre_max\n          FROM turnos tr WITH (NOLOCK)\n          INNER JOIN cheques ch WITH (NOLOCK) ON ch.idturno=tr.idturno\n          WHERE tr.apertura>='2026-02-16' AND tr.apertura<'2026-02-23'\n            AND ISNULL(ch.cancelado,0)=0\n          GROUP BY tr.idturno,tr.apertura,tr.cierre\n          ORDER BY tr.apertura"
+        },
+        {
+          "name": "soft_130mid_zero_total_problem_days",
+          "sql": "SELECT\n            CONVERT(date,tr.apertura) AS fecha_apertura,\n            COUNT(DISTINCT CASE WHEN ISNULL(ch.total,0)=0 THEN ch.folio END) AS tickets_total_cero,\n            SUM(CASE WHEN ISNULL(ch.total,0)=0 THEN ISNULL(ch.nopersonas,0) ELSE 0 END) AS pax_total_cero\n          FROM cheques ch WITH (NOLOCK)\n          INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno\n          WHERE tr.apertura>='2026-02-01' AND tr.apertura<'2026-03-01'\n            AND ISNULL(ch.cancelado,0)=0\n          GROUP BY CONVERT(date,tr.apertura)\n          ORDER BY fecha_apertura"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "runtime_130mid_feb2026",
+          "sql": "SELECT CAST(fecha_operacion AS date) AS fecha_operacion,\n                     CAST(ventas_total AS decimal(18,2)) AS ventas_total,\n                     tickets_total,\n                     pax_total,\n                     sync_run_id,\n                     fecha_ultima_actualizacion\n              FROM dbo.Comercial_KPIs_Diarios_v2\n              WHERE unidad_negocio_id='130MID'\n                AND fecha_operacion>='2026-02-01'\n                AND fecha_operacion<'2026-03-01'\n              ORDER BY fecha_operacion"
+        },
+        {
+          "name": "turnos_operativos_130mid",
+          "sql": "SELECT *\n              FROM dbo.Sistema_TurnosOperativosUnidad\n              WHERE UPPER(CONVERT(varchar(100),UnidadNegocioID))='130MID'\n                 OR UPPER(CONVERT(varchar(100),UnidadCodigo))='130MID'\n              ORDER BY 1"
+        }
+      ]
+    }
+  ]
+}
