@@ -108,13 +108,15 @@ IF OBJECT_ID('dbo.Sistema_ApiFactoryConsumerEmpresa', 'U') IS NULL
 BEGIN
     CREATE TABLE dbo.Sistema_ApiFactoryConsumerEmpresa (
         ConsumerGrantID BIGINT NOT NULL,
-        EmpresaID UNIQUEIDENTIFIER NOT NULL,
+        EmpresaID INT NOT NULL,
         Activo BIT NOT NULL DEFAULT 1,
         FechaCreacionUTC DATETIME2(0) NOT NULL DEFAULT SYSUTCDATETIME(),
         CONSTRAINT PK_ApiFactoryConsumerEmpresa PRIMARY KEY
             (ConsumerGrantID, EmpresaID),
         CONSTRAINT FK_ApiFactoryConsumerEmpresa_Grant FOREIGN KEY (ConsumerGrantID)
-            REFERENCES dbo.Sistema_ApiFactoryConsumerGrant(ConsumerGrantID)
+            REFERENCES dbo.Sistema_ApiFactoryConsumerGrant(ConsumerGrantID),
+        CONSTRAINT FK_ApiFactoryConsumerEmpresa_Empresa FOREIGN KEY (EmpresaID)
+            REFERENCES dbo.Sistema_Empresas(EmpresaID)
     );
 END;
 
@@ -130,7 +132,7 @@ BEGIN
         CONSTRAINT FK_ApiFactoryConsumerUnidad_Grant FOREIGN KEY (ConsumerGrantID)
             REFERENCES dbo.Sistema_ApiFactoryConsumerGrant(ConsumerGrantID),
         CONSTRAINT FK_ApiFactoryConsumerUnidad_Unidad FOREIGN KEY (UnidadNegocioID)
-            REFERENCES dbo.Unidades_Negocio(unidad_negocio_pk)
+            REFERENCES dbo.Unidades_Negocio(id)
     );
 END;
 """
