@@ -22,6 +22,7 @@ from core.rbac_helper_sql import es_superadmin
 from core.server_registry import filter_servers_by_user_permissions, list_servers
 
 from . import repository
+from .homologation import empty_connection_homologation
 
 _SECRET_KEYS = {
     "password",
@@ -99,6 +100,7 @@ def _normalize_connection(raw: Dict, source_contract: str) -> Dict:
             "has_evidence": False,
             "source": "dbo.Servidores_ConexionEstado",
         },
+        "homologation": empty_connection_homologation(),
     }
 
     # Defensa adicional: la proyeccion nunca puede arrastrar un valor secreto.
