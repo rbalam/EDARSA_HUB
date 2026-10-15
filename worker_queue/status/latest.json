@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "7390f0ac6597a000e0924afd14d5d0ede45281c1",
-  "generated_at_utc": "2026-10-15T14:59:14Z",
+  "generated_at_utc": "2026-10-15T15:00:46Z",
   "history": {
     "done_total_local": 1422,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 465,
+      "age_seconds": 557,
       "job_id": "SERVIDORES-INTEGRATIONS-HOMOLOGATION-H1-H6-CERT-R1-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 50,
+      "age_seconds": 142,
       "job_id": "SERVIDORES-INTEGRATIONS-HOMOLOGATION-H1-H6-CERT-R2-20261015",
       "reason": null,
       "state": "RESULT_READY"
@@ -42,8 +42,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-15T14:59:05Z",
-    "last_receive_utc": "2026-10-15T14:59:00Z",
+    "last_cycle_utc": "2026-10-15T15:00:36Z",
+    "last_receive_utc": "2026-10-15T15:00:31Z",
     "last_terminal_utc": "2026-10-15T14:58:23Z",
     "pid": "1436",
     "runtime_fingerprint": {
