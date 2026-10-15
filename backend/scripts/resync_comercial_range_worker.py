@@ -33,6 +33,10 @@ def _safe_summary(result: dict, unit: str, fi: date, ff: date, committed: bool) 
         "records_skipped": int(result.get("records_skipped") or 0),
         "records_errored": int(result.get("records_errored") or 0),
         "warning": str(result.get("warning_message") or "")[:500],
+        "detail_blockers": (
+            (result.get("detalle_producto") or {}).get("blockers")
+            or []
+        )[:100],
     }
 
 
@@ -42,7 +46,15 @@ def main() -> int:
     parser.add_argument("--fecha-inicio", required=True)
     parser.add_argument("--fecha-fin", required=True)
     parser.add_argument("--commit", action="store_true")
+    parser.add_argument("--forced-tickets-json", default="{}")
     args = parser.parse_args()
+
+    try:
+        forced_tickets = json.loads(args.forced_tickets_json or "{}")
+    except json.JSONDecodeError:
+        forced_tickets = {}
+    if not isinstance(forced_tickets, dict):
+        forced_tickets = {}
 
     unit = args.unidad.strip().upper()
     fi = date.fromisoformat(args.fecha_inicio)
@@ -69,9 +81,26 @@ def main() -> int:
 
     if args.commit:
         run_id = f"WORKER-COMERCIAL-{unit}-{fi:%Y%m%d}-{ff:%Y%m%d}-{uuid.uuid4().hex[:8]}"
-        result = asyncio.run(_ejecutar_sync_real(unit, config, fi, ff, run_id))
+        result = asyncio.run(
+            _ejecutar_sync_real(
+                unit,
+                config,
+                fi,
+                ff,
+                run_id,
+                forced_tickets=forced_tickets,
+            )
+        )
     else:
-        result = asyncio.run(_ejecutar_dry_run(unit, config, fi, ff))
+        result = asyncio.run(
+            _ejecutar_dry_run(
+                unit,
+                config,
+                fi,
+                ff,
+                forced_tickets=forced_tickets,
+            )
+        )
 
     summary = _safe_summary(result, unit, fi, ff, args.commit)
     print(json.dumps(summary, ensure_ascii=False, default=str))
