@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AI-EXECUTIVE-ASSISTANT-G1B1-CONTEXT-VALIDATION-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "GATE1B1 aplicar validacion fail-closed de unidad explicita en RBACContextService; no alterar SQL ni Produccion; parche minimo y compilacion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/rbac_context_sql/context_service.py",
+      "old": "            # roles contextuales activos para unidad elegida\n",
+      "new": "            # Fail closed: la unidad explicita debe figurar en las asignaciones activas.\n            if unidad_negocio_id is not None:\n                unidades_asignadas = {\n                    str(item['UnidadNegocioID'])\n                    for item in unidades\n                    if item.get('UnidadNegocioID') is not None\n                }\n                if str(unidad_negocio_id) not in unidades_asignadas:\n                    return None\n\n            # roles contextuales activos para unidad elegida\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/rbac_context_sql/context_service.py"
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
