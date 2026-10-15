@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CXP-GATE3F-G-IDEMPOTENCY-MIGRATION-PREFLIGHT-READONLY-20261015",
+  "created_at_utc": "2026-10-15T22:14:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "91e758e22788f09b5521ac582a41a7dfb78d0d86",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 3F-G IDEMPOTENCY MIGRATION PREFLIGHT. Validar exclusivamente, sin DDL ni writes, que el diseño minimo propuesto es compatible con el esquema actual: (A) unique filtered index de una sola queue activa por DecisionPagoID; (B) agregar en el futuro Finanzas_Pagos.PagoOrigenQueueID BIGINT NULL como correlacion generica, con FK a Finanzas_CxP_PagosOrigenQueue(PagoOrigenQueueID) y unique filtered index WHERE PagoOrigenQueueID IS NOT NULL; (C) no duplicar DecisionPagoID ni HashOrigen en Finanzas_Pagos porque se derivan canonicamente desde queue; (D) preservar compatibilidad con COA_ExpedienteReferencias que referencia PagoID. Certificar o bloquear este diseño antes de escribir una migracion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "f3g_runtime_identity",
+          "sql": "SELECT @@SERVERNAME AS server_name,DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user"
+        },
+        {
+          "name": "f3g_active_queue_duplicates_by_decision",
+          "sql": "SELECT COUNT_BIG(*) AS grupos_duplicados FROM (SELECT DecisionPagoID,COUNT_BIG(*) AS n FROM dbo.Finanzas_CxP_PagosOrigenQueue WHERE Activo=1 GROUP BY DecisionPagoID HAVING COUNT_BIG(*)>1) q"
+        },
+        {
+          "name": "f3g_queue_pk",
+          "sql": "SELECT i.name AS index_name,i.is_unique,i.is_primary_key,ic.key_ordinal,c.name AS column_name FROM sys.indexes i INNER JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id INNER JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.Finanzas_CxP_PagosOrigenQueue') AND i.is_primary_key=1 ORDER BY ic.key_ordinal"
+        },
+        {
+          "name": "f3g_pagos_rows",
+          "sql": "SELECT COUNT_BIG(*) AS total FROM dbo.Finanzas_Pagos"
+        },
+        {
+          "name": "f3g_pagos_incoming_fks",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(fk.parent_object_id) AS child_schema,OBJECT_NAME(fk.parent_object_id) AS child_table,fk.name AS fk_name FROM sys.foreign_keys fk WHERE fk.referenced_object_id=OBJECT_ID(N'dbo.Finanzas_Pagos') ORDER BY child_schema,child_table,fk.name"
+        },
+        {
+          "name": "f3g_queue_outgoing_fk_target",
+          "sql": "SELECT fk.name AS fk_name,OBJECT_SCHEMA_NAME(fk.referenced_object_id) AS referenced_schema,OBJECT_NAME(fk.referenced_object_id) AS referenced_table FROM sys.foreign_keys fk WHERE fk.parent_object_id=OBJECT_ID(N'dbo.Finanzas_CxP_PagosOrigenQueue') ORDER BY fk.name"
+        },
+        {
+          "name": "f3g_pagos_column_name_collision",
+          "sql": "SELECT c.name AS column_name FROM sys.columns c WHERE c.object_id=OBJECT_ID(N'dbo.Finanzas_Pagos') AND c.name IN (N'PagoOrigenQueueID',N'DecisionPagoID',N'HashOrigen',N'IdempotencyKey') ORDER BY c.name"
+        },
+        {
+          "name": "f3g_queue_index_name_collision",
+          "sql": "SELECT i.name AS index_name FROM sys.indexes i WHERE i.object_id=OBJECT_ID(N'dbo.Finanzas_CxP_PagosOrigenQueue') AND i.name IN (N'UQ_Finanzas_CxP_PagosOrigenQueue_Decision_Activo')"
+        },
+        {
+          "name": "f3g_pagos_index_name_collision",
+          "sql": "SELECT i.name AS index_name FROM sys.indexes i WHERE i.object_id=OBJECT_ID(N'dbo.Finanzas_Pagos') AND i.name IN (N'UQ_Finanzas_Pagos_PagoOrigenQueueID')"
+        },
+        {
+          "name": "f3g_queue_incoming_fks",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(fk.parent_object_id) AS child_schema,OBJECT_NAME(fk.parent_object_id) AS child_table,fk.name AS fk_name FROM sys.foreign_keys fk WHERE fk.referenced_object_id=OBJECT_ID(N'dbo.Finanzas_CxP_PagosOrigenQueue') ORDER BY child_schema,child_table,fk.name"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY SQL ONLY",
+    "actions must remain empty",
+    "NO INSERT UPDATE DELETE MERGE EXEC EXECUTE DDL SELECT INTO OR MULTI-STATEMENT SQL",
+    "NO procedure execution",
+    "NO Production",
+    "NO code or file mutation",
+    "DO NOT create migration file",
+    "DO NOT add column, FK, constraint or index",
+    "Proposed minimal design is one active queue per DecisionPagoID plus one payment evidence row per PagoOrigenQueueID",
+    "Do not duplicate DecisionPagoID or HashOrigen into Finanzas_Pagos unless runtime evidence proves required",
+    "Do not hardcode ERP-specific identifiers",
+    "COA_ExpedienteReferencias incoming FK to Finanzas_Pagos.PagoID must remain unaffected",
+    "If any collision or compatibility blocker exists, classify migration design NOT_READY",
+    "Do not authorize canary or Payment Executor writer",
+    "Payment Executor writer remains 0 percent"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
