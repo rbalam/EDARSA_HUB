@@ -1,0 +1,108 @@
+{
+  "base_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
+  "blockers": [],
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-10-15T00:13:41Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-20261013-REAL-VERIFY-R14-CARLOS-20261014",
+  "operation": "ISCAM_DETAIL_BACKFILL",
+  "operation_summary": {
+    "dias_bloqueados": 0,
+    "dias_candidatos": 1,
+    "dias_evaluados": 1,
+    "dias_reparables": 1,
+    "dias_sin_runtime": 0,
+    "dias_ya_ok": 0,
+    "fecha_fin_exclusivo": "2026-10-14",
+    "fecha_inicio": "2026-10-13",
+    "filas_insertadas": 558,
+    "modo": "COMMIT",
+    "unidades": [
+      {
+        "bloqueados": 0,
+        "candidatos": 1,
+        "dias": [
+          {
+            "delta_pax": 0,
+            "delta_tickets": 0,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-10-13",
+            "filas_insertadas": 558,
+            "pax_pos": 105,
+            "pax_runtime": 105,
+            "status": "OK_HEADER_CANONICO",
+            "tickets_pos": 36,
+            "tickets_runtime": 36,
+            "ventas_pos": "147424.0000",
+            "ventas_runtime": "147424.00"
+          }
+        ],
+        "filas_insertadas": 558,
+        "reparables": 1,
+        "sin_runtime": 0,
+        "unidad": "CIENFUEGOS",
+        "ya_ok": 0
+      }
+    ]
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-15T00:14:17Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "runtime_ventas",
+              "detalle_ventas",
+              "runtime_tickets",
+              "detalle_tickets",
+              "runtime_pax",
+              "detalle_pax",
+              "delta_venta",
+              "delta_tickets",
+              "delta_pax"
+            ],
+            "name": "cienfuegos_20261013_post_real",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "147424.0000",
+                "147424.0000",
+                "36",
+                36,
+                "105",
+                "105",
+                "0.00",
+                "0",
+                "0"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-15T00:13:15Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto el backfill cerrado de detalle ISCAM para las unidades y fechas autorizadas y certifico el resultado con SQL de solo lectura. No acepto shell, rutas ni comandos externos y no toco Produccion.",
+  "tests": "PASS",
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "work_completion": "COMPLETE"
+}
