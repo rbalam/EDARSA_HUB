@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-MCP-WORKER-MCP-INIT-LAZY-IMPORT-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "mode": "DEVELOPMENT_REPO_CHANGE",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "source": "CHATGPT",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "chat": "MCP backend import recovery"
+  },
+  "objective": "Eliminar exclusivamente import anticipado de .server en backend/modules/worker_mcp/__init__.py para que FastAPI importe gateway_router sin requerir SDK mcp. Mantener API build_mcp_server via __getattr__ lazy; no tocar RBAC, gateway, credenciales ni produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_mcp/__init__.py",
+      "old": "from .server import build_mcp_server\n\n__all__ = [\"build_mcp_server\"]",
+      "new": "__all__ = [\"build_mcp_server\"]\n\n\ndef __getattr__(name):\n    if name == \"build_mcp_server\":\n        from .server import build_mcp_server\n        return build_mcp_server\n    raise AttributeError(name)",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/worker_mcp/__init__.py",
+        "backend/server.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_mcp_oauth_discovery.py",
+        "backend/tests/test_worker_mcp_oauth_pkce.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
