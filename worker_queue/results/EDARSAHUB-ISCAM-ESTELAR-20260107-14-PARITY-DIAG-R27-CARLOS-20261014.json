@@ -1,0 +1,278 @@
+{
+  "base_sha": "d7a769c4dd721ad2fe66879a2e5e5e98f64712b2",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-15T05:37:03Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-ESTELAR-20260107-14-PARITY-DIAG-R27-CARLOS-20261014",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-15T05:37:33Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_runtime",
+              "tickets_runtime",
+              "pax_runtime",
+              "sync_run_id"
+            ],
+            "name": "estelar_runtime_20260106_08_13_15",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                "2026-01-06",
+                "40260.00",
+                29,
+                84,
+                "c8f97699"
+              ],
+              [
+                "2026-01-07",
+                "52255.00",
+                42,
+                101,
+                "RESYNC-ESTELAR-20260101-20260130-acbe"
+              ],
+              [
+                "2026-01-08",
+                "83395.00",
+                52,
+                141,
+                "RESYNC-ESTELAR-20260101-20260130-acbe"
+              ],
+              [
+                "2026-01-13",
+                "80800.00",
+                67,
+                156,
+                "RESYNC-ESTELAR-20260101-20260130-acbe"
+              ],
+              [
+                "2026-01-14",
+                "41423.00",
+                32,
+                80,
+                "RESYNC-ESTELAR-20260101-20260130-acbe"
+              ],
+              [
+                "2026-01-15",
+                "77043.00",
+                56,
+                138,
+                "c8f97699"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_detalle",
+              "tickets_detalle",
+              "pax_detalle"
+            ],
+            "name": "estelar_detail_20260106_08_13_15",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                "2026-01-06",
+                "40260.00",
+                29,
+                "84"
+              ],
+              [
+                "2026-01-07",
+                "52255.00",
+                42,
+                "101"
+              ],
+              [
+                "2026-01-08",
+                "83395.00",
+                52,
+                "141"
+              ],
+              [
+                "2026-01-13",
+                "80800.00",
+                67,
+                "156"
+              ],
+              [
+                "2026-01-14",
+                "41422.50",
+                29,
+                "77"
+              ],
+              [
+                "2026-01-15",
+                "77043.00",
+                56,
+                "138"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_pos",
+              "tickets_pos",
+              "pax_pos",
+              "apertura_min",
+              "apertura_max"
+            ],
+            "name": "estelar_pos_by_operational_day_plus9",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                "2026-01-06",
+                "40260.00",
+                29,
+                "84",
+                "2026-01-06T16:03:58",
+                "2026-01-06T16:03:58"
+              ],
+              [
+                "2026-01-07",
+                "52255.00",
+                42,
+                "101",
+                "2026-01-07T14:24:53",
+                "2026-01-07T14:24:53"
+              ],
+              [
+                "2026-01-08",
+                "83395.00",
+                52,
+                "141",
+                "2026-01-08T15:20:32",
+                "2026-01-08T15:20:32"
+              ],
+              [
+                "2026-01-13",
+                "80800.00",
+                67,
+                "156",
+                "2026-01-13T16:02:32",
+                "2026-01-13T16:02:32"
+              ],
+              [
+                "2026-01-14",
+                "41423.00",
+                32,
+                "80",
+                "2026-01-14T14:02:40",
+                "2026-01-14T14:02:40"
+              ],
+              [
+                "2026-01-15",
+                "77043.00",
+                56,
+                "138",
+                "2026-01-15T15:03:05",
+                "2026-01-15T15:03:05"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "idturno",
+              "apertura",
+              "cierre",
+              "fecha_operacion",
+              "venta",
+              "tickets",
+              "pax",
+              "cheque_fecha_min",
+              "cheque_fecha_max",
+              "cheque_cierre_min",
+              "cheque_cierre_max"
+            ],
+            "name": "estelar_turnos_problem_windows",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "196",
+                "2026-01-07T14:24:53",
+                "2026-01-08T00:42:13",
+                "2026-01-07",
+                "52255.00",
+                42,
+                "101",
+                "2026-01-05T15:36:27",
+                "2026-01-07T23:03:52",
+                "2026-01-07T14:25:15",
+                "2026-01-08T00:22:33"
+              ],
+              [
+                "202",
+                "2026-01-14T14:02:40",
+                "2026-01-15T01:36:23",
+                "2026-01-14",
+                "41423.00",
+                32,
+                "80",
+                "2026-01-13T21:34:54",
+                "2026-01-15T00:39:27",
+                "2026-01-14T14:20:34",
+                "2026-01-15T00:55:31"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_operacion",
+              "tickets_total_cero",
+              "pax_total_cero"
+            ],
+            "name": "estelar_zero_total_problem_days",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "2026-01-07",
+                1,
+                "1"
+              ],
+              [
+                "2026-01-14",
+                3,
+                "3"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-15T05:37:01Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
