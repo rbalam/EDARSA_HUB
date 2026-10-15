@@ -1,0 +1,253 @@
+{
+  "base_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-15T02:05:00Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-20260204-PARITY-DIAG-R20-CARLOS-20261014",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-15T02:05:42Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_runtime",
+              "tickets_runtime",
+              "pax_runtime",
+              "sync_run_id"
+            ],
+            "name": "cienfuegos_runtime_20260203_05",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "2026-02-03",
+                "98458.00",
+                26,
+                66,
+                "CHATGPT-RECON-2026-CIENFUEGOS-20260203"
+              ],
+              [
+                "2026-02-04",
+                "98034.00",
+                34,
+                90,
+                "CHATGPT-RECON-2026-CIENFUEGOS-20260204"
+              ],
+              [
+                "2026-02-05",
+                "188069.00",
+                48,
+                136,
+                "fc20331a"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_detalle",
+              "tickets_detalle",
+              "pax_detalle"
+            ],
+            "name": "cienfuegos_detail_20260203_05",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "2026-02-03",
+                "98458.00",
+                26,
+                "66"
+              ],
+              [
+                "2026-02-04",
+                "98034.09",
+                29,
+                "85"
+              ],
+              [
+                "2026-02-05",
+                "188069.00",
+                48,
+                "136"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_apertura",
+              "ventas_pos",
+              "tickets_pos",
+              "pax_pos",
+              "apertura_min",
+              "apertura_max"
+            ],
+            "name": "cienfuegos_pos_by_apertura_20260203_05",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "2026-02-03",
+                "98458.00",
+                26,
+                "66",
+                "2026-02-03T12:57:18",
+                "2026-02-03T13:12:14"
+              ],
+              [
+                "2026-02-04",
+                "98034.00",
+                34,
+                "90",
+                "2026-02-04T10:46:37",
+                "2026-02-04T11:56:54"
+              ],
+              [
+                "2026-02-05",
+                "188069.00",
+                48,
+                "136",
+                "2026-02-05T13:36:18",
+                "2026-02-05T13:36:18"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "idturno",
+              "apertura",
+              "cierre",
+              "venta",
+              "tickets",
+              "pax",
+              "cheque_fecha_min",
+              "cheque_fecha_max",
+              "cheque_cierre_min",
+              "cheque_cierre_max"
+            ],
+            "name": "cienfuegos_turnos_20260203_05",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "2416",
+                "2026-02-03T12:57:18",
+                "2026-02-03T12:59:05",
+                "2900.00",
+                1,
+                "1",
+                "2026-02-03T12:58:01",
+                "2026-02-03T12:58:01",
+                "2026-02-03T12:58:28",
+                "2026-02-03T12:58:28"
+              ],
+              [
+                "2417",
+                "2026-02-03T13:12:14",
+                "2026-02-04T00:33:36",
+                "95558.00",
+                25,
+                "65",
+                "2026-02-03T13:59:54",
+                "2026-02-03T23:49:46",
+                "2026-02-03T15:18:39",
+                "2026-02-03T23:54:12"
+              ],
+              [
+                "2418",
+                "2026-02-04T10:46:37",
+                "2026-02-04T11:55:21",
+                "1700.00",
+                1,
+                "1",
+                "2026-02-04T10:48:48",
+                "2026-02-04T10:48:48",
+                "2026-02-04T11:48:56",
+                "2026-02-04T11:48:56"
+              ],
+              [
+                "2419",
+                "2026-02-04T11:56:54",
+                "2026-02-05T01:53:33",
+                "96334.00",
+                33,
+                "89",
+                "2026-02-03T21:20:21",
+                "2026-02-05T01:47:13",
+                "2026-02-04T15:20:55",
+                "2026-02-05T01:50:47"
+              ],
+              [
+                "2420",
+                "2026-02-05T13:36:18",
+                "2026-02-06T12:12:47",
+                "188069.00",
+                48,
+                "136",
+                "2026-02-05T13:15:39",
+                "2026-02-05T23:40:58",
+                "2026-02-05T14:49:26",
+                "2026-02-06T12:09:41"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_apertura",
+              "tickets_total_cero",
+              "pax_total_cero"
+            ],
+            "name": "cienfuegos_zero_total_20260203_05",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "2026-02-03",
+                1,
+                "1"
+              ],
+              [
+                "2026-02-04",
+                5,
+                "5"
+              ],
+              [
+                "2026-02-05",
+                0,
+                "0"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-15T02:04:57Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
