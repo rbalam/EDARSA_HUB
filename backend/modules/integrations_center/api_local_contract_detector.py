@@ -37,11 +37,6 @@ def api_local_contract_payload(
                 {"name": "query_param", "type": "sql", "nullable": False},
                 {"name": "auth_header", "type": "X-API-Key", "nullable": False},
                 {"name": "response", "type": "data:list[object]", "nullable": False},
-                {
-                    "name": "contract_version",
-                    "type": API_LOCAL_SQL_QUERY_CONTRACT_VERSION,
-                    "nullable": False,
-                },
             ],
         }
     ]
@@ -50,6 +45,7 @@ def api_local_contract_payload(
         "read": True,
         "readonly_sql": True,
         "transport": "API_LOCAL",
+        "contract_version": API_LOCAL_SQL_QUERY_CONTRACT_VERSION,
     }
     merged_capabilities.update(dict(capabilities or {}))
 
