@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-OPERATIONAL-SCOPE-GUARD-CERT-R1-20261015",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Certificar READ_ONLY el guard canonico de scope operacional: nuevas conexiones no nacen visibles en Operaciones; activar visible_en_operaciones requiere Unidad de Negocio activa vinculada; la decision critica omite cache de Unidades. Validar CRUD/RBAC existente y ausencia de Mongo operativo. No DDL, no datos, no Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/unidades_service.py",
+        "backend/core/connections/operational_scope.py",
+        "backend/core/server_registry.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_servers_crud_explicit_rbac_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/unidades_service.py",
+          "backend/core/connections/operational_scope.py",
+          "backend/core/server_registry.py",
+          "backend/tests/test_servers_crud_explicit_rbac_contract.py"
+        ],
+        "search_terms": [
+          "force_refresh",
+          "require_operational_mapping",
+          "visible_en_operaciones",
+          "OPERATIONAL_SCOPE_REQUIRED",
+          "allow_mongo_fallback=False"
+        ],
+        "max_results": 120
+      }
+    }
+  ]
+}
