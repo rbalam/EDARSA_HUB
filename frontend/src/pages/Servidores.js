@@ -1033,11 +1033,15 @@ const Servidores = () => {
   const toggleVisibilidadOperaciones = async (server) => {
     try {
       const newValue = server.visible_en_operaciones === false ? true : false;
+      if (newValue && !isOperationallyEligible(server)) {
+        toast.error('Para habilitar operaciones se requiere Unidad de Negocio y homologación certificada');
+        return;
+      }
       await api.put(`/servers/${server.id}`, { visible_en_operaciones: newValue });
       toast.success(newValue ? 'Servidor visible en operaciones' : 'Servidor oculto en operaciones');
       loadServers();
     } catch (error) {
-      toast.error('Error al cambiar visibilidad');
+      toast.error(error.response?.data?.detail || 'Error al cambiar visibilidad');
     }
   };
 
@@ -1311,6 +1315,64 @@ const Servidores = () => {
     return tiposCount + catCount + deptCount;
   };
 
+  const getHomologationPresentation = (connection) => {
+    const homologation = connection?.homologation || {};
+    const status = String(homologation.status || 'NOT_ASSESSED').toUpperCase();
+    const source = homologation.certification_source;
+    const labels = {
+      NOT_ASSESSED: 'No evaluada',
+      PENDING: 'Pendiente',
+      IN_PROGRESS: 'En proceso',
+      PARTIAL: 'Parcial',
+      CERTIFIED: source === 'REUSED' ? 'Certificada · Reutilizada' : 'Certificada',
+      REVALIDATION_REQUIRED: 'Revalidación requerida',
+      BLOCKED: 'Bloqueada',
+      NOT_APPLICABLE: 'No aplica'
+    };
+    const classes = {
+      NOT_ASSESSED: 'bg-zinc-50 text-zinc-600 border-zinc-200',
+      PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
+      IN_PROGRESS: 'bg-blue-50 text-blue-700 border-blue-200',
+      PARTIAL: 'bg-orange-50 text-orange-700 border-orange-200',
+      CERTIFIED: 'bg-green-50 text-green-700 border-green-200',
+      REVALIDATION_REQUIRED: 'bg-red-50 text-red-700 border-red-200',
+      BLOCKED: 'bg-red-50 text-red-700 border-red-200',
+      NOT_APPLICABLE: 'bg-zinc-50 text-zinc-500 border-zinc-200'
+    };
+    return {
+      status,
+      label: labels[status] || status,
+      className: classes[status] || classes.NOT_ASSESSED,
+      source,
+      sourceContractVersion: homologation.source_contract_version,
+      edarsahubContractVersion: homologation.edarsahub_contract_version,
+      domains: homologation.domains || []
+    };
+  };
+
+  const isOperationallyEligible = (connection) => {
+    const unitCount = connection?.scope?.unidad_negocio_ids?.length || 0;
+    const homologation = getHomologationPresentation(connection);
+    return unitCount > 0 && homologation.status === 'CERTIFIED';
+  };
+
+  const renderHomologationBadge = (connection) => {
+    const state = getHomologationPresentation(connection);
+    return (
+      <Badge
+        variant="outline"
+        className={`text-xs ${state.className}`}
+        title={
+          state.sourceContractVersion || state.edarsahubContractVersion
+            ? `Origen: ${state.sourceContractVersion || '-'} · EDARSAHUB: ${state.edarsahubContractVersion || '-'}`
+            : state.label
+        }
+      >
+        {state.label}
+      </Badge>
+    );
+  };
+
   return (
     <div className="space-y-6" data-testid="servidores-page">
       <div className="flex items-center justify-between">
@@ -1412,6 +1474,7 @@ const Servidores = () => {
                         <th className="px-3 py-2 text-left font-medium text-zinc-600">Sistema</th>
                         <th className="px-3 py-2 text-left font-medium text-zinc-600">Host:Puerto</th>
                         <th className="px-3 py-2 text-left font-medium text-zinc-600">Base de datos</th>
+                        <th className="px-3 py-2 text-left font-medium text-zinc-600">Homologación</th>
                         <th className="px-3 py-2 text-left font-medium text-zinc-600">Visible Op.</th>
                         <th className="px-3 py-2 text-left font-medium text-zinc-600">Activo</th>
                         <th className="px-3 py-2 text-right font-medium text-zinc-600">Acciones</th>
@@ -1456,6 +1519,10 @@ const Servidores = () => {
                           </td>
                           {/* Base de datos */}
                           <td className="px-3 py-2 text-zinc-600 text-xs">{server.database || '-'}</td>
+                          {/* Homologación */}
+                          <td className="px-3 py-2">
+                            {renderHomologationBadge(server)}
+                          </td>
                           {/* Visible Operaciones */}
                           <td className="px-3 py-2">
                             {server.visible_en_operaciones ? (
@@ -1573,6 +1640,19 @@ const Servidores = () => {
                     <span className="font-mono text-zinc-900">{server.username}</span>
                   </div>
                   
+                  {/* Homologación canónica */}
+                  <div className="pt-2 border-t border-zinc-100">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-zinc-500">Homologación:</span>
+                      {renderHomologationBadge(server)}
+                    </div>
+                    {server.homologation?.profile_code && (
+                      <p className="text-xs text-zinc-400 mt-1">
+                        Perfil: {server.homologation.profile_code}
+                      </p>
+                    )}
+                  </div>
+
                   {/* Mostrar estado de consultas SQL */}
                   <div className="pt-2 border-t border-zinc-100">
                     <div className="flex items-center justify-between">
@@ -1819,6 +1899,7 @@ const Servidores = () => {
                       <th className="px-3 py-2 text-left font-medium text-zinc-600">URL/Host</th>
                       <th className="px-3 py-2 text-left font-medium text-zinc-600">Sucursal</th>
                       <th className="px-3 py-2 text-left font-medium text-zinc-600">Hora Réplica</th>
+                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Homologación</th>
                       <th className="px-3 py-2 text-left font-medium text-zinc-600">Activo</th>
                       <th className="px-3 py-2 text-right font-medium text-zinc-600">Acciones</th>
                     </tr>
@@ -1869,6 +1950,10 @@ const Servidores = () => {
                         <td className="px-3 py-2 text-zinc-600">{apiConn.sucursal_destino || '-'}</td>
                         {/* Hora Réplica */}
                         <td className="px-3 py-2 text-zinc-600">{apiConn.hora_replica || '04:00'}</td>
+                        {/* Homologación */}
+                        <td className="px-3 py-2">
+                          {renderHomologationBadge(apiConn)}
+                        </td>
                         {/* Activo */}
                         <td className="px-3 py-2">
                           {apiConn.activo ? (
@@ -2001,6 +2086,18 @@ const Servidores = () => {
                     </div>
                     
                     <div className="pt-2 border-t border-zinc-100">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-zinc-500">Homologación:</span>
+                        {renderHomologationBadge(apiConn)}
+                      </div>
+                      {apiConn.homologation?.profile_code && (
+                        <p className="text-xs text-zinc-400 mt-1">
+                          Perfil: {apiConn.homologation.profile_code}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-zinc-100">
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-zinc-500 flex items-center gap-1">
                           <Clock className="h-3 w-3" />
@@ -2027,6 +2124,10 @@ const Servidores = () => {
                           onClick={async () => {
                             // CORRECCIÓN P0-CHAPUR: Persistir visible_en_operaciones en EDARSAHUB SQL
                             const newValue = !apiConn.visible_en_operaciones;
+                            if (newValue && !isOperationallyEligible(apiConn)) {
+                              toast.error('Para habilitar operaciones se requiere Unidad de Negocio y homologación certificada');
+                              return;
+                            }
                             try {
                               await api.put(`/api-connections/${apiConn.id}`, {
                                 visible_en_operaciones: newValue
