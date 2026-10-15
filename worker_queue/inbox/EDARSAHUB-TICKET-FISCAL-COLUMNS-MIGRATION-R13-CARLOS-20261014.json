@@ -1,0 +1,46 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TICKET-FISCAL-COLUMNS-MIGRATION-R13-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
+  "production_allowed": false,
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "objective": "Aplicar exclusivamente en Desarrollo/Preview la migración versionada existente que agrega ticket_subtotal, ticket_impuesto y ticket_total a dbo.Comercial_Inteligencia_VentasDetalleProducto. Estas columnas son requeridas por el contrato de ticket ya integrado. No tocar Producción ni otras tablas.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20261013_004_ticket_fiscal_header_totals.sql",
+  "migration_sha256": "bff37bb1ab393cf1b309090c5c4b8b5944dac8733658b2696a3d803c93051a4d",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "preflight_checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "preflight_ticket_fiscal_columns",
+          "sql": "SELECT COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto','ticket_subtotal') AS ticket_subtotal_len,COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto','ticket_impuesto') AS ticket_impuesto_len,COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto','ticket_total') AS ticket_total_len"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "post_ticket_fiscal_columns",
+          "sql": "SELECT name,TYPE_NAME(user_type_id) AS tipo,max_length,precision,scale,is_nullable FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto') AND name IN ('ticket_subtotal','ticket_impuesto','ticket_total') ORDER BY name"
+        }
+      ]
+    }
+  ]
+}
