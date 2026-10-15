@@ -1,0 +1,84 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RESYNC-DETAIL-COMMIT-CONTRACT-FIX-R12-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9a9913697414fc548b702f80bf789a6cdd369ca0",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir de forma canónica, atómica y transversal el COMMIT del detalle de ventas. Sustituir la lista manual de columnas/placeholders del INSERT de Comercial_Inteligencia_VentasDetalleProducto por un contrato dinámico base_columns + FIELDS, de modo que ticket_subtotal, ticket_impuesto, ticket_total y cualquier campo futuro del contrato queden alineados automáticamente con sus valores. Mantener la transacción DELETE+INSERT existente. No tocar extracción POS, headers, sync_comercial_abiertas_v2, otras tablas ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "        insert_sql = f\"\"\"\n        INSERT INTO {DESTINO} (\n            id,\n            unidad_negocio_id,\n            unidad_negocio_nombre,\n            server_id,\n            sucursal_id,\n            sucursal_nombre,\n            sistema_origen,\n            fecha_operacion,\n            fecha_hora,\n            numero_ticket,\n            id_transaccion,\n            estado_origen,\n            cancelado_origen,\n            es_kpi_valido,\n            folio_origen,\n            documento_origen,\n            fuente_original,\n            producto_codigo_fuente,\n            producto_id,\n            producto_nombre,\n            familia_id,\n            familia_nombre,\n            subfamilia_id,\n            subfamilia_nombre,\n            casa,\n            porcentaje_alcohol,\n            es_alcohol,\n            cantidad,\n            precio_unitario,\n            importe_bruto,\n            importe_neto,\n            descuento,\n            propina,\n            pax,\n            sync_run_id,\n            hash_origen,\n            fecha_sincronizacion,\n            activo,\n            vendedor_id,\n            vendedor_nombre,\n            descuento_pct,\n            mesa,\n            partida_origen_id,\n            partida_key,\n            cliente_id,\n            cliente_nombre,\n            cliente_razon_social,\n            cliente_descripcion,\n            cliente_maestro_id,\n            cliente_sucursal_origen,\n            cliente_contacto,\n            cliente_rfc,\n            cliente_direccion_1,\n            cliente_direccion_2,\n            cliente_direccion_3,\n            cliente_calle,\n            cliente_numero_exterior,\n            cliente_numero_interior,\n            cliente_colonia,\n            cliente_ciudad,\n            cliente_municipio,\n            cliente_estado,\n            cliente_pais,\n            cliente_codigo_postal,\n            ticket_fecha,\n            ticket_fecha_cierre,\n            ticket_pagado,\n            ticket_impreso,\n            ticket_impresiones,\n            ticket_comentario,\n            ticket_comentario_descuento,\n            ticket_fecha_alta,\n            ticket_oper_ult_modif,\n            ticket_oper_baja,\n            ticket_fecha_baja,\n            partida_comentario,\n            partida_comentario_descuento,\n            partida_comentario_cancelacion,\n            partida_oper_baja,\n            partida_fecha_baja,\n            tipo_descuento_id,\n            tipo_descuento_descripcion,\n            tipo_descuento_valor,\n            cliente_cruzamiento_1,\n            cliente_cruzamiento_2,\n            cliente_entrega_direccion_1,\n            cliente_entrega_direccion_2,\n            cliente_entrega_direccion_3,\n            cliente_entrega_ciudad,\n            cliente_entrega_estado,\n            cliente_entrega_pais,\n            cliente_entrega_codigo_postal,\n            cliente_colonia_origen_id,\n            cliente_ciudad_origen_id,\n            cliente_municipio_origen_id,\n            cliente_estado_origen_id,\n            cliente_pais_origen_id,\n            cliente_codigo_postal_origen_id,\n            cliente_latitud,\n            cliente_longitud\n        ) VALUES (\n            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\n            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\n            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\n            %s,%s,%s,%s,%s,%s,\n            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n,\n            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n        )\n        \"\"\"\n\n",
+      "new": "        base_columns = (\n            \"id\",\n            \"unidad_negocio_id\",\n            \"unidad_negocio_nombre\",\n            \"server_id\",\n            \"sucursal_id\",\n            \"sucursal_nombre\",\n            \"sistema_origen\",\n            \"fecha_operacion\",\n            \"fecha_hora\",\n            \"numero_ticket\",\n            \"id_transaccion\",\n            \"estado_origen\",\n            \"cancelado_origen\",\n            \"es_kpi_valido\",\n            \"folio_origen\",\n            \"documento_origen\",\n            \"fuente_original\",\n            \"producto_codigo_fuente\",\n            \"producto_id\",\n            \"producto_nombre\",\n            \"familia_id\",\n            \"familia_nombre\",\n            \"subfamilia_id\",\n            \"subfamilia_nombre\",\n            \"casa\",\n            \"porcentaje_alcohol\",\n            \"es_alcohol\",\n            \"cantidad\",\n            \"precio_unitario\",\n            \"importe_bruto\",\n            \"importe_neto\",\n            \"descuento\",\n            \"propina\",\n            \"pax\",\n            \"sync_run_id\",\n            \"hash_origen\",\n            \"fecha_sincronizacion\",\n            \"activo\",\n            \"vendedor_id\",\n            \"vendedor_nombre\",\n            \"descuento_pct\",\n            \"mesa\",\n        )\n        insert_columns = base_columns + tuple(FIELDS)\n        placeholders = \",\".join([\"%s\"] * len(insert_columns))\n        insert_sql = (\n            f\"INSERT INTO {DESTINO} \"\n            f\"({','.join(insert_columns)}) \"\n            f\"VALUES ({placeholders})\"\n        )\n\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_detail_insert_contract_alignment.py",
+      "content": "from pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nEXTRACTOR = ROOT / \"backend\" / \"scripts\" / \"poblar_ventas_detalle_producto_canonico.py\"\nCONTRACT = ROOT / \"backend\" / \"modules\" / \"comercial_v2\" / \"ticket_contract.py\"\n\n\ndef test_detail_insert_uses_ticket_contract_columns_and_dynamic_placeholders():\n    extractor = EXTRACTOR.read_text(encoding=\"utf-8\")\n    contract = CONTRACT.read_text(encoding=\"utf-8\")\n\n    assert 'insert_columns = base_columns + tuple(FIELDS)' in extractor\n    assert 'placeholders = \",\".join([\"%s\"] * len(insert_columns))' in extractor\n    assert '*(r.get(field) for field in FIELDS)' in extractor\n\n    for field in (\"ticket_subtotal\", \"ticket_impuesto\", \"ticket_total\"):\n        assert field in contract\n\n\ndef test_detail_insert_keeps_atomic_delete_and_insert_transaction():\n    extractor = EXTRACTOR.read_text(encoding=\"utf-8\")\n    block = extractor.split(\"def _insert_rows(\", 1)[1].split(\"def sync_detalle_producto_canonico_dia\", 1)[0]\n    assert \"conn.autocommit(False)\" in block\n    assert \"DELETE FROM {DESTINO}\" in block\n    assert \"conn.commit()\" in block\n    assert \"conn.rollback()\" in block\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/scripts/backfill_detalle_producto_pendientes.py",
+        "backend/scripts/resync_comercial_range_worker.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_detail_insert_contract_alignment.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "detail_ticket_totals_columns_exist",
+          "sql": "SELECT name FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto') AND name IN ('ticket_subtotal','ticket_impuesto','ticket_total') ORDER BY name"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial_v2/ticket_contract.py",
+          "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+          "backend/tests/test_detail_insert_contract_alignment.py"
+        ],
+        "search_terms": [
+          "insert_columns = base_columns + tuple(FIELDS)",
+          "placeholders",
+          "ticket_subtotal",
+          "ticket_impuesto",
+          "ticket_total",
+          "conn.autocommit(False)",
+          "DELETE FROM {DESTINO}"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 120
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
