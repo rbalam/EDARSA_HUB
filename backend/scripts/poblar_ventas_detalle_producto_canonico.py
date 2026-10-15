@@ -719,7 +719,11 @@ def _soft_operational_datetime_range(cfg: Dict[str, Any], dia: date) -> Tuple[st
     )
 
 
-def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
+def _extract_soft(
+    cfg: Dict[str, Any],
+    dia: date,
+    forced_ticket_keys: Optional[Iterable[str]] = None,
+) -> List[Dict[str, Any]]:
     conn = get_pos_connection(cfg)
     if not conn:
         raise RuntimeError(f"sin conexión POS para {cfg.get('unidad_codigo')}")
@@ -938,7 +942,10 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         rows = cur.fetchall() or []
         for r in rows:
             r["sistema_origen"] = "SOFTRESTAURANT"
-        return _soft_add_ticket_adjustments(rows)
+        return _soft_add_ticket_adjustments(
+            rows,
+            forced_ticket_keys=forced_ticket_keys,
+        )
     finally:
         conn.close()
 
@@ -949,7 +956,24 @@ SOFT_AJUSTE_ANTICIPO_CERO = "__ISCAM_AJUSTE_ANTICIPO_CERO__"
 SOFT_AJUSTE_ENCABEZADO = "__ISCAM_AJUSTE_ENCABEZADO__"
 
 
-def _soft_add_ticket_adjustments(src_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+class SoftTicketReconciliationError(RuntimeError):
+    """Bloqueo auditable de conciliación de un ticket SoftRestaurant."""
+
+    def __init__(self, blocker: Dict[str, Any]):
+        self.blocker = dict(blocker)
+        ticket = self.blocker.get("numero_ticket") or self.blocker.get("ticket_key")
+        super().__init__(
+            "SoftRestaurant: diferencia no explicada; ticket bloqueado por conciliación "
+            f"#{ticket}; encabezado={self.blocker.get('encabezado')}; "
+            f"detalle={self.blocker.get('detalle')}; "
+            f"diferencia={self.blocker.get('diferencia_detalle_menos_encabezado')}"
+        )
+
+
+def _soft_add_ticket_adjustments(
+    src_rows: List[Dict[str, Any]],
+    forced_ticket_keys: Optional[Iterable[str]] = None,
+) -> List[Dict[str, Any]]:
     """Conserva productos reales y hace que el detalle dependa del folio header.
 
     La poblacion valida nace exclusivamente de ``h`` (cheques validos) y cada linea
@@ -959,6 +983,11 @@ def _soft_add_ticket_adjustments(src_rows: List[Dict[str, Any]]) -> List[Dict[st
     linea tecnica de conciliacion ligada al ticket para que el detalle sume
     exactamente al encabezado sin alterar los productos reales.
     """
+    forced_keys = {
+        _s(value)
+        for value in (forced_ticket_keys or [])
+        if _s(value)
+    }
     grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     for raw in src_rows:
         row = dict(raw)
@@ -1074,12 +1103,61 @@ def _soft_add_ticket_adjustments(src_rows: List[Dict[str, Any]]) -> List[Dict[st
             out.append(adjustment)
             continue
 
-        if header_total == Decimal("0"):
-            raise RuntimeError(
-                f"SoftRestaurant: diferencia no explicada en ticket {ticket_key}; "
-                f"productos={product_total}; encabezado={header_total}; delta={delta}; "
-                f"indicador_descuento_cortesia={discount_indicator}"
+        line_nets = [_d(row.get("importe_neto")) for row in items]
+        technical_compensated_rounding_zero = (
+            header_total == Decimal("0")
+            and discount_indicator == Decimal("0")
+            and abs(product_total) <= Decimal("1.00")
+            and any(value > 0 for value in line_nets)
+            and any(value < 0 for value in line_nets)
+        )
+        if technical_compensated_rounding_zero:
+            adjustment = dict(items[0])
+            adjustment["producto_codigo_fuente"] = SOFT_AJUSTE_ENCABEZADO
+            adjustment["producto_nombre"] = (
+                "AJUSTE DE CIERRE A CERO (REDONDEO PARTIDAS COMPENSADAS)"
             )
+            adjustment["cantidad"] = Decimal("0")
+            adjustment["precio_unitario"] = Decimal("0")
+            adjustment["importe_bruto"] = Decimal("0")
+            adjustment["importe_neto"] = delta
+            out.append(adjustment)
+            continue
+
+        if header_total == Decimal("0"):
+            if ticket_key in forced_keys:
+                adjustment = dict(items[0])
+                adjustment["producto_codigo_fuente"] = SOFT_AJUSTE_ENCABEZADO
+                adjustment["producto_nombre"] = (
+                    "AJUSTE FORZADO AUTORIZADO CONTRA ENCABEZADO DEL TICKET"
+                )
+                adjustment["cantidad"] = Decimal("0")
+                adjustment["precio_unitario"] = Decimal("0")
+                adjustment["importe_bruto"] = Decimal("0")
+                adjustment["importe_neto"] = delta
+                out.append(adjustment)
+                continue
+
+            numero_ticket = _s(items[0].get("numero_ticket")) or ticket_key
+            folio_origen = _s(items[0].get("folio_origen"))
+            raise SoftTicketReconciliationError({
+                "ticket_key": ticket_key,
+                "id_transaccion": ticket_key,
+                "numero_ticket": numero_ticket,
+                "folio_origen": folio_origen,
+                "encabezado": str(header_total),
+                "detalle": str(product_total),
+                "diferencia_detalle_menos_encabezado": str(
+                    product_total - header_total
+                ),
+                "ajuste_requerido": str(delta),
+                "reason_code": "ZERO_HEADER_UNEXPLAINED_DETAIL",
+                "reason": (
+                    "El total del detalle no coincide con el total del encabezado "
+                    "del ticket y no corresponde a una regla automática certificada."
+                ),
+                "force_allowed": True,
+            })
 
         # El folio del encabezado es el padre y la cifra autoritativa.
         # Conservamos las lineas reales tal como vienen del POS y agregamos una
@@ -1591,6 +1669,8 @@ def _validate(src_rows: List[Dict[str, Any]], runtime: Dict[str, Any]) -> Dict[s
             tickets[k] = {
                 "venta": _d(r.get("importe_neto_ticket")),
                 "pax": int(_d(r.get("pax_ticket"))),
+                "numero_ticket": _s(r.get("numero_ticket")),
+                "folio_origen": _s(r.get("folio_origen")),
             }
         detalle_por_ticket[k] += _d(r.get("importe_neto"))
 
@@ -1603,10 +1683,20 @@ def _validate(src_rows: List[Dict[str, Any]], runtime: Dict[str, Any]) -> Dict[s
         detalle = detalle_por_ticket.get(key, Decimal("0"))
         if not _money_eq(detalle, ticket["venta"]):
             diferencias.append({
+                "ticket_key": key,
                 "id_transaccion": key,
+                "numero_ticket": ticket.get("numero_ticket") or key,
+                "folio_origen": ticket.get("folio_origen"),
                 "encabezado": ticket["venta"],
                 "detalle": detalle,
+                "diferencia_detalle_menos_encabezado": detalle - ticket["venta"],
                 "delta": detalle - ticket["venta"],
+                "reason_code": "DETAIL_HEADER_MISMATCH",
+                "reason": (
+                    "El total del detalle no coincide con el total del encabezado "
+                    "del ticket."
+                ),
+                "force_allowed": False,
             })
 
     ventas_runtime = runtime["ventas"]
@@ -1780,6 +1870,7 @@ def sync_detalle_producto_canonico_dia(
     run_id: str,
     commit: bool = False,
     excluir_abiertas: bool = True,
+    forced_ticket_keys: Optional[Iterable[str]] = None,
 ) -> Dict[str, Any]:
     """
     Sincroniza el detalle canónico de producto para una unidad y un día
@@ -1813,7 +1904,11 @@ def sync_detalle_producto_canonico_dia(
         }
 
     if sistema == SystemType.SOFTRESTAURANT.value:
-        src_rows = _extract_soft(cfg, dia)
+        src_rows = _extract_soft(
+            cfg,
+            dia,
+            forced_ticket_keys=forced_ticket_keys,
+        )
     elif sistema == SystemType.MANAGEMENTPRO.value:
         src_rows = _extract_mpro(cfg, dia)
     else:
