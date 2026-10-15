@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-INTEGRATIONS-HOMOLOGATION-H7-H8-CERT-R1-20261015",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Certificar READ_ONLY H7 UI homologacion + H8 API Factory. Validar contratos, tests y DDL estatico sin ejecutar migraciones, sin publicar endpoints, sin CHAPUR/POS LIVE y sin Produccion.",
+  "mode": "READ_ONLY",
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/integrations_center/api_factory_contract.py",
+        "backend/modules/integrations_center/api_factory_access.py",
+        "backend/migrations/integrations_api_factory_20261015.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_integrations_center_api_factory_contract.py",
+        "backend/tests/test_integrations_center_api_factory_access.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/Servidores.js",
+          "backend/modules/integrations_center/api_factory_contract.py",
+          "backend/modules/integrations_center/api_factory_access.py",
+          "backend/migrations/integrations_api_factory_20261015.py"
+        ],
+        "search_terms": [
+          "Homologación",
+          "CERTIFIED",
+          "REVALIDATION_REQUIRED",
+          "ApiCapabilityBinding",
+          "consumer_can_call",
+          "Sistema_Empresas(EmpresaID)",
+          "Unidades_Negocio(id)"
+        ],
+        "max_results": 120
+      }
+    }
+  ]
+}
