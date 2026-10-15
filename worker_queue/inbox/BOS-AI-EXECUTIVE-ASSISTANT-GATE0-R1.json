@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AI-EXECUTIVE-ASSISTANT-GATE0-R1",
+  "mode": "READ_ONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Auditoria GATE0 de arquitectura canonica para EXECUTIVE_ASSISTANT: RBAC contextual, Agent Harness, BOS Direction Scheduler, Universal Worker, AI FinOps y migraciones. Solo lectura, sin DDL ni cambios productivos.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/rbac",
+          "backend/modules/rbac_context_sql",
+          "backend/modules/agent_harness",
+          "backend/core/scheduler",
+          "backend/core/agent_capability_policy.py",
+          "backend/core/ai_gateway_policy_adapter.py",
+          "backend/core/agent_execution_gate.py",
+          "tools/mirror_sync",
+          "backend/database",
+          "docs/BOS"
+        ],
+        "search_terms": [
+          "Usuario_RolesContexto",
+          "UnidadNegocioID",
+          "bos_direction_status",
+          "READ_ONLY",
+          "budget",
+          "inference_cost_usd",
+          "token",
+          "idempotency",
+          "approval"
+        ],
+        "max_results": 500
+      }
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
