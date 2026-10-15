@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AI-EXECUTIVE-ASSISTANT-GATE0-R2-RBAC",
+  "mode": "READ_ONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Auditar contratos RBAC multiempresa y autorizacion contextual del Asistente de Direccion; solo lectura, sin cambios de codigo ni SQL.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/rbac_context_sql",
+          "backend/core/rbac",
+          "backend/core/rbac_helper_sql.py",
+          "backend/core/auth",
+          "docs/architecture/rbac"
+        ],
+        "search_terms": [
+          "Usuario_RolesContexto",
+          "UnidadNegocioID",
+          "EmpresaID",
+          "get_current_user",
+          "require_permission",
+          "Activo",
+          "contexto",
+          "scope"
+        ],
+        "max_results": 250
+      }
+    }
+  ],
+  "human_summary_language": "es"
+}
