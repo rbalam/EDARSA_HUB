@@ -1,0 +1,26 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-130MID-FEB2026-DIRECT-DRY-R16-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
+  "production_allowed": false,
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "objective": "DRY RUN canónico de detalle ISCAM para 130MID del 2026-02-01 al 2026-02-28 inclusive. Determinar cuáles de los 12 días pendientes son reparables contra POS actual y cuáles siguen bloqueados por diferencias de venta/tickets/PAX. No escribir datos ni tocar Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "units": [
+    "130MID"
+  ],
+  "fecha_inicio": "2026-02-01",
+  "fecha_fin": "2026-03-01",
+  "dry_run": true,
+  "confirm_detail_backfill": true,
+  "checks": []
+}
