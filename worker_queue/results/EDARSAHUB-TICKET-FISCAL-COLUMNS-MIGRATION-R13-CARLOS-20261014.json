@@ -1,0 +1,81 @@
+{
+  "base_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-10-15T00:10:18Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-TICKET-FISCAL-COLUMNS-MIGRATION-R13-CARLOS-20261014",
+  "operation": "SQL_MIGRATION_DEVELOPMENT",
+  "operation_summary": {
+    "credential_source": "canonical",
+    "returncode": 0,
+    "status": "PASS"
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-15T00:11:05Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "name",
+              "tipo",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable"
+            ],
+            "name": "post_ticket_fiscal_columns",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "ticket_impuesto",
+                "decimal",
+                9,
+                18,
+                4,
+                true
+              ],
+              [
+                "ticket_subtotal",
+                "decimal",
+                9,
+                18,
+                4,
+                true
+              ],
+              [
+                "ticket_total",
+                "decimal",
+                9,
+                18,
+                4,
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-15T00:10:16Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto preflight SQL HRLectura, una migracion Development versionada y SHA-bound mediante writer dedicado, y post-audit SQL HRLectura. No acepto SQL inline, shell arbitrario ni toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
