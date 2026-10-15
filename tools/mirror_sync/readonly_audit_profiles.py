@@ -61,6 +61,33 @@ def build_readonly_audit_checks(profile: str) -> List[Dict[str, Any]]:
                         ),
                     },
                     {
+                        "name": "chapur_company_candidates",
+                        "sql": (
+                            "SELECT EmpresaID,CodigoEmpresa,NombreEmpresa,NombreComercial,Activo "
+                            "FROM dbo.Sistema_Empresas "
+                            "WHERE UPPER(ISNULL(CodigoEmpresa,'')) LIKE '%CHAPUR%' "
+                            "OR UPPER(ISNULL(NombreEmpresa,'')) LIKE '%CHAPUR%' "
+                            "OR UPPER(ISNULL(NombreComercial,'')) LIKE '%CHAPUR%' "
+                            "ORDER BY EmpresaID"
+                        ),
+                    },
+                    {
+                        "name": "chapur_branch_candidates",
+                        "sql": (
+                            "SELECT s.SucursalID,s.CodigoSucursal,s.NombreSucursal,s.EmpresaID,"
+                            "e.CodigoEmpresa,e.NombreEmpresa,e.NombreComercial,s.Activo "
+                            "FROM dbo.Sistema_Sucursales s "
+                            "LEFT JOIN dbo.Sistema_Empresas e ON e.EmpresaID=s.EmpresaID "
+                            "WHERE UPPER(ISNULL(s.CodigoSucursal,'')) LIKE '%CHAPUR%' "
+                            "OR UPPER(ISNULL(s.NombreSucursal,'')) LIKE '%CHAPUR%' "
+                            "OR UPPER(ISNULL(s.NombreSucursal,'')) LIKE '%NORTE%' "
+                            "OR UPPER(ISNULL(e.CodigoEmpresa,'')) LIKE '%CHAPUR%' "
+                            "OR UPPER(ISNULL(e.NombreEmpresa,'')) LIKE '%CHAPUR%' "
+                            "OR UPPER(ISNULL(e.NombreComercial,'')) LIKE '%CHAPUR%' "
+                            "ORDER BY s.EmpresaID,s.SucursalID"
+                        ),
+                    },
+                    {
                         "name": "chapur_versions",
                         "sql": (
                             "SELECT "
