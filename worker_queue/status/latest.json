@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "e43ab9beee5fb916deed53b818895555fb9c15c2",
-  "generated_at_utc": "2026-10-15T19:19:22Z",
+  "generated_at_utc": "2026-10-15T20:42:44Z",
   "history": {
     "done_total_local": 1424,
     "pending_total_local": 0,
@@ -14,24 +14,7 @@
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [
-    {
-      "age_seconds": 849,
-      "job_id": "SERVIDORES-INTEGRATIONS-HOMOLOGATION-H7-H8-CERT-R1-20261015",
-      "reasons": [
-        "SUMMARY_LANGUAGE_MUST_BE_ES",
-        "READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 2662,
-      "job_id": "BOS-AI-EXECUTIVE-ASSISTANT-G1B1-CONTEXT-VALIDATION-R1",
-      "reason": null,
-      "state": "RESULT_READY"
-    }
-  ],
+  "jobs": [],
   "local_development_sha": "e43ab9beee5fb916deed53b818895555fb9c15c2",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
@@ -39,17 +22,17 @@
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 1,
+  "queue_rejected_recent": 0,
+  "queue_result_ready_recent": 0,
   "queue_running": 0,
   "remote_development_sha": "e43ab9beee5fb916deed53b818895555fb9c15c2",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-15T19:19:13Z",
-    "last_receive_utc": "2026-10-15T19:19:21Z",
+    "last_cycle_utc": "2026-10-15T20:42:39Z",
+    "last_receive_utc": "2026-10-15T20:42:33Z",
     "last_terminal_utc": "2026-10-15T18:35:00Z",
-    "pid": "504",
+    "pid": "718",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "007da57a0c9aeec8412a797df9af562fa0b55afc",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
