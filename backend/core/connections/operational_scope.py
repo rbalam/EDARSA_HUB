@@ -33,7 +33,7 @@ def active_units_for_server(server_id: str) -> List[Dict]:
 
     return [
         unit
-        for unit in UnidadesService.get_all()
+        for unit in UnidadesService.get_all(force_refresh=True)
         if str(unit.get("server_id") or "").strip().lower() == wanted
     ]
 
