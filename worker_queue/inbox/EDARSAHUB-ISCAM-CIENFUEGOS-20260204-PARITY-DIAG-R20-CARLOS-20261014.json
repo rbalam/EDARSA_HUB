@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-20260204-PARITY-DIAG-R20-CARLOS-20261014",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar el bloque pendiente de CIENFUEGOS alrededor del 2026-02-04. Comparar Runtime V2, detalle canónico guardado y SoftRestaurant actual usando turnos.apertura para 2026-02-03 a 2026-02-05. Determinar si la diferencia viene de encabezado histórico, detalle o POS. Solo lectura; no modificar datos ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_runtime_20260203_05",
+          "sql": "SELECT CAST(fecha_operacion AS date) AS fecha_operacion,\n                      CAST(ventas_total AS decimal(18,2)) AS ventas_runtime,\n                      tickets_total AS tickets_runtime,\n                      pax_total AS pax_runtime,\n                      sync_run_id\n               FROM dbo.Comercial_KPIs_Diarios_v2\n               WHERE unidad_negocio_id='CIENFUEGOS'\n                 AND fecha_operacion>='2026-02-03'\n                 AND fecha_operacion<'2026-02-06'\n               ORDER BY fecha_operacion"
+        },
+        {
+          "name": "cienfuegos_detail_20260203_05",
+          "sql": "WITH t AS (\n                 SELECT CAST(fecha_operacion AS date) fecha_operacion,\n                        numero_ticket,\n                        SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) venta_ticket,\n                        MAX(CAST(ISNULL(pax,0) AS bigint)) pax_ticket\n                 FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n                 WHERE unidad_negocio_id='CIENFUEGOS'\n                   AND fecha_operacion>='2026-02-03'\n                   AND fecha_operacion<'2026-02-06'\n                   AND ISNULL(activo,1)=1\n                   AND ISNULL(es_kpi_valido,1)=1\n                 GROUP BY CAST(fecha_operacion AS date),numero_ticket\n               )\n               SELECT fecha_operacion,\n                      CAST(SUM(venta_ticket) AS decimal(18,2)) AS ventas_detalle,\n                      COUNT(*) AS tickets_detalle,\n                      SUM(pax_ticket) AS pax_detalle\n               FROM t\n               GROUP BY fecha_operacion\n               ORDER BY fecha_operacion"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "CIENFUEGOS"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "cienfuegos_pos_by_apertura_20260203_05",
+          "sql": "SELECT CONVERT(date,tr.apertura) AS fecha_apertura,\n                      CAST(SUM(ISNULL(ch.total,0)) AS decimal(18,2)) AS ventas_pos,\n                      COUNT(DISTINCT ch.folio) AS tickets_pos,\n                      SUM(CAST(ISNULL(ch.nopersonas,0) AS bigint)) AS pax_pos,\n                      MIN(tr.apertura) AS apertura_min,\n                      MAX(tr.apertura) AS apertura_max\n               FROM cheques ch WITH (NOLOCK)\n               INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno\n               WHERE tr.apertura>='2026-02-03'\n                 AND tr.apertura<'2026-02-06'\n                 AND ISNULL(ch.cancelado,0)=0\n               GROUP BY CONVERT(date,tr.apertura)\n               ORDER BY fecha_apertura"
+        },
+        {
+          "name": "cienfuegos_turnos_20260203_05",
+          "sql": "SELECT tr.idturno,tr.apertura,tr.cierre,\n                      CAST(SUM(ISNULL(ch.total,0)) AS decimal(18,2)) AS venta,\n                      COUNT(DISTINCT ch.folio) AS tickets,\n                      SUM(CAST(ISNULL(ch.nopersonas,0) AS bigint)) AS pax,\n                      MIN(ch.fecha) AS cheque_fecha_min,\n                      MAX(ch.fecha) AS cheque_fecha_max,\n                      MIN(ch.cierre) AS cheque_cierre_min,\n                      MAX(ch.cierre) AS cheque_cierre_max\n               FROM turnos tr WITH (NOLOCK)\n               INNER JOIN cheques ch WITH (NOLOCK) ON ch.idturno=tr.idturno\n               WHERE tr.apertura>='2026-02-03'\n                 AND tr.apertura<'2026-02-06'\n                 AND ISNULL(ch.cancelado,0)=0\n               GROUP BY tr.idturno,tr.apertura,tr.cierre\n               ORDER BY tr.apertura"
+        },
+        {
+          "name": "cienfuegos_zero_total_20260203_05",
+          "sql": "SELECT CONVERT(date,tr.apertura) AS fecha_apertura,\n                      COUNT(DISTINCT CASE WHEN ISNULL(ch.total,0)=0 THEN ch.folio END) AS tickets_total_cero,\n                      SUM(CASE WHEN ISNULL(ch.total,0)=0 THEN ISNULL(ch.nopersonas,0) ELSE 0 END) AS pax_total_cero\n               FROM cheques ch WITH (NOLOCK)\n               INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno\n               WHERE tr.apertura>='2026-02-03'\n                 AND tr.apertura<'2026-02-06'\n                 AND ISNULL(ch.cancelado,0)=0\n               GROUP BY CONVERT(date,tr.apertura)\n               ORDER BY fecha_apertura"
+        }
+      ]
+    }
+  ]
+}
