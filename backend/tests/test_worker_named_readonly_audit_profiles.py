@@ -28,13 +28,14 @@ def test_chapur_profile_is_allowlisted_and_select_only():
     assert check["type"] == "sql_readonly_audit"
     assert check["source"] == "EDARSAHUB"
     assert {q["name"] for q in check["queries"]} == {
-        "chapur_softrestaurant_connections",
+        "chapur_enterprise_connections",
         "chapur_units",
         "chapur_versions",
     }
     for query in check["queries"]:
         assert query["sql"].lstrip().upper().startswith("SELECT")
         upper = query["sql"].upper()
+        assert "SOFTRESTAURANT" not in upper
         for forbidden in (
             " INSERT ",
             " UPDATE ",
