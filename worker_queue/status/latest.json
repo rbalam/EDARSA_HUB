@@ -3,44 +3,50 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "49ea2c3420960590c5a1e2f58cab389cebdada9e",
-  "generated_at_utc": "2026-10-15T23:04:58Z",
+  "development_sha": "a9b7eecb233603b2c599da0239e9fe09137bcd1a",
+  "generated_at_utc": "2026-10-15T23:06:32Z",
   "history": {
-    "done_total_local": 1428,
+    "done_total_local": 1429,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1241,
-    "results_total_local": 2444
+    "results_total_local": 2445
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 830,
+      "age_seconds": 923,
       "job_id": "BOS-MCP-CLAUDE-GATEWAY-404-DIAGNOSTIC-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 83,
+      "age_seconds": 176,
       "job_id": "BOS-MCP-CLAUDE-GATEWAY-ROUTER-REGISTER-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2395,
+      "age_seconds": 2489,
       "job_id": "SERVIDORES-CHAPUR-API-LOCAL-CONTRACT-DETECTOR-CERT-R2-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 700,
+      "age_seconds": 793,
       "job_id": "SERVIDORES-CHAPUR-API-LOCAL-CONTRACT-DETECTOR-CERT-R3-20261015",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 35,
+      "job_id": "SERVIDORES-OPERATIONAL-SCOPE-GUARD-CERT-R1-20261015",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "49ea2c3420960590c5a1e2f58cab389cebdada9e",
+  "local_development_sha": "a9b7eecb233603b2c599da0239e9fe09137bcd1a",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -48,21 +54,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
-  "remote_development_sha": "49ea2c3420960590c5a1e2f58cab389cebdada9e",
+  "remote_development_sha": "a9b7eecb233603b2c599da0239e9fe09137bcd1a",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-15T23:04:54Z",
-    "last_receive_utc": "2026-10-15T23:04:49Z",
-    "last_terminal_utc": "2026-10-15T23:03:35Z",
+    "last_cycle_utc": "2026-10-15T23:06:22Z",
+    "last_receive_utc": "2026-10-15T23:06:17Z",
+    "last_terminal_utc": "2026-10-15T23:05:57Z",
     "pid": "128755",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "dbe0d28e3a51dfcc819a758ce1c7b169f407bb63",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "49ea2c3420960590c5a1e2f58cab389cebdada9e",
+      "development_sha": "a9b7eecb233603b2c599da0239e9fe09137bcd1a",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
