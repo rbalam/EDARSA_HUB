@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "33d57960c8140c12dfdf210dbd987777920f01b6",
-  "generated_at_utc": "2026-10-15T22:55:20Z",
+  "generated_at_utc": "2026-10-15T22:56:39Z",
   "history": {
     "done_total_local": 1427,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 251,
+      "age_seconds": 330,
       "job_id": "BOS-MCP-CLAUDE-GATEWAY-404-DIAGNOSTIC-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1817,
+      "age_seconds": 1896,
       "job_id": "SERVIDORES-CHAPUR-API-LOCAL-CONTRACT-DETECTOR-CERT-R2-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 121,
+      "age_seconds": 200,
       "job_id": "SERVIDORES-CHAPUR-API-LOCAL-CONTRACT-DETECTOR-CERT-R3-20261015",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-15T22:55:16Z",
-    "last_receive_utc": "2026-10-15T22:55:11Z",
+    "last_cycle_utc": "2026-10-15T22:56:35Z",
+    "last_receive_utc": "2026-10-15T22:56:30Z",
     "last_terminal_utc": "2026-10-15T22:53:18Z",
     "pid": "522",
     "runtime_fingerprint": {
