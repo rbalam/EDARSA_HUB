@@ -1,28 +1,34 @@
 {
   "ahead_count": 0,
-  "behind_count": 2,
+  "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "REMOTE_AHEAD_ONLY",
-  "development_sha": "b6617aeb1e7d254e9a7d9e67639362abd2dbe5df",
-  "generated_at_utc": "2026-10-15T20:56:06Z",
+  "convergence_status": "SYNC",
+  "development_sha": "888ec8fe06d8ef00f2d82217703ac9218da37e2f",
+  "generated_at_utc": "2026-10-15T20:57:46Z",
   "history": {
     "done_total_local": 1425,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1238,
-    "results_total_local": 2438
+    "rejected_total_local": 1239,
+    "results_total_local": 2439
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 573,
+      "age_seconds": 55,
+      "job_id": "SERVIDORES-CHAPUR-ENTERPRISE-CANONICAL-DISCOVERY-R1-20261015",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 674,
       "job_id": "SERVIDORES-INTEGRATIONS-HOMOLOGATION-H7-H8-CERT-R2-20261015",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "23d727a4826502d0ba7351864b3dd0d11f639df1",
+  "local_development_sha": "888ec8fe06d8ef00f2d82217703ac9218da37e2f",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -30,21 +36,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
-  "remote_development_sha": "b6617aeb1e7d254e9a7d9e67639362abd2dbe5df",
+  "remote_development_sha": "888ec8fe06d8ef00f2d82217703ac9218da37e2f",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-15T20:55:58Z",
-    "last_receive_utc": "2026-10-15T20:55:52Z",
-    "last_terminal_utc": "2026-10-15T20:46:32Z",
-    "pid": "54868",
+    "last_cycle_utc": "2026-10-15T20:57:37Z",
+    "last_receive_utc": "2026-10-15T20:57:32Z",
+    "last_terminal_utc": "2026-10-15T20:56:51Z",
+    "pid": "58534",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "007da57a0c9aeec8412a797df9af562fa0b55afc",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "23d727a4826502d0ba7351864b3dd0d11f639df1",
+      "development_sha": "888ec8fe06d8ef00f2d82217703ac9218da37e2f",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
@@ -59,7 +65,7 @@
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
       "worker_code_tree_aligned": false,
-      "worker_code_tree_sha": "69b257b62f33b8e92c010cbe59e21351123e8a2a"
+      "worker_code_tree_sha": "dbe0d28e3a51dfcc819a758ce1c7b169f407bb63"
     }
   },
   "schema": "edarsahub.worker-health.v3",
