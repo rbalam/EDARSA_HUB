@@ -1,0 +1,158 @@
+{
+  "base_sha": "763d1e43dad506d84cbe6304c0cc6f83efbe73eb",
+  "blockers": [],
+  "candidate_sha": "b6936216f8475d1992f3750e1f69d29f3b170489",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-10-15T02:25:23Z",
+  "development_sha": "b6936216f8475d1992f3750e1f69d29f3b170489",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+    "backend/tests/test_iscam_soft_zero_compensated_rounding_r23.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-SOFT-ZERO-COMPENSATED-ROUNDING-FIX-R23-CARLOS-20261014",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-10-15T02:26:22Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "argparse",
+              "collections",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "json",
+              "modules.comercial_v2.ticket_contract",
+              "pymssql",
+              "sys",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "abs(product_total) <= decimal(\"1.00\")",
+              "any(value < 0 for value in line_nets)",
+              "any(value > 0 for value in line_nets)",
+              "redondeo partidas compensadas",
+              "technical_compensated_rounding_zero"
+            ],
+            "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_as_date",
+              "_cfg_values",
+              "_d",
+              "_daterange",
+              "_extract_mpro",
+              "_extract_soft",
+              "_first",
+              "_hash_row",
+              "_insert_rows",
+              "_int_eq",
+              "_load_runtime_rows",
+              "_materialize_rows",
+              "_money_eq",
+              "_mpro_operational_datetime_range",
+              "_mpro_row_es_kpi_valido",
+              "_object_columns",
+              "_parse_sql_server_host_port",
+              "_prorratear_mpro_por_ticket",
+              "_q4",
+              "_query_edarsahub_dicts",
+              "_row_unit_values",
+              "_runtime_for",
+              "_runtime_metrics",
+              "_s",
+              "_safe_print",
+              "_secret_value",
+              "_sistema",
+              "_soft_add_ticket_adjustments",
+              "_soft_operational_datetime_range",
+              "_table_has_col",
+              "_unidad_operativa_id_for_window",
+              "_validate",
+              "get_pos_config_for_unidad",
+              "get_pos_connection",
+              "get_unidades_negocio_pos",
+              "main",
+              "sync_detalle_producto_canonico_dia"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Servidores_Conexiones",
+              "Unidades_Negocio",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "decimal",
+              "pytest",
+              "scripts.poblar_ventas_detalle_producto_canonico"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "redondeo partidas compensadas"
+            ],
+            "path": "backend/tests/test_iscam_soft_zero_compensated_rounding_r23.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_row",
+              "test_zero_header_accepts_compensated_rounding_residual",
+              "test_zero_header_large_compensated_difference_still_fails_closed",
+              "test_zero_header_single_negative_residual_still_fails_closed"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 2,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-15T02:25:16Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
