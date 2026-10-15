@@ -14933,7 +14933,7 @@ async def obtener_pendientes_unificados(
 
     # ===== SCOPE POR UNIDAD / PERMISOS =====
     # Admin/SuperAdmin ven todas las unidades. Roles operativos solo sus servers permitidos.
-    from core.security import es_admin as _es_admin, es_superadmin as _es_superadmin, get_user_empresas_permitidas
+    from core.security import es_admin as _es_admin, es_superadmin as _es_superadmin
     is_admin_view = _es_admin(current_user) or _es_superadmin(current_user)
     allowed_servers = set()
     if not is_admin_view:
