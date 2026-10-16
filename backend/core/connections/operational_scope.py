@@ -26,6 +26,20 @@ def classify_operational_scope(
     return "TECHNICAL"
 
 
+
+def operational_server_ids() -> set[str]:
+    """Return active server ids that have at least one active business unit.
+
+    The unit catalog is read once with force_refresh=True so callers that
+    filter multiple servers avoid one SQL refresh per server while still making
+    an authoritative operational decision.
+    """
+    return {
+        str(unit.get("server_id") or "").strip().lower()
+        for unit in UnidadesService.get_all(force_refresh=True)
+        if str(unit.get("server_id") or "").strip()
+    }
+
 def active_units_for_server(server_id: str) -> List[Dict]:
     wanted = str(server_id or "").strip().lower()
     if not wanted:
