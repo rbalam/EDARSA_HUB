@@ -1,0 +1,245 @@
+{
+  "base_sha": "6fb1af3ec9cc1af1dd4a708fa609d4c3b9375bd9",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-16T15:58:29Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-CIENFUEGOS-20261015-CLOSED-DETAIL-PARITY-AUDIT-R1-CARLOS-20261016",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-16T15:59:12Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "ventas_runtime",
+              "tickets_runtime",
+              "pax_runtime",
+              "ventas_detalle",
+              "tickets_detalle",
+              "pax_detalle",
+              "delta_venta",
+              "delta_tickets",
+              "delta_pax"
+            ],
+            "name": "oct15_runtime_vs_detail_soft_units",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                "2026-10-15",
+                "115016.3600",
+                "25",
+                "72",
+                "0.0000",
+                0,
+                "0",
+                "115016.36",
+                "25",
+                "72"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-15",
+                "182004.6700",
+                "52",
+                "140",
+                "0.0000",
+                0,
+                "0",
+                "182004.67",
+                "52",
+                "140"
+              ],
+              [
+                "ESTELAR",
+                "2026-10-15",
+                "45128.2500",
+                "35",
+                "95",
+                "5250.0000",
+                1,
+                "1",
+                "39878.25",
+                "34",
+                "94"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ventas_runtime",
+              "tickets_runtime",
+              "pax_runtime",
+              "ventas_detalle",
+              "tickets_detalle",
+              "pax_detalle",
+              "delta_venta",
+              "delta_tickets",
+              "delta_pax"
+            ],
+            "name": "cienfuegos_oct1_15_runtime_vs_detail_totals",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2479539.6700",
+                "630",
+                "2899",
+                "2297535.0000",
+                578,
+                "2759",
+                "182004.67",
+                "52",
+                "140"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "latest_snapshot",
+              "latest_update",
+              "ventas_snapshot",
+              "tickets_snapshot",
+              "pax_snapshot"
+            ],
+            "name": "soft_units_snapshot_dates_14_16",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                "2026-10-15",
+                "2026-10-16 15:58:15.6002190",
+                "2026-10-16 15:58:15.6551046",
+                "115016.36",
+                25,
+                72
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-15",
+                "2026-10-16 15:58:17.0194020",
+                "2026-10-16 15:58:17.0547760",
+                "182004.67",
+                52,
+                140
+              ],
+              [
+                "ESTELAR",
+                "2026-10-15",
+                "2026-10-16 15:58:18.4019400",
+                "2026-10-16 15:58:18.4364272",
+                "45128.25",
+                35,
+                95
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "latest_detail_date",
+              "tickets_15"
+            ],
+            "name": "cienfuegos_detail_latest_date",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-10-14",
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_total",
+              "cheques",
+              "pax"
+            ],
+            "name": "softrestaurant_oct15_source_totals",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-10-15",
+                "203625.00",
+                54,
+                "143"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_total",
+              "cheques",
+              "pax"
+            ],
+            "name": "softrestaurant_oct15_source_totals",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-10-15",
+                "125801.00",
+                25,
+                "72"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_total",
+              "cheques",
+              "pax"
+            ],
+            "name": "softrestaurant_oct15_source_totals",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-10-15",
+                "52414.00",
+                35,
+                "98"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-16T15:58:25Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
