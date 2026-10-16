@@ -1,0 +1,168 @@
+{
+  "base_sha": "6da93e7f3e21f6d416eb1b1a8e3ac1c3d267b55d",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-16T03:09:38Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES-OPERATIONAL-LISTINGS-FAIL-CLOSED-CERT-R1-20261015",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-16T03:10:32Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.connections",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.unidades_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "force_refresh=true",
+              "operational_server_ids",
+              "visible_en_operaciones"
+            ],
+            "path": "backend/core/connections/operational_scope.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "active_units_for_server",
+              "classify_operational_scope",
+              "connection_scope_summary",
+              "operational_server_ids",
+              "require_operational_mapping"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.server_registry.py",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.connections.operational_scope",
+              "core.db",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "operational_server_ids",
+              "scoped_ids",
+              "visible_en_operaciones"
+            ],
+            "path": "backend/core/server_registry.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_execute_sql_write",
+              "_get_server_by_id_from_sql",
+              "_get_servers_from_sql",
+              "_get_unidades_from_sql",
+              "_parse_json_field",
+              "_parse_tipos_movimiento",
+              "_serialize_catalog_field",
+              "_sql_row_to_server_dict",
+              "create_server",
+              "delete_server",
+              "filter_servers_by_user_permissions",
+              "get_connection_config",
+              "get_decrypted_credentials",
+              "get_server_by_id",
+              "get_server_by_unidad_codigo",
+              "get_server_connection_info",
+              "get_server_connection_info_with_secrets",
+              "get_server_sucursales",
+              "get_visible_servers_for_operaciones",
+              "list_operational_servers",
+              "list_servers",
+              "list_unidades_negocio",
+              "map_sql_to_api_server_response",
+              "mask_sensitive_fields",
+              "normalize_server_record",
+              "normalize_system_type",
+              "normalize_unidad_codigo",
+              "resolve_server_context",
+              "resolve_unidad_by_server_sucursal",
+              "update_server",
+              "validate_registry_integrity",
+              "validate_server_payload"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "force_refresh=true",
+              "operational_server_ids",
+              "scoped_ids",
+              "visible_en_operaciones"
+            ],
+            "path": "backend/tests/test_server_registry_operational_scope_fail_closed.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_operational_scope_exposes_single_refresh_server_set",
+              "test_operational_server_list_fails_closed_without_scope",
+              "test_visible_operational_list_requires_flag_and_scope"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 3,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-16T03:09:33Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
