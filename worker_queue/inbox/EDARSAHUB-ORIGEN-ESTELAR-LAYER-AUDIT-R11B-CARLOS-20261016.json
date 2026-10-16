@@ -1,0 +1,47 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ORIGEN-ESTELAR-LAYER-AUDIT-R11B-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Auditar sin modificar nada el descuadre reportado en Preview para ORIGEN y ESTELAR del 2026-10-01 al 2026-10-15 despues del rollback. Comparar acumulado de KPI base, Runtime y detalle historico, y mostrar diferencias por dia para localizar exactamente donde se desalinearon. No modificar datos, codigo, vistas, sincronizadores ni Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 100,
+      "queries": [
+        {
+          "name": "origen_totales_capas",
+          "sql": "SELECT 'BASE' AS capa,CAST(SUM(ventas_total) AS decimal(18,2)) AS ventas,SUM(tickets_total) AS tickets,SUM(pax_total) AS pax FROM dbo.Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion BETWEEN '2026-10-01' AND '2026-10-15' AND ISNULL(activo,1)=1 AND ISNULL(es_demo,0)=0 UNION ALL SELECT 'RUNTIME',CAST(SUM(ventas_total) AS decimal(18,2)),SUM(tickets_total),SUM(pax_total) FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion BETWEEN '2026-10-01' AND '2026-10-15'"
+        },
+        {
+          "name": "origen_detalle_total",
+          "sql": "SELECT CAST(SUM(x.venta_ticket) AS decimal(18,2)) AS ventas_detalle,COUNT(*) AS tickets_detalle,SUM(x.pax_ticket) AS pax_detalle FROM (SELECT numero_ticket,fecha_operacion,SUM(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 THEN ISNULL(importe_neto,0) ELSE 0 END) AS venta_ticket,MAX(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 THEN ISNULL(pax,0) ELSE 0 END) AS pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion BETWEEN '2026-10-01' AND '2026-10-15' GROUP BY numero_ticket,fecha_operacion) x"
+        },
+        {
+          "name": "origen_por_dia",
+          "sql": "SELECT CAST(b.fecha_operacion AS date) AS fecha,CAST(b.ventas_total AS decimal(18,2)) AS base_ventas,CAST(r.ventas_total AS decimal(18,2)) AS runtime_ventas,b.tickets_total AS base_tickets,r.tickets_total AS runtime_tickets,b.pax_total AS base_pax,r.pax_total AS runtime_pax FROM dbo.Comercial_KPIs_Diarios_v2 b LEFT JOIN dbo.vw_Comercial_KPIs_Diarios_v2_Runtime r ON r.unidad_negocio_pk=b.unidad_negocio_pk AND r.sucursal_id=b.sucursal_id AND r.fecha_operacion=b.fecha_operacion WHERE b.unidad_negocio_id='ORIGEN' AND b.fecha_operacion BETWEEN '2026-10-01' AND '2026-10-15' AND ISNULL(b.activo,1)=1 AND ISNULL(b.es_demo,0)=0 ORDER BY b.fecha_operacion"
+        },
+        {
+          "name": "estelar_totales_capas",
+          "sql": "SELECT 'BASE' AS capa,CAST(SUM(ventas_total) AS decimal(18,2)) AS ventas,SUM(tickets_total) AS tickets,SUM(pax_total) AS pax FROM dbo.Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion BETWEEN '2026-10-01' AND '2026-10-15' AND ISNULL(activo,1)=1 AND ISNULL(es_demo,0)=0 UNION ALL SELECT 'RUNTIME',CAST(SUM(ventas_total) AS decimal(18,2)),SUM(tickets_total),SUM(pax_total) FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion BETWEEN '2026-10-01' AND '2026-10-15'"
+        },
+        {
+          "name": "estelar_detalle_total",
+          "sql": "SELECT CAST(SUM(x.venta_ticket) AS decimal(18,2)) AS ventas_detalle,COUNT(*) AS tickets_detalle,SUM(x.pax_ticket) AS pax_detalle FROM (SELECT numero_ticket,fecha_operacion,SUM(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 THEN ISNULL(importe_neto,0) ELSE 0 END) AS venta_ticket,MAX(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 THEN ISNULL(pax,0) ELSE 0 END) AS pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion BETWEEN '2026-10-01' AND '2026-10-15' GROUP BY numero_ticket,fecha_operacion) x"
+        }
+      ]
+    }
+  ]
+}
