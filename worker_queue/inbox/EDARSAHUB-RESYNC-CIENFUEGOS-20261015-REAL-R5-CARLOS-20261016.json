@@ -1,0 +1,26 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261015-REAL-R5-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6fb1af3ec9cc1af1dd4a708fa609d4c3b9375bd9",
+  "production_allowed": false,
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "objective": "Re-sincronizar en modo REAL exclusivamente CIENFUEGOS para 2026-10-15. Evidencia previa certificada: SoftRestaurant tiene 55 tickets, $203625.00 y 144 PAX; Runtime V2 tenía 52 tickets, $182004.67 y 140 PAX; Sync_Sales y Comercial_Inteligencia_VentasDetalleProducto tenían 0 tickets del 15. Ejecutar primero HEADER_KPI con el handler oficial SoftRestaurant, después DETALLE_ISCAM force-refresh y Pagos por Ticket, y certificar conciliación. Mantener exactamente la misma lógica canónica que 130MID/LA ESTELAR. No modificar código ni sincronizadores protegidos de Ventas del Día/Ventas Cerradas ni sync_comercial_abiertas_v2. No tocar Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "fecha_inicio": "2026-10-15",
+  "fecha_fin": "2026-10-15",
+  "dry_run": false,
+  "confirm_comercial_range_resync": true,
+  "audit_profile": "closed_ticket_metadata"
+}
