@@ -22,10 +22,13 @@ def test_mode_is_closed_and_forbids_secrets_and_inline_sql():
 def test_mode_requires_readonly_preflight_and_post_audit():
     bridge = BRIDGE.read_text(encoding="utf-8")
     dispatcher = DISPATCHER.read_text(encoding="utf-8")
-    assert "SERVER_REGISTRY_METADATA_UPDATE_PREFLIGHT_REQUIRED" in bridge
-    assert "SERVER_REGISTRY_METADATA_UPDATE_POST_AUDIT_REQUIRED" in bridge
+    assert "SERVER_REGISTRY_METADATA_UPDATE_PREFLIGHT_PROFILE_REQUIRED" in bridge
+    assert "SERVER_REGISTRY_METADATA_UPDATE_POST_PROFILE_REQUIRED" in bridge
+    assert "SERVER_REGISTRY_METADATA_UPDATE_INLINE_SQL_FORBIDDEN" in bridge
     block = dispatcher.split("if mode == SERVER_REGISTRY_METADATA_UPDATE_MODE:", 1)[1].split("if mode == SQL_MIGRATION_DEVELOPMENT_MODE:", 1)[0]
-    assert "sql_readonly_audit" in block
+    assert "build_readonly_audit_checks(preflight_profile)" in block
+    assert "build_readonly_audit_checks(post_profile)" in block
+    assert "SERVER_REGISTRY_METADATA_UPDATE_INLINE_SQL_FORBIDDEN" in block
     assert "preflight_checks" in block
     assert 'result["checks"]' in block
     assert "CERTIFIED_OPERATIONAL" in block
