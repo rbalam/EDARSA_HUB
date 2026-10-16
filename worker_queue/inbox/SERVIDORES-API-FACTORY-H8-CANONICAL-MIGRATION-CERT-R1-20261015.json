@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-API-FACTORY-H8-CANONICAL-MIGRATION-CERT-R1-20261015",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Certificar READ_ONLY que H8 API Factory usa una unica migracion SQL canonica bajo backend/database/migrations, es idempotente para las seis tablas y el wrapper legacy reutiliza ese archivo sin duplicar DDL. No ejecutar migracion ni tocar Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/migrations/integrations_api_factory_20261015.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_api_factory_h8_canonical_migration.py",
+        "backend/tests/test_worker_sql_migration_integration_gate6.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/database/migrations/20261015_integrations_api_factory.sql",
+          "backend/migrations/integrations_api_factory_20261015.py",
+          "tools/mirror_sync/sql_migration_development.py",
+          "backend/tests/test_api_factory_h8_canonical_migration.py"
+        ],
+        "search_terms": [
+          "20261015_integrations_api_factory.sql",
+          "IF OBJECT_ID",
+          "CREATE TABLE",
+          "MIGRATIONS_ROOT",
+          "MIGRATION_PATH_OUTSIDE_CANONICAL_ROOT"
+        ],
+        "max_results": 100
+      }
+    }
+  ]
+}
