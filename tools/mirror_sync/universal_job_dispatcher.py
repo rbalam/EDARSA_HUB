@@ -1727,9 +1727,15 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                 raise RuntimeError("SERVER_REGISTRY_METADATA_UPDATE_CHANGE_REQUIRED")
             if job.get("confirm_server_registry_metadata_update") is not True:
                 raise RuntimeError("SERVER_REGISTRY_METADATA_UPDATE_CONFIRMATION_REQUIRED")
-            preflight_checks = job.get("preflight_checks") or []
-            if not preflight_checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in preflight_checks):
-                raise RuntimeError("SERVER_REGISTRY_METADATA_UPDATE_PREFLIGHT_REQUIRED")
+            preflight_profile = str(job.get("preflight_audit_profile") or "").strip()
+            post_profile = str(job.get("post_audit_profile") or "").strip()
+            if not is_allowed_readonly_audit_profile(preflight_profile):
+                raise RuntimeError("SERVER_REGISTRY_METADATA_UPDATE_PREFLIGHT_PROFILE_REQUIRED")
+            if not is_allowed_readonly_audit_profile(post_profile):
+                raise RuntimeError("SERVER_REGISTRY_METADATA_UPDATE_POST_PROFILE_REQUIRED")
+            if job.get("preflight_checks") not in (None, []) or job.get("checks") not in (None, []):
+                raise RuntimeError("SERVER_REGISTRY_METADATA_UPDATE_INLINE_SQL_FORBIDDEN")
+            preflight_checks = build_readonly_audit_checks(preflight_profile)
             preflight_results = []
             for check in preflight_checks:
                 check_result = run_check(ROOT, check)
@@ -1755,10 +1761,10 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                 if execution.returncode != 0:
                     result["blockers"].append(f"server_registry_metadata_update_failed:rc={execution.returncode}")
             result["files_changed"] = []
-            checks = job.get("checks") or []
+            checks = build_readonly_audit_checks(post_profile)
             check_results = []
             if not result["blockers"]:
-                if not checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+                if not checks:
                     result["blockers"].append("SERVER_REGISTRY_METADATA_UPDATE_POST_AUDIT_REQUIRED")
                 else:
                     for check in checks:
