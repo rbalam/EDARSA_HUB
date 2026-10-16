@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "442059ad20c51716895240d567043ce2605603ac",
-  "generated_at_utc": "2026-10-16T02:56:28Z",
+  "generated_at_utc": "2026-10-16T02:57:53Z",
   "history": {
     "done_total_local": 1434,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1887,
+      "age_seconds": 1972,
       "job_id": "BOS-MCP-WORKER-MCP-INIT-LAZY-IMPORT-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1795,
+      "age_seconds": 1880,
       "job_id": "SERVIDORES-REGISTRY-DISABLE-OPERATIONS-CAPABILITY-CERT-R1-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 132,
+      "age_seconds": 217,
       "job_id": "SERVIDORES-REGISTRY-DISABLE-OPERATIONS-CAPABILITY-CERT-R2-20261015",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-16T02:56:14Z",
-    "last_receive_utc": "2026-10-16T02:56:23Z",
+    "last_cycle_utc": "2026-10-16T02:57:41Z",
+    "last_receive_utc": "2026-10-16T02:57:52Z",
     "last_terminal_utc": "2026-10-16T02:54:15Z",
     "pid": "26278",
     "runtime_fingerprint": {
