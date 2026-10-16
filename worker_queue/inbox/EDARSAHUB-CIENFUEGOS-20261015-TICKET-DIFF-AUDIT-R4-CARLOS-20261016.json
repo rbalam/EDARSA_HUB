@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-CIENFUEGOS-20261015-TICKET-DIFF-AUDIT-R4-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6fb1af3ec9cc1af1dd4a708fa609d4c3b9375bd9",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Completar la comparación ticket a ticket de CIENFUEGOS 2026-10-15 después de que R3 certificó 55 folios en SoftRestaurant. Leer únicamente Sync_Sales y el detalle histórico con columnas confirmadas para identificar qué tickets no llegaron a EDARSAHUB. No modificar datos/código ni tocar sincronizadores protegidos o Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 200,
+      "queries": [
+        {
+          "name": "cienfuegos_oct15_sync_sales",
+          "sql": "SELECT NumeroTicket,FechaHora,MontoTotal,Pax,status FROM dbo.Sync_Sales WHERE UPPER(LTRIM(RTRIM(UnidadNegocio)))='CIENFUEGOS' AND FechaHora>='2026-10-15' AND FechaHora<'2026-10-16' ORDER BY NumeroTicket"
+        },
+        {
+          "name": "cienfuegos_oct15_detail_existing",
+          "sql": "SELECT numero_ticket,MIN(fecha_hora) AS fecha_hora,SUM(ISNULL(importe_neto,0)) AS importe_detalle,MAX(ISNULL(pax,0)) AS pax FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion='2026-10-15' AND ISNULL(activo,1)=1 GROUP BY numero_ticket ORDER BY numero_ticket"
+        },
+        {
+          "name": "cienfuegos_oct15_runtime",
+          "sql": "SELECT unidad_negocio_id,CAST(fecha_operacion AS date) AS fecha_operacion,ventas_total,tickets_total,pax_total FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion='2026-10-15'"
+        }
+      ]
+    }
+  ]
+}
