@@ -1,0 +1,81 @@
+{
+  "base_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-10-16T19:00:47Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-CLOSED-BASE-PRECEDENCE-MIGRATE-R3-CARLOS-20261016",
+  "operation": "SQL_MIGRATION_DEVELOPMENT",
+  "operation_summary": {
+    "credential_source": "canonical",
+    "returncode": 0,
+    "status": "PASS"
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-16T19:01:17Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "delta_ventas",
+              "delta_tickets",
+              "delta_pax",
+              "fuente_original"
+            ],
+            "name": "post_runtime_closed_base_parity",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                "2026-10-15",
+                "0.00",
+                0,
+                0,
+                "API_LOCAL"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-15",
+                "0.00",
+                0,
+                0,
+                "API_LOCAL"
+              ],
+              [
+                "ESTELAR",
+                "2026-10-15",
+                "0.00",
+                0,
+                0,
+                "API_LOCAL"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-16T19:00:44Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto preflight SQL HRLectura, una migracion Development versionada y SHA-bound mediante writer dedicado, y post-audit SQL HRLectura. No acepto SQL inline, shell arbitrario ni toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
