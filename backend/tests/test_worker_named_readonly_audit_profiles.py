@@ -105,3 +105,22 @@ def test_bridge_rejects_profile_plus_inline_checks():
     }
     errors = bridge.validate(job)
     assert "READ_ONLY_SQL_AUDIT_PROFILE_WITH_INLINE_CHECKS_FORBIDDEN" in errors
+
+
+def test_chapur_norte_visibility_profile_is_named_and_readonly():
+    assert profiles.is_allowed_readonly_audit_profile(
+        "chapur_norte_operational_visibility_v1"
+    )
+    checks = profiles.build_readonly_audit_checks(
+        "chapur_norte_operational_visibility_v1"
+    )
+    assert len(checks) == 1
+    check = checks[0]
+    assert check["type"] == "sql_readonly_audit"
+    names = {query["name"] for query in check["queries"]}
+    assert names == {"chapur_norte_connection", "chapur_norte_units"}
+    for query in check["queries"]:
+        upper = query["sql"].upper()
+        assert "SELECT" in upper
+        for forbidden in ("UPDATE ", "INSERT ", "DELETE ", "MERGE ", "DROP ", "ALTER ", "CREATE "):
+            assert forbidden not in upper
