@@ -128,3 +128,38 @@ def test_chapur_norte_visibility_profile_is_named_and_readonly():
         assert "SELECT" in upper
         for forbidden in ("UPDATE ", "INSERT ", "DELETE ", "MERGE ", "DROP ", "ALTER ", "CREATE "):
             assert forbidden not in upper
+
+
+def test_api_factory_persistence_profile_is_named_and_readonly():
+    profiles = _load(
+        "readonly_audit_profiles_api_factory",
+        "tools/mirror_sync/readonly_audit_profiles.py",
+    )
+    assert profiles.is_allowed_readonly_audit_profile(
+        "api_factory_persistence_state_v1"
+    )
+    checks = profiles.build_readonly_audit_checks(
+        "api_factory_persistence_state_v1"
+    )
+    assert len(checks) == 1
+    check = checks[0]
+    assert check["type"] == "sql_readonly_audit"
+    assert check["source"] == "EDARSAHUB"
+    assert {query["name"] for query in check["queries"]} == {
+        "api_factory_tables",
+        "api_factory_columns",
+    }
+    for query in check["queries"]:
+        upper = query["sql"].upper()
+        assert "SELECT" in upper
+        for forbidden in (
+            " INSERT ",
+            " UPDATE ",
+            " DELETE ",
+            " MERGE ",
+            " DROP ",
+            " ALTER ",
+            " CREATE ",
+            " EXEC ",
+        ):
+            assert forbidden not in f" {upper} "
