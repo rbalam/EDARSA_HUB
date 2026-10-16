@@ -3,56 +3,32 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "5b045feb6ed5ede56d3c0620a8e0d7ed693fa41c",
-  "generated_at_utc": "2026-10-16T00:05:44Z",
+  "development_sha": "e895712723ab49d44c63cbfc10674712391c7df7",
+  "generated_at_utc": "2026-10-16T02:26:40Z",
   "history": {
-    "done_total_local": 1432,
+    "done_total_local": 1433,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1243,
-    "results_total_local": 2450
+    "rejected_total_local": 1244,
+    "results_total_local": 2452
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2560,
-      "job_id": "BOS-MCP-WORKER-MCP-INIT-LAZY-IMPORT-R1",
+      "age_seconds": 99,
+      "job_id": "BOS-MCP-WORKER-MCP-INIT-LAZY-IMPORT-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2531,
-      "job_id": "BOS-TOAST-GATE4-ONBOARDING-CONTRACT-READONLY-R1-20261015",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2383,
-      "job_id": "CXP-GATE3F-G-IDEMPOTENCY-MIGRATION-PREFLIGHT-READONLY-20261015",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2168,
-      "job_id": "SERVIDORES-CHAPUR-CANONICAL-SCOPE-CANDIDATES-R1-20261015",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2463,
-      "job_id": "SERVIDORES-CHAPUR-ENTERPRISE-CANONICAL-DISCOVERY-R2-20261015",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3587,
-      "job_id": "SERVIDORES-OPERATIONAL-SCOPE-GUARD-CERT-R1-20261015",
+      "age_seconds": 7,
+      "job_id": "SERVIDORES-REGISTRY-DISABLE-OPERATIONS-CAPABILITY-CERT-R1-20261015",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "5b045feb6ed5ede56d3c0620a8e0d7ed693fa41c",
+  "local_development_sha": "e895712723ab49d44c63cbfc10674712391c7df7",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -60,21 +36,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
-  "remote_development_sha": "5b045feb6ed5ede56d3c0620a8e0d7ed693fa41c",
+  "remote_development_sha": "e895712723ab49d44c63cbfc10674712391c7df7",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-16T00:05:37Z",
-    "last_receive_utc": "2026-10-16T00:05:32Z",
-    "last_terminal_utc": "2026-10-15T23:29:35Z",
-    "pid": "67621",
+    "last_cycle_utc": "2026-10-16T02:26:24Z",
+    "last_receive_utc": "2026-10-16T02:26:39Z",
+    "last_terminal_utc": "2026-10-16T02:26:32Z",
+    "pid": "4438",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "dbe0d28e3a51dfcc819a758ce1c7b169f407bb63",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "5b045feb6ed5ede56d3c0620a8e0d7ed693fa41c",
+      "development_sha": "e895712723ab49d44c63cbfc10674712391c7df7",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
@@ -89,7 +65,7 @@
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
       "worker_code_tree_aligned": false,
-      "worker_code_tree_sha": "66fae875ccfff991d4dba5d1ddb636f7859cae2d"
+      "worker_code_tree_sha": "bbbf023a4b31ce120fb27a18a63c0ceb19e55fb8"
     }
   },
   "schema": "edarsahub.worker-health.v3",
