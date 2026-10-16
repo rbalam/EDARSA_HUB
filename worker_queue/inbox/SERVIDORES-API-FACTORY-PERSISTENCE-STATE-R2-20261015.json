@@ -1,0 +1,13 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-API-FACTORY-PERSISTENCE-STATE-R2-20261015",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Auditar en solo lectura el estado de persistencia API Factory en Desarrollo mediante el perfil nombrado certificado.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "audit_profile": "api_factory_persistence_state_v1",
+  "checks": []
+}
