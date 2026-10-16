@@ -1718,10 +1718,13 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                     raise RuntimeError(f"SERVER_REGISTRY_METADATA_UPDATE_FORBIDDEN_FIELD:{forbidden_field}")
             server_id = str(job.get("server_id") or "").strip()
             database_name = str(job.get("database_name") or "").strip()
+            disable_operations = job.get("disable_operations") is True
             if not re.fullmatch(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", server_id):
                 raise RuntimeError("SERVER_REGISTRY_METADATA_UPDATE_SERVER_ID_INVALID")
-            if not re.fullmatch(r"[A-Za-z0-9_]{1,128}", database_name):
+            if database_name and not re.fullmatch(r"[A-Za-z0-9_]{1,128}", database_name):
                 raise RuntimeError("SERVER_REGISTRY_METADATA_UPDATE_DATABASE_NAME_INVALID")
+            if not database_name and not disable_operations:
+                raise RuntimeError("SERVER_REGISTRY_METADATA_UPDATE_CHANGE_REQUIRED")
             if job.get("confirm_server_registry_metadata_update") is not True:
                 raise RuntimeError("SERVER_REGISTRY_METADATA_UPDATE_CONFIRMATION_REQUIRED")
             preflight_checks = job.get("preflight_checks") or []
@@ -1741,7 +1744,7 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
             backend = ROOT / "backend"
             if not result["blockers"]:
                 execution = run(
-                    [PYTHON_BIN, str(script), "--server-id", server_id, "--database-name", database_name, "--confirm"],
+                    [PYTHON_BIN, str(script), "--server-id", server_id] + (["--database-name", database_name] if database_name else []) + (["--disable-operations"] if disable_operations else []) + ["--confirm"],
                     cwd=ROOT,
                     timeout=MAX_SECONDS,
                     env_extra={**load_backend_runtime_env(), "PYTHONPATH": str(backend)},
