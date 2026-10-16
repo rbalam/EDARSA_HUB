@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RUNTIME-ROLLBACK-PRE-R3-R10-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
+  "production_allowed": false,
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "objective": "ROLLBACK inmediato y exacto de la migración Runtime R3 que cambió globalmente la precedencia de datos y produjo regresión reportada en ORIGEN y LA ESTELAR. Restaurar la definición previa certificada de dbo.vw_Comercial_KPIs_Diarios_v2_Runtime re-ejecutando la migración histórica 20260816_002_fix_runtime_ticket_promedio_canonico.sql. No modificar datos base, detalle, sincronizadores de Ventas del Día/Ventas Cerradas, sync_comercial_abiertas_v2, frontend ni Producción. Auditar ORIGEN, ESTELAR, 130MID y CIENFUEGOS antes y después.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20260816_002_fix_runtime_ticket_promedio_canonico.sql",
+  "migration_sha256": "5aba38675c45c0f0002ce2c9b9efbeca114a334065b67435fe423aa16a1896b5",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "preflight_checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 20,
+      "queries": [
+        {
+          "name": "pre_rollback_runtime_state",
+          "sql": "SELECT b.unidad_negocio_id,CAST(b.fecha_operacion AS date) AS fecha_operacion,b.ventas_total AS base_ventas,b.tickets_total AS base_tickets,b.pax_total AS base_pax,r.ventas_total AS runtime_ventas,r.tickets_total AS runtime_tickets,r.pax_total AS runtime_pax,r.fuente_original,s.ventas_abiertas,s.ventas_cerradas_dia,s.total_estimado_dia,s.tickets_abiertos,s.tickets_cerrados_dia,s.pax_abiertos,s.pax_cerrados_dia,s.snapshot_timestamp FROM dbo.Comercial_KPIs_Diarios_v2 b LEFT JOIN dbo.vw_Comercial_KPIs_Diarios_v2_Runtime r ON r.unidad_negocio_pk=b.unidad_negocio_pk AND r.sucursal_id=b.sucursal_id AND r.fecha_operacion=b.fecha_operacion OUTER APPLY (SELECT TOP 1 ventas_abiertas,ventas_cerradas_dia,total_estimado_dia,tickets_abiertos,tickets_cerrados_dia,pax_abiertos,pax_cerrados_dia,snapshot_timestamp FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 s0 WHERE s0.unidad_negocio_id=b.unidad_negocio_id AND CAST(s0.fecha_operacion AS date)=CAST(b.fecha_operacion AS date) ORDER BY s0.snapshot_timestamp DESC,s0.fecha_ultima_actualizacion DESC) s WHERE b.unidad_negocio_id IN ('ORIGEN','ESTELAR','130MID','CIENFUEGOS') AND b.fecha_operacion='2026-10-15' ORDER BY b.unidad_negocio_id"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 20,
+      "queries": [
+        {
+          "name": "post_rollback_runtime_state",
+          "sql": "SELECT b.unidad_negocio_id,CAST(b.fecha_operacion AS date) AS fecha_operacion,b.ventas_total AS base_ventas,b.tickets_total AS base_tickets,b.pax_total AS base_pax,r.ventas_total AS runtime_ventas,r.tickets_total AS runtime_tickets,r.pax_total AS runtime_pax,r.fuente_original,s.ventas_abiertas,s.ventas_cerradas_dia,s.total_estimado_dia,s.tickets_abiertos,s.tickets_cerrados_dia,s.pax_abiertos,s.pax_cerrados_dia,s.snapshot_timestamp FROM dbo.Comercial_KPIs_Diarios_v2 b LEFT JOIN dbo.vw_Comercial_KPIs_Diarios_v2_Runtime r ON r.unidad_negocio_pk=b.unidad_negocio_pk AND r.sucursal_id=b.sucursal_id AND r.fecha_operacion=b.fecha_operacion OUTER APPLY (SELECT TOP 1 ventas_abiertas,ventas_cerradas_dia,total_estimado_dia,tickets_abiertos,tickets_cerrados_dia,pax_abiertos,pax_cerrados_dia,snapshot_timestamp FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 s0 WHERE s0.unidad_negocio_id=b.unidad_negocio_id AND CAST(s0.fecha_operacion AS date)=CAST(b.fecha_operacion AS date) ORDER BY s0.snapshot_timestamp DESC,s0.fecha_ultima_actualizacion DESC) s WHERE b.unidad_negocio_id IN ('ORIGEN','ESTELAR','130MID','CIENFUEGOS') AND b.fecha_operacion='2026-10-15' ORDER BY b.unidad_negocio_id"
+        }
+      ]
+    }
+  ]
+}
