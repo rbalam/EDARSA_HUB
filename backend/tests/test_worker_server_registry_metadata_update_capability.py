@@ -34,7 +34,8 @@ def test_mode_requires_readonly_preflight_and_post_audit():
 
 def test_runtime_uses_canonical_server_registry_helper_and_preserves_active():
     text = SCRIPT.read_text(encoding="utf-8")
-    assert 'update_server(server_id, {"database_name": database_name})' in text
+    assert "result = asyncio.run(update_server(server_id, payload))" in text
+    assert 'payload["database_name"] = database_name' in text
     assert "_get_server_by_id_from_sql(server_id, include_inactive=True)" in text
     assert "ACTIVE_STATE_CHANGED" in text
     assert "password" not in text.lower()
