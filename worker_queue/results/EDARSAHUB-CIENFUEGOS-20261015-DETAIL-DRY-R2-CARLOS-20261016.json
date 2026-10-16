@@ -1,0 +1,69 @@
+{
+  "base_sha": "6fb1af3ec9cc1af1dd4a708fa609d4c3b9375bd9",
+  "blockers": [
+    "iscam_detail_backfill_failed:rc=1"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-16T17:35:02Z",
+  "dry_run": true,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-CIENFUEGOS-20261015-DETAIL-DRY-R2-CARLOS-20261016",
+  "operation": "ISCAM_DETAIL_BACKFILL",
+  "operation_summary": {
+    "dias_bloqueados": 1,
+    "dias_candidatos": 1,
+    "dias_evaluados": 1,
+    "dias_reparables": 0,
+    "dias_sin_runtime": 0,
+    "dias_ya_ok": 0,
+    "fecha_fin_exclusivo": "2026-10-16",
+    "fecha_inicio": "2026-10-15",
+    "filas_insertadas": 0,
+    "modo": "DRY_RUN",
+    "unidades": [
+      {
+        "bloqueados": 1,
+        "candidatos": 1,
+        "dias": [
+          {
+            "delta_pax": 4,
+            "delta_tickets": 3,
+            "delta_ventas": "21620.3300",
+            "fecha_operacion": "2026-10-15",
+            "filas_insertadas": 0,
+            "pax_pos": 144,
+            "pax_runtime": 140,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 55,
+            "tickets_runtime": 52,
+            "ventas_pos": "203625.0000",
+            "ventas_runtime": "182004.67"
+          }
+        ],
+        "filas_insertadas": 0,
+        "reparables": 0,
+        "sin_runtime": 0,
+        "unidad": "CIENFUEGOS",
+        "ya_ok": 0
+      }
+    ]
+  },
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-16T17:35:46Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-16T17:34:55Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "work_completion": "NOT_CERTIFIED"
+}
