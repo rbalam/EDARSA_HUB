@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "f34f3aef70826b0132f1f4588d8d49680ca769ed",
-  "generated_at_utc": "2026-10-16T03:23:49Z",
+  "generated_at_utc": "2026-10-16T03:25:10Z",
   "history": {
     "done_total_local": 1439,
     "pending_total_local": 0,
@@ -16,55 +16,49 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3528,
-      "job_id": "BOS-MCP-WORKER-MCP-INIT-LAZY-IMPORT-R2",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 13,
+      "age_seconds": 95,
       "job_id": "SERVIDORES-API-FACTORY-H8-CANONICAL-MIGRATION-CERT-R1-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 542,
+      "age_seconds": 623,
       "job_id": "SERVIDORES-API-FACTORY-H8-REPOSITORY-CERT-R1-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 278,
+      "age_seconds": 360,
       "job_id": "SERVIDORES-API-FACTORY-PERSISTENCE-STATE-R2-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 851,
+      "age_seconds": 932,
       "job_id": "SERVIDORES-OPERATIONAL-LISTINGS-FAIL-CLOSED-CERT-R1-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3436,
+      "age_seconds": 3518,
       "job_id": "SERVIDORES-REGISTRY-DISABLE-OPERATIONS-CAPABILITY-CERT-R1-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1773,
+      "age_seconds": 1855,
       "job_id": "SERVIDORES-REGISTRY-DISABLE-OPERATIONS-CAPABILITY-CERT-R2-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1350,
+      "age_seconds": 1431,
       "job_id": "SERVIDORES-REGISTRY-NAMED-AUDIT-DISABLE-OPERATIONS-CERT-R1-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1104,
+      "age_seconds": 1186,
       "job_id": "SERVIDORES-REGISTRY-NAMED-AUDIT-DISABLE-OPERATIONS-CERT-R2-20261015",
       "reason": null,
       "state": "RESULT_READY"
@@ -78,14 +72,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 9,
+  "queue_result_ready_recent": 8,
   "queue_running": 0,
   "remote_development_sha": "f34f3aef70826b0132f1f4588d8d49680ca769ed",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-16T03:23:39Z",
-    "last_receive_utc": "2026-10-16T03:23:34Z",
+    "last_cycle_utc": "2026-10-16T03:25:08Z",
+    "last_receive_utc": "2026-10-16T03:25:03Z",
     "last_terminal_utc": "2026-10-16T03:23:35Z",
     "pid": "598",
     "runtime_fingerprint": {
