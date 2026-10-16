@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-CIENFUEGOS-20261015-TICKET-DIFF-AUDIT-R3-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6fb1af3ec9cc1af1dd4a708fa609d4c3b9375bd9",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Identificar exactamente los tickets que explican la diferencia de CIENFUEGOS 2026-10-15 entre SoftRestaurant y Runtime V2 antes de corregir. Listar folio/numcheque/fecha/cierre/pagado/cancelado/total/pax/turno en POS y comparar contra Sync_Sales y detalle histórico en EDARSAHUB. Determinar si los 3 tickets faltantes son ventas cerradas válidas, tickets de otra fecha operativa o registros que deben excluirse. No modificar datos ni código. No tocar sincronizadores protegidos ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "CIENFUEGOS"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "max_rows": 200,
+      "queries": [
+        {
+          "name": "cienfuegos_oct15_ticket_population",
+          "sql": "SELECT ch.folio,ch.numcheque,ch.fecha,ch.cierre,ch.pagado,ch.cancelado,ch.total,ch.nopersonas,ch.idturno,tr.apertura,tr.cierre AS turno_cierre FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE tr.apertura>='2026-10-15' AND tr.apertura<'2026-10-16' AND ISNULL(ch.cancelado,0)=0 ORDER BY ch.folio"
+        },
+        {
+          "name": "cienfuegos_oct15_ticket_population_summary",
+          "sql": "SELECT COUNT(DISTINCT ch.folio) AS tickets,CAST(SUM(ISNULL(ch.total,0)) AS decimal(18,2)) AS ventas,SUM(ISNULL(ch.nopersonas,0)) AS pax,SUM(CASE WHEN ch.cierre IS NULL THEN 1 ELSE 0 END) AS sin_cierre,SUM(CASE WHEN ISNULL(ch.pagado,0)=0 THEN 1 ELSE 0 END) AS no_pagados,SUM(CASE WHEN ISNULL(ch.total,0)=0 THEN 1 ELSE 0 END) AS total_cero FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE tr.apertura>='2026-10-15' AND tr.apertura<'2026-10-16' AND ISNULL(ch.cancelado,0)=0"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 200,
+      "queries": [
+        {
+          "name": "cienfuegos_oct15_sync_sales_tickets",
+          "sql": "SELECT NumeroTicket,FechaHora,MontoTotal,Pax,status,last_modified FROM dbo.Sync_Sales WHERE UPPER(LTRIM(RTRIM(UnidadNegocio)))='CIENFUEGOS' AND FechaHora>='2026-10-15' AND FechaHora<'2026-10-16' ORDER BY NumeroTicket"
+        },
+        {
+          "name": "cienfuegos_oct15_detail_tickets",
+          "sql": "SELECT numero_ticket,MIN(fecha_hora) AS fecha_hora,MAX(ticket_fecha_cierre) AS ticket_fecha_cierre,MAX(ticket_pagado) AS ticket_pagado,MAX(ticket_total) AS ticket_total,MAX(pax) AS pax,SUM(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 THEN ISNULL(importe_neto,0) ELSE 0 END) AS detalle_total FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2026-10-15' AND fecha_operacion<'2026-10-16' GROUP BY numero_ticket ORDER BY numero_ticket"
+        },
+        {
+          "name": "cienfuegos_oct15_runtime_header",
+          "sql": "SELECT CAST(fecha_operacion AS date) AS fecha_operacion,ventas_total,tickets_total,pax_total,fecha_ultima_actualizacion FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2026-10-15' AND fecha_operacion<'2026-10-16'"
+        }
+      ]
+    }
+  ]
+}
