@@ -11,10 +11,12 @@ from typing import Any, Dict, List
 
 CHAPUR_CONNECTION_DISCOVERY_V1 = "chapur_connection_discovery_v1"
 CHAPUR_NORTE_OPERATIONAL_VISIBILITY_V1 = "chapur_norte_operational_visibility_v1"
+API_FACTORY_PERSISTENCE_STATE_V1 = "api_factory_persistence_state_v1"
 
 _ALLOWED = {
     CHAPUR_CONNECTION_DISCOVERY_V1,
     CHAPUR_NORTE_OPERATIONAL_VISIBILITY_V1,
+    API_FACTORY_PERSISTENCE_STATE_V1,
 }
 
 
@@ -24,6 +26,40 @@ def is_allowed_readonly_audit_profile(value: str) -> bool:
 
 def build_readonly_audit_checks(profile: str) -> List[Dict[str, Any]]:
     name = str(profile or "").strip()
+    if name == API_FACTORY_PERSISTENCE_STATE_V1:
+        return [
+            {
+                "type": "sql_readonly_audit",
+                "source": "EDARSAHUB",
+                "max_rows": 300,
+                "queries": [
+                    {
+                        "name": "api_factory_tables",
+                        "sql": (
+                            "SELECT TABLE_SCHEMA,TABLE_NAME "
+                            "FROM INFORMATION_SCHEMA.TABLES "
+                            "WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME IN ("
+                            "'Sistema_ApiFactoryApi','Sistema_ApiFactoryVersion',"
+                            "'Sistema_ApiFactoryConsumer','Sistema_ApiFactoryConsumerGrant',"
+                            "'Sistema_ApiFactoryConsumerEmpresa','Sistema_ApiFactoryConsumerUnidad'"
+                            ") ORDER BY TABLE_NAME"
+                        ),
+                    },
+                    {
+                        "name": "api_factory_columns",
+                        "sql": (
+                            "SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE,IS_NULLABLE,ORDINAL_POSITION "
+                            "FROM INFORMATION_SCHEMA.COLUMNS "
+                            "WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME IN ("
+                            "'Sistema_ApiFactoryApi','Sistema_ApiFactoryVersion',"
+                            "'Sistema_ApiFactoryConsumer','Sistema_ApiFactoryConsumerGrant',"
+                            "'Sistema_ApiFactoryConsumerEmpresa','Sistema_ApiFactoryConsumerUnidad'"
+                            ") ORDER BY TABLE_NAME,ORDINAL_POSITION"
+                        ),
+                    },
+                ],
+            }
+        ]
     if name == CHAPUR_NORTE_OPERATIONAL_VISIBILITY_V1:
         return [
             {
