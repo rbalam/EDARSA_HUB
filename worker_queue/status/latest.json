@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
-  "generated_at_utc": "2026-10-16T19:23:11Z",
+  "generated_at_utc": "2026-10-16T19:24:30Z",
   "history": {
     "done_total_local": 1449,
     "pending_total_local": 0,
@@ -16,61 +16,61 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1145,
+      "age_seconds": 1224,
       "job_id": "EDARSAHUB-CIENFUEGOS-20261015-DETAIL-BACKFILL-R7-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2254,
+      "age_seconds": 2333,
       "job_id": "EDARSAHUB-CIENFUEGOS-20261015-POST-RESYNC-LAYERS-AUDIT-R6-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 875,
+      "age_seconds": 954,
       "job_id": "EDARSAHUB-CIENFUEGOS-OCT01-15-PREVIEW-DATA-AUDIT-R8-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1581,
+      "age_seconds": 1660,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-CLOSED-BASE-PRECEDENCE-MIGRATE-R2-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1343,
+      "age_seconds": 1422,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-CLOSED-BASE-PRECEDENCE-MIGRATE-R3-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1976,
+      "age_seconds": 2055,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-CLOSED-BASE-PRECEDENCE-R1-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1003,
+      "age_seconds": 1082,
       "job_id": "EDARSAHUB-DASHBOARD-INSIGHTS-DATA-AUDIT-R1B-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1248,
+      "age_seconds": 1327,
       "job_id": "EDARSAHUB-DASHBOARD-INSIGHTS-SCHEMA-AUDIT-R1A-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 83,
+      "age_seconds": 161,
       "job_id": "EDARSAHUB-ORIGEN-ESTELAR-LAYER-AUDIT-R11B-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 458,
+      "age_seconds": 537,
       "job_id": "EDARSAHUB-RUNTIME-ROLLBACK-PRE-R3-R10-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
@@ -90,8 +90,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-16T19:23:07Z",
-    "last_receive_utc": "2026-10-16T19:23:02Z",
+    "last_cycle_utc": "2026-10-16T19:24:28Z",
+    "last_receive_utc": "2026-10-16T19:24:23Z",
     "last_terminal_utc": "2026-10-16T19:21:48Z",
     "pid": "40317",
     "runtime_fingerprint": {
