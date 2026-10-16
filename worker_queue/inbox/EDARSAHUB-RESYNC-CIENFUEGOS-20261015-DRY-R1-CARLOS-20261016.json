@@ -1,0 +1,26 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261015-DRY-R1-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6fb1af3ec9cc1af1dd4a708fa609d4c3b9375bd9",
+  "production_allowed": false,
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "objective": "Sincronizador: validar en DRY RUN exclusivo CIENFUEGOS 2026-10-15 usando la misma lógica SoftRestaurant canónica que 130MID y LA ESTELAR. Auditar encabezado KPI, detalle comercial/ISCAM y pagos por ticket contra el origen operativo antes del re-sync REAL. El problema observado: el rango 01-15 no muestra el 15 aunque la consulta del día sí tiene venta; Comercial_Inteligencia_VentasDetalleProducto no tiene tickets del 15. No modificar código ni sincronizadores protegidos de Ventas del Día/Ventas Cerradas ni sync_comercial_abiertas_v2. No tocar Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "fecha_inicio": "2026-10-15",
+  "fecha_fin": "2026-10-15",
+  "dry_run": true,
+  "confirm_comercial_range_resync": true,
+  "audit_profile": "closed_ticket_metadata"
+}
