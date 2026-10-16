@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-REGISTRY-DISABLE-OPERATIONS-CAPABILITY-CERT-R1-20261015",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Certificar READ_ONLY la extension cerrada de SERVER_REGISTRY_METADATA_UPDATE que permite exclusivamente desactivar visible_en_operaciones. Debe reutilizar update_server, preservar activo, no permitir activar Operaciones, no secretos, no SQL inline y no Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/update_server_registry_metadata.py",
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_server_registry_metadata_update_capability.py",
+        "backend/tests/test_servers_crud_explicit_rbac_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/scripts/update_server_registry_metadata.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "backend/tests/test_worker_server_registry_metadata_update_capability.py"
+        ],
+        "search_terms": [
+          "disable_operations",
+          "visible_en_operaciones",
+          "SERVER_REGISTRY_METADATA_UPDATE_CHANGE_REQUIRED",
+          "update_server"
+        ],
+        "max_results": 120
+      }
+    }
+  ]
+}
