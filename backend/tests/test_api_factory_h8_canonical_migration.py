@@ -30,3 +30,9 @@ def test_legacy_wrapper_reuses_canonical_migration_without_ddl_copy():
     assert '"20261015_integrations_api_factory.sql"' in text
     assert 'read_text(encoding="utf-8")' in text
     assert "CREATE TABLE dbo.Sistema_ApiFactoryApi" not in text
+
+
+def test_h8_migration_fails_closed_if_persistence_is_incomplete():
+    text = SQL.read_text(encoding="utf-8")
+    assert "API_FACTORY_PERSISTENCE_INCOMPLETE" in text
+    assert "THROW 51000" in text
