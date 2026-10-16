@@ -1,0 +1,140 @@
+{
+  "base_sha": "517a47885d42dc75d4ebed05543d4defcd71fb84",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-16T03:14:46Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES-API-FACTORY-H8-REPOSITORY-CERT-R1-20261015",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-16T03:15:17Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "api_factory_persistence_state_v1",
+              "sistema_apifactoryapi",
+              "sistema_apifactoryconsumer",
+              "sistema_apifactoryversion"
+            ],
+            "path": "tools/mirror_sync/readonly_audit_profiles.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "build_readonly_audit_checks",
+              "is_allowed_readonly_audit_profile"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_Empresas",
+              "Sistema_Sucursales",
+              "Sistema_VersionesSistemas",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.sql_first.db",
+              "pathlib",
+              "sys"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "if object_id",
+              "object_id",
+              "sistema_apifactoryapi",
+              "sistema_apifactoryconsumer",
+              "sistema_apifactoryversion"
+            ],
+            "path": "backend/migrations/integrations_api_factory_20261015.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "main"
+            ],
+            "tables_referenced": [
+              "Sistema_ApiFactoryApi",
+              "Sistema_ApiFactoryConsumer",
+              "Sistema_ApiFactoryConsumerEmpresa",
+              "Sistema_ApiFactoryConsumerGrant",
+              "Sistema_ApiFactoryConsumerUnidad",
+              "Sistema_ApiFactoryVersion",
+              "Sistema_Empresas",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "importlib.util",
+              "pathlib"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "api_factory_persistence_state_v1"
+            ],
+            "path": "backend/tests/test_worker_named_readonly_audit_profiles.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_load",
+              "test_api_factory_persistence_profile_is_named_and_readonly",
+              "test_bridge_accepts_profile_without_inline_sql_checks",
+              "test_bridge_rejects_profile_plus_inline_checks",
+              "test_chapur_norte_visibility_profile_is_named_and_readonly",
+              "test_chapur_profile_is_allowlisted_and_select_only",
+              "test_unknown_profile_is_rejected"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 3,
+          "scanned_files": 5,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-16T03:14:46Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
