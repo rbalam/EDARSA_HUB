@@ -1,0 +1,161 @@
+{
+  "base_sha": "f34f3aef70826b0132f1f4588d8d49680ca769ed",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-16T03:23:35Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES-API-FACTORY-H8-CANONICAL-MIGRATION-CERT-R1-20261015",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-16T03:24:33Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "20261015_integrations_api_factory.sql",
+              "create table",
+              "if object_id"
+            ],
+            "path": "backend/database/migrations/20261015_integrations_api_factory.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Sistema_ApiFactoryApi",
+              "Sistema_ApiFactoryConsumer",
+              "Sistema_ApiFactoryConsumerEmpresa",
+              "Sistema_ApiFactoryConsumerGrant",
+              "Sistema_ApiFactoryConsumerUnidad",
+              "Sistema_ApiFactoryVersion",
+              "Sistema_Empresas",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.sql_first.db",
+              "pathlib",
+              "sys"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "20261015_integrations_api_factory.sql"
+            ],
+            "path": "backend/migrations/integrations_api_factory_20261015.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "main"
+            ],
+            "tables_referenced": [
+              "Sistema_ApiFactoryApi",
+              "Sistema_ApiFactoryConsumer",
+              "Sistema_ApiFactoryConsumerEmpresa",
+              "Sistema_ApiFactoryConsumerGrant",
+              "Sistema_ApiFactoryConsumerUnidad",
+              "Sistema_ApiFactoryVersion"
+            ]
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "argparse",
+              "hashlib",
+              "json",
+              "os",
+              "pathlib",
+              "subprocess",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "migration_path_outside_canonical_root",
+              "migrations_root"
+            ],
+            "path": "tools/mirror_sync/sql_migration_development.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "MigrationContractError",
+              "build_child_env",
+              "execute_migration",
+              "main",
+              "resolve_migration_path",
+              "sha256_file",
+              "validate_request"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "20261015_integrations_api_factory.sql",
+              "create table",
+              "if object_id"
+            ],
+            "path": "backend/tests/test_api_factory_h8_canonical_migration.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_h8_migration_is_idempotent_for_all_six_tables",
+              "test_h8_uses_canonical_sql_migration_root",
+              "test_legacy_wrapper_reuses_canonical_migration_without_ddl_copy"
+            ],
+            "tables_referenced": [
+              "Sistema_ApiFactoryApi"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 4,
+          "scanned_files": 4,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-16T03:23:32Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
