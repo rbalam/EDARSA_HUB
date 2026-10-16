@@ -435,8 +435,11 @@ def validate(job: Any) -> list[str]:
         if not re.fullmatch(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", server_id):
             errors.append("SERVER_REGISTRY_METADATA_UPDATE_SERVER_ID_INVALID")
         database_name = str(job.get("database_name") or "").strip()
-        if not re.fullmatch(r"[A-Za-z0-9_]{1,128}", database_name):
+        disable_operations = job.get("disable_operations") is True
+        if database_name and not re.fullmatch(r"[A-Za-z0-9_]{1,128}", database_name):
             errors.append("SERVER_REGISTRY_METADATA_UPDATE_DATABASE_NAME_INVALID")
+        if not database_name and not disable_operations:
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_CHANGE_REQUIRED")
         if job.get("confirm_server_registry_metadata_update") is not True:
             errors.append("SERVER_REGISTRY_METADATA_UPDATE_CONFIRMATION_REQUIRED")
         preflight_checks = job.get("preflight_checks")
