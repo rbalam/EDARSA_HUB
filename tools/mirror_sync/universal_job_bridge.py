@@ -442,14 +442,14 @@ def validate(job: Any) -> list[str]:
             errors.append("SERVER_REGISTRY_METADATA_UPDATE_CHANGE_REQUIRED")
         if job.get("confirm_server_registry_metadata_update") is not True:
             errors.append("SERVER_REGISTRY_METADATA_UPDATE_CONFIRMATION_REQUIRED")
-        preflight_checks = job.get("preflight_checks")
-        if not isinstance(preflight_checks, list) or not preflight_checks:
-            errors.append("SERVER_REGISTRY_METADATA_UPDATE_PREFLIGHT_REQUIRED")
-        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in preflight_checks):
-            errors.append("SERVER_REGISTRY_METADATA_UPDATE_PREFLIGHT_ONLY_SQL_AUDIT_ALLOWED")
-        else:
-            for index, check in enumerate(preflight_checks, 1):
-                errors.extend(validate_check(check, index))
+        preflight_profile = str(job.get("preflight_audit_profile") or "").strip()
+        post_profile = str(job.get("post_audit_profile") or "").strip()
+        if not preflight_profile or not is_allowed_readonly_audit_profile(preflight_profile):
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_PREFLIGHT_PROFILE_REQUIRED")
+        if not post_profile or not is_allowed_readonly_audit_profile(post_profile):
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_POST_PROFILE_REQUIRED")
+        if job.get("preflight_checks") not in (None, []) or job.get("checks") not in (None, []):
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_INLINE_SQL_FORBIDDEN")
     elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:
         if actions not in (None, []):
             errors.append("SQL_MIGRATION_ACTIONS_FORBIDDEN")
