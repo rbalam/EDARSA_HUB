@@ -4,25 +4,31 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "6fb1af3ec9cc1af1dd4a708fa609d4c3b9375bd9",
-  "generated_at_utc": "2026-10-16T18:44:25Z",
+  "generated_at_utc": "2026-10-16T18:45:41Z",
   "history": {
-    "done_total_local": 1441,
+    "done_total_local": 1442,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1249,
-    "results_total_local": 2465
+    "results_total_local": 2466
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3385,
+      "age_seconds": 4,
+      "job_id": "EDARSAHUB-CIENFUEGOS-20261015-POST-RESYNC-LAYERS-AUDIT-R6-CARLOS-20261016",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3461,
       "job_id": "EDARSAHUB-CIENFUEGOS-20261015-TICKET-DIFF-AUDIT-R4-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3269,
+      "age_seconds": 3346,
       "job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261015-REAL-R5-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,15 +42,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "remote_development_sha": "6fb1af3ec9cc1af1dd4a708fa609d4c3b9375bd9",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-16T18:44:17Z",
-    "last_receive_utc": "2026-10-16T18:44:12Z",
-    "last_terminal_utc": "2026-10-16T17:49:55Z",
+    "last_cycle_utc": "2026-10-16T18:45:32Z",
+    "last_receive_utc": "2026-10-16T18:45:41Z",
+    "last_terminal_utc": "2026-10-16T18:45:37Z",
     "pid": "472",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "e1a32d698deebfc588c4413d85c11c66fb0a0a31",
