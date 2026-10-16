@@ -27,6 +27,7 @@ import os
 import json
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timezone
+from core.connections.operational_scope import operational_server_ids
 from core.config.edarsahub_config import get_edarsahub_sql_config
 from core.sql_first.db import get_sql_connection
 
@@ -1891,6 +1892,11 @@ def list_operational_servers(system_type_filter: str = None) -> List[Dict]:
         system_type_filter: Opcional. Filtra por system_type (ej: 'SoftRestaurant', 'MPRO')
     """
     servers = _get_servers_from_sql(filter_active=True, filter_visible_listado=False, exclude_core=True)
+    scoped_ids = operational_server_ids()
+    servers = [
+        s for s in servers
+        if str(s.get('id') or '').strip().lower() in scoped_ids
+    ]
     
     if system_type_filter:
         filter_upper = system_type_filter.upper()
@@ -1906,7 +1912,12 @@ def get_visible_servers_for_operaciones() -> List[Dict]:
     Filtra por visible_en_operaciones=True.
     """
     servers = _get_servers_from_sql(filter_active=True, filter_visible_listado=False, exclude_core=True)
-    return [s for s in servers if s.get('visible_en_operaciones', False)]
+    scoped_ids = operational_server_ids()
+    return [
+        s for s in servers
+        if s.get('visible_en_operaciones', False)
+        and str(s.get('id') or '').strip().lower() in scoped_ids
+    ]
 
 
 def get_connection_config(server_id: str) -> Optional[Dict]:
