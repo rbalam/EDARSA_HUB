@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-CIENFUEGOS-20261015-DETAIL-DRY-R2-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6fb1af3ec9cc1af1dd4a708fa609d4c3b9375bd9",
+  "production_allowed": false,
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "objective": "Aislar en DRY RUN el bloqueo del detalle histórico de CIENFUEGOS para 2026-10-15 y obtener los ticket_blockers exactos. El header y snapshot existen, pero Comercial_Inteligencia_VentasDetalleProducto tiene 0 tickets del día. No modificar datos, no tocar Ventas del Día, Ventas Cerradas ni sync_comercial_abiertas_v2, y no tocar Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "fecha_inicio": "2026-10-15",
+  "fecha_fin": "2026-10-16",
+  "dry_run": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_oct15_detail_state",
+          "sql": "SELECT COUNT(DISTINCT numero_ticket) AS tickets_detalle,CAST(SUM(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 THEN ISNULL(importe_neto,0) ELSE 0 END) AS decimal(18,2)) AS ventas_detalle,MAX(CAST(fecha_operacion AS date)) AS latest_detail_date FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2026-10-15' AND fecha_operacion<'2026-10-16'"
+        }
+      ]
+    }
+  ]
+}
