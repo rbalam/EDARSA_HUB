@@ -4,32 +4,38 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "877ca4ef42241e2cf60c355726fbdb08b9afa72e",
-  "generated_at_utc": "2026-10-16T03:01:07Z",
+  "generated_at_utc": "2026-10-16T03:02:47Z",
   "history": {
     "done_total_local": 1434,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1244,
-    "results_total_local": 2453
+    "rejected_total_local": 1245,
+    "results_total_local": 2454
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2166,
+      "age_seconds": 2266,
       "job_id": "BOS-MCP-WORKER-MCP-INIT-LAZY-IMPORT-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2074,
+      "age_seconds": 2174,
       "job_id": "SERVIDORES-REGISTRY-DISABLE-OPERATIONS-CAPABILITY-CERT-R1-20261015",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 411,
+      "age_seconds": 511,
       "job_id": "SERVIDORES-REGISTRY-DISABLE-OPERATIONS-CAPABILITY-CERT-R2-20261015",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 88,
+      "job_id": "SERVIDORES-REGISTRY-NAMED-AUDIT-DISABLE-OPERATIONS-CERT-R1-20261015",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -42,18 +48,18 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "remote_development_sha": "877ca4ef42241e2cf60c355726fbdb08b9afa72e",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-16T03:01:00Z",
-    "last_receive_utc": "2026-10-16T03:00:55Z",
-    "last_terminal_utc": "2026-10-16T02:54:15Z",
-    "pid": "26278",
+    "last_cycle_utc": "2026-10-16T03:02:38Z",
+    "last_receive_utc": "2026-10-16T03:02:33Z",
+    "last_terminal_utc": "2026-10-16T03:01:19Z",
+    "pid": "64945",
     "runtime_fingerprint": {
-      "active_worker_code_tree_sha": "bbbf023a4b31ce120fb27a18a63c0ceb19e55fb8",
+      "active_worker_code_tree_sha": "4604697089463ea9b60100ffe99041168982c2f2",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
       "development_sha": "877ca4ef42241e2cf60c355726fbdb08b9afa72e",
@@ -70,7 +76,7 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": false,
+      "worker_code_tree_aligned": true,
       "worker_code_tree_sha": "4604697089463ea9b60100ffe99041168982c2f2"
     }
   },
