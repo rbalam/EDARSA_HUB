@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ORIGEN-OCT01-15-DETAIL-ROOTCAUSE-R13-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Auditar sin escribir ORIGEN 2026-10-01 a 2026-10-15. El total canonico correcto confirmado por el usuario es 978884.83. Localizar por dia la diferencia entre Runtime y Detalle de Ventas persistido y revisar el snapshot mas reciente que el endpoint de rango puede estar mezclando. No modificar datos, codigo, vistas ni sincronizadores.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 100,
+      "queries": [
+        {
+          "name": "origen_runtime_daily",
+          "sql": "SELECT CAST(fecha_operacion AS date) AS fecha_operacion,CAST(ventas_total AS decimal(18,2)) AS ventas,tickets_total AS tickets,pax_total AS pax,fuente_original FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion>='2026-10-01' AND fecha_operacion<='2026-10-15' ORDER BY fecha_operacion"
+        },
+        {
+          "name": "origen_detail_daily",
+          "sql": "WITH t AS (SELECT fecha_operacion,numero_ticket,SUM(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 THEN ISNULL(importe_neto,0) ELSE 0 END) AS venta_ticket,MAX(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 THEN ISNULL(pax,0) ELSE 0 END) AS pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion>='2026-10-01' AND fecha_operacion<='2026-10-15' GROUP BY fecha_operacion,numero_ticket) SELECT CAST(fecha_operacion AS date) AS fecha_operacion,CAST(SUM(venta_ticket) AS decimal(18,2)) AS ventas,COUNT(*) AS tickets,SUM(pax_ticket) AS pax FROM t GROUP BY fecha_operacion ORDER BY fecha_operacion"
+        },
+        {
+          "name": "origen_latest_snapshot",
+          "sql": "SELECT TOP 1 CAST(fecha_operacion AS date) AS fecha_operacion,CAST(ventas_abiertas AS decimal(18,2)) AS ventas_abiertas,CAST(ventas_cerradas_dia AS decimal(18,2)) AS ventas_cerradas_dia,CAST(total_estimado_dia AS decimal(18,2)) AS total_estimado_dia,tickets_abiertos,tickets_cerrados_dia,pax_abiertos,pax_cerrados_dia,snapshot_timestamp,fecha_ultima_actualizacion FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WHERE unidad_negocio_id='ORIGEN' ORDER BY snapshot_timestamp DESC,fecha_ultima_actualizacion DESC"
+        }
+      ]
+    }
+  ]
+}
