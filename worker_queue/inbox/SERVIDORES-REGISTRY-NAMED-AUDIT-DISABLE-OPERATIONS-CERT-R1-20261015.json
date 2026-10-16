@@ -1,0 +1,54 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-REGISTRY-NAMED-AUDIT-DISABLE-OPERATIONS-CERT-R1-20261015",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Certificar READ_ONLY la version final de SERVER_REGISTRY_METADATA_UPDATE: preflight/post-audit exclusivamente mediante perfiles READ_ONLY nombrados, rechazo de SQL inline y capability disable-only para visible_en_operaciones. Validar perfil chapur_norte_operational_visibility_v1. No mutaciones, no Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/readonly_audit_profiles.py",
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "backend/scripts/update_server_registry_metadata.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_named_readonly_audit_profiles.py",
+        "backend/tests/test_worker_server_registry_metadata_update_capability.py",
+        "backend/tests/test_servers_crud_explicit_rbac_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/readonly_audit_profiles.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "backend/scripts/update_server_registry_metadata.py",
+          "backend/tests/test_worker_named_readonly_audit_profiles.py",
+          "backend/tests/test_worker_server_registry_metadata_update_capability.py"
+        ],
+        "search_terms": [
+          "chapur_norte_operational_visibility_v1",
+          "build_readonly_audit_checks(preflight_profile)",
+          "build_readonly_audit_checks(post_profile)",
+          "SERVER_REGISTRY_METADATA_UPDATE_INLINE_SQL_FORBIDDEN",
+          "visible_en_operaciones"
+        ],
+        "max_results": 150
+      }
+    }
+  ]
+}
