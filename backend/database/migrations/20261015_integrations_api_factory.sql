@@ -118,3 +118,14 @@ BEGIN
             REFERENCES dbo.Unidades_Negocio(id)
     );
 END;
+
+
+IF OBJECT_ID('dbo.Sistema_ApiFactoryApi', 'U') IS NULL
+   OR OBJECT_ID('dbo.Sistema_ApiFactoryVersion', 'U') IS NULL
+   OR OBJECT_ID('dbo.Sistema_ApiFactoryConsumer', 'U') IS NULL
+   OR OBJECT_ID('dbo.Sistema_ApiFactoryConsumerGrant', 'U') IS NULL
+   OR OBJECT_ID('dbo.Sistema_ApiFactoryConsumerEmpresa', 'U') IS NULL
+   OR OBJECT_ID('dbo.Sistema_ApiFactoryConsumerUnidad', 'U') IS NULL
+BEGIN
+    THROW 51000, 'API_FACTORY_PERSISTENCE_INCOMPLETE', 1;
+END;
