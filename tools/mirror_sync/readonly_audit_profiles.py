@@ -10,9 +10,11 @@ from typing import Any, Dict, List
 
 
 CHAPUR_CONNECTION_DISCOVERY_V1 = "chapur_connection_discovery_v1"
+CHAPUR_NORTE_OPERATIONAL_VISIBILITY_V1 = "chapur_norte_operational_visibility_v1"
 
 _ALLOWED = {
     CHAPUR_CONNECTION_DISCOVERY_V1,
+    CHAPUR_NORTE_OPERATIONAL_VISIBILITY_V1,
 }
 
 
@@ -22,6 +24,34 @@ def is_allowed_readonly_audit_profile(value: str) -> bool:
 
 def build_readonly_audit_checks(profile: str) -> List[Dict[str, Any]]:
     name = str(profile or "").strip()
+    if name == CHAPUR_NORTE_OPERATIONAL_VISIBILITY_V1:
+        return [
+            {
+                "type": "sql_readonly_audit",
+                "source": "EDARSAHUB",
+                "max_rows": 20,
+                "queries": [
+                    {
+                        "name": "chapur_norte_connection",
+                        "sql": (
+                            "SELECT CONVERT(varchar(36),id) AS connection_id,nombre,tipo_conexion,"
+                            "system_type,activo,visible_en_operaciones "
+                            "FROM dbo.Servidores_Conexiones "
+                            "WHERE id='d8b2d1eb-2e1f-4e43-b7d9-822bf671e315'"
+                        ),
+                    },
+                    {
+                        "name": "chapur_norte_units",
+                        "sql": (
+                            "SELECT CONVERT(varchar(36),id) AS unidad_negocio_pk,codigo,nombre,"
+                            "CONVERT(varchar(36),server_id) AS server_id,sucursal_origen_id,system_type,activo "
+                            "FROM dbo.Unidades_Negocio "
+                            "WHERE server_id='d8b2d1eb-2e1f-4e43-b7d9-822bf671e315' ORDER BY id"
+                        ),
+                    },
+                ],
+            }
+        ]
     if name == CHAPUR_CONNECTION_DISCOVERY_V1:
         return [
             {
