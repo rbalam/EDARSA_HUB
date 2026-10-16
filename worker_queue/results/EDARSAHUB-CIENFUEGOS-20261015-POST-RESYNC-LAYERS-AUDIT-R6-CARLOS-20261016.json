@@ -1,0 +1,127 @@
+{
+  "base_sha": "6fb1af3ec9cc1af1dd4a708fa609d4c3b9375bd9",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-16T18:45:37Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-CIENFUEGOS-20261015-POST-RESYNC-LAYERS-AUDIT-R6-CARLOS-20261016",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-16T18:46:31Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "base_ventas",
+              "base_tickets",
+              "base_pax",
+              "runtime_ventas",
+              "runtime_tickets",
+              "runtime_pax",
+              "ventas_abiertas",
+              "ventas_cerradas_dia",
+              "tickets_abiertos",
+              "tickets_cerrados_dia",
+              "pax_abiertos",
+              "pax_cerrados_dia",
+              "snapshot_timestamp"
+            ],
+            "name": "soft_units_oct15_base_runtime_snapshot",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                "2026-10-15",
+                "125801.00",
+                25,
+                72,
+                "115016.36",
+                25,
+                72,
+                "0.00",
+                "115016.36",
+                0,
+                25,
+                0,
+                72,
+                "2026-10-16 18:42:43.7631600"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-15",
+                "203625.00",
+                55,
+                144,
+                "182004.67",
+                52,
+                140,
+                "0.00",
+                "182004.67",
+                0,
+                52,
+                0,
+                140,
+                "2026-10-16 18:42:45.5583010"
+              ],
+              [
+                "ESTELAR",
+                "2026-10-15",
+                "52414.00",
+                38,
+                103,
+                "45128.25",
+                35,
+                95,
+                "0.00",
+                "45128.25",
+                0,
+                35,
+                0,
+                95,
+                "2026-10-16 18:42:47.4976260"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "tickets_detalle",
+              "ventas_detalle",
+              "max_pax"
+            ],
+            "name": "cienfuegos_oct15_detail_after_r5",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                0,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-16T18:45:34Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
