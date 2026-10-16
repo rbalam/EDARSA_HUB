@@ -1,0 +1,35 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-CIENFUEGOS-20261015-POST-RESYNC-LAYERS-AUDIT-R6-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6fb1af3ec9cc1af1dd4a708fa609d4c3b9375bd9",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Verificar después del re-sync REAL R5 si el valor correcto de CIENFUEGOS 2026-10-15 ya quedó en la tabla base Comercial_KPIs_Diarios_v2 y si la discrepancia restante proviene únicamente del overlay Runtime/Snapshot. Comparar base KPI, vw_Comercial_KPIs_Diarios_v2_Runtime, Comercial_Ventas_Dia_Abiertas_v2 y detalle histórico para CIENFUEGOS, 130MID y ESTELAR. No modificar datos/código ni sincronizadores protegidos ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 100,
+      "queries": [
+        {
+          "name": "soft_units_oct15_base_runtime_snapshot",
+          "sql": "SELECT b.unidad_negocio_id,b.fecha_operacion,b.ventas_total AS base_ventas,b.tickets_total AS base_tickets,b.pax_total AS base_pax,r.ventas_total AS runtime_ventas,r.tickets_total AS runtime_tickets,r.pax_total AS runtime_pax,s.ventas_abiertas,s.ventas_cerradas_dia,s.tickets_abiertos,s.tickets_cerrados_dia,s.pax_abiertos,s.pax_cerrados_dia,s.snapshot_timestamp FROM dbo.Comercial_KPIs_Diarios_v2 b LEFT JOIN dbo.vw_Comercial_KPIs_Diarios_v2_Runtime r ON r.unidad_negocio_id=b.unidad_negocio_id AND r.fecha_operacion=b.fecha_operacion OUTER APPLY (SELECT TOP 1 ventas_abiertas,ventas_cerradas_dia,tickets_abiertos,tickets_cerrados_dia,pax_abiertos,pax_cerrados_dia,snapshot_timestamp FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 s0 WHERE s0.unidad_negocio_id=b.unidad_negocio_id AND CAST(s0.fecha_operacion AS date)=CAST(b.fecha_operacion AS date) ORDER BY s0.snapshot_timestamp DESC) s WHERE b.unidad_negocio_id IN ('CIENFUEGOS','130MID','ESTELAR') AND b.fecha_operacion='2026-10-15' ORDER BY b.unidad_negocio_id"
+        },
+        {
+          "name": "cienfuegos_oct15_detail_after_r5",
+          "sql": "SELECT COUNT(DISTINCT numero_ticket) AS tickets_detalle,CAST(SUM(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 THEN ISNULL(importe_neto,0) ELSE 0 END) AS decimal(18,2)) AS ventas_detalle,MAX(ISNULL(pax,0)) AS max_pax FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion='2026-10-15'"
+        }
+      ]
+    }
+  ]
+}
