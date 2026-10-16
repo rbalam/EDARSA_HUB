@@ -108,6 +108,10 @@ def test_bridge_rejects_profile_plus_inline_checks():
 
 
 def test_chapur_norte_visibility_profile_is_named_and_readonly():
+    profiles = _load(
+        "readonly_audit_profiles_chapur_norte",
+        "tools/mirror_sync/readonly_audit_profiles.py",
+    )
     assert profiles.is_allowed_readonly_audit_profile(
         "chapur_norte_operational_visibility_v1"
     )
