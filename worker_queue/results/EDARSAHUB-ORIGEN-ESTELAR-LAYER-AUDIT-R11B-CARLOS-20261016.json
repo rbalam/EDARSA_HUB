@@ -1,0 +1,270 @@
+{
+  "base_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-16T19:21:48Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ORIGEN-ESTELAR-LAYER-AUDIT-R11B-CARLOS-20261016",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-16T19:22:18Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "capa",
+              "ventas",
+              "tickets",
+              "pax"
+            ],
+            "name": "origen_totales_capas",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "BASE",
+                "978884.83",
+                450,
+                1325
+              ],
+              [
+                "RUNTIME",
+                "978884.83",
+                450,
+                1325
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ventas_detalle",
+              "tickets_detalle",
+              "pax_detalle"
+            ],
+            "name": "origen_detalle_total",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "956159.83",
+                454,
+                1287
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha",
+              "base_ventas",
+              "runtime_ventas",
+              "base_tickets",
+              "runtime_tickets",
+              "base_pax",
+              "runtime_pax"
+            ],
+            "name": "origen_por_dia",
+            "row_count_returned": 15,
+            "rows": [
+              [
+                "2026-10-01",
+                "53857.60",
+                "53857.60",
+                33,
+                33,
+                78,
+                78
+              ],
+              [
+                "2026-10-02",
+                "135593.56",
+                "135593.56",
+                56,
+                56,
+                177,
+                177
+              ],
+              [
+                "2026-10-03",
+                "118599.41",
+                "118599.41",
+                66,
+                66,
+                171,
+                171
+              ],
+              [
+                "2026-10-04",
+                "33224.76",
+                "33224.76",
+                18,
+                18,
+                54,
+                54
+              ],
+              [
+                "2026-10-05",
+                "26139.98",
+                "26139.98",
+                13,
+                13,
+                39,
+                39
+              ],
+              [
+                "2026-10-06",
+                "70073.87",
+                "70073.87",
+                25,
+                25,
+                102,
+                102
+              ],
+              [
+                "2026-10-07",
+                "51074.50",
+                "51074.50",
+                30,
+                30,
+                65,
+                65
+              ],
+              [
+                "2026-10-08",
+                "88559.99",
+                "88559.99",
+                33,
+                33,
+                103,
+                103
+              ],
+              [
+                "2026-10-09",
+                "79037.47",
+                "79037.47",
+                27,
+                27,
+                95,
+                95
+              ],
+              [
+                "2026-10-10",
+                "101804.82",
+                "101804.82",
+                41,
+                41,
+                132,
+                132
+              ],
+              [
+                "2026-10-11",
+                "52341.82",
+                "52341.82",
+                21,
+                21,
+                65,
+                65
+              ],
+              [
+                "2026-10-12",
+                "35673.94",
+                "35673.94",
+                21,
+                21,
+                67,
+                67
+              ],
+              [
+                "2026-10-13",
+                "47816.99",
+                "47816.99",
+                26,
+                26,
+                71,
+                71
+              ],
+              [
+                "2026-10-14",
+                "50342.63",
+                "50342.63",
+                17,
+                17,
+                46,
+                46
+              ],
+              [
+                "2026-10-15",
+                "34743.49",
+                "34743.49",
+                23,
+                23,
+                60,
+                60
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "capa",
+              "ventas",
+              "tickets",
+              "pax"
+            ],
+            "name": "estelar_totales_capas",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "BASE",
+                "1143920.00",
+                838,
+                2371
+              ],
+              [
+                "RUNTIME",
+                "1143920.00",
+                838,
+                2371
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ventas_detalle",
+              "tickets_detalle",
+              "pax_detalle"
+            ],
+            "name": "estelar_detalle_total",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "1143920.00",
+                837,
+                2370
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-16T19:21:29Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
