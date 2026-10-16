@@ -1,0 +1,62 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-CIENFUEGOS-20261015-CLOSED-DETAIL-PARITY-AUDIT-R1-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6fb1af3ec9cc1af1dd4a708fa609d4c3b9375bd9",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Auditar en solo lectura por qué CIENFUEGOS SoftRestaurant muestra correctamente 2026-10-15 en Ventas del Día pero el detalle histórico del periodo 2026-10-01..2026-10-15 sólo llega al 14, mientras 130MID y ESTELAR sí muestran cerradas del 15. Comparar POS SoftRestaurant vs vw_Comercial_KPIs_Diarios_v2_Runtime, Comercial_Inteligencia_VentasDetalleProducto y Comercial_Ventas_Dia_Abiertas_v2. Confirmar si el problema es de commit/backfill de detalle, no de lógica de negocio. No modificar sincronizadores protegidos de Ventas del Día, Ventas Cerradas ni sync_comercial_abiertas_v2. No tocar Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 200,
+      "queries": [
+        {
+          "name": "oct15_runtime_vs_detail_soft_units",
+          "sql": "WITH runtime AS (SELECT unidad_negocio_id, CAST(fecha_operacion AS date) AS fecha_operacion, SUM(CAST(ISNULL(ventas_total,0) AS decimal(18,4))) AS ventas_runtime, SUM(CAST(ISNULL(tickets_total,0) AS bigint)) AS tickets_runtime, SUM(CAST(ISNULL(pax_total,0) AS bigint)) AS pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id IN ('CIENFUEGOS','130MID','ESTELAR') AND fecha_operacion>='2026-10-15' AND fecha_operacion<'2026-10-16' GROUP BY unidad_negocio_id,CAST(fecha_operacion AS date)), detalle_ticket AS (SELECT unidad_negocio_id,CAST(fecha_operacion AS date) AS fecha_operacion,numero_ticket,SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) AS ventas_ticket,MAX(CAST(ISNULL(pax,0) AS bigint)) AS pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('CIENFUEGOS','130MID','ESTELAR') AND fecha_operacion>='2026-10-15' AND fecha_operacion<'2026-10-16' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 GROUP BY unidad_negocio_id,CAST(fecha_operacion AS date),numero_ticket), detalle AS (SELECT unidad_negocio_id,fecha_operacion,SUM(ventas_ticket) AS ventas_detalle,COUNT(*) AS tickets_detalle,SUM(pax_ticket) AS pax_detalle FROM detalle_ticket GROUP BY unidad_negocio_id,fecha_operacion) SELECT r.unidad_negocio_id,r.fecha_operacion,r.ventas_runtime,r.tickets_runtime,r.pax_runtime,ISNULL(d.ventas_detalle,0) AS ventas_detalle,ISNULL(d.tickets_detalle,0) AS tickets_detalle,ISNULL(d.pax_detalle,0) AS pax_detalle,CAST(r.ventas_runtime-ISNULL(d.ventas_detalle,0) AS decimal(18,2)) AS delta_venta,r.tickets_runtime-ISNULL(d.tickets_detalle,0) AS delta_tickets,r.pax_runtime-ISNULL(d.pax_detalle,0) AS delta_pax FROM runtime r LEFT JOIN detalle d ON d.unidad_negocio_id=r.unidad_negocio_id AND d.fecha_operacion=r.fecha_operacion ORDER BY r.unidad_negocio_id"
+        },
+        {
+          "name": "cienfuegos_oct1_15_runtime_vs_detail_totals",
+          "sql": "WITH runtime AS (SELECT SUM(CAST(ISNULL(ventas_total,0) AS decimal(18,4))) AS ventas_runtime,SUM(CAST(ISNULL(tickets_total,0) AS bigint)) AS tickets_runtime,SUM(CAST(ISNULL(pax_total,0) AS bigint)) AS pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2026-10-01' AND fecha_operacion<'2026-10-16'), detalle_ticket AS (SELECT numero_ticket,CAST(fecha_operacion AS date) AS fecha_operacion,SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) AS ventas_ticket,MAX(CAST(ISNULL(pax,0) AS bigint)) AS pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2026-10-01' AND fecha_operacion<'2026-10-16' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 GROUP BY CAST(fecha_operacion AS date),numero_ticket), detalle AS (SELECT SUM(ventas_ticket) AS ventas_detalle,COUNT(*) AS tickets_detalle,SUM(pax_ticket) AS pax_detalle FROM detalle_ticket) SELECT r.ventas_runtime,r.tickets_runtime,r.pax_runtime,d.ventas_detalle,d.tickets_detalle,d.pax_detalle,CAST(r.ventas_runtime-ISNULL(d.ventas_detalle,0) AS decimal(18,2)) AS delta_venta,r.tickets_runtime-ISNULL(d.tickets_detalle,0) AS delta_tickets,r.pax_runtime-ISNULL(d.pax_detalle,0) AS delta_pax FROM runtime r CROSS JOIN detalle d"
+        },
+        {
+          "name": "soft_units_snapshot_dates_14_16",
+          "sql": "SELECT unidad_negocio_id,CAST(fecha_operacion AS date) AS fecha_operacion,MAX(snapshot_timestamp) AS latest_snapshot,MAX(fecha_ultima_actualizacion) AS latest_update,SUM(CAST(ISNULL(ventas_abiertas,0)+ISNULL(ventas_cerradas_dia,0) AS decimal(18,2))) AS ventas_snapshot,SUM(ISNULL(tickets_abiertos,0)+ISNULL(tickets_cerrados_dia,0)) AS tickets_snapshot,SUM(ISNULL(pax_abiertos,0)+ISNULL(pax_cerrados_dia,0)) AS pax_snapshot FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WHERE unidad_negocio_id IN ('CIENFUEGOS','130MID','ESTELAR') AND fecha_operacion>='2026-10-14' AND fecha_operacion<'2026-10-17' GROUP BY unidad_negocio_id,CAST(fecha_operacion AS date) ORDER BY unidad_negocio_id,fecha_operacion"
+        },
+        {
+          "name": "cienfuegos_detail_latest_date",
+          "sql": "SELECT MAX(CAST(fecha_operacion AS date)) AS latest_detail_date,COUNT(DISTINCT CASE WHEN CAST(fecha_operacion AS date)='2026-10-15' THEN numero_ticket END) AS tickets_15 FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "CIENFUEGOS",
+        "130MID",
+        "ESTELAR"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "max_rows": 50,
+      "queries": [
+        {
+          "name": "softrestaurant_oct15_source_totals",
+          "sql": "SELECT CAST(t.apertura AS date) AS fecha_operacion,CAST(SUM(ISNULL(ch.total,0)) AS decimal(18,2)) AS ventas_total,COUNT(*) AS cheques,SUM(ISNULL(ch.nopersonas,0)) AS pax FROM cheques ch INNER JOIN turnos t ON t.idturno=ch.idturno WHERE t.apertura>='2026-10-15' AND t.apertura<'2026-10-16' AND ISNULL(ch.cancelado,0)=0 AND ISNULL(ch.total,0)>0 GROUP BY CAST(t.apertura AS date)"
+        }
+      ]
+    }
+  ]
+}
