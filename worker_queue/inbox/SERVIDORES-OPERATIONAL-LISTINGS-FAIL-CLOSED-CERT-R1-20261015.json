@@ -1,0 +1,47 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-OPERATIONAL-LISTINGS-FAIL-CLOSED-CERT-R1-20261015",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Certificar READ_ONLY que los listados operacionales de server_registry fallan cerrados: una conexion solo puede aparecer como operacional/visible si tiene al menos una Unidad de Negocio canonica activa. Validar lectura unica force_refresh y regresion. Sin mutaciones ni Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/connections/operational_scope.py",
+        "backend/core/server_registry.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_server_registry_operational_scope_fail_closed.py",
+        "backend/tests/test_servers_crud_explicit_rbac_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/connections/operational_scope.py",
+          "backend/core/server_registry.py",
+          "backend/tests/test_server_registry_operational_scope_fail_closed.py"
+        ],
+        "search_terms": [
+          "operational_server_ids",
+          "force_refresh=True",
+          "scoped_ids",
+          "visible_en_operaciones"
+        ],
+        "max_results": 100
+      }
+    }
+  ]
+}
