@@ -44,3 +44,14 @@ def test_runtime_uses_canonical_server_registry_helper_and_preserves_active():
 def test_operational_mode_does_not_require_git_writer_lock():
     text = GUARD.read_text(encoding="utf-8")
     assert '"SERVER_REGISTRY_METADATA_UPDATE"' in text
+
+
+def test_runtime_allows_disable_operations_only_and_never_enables_it():
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert 'parser.add_argument("--disable-operations", action="store_true")' in text
+    assert 'payload["visible_en_operaciones"] = False' in text
+    assert 'payload["visible_en_operaciones"] = True' not in text
+    bridge = BRIDGE.read_text(encoding="utf-8")
+    dispatcher = DISPATCHER.read_text(encoding="utf-8")
+    assert 'disable_operations = job.get("disable_operations") is True' in bridge
+    assert 'disable_operations = job.get("disable_operations") is True' in dispatcher
