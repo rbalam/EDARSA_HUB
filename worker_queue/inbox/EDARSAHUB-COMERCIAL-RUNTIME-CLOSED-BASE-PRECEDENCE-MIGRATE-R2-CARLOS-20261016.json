@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-CLOSED-BASE-PRECEDENCE-MIGRATE-R2-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
+  "production_allowed": false,
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "objective": "Aplicar en SQL Development la migración ya integrada que corrige de fondo la precedencia Runtime: cuando existe KPI base cerrado y el snapshot del día tiene ventas_abiertas=0, Runtime debe respetar la base; el snapshot sólo puede hacer overlay si hay ventas abiertas, y snapshot_only conserva días aún sin base. Validar 130MID, CIENFUEGOS y ESTELAR para 2026-10-15. No tocar Producción ni sincronizadores protegidos.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20261016_001_runtime_closed_base_precedence.sql",
+  "migration_sha256": "4f027e34eaa5f66ef0f223748429aa387c2e9574ec1ac01a1489540daa6cda02",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": false,
+  "preflight_checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 20,
+      "queries": [
+        {
+          "name": "pre_runtime_closed_base_parity",
+          "sql": "SELECT b.unidad_negocio_id,b.fecha_operacion,b.ventas_total AS base_ventas,b.tickets_total AS base_tickets,b.pax_total AS base_pax,r.ventas_total AS runtime_ventas,r.tickets_total AS runtime_tickets,r.pax_total AS runtime_pax,s.ventas_abiertas,s.ventas_cerradas_dia,s.tickets_abiertos,s.tickets_cerrados_dia,s.pax_abiertos,s.pax_cerrados_dia FROM dbo.Comercial_KPIs_Diarios_v2 b LEFT JOIN dbo.vw_Comercial_KPIs_Diarios_v2_Runtime r ON r.unidad_negocio_pk=b.unidad_negocio_pk AND r.sucursal_id=b.sucursal_id AND r.fecha_operacion=b.fecha_operacion OUTER APPLY (SELECT TOP 1 ventas_abiertas,ventas_cerradas_dia,tickets_abiertos,tickets_cerrados_dia,pax_abiertos,pax_cerrados_dia FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 s0 WHERE s0.unidad_negocio_id=b.unidad_negocio_id AND CAST(s0.fecha_operacion AS date)=CAST(b.fecha_operacion AS date) ORDER BY s0.snapshot_timestamp DESC,s0.fecha_ultima_actualizacion DESC) s WHERE b.unidad_negocio_id IN ('CIENFUEGOS','130MID','ESTELAR') AND b.fecha_operacion='2026-10-15' ORDER BY b.unidad_negocio_id"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 20,
+      "queries": [
+        {
+          "name": "post_runtime_closed_base_parity",
+          "sql": "SELECT b.unidad_negocio_id,CAST(b.fecha_operacion AS date) AS fecha_operacion,CAST(b.ventas_total-r.ventas_total AS decimal(18,2)) AS delta_ventas,b.tickets_total-r.tickets_total AS delta_tickets,b.pax_total-r.pax_total AS delta_pax,r.fuente_original FROM dbo.Comercial_KPIs_Diarios_v2 b JOIN dbo.vw_Comercial_KPIs_Diarios_v2_Runtime r ON r.unidad_negocio_pk=b.unidad_negocio_pk AND r.sucursal_id=b.sucursal_id AND r.fecha_operacion=b.fecha_operacion WHERE b.unidad_negocio_id IN ('CIENFUEGOS','130MID','ESTELAR') AND b.fecha_operacion='2026-10-15' ORDER BY b.unidad_negocio_id"
+        }
+      ]
+    }
+  ]
+}
