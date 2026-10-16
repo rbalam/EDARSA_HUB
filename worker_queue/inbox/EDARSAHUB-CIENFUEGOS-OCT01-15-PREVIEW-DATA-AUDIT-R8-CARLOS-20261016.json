@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-CIENFUEGOS-OCT01-15-PREVIEW-DATA-AUDIT-R8-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Certificar los datos que Preview debe mostrar para CIENFUEGOS del 2026-10-01 al 2026-10-15 después de la corrección Runtime y del detalle del 15. Comparar acumulado Runtime contra detalle histórico y confirmar cobertura del día 15. No modificar datos, código, sincronizadores protegidos ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 50,
+      "queries": [
+        {
+          "name": "cienfuegos_oct01_15_runtime_sum",
+          "sql": "SELECT CAST(SUM(ventas_total) AS decimal(18,2)) AS ventas_runtime,SUM(tickets_total) AS tickets_runtime,SUM(pax_total) AS pax_runtime,COUNT(DISTINCT fecha_operacion) AS dias_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2026-10-01' AND fecha_operacion<='2026-10-15'"
+        },
+        {
+          "name": "cienfuegos_oct01_15_detail_sum",
+          "sql": "WITH t AS (SELECT fecha_operacion,numero_ticket,SUM(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 THEN ISNULL(importe_neto,0) ELSE 0 END) AS venta_ticket,MAX(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 THEN ISNULL(pax,0) ELSE 0 END) AS pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2026-10-01' AND fecha_operacion<='2026-10-15' GROUP BY fecha_operacion,numero_ticket) SELECT CAST(SUM(venta_ticket) AS decimal(18,2)) AS ventas_detalle,COUNT(*) AS tickets_detalle,SUM(pax_ticket) AS pax_detalle,COUNT(DISTINCT fecha_operacion) AS dias_detalle,MAX(fecha_operacion) AS ultima_fecha_detalle FROM t"
+        },
+        {
+          "name": "cienfuegos_oct15_detail_visibility",
+          "sql": "SELECT CAST(fecha_operacion AS date) AS fecha_operacion,COUNT(DISTINCT numero_ticket) AS tickets,CAST(SUM(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 THEN ISNULL(importe_neto,0) ELSE 0 END) AS decimal(18,2)) AS ventas FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion='2026-10-15' GROUP BY CAST(fecha_operacion AS date)"
+        }
+      ]
+    }
+  ]
+}
