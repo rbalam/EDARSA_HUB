@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-DASHBOARD-INSIGHTS-SCHEMA-AUDIT-R1A-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Iniciar R1 de la mejora transversal de Tablero Comercial y Ejecutivo: auditar SOLO LECTURA el esquema real de EDARSAHUB para descuentos, cancelaciones, pagos por ticket, categorias y matriz interna de alimentos. Regla aprobada: descuentos monetarios de detalle MAS descuento adicional de encabezado contado una sola vez por ticket, sobre TODA la venta antes de descuentos del periodo; incluir cuentas sin descuento y al 100 por ciento. Sin clasificacion por nombres ni catalogo nuevo de descuentos. Esta fase solo descubre esquema, no certifica cobertura. No modificar codigo, datos, configuracion, sincronizadores ni dependencias; no ejecutar resync, migraciones, reinicios ni builds. No tocar sync_comercial_abiertas_v2, SQL de origen, infraestructura, Produccion ni otros trabajos en curso. No imprimir secretos o datos personales.",
+  "requester": {"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1.0","chat":"Soporte Worker - Mejora KPIs tableros"},
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 300,
+      "queries": [
+        {"name":"database_read_context","sql":"SELECT DB_NAME() AS database_name, SYSUTCDATETIME() AS observed_at_utc, DATABASEPROPERTYEX(DB_NAME(),'Updateability') AS updateability"},
+        {"name":"canonical_objects_presence","sql":"SELECT s.name AS schema_name,o.name AS object_name,o.type_desc,o.modify_date FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name IN ('Comercial_Inteligencia_VentasDetalleProducto','Comercial_Ventas_Dia_Abiertas_v2','Comercial_KPIs_Diarios_v2','vw_Comercial_KPIs_Diarios_v2_Runtime','Finanzas_CortesCaja_DetallePagos','Sync_Productos','Comercial_ClasificacionesProducto','Sync_Sales','Sync_Productos_Recetas') ORDER BY o.name"},
+        {"name":"detail_columns","sql":"SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable FROM sys.columns c INNER JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto') ORDER BY c.column_id"},
+        {"name":"snapshot_and_kpi_columns","sql":"SELECT OBJECT_NAME(c.object_id) AS table_name,c.column_id,c.name AS column_name,t.name AS data_type,c.precision,c.scale,c.is_nullable FROM sys.columns c INNER JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id IN (OBJECT_ID('dbo.Comercial_Ventas_Dia_Abiertas_v2'),OBJECT_ID('dbo.Comercial_KPIs_Diarios_v2')) ORDER BY table_name,c.column_id"},
+        {"name":"payments_and_sales_columns","sql":"SELECT OBJECT_NAME(c.object_id) AS table_name,c.column_id,c.name AS column_name,t.name AS data_type,c.precision,c.scale,c.is_nullable FROM sys.columns c INNER JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id IN (OBJECT_ID('dbo.Finanzas_CortesCaja_DetallePagos'),OBJECT_ID('dbo.Sync_Sales')) ORDER BY table_name,c.column_id"},
+        {"name":"product_classification_columns","sql":"SELECT OBJECT_NAME(c.object_id) AS table_name,c.column_id,c.name AS column_name,t.name AS data_type,c.is_nullable FROM sys.columns c INNER JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id IN (OBJECT_ID('dbo.Sync_Productos'),OBJECT_ID('dbo.Comercial_ClasificacionesProducto')) ORDER BY table_name,c.column_id"},
+        {"name":"organization_catalog_discovery","sql":"SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id=t.schema_id INNER JOIN sys.columns c ON c.object_id=t.object_id INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('UnidadesNegocio','Unidades_Negocio','Unidad_Negocio','UnidadNegocio','UnidadesNegocio_Catalogo') ORDER BY t.name,c.column_id"},
+        {"name":"canonical_indexes","sql":"SELECT OBJECT_NAME(i.object_id) AS table_name,i.name AS index_name,i.is_unique,i.is_primary_key,i.is_disabled,c.name AS column_name,ic.key_ordinal,ic.is_included_column FROM sys.indexes i INNER JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id INNER JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id IN (OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto'),OBJECT_ID('dbo.Finanzas_CortesCaja_DetallePagos'),OBJECT_ID('dbo.Comercial_Ventas_Dia_Abiertas_v2')) ORDER BY table_name,index_name,ic.key_ordinal,ic.index_column_id"}
+      ]
+    }
+  ]
+}
