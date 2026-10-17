@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ORIGEN-OCT01-15-DETAIL-PARITY-POSTBACKFILL-R23-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3d035d0b250752fbb74e5b73bcf245e8385db09d",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Certificar la reparación visible de Detalle de Ventas ORIGEN 2026-10-01 a 2026-10-15 después de R22. Aplicar exactamente los filtros de la UI/repositorio: activo=1, es_kpi_valido=1, cancelado_origen=0 antes de agrupar tickets. Verificar total ventas/tickets/PAX contra Runtime y verificar que el snapshot MPRO cerrado del 15/oct no genere duplicados de folio frente al detalle persistido. No escribir datos/código ni tocar Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 200,
+      "queries": [
+        {
+          "name": "origen_oct01_15_valid_detail_vs_runtime",
+          "sql": "WITH d AS (SELECT fecha_operacion,numero_ticket,SUM(ISNULL(importe_neto,0)) AS venta_ticket,MAX(ISNULL(pax,0)) AS pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion BETWEEN '2026-10-01' AND '2026-10-15' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND numero_ticket IS NOT NULL GROUP BY fecha_operacion,numero_ticket), ds AS (SELECT CAST(SUM(venta_ticket) AS decimal(18,2)) AS detalle_ventas,COUNT(*) AS detalle_tickets,SUM(pax_ticket) AS detalle_pax FROM d), r AS (SELECT CAST(SUM(ventas_total) AS decimal(18,2)) AS runtime_ventas,SUM(tickets_total) AS runtime_tickets,SUM(pax_total) AS runtime_pax FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion BETWEEN '2026-10-01' AND '2026-10-15') SELECT ds.detalle_ventas,ds.detalle_tickets,ds.detalle_pax,r.runtime_ventas,r.runtime_tickets,r.runtime_pax,CAST(ds.detalle_ventas-r.runtime_ventas AS decimal(18,2)) AS delta_ventas,ds.detalle_tickets-r.runtime_tickets AS delta_tickets,ds.detalle_pax-r.runtime_pax AS delta_pax FROM ds CROSS JOIN r"
+        },
+        {
+          "name": "origen_oct15_valid_detail",
+          "sql": "WITH d AS (SELECT numero_ticket,SUM(ISNULL(importe_neto,0)) AS venta_ticket,MAX(ISNULL(pax,0)) AS pax_ticket,COUNT(*) AS lineas FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion='2026-10-15' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND numero_ticket IS NOT NULL GROUP BY numero_ticket) SELECT numero_ticket,CAST(venta_ticket AS decimal(18,2)) AS ventas,pax_ticket,lineas FROM d ORDER BY TRY_CONVERT(bigint,numero_ticket),numero_ticket"
+        },
+        {
+          "name": "origen_oct15_invalid_nonvisible_tickets",
+          "sql": "SELECT numero_ticket,MAX(estado_origen) AS estado_origen,MAX(CAST(ISNULL(cancelado_origen,0) AS int)) AS cancelado_origen,MAX(CAST(ISNULL(es_kpi_valido,1) AS int)) AS es_kpi_valido,CAST(SUM(ISNULL(importe_neto,0)) AS decimal(18,2)) AS importe_neto,MAX(ISNULL(pax,0)) AS pax,COUNT(*) AS lineas FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion='2026-10-15' AND ISNULL(activo,1)=1 AND (ISNULL(es_kpi_valido,1)=0 OR ISNULL(cancelado_origen,0)=1) GROUP BY numero_ticket ORDER BY numero_ticket"
+        }
+      ]
+    }
+  ]
+}
