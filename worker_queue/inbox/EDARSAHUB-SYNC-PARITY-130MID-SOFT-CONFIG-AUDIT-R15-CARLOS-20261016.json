@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SYNC-PARITY-130MID-SOFT-CONFIG-AUDIT-R15-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Comparar configuracion real de 130MID con ESTELAR y CIENFUEGOS para definir una regla canonica SoftRestaurant transversal. Solo lectura.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 100,
+      "queries": [
+        {
+          "name": "soft_units_config",
+          "sql": "SELECT codigo,nombre,CONVERT(varchar(36),server_id) AS server_id,system_type,sucursal_origen_id,activo FROM dbo.Unidades_Negocio WHERE codigo IN ('130MID','ESTELAR','CIENFUEGOS') ORDER BY codigo"
+        },
+        {
+          "name": "soft_operational_turns",
+          "sql": "SELECT unidad_negocio_id,turno_codigo,turno_nombre,CAST(hora_inicio AS varchar(8)) AS hora_inicio,CAST(hora_fin AS varchar(8)) AS hora_fin,cruza_medianoche,aplica_ventas_dia,es_turno_principal,orden,activo FROM dbo.Sistema_TurnosOperativosUnidad WHERE unidad_negocio_id IN ('130MID','ESTELAR','CIENFUEGOS') ORDER BY unidad_negocio_id,orden"
+        },
+        {
+          "name": "soft_company_servers",
+          "sql": "SELECT e.CodigoEmpresa,es.RolConexion,es.CodigoSucursalSistema,es.NumeroSucursalSistema,es.NombreSucursalSistema,es.EsPrincipal,es.Prioridad,CONVERT(varchar(36),es.ServidorID) AS servidor_id,sc.nombre AS servidor_nombre,sc.tipo_conexion,sc.system_type FROM dbo.Sistema_Empresas e JOIN dbo.Sistema_EmpresasServidores es ON es.EmpresaID=e.EmpresaID JOIN dbo.Servidores_Conexiones sc ON sc.id=es.ServidorID WHERE e.CodigoEmpresa IN ('130MID','ESTELAR','CIENFUEGOS') AND ISNULL(e.Activo,1)=1 ORDER BY e.CodigoEmpresa,es.Prioridad"
+        }
+      ]
+    }
+  ]
+}
