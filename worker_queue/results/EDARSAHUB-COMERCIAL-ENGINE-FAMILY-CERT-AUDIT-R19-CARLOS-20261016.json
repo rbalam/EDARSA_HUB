@@ -1,0 +1,199 @@
+{
+  "base_sha": "3d035d0b250752fbb74e5b73bcf245e8385db09d",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-17T00:45:24Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-ENGINE-FAMILY-CERT-AUDIT-R19-CARLOS-20261016",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-17T00:46:44Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "ventas",
+              "tickets",
+              "pax",
+              "fuente_original"
+            ],
+            "name": "base_oct15_all_units",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                "2026-10-15",
+                "125801.00",
+                25,
+                72,
+                "API_LOCAL"
+              ],
+              [
+                "130QRO",
+                "2026-10-15",
+                "162538.00",
+                36,
+                90,
+                "API_LOCAL"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-15",
+                "203625.00",
+                55,
+                144,
+                "API_LOCAL"
+              ],
+              [
+                "ESTELAR",
+                "2026-10-15",
+                "52414.00",
+                38,
+                103,
+                "API_LOCAL"
+              ],
+              [
+                "ORIGEN",
+                "2026-10-15",
+                "34743.49",
+                23,
+                60,
+                "API_LOCAL"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "ventas",
+              "tickets",
+              "pax"
+            ],
+            "name": "soft_oct15_offset9",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "125801.00",
+                25,
+                "72"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ventas",
+              "tickets",
+              "pax"
+            ],
+            "name": "soft_oct15_offset0",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "125801.00",
+                25,
+                "72"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ventas",
+              "tickets",
+              "pax"
+            ],
+            "name": "soft_oct15_offset9",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "52414.00",
+                38,
+                "103"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ventas",
+              "tickets",
+              "pax"
+            ],
+            "name": "soft_oct15_offset0",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "52414.00",
+                38,
+                "103"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ventas",
+              "tickets",
+              "pax"
+            ],
+            "name": "soft_oct15_offset9",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "203625.00",
+                55,
+                "144"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ventas",
+              "tickets",
+              "pax"
+            ],
+            "name": "soft_oct15_offset0",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "203625.00",
+                55,
+                "144"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-17T00:45:21Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
