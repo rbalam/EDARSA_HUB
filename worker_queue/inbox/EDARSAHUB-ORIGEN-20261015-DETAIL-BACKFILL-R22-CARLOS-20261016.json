@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ORIGEN-20261015-DETAIL-BACKFILL-R22-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3d035d0b250752fbb74e5b73bcf245e8385db09d",
+  "production_allowed": false,
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "objective": "Ejecutar el backfill real y exclusivo del detalle historico de ORIGEN para 2026-10-15, previamente certificado como reparable por R21. Header/POS canonico: 34743.49, 23 tickets, 60 PAX. Antes del backfill el detalle persistido tiene 12018.50, 13 tickets, 22 PAX. El objetivo es dejar detalle en paridad exacta con Runtime/encabezado sin modificar KPI, Runtime, sincronizadores protegidos ni Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "units": [
+    "ORIGEN"
+  ],
+  "fecha_inicio": "2026-10-15",
+  "fecha_fin": "2026-10-16",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 20,
+      "queries": [
+        {
+          "name": "origen_oct15_post_backfill_parity",
+          "sql": "WITH d AS (SELECT numero_ticket,SUM(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 THEN ISNULL(importe_neto,0) ELSE 0 END) AS venta_ticket,MAX(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 THEN ISNULL(pax,0) ELSE 0 END) AS pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion='2026-10-15' GROUP BY numero_ticket), ds AS (SELECT CAST(SUM(venta_ticket) AS decimal(18,2)) AS detalle_ventas,COUNT(*) AS detalle_tickets,SUM(pax_ticket) AS detalle_pax FROM d), r AS (SELECT TOP 1 CAST(ventas_total AS decimal(18,2)) AS runtime_ventas,tickets_total AS runtime_tickets,pax_total AS runtime_pax FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion='2026-10-15') SELECT ds.detalle_ventas,ds.detalle_tickets,ds.detalle_pax,r.runtime_ventas,r.runtime_tickets,r.runtime_pax,CAST(ds.detalle_ventas-r.runtime_ventas AS decimal(18,2)) AS delta_ventas,ds.detalle_tickets-r.runtime_tickets AS delta_tickets,ds.detalle_pax-r.runtime_pax AS delta_pax FROM ds CROSS JOIN r"
+        }
+      ]
+    }
+  ]
+}
