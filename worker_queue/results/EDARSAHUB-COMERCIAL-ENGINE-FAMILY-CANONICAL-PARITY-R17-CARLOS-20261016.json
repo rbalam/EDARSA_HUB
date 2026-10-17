@@ -1,0 +1,30 @@
+{
+  "base_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "candidate_sha": "4f2496d4a7ee747eb9716f234b020ccfdcae7bd3",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-17T00:19:44Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/comercial_v2/mpro_closed_api.py",
+    "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+    "backend/tests/test_comercial_engine_family_canonical_parity_20261016.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-ENGINE-FAMILY-CANONICAL-PARITY-R17-CARLOS-20261016",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-10-17T00:20:40Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-17T00:19:39Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
