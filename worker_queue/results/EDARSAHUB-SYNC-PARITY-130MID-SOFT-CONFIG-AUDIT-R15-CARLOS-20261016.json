@@ -1,0 +1,260 @@
+{
+  "base_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-17T00:11:45Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SYNC-PARITY-130MID-SOFT-CONFIG-AUDIT-R15-CARLOS-20261016",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-17T00:12:31Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "codigo",
+              "nombre",
+              "server_id",
+              "system_type",
+              "sucursal_origen_id",
+              "activo"
+            ],
+            "name": "soft_units_config",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                "130° MERIDA",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "SoftRestaurant",
+                null,
+                true
+              ],
+              [
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "SoftRestaurant",
+                null,
+                true
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "SoftRestaurant",
+                null,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "turno_codigo",
+              "turno_nombre",
+              "hora_inicio",
+              "hora_fin",
+              "cruza_medianoche",
+              "aplica_ventas_dia",
+              "es_turno_principal",
+              "orden",
+              "activo"
+            ],
+            "name": "soft_operational_turns",
+            "row_count_returned": 9,
+            "rows": [
+              [
+                "130MID",
+                "DESAYUNO",
+                "Desayuno",
+                "07:00:00",
+                "12:59:00",
+                false,
+                true,
+                false,
+                1,
+                false
+              ],
+              [
+                "130MID",
+                "COMIDA",
+                "Comida",
+                "13:00:00",
+                "18:59:00",
+                false,
+                true,
+                false,
+                2,
+                true
+              ],
+              [
+                "130MID",
+                "CENA",
+                "Cena",
+                "19:00:00",
+                "12:59:00",
+                true,
+                true,
+                true,
+                3,
+                true
+              ],
+              [
+                "CIENFUEGOS",
+                "DESAYUNO",
+                "Desayuno",
+                "08:00:00",
+                "12:59:00",
+                false,
+                true,
+                false,
+                1,
+                false
+              ],
+              [
+                "CIENFUEGOS",
+                "COMIDA",
+                "Comida",
+                "13:00:00",
+                "18:59:00",
+                false,
+                true,
+                false,
+                2,
+                true
+              ],
+              [
+                "CIENFUEGOS",
+                "CENA",
+                "Cena",
+                "19:00:00",
+                "12:59:00",
+                true,
+                true,
+                true,
+                3,
+                true
+              ],
+              [
+                "ESTELAR",
+                "DESAYUNO",
+                "Desayuno",
+                "08:00:00",
+                "12:59:00",
+                false,
+                true,
+                false,
+                1,
+                false
+              ],
+              [
+                "ESTELAR",
+                "COMIDA",
+                "Comida",
+                "13:00:00",
+                "18:59:00",
+                false,
+                true,
+                false,
+                2,
+                true
+              ],
+              [
+                "ESTELAR",
+                "CENA",
+                "Cena",
+                "19:00:00",
+                "12:59:00",
+                true,
+                true,
+                true,
+                3,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "CodigoEmpresa",
+              "RolConexion",
+              "CodigoSucursalSistema",
+              "NumeroSucursalSistema",
+              "NombreSucursalSistema",
+              "EsPrincipal",
+              "Prioridad",
+              "servidor_id",
+              "servidor_nombre",
+              "tipo_conexion",
+              "system_type"
+            ],
+            "name": "soft_company_servers",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                "PRINCIPAL_SQL",
+                null,
+                null,
+                "130° MERIDA",
+                true,
+                1,
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "130° MERIDA",
+                "DATA_SOURCE",
+                "SOFTRESTAURANT_PRO"
+              ],
+              [
+                "CIENFUEGOS",
+                "PRINCIPAL_SQL",
+                null,
+                null,
+                "CIENFUEGOS",
+                true,
+                1,
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "CIENFUEGOS",
+                "DATA_SOURCE",
+                "SOFTRESTAURANT_PRO"
+              ],
+              [
+                "ESTELAR",
+                "PRINCIPAL_SQL",
+                null,
+                null,
+                "LA ESTELAR",
+                true,
+                1,
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "LA ESTELAR",
+                "DATA_SOURCE",
+                "SOFTRESTAURANT_PRO"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-17T00:11:44Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
