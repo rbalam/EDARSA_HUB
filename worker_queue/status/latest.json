@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
-  "generated_at_utc": "2026-10-17T00:07:21Z",
+  "generated_at_utc": "2026-10-17T00:08:38Z",
   "history": {
     "done_total_local": 1451,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 339,
+      "age_seconds": 416,
       "job_id": "EDARSAHUB-ORIGEN-OCT01-15-DETAIL-ROOTCAUSE-R13-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 212,
+      "age_seconds": 289,
       "job_id": "EDARSAHUB-SYNC-PARITY-130QRO-ORIGEN-ESTELAR-CIENFUEGOS-AUDIT-R14-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
@@ -42,8 +42,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-17T00:07:18Z",
-    "last_receive_utc": "2026-10-17T00:07:13Z",
+    "last_cycle_utc": "2026-10-17T00:08:33Z",
+    "last_receive_utc": "2026-10-17T00:08:28Z",
     "last_terminal_utc": "2026-10-17T00:03:49Z",
     "pid": "557",
     "runtime_fingerprint": {
