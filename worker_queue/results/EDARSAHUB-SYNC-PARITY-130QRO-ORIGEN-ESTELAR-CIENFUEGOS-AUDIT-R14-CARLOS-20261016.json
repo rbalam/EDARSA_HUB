@@ -1,0 +1,357 @@
+{
+  "base_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-17T00:03:49Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SYNC-PARITY-130QRO-ORIGEN-ESTELAR-CIENFUEGOS-AUDIT-R14-CARLOS-20261016",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-17T00:04:21Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "codigo",
+              "nombre",
+              "server_id",
+              "system_type",
+              "sucursal_origen_id",
+              "activo"
+            ],
+            "name": "unit_config_four",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "130QRO",
+                "130° QUERETARO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "MPRO",
+                "0021",
+                true
+              ],
+              [
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "SoftRestaurant",
+                null,
+                true
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "SoftRestaurant",
+                null,
+                true
+              ],
+              [
+                "ORIGEN",
+                "ORIGEN",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "MPRO",
+                "0023",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "turno_codigo",
+              "turno_nombre",
+              "hora_inicio",
+              "hora_fin",
+              "cruza_medianoche",
+              "aplica_ventas_dia",
+              "es_turno_principal",
+              "orden",
+              "activo"
+            ],
+            "name": "operational_turns_four",
+            "row_count_returned": 12,
+            "rows": [
+              [
+                "130QRO",
+                "DESAYUNO",
+                "Desayuno",
+                "07:00:00",
+                "12:59:00",
+                false,
+                true,
+                false,
+                1,
+                false
+              ],
+              [
+                "130QRO",
+                "COMIDA",
+                "Comida",
+                "13:00:00",
+                "18:59:00",
+                false,
+                true,
+                false,
+                2,
+                true
+              ],
+              [
+                "130QRO",
+                "CENA",
+                "Cena",
+                "19:00:00",
+                "05:59:00",
+                true,
+                true,
+                true,
+                3,
+                true
+              ],
+              [
+                "CIENFUEGOS",
+                "DESAYUNO",
+                "Desayuno",
+                "08:00:00",
+                "12:59:00",
+                false,
+                true,
+                false,
+                1,
+                false
+              ],
+              [
+                "CIENFUEGOS",
+                "COMIDA",
+                "Comida",
+                "13:00:00",
+                "18:59:00",
+                false,
+                true,
+                false,
+                2,
+                true
+              ],
+              [
+                "CIENFUEGOS",
+                "CENA",
+                "Cena",
+                "19:00:00",
+                "12:59:00",
+                true,
+                true,
+                true,
+                3,
+                true
+              ],
+              [
+                "ESTELAR",
+                "DESAYUNO",
+                "Desayuno",
+                "08:00:00",
+                "12:59:00",
+                false,
+                true,
+                false,
+                1,
+                false
+              ],
+              [
+                "ESTELAR",
+                "COMIDA",
+                "Comida",
+                "13:00:00",
+                "18:59:00",
+                false,
+                true,
+                false,
+                2,
+                true
+              ],
+              [
+                "ESTELAR",
+                "CENA",
+                "Cena",
+                "19:00:00",
+                "12:59:00",
+                true,
+                true,
+                true,
+                3,
+                true
+              ],
+              [
+                "ORIGEN",
+                "DESAYUNO",
+                "Desayuno",
+                "07:00:00",
+                "12:59:00",
+                false,
+                true,
+                false,
+                1,
+                true
+              ],
+              [
+                "ORIGEN",
+                "COMIDA",
+                "Comida",
+                "13:00:00",
+                "18:59:00",
+                false,
+                true,
+                false,
+                2,
+                true
+              ],
+              [
+                "ORIGEN",
+                "CENA",
+                "Cena",
+                "19:00:00",
+                "06:59:00",
+                true,
+                true,
+                true,
+                3,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "CodigoEmpresa",
+              "RolConexion",
+              "CodigoSucursalSistema",
+              "NumeroSucursalSistema",
+              "NombreSucursalSistema",
+              "EsPrincipal",
+              "Prioridad",
+              "servidor_id",
+              "servidor_nombre",
+              "tipo_conexion",
+              "system_type",
+              "relacion_activa",
+              "servidor_activo"
+            ],
+            "name": "company_server_roles_four",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                "130QRO",
+                "PRINCIPAL_SQL",
+                "0021",
+                21,
+                "130° QUERETARO",
+                true,
+                1,
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "ManagmentPro",
+                "DATA_SOURCE",
+                "MPRO",
+                true,
+                true
+              ],
+              [
+                "130QRO",
+                "VENTAS_DIA_API_LOCAL",
+                "0021",
+                21,
+                "130° QUERETARO",
+                false,
+                2,
+                "72F6E9A7-8EA2-4EB2-802E-4EE31753435E",
+                "130° QRO LOCAL",
+                "API_LOCAL",
+                "MPRO",
+                true,
+                true
+              ],
+              [
+                "CIENFUEGOS",
+                "PRINCIPAL_SQL",
+                null,
+                null,
+                "CIENFUEGOS",
+                true,
+                1,
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "CIENFUEGOS",
+                "DATA_SOURCE",
+                "SOFTRESTAURANT_PRO",
+                true,
+                true
+              ],
+              [
+                "ESTELAR",
+                "PRINCIPAL_SQL",
+                null,
+                null,
+                "LA ESTELAR",
+                true,
+                1,
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "LA ESTELAR",
+                "DATA_SOURCE",
+                "SOFTRESTAURANT_PRO",
+                true,
+                true
+              ],
+              [
+                "ORIGEN",
+                "PRINCIPAL_SQL",
+                "0023",
+                23,
+                "ORIGEN",
+                true,
+                1,
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "ManagmentPro",
+                "DATA_SOURCE",
+                "MPRO",
+                true,
+                true
+              ],
+              [
+                "ORIGEN",
+                "VENTAS_DIA_API_LOCAL",
+                "0023",
+                23,
+                "ORIGEN",
+                false,
+                2,
+                "817A0AA8-6170-4738-A8F6-A72AC36BA0DF",
+                "ORIGEN LOCAL",
+                "API_LOCAL",
+                "MPRO",
+                true,
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-17T00:03:48Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
