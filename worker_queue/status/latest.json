@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "3d035d0b250752fbb74e5b73bcf245e8385db09d",
-  "generated_at_utc": "2026-10-17T00:52:11Z",
+  "generated_at_utc": "2026-10-17T00:53:34Z",
   "history": {
     "done_total_local": 1454,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 410,
+      "age_seconds": 493,
       "job_id": "EDARSAHUB-ORIGEN-20261015-DETAIL-DRY-R20-CARLOS-20261016",
       "reasons": [
         "ISCAM_DETAIL_BACKFILL_ONLY_SQL_AUDIT_ALLOWED"
@@ -25,43 +25,43 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2344,
+      "age_seconds": 2427,
       "job_id": "EDARSAHUB-COMERCIAL-ENGINE-FAMILY-CANONICAL-PARITY-R16-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1947,
+      "age_seconds": 2030,
       "job_id": "EDARSAHUB-COMERCIAL-ENGINE-FAMILY-CANONICAL-PARITY-R17-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1159,
+      "age_seconds": 1242,
       "job_id": "EDARSAHUB-COMERCIAL-ENGINE-FAMILY-CANONICAL-PARITY-R18-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 407,
+      "age_seconds": 489,
       "job_id": "EDARSAHUB-COMERCIAL-ENGINE-FAMILY-CERT-AUDIT-R19-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3029,
+      "age_seconds": 3112,
       "job_id": "EDARSAHUB-ORIGEN-OCT01-15-DETAIL-ROOTCAUSE-R13-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2426,
+      "age_seconds": 2509,
       "job_id": "EDARSAHUB-SYNC-PARITY-130MID-SOFT-CONFIG-AUDIT-R15-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2902,
+      "age_seconds": 2984,
       "job_id": "EDARSAHUB-SYNC-PARITY-130QRO-ORIGEN-ESTELAR-CIENFUEGOS-AUDIT-R14-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
@@ -81,8 +81,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-17T00:52:04Z",
-    "last_receive_utc": "2026-10-17T00:51:59Z",
+    "last_cycle_utc": "2026-10-17T00:53:30Z",
+    "last_receive_utc": "2026-10-17T00:53:25Z",
     "last_terminal_utc": "2026-10-17T00:45:24Z",
     "pid": "122801",
     "runtime_fingerprint": {
