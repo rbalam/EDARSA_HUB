@@ -132,10 +132,10 @@ def build_mpro_closed_sales_query(
 ) -> str:
     """Build the canonical final closed-sales SELECT for MPRO local APIs.
 
-    ORIGEN and 130QRO share the same final accounting authority:
-    Venta_Encabezado.Vn_Precio_Neto_Importe.  Comanda/Comanda_Detalle may be
-    used only by the isolated intraday provisional path while the final header
-    is not yet available; it is never authoritative for persisted closed KPIs.
+    Every ManagementPro unit resolved by the canonical registry shares the
+    same final accounting authority: Venta_Encabezado.Vn_Precio_Neto_Importe.
+    The unit code is identity/traceability only; it never selects a different
+    accounting algorithm. Comanda/Comanda_Detalle remains provisional only.
     """
 
     codigo = str(unidad_codigo or "").strip().upper()
@@ -143,9 +143,11 @@ def build_mpro_closed_sales_query(
     inicio = fecha_inicio.strftime("%Y%m%d")
     fin = fecha_fin.strftime("%Y%m%d")
 
-    if codigo not in {"ORIGEN", "130QRO"}:
+    if not codigo:
+        raise ValueError("MPRO closed-sales unit code is required")
+    if not sucursal:
         raise ValueError(
-            f"Unsupported MPRO closed-sales unit: {codigo or 'EMPTY'}"
+            "MPRO closed-sales canonical branch id is required"
         )
 
     return f"""

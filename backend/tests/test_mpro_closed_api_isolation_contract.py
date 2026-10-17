@@ -34,7 +34,8 @@ def test_closed_sales_has_no_central2020_fallback():
 def test_mpro_units_share_final_header_authority_and_select_only():
     text = _text(API_MODULE)
 
-    assert 'codigo not in {"ORIGEN", "130QRO"}' in text
+    assert 'codigo not in {"ORIGEN", "130QRO"}' not in text
+    assert "MPRO closed-sales canonical branch id is required" in text
     assert "FROM Venta_Encabezado AS ve" in text
     assert "ve.Vn_Precio_Neto_Importe AS Vn_Precio_Neto_Importe" in text
     assert "ve.Sc_Cve_Sucursal = '{sucursal}'" in text

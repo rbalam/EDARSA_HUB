@@ -13,9 +13,10 @@ def _text(path):
     return path.read_text(encoding="utf-8")
 
 
-def test_origen_and_130qro_share_venta_encabezado_final_authority():
+def test_all_mpro_units_share_venta_encabezado_final_authority():
     text = _text(API)
-    assert 'codigo not in {"ORIGEN", "130QRO"}' in text
+    assert 'codigo not in {"ORIGEN", "130QRO"}' not in text
+    assert "MPRO closed-sales canonical branch id is required" in text
     assert "FROM Venta_Encabezado AS ve" in text
     assert "ve.Vn_Precio_Neto_Importe AS Vn_Precio_Neto_Importe" in text
     assert "ve.Sc_Cve_Sucursal = '{sucursal}'" in text

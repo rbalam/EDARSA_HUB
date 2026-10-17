@@ -642,7 +642,9 @@ def build_softrestaurant_ventas_cerradas_query(
     La pertenencia al dia se define SOLO por la fecha calendario de
     turnos.apertura. No usa turnos operativos, cierre ni idempresa.
     """
-    offset_hours = 9 if str((server_config or {}).get('unidad_codigo') or '').strip().upper() == 'ESTELAR' else 0
+    # Regla canónica/transversal SoftRestaurant: todas las sucursales usan
+    # el mismo corte operativo de 09:00 sobre turnos.apertura.
+    offset_hours = 9
     bloques = []
     fecha_actual = fecha_inicio
     while fecha_actual <= fecha_fin:
@@ -837,8 +839,9 @@ def sync_mpro_ventas_cerradas(
     
     try:
         # REGLA CANÓNICA MPRO CERRADAS:
-        # ORIGEN/130QRO se resuelven por la relación de API local de la unidad.
-        # No se permite fallback silencioso al servidor MPRO compartido/CENTRAL2020.
+        # toda unidad ManagementPro se resuelve por la relación API local
+        # canónica y usa la misma autoridad final Venta_Encabezado.
+        # No se permite fallback silencioso al servidor compartido/CENTRAL2020.
         api_config = resolve_mpro_closed_api(config.unidad_negocio_pk)
         if not api_config:
             result.error_message = (
@@ -856,8 +859,8 @@ def sync_mpro_ventas_cerradas(
             )
             return result
 
-        # La consulta se construye por unidad porque ORIGEN y 130QRO
-        # no comparten el mismo esquema operativo de ventas cerradas.
+        # La consulta final es transversal para toda unidad ManagementPro.
+        # La sucursal canónica identifica la rama; no cambia el algoritmo.
         query = build_mpro_closed_sales_query(
             api_config.get("unidad_codigo"),
             api_sucursal_id,
