@@ -1,0 +1,54 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-ENGINE-FAMILY-CERT-AUDIT-R19-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3d035d0b250752fbb74e5b73bcf245e8385db09d",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Certificar antes de cualquier resincronizacion que la regla R18 por familia no altera unidades ya correctas. Para SoftRestaurant comparar 130MID, ESTELAR y CIENFUEGOS en 2026-10-15 usando el contrato nuevo DATEADD(hour,-9,turnos.apertura) y el contrato previo sin offset, contra KPI base EDARSAHUB. Para ManagementPro verificar que ORIGEN y 130QRO siguen usando la misma autoridad final de Venta_Encabezado. No escribir datos/codigo ni tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 50,
+      "queries": [
+        {
+          "name": "base_oct15_all_units",
+          "sql": "SELECT unidad_negocio_id,CAST(fecha_operacion AS date) AS fecha_operacion,CAST(ventas_total AS decimal(18,2)) AS ventas,tickets_total AS tickets,pax_total AS pax,fuente_original FROM dbo.Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_id IN ('130MID','ESTELAR','CIENFUEGOS','ORIGEN','130QRO') AND fecha_operacion='2026-10-15' AND ISNULL(activo,1)=1 AND ISNULL(es_demo,0)=0 ORDER BY unidad_negocio_id"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "130MID",
+        "ESTELAR",
+        "CIENFUEGOS"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "max_rows": 20,
+      "queries": [
+        {
+          "name": "soft_oct15_offset9",
+          "sql": "SELECT CAST(SUM(ch.total) AS decimal(18,2)) AS ventas,COUNT(DISTINCT ch.folio) AS tickets,SUM(ISNULL(ch.nopersonas,0)) AS pax FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE CONVERT(varchar,DATEADD(hour,-9,tr.apertura),112)='20261015' AND ISNULL(ch.cancelado,0)=0"
+        },
+        {
+          "name": "soft_oct15_offset0",
+          "sql": "SELECT CAST(SUM(ch.total) AS decimal(18,2)) AS ventas,COUNT(DISTINCT ch.folio) AS tickets,SUM(ISNULL(ch.nopersonas,0)) AS pax FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE CONVERT(varchar,tr.apertura,112)='20261015' AND ISNULL(ch.cancelado,0)=0"
+        }
+      ]
+    }
+  ]
+}
