@@ -1,0 +1,288 @@
+{
+  "base_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-17T00:01:41Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ORIGEN-OCT01-15-DETAIL-ROOTCAUSE-R13-CARLOS-20261016",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-17T00:02:58Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas",
+              "tickets",
+              "pax",
+              "fuente_original"
+            ],
+            "name": "origen_runtime_daily",
+            "row_count_returned": 15,
+            "rows": [
+              [
+                "2026-10-01",
+                "53857.60",
+                33,
+                78,
+                "API_LOCAL"
+              ],
+              [
+                "2026-10-02",
+                "135593.56",
+                56,
+                177,
+                "API_LOCAL"
+              ],
+              [
+                "2026-10-03",
+                "118599.41",
+                66,
+                171,
+                "API_LOCAL"
+              ],
+              [
+                "2026-10-04",
+                "33224.76",
+                18,
+                54,
+                "API_LOCAL"
+              ],
+              [
+                "2026-10-05",
+                "26139.98",
+                13,
+                39,
+                "API_LOCAL"
+              ],
+              [
+                "2026-10-06",
+                "70073.87",
+                25,
+                102,
+                "API_LOCAL"
+              ],
+              [
+                "2026-10-07",
+                "51074.50",
+                30,
+                65,
+                "API_LOCAL"
+              ],
+              [
+                "2026-10-08",
+                "88559.99",
+                33,
+                103,
+                "API_LOCAL"
+              ],
+              [
+                "2026-10-09",
+                "79037.47",
+                27,
+                95,
+                "API_LOCAL"
+              ],
+              [
+                "2026-10-10",
+                "101804.82",
+                41,
+                132,
+                "API_LOCAL"
+              ],
+              [
+                "2026-10-11",
+                "52341.82",
+                21,
+                65,
+                "API_LOCAL"
+              ],
+              [
+                "2026-10-12",
+                "35673.94",
+                21,
+                67,
+                "API_LOCAL"
+              ],
+              [
+                "2026-10-13",
+                "47816.99",
+                26,
+                71,
+                "API_LOCAL"
+              ],
+              [
+                "2026-10-14",
+                "50342.63",
+                17,
+                46,
+                "API_LOCAL"
+              ],
+              [
+                "2026-10-15",
+                "34743.49",
+                23,
+                60,
+                "API_LOCAL"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas",
+              "tickets",
+              "pax"
+            ],
+            "name": "origen_detail_daily",
+            "row_count_returned": 15,
+            "rows": [
+              [
+                "2026-10-01",
+                "53857.60",
+                37,
+                78
+              ],
+              [
+                "2026-10-02",
+                "135593.56",
+                56,
+                177
+              ],
+              [
+                "2026-10-03",
+                "118599.41",
+                68,
+                171
+              ],
+              [
+                "2026-10-04",
+                "33224.76",
+                18,
+                54
+              ],
+              [
+                "2026-10-05",
+                "26139.98",
+                13,
+                39
+              ],
+              [
+                "2026-10-06",
+                "70073.87",
+                26,
+                102
+              ],
+              [
+                "2026-10-07",
+                "51074.50",
+                30,
+                65
+              ],
+              [
+                "2026-10-08",
+                "88559.99",
+                33,
+                103
+              ],
+              [
+                "2026-10-09",
+                "79037.47",
+                27,
+                95
+              ],
+              [
+                "2026-10-10",
+                "101804.82",
+                45,
+                132
+              ],
+              [
+                "2026-10-11",
+                "52341.82",
+                21,
+                65
+              ],
+              [
+                "2026-10-12",
+                "35673.94",
+                23,
+                67
+              ],
+              [
+                "2026-10-13",
+                "47816.99",
+                27,
+                71
+              ],
+              [
+                "2026-10-14",
+                "50342.63",
+                17,
+                46
+              ],
+              [
+                "2026-10-15",
+                "12018.50",
+                13,
+                22
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_abiertas",
+              "ventas_cerradas_dia",
+              "total_estimado_dia",
+              "tickets_abiertos",
+              "tickets_cerrados_dia",
+              "pax_abiertos",
+              "pax_cerrados_dia",
+              "snapshot_timestamp",
+              "fecha_ultima_actualizacion"
+            ],
+            "name": "origen_latest_snapshot",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-10-15",
+                "0.00",
+                "34743.49",
+                "34743.49",
+                0,
+                23,
+                0,
+                60,
+                "2026-10-16 08:41:26.4928710",
+                "2026-10-16 08:41:27.2793597"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-17T00:01:39Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
