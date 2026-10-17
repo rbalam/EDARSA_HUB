@@ -3,78 +3,78 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
-  "generated_at_utc": "2026-10-17T00:32:50Z",
+  "development_sha": "3d035d0b250752fbb74e5b73bcf245e8385db09d",
+  "generated_at_utc": "2026-10-17T00:34:17Z",
   "history": {
-    "done_total_local": 1452,
+    "done_total_local": 1453,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 1254,
-    "results_total_local": 2481
+    "results_total_local": 2482
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1183,
+      "age_seconds": 1270,
       "job_id": "EDARSAHUB-COMERCIAL-ENGINE-FAMILY-CANONICAL-PARITY-R16-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 786,
+      "age_seconds": 873,
       "job_id": "EDARSAHUB-COMERCIAL-ENGINE-FAMILY-CANONICAL-PARITY-R17-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1868,
+      "age_seconds": 86,
+      "job_id": "EDARSAHUB-COMERCIAL-ENGINE-FAMILY-CANONICAL-PARITY-R18-CARLOS-20261016",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1955,
       "job_id": "EDARSAHUB-ORIGEN-OCT01-15-DETAIL-ROOTCAUSE-R13-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1265,
+      "age_seconds": 1352,
       "job_id": "EDARSAHUB-SYNC-PARITY-130MID-SOFT-CONFIG-AUDIT-R15-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1740,
+      "age_seconds": 1828,
       "job_id": "EDARSAHUB-SYNC-PARITY-130QRO-ORIGEN-ESTELAR-CIENFUEGOS-AUDIT-R14-CARLOS-20261016",
       "reason": null,
       "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 8,
-      "job_id": "EDARSAHUB-COMERCIAL-ENGINE-FAMILY-CANONICAL-PARITY-R18-CARLOS-20261016",
-      "reason": null,
-      "state": "RUNNING"
     }
   ],
-  "local_development_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
+  "local_development_sha": "3d035d0b250752fbb74e5b73bcf245e8385db09d",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 5,
-  "queue_running": 1,
-  "remote_development_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
+  "queue_result_ready_recent": 6,
+  "queue_running": 0,
+  "remote_development_sha": "3d035d0b250752fbb74e5b73bcf245e8385db09d",
   "runtime": {
-    "current_job_id": "EDARSAHUB-COMERCIAL-ENGINE-FAMILY-CANONICAL-PARITY-R18-CARLOS-20261016",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-17T00:32:38Z",
-    "last_receive_utc": "2026-10-17T00:32:47Z",
-    "last_terminal_utc": "2026-10-17T00:19:44Z",
-    "pid": "557",
+    "last_cycle_utc": "2026-10-17T00:34:04Z",
+    "last_receive_utc": "2026-10-17T00:34:14Z",
+    "last_terminal_utc": "2026-10-17T00:32:51Z",
+    "pid": "122801",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "e1a32d698deebfc588c4413d85c11c66fb0a0a31",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "9a0b7702469b28065b5ada0796920fb96d7d92ed",
+      "development_sha": "3d035d0b250752fbb74e5b73bcf245e8385db09d",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
