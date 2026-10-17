@@ -1,0 +1,25 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ORIGEN-20261015-DETAIL-DRY-R20-CARLOS-20261016",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3d035d0b250752fbb74e5b73bcf245e8385db09d",
+  "production_allowed": false,
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "objective": "Dry-run exclusivo de ORIGEN 2026-10-15 para completar el detalle historico sin tocar KPI/Runtime. Evidencia R13: Runtime correcto 34743.49/23 tickets/60 PAX, detalle persistido incompleto 12018.50/13 tickets/22 PAX. Determinar si el backfill independiente puede reconstruir exactamente la diferencia faltante y quedar en paridad. No modificar sincronizadores protegidos ni Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "units": [
+    "ORIGEN"
+  ],
+  "fecha_inicio": "2026-10-15",
+  "fecha_fin": "2026-10-16",
+  "dry_run": true,
+  "confirm_detail_backfill": false
+}
