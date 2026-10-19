@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "3d035d0b250752fbb74e5b73bcf245e8385db09d",
-  "generated_at_utc": "2026-10-19T17:23:29Z",
+  "generated_at_utc": "2026-10-19T17:24:46Z",
   "history": {
     "done_total_local": 1457,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 740,
+      "age_seconds": 817,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-20261018-RANGE-RESYNC-R25-CARLOS-20261019",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,8 +36,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-19T17:23:18Z",
-    "last_receive_utc": "2026-10-19T17:23:25Z",
+    "last_cycle_utc": "2026-10-19T17:24:39Z",
+    "last_receive_utc": "2026-10-19T17:24:45Z",
     "last_terminal_utc": "2026-10-19T17:11:09Z",
     "pid": "962",
     "runtime_fingerprint": {
