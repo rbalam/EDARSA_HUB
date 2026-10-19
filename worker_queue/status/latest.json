@@ -1,58 +1,58 @@
 {
   "ahead_count": 0,
-  "behind_count": 1,
+  "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "REMOTE_AHEAD_ONLY",
-  "development_sha": "6564bddc585f79597e3bca28cbfd1303f78d144c",
-  "generated_at_utc": "2026-10-19T22:59:33Z",
+  "convergence_status": "SYNC",
+  "development_sha": "8152f9d10f4431dbcc0d2d6c802ca22d9bcd6e7a",
+  "generated_at_utc": "2026-10-19T23:01:10Z",
   "history": {
-    "done_total_local": 1465,
+    "done_total_local": 1466,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1260,
-    "results_total_local": 2499
+    "results_total_local": 2500
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3505,
-      "job_id": "EDARSAHUB-TABLAJERIA-PLANTILLAS-FULL-EXPORT-R1-CARLOS-20261019T214100Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 651,
+      "age_seconds": 748,
       "job_id": "SERVIDORES-API-FACTORY-H8-MIGRATION-R1-20261019",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 414,
+      "age_seconds": 511,
       "job_id": "SERVIDORES-API-FACTORY-H8-READONLY-RUNTIME-CERT-R1-20261019",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 185,
+      "age_seconds": 282,
       "job_id": "SERVIDORES-API-FACTORY-H8-READONLY-RUNTIME-CERT-R2-20261019",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1242,
+      "age_seconds": 62,
+      "job_id": "SERVIDORES-API-FACTORY-H8-UI-CERT-R1-20261019",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1340,
       "job_id": "SERVIDORES-SQL-MIGRATION-NAMED-AUDITS-CERT-R1-20261019",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 964,
+      "age_seconds": 1062,
       "job_id": "SERVIDORES-SQL-MIGRATION-NAMED-AUDITS-CERT-R2-20261019",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "90680ab8668bdf084c404f2aa4feb0ae74941a33",
+  "local_development_sha": "8152f9d10f4431dbcc0d2d6c802ca22d9bcd6e7a",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -62,19 +62,19 @@
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 6,
   "queue_running": 0,
-  "remote_development_sha": "6564bddc585f79597e3bca28cbfd1303f78d144c",
+  "remote_development_sha": "8152f9d10f4431dbcc0d2d6c802ca22d9bcd6e7a",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-19T22:59:25Z",
-    "last_receive_utc": "2026-10-19T22:59:20Z",
-    "last_terminal_utc": "2026-10-19T22:56:28Z",
-    "pid": "146950",
+    "last_cycle_utc": "2026-10-19T23:01:01Z",
+    "last_receive_utc": "2026-10-19T23:00:56Z",
+    "last_terminal_utc": "2026-10-19T23:00:08Z",
+    "pid": "175074",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "ae9ebc1d1120a14bc75923e30f0276b0f7bdc0cb",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "90680ab8668bdf084c404f2aa4feb0ae74941a33",
+      "development_sha": "8152f9d10f4431dbcc0d2d6c802ca22d9bcd6e7a",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
