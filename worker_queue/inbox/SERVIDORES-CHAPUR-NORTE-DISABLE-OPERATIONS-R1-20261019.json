@@ -1,0 +1,18 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-CHAPUR-NORTE-DISABLE-OPERATIONS-R1-20261019",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir exclusivamente el flag historico de CHAPUR NORTE en Desarrollo usando la capability canonica SERVER_REGISTRY_METADATA_UPDATE: visible_en_operaciones true -> false. Preservar activo e identidad/configuracion restante. Ejecutar preflight y post-audit exclusivamente mediante chapur_norte_operational_visibility_v1. No SQL inline, no secretos, no Produccion, no crear Empresa/Sucursal/Unidad, no ampliar scope.",
+  "human_summary_language": "es",
+  "mode": "SERVER_REGISTRY_METADATA_UPDATE",
+  "actions": [],
+  "server_id": "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+  "disable_operations": true,
+  "confirm_server_registry_metadata_update": true,
+  "preflight_audit_profile": "chapur_norte_operational_visibility_v1",
+  "post_audit_profile": "chapur_norte_operational_visibility_v1",
+  "preflight_checks": [],
+  "checks": []
+}
