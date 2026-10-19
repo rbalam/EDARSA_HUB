@@ -1,0 +1,24 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SOFTRESTAURANT-20261018-RANGE-RESYNC-R25-CARLOS-20261019",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3d035d0b250752fbb74e5b73bcf245e8385db09d",
+  "production_allowed": false,
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "objective": "Re-sincronizar de forma real y exclusiva las unidades SoftRestaurant 130MID, CIENFUEGOS y ESTELAR para 2026-10-18. El encabezado del día aparece en los dashboards, pero el Detalle de Ventas está vacío o incompleto. Ejecutar el handler canónico SoftRestaurant para encabezado y después el backfill de detalle ISCAM del mismo día, conservando ventas TOTAL del POS, tickets y PAX. No consultar, ejecutar ni modificar ninguna unidad ManagementPro. No tocar sync_comercial_abiertas_v2, Ventas del Día protegidas ni Producción.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "units": ["130MID", "CIENFUEGOS", "ESTELAR"],
+  "fecha_inicio": "2026-10-18",
+  "fecha_fin": "2026-10-18",
+  "dry_run": false,
+  "confirm_comercial_range_resync": true,
+  "audit_profile": "closed_ticket_metadata"
+}
