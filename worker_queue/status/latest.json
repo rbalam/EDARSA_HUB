@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "8152f9d10f4431dbcc0d2d6c802ca22d9bcd6e7a",
-  "generated_at_utc": "2026-10-19T23:01:10Z",
+  "generated_at_utc": "2026-10-19T23:02:40Z",
   "history": {
     "done_total_local": 1466,
     "pending_total_local": 0,
@@ -16,37 +16,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 748,
+      "age_seconds": 838,
       "job_id": "SERVIDORES-API-FACTORY-H8-MIGRATION-R1-20261019",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 511,
+      "age_seconds": 601,
       "job_id": "SERVIDORES-API-FACTORY-H8-READONLY-RUNTIME-CERT-R1-20261019",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 282,
+      "age_seconds": 372,
       "job_id": "SERVIDORES-API-FACTORY-H8-READONLY-RUNTIME-CERT-R2-20261019",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 62,
+      "age_seconds": 152,
       "job_id": "SERVIDORES-API-FACTORY-H8-UI-CERT-R1-20261019",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1340,
+      "age_seconds": 1430,
       "job_id": "SERVIDORES-SQL-MIGRATION-NAMED-AUDITS-CERT-R1-20261019",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1062,
+      "age_seconds": 1152,
       "job_id": "SERVIDORES-SQL-MIGRATION-NAMED-AUDITS-CERT-R2-20261019",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,8 +66,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-19T23:01:01Z",
-    "last_receive_utc": "2026-10-19T23:00:56Z",
+    "last_cycle_utc": "2026-10-19T23:02:29Z",
+    "last_receive_utc": "2026-10-19T23:02:24Z",
     "last_terminal_utc": "2026-10-19T23:00:08Z",
     "pid": "175074",
     "runtime_fingerprint": {
