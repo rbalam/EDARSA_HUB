@@ -90,3 +90,13 @@ def test_non_frozenset_consent_denied():
 def test_unknown_tool_scope_denied_even_when_granted():
     with pytest.raises(OAuthValidationError, match="TOOL_SCOPE_NOT_CONFIGURED"):
         require_tool_scope("worker:admin", frozenset({"worker:admin"}))
+
+@pytest.mark.parametrize("resource", [
+    "https://example.org:invalid/api/mcp",
+    "https://example.org:99999/api/mcp",
+    "https://example.org/api/mcp\\\\bad",
+    "https://example.org/api/mcp\n",
+])
+def test_malformed_resource_fails_closed(resource):
+    with pytest.raises(OAuthValidationError, match="RESOURCE_INVALID"):
+        grant(resource=resource, registered_resource=resource)
