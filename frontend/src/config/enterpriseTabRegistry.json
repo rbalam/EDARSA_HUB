@@ -1,4 +1,16 @@
 {
   "version": 1,
-  "tabs": []
+  "tabs": [
+    {
+      "id": "sistema.servidores.api-factory",
+      "groupId": "plataforma-integraciones",
+      "sectionId": "datos-infraestructura",
+      "label": "API Factory",
+      "parentScreen": "sistema.servidores",
+      "parentRoute": "/servidores",
+      "order": 40,
+      "status": "active",
+      "releasedAt": "2026-10-19"
+    }
+  ]
 }

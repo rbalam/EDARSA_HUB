@@ -1440,7 +1440,7 @@ const Servidores = () => {
             <Link2 className="h-4 w-4" />
             Vtiger CRM
           </TabsTrigger>
-          <TabsTrigger value="api-factory" className="flex items-center gap-2" data-testid="tab-api-factory">
+          <TabsTrigger value="api-factory" className="flex items-center gap-2" data-testid="tab-api-factory" data-enterprise-tab-id="sistema.servidores.api-factory">
             <Code className="h-4 w-4" />
             API Factory
           </TabsTrigger>
