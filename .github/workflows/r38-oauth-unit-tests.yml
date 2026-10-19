@@ -1,0 +1,32 @@
+name: R38 OAuth unit tests
+on:
+  pull_request:
+    paths:
+      - "backend/modules/worker_mcp/oauth_*.py"
+      - "backend/tests/test_worker_mcp_oauth_*.py"
+      - ".github/workflows/r38-oauth-unit-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  oauth-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install isolated test runner
+        run: python -m pip install "pytest==9.0.2"
+      - name: Validate OAuth Discovery PKCE and Security
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python -m pytest -q -p no:cacheprovider \
+            backend/tests/test_worker_mcp_oauth_discovery.py \
+            backend/tests/test_worker_mcp_oauth_pkce.py \
+            backend/tests/test_worker_mcp_oauth_security.py
