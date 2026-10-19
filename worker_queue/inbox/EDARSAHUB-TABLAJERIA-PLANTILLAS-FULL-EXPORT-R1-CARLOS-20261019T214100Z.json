@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TABLAJERIA-PLANTILLAS-FULL-EXPORT-R1-CARLOS-20261019T214100Z",
+  "created_at_utc": "2026-10-19T21:41:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "eb84591e8f274da8d843eb428e89985f139bb563",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Exportar en solo lectura todas las filas y todas las columnas de dbo.Operaciones_Tablaje_Plantillas sin filtros funcionales ni transformaciones. Incluir conteo total y datos completos para generar un Excel fiel a la tabla. No escribir en SQL, no modificar codigo y no tocar Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "plantillas_total_rows",
+          "sql": "SELECT COUNT_BIG(*) AS total_rows FROM dbo.Operaciones_Tablaje_Plantillas"
+        },
+        {
+          "name": "plantillas_all_columns_all_rows",
+          "sql": "SELECT * FROM dbo.Operaciones_Tablaje_Plantillas ORDER BY PlantillaID"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
