@@ -1,0 +1,385 @@
+{
+  "base_sha": "f77295e9880457836a50dd56296d521bcf22ef21",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-10-19T22:48:42Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES-API-FACTORY-H8-MIGRATION-R1-20261019",
+  "operation": "SQL_MIGRATION_DEVELOPMENT",
+  "operation_summary": {
+    "credential_source": "canonical",
+    "returncode": 0,
+    "status": "PASS"
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-19T22:50:00Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "TABLE_SCHEMA",
+              "TABLE_NAME"
+            ],
+            "name": "api_factory_tables",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                "dbo",
+                "Sistema_ApiFactoryApi"
+              ],
+              [
+                "dbo",
+                "Sistema_ApiFactoryConsumer"
+              ],
+              [
+                "dbo",
+                "Sistema_ApiFactoryConsumerEmpresa"
+              ],
+              [
+                "dbo",
+                "Sistema_ApiFactoryConsumerGrant"
+              ],
+              [
+                "dbo",
+                "Sistema_ApiFactoryConsumerUnidad"
+              ],
+              [
+                "dbo",
+                "Sistema_ApiFactoryVersion"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "TABLE_NAME",
+              "COLUMN_NAME",
+              "DATA_TYPE",
+              "IS_NULLABLE",
+              "ORDINAL_POSITION"
+            ],
+            "name": "api_factory_columns",
+            "row_count_returned": 42,
+            "rows": [
+              [
+                "Sistema_ApiFactoryApi",
+                "ApiID",
+                "uniqueidentifier",
+                "NO",
+                1
+              ],
+              [
+                "Sistema_ApiFactoryApi",
+                "ApiCode",
+                "nvarchar",
+                "NO",
+                2
+              ],
+              [
+                "Sistema_ApiFactoryApi",
+                "Nombre",
+                "nvarchar",
+                "NO",
+                3
+              ],
+              [
+                "Sistema_ApiFactoryApi",
+                "Estado",
+                "nvarchar",
+                "NO",
+                4
+              ],
+              [
+                "Sistema_ApiFactoryApi",
+                "AuthMode",
+                "nvarchar",
+                "NO",
+                5
+              ],
+              [
+                "Sistema_ApiFactoryApi",
+                "Activo",
+                "bit",
+                "NO",
+                6
+              ],
+              [
+                "Sistema_ApiFactoryApi",
+                "FechaCreacionUTC",
+                "datetime2",
+                "NO",
+                7
+              ],
+              [
+                "Sistema_ApiFactoryApi",
+                "FechaActualizacionUTC",
+                "datetime2",
+                "YES",
+                8
+              ],
+              [
+                "Sistema_ApiFactoryConsumer",
+                "ConsumerID",
+                "uniqueidentifier",
+                "NO",
+                1
+              ],
+              [
+                "Sistema_ApiFactoryConsumer",
+                "ConsumerCode",
+                "nvarchar",
+                "NO",
+                2
+              ],
+              [
+                "Sistema_ApiFactoryConsumer",
+                "Nombre",
+                "nvarchar",
+                "NO",
+                3
+              ],
+              [
+                "Sistema_ApiFactoryConsumer",
+                "Estado",
+                "nvarchar",
+                "NO",
+                4
+              ],
+              [
+                "Sistema_ApiFactoryConsumer",
+                "CredentialReference",
+                "nvarchar",
+                "YES",
+                5
+              ],
+              [
+                "Sistema_ApiFactoryConsumer",
+                "Activo",
+                "bit",
+                "NO",
+                6
+              ],
+              [
+                "Sistema_ApiFactoryConsumer",
+                "FechaCreacionUTC",
+                "datetime2",
+                "NO",
+                7
+              ],
+              [
+                "Sistema_ApiFactoryConsumer",
+                "FechaActualizacionUTC",
+                "datetime2",
+                "YES",
+                8
+              ],
+              [
+                "Sistema_ApiFactoryConsumerEmpresa",
+                "ConsumerGrantID",
+                "bigint",
+                "NO",
+                1
+              ],
+              [
+                "Sistema_ApiFactoryConsumerEmpresa",
+                "EmpresaID",
+                "int",
+                "NO",
+                2
+              ],
+              [
+                "Sistema_ApiFactoryConsumerEmpresa",
+                "Activo",
+                "bit",
+                "NO",
+                3
+              ],
+              [
+                "Sistema_ApiFactoryConsumerEmpresa",
+                "FechaCreacionUTC",
+                "datetime2",
+                "NO",
+                4
+              ],
+              [
+                "Sistema_ApiFactoryConsumerGrant",
+                "ConsumerGrantID",
+                "bigint",
+                "NO",
+                1
+              ],
+              [
+                "Sistema_ApiFactoryConsumerGrant",
+                "ConsumerID",
+                "uniqueidentifier",
+                "NO",
+                2
+              ],
+              [
+                "Sistema_ApiFactoryConsumerGrant",
+                "ApiVersionID",
+                "uniqueidentifier",
+                "NO",
+                3
+              ],
+              [
+                "Sistema_ApiFactoryConsumerGrant",
+                "RateLimitPerMinute",
+                "int",
+                "YES",
+                4
+              ],
+              [
+                "Sistema_ApiFactoryConsumerGrant",
+                "Activo",
+                "bit",
+                "NO",
+                5
+              ],
+              [
+                "Sistema_ApiFactoryConsumerGrant",
+                "FechaCreacionUTC",
+                "datetime2",
+                "NO",
+                6
+              ],
+              [
+                "Sistema_ApiFactoryConsumerUnidad",
+                "ConsumerGrantID",
+                "bigint",
+                "NO",
+                1
+              ],
+              [
+                "Sistema_ApiFactoryConsumerUnidad",
+                "UnidadNegocioID",
+                "uniqueidentifier",
+                "NO",
+                2
+              ],
+              [
+                "Sistema_ApiFactoryConsumerUnidad",
+                "Activo",
+                "bit",
+                "NO",
+                3
+              ],
+              [
+                "Sistema_ApiFactoryConsumerUnidad",
+                "FechaCreacionUTC",
+                "datetime2",
+                "NO",
+                4
+              ],
+              [
+                "Sistema_ApiFactoryVersion",
+                "ApiVersionID",
+                "uniqueidentifier",
+                "NO",
+                1
+              ],
+              [
+                "Sistema_ApiFactoryVersion",
+                "ApiID",
+                "uniqueidentifier",
+                "NO",
+                2
+              ],
+              [
+                "Sistema_ApiFactoryVersion",
+                "VersionCode",
+                "nvarchar",
+                "NO",
+                3
+              ],
+              [
+                "Sistema_ApiFactoryVersion",
+                "Route",
+                "nvarchar",
+                "NO",
+                4
+              ],
+              [
+                "Sistema_ApiFactoryVersion",
+                "HttpMethod",
+                "nvarchar",
+                "NO",
+                5
+              ],
+              [
+                "Sistema_ApiFactoryVersion",
+                "ContractFingerprint",
+                "char",
+                "NO",
+                6
+              ],
+              [
+                "Sistema_ApiFactoryVersion",
+                "InputSchemaVersion",
+                "nvarchar",
+                "YES",
+                7
+              ],
+              [
+                "Sistema_ApiFactoryVersion",
+                "OutputSchemaVersion",
+                "nvarchar",
+                "YES",
+                8
+              ],
+              [
+                "Sistema_ApiFactoryVersion",
+                "RateLimitPerMinute",
+                "int",
+                "YES",
+                9
+              ],
+              [
+                "Sistema_ApiFactoryVersion",
+                "Immutable",
+                "bit",
+                "NO",
+                10
+              ],
+              [
+                "Sistema_ApiFactoryVersion",
+                "Activo",
+                "bit",
+                "NO",
+                11
+              ],
+              [
+                "Sistema_ApiFactoryVersion",
+                "FechaCreacionUTC",
+                "datetime2",
+                "NO",
+                12
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-19T22:48:36Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto preflight SQL HRLectura, una migracion Development versionada y SHA-bound mediante writer dedicado, y post-audit SQL HRLectura. No acepto SQL inline, shell arbitrario ni toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
