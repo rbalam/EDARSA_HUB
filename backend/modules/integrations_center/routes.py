@@ -14,6 +14,7 @@ from core.rbac.middleware import require_permission
 from core.security import get_current_user
 
 from . import service
+from . import api_factory_service
 from .communications_routes import router as communications_router
 
 logger = logging.getLogger(__name__)
@@ -109,3 +110,49 @@ async def communications(
     except Exception as exc:
         logger.error("[INTEGRATIONS_CENTER][COMMUNICATIONS] %s", type(exc).__name__)
         raise HTTPException(status_code=500, detail="Error obteniendo resumen de comunicaciones")
+
+
+@router.get("/api-factory/overview")
+async def api_factory_overview(
+    current_user: Dict = Depends(require_permission("SERVIDORES_VER")),
+):
+    _ = current_user
+    return {"status": "SUCCESS", "data": api_factory_service.get_overview(), "meta": _meta()}
+
+
+@router.get("/api-factory/apis")
+async def api_factory_apis(
+    current_user: Dict = Depends(require_permission("SERVIDORES_VER")),
+):
+    _ = current_user
+    items = api_factory_service.list_apis()
+    return {"status": "SUCCESS", "data": items, "count": len(items), "meta": _meta()}
+
+
+@router.get("/api-factory/apis/{api_id}/versions")
+async def api_factory_versions(
+    api_id: str,
+    current_user: Dict = Depends(require_permission("SERVIDORES_VER")),
+):
+    _ = current_user
+    items = api_factory_service.list_versions(api_id)
+    return {"status": "SUCCESS", "data": items, "count": len(items), "meta": _meta()}
+
+
+@router.get("/api-factory/consumers")
+async def api_factory_consumers(
+    current_user: Dict = Depends(require_permission("SERVIDORES_VER")),
+):
+    _ = current_user
+    items = api_factory_service.list_consumers()
+    return {"status": "SUCCESS", "data": items, "count": len(items), "meta": _meta()}
+
+
+@router.get("/api-factory/consumers/{consumer_id}/grants")
+async def api_factory_consumer_grants(
+    consumer_id: str,
+    current_user: Dict = Depends(require_permission("SERVIDORES_VER")),
+):
+    _ = current_user
+    items = api_factory_service.list_consumer_grants(consumer_id)
+    return {"status": "SUCCESS", "data": items, "count": len(items), "meta": _meta()}
