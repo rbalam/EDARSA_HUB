@@ -1,0 +1,160 @@
+{
+  "base_sha": "90680ab8668bdf084c404f2aa4feb0ae74941a33",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-19T22:56:28Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES-API-FACTORY-H8-READONLY-RUNTIME-CERT-R2-20261019",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-19T22:57:21Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.sql_first.connection_factory",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sistema_apifactoryapi",
+              "sistema_apifactoryconsumer",
+              "sistema_apifactoryconsumergrant",
+              "sistema_apifactoryversion"
+            ],
+            "path": "backend/modules/integrations_center/api_factory_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_rows",
+              "get_overview",
+              "list_apis",
+              "list_consumer_grants",
+              "list_consumers",
+              "list_versions"
+            ],
+            "tables_referenced": [
+              "Sistema_ApiFactoryApi",
+              "Sistema_ApiFactoryConsumer",
+              "Sistema_ApiFactoryConsumerGrant",
+              "Sistema_ApiFactoryVersion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "communications_routes",
+              "core.rbac.middleware",
+              "core.security",
+              "fastapi",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "api-factory",
+              "servidores_ver"
+            ],
+            "path": "backend/modules/integrations_center/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/api-factory/apis",
+              "/api-factory/apis/{api_id}/versions",
+              "/api-factory/consumers",
+              "/api-factory/consumers/{consumer_id}/grants",
+              "/api-factory/overview",
+              "/catalogs",
+              "/communications",
+              "/connections",
+              "/connections/{connection_id}",
+              "/overview"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_meta",
+              "api_factory_apis",
+              "api_factory_consumer_grants",
+              "api_factory_consumers",
+              "api_factory_overview",
+              "api_factory_versions",
+              "catalogs",
+              "communications",
+              "connection_detail",
+              "connections",
+              "overview"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "api-factory",
+              "servidores_ver",
+              "sistema_apifactoryapi",
+              "sistema_apifactoryconsumer",
+              "sistema_apifactoryconsumergrant",
+              "sistema_apifactoryversion"
+            ],
+            "path": "backend/tests/test_api_factory_h8_readonly_persistence.py",
+            "rbac_contracts": [],
+            "routes": [
+              " not in block\n",
+              " not in block\n    assert ",
+              "/api-factory/overview",
+              "{route}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_api_factory_admin_routes_are_read_only_and_rbac_protected",
+              "test_repository_reads_all_h8_tables_without_writes_or_credentials"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 3,
+          "scanned_files": 4,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-19T22:56:24Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
