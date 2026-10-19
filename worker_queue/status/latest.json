@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "eb84591e8f274da8d843eb428e89985f139bb563",
-  "generated_at_utc": "2026-10-19T22:13:29Z",
+  "generated_at_utc": "2026-10-19T22:14:43Z",
   "history": {
     "done_total_local": 1462,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 740,
+      "age_seconds": 815,
       "job_id": "EDARSAHUB-TABLAJERIA-PLANTILLAS-FULL-EXPORT-R1-CARLOS-20261019T214100Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,8 +36,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-19T22:13:20Z",
-    "last_receive_utc": "2026-10-19T22:13:27Z",
+    "last_cycle_utc": "2026-10-19T22:14:41Z",
+    "last_receive_utc": "2026-10-19T22:14:36Z",
     "last_terminal_utc": "2026-10-19T22:01:08Z",
     "pid": "901",
     "runtime_fingerprint": {
