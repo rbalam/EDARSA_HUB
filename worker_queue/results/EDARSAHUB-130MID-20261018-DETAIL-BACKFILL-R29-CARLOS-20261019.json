@@ -1,0 +1,98 @@
+{
+  "base_sha": "eb84591e8f274da8d843eb428e89985f139bb563",
+  "blockers": [],
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-10-19T19:58:38Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-130MID-20261018-DETAIL-BACKFILL-R29-CARLOS-20261019",
+  "operation": "ISCAM_DETAIL_BACKFILL",
+  "operation_summary": {
+    "dias_bloqueados": 0,
+    "dias_candidatos": 0,
+    "dias_evaluados": 1,
+    "dias_reparables": 0,
+    "dias_sin_runtime": 0,
+    "dias_ya_ok": 1,
+    "fecha_fin_exclusivo": "2026-10-19",
+    "fecha_inicio": "2026-10-18",
+    "filas_insertadas": 0,
+    "modo": "COMMIT",
+    "unidades": [
+      {
+        "bloqueados": 0,
+        "candidatos": 0,
+        "dias": [
+          {
+            "fecha_operacion": "2026-10-18",
+            "status": "YA_CONCILIADO"
+          }
+        ],
+        "filas_insertadas": 0,
+        "reparables": 0,
+        "sin_runtime": 0,
+        "unidad": "130MID",
+        "ya_ok": 1
+      }
+    ]
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-19T19:59:10Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "detalle_ventas",
+              "detalle_tickets",
+              "detalle_pax",
+              "runtime_ventas",
+              "runtime_tickets",
+              "runtime_pax",
+              "delta_ventas",
+              "delta_tickets",
+              "delta_pax"
+            ],
+            "name": "130mid_oct18_post_backfill_parity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "192118.00",
+                42,
+                118,
+                "192118.00",
+                42,
+                118,
+                "0.00",
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-19T19:58:36Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto el backfill cerrado de detalle ISCAM para las unidades y fechas autorizadas y certifico el resultado con SQL de solo lectura. No acepto shell, rutas ni comandos externos y no toco Produccion.",
+  "tests": "PASS",
+  "units": [
+    "130MID"
+  ],
+  "work_completion": "COMPLETE"
+}
