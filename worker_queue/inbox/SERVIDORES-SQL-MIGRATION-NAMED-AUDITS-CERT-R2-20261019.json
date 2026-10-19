@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-SQL-MIGRATION-NAMED-AUDITS-CERT-R2-20261019",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Recertificar READ_ONLY SQL_MIGRATION_DEVELOPMENT tras eliminar la validacion legacy duplicada: perfiles nombrados pre/post, cero SQL inline y orden preflight-migracion-postaudit.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_sql_migration_integration_gate6.py",
+        "backend/tests/test_worker_named_readonly_audit_profiles.py",
+        "backend/tests/test_api_factory_h8_canonical_migration.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "backend/tests/test_worker_sql_migration_integration_gate6.py"
+        ],
+        "search_terms": [
+          "preflight_audit_profile",
+          "post_audit_profile",
+          "SQL_MIGRATION_INLINE_SQL_FORBIDDEN",
+          "build_readonly_audit_checks"
+        ],
+        "max_results": 100
+      }
+    }
+  ]
+}
