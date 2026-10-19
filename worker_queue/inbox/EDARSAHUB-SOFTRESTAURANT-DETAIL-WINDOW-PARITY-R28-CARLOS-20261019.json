@@ -1,0 +1,101 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SOFTRESTAURANT-DETAIL-WINDOW-PARITY-R28-CARLOS-20261019",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3d035d0b250752fbb74e5b73bcf245e8385db09d",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Reintento focalizado posterior a R27. Corregir de forma canonica, atomica y transversal solo el contrato de ventana del detalle cerrado SoftRestaurant: encabezado y detalle deben usar [09:00, siguiente 09:00) para 130MID, CIENFUEGOS, ESTELAR y futuras sucursales SoftRestaurant. Actualizar los contratos de prueba legacy directamente afectados. No modificar ManagementPro, sync_comercial_abiertas_v2, scheduler, dashboards, Produccion ni codigo publicado.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "scheduling": {
+    "project_id": "EDARSAHUB_COMERCIAL",
+    "bounded_context": "SOFTRESTAURANT_CLOSED_DETAIL_WINDOW",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [
+      "code:softrestaurant_detail_window",
+      "tests:softrestaurant_detail_window_contract"
+    ],
+    "conflict_domains": ["GLOBAL_GIT_WRITER"]
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "    Para un dia, Reporte Ejecutivo equivale a [00:00:00, siguiente 00:00:00).\n    \"\"\"\n    inicio = datetime.combine(dia, datetime.min.time())\n    if str(cfg.get('unidad_codigo') or '').strip().upper() == 'ESTELAR':\n        inicio += timedelta(hours=9)\n",
+      "new": "    Para toda unidad SoftRestaurant, el contrato es [09:00:00, siguiente\n    09:00:00), exactamente igual al encabezado de ventas cerradas. El codigo\n    de la sucursal identifica la unidad, pero nunca cambia el algoritmo.\n    \"\"\"\n    _ = cfg  # compatibilidad de firma; la regla pertenece al motor SoftRestaurant.\n    inicio = datetime.combine(dia, datetime.min.time()) + timedelta(hours=9)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_soft_detail_window_parity_r35.py",
+      "old": "def test_detail_day_is_calendar_apertura_day():\n    fi, ff = _soft_operational_datetime_range({}, date(2026, 9, 5))\n    assert fi == '2026-09-05 00:00:00'\n    assert ff == '2026-09-06 00:00:00'\n",
+      "new": "def test_detail_day_uses_transversal_softrestaurant_0900_window():\n    for unidad in ('130MID', 'CIENFUEGOS', 'ESTELAR', 'NUEVA_SR'):\n        fi, ff = _soft_operational_datetime_range(\n            {'unidad_codigo': unidad},\n            date(2026, 9, 5),\n        )\n        assert fi == '2026-09-05 09:00:00'\n        assert ff == '2026-09-06 09:00:00'\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_soft_detail_window_parity_r35.py",
+      "old": "    assert \"CONVERT(varchar, tr.apertura, 112) = '{fecha_operacion_sql}'\" in query_block\n",
+      "new": "    assert \"DATEADD(hour, -{offset_hours}, tr.apertura)\" in query_block\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_softrestaurant_canonical_window_join_r40.py",
+      "old": "    assert 'CONVERT(varchar, tr.apertura, 112)' in query_block\n",
+      "new": "    assert 'DATEADD(hour, -{offset_hours}, tr.apertura)' in query_block\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_softrestaurant_canonical_window_join_r40.py",
+      "old": "    assert 'get_operational_datetime_range_for_fecha_operacion' not in detail_range\n",
+      "new": "    assert 'get_operational_datetime_range_for_fecha_operacion' not in detail_range\n    assert 'timedelta(hours=9)' in detail_range\n    assert \"== 'ESTELAR'\" not in detail_range\n    assert \"== 'CIENFUEGOS'\" not in detail_range\n    assert \"== '130MID'\" not in detail_range\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_softrestaurant_header_detail_empresa_parity_r39.py",
+      "old": "def test_softrestaurant_matches_executive_apertura_contract():\n    header = SYNC.read_text(encoding='utf-8')\n    assert 'CONVERT(varchar, tr.apertura, 112)' in header\n    assert 'COUNT(DISTINCT ch.folio)' in header\n    assert 'ch.cancelado = 0' in header\n",
+      "new": "def test_softrestaurant_header_and_detail_share_transversal_0900_contract():\n    header = SYNC.read_text(encoding='utf-8')\n    detail = DETAIL.read_text(encoding='utf-8')\n    detail_range = detail.split(\n        'def _soft_operational_datetime_range', 1\n    )[1].split('def _extract_soft(', 1)[0]\n    assert 'DATEADD(hour, -{offset_hours}, tr.apertura)' in header\n    assert 'offset_hours = 9' in header\n    assert 'timedelta(hours=9)' in detail_range\n    assert \"== 'ESTELAR'\" not in detail_range\n    assert 'COUNT(DISTINCT ch.folio)' in header\n    assert 'ch.cancelado = 0' in header\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_soft_folio_first_contract_r46.py",
+      "old": "    assert 'CONVERT(varchar, tr.apertura, 112)' in block\n",
+      "new": "    assert 'DATEADD(hour, -{offset_hours}, tr.apertura)' in block\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_softrestaurant_detail_window_contract_20261019.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nHEADER = ROOT / 'backend/modules/comercial_v2/sync_comercial_edarsahub.py'\nDETAIL = ROOT / 'backend/scripts/poblar_ventas_detalle_producto_canonico.py'\nPROTECTED_OPEN = ROOT / 'backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py'\n\n\ndef test_softrestaurant_header_and_detail_share_0900_window_contract():\n    header = HEADER.read_text(encoding='utf-8')\n    detail = DETAIL.read_text(encoding='utf-8')\n    helper = detail.split(\n        'def _soft_operational_datetime_range', 1\n    )[1].split('def _extract_soft(', 1)[0]\n\n    assert 'offset_hours = 9' in header\n    assert 'DATEADD(hour, -{offset_hours}, tr.apertura)' in header\n    assert 'timedelta(hours=9)' in helper\n    assert \"== 'ESTELAR'\" not in helper\n    assert \"== 'CIENFUEGOS'\" not in helper\n    assert \"== '130MID'\" not in helper\n\n\ndef test_scope_does_not_modify_protected_open_sales_contract():\n    text = PROTECTED_OPEN.read_text(encoding='utf-8')\n    assert 'PROVISIONAL_COMANDA' in text\n    assert 'MPRO ORIGEN/QRO: API local (NO SQL Server central)' in text\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/tests/test_softrestaurant_detail_window_contract_20261019.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_softrestaurant_detail_window_contract_20261019.py"
+      ]
+    }
+  ]
+}
