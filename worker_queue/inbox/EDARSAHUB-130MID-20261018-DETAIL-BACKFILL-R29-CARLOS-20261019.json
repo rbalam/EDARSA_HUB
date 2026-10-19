@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-130MID-20261018-DETAIL-BACKFILL-R29-CARLOS-20261019",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "eb84591e8f274da8d843eb428e89985f139bb563",
+  "production_allowed": false,
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "objective": "Aplicar la correccion R28 al detalle historico SoftRestaurant de 130MID para 2026-10-18. Reconstruir el detalle cerrado con la ventana canonica transversal [09:00, siguiente 09:00), conciliar contra Runtime/encabezado y dejar el detalle visible completo. No modificar ManagementPro, sync_comercial_abiertas_v2, KPI/Runtime ni Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "units": [
+    "130MID"
+  ],
+  "fecha_inicio": "2026-10-18",
+  "fecha_fin": "2026-10-19",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 20,
+      "queries": [
+        {
+          "name": "130mid_oct18_post_backfill_parity",
+          "sql": "WITH d AS (SELECT numero_ticket,SUM(ISNULL(importe_neto,0)) AS venta_ticket,MAX(ISNULL(pax,0)) AS pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='130MID' AND fecha_operacion='2026-10-18' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND numero_ticket IS NOT NULL GROUP BY numero_ticket), ds AS (SELECT CAST(SUM(venta_ticket) AS decimal(18,2)) AS detalle_ventas,COUNT(*) AS detalle_tickets,SUM(pax_ticket) AS detalle_pax FROM d), r AS (SELECT TOP 1 CAST(ventas_total AS decimal(18,2)) AS runtime_ventas,tickets_total AS runtime_tickets,pax_total AS runtime_pax FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='130MID' AND fecha_operacion='2026-10-18') SELECT ds.detalle_ventas,ds.detalle_tickets,ds.detalle_pax,r.runtime_ventas,r.runtime_tickets,r.runtime_pax,CAST(ds.detalle_ventas-r.runtime_ventas AS decimal(18,2)) AS delta_ventas,ds.detalle_tickets-r.runtime_tickets AS delta_tickets,ds.detalle_pax-r.runtime_pax AS delta_pax FROM ds CROSS JOIN r"
+        }
+      ]
+    }
+  ]
+}
