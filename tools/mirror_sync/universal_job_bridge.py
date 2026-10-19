@@ -470,14 +470,14 @@ def validate(job: Any) -> list[str]:
             errors.append("SQL_MIGRATION_SHA256_INVALID")
         if job.get("confirm_sql_migration") is not True:
             errors.append("SQL_MIGRATION_CONFIRMATION_REQUIRED")
-        preflight_checks = job.get("preflight_checks")
-        if not isinstance(preflight_checks, list) or not preflight_checks:
-            errors.append("SQL_MIGRATION_PREFLIGHT_REQUIRED")
-        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in preflight_checks):
-            errors.append("SQL_MIGRATION_PREFLIGHT_ONLY_SQL_AUDIT_ALLOWED")
-        else:
-            for index, check in enumerate(preflight_checks, 1):
-                errors.extend(validate_check(check, index))
+        preflight_profile = str(job.get("preflight_audit_profile") or "").strip()
+        post_profile = str(job.get("post_audit_profile") or "").strip()
+        if not preflight_profile or not is_allowed_readonly_audit_profile(preflight_profile):
+            errors.append("SQL_MIGRATION_PREFLIGHT_PROFILE_REQUIRED")
+        if not post_profile or not is_allowed_readonly_audit_profile(post_profile):
+            errors.append("SQL_MIGRATION_POST_PROFILE_REQUIRED")
+        if job.get("preflight_checks") not in (None, []) or job.get("checks") not in (None, []):
+            errors.append("SQL_MIGRATION_INLINE_SQL_FORBIDDEN")
     elif mode == FRONTEND_BUILD_CERTIFICATION_MODE:
         if actions not in (None, []):
             errors.append("FRONTEND_BUILD_CERTIFICATION_ACTIONS_FORBIDDEN")
