@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install isolated test runner
-        run: python -m pip install "pytest==9.0.2"
+        run: python -m pip install "pytest==9.0.2" "python-dotenv==1.1.1"
       - name: Validate OAuth Discovery PKCE and Security
         env:
           PYTHONPATH: ${{ github.workspace }}/backend
