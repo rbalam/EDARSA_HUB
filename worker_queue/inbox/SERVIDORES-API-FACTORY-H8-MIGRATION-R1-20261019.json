@@ -1,0 +1,19 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-API-FACTORY-H8-MIGRATION-R1-20261019",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Ejecutar en Desarrollo la migracion canonica H8 API Factory para crear las seis tablas faltantes. Usar writer SQL canonico existente con opt-in explicito; preflight y post-audit exclusivamente mediante el perfil nombrado api_factory_persistence_state_v1. No SQL inline, no secretos, no Produccion.",
+  "human_summary_language": "es",
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20261015_integrations_api_factory.sql",
+  "migration_sha256": "9c7d00a137e9f14e3bcc563d79c12401f527039af33f6f3a59450ed0d27efaa3",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "preflight_audit_profile": "api_factory_persistence_state_v1",
+  "post_audit_profile": "api_factory_persistence_state_v1",
+  "preflight_checks": [],
+  "checks": []
+}
