@@ -1,0 +1,40 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-API-FACTORY-H8-UI-CERT-R1-20261019",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Certificar READ_ONLY que API Factory H8 esta integrado en la pantalla canonica frontend/src/pages/Servidores.js como quinto tab, consume solo endpoints GET certificados, no expone secretos y no incorpora acciones writer.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_servidores_api_factory_ui_contract.py",
+        "backend/tests/test_api_factory_h8_readonly_persistence.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/Servidores.js",
+          "backend/tests/test_servidores_api_factory_ui_contract.py",
+          "backend/modules/integrations_center/routes.py"
+        ],
+        "search_terms": [
+          "api-factory",
+          "tab-api-factory",
+          "api-factory-readonly",
+          "SERVIDORES_VER"
+        ],
+        "max_results": 100
+      }
+    }
+  ]
+}
