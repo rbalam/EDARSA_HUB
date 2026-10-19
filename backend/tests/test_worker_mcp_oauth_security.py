@@ -63,3 +63,30 @@ def test_unknown_scope_denied():
 def test_missing_scope_set_denied():
     with pytest.raises(OAuthValidationError):
         require_tool_scope("worker:status", None)
+
+def test_both_scopes_require_explicit_identity_and_consent():
+    both = frozenset({"worker:status", "worker:submit"})
+    assert grant(requested_scopes="worker:status worker:submit",
+                 identity_scopes=both, consented_scopes=both) == both
+
+
+def test_submit_without_consent_denied():
+    with pytest.raises(OAuthValidationError, match="CONSENT_REQUIRED"):
+        grant(requested_scopes="worker:submit",
+              identity_scopes=frozenset({"worker:submit"}))
+
+
+def test_identity_scope_escalation_denied():
+    with pytest.raises(OAuthValidationError, match="SCOPES_FORBIDDEN"):
+        grant(requested_scopes="worker:submit",
+              consented_scopes=frozenset({"worker:submit"}))
+
+
+def test_non_frozenset_consent_denied():
+    with pytest.raises(OAuthValidationError, match="CONSENT_REQUIRED"):
+        grant(consented_scopes={"worker:status"})
+
+
+def test_unknown_tool_scope_denied_even_when_granted():
+    with pytest.raises(OAuthValidationError, match="TOOL_SCOPE_NOT_CONFIGURED"):
+        require_tool_scope("worker:admin", frozenset({"worker:admin"}))
