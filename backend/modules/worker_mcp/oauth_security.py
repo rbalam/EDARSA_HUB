@@ -24,11 +24,18 @@ def require_tool_scope(required_scope: str, granted_scopes: frozenset[str]) -> N
 def _validate_resource(url: str) -> None:
     if not isinstance(url, str) or not url:
         raise OAuthValidationError("RESOURCE_INVALID")
-    parts = urlsplit(url)
+    try:
+        parts = urlsplit(url)
+        port = parts.port
+    except ValueError as exc:
+        raise OAuthValidationError("RESOURCE_INVALID") from exc
     if (
         parts.scheme != "https"
         or not parts.netloc
         or not parts.hostname
+        or port is not None and not (1 <= port <= 65535)
+        or any(ch.isspace() for ch in url)
+        or "\\" in url
         or parts.username is not None
         or parts.password is not None
         or parts.query
