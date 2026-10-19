@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "f77295e9880457836a50dd56296d521bcf22ef21",
-  "generated_at_utc": "2026-10-19T22:44:04Z",
+  "generated_at_utc": "2026-10-19T22:45:35Z",
   "history": {
     "done_total_local": 1463,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2576,
+      "age_seconds": 2666,
       "job_id": "EDARSAHUB-TABLAJERIA-PLANTILLAS-FULL-EXPORT-R1-CARLOS-20261019T214100Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 314,
+      "age_seconds": 404,
       "job_id": "SERVIDORES-SQL-MIGRATION-NAMED-AUDITS-CERT-R1-20261019",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 36,
+      "age_seconds": 126,
       "job_id": "SERVIDORES-SQL-MIGRATION-NAMED-AUDITS-CERT-R2-20261019",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,12 +48,12 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-19T22:43:58Z",
-    "last_receive_utc": "2026-10-19T22:43:53Z",
+    "last_cycle_utc": "2026-10-19T22:45:30Z",
+    "last_receive_utc": "2026-10-19T22:45:25Z",
     "last_terminal_utc": "2026-10-19T22:43:28Z",
-    "pid": "105968",
+    "pid": "110625",
     "runtime_fingerprint": {
-      "active_worker_code_tree_sha": "69d28de003a6bcec27b1bd99266db4bbb13e634a",
+      "active_worker_code_tree_sha": "ae9ebc1d1120a14bc75923e30f0276b0f7bdc0cb",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
       "development_sha": "f77295e9880457836a50dd56296d521bcf22ef21",
@@ -70,7 +70,7 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": false,
+      "worker_code_tree_aligned": true,
       "worker_code_tree_sha": "ae9ebc1d1120a14bc75923e30f0276b0f7bdc0cb"
     }
   },
