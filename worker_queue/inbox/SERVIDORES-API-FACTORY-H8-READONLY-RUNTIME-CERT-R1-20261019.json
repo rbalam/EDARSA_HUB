@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-API-FACTORY-H8-READONLY-RUNTIME-CERT-R1-20261019",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Certificar READ_ONLY la integracion runtime administrativa H8: repository y service leen persistencia API Factory, endpoints GET protegidos por SERVIDORES_VER, sin writers, sin secretos y sin publicar APIs externas.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/integrations_center/api_factory_repository.py",
+        "backend/modules/integrations_center/api_factory_service.py",
+        "backend/modules/integrations_center/routes.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_api_factory_h8_readonly_persistence.py",
+        "backend/tests/test_api_factory_h8_canonical_migration.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/integrations_center/api_factory_repository.py",
+          "backend/modules/integrations_center/api_factory_service.py",
+          "backend/modules/integrations_center/routes.py",
+          "backend/tests/test_api_factory_h8_readonly_persistence.py"
+        ],
+        "search_terms": [
+          "Sistema_ApiFactoryApi",
+          "Sistema_ApiFactoryVersion",
+          "Sistema_ApiFactoryConsumer",
+          "Sistema_ApiFactoryConsumerGrant",
+          "SERVIDORES_VER",
+          "api-factory"
+        ],
+        "max_results": 100
+      }
+    }
+  ]
+}
