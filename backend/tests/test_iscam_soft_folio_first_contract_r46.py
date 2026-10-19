@@ -15,7 +15,7 @@ def test_header_reuses_executive_ticket_population_contract():
     block = header.split('QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA =', 1)[1].split('def build_softrestaurant_ventas_cerradas_query', 1)[0]
     assert 'INNER JOIN turnos AS tr' in block
     assert 'ON tr.idturno = ch.idturno' in block
-    assert 'CONVERT(varchar, tr.apertura, 112)' in block
+    assert 'DATEADD(hour, -{offset_hours}, tr.apertura)' in block
     assert 'ch.cancelado = 0' in block
     assert '09:00:00' not in block
     assert 'cierre IS NOT NULL' not in block

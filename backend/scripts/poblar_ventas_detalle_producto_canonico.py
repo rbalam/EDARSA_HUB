@@ -707,11 +707,12 @@ def _unidad_operativa_id_for_window(cfg: Dict[str, Any]) -> str:
 def _soft_operational_datetime_range(cfg: Dict[str, Any], dia: date) -> Tuple[str, str]:
     """Rango diario equivalente al filtro por fecha de turnos.apertura.
 
-    Para un dia, Reporte Ejecutivo equivale a [00:00:00, siguiente 00:00:00).
+    Para toda unidad SoftRestaurant, el contrato es [09:00:00, siguiente
+    09:00:00), exactamente igual al encabezado de ventas cerradas. El codigo
+    de la sucursal identifica la unidad, pero nunca cambia el algoritmo.
     """
-    inicio = datetime.combine(dia, datetime.min.time())
-    if str(cfg.get('unidad_codigo') or '').strip().upper() == 'ESTELAR':
-        inicio += timedelta(hours=9)
+    _ = cfg  # compatibilidad de firma; la regla pertenece al motor SoftRestaurant.
+    inicio = datetime.combine(dia, datetime.min.time()) + timedelta(hours=9)
     fin = inicio + timedelta(days=1)
     return (
         inicio.strftime("%Y-%m-%d %H:%M:%S"),

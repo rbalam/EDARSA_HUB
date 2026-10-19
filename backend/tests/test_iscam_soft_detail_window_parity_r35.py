@@ -8,17 +8,21 @@ SYNC = ROOT / 'backend' / 'modules' / 'comercial_v2' / 'sync_comercial_edarsahub
 DETAIL = ROOT / 'backend' / 'scripts' / 'poblar_ventas_detalle_producto_canonico.py'
 
 
-def test_detail_day_is_calendar_apertura_day():
-    fi, ff = _soft_operational_datetime_range({}, date(2026, 9, 5))
-    assert fi == '2026-09-05 00:00:00'
-    assert ff == '2026-09-06 00:00:00'
+def test_detail_day_uses_transversal_softrestaurant_0900_window():
+    for unidad in ('130MID', 'CIENFUEGOS', 'ESTELAR', 'NUEVA_SR'):
+        fi, ff = _soft_operational_datetime_range(
+            {'unidad_codigo': unidad},
+            date(2026, 9, 5),
+        )
+        assert fi == '2026-09-05 09:00:00'
+        assert ff == '2026-09-06 09:00:00'
 
 
 def test_header_and_detail_select_by_turnos_apertura_only():
     header = SYNC.read_text(encoding='utf-8')
     detail = DETAIL.read_text(encoding='utf-8')
     query_block = header.split('QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA =', 1)[1].split('def build_softrestaurant_ventas_cerradas_query', 1)[0]
-    assert "CONVERT(varchar, tr.apertura, 112) = '{fecha_operacion_sql}'" in query_block
+    assert "DATEADD(hour, -{offset_hours}, tr.apertura)" in query_block
     assert 'ch.cancelado = 0' in query_block
     assert 'cierre IS NOT NULL' not in query_block
     assert 'idempresa' not in query_block
