@@ -1,0 +1,673 @@
+{
+  "base_sha": "dc7d2eecad33d3c8c730b3ac2924e3a4a67d8978",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-20T22:29:58Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-DASHBOARD-INSIGHTS-PILOT-DAY-AUDIT-R1D-CARLOS-20261020",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T22:30:48Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "sistema_origen",
+              "fecha_operacion",
+              "cancelado_origen",
+              "es_kpi_valido",
+              "filas",
+              "filas_descuento_no_nulo",
+              "descuento_guardado",
+              "bruto_guardado",
+              "neto_guardado",
+              "filas_header",
+              "filas_producto_id",
+              "filas_cantidad_cero"
+            ],
+            "name": "day_detail_by_state",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "CIENFUEGOS",
+                "SOFTRESTAURANT",
+                "2026-10-15",
+                false,
+                true,
+                "950",
+                "950",
+                "12500.3363",
+                "216125.3363",
+                "203625.0000",
+                "950",
+                "0",
+                38
+              ],
+              [
+                "ORIGEN",
+                "MPRO",
+                "2026-10-15",
+                false,
+                true,
+                "268",
+                "268",
+                "-3509.8730",
+                "31233.6120",
+                "34743.4850",
+                "268",
+                "0",
+                23
+              ],
+              [
+                "ORIGEN",
+                "MPRO",
+                "2026-10-15",
+                true,
+                false,
+                "31",
+                "31",
+                "0.0000",
+                "0.0000",
+                "0.0000",
+                "31",
+                "0",
+                31
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "sistema_origen",
+              "tickets_con_estado_valido",
+              "tickets_descuento_positivo",
+              "tickets_neto_cero",
+              "tickets_sin_header",
+              "tickets_header_conflictivo",
+              "descuento_guardado",
+              "bruto_guardado",
+              "neto_guardado",
+              "headers_unicos"
+            ],
+            "name": "day_ticket_rollup_diagnostic",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "CIENFUEGOS",
+                "SOFTRESTAURANT",
+                "55",
+                39,
+                1,
+                0,
+                0,
+                "12500.3363",
+                "216125.3363",
+                "203625.0000",
+                "203625.0000"
+              ],
+              [
+                "ORIGEN",
+                "MPRO",
+                "23",
+                6,
+                1,
+                0,
+                0,
+                "-3509.8730",
+                "31233.6120",
+                "34743.4850",
+                "34743.4850"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "UnidadNegocio",
+              "SistemaOrigen",
+              "FormaPagoCodigo",
+              "pagos",
+              "pagos_con_ticket",
+              "pagos_con_id_origen",
+              "importe",
+              "propina"
+            ],
+            "name": "day_payments_by_method",
+            "row_count_returned": 9,
+            "rows": [
+              [
+                "CIENFUEGOS",
+                "SoftRestaurant",
+                "01",
+                "25",
+                "25",
+                "0",
+                "50337.50",
+                "0.0000"
+              ],
+              [
+                "CIENFUEGOS",
+                "SoftRestaurant",
+                "10",
+                "19",
+                "19",
+                "0",
+                "71080.00",
+                "4942.8500"
+              ],
+              [
+                "CIENFUEGOS",
+                "SoftRestaurant",
+                "11",
+                "15",
+                "15",
+                "0",
+                "21345.00",
+                "2605.5500"
+              ],
+              [
+                "CIENFUEGOS",
+                "SoftRestaurant",
+                "12",
+                "12",
+                "12",
+                "0",
+                "41436.50",
+                "6734.2800"
+              ],
+              [
+                "CIENFUEGOS",
+                "SoftRestaurant",
+                "20",
+                "1",
+                "1",
+                "0",
+                "660.00",
+                "0.0000"
+              ],
+              [
+                "CIENFUEGOS",
+                "SoftRestaurant",
+                "24",
+                "3",
+                "3",
+                "0",
+                "18766.00",
+                "2729.9000"
+              ],
+              [
+                "ORIGEN",
+                "MPRO",
+                "0001",
+                "5",
+                "5",
+                "0",
+                "4632.50",
+                "0.0000"
+              ],
+              [
+                "ORIGEN",
+                "MPRO",
+                "0004",
+                "4",
+                "4",
+                "0",
+                "4406.50",
+                "535.5000"
+              ],
+              [
+                "ORIGEN",
+                "MPRO",
+                "0005",
+                "4",
+                "4",
+                "0",
+                "4206.30",
+                "524.3000"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "sistema_origen",
+              "clasificacion",
+              "filas",
+              "filas_producto_enlazado",
+              "neto_guardado",
+              "cantidad",
+              "enlaces_servidor_distinto"
+            ],
+            "name": "day_classification_link_diagnostic",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "CIENFUEGOS",
+                "SOFTRESTAURANT",
+                null,
+                "950",
+                "0",
+                "203625.0000",
+                "1646.0000",
+                0
+              ],
+              [
+                "ORIGEN",
+                "MPRO",
+                null,
+                "268",
+                "0",
+                "34743.4850",
+                "2787.0000",
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "codigo",
+              "sistema_origen",
+              "fecha_operacion",
+              "snapshot_timestamp",
+              "json_valido",
+              "json_bytes",
+              "tipo_raiz"
+            ],
+            "name": "latest_snapshot_structure",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "CIENFUEGOS",
+                "SOFTRESTAURANT",
+                "2026-10-20",
+                "2026-10-20 22:28:09.7736560",
+                1,
+                "206154",
+                "["
+              ],
+              [
+                "ORIGEN",
+                "MPRO",
+                "2026-10-20",
+                "2026-10-20 22:28:20.4542660",
+                1,
+                "925890",
+                "["
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "codigo",
+              "fecha_operacion",
+              "campo",
+              "tipo_json"
+            ],
+            "name": "snapshot_first_item_money_keys_only",
+            "row_count_returned": 42,
+            "rows": [
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "cantidad",
+                2
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "descuento_encabezado_reportado",
+                2
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "descuento_pct",
+                2
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "descuento_producto",
+                2
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "descuento_total_reportado",
+                2
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "estado_ticket",
+                1
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "folio",
+                1
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "folio_origen",
+                1
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "importe_bruto",
+                2
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "importe_neto_producto",
+                2
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "partida_comentario_cancelacion",
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "partida_comentario_descuento",
+                1
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "precio_unitario",
+                2
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "producto_codigo",
+                1
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "ticket_comentario_descuento",
+                1
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "ticket_subtotal",
+                2
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "ticket_total",
+                2
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "tipo_descuento_descripcion",
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "tipo_descuento_id",
+                1
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "tipo_descuento_valor",
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "total_ticket",
+                2
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "cantidad",
+                2
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "descuento_encabezado_reportado",
+                2
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "descuento_pct",
+                2
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "descuento_producto",
+                2
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "descuento_total_reportado",
+                2
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "estado_ticket",
+                1
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "folio",
+                1
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "folio_origen",
+                1
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "importe_bruto",
+                2
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "importe_neto_producto",
+                2
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "partida_comentario_cancelacion",
+                1
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "partida_comentario_descuento",
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "precio_unitario",
+                2
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "producto_codigo",
+                1
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "ticket_comentario_descuento",
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "ticket_subtotal",
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "ticket_total",
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "tipo_descuento_descripcion",
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "tipo_descuento_id",
+                1
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "tipo_descuento_valor",
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-10-20",
+                "total_ticket",
+                2
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "sistema_origen",
+              "fecha_operacion",
+              "ventas_total",
+              "ventas_sin_propina",
+              "propinas_total",
+              "tickets_total",
+              "pax_total",
+              "activo"
+            ],
+            "name": "day_existing_kpi_baseline",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "CIENFUEGOS",
+                "SOFTRESTAURANT",
+                "2026-10-15",
+                "203625.00",
+                "203625.00",
+                "17012.58",
+                55,
+                144,
+                true
+              ],
+              [
+                "ORIGEN",
+                "MPRO",
+                "2026-10-15",
+                "34743.49",
+                "34743.49",
+                "3738.10",
+                23,
+                60,
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-20T22:29:48Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
