@@ -104,8 +104,46 @@ const Servidores = () => {
   const [syncingSucursales, setSyncingSucursales] = useState(false);
   const [serverForSucursales, setServerForSucursales] = useState(null);
   
-  // Estado para el tab activo (SQL Servers o Conexiones API)
+  // Estado para el tab activo
   const [activeMainTab, setActiveMainTab] = useState('sql');
+
+  // ========== API FACTORY H8 - SOLO LECTURA ==========
+  const [apiFactoryOverview, setApiFactoryOverview] = useState({
+    apis: 0,
+    versions: 0,
+    consumers: 0,
+    grants: 0
+  });
+  const [apiFactoryApis, setApiFactoryApis] = useState([]);
+  const [apiFactoryConsumers, setApiFactoryConsumers] = useState([]);
+  const [loadingApiFactory, setLoadingApiFactory] = useState(false);
+
+  const loadApiFactory = useCallback(async () => {
+    setLoadingApiFactory(true);
+    try {
+      const [overviewResponse, apisResponse, consumersResponse] = await Promise.all([
+        api.get('/integrations-center/api-factory/overview'),
+        api.get('/integrations-center/api-factory/apis'),
+        api.get('/integrations-center/api-factory/consumers')
+      ]);
+      setApiFactoryOverview(overviewResponse.data?.data || {
+        apis: 0,
+        versions: 0,
+        consumers: 0,
+        grants: 0
+      });
+      setApiFactoryApis(apisResponse.data?.data || []);
+      setApiFactoryConsumers(consumersResponse.data?.data || []);
+    } catch (error) {
+      console.error('Error cargando API Factory:', error);
+      setApiFactoryOverview({ apis: 0, versions: 0, consumers: 0, grants: 0 });
+      setApiFactoryApis([]);
+      setApiFactoryConsumers([]);
+      toast.error('Error al cargar API Factory');
+    } finally {
+      setLoadingApiFactory(false);
+    }
+  }, []);
 
   // ========== ESTADO BITÁCORA ADMIN CORE ==========
   const [coreAuditLog, setCoreAuditLog] = useState([]);
@@ -131,7 +169,10 @@ const Servidores = () => {
     if (activeMainTab === 'bitacora') {
       loadCoreAuditLog();
     }
-  }, [activeMainTab, loadCoreAuditLog]);
+    if (activeMainTab === 'api-factory') {
+      loadApiFactory();
+    }
+  }, [activeMainTab, loadCoreAuditLog, loadApiFactory]);
   
   // Estado para Conexiones API
   const [apiConnections, setApiConnections] = useState([]);
@@ -1384,9 +1425,9 @@ const Servidores = () => {
         </div>
       </div>
 
-      {/* Tabs principales: SQL Servers | Conexiones API | Vtiger CRM */}
+      {/* Tabs principales del Centro de Conexiones */}
       <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
-        <TabsList className="grid w-full max-w-2xl grid-cols-4 mb-6">
+        <TabsList className="grid w-full max-w-4xl grid-cols-5 mb-6">
           <TabsTrigger value="sql" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
             SQL Servers
@@ -1398,6 +1439,10 @@ const Servidores = () => {
           <TabsTrigger value="vtiger" className="flex items-center gap-2">
             <Link2 className="h-4 w-4" />
             Vtiger CRM
+          </TabsTrigger>
+          <TabsTrigger value="api-factory" className="flex items-center gap-2" data-testid="tab-api-factory" data-enterprise-tab-id="sistema.servidores.api-factory">
+            <Code className="h-4 w-4" />
+            API Factory
           </TabsTrigger>
           <TabsTrigger value="bitacora" className="flex items-center gap-2" data-testid="tab-bitacora-core">
             <History className="h-4 w-4" />
@@ -2319,6 +2364,103 @@ const Servidores = () => {
               <p className="text-sm mt-1">Agrega una conexión para obtener datos en tiempo real</p>
             </div>
           )}
+        </TabsContent>
+
+        {/* Tab: API Factory H8 - solo lectura */}
+        <TabsContent value="api-factory">
+          <div className="space-y-6" data-testid="api-factory-readonly">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-zinc-800">API Factory</h3>
+                <p className="text-sm text-zinc-500">
+                  Catálogo administrativo de APIs, versiones y consumidores. Solo lectura.
+                </p>
+              </div>
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                H8 · READ ONLY
+              </Badge>
+            </div>
+
+            {loadingApiFactory ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    ['APIs', apiFactoryOverview.apis],
+                    ['Versiones', apiFactoryOverview.versions],
+                    ['Consumidores', apiFactoryOverview.consumers],
+                    ['Permisos', apiFactoryOverview.grants]
+                  ].map(([label, value]) => (
+                    <Card key={label}>
+                      <CardContent className="pt-5">
+                        <p className="text-xs uppercase tracking-wide text-zinc-500">{label}</p>
+                        <p className="text-2xl font-bold text-zinc-900 mt-1">{value || 0}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">APIs registradas</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {apiFactoryApis.length === 0 ? (
+                      <div className="text-sm text-zinc-500 py-4">
+                        No hay APIs registradas todavía.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {apiFactoryApis.map((item) => (
+                          <div key={item.api_id} className="flex items-center justify-between rounded-lg border border-zinc-200 p-3">
+                            <div>
+                              <p className="font-medium text-zinc-900">{item.name || item.api_code}</p>
+                              <p className="text-xs text-zinc-500">{item.api_code} · {item.auth_mode}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">{item.status}</Badge>
+                              <span className="text-xs text-zinc-500">{item.version_count || 0} versiones</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Consumidores</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {apiFactoryConsumers.length === 0 ? (
+                      <div className="text-sm text-zinc-500 py-4">
+                        No hay consumidores registrados todavía.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {apiFactoryConsumers.map((item) => (
+                          <div key={item.consumer_id} className="flex items-center justify-between rounded-lg border border-zinc-200 p-3">
+                            <div>
+                              <p className="font-medium text-zinc-900">{item.name || item.consumer_code}</p>
+                              <p className="text-xs text-zinc-500">{item.consumer_code}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">{item.status}</Badge>
+                              <span className="text-xs text-zinc-500">{item.grant_count || 0} permisos</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
         </TabsContent>
 
         {/* Tab: Vtiger CRM */}

@@ -592,15 +592,13 @@ def validate(job: Any) -> list[str]:
         elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
             errors.append("ISCAM_PAYMENTS_ONLY_ONLY_SQL_AUDIT_ALLOWED")
     elif mode == SERVER_REGISTRY_METADATA_UPDATE_MODE:
-        if not isinstance(checks, list) or not checks:
-            errors.append("SERVER_REGISTRY_METADATA_UPDATE_POST_AUDIT_REQUIRED")
-        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
-            errors.append("SERVER_REGISTRY_METADATA_UPDATE_POST_ONLY_SQL_AUDIT_ALLOWED")
+        # Pre/post SQL audits are materialized exclusively from named profiles
+        # in the mode-specific validation above; inline checks are forbidden.
+        checks = []
     elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:
-        if not isinstance(checks, list) or not checks:
-            errors.append("SQL_MIGRATION_POST_AUDIT_REQUIRED")
-        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
-            errors.append("SQL_MIGRATION_POST_ONLY_SQL_AUDIT_ALLOWED")
+        # Pre/post SQL audits are materialized exclusively from named profiles
+        # in the mode-specific validation above; inline checks are forbidden.
+        checks = []
     elif mode == FRONTEND_BUILD_CERTIFICATION_MODE:
         if not isinstance(checks, list) or not checks:
             errors.append("FRONTEND_BUILD_CERTIFICATION_CHECK_REQUIRED")
