@@ -40,3 +40,14 @@ def test_role_mutations_retain_admin_gate():
             and node.func.id == "require_admin"
             for node in ast.walk(fn)
         ), f"{name} must retain its existing admin role gate"
+
+
+def test_catalog_permissions_global_write_requires_superadmin_sql():
+    fn = _routes()["save_permisos_catalogos"]
+    source = ast.get_source_segment(SOURCE.read_text(encoding="utf-8"), fn)
+    assert 'require_explicit_permission("RBAC_ADMIN")' in source
+    assert "SUPERADMIN" in source and "SUPERADMINISTRADOR" in source
+    assert "Usuario_RolesAsignacion" in source
+    assert "actor_email" in source
+    assert "status_code=403" in source
+    assert source.index("if not cur.fetchone():") < source.index("UPDATE dbo.Usuario_PermisosCatalogosFlujo")
