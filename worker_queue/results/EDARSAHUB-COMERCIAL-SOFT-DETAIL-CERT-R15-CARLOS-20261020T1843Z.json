@@ -1,0 +1,387 @@
+{
+  "base_sha": "d652050b9bb8f7e9f860eacb8b18658d575a60a9",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-20T18:45:23Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-CERT-R15-CARLOS-20261020T1843Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T18:46:55Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "unidad_nombre",
+              "system_type",
+              "server_id",
+              "turno_codigo",
+              "turno_nombre",
+              "hora_inicio",
+              "hora_fin",
+              "cruza_medianoche",
+              "aplica_ventas_dia",
+              "orden",
+              "turno_activo"
+            ],
+            "name": "soft_units_and_operational_periods",
+            "row_count_returned": 9,
+            "rows": [
+              [
+                "130MID",
+                "130° MERIDA",
+                "SoftRestaurant",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "DESAYUNO",
+                "Desayuno",
+                "07:00:00",
+                "12:59:00",
+                false,
+                true,
+                1,
+                false
+              ],
+              [
+                "130MID",
+                "130° MERIDA",
+                "SoftRestaurant",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "COMIDA",
+                "Comida",
+                "13:00:00",
+                "18:59:00",
+                false,
+                true,
+                2,
+                true
+              ],
+              [
+                "130MID",
+                "130° MERIDA",
+                "SoftRestaurant",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "CENA",
+                "Cena",
+                "19:00:00",
+                "12:59:00",
+                true,
+                true,
+                3,
+                true
+              ],
+              [
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "SoftRestaurant",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "DESAYUNO",
+                "Desayuno",
+                "08:00:00",
+                "12:59:00",
+                false,
+                true,
+                1,
+                false
+              ],
+              [
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "SoftRestaurant",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "COMIDA",
+                "Comida",
+                "13:00:00",
+                "18:59:00",
+                false,
+                true,
+                2,
+                true
+              ],
+              [
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "SoftRestaurant",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "CENA",
+                "Cena",
+                "19:00:00",
+                "12:59:00",
+                true,
+                true,
+                3,
+                true
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "SoftRestaurant",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "DESAYUNO",
+                "Desayuno",
+                "08:00:00",
+                "12:59:00",
+                false,
+                true,
+                1,
+                false
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "SoftRestaurant",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "COMIDA",
+                "Comida",
+                "13:00:00",
+                "18:59:00",
+                false,
+                true,
+                2,
+                true
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "SoftRestaurant",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "CENA",
+                "Cena",
+                "19:00:00",
+                "12:59:00",
+                true,
+                true,
+                3,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "ventas_total",
+              "propinas_total",
+              "tickets_total",
+              "pax_total",
+              "ventas_abiertas",
+              "es_venta_abierta",
+              "es_corte_cerrado",
+              "fuente_original",
+              "sync_run_id",
+              "fecha_ultima_actualizacion"
+            ],
+            "name": "soft_runtime_oct19",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                "2026-10-19",
+                "55983.00",
+                "5426.40",
+                8,
+                22,
+                "0.00",
+                false,
+                true,
+                "API_LOCAL",
+                "INCR-20261020-060158-5211",
+                "2026-10-20 06:02:00.1962939"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-19",
+                "49249.48",
+                "5850.52",
+                13,
+                38,
+                "49249.48",
+                true,
+                false,
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                "INCR-20261019-185548-ec82",
+                "2026-10-20 18:42:00.1507229"
+              ],
+              [
+                "ESTELAR",
+                "2026-10-19",
+                "25128.00",
+                "3346.40",
+                18,
+                47,
+                "0.00",
+                false,
+                true,
+                "API_LOCAL",
+                "INCR-20261020-070224-61a2",
+                "2026-10-20 07:02:31.0045957"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "tickets_visibles",
+              "venta_visible",
+              "pax_visible"
+            ],
+            "name": "soft_detail_visible_oct19",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "130MID",
+                "2026-10-19",
+                8,
+                "55983.00",
+                22
+              ],
+              [
+                "ESTELAR",
+                "2026-10-19",
+                18,
+                "25128.00",
+                47
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "sistema_origen",
+              "filas",
+              "tickets_fisicos",
+              "numeros_ticket",
+              "venta_fisica",
+              "pax_fisico",
+              "filas_inactivas",
+              "filas_no_kpi",
+              "filas_canceladas",
+              "filas_sin_ticket",
+              "ultima_sincronizacion",
+              "ultimo_run_id"
+            ],
+            "name": "soft_detail_rows_oct19",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "130MID",
+                "2026-10-19",
+                "SOFTRESTAURANT",
+                "160",
+                8,
+                8,
+                "55983.00",
+                22,
+                0,
+                0,
+                0,
+                0,
+                "2026-10-20 18:35:15.5650000",
+                "backfill_detalle_20261020_183513_6fc84c"
+              ],
+              [
+                "ESTELAR",
+                "2026-10-19",
+                "SOFTRESTAURANT",
+                "191",
+                18,
+                18,
+                "25128.00",
+                47,
+                0,
+                0,
+                0,
+                0,
+                "2026-10-20 18:35:26.4620000",
+                "backfill_detalle_20261020_183513_6fc84c"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "runtime_venta",
+              "detalle_venta",
+              "delta_venta",
+              "runtime_tickets",
+              "detalle_tickets",
+              "delta_tickets",
+              "runtime_pax",
+              "detalle_pax",
+              "delta_pax"
+            ],
+            "name": "soft_detail_vs_runtime_oct19",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                "2026-10-19",
+                "55983.00",
+                "55983.00",
+                "0.00",
+                8,
+                8,
+                0,
+                22,
+                22,
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-19",
+                "49249.48",
+                null,
+                "-49249.48",
+                13,
+                null,
+                -13,
+                38,
+                null,
+                -38
+              ],
+              [
+                "ESTELAR",
+                "2026-10-19",
+                "25128.00",
+                "25128.00",
+                "0.00",
+                18,
+                18,
+                0,
+                47,
+                47,
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-20T18:45:22Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
