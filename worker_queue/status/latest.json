@@ -3,8 +3,8 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "d7847ca7a09cffc02ff05eee2d12a5addc38cdb2",
-  "generated_at_utc": "2026-10-20T16:33:26Z",
+  "development_sha": "7dfb4cf507af267ddc0f9c7a25637483034c00d3",
+  "generated_at_utc": "2026-10-20T16:34:49Z",
   "history": {
     "done_total_local": 1473,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1856,
+      "age_seconds": 1939,
       "job_id": "BOS-RBAC-U2-R1A-CORPORATE-SCOPE-DISCOVERY-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1121,
+      "age_seconds": 1204,
       "job_id": "BOS-RBAC-U2-R1B-EMPRESA-ASIGNACION-ORIGEN-VIGENCIA-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "d7847ca7a09cffc02ff05eee2d12a5addc38cdb2",
+  "local_development_sha": "7dfb4cf507af267ddc0f9c7a25637483034c00d3",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -38,19 +38,19 @@
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 2,
   "queue_running": 0,
-  "remote_development_sha": "d7847ca7a09cffc02ff05eee2d12a5addc38cdb2",
+  "remote_development_sha": "7dfb4cf507af267ddc0f9c7a25637483034c00d3",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-20T16:33:22Z",
-    "last_receive_utc": "2026-10-20T16:33:17Z",
+    "last_cycle_utc": "2026-10-20T16:34:34Z",
+    "last_receive_utc": "2026-10-20T16:34:45Z",
     "last_terminal_utc": "2026-10-20T16:14:44Z",
     "pid": "87611",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "66986ac55972fac9633f274cb447d9101c49402a",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "d7847ca7a09cffc02ff05eee2d12a5addc38cdb2",
+      "development_sha": "7dfb4cf507af267ddc0f9c7a25637483034c00d3",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
