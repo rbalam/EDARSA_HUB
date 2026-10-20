@@ -1,0 +1,63 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-RUNTIME-AUDIT-R16-CARLOS-20261020T1850Z",
+  "created_at_utc": "2026-10-20T18:50:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d652050b9bb8f7e9f860eacb8b18658d575a60a9",
+  "production_allowed": false,
+  "objective": "Auditar en solo lectura por que CIENFUEGOS el 19 de octubre de 2026 queda representado en Runtime por un snapshot abierto y no tiene detalle canonico, mientras el corte fisico ya fue realizado. Comparar KPI base cerrado, snapshot intradia mas reciente, vista Runtime y detalle visible. Confirmar si la vista Runtime esta sobreponiendo incorrectamente un snapshot abierto sobre una fila base cerrada. No modificar datos ni codigo.",
+  "acceptance": [
+    "Mostrar la fila base de Comercial_KPIs_Diarios_v2 para CIENFUEGOS 2026-10-19",
+    "Mostrar todos los snapshots recientes de Comercial_Ventas_Dia_Abiertas_v2 para CIENFUEGOS 2026-10-19",
+    "Mostrar la fila final de vw_Comercial_KPIs_Diarios_v2_Runtime",
+    "Mostrar existencia o ausencia de detalle visible y fisico",
+    "Emitir dictamen CLOSED_BASE_OVERRIDDEN_BY_OPEN_SNAPSHOT, BASE_MISSING o causa alternativa",
+    "Cero DDL, cero DML y production_touched=false"
+  ],
+  "constraints": [
+    "No tocar el sincronizador de Ventas del dia",
+    "No tocar el sincronizador de Ventas cerradas",
+    "No ejecutar backfill ni sincronizacion",
+    "No escribir en EDARSAHUB ni POS",
+    "Mantener enfoque atomico, canonico y transversal",
+    "Trabajar solo en Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_base_kpi_oct19",
+          "sql": "SELECT id,unidad_negocio_pk,unidad_negocio_id,unidad_negocio_nombre,server_id,sucursal_id,sistema_origen,fecha_operacion,ventas_total,ventas_sin_propina,propinas_total,tickets_total,pax_total,ventas_cerradas,ventas_abiertas,total_estimado_dia,es_venta_abierta,es_corte_cerrado,fuente_original,sync_run_id,fecha_sincronizacion,fecha_ultima_actualizacion,activo,es_demo FROM dbo.Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion='2026-10-19' ORDER BY fecha_ultima_actualizacion DESC;"
+        },
+        {
+          "name": "cienfuegos_snapshots_oct19",
+          "sql": "SELECT id,unidad_negocio_id,unidad_negocio_nombre,server_id,sucursal_id,sistema_origen,fecha_operacion,ventas_abiertas,ventas_cerradas_dia,total_estimado_dia,tickets_abiertos,tickets_cerrados_dia,pax_abiertos,pax_cerrados_dia,propinas_total,snapshot_timestamp,fecha_ultima_actualizacion,sync_run_id FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion='2026-10-19' ORDER BY snapshot_timestamp DESC,fecha_ultima_actualizacion DESC;"
+        },
+        {
+          "name": "cienfuegos_runtime_oct19",
+          "sql": "SELECT unidad_negocio_id,fecha_operacion,ventas_total,ventas_sin_propina,propinas_total,tickets_total,pax_total,ventas_cerradas,ventas_abiertas,total_estimado_dia,es_venta_abierta,es_corte_cerrado,fuente_original,sync_run_id,fecha_sincronizacion,fecha_ultima_actualizacion FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion='2026-10-19';"
+        },
+        {
+          "name": "cienfuegos_detail_oct19",
+          "sql": "SELECT unidad_negocio_id,fecha_operacion,sistema_origen,COUNT_BIG(*) AS filas_fisicas,COUNT(DISTINCT id_transaccion) AS tickets_fisicos,CAST(SUM(ISNULL(importe_neto,0)) AS decimal(18,2)) AS venta_fisica,SUM(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND numero_ticket IS NOT NULL THEN 1 ELSE 0 END) AS filas_visibles,COUNT(DISTINCT CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND numero_ticket IS NOT NULL THEN id_transaccion END) AS tickets_visibles,CAST(SUM(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND numero_ticket IS NOT NULL THEN ISNULL(importe_neto,0) ELSE 0 END) AS decimal(18,2)) AS venta_visible,MAX(fecha_sincronizacion) AS ultima_sincronizacion,MAX(sync_run_id) AS ultimo_run_id FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion='2026-10-19' GROUP BY unidad_negocio_id,fecha_operacion,sistema_origen;"
+        },
+        {
+          "name": "runtime_view_definition_flags",
+          "sql": "SELECT CASE WHEN OBJECT_DEFINITION(OBJECT_ID('dbo.vw_Comercial_KPIs_Diarios_v2_Runtime')) LIKE '%AND ISNULL(s.ventas_abiertas, 0) > 0%' THEN 1 ELSE 0 END AS joins_open_snapshot, CASE WHEN OBJECT_DEFINITION(OBJECT_ID('dbo.vw_Comercial_KPIs_Diarios_v2_Runtime')) LIKE '%k.es_corte_cerrado%' THEN 1 ELSE 0 END AS checks_base_closed, CASE WHEN OBJECT_DEFINITION(OBJECT_ID('dbo.vw_Comercial_KPIs_Diarios_v2_Runtime')) LIKE '%k.es_venta_abierta%' THEN 1 ELSE 0 END AS checks_base_open;"
+        }
+      ]
+    }
+  ]
+}
