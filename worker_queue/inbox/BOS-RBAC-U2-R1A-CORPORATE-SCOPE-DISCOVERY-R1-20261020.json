@@ -1,0 +1,67 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-RBAC-U2-R1A-CORPORATE-SCOPE-DISCOVERY-R1-20261020",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar en solo lectura el contrato RBAC de Usuarios U2-R1A: toggle-activo, RBAC_ADMIN, roles ADMIN/SUPERADMIN, sesiones, aislamiento corporativo y fuentes de Usuario_EmpresasAsignacion. Identificar rutas de escritura, migraciones y pruebas, explicar posibles causas de 38 asignaciones inactivas sin asumir la causa. Entregar evidencia y recomendaciones; no ejecutar SQL, no modificar archivos, no reactivar asignaciones, no tocar Produccion ni secretos.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "20. Seguridad",
+    "chat": "Menu Usuarios RBAC U2-R1A"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB",
+    "bounded_context": "AUTH_RBAC_U2_R1A",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "AUTH_RBAC",
+      "USER_ACCESS_CONTEXT",
+      "CORPORATE_IDENTITY"
+    ]
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/admin_sql/routes.py",
+          "backend/core/user_access_context.py",
+          "backend/core/access_context/sql_context.py",
+          "backend/core/auth/user_repository_sql.py",
+          "backend/core/corporate_identity_resolver.py",
+          "backend/modules/auth/routes.py",
+          "backend/tests/test_admin_sql_rbac_mutations_contract.py",
+          "backend/migrations",
+          "migrations"
+        ],
+        "search_terms": [
+          "toggle_user_activo",
+          "toggle-activo",
+          "RBAC_ADMIN",
+          "Usuario_EmpresasAsignacion",
+          "Usuario_RolesAsignacion",
+          "Usuario_Catalogo",
+          "Sesiones",
+          "SUPERADMIN",
+          "EmpresaID",
+          "FechaInicio",
+          "FechaFin",
+          "Activo",
+          "corporate_scope",
+          "empresas_permitidas"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [],
+        "max_results": 1500
+      }
+    }
+  ]
+}
