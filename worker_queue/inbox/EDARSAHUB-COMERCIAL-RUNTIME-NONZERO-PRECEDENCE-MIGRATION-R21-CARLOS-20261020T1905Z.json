@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-NONZERO-PRECEDENCE-MIGRATION-R21-CARLOS-20261020T1905Z",
+  "created_at_utc": "2026-10-20T19:05:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
+  "production_allowed": false,
+  "objective": "Aplicar en la base de Desarrollo la version exacta e idempotente de la vista dbo.vw_Comercial_KPIs_Diarios_v2_Runtime que da precedencia a un KPI base cerrado con evidencia comercial sobre un snapshot residual abierto, pero conserva temporalmente el overlay cuando la base cerrada esta vacia. No modificar ni ejecutar sincronizadores, scheduler, extractores, mappers o tablas de ventas.",
+  "acceptance": [
+    "La migracion ejecutada coincide exactamente con el archivo versionado y su SHA256",
+    "La vista Runtime queda creada o alterada exitosamente",
+    "No se ejecuta DML sobre tablas de negocio",
+    "Preflight y post-audit de la identidad SQL writer PASS",
+    "Los sincronizadores protegidos no son modificados ni ejecutados",
+    "production_touched=false"
+  ],
+  "constraints": [
+    "No tocar el sincronizador de Ventas del dia",
+    "No tocar el sincronizador de Ventas cerradas",
+    "No ejecutar sincronizaciones ni backfills",
+    "No modificar tablas de origen o destino de ventas",
+    "No modificar Produccion",
+    "Mantener solucion atomica, canonica y transversal"
+  ],
+  "human_summary_language": "es",
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20261020_001_runtime_closed_base_precedence_apply.sql",
+  "migration_sha256": "0cec0288aebae2a18fed93bd6bc47a16246cccf38ff7e63ad8422b737948230b",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "preflight_audit_profile": "sql_runtime_principal_permissions_v1",
+  "post_audit_profile": "sql_runtime_principal_permissions_v1"
+}
