@@ -1,0 +1,21 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-CHAPUR-EXTERNAL-READINESS-R1-20261019",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "source_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2bb0e1a6e5ecf0b11dac1e0c1638bd9954e9c10e",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Certificar readiness tecnico no secreto de CHAPUR BACKOFFICE y CHAPUR NORTE como integraciones externas. Solo lectura. No ejecutar sync, no probar credenciales contra sistemas externos, no habilitar Operaciones, no crear scope corporativo y no tocar Produccion.",
+  "audit_profile": "chapur_external_integration_readiness_v1",
+  "actions": [],
+  "checks": [],
+  "constraints": [
+    "READ_ONLY",
+    "NO_INLINE_SQL",
+    "NO_SECRET_VALUES",
+    "NO_SYNC",
+    "NO_EXTERNAL_CONNECTION_TEST",
+    "NO_PRODUCTION",
+    "NO_CORPORATE_SCOPE_MUTATION"
+  ]
+}
