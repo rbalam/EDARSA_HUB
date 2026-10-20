@@ -1,0 +1,891 @@
+{
+  "base_sha": "dc7d2eecad33d3c8c730b3ac2924e3a4a67d8978",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-20T22:27:07Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-DASHBOARD-INSIGHTS-RESUME-PREFLIGHT-R1C-CARLOS-20261020",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T22:28:07Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "core.empresa_resolver",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "core.utils.operational_window",
+              "datetime",
+              "decimal",
+              "logging",
+              "modules.comercial_v2.repository_comercial_edarsahub",
+              "modules.comercial_v2.schemas",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "modules.comercial_v2.ticket_snapshot",
+              "modules.integrations_runtime.sync_ledger",
+              "os",
+              "pytz",
+              "requests",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "sync_comercial",
+              "ticket"
+            ],
+            "path": "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_acquire_sync_lock_sync",
+              "_coerce_mx_datetime",
+              "_execute_query_via_api_local",
+              "_get_api_local_config",
+              "_get_existing_ventas_dia",
+              "_get_unidades_from_edarsahub",
+              "_merge_mpro_summary_detail_rows",
+              "_prefer_real_mpro_detail_rows",
+              "_release_sync_lock_sync",
+              "_summarize_mpro_ticket_rows",
+              "execute_sync_comercial_abiertas_v2",
+              "is_real",
+              "run_sync_comercial_abiertas_v2_manual",
+              "select_mpro_closed_sales",
+              "totals"
+            ],
+            "tables_referenced": [
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "Servidores_Conexiones",
+              "Sync_Control_Ejecuciones",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.scheduler.jobs.inteligencia_comercial_enrich",
+              "core.scheduler.locks",
+              "core.unidades_service",
+              "core.utils.operational_window",
+              "datetime",
+              "json",
+              "logging",
+              "modules.comercial_v2.schemas",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "os",
+              "pathlib",
+              "scripts.backfill_detalle_producto_pendientes",
+              "subprocess",
+              "sys",
+              "types",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "sync_comercial"
+            ],
+            "path": "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_get_unidades_from_edarsahub",
+              "_resolve_estatus_general",
+              "_run_header_sync_isolated",
+              "_run_manual_locked",
+              "_sync_detalle_post_header",
+              "_sync_pagos_post_header",
+              "_unit_selected",
+              "execute_sync_comercial_v2",
+              "run_sync_comercial_v2_manual"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "argparse",
+              "collections",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "json",
+              "modules.comercial_v2.ticket_contract",
+              "pymssql",
+              "sys",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "comercial_inteligencia_ventasdetalleproducto",
+              "descuento",
+              "ticket"
+            ],
+            "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "SoftTicketReconciliationError",
+              "__init__",
+              "_as_date",
+              "_cfg_values",
+              "_d",
+              "_daterange",
+              "_extract_mpro",
+              "_extract_soft",
+              "_first",
+              "_hash_row",
+              "_insert_rows",
+              "_int_eq",
+              "_load_runtime_rows",
+              "_materialize_rows",
+              "_money_eq",
+              "_mpro_operational_datetime_range",
+              "_mpro_row_es_kpi_valido",
+              "_object_columns",
+              "_parse_sql_server_host_port",
+              "_prorratear_mpro_por_ticket",
+              "_q4",
+              "_query_edarsahub_dicts",
+              "_row_unit_values",
+              "_runtime_for",
+              "_runtime_metrics",
+              "_s",
+              "_safe_print",
+              "_secret_value",
+              "_sistema",
+              "_soft_add_ticket_adjustments",
+              "_soft_operational_datetime_range",
+              "_table_has_col",
+              "_unidad_operativa_id_for_window",
+              "_validate",
+              "get_pos_config_for_unidad",
+              "get_pos_connection",
+              "get_unidades_negocio_pos",
+              "main",
+              "sync_detalle_producto_canonico_dia"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Servidores_Conexiones",
+              "Unidades_Negocio",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial_v2",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "decimal",
+              "json",
+              "modules.comercial_v2.ticket_contract",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "descuento",
+              "sync_comercial",
+              "ticket"
+            ],
+            "path": "backend/modules/comercial_v2/ticket_snapshot.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_json_default",
+              "_number",
+              "serialize_open_detail_rows"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial_v2",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "descuento",
+              "ticket"
+            ],
+            "path": "backend/modules/comercial_v2/ticket_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "discount_comment",
+              "fields_from",
+              "header_from",
+              "visible_sale_from_pos_total"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "json",
+              "modules.comercial_v2.ticket_contract",
+              "service",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "comercial_inteligencia_ventasdetalleproducto",
+              "descuento",
+              "ticket"
+            ],
+            "path": "backend/modules/comercial/ticket_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_folio_sort_key",
+              "_integer",
+              "_money",
+              "_open_detail_column_available",
+              "_real_product_row",
+              "_safe_sql",
+              "_snapshot_display_folio",
+              "_snapshot_line_net_amount",
+              "_snapshot_partida_sort_key",
+              "_snapshot_sales_amount",
+              "_snapshot_ticket_identity",
+              "build_ticket_venta",
+              "load_open_snapshot_lines",
+              "merge_open_snapshot_tickets"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Comercial_Ventas_Dia_Abiertas_v2"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial_analytics",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.db",
+              "core.server_registry",
+              "datetime",
+              "modules.comercial.ticket_service",
+              "modules.comercial_v2.ticket_contract",
+              "ticket_identity",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "comercial_inteligencia_ventasdetalleproducto",
+              "descuento",
+              "ticket"
+            ],
+            "path": "backend/modules/comercial_analytics/repository_tickets.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_date_string",
+              "_ensure_unit_allowed",
+              "_execute",
+              "_execute_readonly_query_params",
+              "_fallback_ticket_from_comercial",
+              "_latest_snapshot_operation_date",
+              "_list_current_day_with_comercial_merge",
+              "_normalize_allowed_units",
+              "_required",
+              "get_ticket_detail",
+              "list_discounts",
+              "list_tickets",
+              "summarize_current_day_tickets"
+            ],
+            "tables_referenced": [
+              "Comercial_Ventas_Dia_Abiertas_v2"
+            ]
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "ticket"
+            ],
+            "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "descuento",
+              "ticket"
+            ],
+            "path": "frontend/src/components/comercial/TicketVentaModal.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "descuento",
+              "ticket"
+            ],
+            "path": "frontend/src/pages/Comercial.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "ticket"
+            ],
+            "path": "frontend/src/pages/TableroEjecutivo.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 11,
+          "scanned_files": 11,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "observed_at_utc"
+            ],
+            "name": "read_context",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "2026-10-20 22:27:06.5929625"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "codigo",
+              "nombre",
+              "system_type",
+              "server_id",
+              "sucursal_origen_id",
+              "timezone_iana",
+              "activo"
+            ],
+            "name": "pilot_identity",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "SoftRestaurant",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                null,
+                null,
+                true
+              ],
+              [
+                "ORIGEN",
+                "ORIGEN",
+                "MPRO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0023",
+                null,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "objeto",
+              "columna",
+              "tipo",
+              "precision",
+              "scale",
+              "is_nullable"
+            ],
+            "name": "money_columns_current",
+            "row_count_returned": 44,
+            "rows": [
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "id",
+                "uniqueidentifier",
+                0,
+                0,
+                false
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "unidad_negocio_id",
+                "nvarchar",
+                0,
+                0,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "sistema_origen",
+                "nvarchar",
+                0,
+                0,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "fecha_operacion",
+                "date",
+                10,
+                0,
+                false
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "numero_ticket",
+                "nvarchar",
+                0,
+                0,
+                false
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "id_transaccion",
+                "nvarchar",
+                0,
+                0,
+                false
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "producto_codigo_fuente",
+                "nvarchar",
+                0,
+                0,
+                false
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "producto_id",
+                "uniqueidentifier",
+                0,
+                0,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "cantidad",
+                "decimal",
+                18,
+                4,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "importe_bruto",
+                "decimal",
+                18,
+                4,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "importe_neto",
+                "decimal",
+                18,
+                4,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "descuento",
+                "decimal",
+                18,
+                4,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "propina",
+                "decimal",
+                18,
+                4,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "activo",
+                "bit",
+                1,
+                0,
+                false
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "cancelado_origen",
+                "bit",
+                1,
+                0,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "es_kpi_valido",
+                "bit",
+                1,
+                0,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "folio_origen",
+                "nvarchar",
+                0,
+                0,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "documento_origen",
+                "nvarchar",
+                0,
+                0,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "descuento_pct",
+                "decimal",
+                9,
+                4,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "partida_origen_id",
+                "nvarchar",
+                0,
+                0,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "ticket_comentario_descuento",
+                "nvarchar",
+                0,
+                0,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "partida_comentario_descuento",
+                "nvarchar",
+                0,
+                0,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "tipo_descuento_id",
+                "nvarchar",
+                0,
+                0,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "tipo_descuento_descripcion",
+                "nvarchar",
+                0,
+                0,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "tipo_descuento_valor",
+                "decimal",
+                18,
+                6,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "ticket_subtotal",
+                "decimal",
+                18,
+                4,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "ticket_impuesto",
+                "decimal",
+                18,
+                4,
+                true
+              ],
+              [
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "ticket_total",
+                "decimal",
+                18,
+                4,
+                true
+              ],
+              [
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                "id",
+                "uniqueidentifier",
+                0,
+                0,
+                false
+              ],
+              [
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                "unidad_negocio_id",
+                "nvarchar",
+                0,
+                0,
+                false
+              ],
+              [
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                "sistema_origen",
+                "nvarchar",
+                0,
+                0,
+                false
+              ],
+              [
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                "snapshot_timestamp",
+                "datetime2",
+                27,
+                7,
+                false
+              ],
+              [
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                "fecha_operacion",
+                "date",
+                10,
+                0,
+                false
+              ],
+              [
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                "detalle_abiertas_json",
+                "nvarchar",
+                0,
+                0,
+                true
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                "FormaPagoCodigo",
+                "nvarchar",
+                0,
+                0,
+                true
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                "Importe",
+                "decimal",
+                18,
+                2,
+                false
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                "SistemaOrigen",
+                "nvarchar",
+                0,
+                0,
+                true
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                "IdOrigen",
+                "bigint",
+                19,
+                0,
+                true
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                "HashOrigen",
+                "nvarchar",
+                0,
+                0,
+                true
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                "Activo",
+                "bit",
+                1,
+                0,
+                true
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                "UnidadNegocio",
+                "nvarchar",
+                0,
+                0,
+                true
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                "NumeroTicket",
+                "nvarchar",
+                0,
+                0,
+                true
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                "FechaHora",
+                "datetime",
+                23,
+                3,
+                true
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                "Propina",
+                "decimal",
+                18,
+                4,
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-20T22:27:05Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
