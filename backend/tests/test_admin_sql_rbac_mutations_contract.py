@@ -69,3 +69,18 @@ def test_global_role_mutations_require_sql_superadmin_gate():
     assert "SUPERADMIN" in helper_source
     assert "status_code=403" in helper_source
     assert "status_code=503" in helper_source
+
+
+def test_user_toggle_enforces_corporate_subset_and_atomic_session_revocation():
+    fn = _routes()["toggle_user_activo"]
+    source = ast.get_source_segment(SOURCE.read_text(encoding="utf-8"), fn)
+    assert 'require_explicit_permission("RBAC_ADMIN")' in source
+    assert "Usuario_EmpresasAsignacion" in source
+    assert "NOT EXISTS" in source
+    assert "FueraAlcance" in source
+    assert "Usuario sin alcance corporativo verificable" in source
+    assert "SUPERADMIN" in source
+    assert "WITH (UPDLOCK, HOLDLOCK)" in source
+    assert "UPDATE dbo.Sesiones" in source
+    assert source.index("UPDATE dbo.Sesiones") < source.index("conn.commit()")
+    assert "conn.rollback()" in source
