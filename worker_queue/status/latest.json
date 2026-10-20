@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "d7847ca7a09cffc02ff05eee2d12a5addc38cdb2",
-  "generated_at_utc": "2026-10-20T16:04:36Z",
+  "generated_at_utc": "2026-10-20T16:08:51Z",
   "history": {
     "done_total_local": 1472,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 126,
+      "age_seconds": 381,
       "job_id": "BOS-RBAC-U2-R1A-CORPORATE-SCOPE-DISCOVERY-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,10 +36,10 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-20T16:04:33Z",
-    "last_receive_utc": "2026-10-20T16:04:28Z",
+    "last_cycle_utc": "2026-10-20T16:08:46Z",
+    "last_receive_utc": "2026-10-20T16:08:41Z",
     "last_terminal_utc": "2026-10-20T16:02:30Z",
-    "pid": "315",
+    "pid": "289",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "66986ac55972fac9633f274cb447d9101c49402a",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
