@@ -1,0 +1,279 @@
+{
+  "base_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-20T18:59:30Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-SOURCE-WINDOW-AUDIT-R20-CARLOS-20261020T1901Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T19:00:52Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_pk",
+              "unidad_codigo",
+              "unidad_nombre",
+              "unidad_system_type",
+              "server_id",
+              "sucursal_origen_id",
+              "servidor_nombre",
+              "servidor_system_type",
+              "tipo_conexion",
+              "host_sin_credenciales",
+              "port",
+              "database_name",
+              "servidor_activo"
+            ],
+            "name": "cienfuegos_canonical_server_mapping",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "SoftRestaurant",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                null,
+                "CIENFUEGOS",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                "[REDACTED]",
+                6669,
+                "softrestaurant12",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "server_id",
+              "sucursal_id",
+              "sistema_origen",
+              "fecha_operacion",
+              "ventas_abiertas",
+              "ventas_cerradas_dia",
+              "total_estimado_dia",
+              "tickets_abiertos",
+              "tickets_cerrados_dia",
+              "pax_abiertos",
+              "pax_cerrados_dia",
+              "snapshot_timestamp",
+              "fecha_ultima_actualizacion",
+              "sync_run_id"
+            ],
+            "name": "cienfuegos_snapshot_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "CIENFUEGOS",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "DEFAULT",
+                "SOFTRESTAURANT",
+                "2026-10-20",
+                "0.00",
+                "0.00",
+                "0.00",
+                0,
+                0,
+                0,
+                0,
+                "2026-10-20 18:57:13.1715760",
+                "2026-10-20 18:57:13.3743582",
+                "ABIERTA-20261020-185704-87ca"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "server_name",
+              "cheque_fecha_min",
+              "cheque_fecha_max",
+              "cheques_total"
+            ],
+            "name": "cienfuegos_pos_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "softrestaurant12",
+                "SVR-CIENFUEGOS\\SOFTRESTAURANT",
+                "2019-12-24T11:20:06",
+                "2026-10-18T18:48:40",
+                "104486"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_apertura",
+              "tickets",
+              "total",
+              "propina",
+              "pax",
+              "apertura_min",
+              "apertura_max",
+              "cheque_fecha_min",
+              "cheque_fecha_max",
+              "cierre_min",
+              "cierre_max"
+            ],
+            "name": "cienfuegos_by_apertura_date",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-10-18",
+                31,
+                "153793.00",
+                "18396.26",
+                "121",
+                "2026-10-18T13:01:58",
+                "2026-10-18T13:01:58",
+                "2026-10-18T13:13:49",
+                "2026-10-18T18:48:40",
+                "2026-10-18T14:07:59",
+                "2026-10-18T19:42:12"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_cheque",
+              "tickets",
+              "total",
+              "propina",
+              "pax",
+              "apertura_min",
+              "apertura_max",
+              "cierre_min",
+              "cierre_max"
+            ],
+            "name": "cienfuegos_by_cheque_date",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-10-18",
+                31,
+                "153793.00",
+                "18396.26",
+                "121",
+                "2026-10-18T13:01:58",
+                "2026-10-18T13:01:58",
+                "2026-10-18T14:07:59",
+                "2026-10-18T19:42:12"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_cierre",
+              "tickets",
+              "total",
+              "propina",
+              "pax",
+              "apertura_min",
+              "apertura_max",
+              "cheque_fecha_min",
+              "cheque_fecha_max",
+              "cierre_min",
+              "cierre_max"
+            ],
+            "name": "cienfuegos_by_close_date",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-10-18",
+                37,
+                "170746.00",
+                "19946.51",
+                "138",
+                "2026-10-17T13:00:50",
+                "2026-10-18T13:01:58",
+                "2026-10-17T19:21:46",
+                "2026-10-18T18:48:40",
+                "2026-10-18T00:00:38",
+                "2026-10-18T19:42:12"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "idturno",
+              "apertura",
+              "tickets",
+              "total",
+              "propina",
+              "pax",
+              "cheque_fecha_min",
+              "cheque_fecha_max",
+              "cierre_min",
+              "cierre_max"
+            ],
+            "name": "cienfuegos_turnos_with_tickets",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "2724",
+                "2026-10-17T13:00:50",
+                6,
+                "16953.00",
+                "1550.25",
+                "17",
+                "2026-10-17T19:21:46",
+                "2026-10-17T23:19:58",
+                "2026-10-18T00:00:38",
+                "2026-10-18T12:36:15"
+              ],
+              [
+                "2725",
+                "2026-10-18T13:01:58",
+                31,
+                "153793.00",
+                "18396.26",
+                "121",
+                "2026-10-18T13:13:49",
+                "2026-10-18T18:48:40",
+                "2026-10-18T14:07:59",
+                "2026-10-18T19:42:12"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-20T18:59:27Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
