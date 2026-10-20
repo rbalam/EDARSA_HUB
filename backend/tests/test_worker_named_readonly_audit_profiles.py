@@ -179,6 +179,7 @@ def test_chapur_external_integration_readiness_profile_is_sanitized_and_readonly
         "chapur_external_readiness",
         "chapur_external_health",
         "chapur_query_contract_metadata",
+        "chapur_connection_roles",
     }
     sql = "\n".join(query["sql"] for query in check["queries"]).lower()
     assert "api_key_configured" in sql

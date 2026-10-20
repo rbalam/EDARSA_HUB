@@ -205,6 +205,16 @@ def build_readonly_audit_checks(profile: str) -> List[Dict[str, Any]]:
                             "ORDER BY sc.nombre"
                         ),
                     },
+                    {
+                        "name": "chapur_connection_roles",
+                        "sql": (
+                            "SELECT CONVERT(varchar(36),ses.ServerID) AS connection_id,"
+                            "ses.EmpresaID,ses.RolConexion,ses.NumeroSucursalSistema,ses.Activo "
+                            "FROM dbo.Sistema_EmpresasServidores ses "
+                            "WHERE ses.ServerID IN ('8CBDCC89-6495-49C3-BE9C-A965DB82C77F','D8B2D1EB-2E1F-4E43-B7D9-822BF671E315') "
+                            "ORDER BY ses.ServerID,ses.RolConexion"
+                        ),
+                    },
                 ],
             }
         ]
