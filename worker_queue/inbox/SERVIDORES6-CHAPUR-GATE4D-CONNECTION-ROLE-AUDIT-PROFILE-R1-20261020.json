@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-CHAPUR-GATE4D-CONNECTION-ROLE-AUDIT-PROFILE-R1-20261020",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "ed99b9ced84f20243445690bf4ffa109873e8d90",
+  "objective": "Extender exclusivamente el perfil canonico chapur_external_integration_readiness_v1 para auditar los roles canonicos en Sistema_EmpresasServidores de CHAPUR BACKOFFICE y NORTE. No exponer secretos, no DML, no Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "Conexiones y Comunicaciones",
+    "chat": "Menu Servidores 6"
+  },
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/readonly_audit_profiles.py",
+      "old": "                    {\n                        \"name\": \"chapur_query_contract_metadata\",\n                        \"sql\": (\n                            \"SELECT CONVERT(varchar(36),sc.id) AS connection_id,sc.nombre,sc.system_type,sc.queries_configured,\"\n                            \"CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.query_ventas,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS query_ventas_present,\"\n                            \"CASE WHEN ISJSON(sc.query_ventas)=1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS query_ventas_json,\"\n                            \"CASE WHEN ISJSON(sc.query_ventas)=1 THEN JSON_VALUE(sc.query_ventas,'$.validated') ELSE NULL END AS query_ventas_validated,\"\n                            \"LEN(ISNULL(sc.query_ventas,'')) AS query_ventas_len,\"\n                            \"CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.query_inventario,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS query_inventario_present,\"\n                            \"CASE WHEN ISJSON(sc.query_inventario)=1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS query_inventario_json,\"\n                            \"CASE WHEN ISJSON(sc.query_inventario)=1 THEN JSON_VALUE(sc.query_inventario,'$.validated') ELSE NULL END AS query_inventario_validated,\"\n                            \"LEN(ISNULL(sc.query_inventario,'')) AS query_inventario_len,\"\n                            \"CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.query_movimientos,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS query_movimientos_present,\"\n                            \"CASE WHEN ISJSON(sc.query_movimientos)=1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS query_movimientos_json,\"\n                            \"CASE WHEN ISJSON(sc.query_movimientos)=1 THEN JSON_VALUE(sc.query_movimientos,'$.validated') ELSE NULL END AS query_movimientos_validated,\"\n                            \"LEN(ISNULL(sc.query_movimientos,'')) AS query_movimientos_len \"\n                            \"FROM dbo.Servidores_Conexiones sc \"\n                            \"WHERE sc.id IN ('8CBDCC89-6495-49C3-BE9C-A965DB82C77F','D8B2D1EB-2E1F-4E43-B7D9-822BF671E315') \"\n                            \"ORDER BY sc.nombre\"\n                        ),\n                    },",
+      "new": "                    {\n                        \"name\": \"chapur_query_contract_metadata\",\n                        \"sql\": (\n                            \"SELECT CONVERT(varchar(36),sc.id) AS connection_id,sc.nombre,sc.system_type,sc.queries_configured,\"\n                            \"CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.query_ventas,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS query_ventas_present,\"\n                            \"CASE WHEN ISJSON(sc.query_ventas)=1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS query_ventas_json,\"\n                            \"CASE WHEN ISJSON(sc.query_ventas)=1 THEN JSON_VALUE(sc.query_ventas,'$.validated') ELSE NULL END AS query_ventas_validated,\"\n                            \"LEN(ISNULL(sc.query_ventas,'')) AS query_ventas_len,\"\n                            \"CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.query_inventario,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS query_inventario_present,\"\n                            \"CASE WHEN ISJSON(sc.query_inventario)=1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS query_inventario_json,\"\n                            \"CASE WHEN ISJSON(sc.query_inventario)=1 THEN JSON_VALUE(sc.query_inventario,'$.validated') ELSE NULL END AS query_inventario_validated,\"\n                            \"LEN(ISNULL(sc.query_inventario,'')) AS query_inventario_len,\"\n                            \"CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.query_movimientos,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS query_movimientos_present,\"\n                            \"CASE WHEN ISJSON(sc.query_movimientos)=1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS query_movimientos_json,\"\n                            \"CASE WHEN ISJSON(sc.query_movimientos)=1 THEN JSON_VALUE(sc.query_movimientos,'$.validated') ELSE NULL END AS query_movimientos_validated,\"\n                            \"LEN(ISNULL(sc.query_movimientos,'')) AS query_movimientos_len \"\n                            \"FROM dbo.Servidores_Conexiones sc \"\n                            \"WHERE sc.id IN ('8CBDCC89-6495-49C3-BE9C-A965DB82C77F','D8B2D1EB-2E1F-4E43-B7D9-822BF671E315') \"\n                            \"ORDER BY sc.nombre\"\n                        ),\n                    },\n                    {\n                        \"name\": \"chapur_connection_roles\",\n                        \"sql\": (\n                            \"SELECT CONVERT(varchar(36),ses.ServerID) AS connection_id,\"\n                            \"ses.EmpresaID,ses.RolConexion,ses.NumeroSucursalSistema,ses.Activo \"\n                            \"FROM dbo.Sistema_EmpresasServidores ses \"\n                            \"WHERE ses.ServerID IN ('8CBDCC89-6495-49C3-BE9C-A965DB82C77F','D8B2D1EB-2E1F-4E43-B7D9-822BF671E315') \"\n                            \"ORDER BY ses.ServerID,ses.RolConexion\"\n                        ),\n                    },",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_named_readonly_audit_profiles.py",
+      "old": "        \"chapur_query_contract_metadata\",\n    }",
+      "new": "        \"chapur_query_contract_metadata\",\n        \"chapur_connection_roles\",\n    }",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_named_readonly_audit_profiles.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
