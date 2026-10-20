@@ -188,7 +188,6 @@ const Servidores = () => {
     servidor_padre_id: '',
     sucursal_destino: '',
     hora_replica: '04:00',
-    solo_ventas_dia: true,
     activo: true,
     visible_en_operaciones: false
   });
@@ -1331,7 +1330,6 @@ const Servidores = () => {
         servidor_padre_id: detail.servidor_padre_id || '',
         sucursal_destino: detail.sucursal_destino || apiConn.sucursal_destino || '',
         hora_replica: detail.hora_replica || apiConn.hora_replica || '04:00',
-        solo_ventas_dia: detail.solo_ventas_dia ?? true,
         activo: detail.activo !== false,
         visible_en_operaciones: detail.visible_en_operaciones === true
       });
@@ -1862,7 +1860,6 @@ const Servidores = () => {
                   servidor_padre: '',
                   sucursal_destino: '',
                   hora_replica: '04:00',
-                  solo_ventas_dia: true,
                   activo: true,
                   visible_en_operaciones: false
                 });
@@ -2877,15 +2874,10 @@ const Servidores = () => {
               </div>
             </div>
             
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="api_solo_ventas"
-                checked={apiFormData.solo_ventas_dia}
-                onCheckedChange={(checked) => setApiFormData({...apiFormData, solo_ventas_dia: checked})}
-              />
-              <Label htmlFor="api_solo_ventas" className="text-sm">
-                Solo obtener ventas del día actual (evita duplicación)
-              </Label>
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+              <p className="text-xs text-blue-900">
+                <strong>Ventas del día:</strong> esta capacidad se deriva del rol canónico VENTAS_DIA_API_LOCAL asociado a la conexión.
+              </p>
             </div>
             
             <div className="bg-amber-50 border border-amber-200 rounded-md p-3">

@@ -129,7 +129,11 @@ def _sql_row_to_api_dict(row: Dict) -> Dict:
         'servidor_padre_id': row.get('empresa_id', ''),
         'sucursal_destino': row.get('database_name', ''),
         'hora_replica': row.get('port', 4),  # Reutilizado para hora de réplica
-        'solo_ventas_dia': bool(row.get('queries_configured', True)),
+        'solo_ventas_dia': bool(row.get('solo_ventas_dia', False)),
+        'queries_configured': any(
+            bool(str(row.get(field) or '').strip())
+            for field in ('query_ventas', 'query_inventario', 'query_movimientos')
+        ),
         'activo': bool(row.get('activo', True)),
         'visible_en_operaciones': bool(row.get('visible_en_operaciones', False)),
         'config': parse_json(row.get('sucursales')),
@@ -150,14 +154,23 @@ def list_api_connections_sql(include_inactive: bool = False) -> List[Dict]:
     Lista conexiones API desde EDARSAHUB SQL (fuente primaria).
     """
     try:
-        where_clause = "WHERE tipo_conexion = 'API_LOCAL'"
+        where_clause = "WHERE sc.tipo_conexion = 'API_LOCAL'"
         if not include_inactive:
-            where_clause += " AND activo = 1"
+            where_clause += " AND sc.activo = 1"
         
         query = f"""
-        SELECT * FROM Servidores_Conexiones
+        SELECT
+            sc.*,
+            CASE WHEN EXISTS (
+                SELECT 1
+                FROM dbo.Sistema_EmpresasServidores ses
+                WHERE ses.ServidorID = sc.id
+                  AND ses.RolConexion = 'VENTAS_DIA_API_LOCAL'
+                  AND ses.Activo = 1
+            ) THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS solo_ventas_dia
+        FROM Servidores_Conexiones sc
         {where_clause}
-        ORDER BY nombre
+        ORDER BY sc.nombre
         """
         results = execute_sql_query(
             EDARSAHUB_CONFIG['host'], EDARSAHUB_CONFIG['port'],
@@ -186,9 +199,18 @@ def get_api_connection_sql(api_id: str) -> Optional[Dict]:
     """
     try:
         query = f"""
-        SELECT * FROM Servidores_Conexiones
-        WHERE id = '{_escape_sql(api_id)}'
-          AND tipo_conexion = 'API_LOCAL'
+        SELECT
+            sc.*,
+            CASE WHEN EXISTS (
+                SELECT 1
+                FROM dbo.Sistema_EmpresasServidores ses
+                WHERE ses.ServidorID = sc.id
+                  AND ses.RolConexion = 'VENTAS_DIA_API_LOCAL'
+                  AND ses.Activo = 1
+            ) THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS solo_ventas_dia
+        FROM Servidores_Conexiones sc
+        WHERE sc.id = '{_escape_sql(api_id)}'
+          AND sc.tipo_conexion = 'API_LOCAL'
         """
         results = execute_sql_query(
             EDARSAHUB_CONFIG['host'], EDARSAHUB_CONFIG['port'],
@@ -303,7 +325,7 @@ async def create_api_connection(data: Dict, created_by: str = "system") -> Dict:
         1, 1, 1,
         N'{_escape_sql(data.get("servidor_padre_id", ""))}',
         N'{_escape_sql(config_json)}',
-        {1 if data.get("solo_ventas_dia", True) else 0},
+        0,
         GETDATE(), GETDATE(),
         N'{_escape_sql(created_by)}'
     )
@@ -384,7 +406,10 @@ async def update_api_connection(api_id: str, data: Dict, updated_by: str = "syst
         hr_int = int(hr.split(':')[0]) if isinstance(hr, str) else hr
         set_parts.append(f"port = {hr_int}")
     if 'solo_ventas_dia' in data:
-        set_parts.append(f"queries_configured = {1 if data['solo_ventas_dia'] else 0}")
+        logging.warning(
+            "[API_CONNECTIONS] solo_ventas_dia ignorado como campo legacy; "
+            "la fuente canonica es Sistema_EmpresasServidores.RolConexion"
+        )
     if 'activo' in data:
         set_parts.append(f"activo = {1 if data['activo'] else 0}")
     if 'visible_en_operaciones' in data:
