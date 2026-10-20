@@ -1,0 +1,255 @@
+{
+  "base_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-20T19:05:54Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-SOFT-POSTMIGRATION-R23-CARLOS-20261020T1910Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T19:07:28Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "checks_closed",
+              "checks_nonzero_sales",
+              "checks_tickets",
+              "checks_pax"
+            ],
+            "name": "runtime_view_r21_contract",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1,
+                1,
+                1,
+                1
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "base_venta",
+              "base_tickets",
+              "base_pax",
+              "base_abiertas",
+              "base_es_abierta",
+              "base_cerrado",
+              "base_run",
+              "runtime_venta",
+              "runtime_tickets",
+              "runtime_pax",
+              "runtime_abiertas",
+              "runtime_es_abierta",
+              "runtime_cerrado",
+              "runtime_fuente",
+              "runtime_run"
+            ],
+            "name": "soft_base_runtime_oct19_post_r21",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                "2026-10-19",
+                "55983.00",
+                8,
+                22,
+                "0.00",
+                false,
+                true,
+                "INCR-20261020-060158-5211",
+                "55983.00",
+                8,
+                22,
+                "0.00",
+                false,
+                true,
+                "API_LOCAL",
+                "INCR-20261020-060158-5211"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-19",
+                "0.00",
+                0,
+                0,
+                "0.00",
+                false,
+                true,
+                "INCR-20261019-185548-ec82",
+                "0.00",
+                0,
+                0,
+                "0.00",
+                false,
+                true,
+                "API_LOCAL",
+                "INCR-20261019-185548-ec82"
+              ],
+              [
+                "ESTELAR",
+                "2026-10-19",
+                "25128.00",
+                18,
+                47,
+                "0.00",
+                false,
+                true,
+                "INCR-20261020-070224-61a2",
+                "25128.00",
+                18,
+                47,
+                "0.00",
+                false,
+                true,
+                "API_LOCAL",
+                "INCR-20261020-070224-61a2"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "ventas_abiertas",
+              "ventas_cerradas_dia",
+              "total_estimado_dia",
+              "tickets_abiertos",
+              "tickets_cerrados_dia",
+              "pax_abiertos",
+              "pax_cerrados_dia",
+              "snapshot_timestamp",
+              "fecha_ultima_actualizacion",
+              "sync_run_id"
+            ],
+            "name": "soft_current_snapshots_post_r21",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                "2026-10-20",
+                "0.00",
+                "0.00",
+                "0.00",
+                0,
+                0,
+                0,
+                0,
+                "2026-10-20 19:02:34.6082610",
+                "2026-10-20 19:02:34.8226523",
+                "ABIERTA-20261020-190229-075e"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "0.00",
+                "0.00",
+                "0.00",
+                0,
+                0,
+                0,
+                0,
+                "2026-10-20 19:02:40.3192710",
+                "2026-10-20 19:02:40.4961128",
+                "ABIERTA-20261020-190229-075e"
+              ],
+              [
+                "ESTELAR",
+                "2026-10-20",
+                "0.00",
+                "4725.00",
+                "4725.00",
+                0,
+                3,
+                0,
+                4,
+                "2026-10-20 19:02:47.8241610",
+                "2026-10-20 19:02:48.0001557",
+                "ABIERTA-20261020-190229-075e"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "runtime_venta",
+              "detalle_venta",
+              "delta_venta",
+              "runtime_tickets",
+              "detalle_tickets",
+              "delta_tickets",
+              "runtime_pax",
+              "detalle_pax",
+              "delta_pax"
+            ],
+            "name": "soft_visible_detail_vs_runtime_post_r21",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                "55983.00",
+                "55983.00",
+                "0.00",
+                8,
+                8,
+                0,
+                22,
+                22,
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                "0.00",
+                "0.00",
+                "0.00",
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                "ESTELAR",
+                "25128.00",
+                "25128.00",
+                "0.00",
+                18,
+                18,
+                0,
+                47,
+                47,
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-20T19:05:52Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
