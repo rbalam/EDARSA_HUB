@@ -1,0 +1,98 @@
+{
+  "base_sha": "e456070d38f62734234c2f6aedf189640dc3bbdd",
+  "blockers": [],
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-10-20T05:26:51Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES6-CHAPUR-API-LOCAL-HEALTH-TEST-R1-20261020",
+  "operation": "API_LOCAL_HEALTH_TEST",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T05:28:07Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "connection_id",
+              "nombre",
+              "tipo_conexion",
+              "system_type",
+              "activo",
+              "visible_en_operaciones",
+              "queries_configured",
+              "api_key_configured",
+              "password_configured",
+              "corporate_scope_configured"
+            ],
+            "name": "chapur_external_readiness",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "CHAPUR BACKOFFICE",
+                "API_LOCAL",
+                "ENTERPRISE",
+                true,
+                false,
+                true,
+                "[REDACTED]",
+                "[REDACTED]",
+                false
+              ],
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "CHAPUR NORTE",
+                "API_LOCAL",
+                "ENTERPRISE",
+                true,
+                false,
+                true,
+                "[REDACTED]",
+                "[REDACTED]",
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "connection_id",
+              "EstadoConexion",
+              "UltimoCheck",
+              "UltimaPruebaUTC",
+              "UltimoExitoUTC",
+              "UltimoErrorUTC",
+              "UltimoErrorCodigo",
+              "LatenciaMs",
+              "UltimoSyncUTC",
+              "UltimoSyncExitosoUTC",
+              "FechaActualizacionUTC"
+            ],
+            "name": "chapur_external_health",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-20T05:26:47Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker probo exclusivamente conexiones API_LOCAL canonicas por connection_id, persistio health en la tabla existente y certifico el estado con auditorias de solo lectura. No ejecuto sync, no expuso secretos y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
