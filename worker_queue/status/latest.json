@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "f14a533eeb3772a3752cfc96839f5c2e8386db51",
-  "generated_at_utc": "2026-10-20T05:05:47Z",
+  "generated_at_utc": "2026-10-20T05:07:04Z",
   "history": {
     "done_total_local": 1468,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 52,
+      "age_seconds": 129,
       "job_id": "SERVIDORES6-CHAPUR-EXTERNAL-READINESS-R1-20261019",
       "reasons": [
         "INVALID_TARGET_REPO",
@@ -42,8 +42,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-20T05:05:37Z",
-    "last_receive_utc": "2026-10-20T05:05:45Z",
+    "last_cycle_utc": "2026-10-20T05:06:55Z",
+    "last_receive_utc": "2026-10-20T05:07:02Z",
     "last_terminal_utc": "2026-10-20T02:52:13Z",
     "pid": "414595",
     "runtime_fingerprint": {
