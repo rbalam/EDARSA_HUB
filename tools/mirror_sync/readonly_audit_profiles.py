@@ -13,12 +13,14 @@ CHAPUR_CONNECTION_DISCOVERY_V1 = "chapur_connection_discovery_v1"
 CHAPUR_NORTE_OPERATIONAL_VISIBILITY_V1 = "chapur_norte_operational_visibility_v1"
 API_FACTORY_PERSISTENCE_STATE_V1 = "api_factory_persistence_state_v1"
 CHAPUR_EXTERNAL_INTEGRATION_READINESS_V1 = "chapur_external_integration_readiness_v1"
+SQL_RUNTIME_PRINCIPAL_PERMISSIONS_V1 = "sql_runtime_principal_permissions_v1"
 
 _ALLOWED = {
     CHAPUR_CONNECTION_DISCOVERY_V1,
     CHAPUR_NORTE_OPERATIONAL_VISIBILITY_V1,
     API_FACTORY_PERSISTENCE_STATE_V1,
     CHAPUR_EXTERNAL_INTEGRATION_READINESS_V1,
+    SQL_RUNTIME_PRINCIPAL_PERMISSIONS_V1,
 }
 
 
@@ -28,6 +30,65 @@ def is_allowed_readonly_audit_profile(value: str) -> bool:
 
 def build_readonly_audit_checks(profile: str) -> List[Dict[str, Any]]:
     name = str(profile or "").strip()
+    if name == SQL_RUNTIME_PRINCIPAL_PERMISSIONS_V1:
+        return [
+            {
+                "type": "sql_readonly_audit",
+                "source": "EDARSAHUB",
+                "max_rows": 200,
+                "queries": [
+                    {
+                        "name": "sql_runtime_principals",
+                        "sql": (
+                            "SELECT p.name,p.type_desc,p.authentication_type_desc,"
+                            "p.default_schema_name,SUSER_SNAME(p.sid) AS login_name "
+                            "FROM sys.database_principals p "
+                            "WHERE p.name IN ('HRLectura','ChatGPT_Escritura','HUB_Escritura','GptEscritura') "
+                            "ORDER BY p.name"
+                        ),
+                    },
+                    {
+                        "name": "sql_runtime_role_memberships",
+                        "sql": (
+                            "SELECT m.name AS member_name,r.name AS role_name "
+                            "FROM sys.database_role_members drm "
+                            "JOIN sys.database_principals r ON r.principal_id=drm.role_principal_id "
+                            "JOIN sys.database_principals m ON m.principal_id=drm.member_principal_id "
+                            "WHERE m.name IN ('HRLectura','ChatGPT_Escritura','HUB_Escritura','GptEscritura') "
+                            "ORDER BY m.name,r.name"
+                        ),
+                    },
+                    {
+                        "name": "sql_runtime_explicit_permissions",
+                        "sql": (
+                            "SELECT grantee.name AS principal_name,dp.state_desc,dp.permission_name,dp.class_desc,"
+                            "CASE dp.class WHEN 0 THEN DB_NAME() "
+                            "WHEN 1 THEN COALESCE(QUOTENAME(OBJECT_SCHEMA_NAME(dp.major_id))+'.'+QUOTENAME(OBJECT_NAME(dp.major_id)),CONVERT(varchar(50),dp.major_id)) "
+                            "WHEN 3 THEN SCHEMA_NAME(dp.major_id) ELSE CONVERT(varchar(50),dp.major_id) END AS securable_name "
+                            "FROM sys.database_permissions dp "
+                            "JOIN sys.database_principals grantee ON grantee.principal_id=dp.grantee_principal_id "
+                            "WHERE grantee.name IN ('HRLectura','ChatGPT_Escritura','HUB_Escritura','GptEscritura') "
+                            "ORDER BY grantee.name,dp.class_desc,securable_name,dp.permission_name"
+                        ),
+                    },
+                    {
+                        "name": "sql_runtime_inherited_role_permissions",
+                        "sql": (
+                            "SELECT m.name AS member_name,r.name AS role_name,dp.state_desc,dp.permission_name,dp.class_desc,"
+                            "CASE dp.class WHEN 0 THEN DB_NAME() "
+                            "WHEN 1 THEN COALESCE(QUOTENAME(OBJECT_SCHEMA_NAME(dp.major_id))+'.'+QUOTENAME(OBJECT_NAME(dp.major_id)),CONVERT(varchar(50),dp.major_id)) "
+                            "WHEN 3 THEN SCHEMA_NAME(dp.major_id) ELSE CONVERT(varchar(50),dp.major_id) END AS securable_name "
+                            "FROM sys.database_role_members drm "
+                            "JOIN sys.database_principals r ON r.principal_id=drm.role_principal_id "
+                            "JOIN sys.database_principals m ON m.principal_id=drm.member_principal_id "
+                            "LEFT JOIN sys.database_permissions dp ON dp.grantee_principal_id=r.principal_id "
+                            "WHERE m.name IN ('HRLectura','ChatGPT_Escritura','HUB_Escritura','GptEscritura') "
+                            "ORDER BY m.name,r.name,dp.class_desc,securable_name,dp.permission_name"
+                        ),
+                    },
+                ],
+            }
+        ]
     if name == API_FACTORY_PERSISTENCE_STATE_V1:
         return [
             {

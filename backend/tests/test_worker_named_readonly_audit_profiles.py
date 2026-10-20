@@ -181,3 +181,46 @@ def test_chapur_external_integration_readiness_profile_is_sanitized_and_readonly
     assert "select" in sql
     for forbidden in (" update ", " insert ", " delete ", " merge ", " drop ", " alter "):
         assert forbidden not in f" {sql} "
+
+
+def test_sql_runtime_principal_permissions_profile_is_named_and_readonly():
+    profiles = _load(
+        "readonly_audit_profiles_sql_runtime_principals",
+        "tools/mirror_sync/readonly_audit_profiles.py",
+    )
+    profile = "sql_runtime_principal_permissions_v1"
+    assert profiles.is_allowed_readonly_audit_profile(profile)
+    checks = profiles.build_readonly_audit_checks(profile)
+    assert len(checks) == 1
+    check = checks[0]
+    assert check["type"] == "sql_readonly_audit"
+    assert check["source"] == "EDARSAHUB"
+    assert {query["name"] for query in check["queries"]} == {
+        "sql_runtime_principals",
+        "sql_runtime_role_memberships",
+        "sql_runtime_explicit_permissions",
+        "sql_runtime_inherited_role_permissions",
+    }
+    sql = "\n".join(query["sql"] for query in check["queries"])
+    assert "ChatGPT_Escritura" in sql
+    assert "HRLectura" in sql
+    assert "sys.database_principals" in sql
+    assert "sys.database_role_members" in sql
+    assert "sys.database_permissions" in sql
+    for query in check["queries"]:
+        upper = query["sql"].upper()
+        assert upper.lstrip().startswith("SELECT")
+        for forbidden in (
+            " INSERT ",
+            " UPDATE ",
+            " DELETE ",
+            " MERGE ",
+            " DROP ",
+            " ALTER ",
+            " CREATE ",
+            " EXEC ",
+            " GRANT ",
+            " DENY ",
+            " REVOKE ",
+        ):
+            assert forbidden not in f" {upper} "
