@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "0447cfd74243d665e40fb96562f15c7ba261b32b",
-  "generated_at_utc": "2026-10-20T02:34:51Z",
+  "generated_at_utc": "2026-10-20T02:36:09Z",
   "history": {
     "done_total_local": 1467,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 44,
+      "age_seconds": 122,
       "job_id": "SERVIDORES-CHAPUR-NORTE-DISABLE-OPERATIONS-R2-20261019",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,12 +36,12 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-20T02:34:43Z",
-    "last_receive_utc": "2026-10-20T02:34:51Z",
+    "last_cycle_utc": "2026-10-20T02:36:02Z",
+    "last_receive_utc": "2026-10-20T02:35:57Z",
     "last_terminal_utc": "2026-10-20T02:34:07Z",
-    "pid": "574",
+    "pid": "98688",
     "runtime_fingerprint": {
-      "active_worker_code_tree_sha": "ae9ebc1d1120a14bc75923e30f0276b0f7bdc0cb",
+      "active_worker_code_tree_sha": "e0e5ea31e3e52f0bf23aa30ccdfbbfa60bf835e9",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
       "development_sha": "0447cfd74243d665e40fb96562f15c7ba261b32b",
@@ -58,7 +58,7 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": false,
+      "worker_code_tree_aligned": true,
       "worker_code_tree_sha": "e0e5ea31e3e52f0bf23aa30ccdfbbfa60bf835e9"
     }
   },
