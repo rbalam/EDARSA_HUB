@@ -1,0 +1,66 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-POST-CLOSE-RECHECK-R28-CARLOS-20261020T1914Z",
+  "created_at_utc": "2026-10-20T19:14:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
+  "production_allowed": false,
+  "objective": "Reverificar en solo lectura CIENFUEGOS inmediatamente después de que tempcheques pasó de 14 filas a cero. Confirmar si las cuentas del 19 de octubre de 2026 ya fueron trasladadas a cheques, si el turno fue cerrado y si el conjunto cerrado puede alimentar el resync oficial.",
+  "acceptance": [
+    "Mostrar frescura actual de turnos, cheques y tempcheques",
+    "Obtener total, tickets, PAX y propina de cheques por turnos.apertura para 2026-10-19",
+    "Listar los tickets cerrados del día operativo 19",
+    "Mostrar cierre del turno o turnos abiertos el 19",
+    "Determinar READY_FOR_CANONICAL_RESYNC o SOURCE_STILL_INCOMPLETE",
+    "Cero DDL, cero DML y production_touched=false"
+  ],
+  "constraints": [
+    "No tocar los sincronizadores de Ventas del dia o Ventas cerradas",
+    "No ejecutar resync o backfill en esta fase",
+    "No escribir en EDARSAHUB ni POS",
+    "Usar la misma ventana transversal 09:00 a 09:00 y turnos.apertura",
+    "Mantener enfoque atomico, canonico y transversal",
+    "Trabajar solo en Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "CIENFUEGOS"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "cienfuegos_current_freshness_after_close",
+          "sql": "SELECT DB_NAME() AS database_name,(SELECT MAX(apertura) FROM turnos WITH (NOLOCK)) AS max_turno_apertura,(SELECT MAX(cierre) FROM turnos WITH (NOLOCK)) AS max_turno_cierre,(SELECT MAX(fecha) FROM cheques WITH (NOLOCK)) AS max_cheque_fecha,(SELECT MAX(cierre) FROM cheques WITH (NOLOCK)) AS max_cheque_cierre,(SELECT COUNT_BIG(*) FROM tempcheques WITH (NOLOCK)) AS tempcheques_rows,(SELECT MAX(fecha) FROM tempcheques WITH (NOLOCK)) AS max_tempcheque_fecha;"
+        },
+        {
+          "name": "cienfuegos_closed_aggregate_oct19",
+          "sql": "SELECT COUNT(DISTINCT ch.folio) AS tickets,CAST(SUM(ISNULL(ch.total,0)) AS decimal(18,2)) AS total,CAST(SUM(ISNULL(ch.propina,0)) AS decimal(18,2)) AS propina,SUM(ISNULL(ch.nopersonas,0)) AS pax,SUM(CASE WHEN ch.cierre IS NULL THEN 1 ELSE 0 END) AS tickets_sin_cierre,MIN(tr.apertura) AS apertura_min,MAX(tr.apertura) AS apertura_max,MIN(tr.cierre) AS turno_cierre_min,MAX(tr.cierre) AS turno_cierre_max,MIN(ch.fecha) AS cheque_fecha_min,MAX(ch.fecha) AS cheque_fecha_max,MIN(ch.cierre) AS cheque_cierre_min,MAX(ch.cierre) AS cheque_cierre_max FROM cheques ch WITH (NOLOCK) INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno WHERE tr.apertura>='2026-10-19 09:00:00' AND tr.apertura<'2026-10-20 09:00:00' AND ISNULL(ch.cancelado,0)=0;"
+        },
+        {
+          "name": "cienfuegos_closed_tickets_oct19",
+          "sql": "SELECT ch.folio,ch.numcheque,tr.idturno,tr.apertura,tr.cierre AS turno_cierre,ch.fecha,ch.cierre AS cheque_cierre,CAST(ISNULL(ch.total,0) AS decimal(18,2)) AS total,CAST(ISNULL(ch.propina,0) AS decimal(18,2)) AS propina,ISNULL(ch.nopersonas,0) AS pax,ISNULL(ch.cancelado,0) AS cancelado FROM cheques ch WITH (NOLOCK) INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno WHERE tr.apertura>='2026-10-19 09:00:00' AND tr.apertura<'2026-10-20 09:00:00' AND ISNULL(ch.cancelado,0)=0 ORDER BY tr.apertura,ch.fecha,ch.folio;"
+        },
+        {
+          "name": "cienfuegos_turnos_oct19",
+          "sql": "SELECT idturno,apertura,cierre FROM turnos WITH (NOLOCK) WHERE apertura>='2026-10-19 09:00:00' AND apertura<'2026-10-20 09:00:00' ORDER BY apertura,idturno;"
+        }
+      ]
+    }
+  ]
+}
