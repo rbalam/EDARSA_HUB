@@ -1,0 +1,93 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-DETAIL-AUDIT-R1-CARLOS-20261020T1735Z",
+  "created_at_utc": "2026-10-20T17:35:14Z",
+  "requested_by": "chatgpt",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "7dfb4cf507af267ddc0f9c7a25637483034c00d3",
+  "production_allowed": false,
+  "objective": "Ejecutar una auditoria SQL estrictamente de solo lectura para certificar si ORIGEN tiene en EDARSAHUB las ventas y el detalle de los dias 16, 17, 18 y 19 de octubre de 2026. Comparar tabla KPI base, vista Runtime, detalle fisico, detalle visible por el mismo predicado del drill-down, tabla Sync_Sales si existe, identidades alternativas de unidad y bitacora del job sync_comercial_v2. Entregar una matriz por fecha con KPI, tickets, PAX, filas fisicas, filas visibles, importe visible, ultimo run_id y dictamen tecnico. No ejecutar reparaciones ni modificar codigo o datos.",
+  "acceptance": [
+    "Identificar la configuracion canonica de ORIGEN, su system_type, server_id, sucursal_origen_id y turnos operativos activos",
+    "Certificar por cada fecha 2026-10-16 a 2026-10-19 si existe KPI base y Runtime",
+    "Certificar por cada fecha filas y tickets fisicos en Comercial_Inteligencia_VentasDetalleProducto",
+    "Certificar por cada fecha filas, tickets, venta y PAX visibles usando activo=1, es_kpi_valido=1, cancelado_origen=0 y numero_ticket no nulo",
+    "Detectar registros de ORIGEN almacenados con otro unidad_negocio_id, nombre o sucursal",
+    "Comparar KPI contra detalle visible y calcular deltas de venta, tickets y PAX",
+    "Consultar Sync_Sales solo si la tabla existe y reportar cobertura del 16 al 19",
+    "Consultar la bitacora reciente de sync_comercial_v2 y exponer estados de detalle sin secretos",
+    "Cero DDL, cero DML, cero cambios de codigo y production_touched=false"
+  ],
+  "constraints": [
+    "No tocar, modificar, reparar o actualizar el sincronizador de Ventas del dia",
+    "No tocar, modificar, reparar o actualizar el sincronizador de Ventas cerradas",
+    "No ejecutar jobs de sincronizacion ni backfills en esta fase",
+    "No escribir en EDARSAHUB ni en servidores POS",
+    "No consultar ni exponer contrasenas, tokens o secretos",
+    "Usar exclusivamente SELECT, CTE e IF de inspeccion",
+    "Mantener enfoque atomico, canonico y transversal",
+    "Trabajar solo en Edarsahub_Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "tecnico-ejecutivo",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "origen_unidad_y_periodo_operativo",
+          "sql": "SELECT CONVERT(varchar(36),u.id) AS unidad_pk, CONVERT(varchar(100),u.codigo) AS unidad_codigo, CONVERT(varchar(200),u.nombre) AS unidad_nombre, CONVERT(varchar(100),u.system_type) AS system_type, CONVERT(varchar(36),u.server_id) AS server_id, CONVERT(varchar(100),u.sucursal_origen_id) AS sucursal_origen_id, CONVERT(varchar(100),t.turno_codigo) AS turno_codigo, CONVERT(varchar(200),t.turno_nombre) AS turno_nombre, CAST(t.hora_inicio AS varchar(8)) AS hora_inicio, CAST(t.hora_fin AS varchar(8)) AS hora_fin, t.cruza_medianoche, t.aplica_ventas_dia, t.es_turno_principal, t.orden, t.activo AS turno_activo FROM dbo.Unidades_Negocio u LEFT JOIN dbo.Sistema_TurnosOperativosUnidad t ON UPPER(LTRIM(RTRIM(CONVERT(varchar(100),t.unidad_negocio_id))))=UPPER(LTRIM(RTRIM(CONVERT(varchar(100),u.codigo)))) WHERE UPPER(LTRIM(RTRIM(CONVERT(varchar(100),u.codigo))))='ORIGEN' ORDER BY t.orden,t.turno_codigo;"
+        },
+        {
+          "name": "origen_kpi_base_20261016_20261019",
+          "sql": "WITH dias AS (SELECT CAST('2026-10-16' AS date) fecha_operacion UNION ALL SELECT CAST('2026-10-17' AS date) UNION ALL SELECT CAST('2026-10-18' AS date) UNION ALL SELECT CAST('2026-10-19' AS date)) SELECT d.fecha_operacion, k.ventas_total, k.ventas_sin_propina, k.ventas_cerradas, k.ventas_abiertas, k.tickets_total, k.pax_total, k.es_venta_abierta, k.es_corte_cerrado, k.fuente_original, k.sync_run_id, k.fecha_sincronizacion, k.fecha_ultima_actualizacion FROM dias d LEFT JOIN dbo.Comercial_KPIs_Diarios_v2 k ON k.fecha_operacion=d.fecha_operacion AND UPPER(LTRIM(RTRIM(CONVERT(varchar(100),k.unidad_negocio_id))))='ORIGEN' AND ISNULL(k.activo,1)=1 ORDER BY d.fecha_operacion;"
+        },
+        {
+          "name": "origen_kpi_runtime_20261016_20261019",
+          "sql": "WITH dias AS (SELECT CAST('2026-10-16' AS date) fecha_operacion UNION ALL SELECT CAST('2026-10-17' AS date) UNION ALL SELECT CAST('2026-10-18' AS date) UNION ALL SELECT CAST('2026-10-19' AS date)) SELECT d.fecha_operacion, r.ventas_total, r.ventas_cerradas, r.ventas_abiertas, r.tickets_total, r.pax_total, r.es_venta_abierta, r.es_corte_cerrado, r.fuente_original, r.sync_run_id, r.fecha_ultima_actualizacion FROM dias d LEFT JOIN dbo.vw_Comercial_KPIs_Diarios_v2_Runtime r ON r.fecha_operacion=d.fecha_operacion AND UPPER(LTRIM(RTRIM(CONVERT(varchar(100),r.unidad_negocio_id))))='ORIGEN' ORDER BY d.fecha_operacion;"
+        },
+        {
+          "name": "origen_detalle_fisico_visible_20261016_20261019",
+          "sql": "WITH dias AS (SELECT CAST('2026-10-16' AS date) fecha_operacion UNION ALL SELECT CAST('2026-10-17' AS date) UNION ALL SELECT CAST('2026-10-18' AS date) UNION ALL SELECT CAST('2026-10-19' AS date)) SELECT dias.fecha_operacion, COUNT_BIG(det.id) AS filas_fisicas, COUNT(DISTINCT det.id_transaccion) AS tickets_fisicos, CAST(SUM(ISNULL(det.importe_neto,0)) AS decimal(18,2)) AS venta_fisica, SUM(CASE WHEN ISNULL(det.activo,1)=1 AND ISNULL(det.es_kpi_valido,1)=1 AND ISNULL(det.cancelado_origen,0)=0 AND det.numero_ticket IS NOT NULL THEN 1 ELSE 0 END) AS filas_visibles, COUNT(DISTINCT CASE WHEN ISNULL(det.activo,1)=1 AND ISNULL(det.es_kpi_valido,1)=1 AND ISNULL(det.cancelado_origen,0)=0 AND det.numero_ticket IS NOT NULL THEN det.id_transaccion END) AS tickets_visibles, CAST(SUM(CASE WHEN ISNULL(det.activo,1)=1 AND ISNULL(det.es_kpi_valido,1)=1 AND ISNULL(det.cancelado_origen,0)=0 AND det.numero_ticket IS NOT NULL THEN ISNULL(det.importe_neto,0) ELSE 0 END) AS decimal(18,2)) AS venta_visible, SUM(CASE WHEN ISNULL(det.activo,1)=1 AND ISNULL(det.es_kpi_valido,1)=1 AND ISNULL(det.cancelado_origen,0)=0 AND det.numero_ticket IS NOT NULL THEN ISNULL(det.pax,0) ELSE 0 END) AS pax_visible, MAX(det.fecha_sincronizacion) AS ultima_sincronizacion, MAX(det.sync_run_id) AS ultimo_run_id FROM dias LEFT JOIN dbo.Comercial_Inteligencia_VentasDetalleProducto det ON det.fecha_operacion=dias.fecha_operacion AND UPPER(LTRIM(RTRIM(CONVERT(varchar(100),det.unidad_negocio_id))))='ORIGEN' GROUP BY dias.fecha_operacion ORDER BY dias.fecha_operacion;"
+        },
+        {
+          "name": "origen_detalle_motivos_exclusion_20261016_20261019",
+          "sql": "SELECT fecha_operacion, COUNT_BIG(*) AS filas_totales, SUM(CASE WHEN ISNULL(activo,1)<>1 THEN 1 ELSE 0 END) AS filas_inactivas, SUM(CASE WHEN ISNULL(es_kpi_valido,1)<>1 THEN 1 ELSE 0 END) AS filas_no_kpi, SUM(CASE WHEN ISNULL(cancelado_origen,0)=1 THEN 1 ELSE 0 END) AS filas_canceladas, SUM(CASE WHEN numero_ticket IS NULL OR LTRIM(RTRIM(CONVERT(varchar(100),numero_ticket)))='' THEN 1 ELSE 0 END) AS filas_sin_ticket, COUNT(DISTINCT sistema_origen) AS sistemas_distintos, COUNT(DISTINCT unidad_negocio_id) AS codigos_unidad_distintos FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE UPPER(LTRIM(RTRIM(CONVERT(varchar(100),unidad_negocio_id))))='ORIGEN' AND fecha_operacion>='2026-10-16' AND fecha_operacion<'2026-10-20' GROUP BY fecha_operacion ORDER BY fecha_operacion;"
+        },
+        {
+          "name": "origen_detalle_identidades_alternas_20261016_20261019",
+          "sql": "SELECT CONVERT(varchar(100),unidad_negocio_id) AS unidad_negocio_id, CONVERT(varchar(200),unidad_negocio_nombre) AS unidad_negocio_nombre, CONVERT(varchar(100),sucursal_id) AS sucursal_id, CONVERT(varchar(200),sucursal_nombre) AS sucursal_nombre, CONVERT(varchar(100),sistema_origen) AS sistema_origen, fecha_operacion, COUNT_BIG(*) AS filas, COUNT(DISTINCT id_transaccion) AS tickets, CAST(SUM(ISNULL(importe_neto,0)) AS decimal(18,2)) AS venta FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE fecha_operacion>='2026-10-16' AND fecha_operacion<'2026-10-20' AND (UPPER(LTRIM(RTRIM(CONVERT(varchar(100),unidad_negocio_id))))='ORIGEN' OR UPPER(CONVERT(varchar(200),ISNULL(unidad_negocio_nombre,''))) LIKE '%ORIGEN%' OR UPPER(CONVERT(varchar(200),ISNULL(sucursal_nombre,''))) LIKE '%ORIGEN%') GROUP BY unidad_negocio_id,unidad_negocio_nombre,sucursal_id,sucursal_nombre,sistema_origen,fecha_operacion ORDER BY fecha_operacion,unidad_negocio_id;"
+        },
+        {
+          "name": "origen_kpi_vs_detalle_visible_20261016_20261019",
+          "sql": "WITH dias AS (SELECT CAST('2026-10-16' AS date) fecha_operacion UNION ALL SELECT CAST('2026-10-17' AS date) UNION ALL SELECT CAST('2026-10-18' AS date) UNION ALL SELECT CAST('2026-10-19' AS date)), k AS (SELECT fecha_operacion, MAX(CAST(ISNULL(ventas_total,0) AS decimal(18,2))) AS ventas_kpi, MAX(ISNULL(tickets_total,0)) AS tickets_kpi, MAX(ISNULL(pax_total,0)) AS pax_kpi FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE UPPER(LTRIM(RTRIM(CONVERT(varchar(100),unidad_negocio_id))))='ORIGEN' AND fecha_operacion>='2026-10-16' AND fecha_operacion<'2026-10-20' GROUP BY fecha_operacion), t AS (SELECT fecha_operacion, id_transaccion, SUM(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND numero_ticket IS NOT NULL THEN ISNULL(importe_neto,0) ELSE 0 END) AS venta_ticket, MAX(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND numero_ticket IS NOT NULL THEN ISNULL(pax,0) ELSE 0 END) AS pax_ticket, MAX(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND numero_ticket IS NOT NULL THEN 1 ELSE 0 END) AS visible FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE UPPER(LTRIM(RTRIM(CONVERT(varchar(100),unidad_negocio_id))))='ORIGEN' AND fecha_operacion>='2026-10-16' AND fecha_operacion<'2026-10-20' GROUP BY fecha_operacion,id_transaccion), d AS (SELECT fecha_operacion, CAST(SUM(venta_ticket) AS decimal(18,2)) AS ventas_detalle, SUM(CASE WHEN visible=1 THEN 1 ELSE 0 END) AS tickets_detalle, SUM(pax_ticket) AS pax_detalle FROM t GROUP BY fecha_operacion) SELECT dias.fecha_operacion, k.ventas_kpi, d.ventas_detalle, CAST(ISNULL(d.ventas_detalle,0)-ISNULL(k.ventas_kpi,0) AS decimal(18,2)) AS delta_venta, k.tickets_kpi, d.tickets_detalle, ISNULL(d.tickets_detalle,0)-ISNULL(k.tickets_kpi,0) AS delta_tickets, k.pax_kpi, d.pax_detalle, ISNULL(d.pax_detalle,0)-ISNULL(k.pax_kpi,0) AS delta_pax FROM dias LEFT JOIN k ON k.fecha_operacion=dias.fecha_operacion LEFT JOIN d ON d.fecha_operacion=dias.fecha_operacion ORDER BY dias.fecha_operacion;"
+        },
+        {
+          "name": "origen_sync_sales_20261016_20261019_si_existe",
+          "sql": "IF OBJECT_ID('dbo.Sync_Sales','U') IS NULL BEGIN SELECT 'TABLA_NO_EXISTE' AS status_sync_sales; END ELSE BEGIN SELECT CONVERT(date,FechaHora) AS fecha_operacion, COUNT_BIG(*) AS filas, COUNT(DISTINCT NumeroTicket) AS tickets, CAST(SUM(ISNULL(MontoTotal,0)) AS decimal(18,2)) AS venta, SUM(ISNULL(Pax,0)) AS pax, MIN(CONVERT(varchar(50),status)) AS status_minimo, MAX(CONVERT(varchar(50),status)) AS status_maximo FROM dbo.Sync_Sales WHERE UPPER(LTRIM(RTRIM(CONVERT(varchar(100),UnidadNegocio))))='ORIGEN' AND FechaHora>='2026-10-16' AND FechaHora<'2026-10-20' GROUP BY CONVERT(date,FechaHora) ORDER BY fecha_operacion; END;"
+        },
+        {
+          "name": "origen_cobertura_detalle_reciente",
+          "sql": "SELECT MIN(fecha_operacion) AS fecha_minima, MAX(fecha_operacion) AS fecha_maxima, COUNT(DISTINCT fecha_operacion) AS dias, COUNT(DISTINCT id_transaccion) AS tickets, COUNT_BIG(*) AS filas, MAX(fecha_sincronizacion) AS ultima_sincronizacion FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE UPPER(LTRIM(RTRIM(CONVERT(varchar(100),unidad_negocio_id))))='ORIGEN' AND fecha_operacion>='2026-10-01' AND fecha_operacion<'2026-10-21';"
+        },
+        {
+          "name": "bitacora_sync_comercial_v2_reciente",
+          "sql": "SELECT TOP (20) FechaAccion, RunID, Accion, Exito, MensajeError, JSON_VALUE(DetallesJSON,'$.status') AS status_job, JSON_VALUE(DetallesJSON,'$.message') AS mensaje, JSON_VALUE(DetallesJSON,'$.metadata.result_summary.estatus_general') AS estatus_general, JSON_VALUE(DetallesJSON,'$.metadata.result_summary.detalle_producto_exitosos') AS detalle_exitosos, JSON_VALUE(DetallesJSON,'$.metadata.result_summary.detalle_producto_fallidos') AS detalle_fallidos, JSON_VALUE(DetallesJSON,'$.metadata.result_summary.detalle_producto_omitidos') AS detalle_omitidos, JSON_QUERY(DetallesJSON,'$.metadata.result_summary.detalles_unidades') AS resultados_por_unidad FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' ORDER BY FechaAccion DESC;"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
