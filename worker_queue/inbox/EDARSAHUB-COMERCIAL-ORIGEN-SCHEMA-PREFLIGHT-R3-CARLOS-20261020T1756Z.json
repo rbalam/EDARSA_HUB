@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-SCHEMA-PREFLIGHT-R3-CARLOS-20261020T1756Z",
+  "created_at_utc": "2026-10-20T17:56:00Z",
+  "requested_by": "chatgpt",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "21b8326d9a65acee99af9f98d9451527f9427555",
+  "production_allowed": false,
+  "objective": "Preflight SQL estrictamente de solo lectura para certificar la conexion usada por el Worker y descubrir el esquema fisico real de las tablas necesarias para auditar ORIGEN del 16 al 19 de octubre de 2026. No consultar secretos, no ejecutar DDL/DML y no modificar sincronizadores.",
+  "acceptance": [
+    "Certificar DB_NAME, login SQL y usuario de base sin exponer secretos",
+    "Listar existencia y columnas reales de Unidades_Negocio, Sistema_TurnosOperativosUnidad, Comercial_KPIs_Diarios_v2, vw_Comercial_KPIs_Diarios_v2_Runtime, Comercial_Inteligencia_VentasDetalleProducto, Sync_Sales y Scheduler_BitacoraJobs",
+    "Cero DDL, cero DML, cero cambios de codigo y production_touched=false"
+  ],
+  "constraints": [
+    "No tocar el sincronizador de Ventas del dia",
+    "No tocar el sincronizador de Ventas cerradas",
+    "No ejecutar sincronizaciones ni backfills",
+    "No escribir en SQL ni POS",
+    "No exponer contrasenas, tokens o secretos",
+    "Mantener enfoque atomico, canonico y transversal",
+    "Trabajar solo en Edarsahub_Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "tecnico-ejecutivo",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "sql_identity",
+          "sql": "SELECT DB_NAME() AS db_name, SUSER_SNAME() AS login_name, USER_NAME() AS user_name;"
+        },
+        {
+          "name": "commercial_required_object_columns",
+          "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.precision, c.scale, c.is_nullable FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id=o.schema_id LEFT JOIN sys.columns c ON c.object_id=o.object_id LEFT JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND o.name IN ('Unidades_Negocio','Sistema_TurnosOperativosUnidad','Comercial_KPIs_Diarios_v2','vw_Comercial_KPIs_Diarios_v2_Runtime','Comercial_Inteligencia_VentasDetalleProducto','Sync_Sales','Scheduler_BitacoraJobs') ORDER BY o.name,c.column_id;"
+        }
+      ]
+    }
+  ]
+}
