@@ -51,3 +51,21 @@ def test_catalog_permissions_global_write_requires_superadmin_sql():
     assert "actor_email" in source
     assert "status_code=403" in source
     assert source.index("if not cur.fetchone():") < source.index("UPDATE dbo.Usuario_PermisosCatalogosFlujo")
+
+
+def test_global_role_mutations_require_sql_superadmin_gate():
+    source = SOURCE.read_text(encoding="utf-8")
+    routes = _routes()
+    for name in TARGETS:
+        fn = routes[name]
+        body = ast.get_source_segment(source, fn)
+        assert "_require_global_role_admin(current_user)" in body, name
+        assert body.index("require_admin(current_user)") < body.index("_require_global_role_admin(current_user)")
+    module = ast.parse(source)
+    helper = next(n for n in module.body if isinstance(n, ast.FunctionDef)
+                  and n.name == "_require_global_role_admin")
+    helper_source = ast.get_source_segment(source, helper)
+    assert "Usuario_RolesAsignacion" in helper_source
+    assert "SUPERADMIN" in helper_source
+    assert "status_code=403" in helper_source
+    assert "status_code=503" in helper_source
