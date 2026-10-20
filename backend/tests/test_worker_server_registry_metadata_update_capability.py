@@ -59,3 +59,13 @@ def test_runtime_allows_disable_operations_only_and_never_enables_it():
     dispatcher = DISPATCHER.read_text(encoding="utf-8")
     assert 'disable_operations = job.get("disable_operations") is True' in bridge
     assert 'disable_operations = job.get("disable_operations") is True' in dispatcher
+
+
+def test_bridge_does_not_require_inline_post_checks_for_server_registry_metadata_update():
+    text = BRIDGE.read_text(encoding="utf-8")
+    blocks = text.split("elif mode == SERVER_REGISTRY_METADATA_UPDATE_MODE:")
+    assert len(blocks) >= 3
+    post_validation_block = blocks[2].split("elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:", 1)[0]
+    assert "SERVER_REGISTRY_METADATA_UPDATE_POST_AUDIT_REQUIRED" not in post_validation_block
+    assert "SERVER_REGISTRY_METADATA_UPDATE_POST_ONLY_SQL_AUDIT_ALLOWED" not in post_validation_block
+    assert "checks = []" in post_validation_block
