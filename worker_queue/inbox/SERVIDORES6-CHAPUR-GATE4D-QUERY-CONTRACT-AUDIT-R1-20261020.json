@@ -1,0 +1,20 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-CHAPUR-GATE4D-QUERY-CONTRACT-AUDIT-R1-20261020",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "ed99b9ced84f20243445690bf4ffa109873e8d90",
+  "objective": "Auditar exclusivamente en READ_ONLY_SQL el readiness externo y metadatos sanitizados de query_* para CHAPUR BACKOFFICE y CHAPUR NORTE usando el perfil canonico preaprobado. No SQL inline, no DML, no secretos, no Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "Conexiones y Comunicaciones",
+    "chat": "Menu Servidores 6"
+  },
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "audit_profile": "chapur_external_integration_readiness_v1",
+  "checks": []
+}
