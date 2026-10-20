@@ -4,19 +4,19 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "ed99b9ced84f20243445690bf4ffa109873e8d90",
-  "generated_at_utc": "2026-10-20T18:19:39Z",
+  "generated_at_utc": "2026-10-20T18:21:02Z",
   "history": {
-    "done_total_local": 1482,
+    "done_total_local": 1483,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1268,
-    "results_total_local": 2520
+    "results_total_local": 2521
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1765,
+      "age_seconds": 1848,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-DETAIL-AUDIT-R1-CARLOS-20261020T1735Z",
       "reasons": [
         "READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED"
@@ -25,67 +25,73 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 625,
+      "age_seconds": 709,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-API-LOCAL-METADATA-R6-CARLOS-20261020T1807Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1220,
+      "age_seconds": 1304,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-DATA-AUDIT-R4-CARLOS-20261020T1759Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1594,
+      "age_seconds": 1678,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-DETAIL-AUDIT-R2-CARLOS-20261020T1753Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 979,
+      "age_seconds": 1062,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-IDENTITY-RUNTIME-R5-CARLOS-20261020T1803Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1411,
+      "age_seconds": 1494,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-SCHEMA-PREFLIGHT-R3-CARLOS-20261020T1756Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 447,
+      "age_seconds": 40,
+      "job_id": "EDARSAHUB-COMERCIAL-SOFT-BASE-RUNTIME-PARITY-R9-CARLOS-20261020T1817Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 531,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-DRYRUN-R7-CARLOS-20261020T1811Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 280,
+      "age_seconds": 364,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-POS-TICKET-AUDIT-R8-CARLOS-20261020T1815Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2511,
+      "age_seconds": 2595,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-HEALTH-AUTH-FIX-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1664,
+      "age_seconds": 1747,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-HEALTH-TIMEOUT-CANONICAL-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 545,
+      "age_seconds": 629,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-QUERY-METADATA-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 230,
+      "age_seconds": 314,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-QUERY-METADATA-R2-20261020",
       "reason": null,
       "state": "RESULT_READY"
@@ -99,15 +105,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 11,
+  "queue_result_ready_recent": 12,
   "queue_running": 0,
   "remote_development_sha": "ed99b9ced84f20243445690bf4ffa109873e8d90",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-20T18:19:34Z",
-    "last_receive_utc": "2026-10-20T18:19:29Z",
-    "last_terminal_utc": "2026-10-20T18:15:48Z",
+    "last_cycle_utc": "2026-10-20T18:20:49Z",
+    "last_receive_utc": "2026-10-20T18:21:01Z",
+    "last_terminal_utc": "2026-10-20T18:20:21Z",
     "pid": "493708",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "bacb6a1760aa6f9e6e3a8bc2220cccdf26b9cb08",
