@@ -1,0 +1,296 @@
+{
+  "base_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-20T19:10:46Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-SNAPSHOT-HISTORY-R26-CARLOS-20261020T1912Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T19:12:10Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "schema_name",
+              "table_name",
+              "temporal_type_desc",
+              "history_schema",
+              "history_table",
+              "is_tracked_by_cdc",
+              "is_memory_optimized"
+            ],
+            "name": "snapshot_table_history_features",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                "NON_TEMPORAL_TABLE",
+                null,
+                null,
+                false,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "trigger_name",
+              "is_disabled",
+              "parent_schema",
+              "parent_table"
+            ],
+            "name": "snapshot_table_triggers",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "table_name",
+              "temporal_type_desc",
+              "is_tracked_by_cdc"
+            ],
+            "name": "snapshot_related_tables",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                "NON_TEMPORAL_TABLE",
+                false
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2_Backup_FechaOperacion_20260521",
+                "NON_TEMPORAL_TABLE",
+                false
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558",
+                "NON_TEMPORAL_TABLE",
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "table_name",
+              "column_id",
+              "column_name",
+              "data_type"
+            ],
+            "name": "snapshot_related_columns",
+            "row_count_returned": 20,
+            "rows": [
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                2,
+                "unidad_negocio_id",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                3,
+                "unidad_negocio_nombre",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                8,
+                "snapshot_timestamp",
+                "datetime2"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                9,
+                "fecha_operacion",
+                "date"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                18,
+                "sync_run_id",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                19,
+                "fecha_ultima_actualizacion",
+                "datetime2"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                23,
+                "detalle_abiertas_json",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2_Backup_FechaOperacion_20260521",
+                2,
+                "unidad_negocio_id",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2_Backup_FechaOperacion_20260521",
+                3,
+                "unidad_negocio_nombre",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2_Backup_FechaOperacion_20260521",
+                8,
+                "snapshot_timestamp",
+                "datetime2"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2_Backup_FechaOperacion_20260521",
+                9,
+                "fecha_operacion",
+                "date"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2_Backup_FechaOperacion_20260521",
+                18,
+                "sync_run_id",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2_Backup_FechaOperacion_20260521",
+                19,
+                "fecha_ultima_actualizacion",
+                "datetime2"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558",
+                2,
+                "unidad_negocio_id",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558",
+                3,
+                "unidad_negocio_nombre",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558",
+                8,
+                "snapshot_timestamp",
+                "datetime2"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558",
+                9,
+                "fecha_operacion",
+                "date"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558",
+                18,
+                "sync_run_id",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558",
+                19,
+                "fecha_ultima_actualizacion",
+                "datetime2"
+              ],
+              [
+                "dbo",
+                "Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558",
+                20,
+                "fecha_backup",
+                "datetime"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "ventas_abiertas",
+              "ventas_cerradas_dia",
+              "total_estimado_dia",
+              "tickets_abiertos",
+              "tickets_cerrados_dia",
+              "pax_abiertos",
+              "pax_cerrados_dia",
+              "tiene_detalle_json",
+              "detalle_json_length",
+              "snapshot_timestamp",
+              "fecha_ultima_actualizacion",
+              "sync_run_id"
+            ],
+            "name": "snapshot_current_row_cienfuegos",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "CIENFUEGOS",
+                "2026-10-20",
+                "0.00",
+                "0.00",
+                "0.00",
+                0,
+                0,
+                0,
+                0,
+                1,
+                "2",
+                "2026-10-20 19:07:38.2220190",
+                "2026-10-20 19:07:38.2602866",
+                "ABIERTA-20261020-190734-8fc3"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-20T19:10:45Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
