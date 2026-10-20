@@ -1,0 +1,64 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-COMMIT-R14-CARLOS-20261020T1835Z",
+  "created_at_utc": "2026-10-20T18:35:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d652050b9bb8f7e9f860eacb8b18658d575a60a9",
+  "production_allowed": false,
+  "objective": "Materializar de forma atomica el detalle canonico del 19 de octubre de 2026 exclusivamente para 130MID y ESTELAR, despues de que el dry-run R13 certifico delta cero contra Runtime. Usar el backfill canonico existente, escribir solo dias OK_HEADER_CANONICO, validar posteriormente importes, tickets, PAX y predicado visible del drill-down. No ejecutar encabezados ni tocar los sincronizadores protegidos.",
+  "acceptance": [
+    "130MID detalle visible = 55983.00, 8 tickets y 22 PAX",
+    "ESTELAR detalle visible = 25128.00, 18 tickets y 47 PAX",
+    "Cada unidad se reemplaza solo por unidad+fecha+sistema dentro de transaccion atomica",
+    "No quedan filas canceladas, no KPI o sin numero_ticket dentro del conjunto visible",
+    "No se modifica ninguna otra fecha o unidad",
+    "production_touched=false"
+  ],
+  "constraints": [
+    "No tocar el sincronizador de Ventas del dia",
+    "No tocar el sincronizador de Ventas cerradas",
+    "No ejecutar sincronizacion de encabezados",
+    "No forzar tickets ni aplicar ajustes manuales no certificados",
+    "Escribir solo dias OK_HEADER_CANONICO",
+    "Mantener enfoque atomico, canonico y transversal",
+    "Trabajar solo en Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "actions": [],
+  "units": [
+    "ESTELAR",
+    "130MID"
+  ],
+  "fecha_inicio": "2026-10-19",
+  "fecha_fin": "2026-10-20",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "soft_detail_postcommit_visible",
+          "sql": "WITH tickets AS (SELECT unidad_negocio_id,fecha_operacion,id_transaccion,numero_ticket,SUM(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND numero_ticket IS NOT NULL THEN ISNULL(importe_neto,0) ELSE 0 END) AS venta_ticket,MAX(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND numero_ticket IS NOT NULL THEN ISNULL(pax,0) ELSE 0 END) AS pax_ticket,MAX(CASE WHEN ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND numero_ticket IS NOT NULL THEN 1 ELSE 0 END) AS visible FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('130MID','ESTELAR') AND fecha_operacion='2026-10-19' GROUP BY unidad_negocio_id,fecha_operacion,id_transaccion,numero_ticket) SELECT unidad_negocio_id,fecha_operacion,COUNT(CASE WHEN visible=1 THEN 1 END) AS tickets_visibles,CAST(SUM(CASE WHEN visible=1 THEN venta_ticket ELSE 0 END) AS decimal(18,2)) AS venta_visible,SUM(CASE WHEN visible=1 THEN pax_ticket ELSE 0 END) AS pax_visible FROM tickets GROUP BY unidad_negocio_id,fecha_operacion ORDER BY unidad_negocio_id;"
+        },
+        {
+          "name": "soft_detail_postcommit_rows",
+          "sql": "SELECT unidad_negocio_id,fecha_operacion,sistema_origen,COUNT_BIG(*) AS filas,COUNT(DISTINCT id_transaccion) AS tickets_fisicos,COUNT(DISTINCT numero_ticket) AS numeros_ticket,CAST(SUM(ISNULL(importe_neto,0)) AS decimal(18,2)) AS venta_fisica,SUM(ISNULL(pax,0)) AS pax_fisico,SUM(CASE WHEN ISNULL(activo,1)<>1 THEN 1 ELSE 0 END) AS filas_inactivas,SUM(CASE WHEN ISNULL(es_kpi_valido,1)<>1 THEN 1 ELSE 0 END) AS filas_no_kpi,SUM(CASE WHEN ISNULL(cancelado_origen,0)=1 THEN 1 ELSE 0 END) AS filas_canceladas,SUM(CASE WHEN numero_ticket IS NULL OR LTRIM(RTRIM(CONVERT(varchar(100),numero_ticket)))='' THEN 1 ELSE 0 END) AS filas_sin_ticket,MAX(fecha_sincronizacion) AS ultima_sincronizacion,MAX(sync_run_id) AS ultimo_run_id FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('130MID','ESTELAR') AND fecha_operacion='2026-10-19' GROUP BY unidad_negocio_id,fecha_operacion,sistema_origen ORDER BY unidad_negocio_id;"
+        },
+        {
+          "name": "soft_detail_postcommit_vs_runtime",
+          "sql": "WITH d AS (SELECT unidad_negocio_id,fecha_operacion,id_transaccion,SUM(ISNULL(importe_neto,0)) AS venta_ticket,MAX(ISNULL(pax,0)) AS pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('130MID','ESTELAR') AND fecha_operacion='2026-10-19' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND numero_ticket IS NOT NULL GROUP BY unidad_negocio_id,fecha_operacion,id_transaccion), a AS (SELECT unidad_negocio_id,fecha_operacion,CAST(SUM(venta_ticket) AS decimal(18,2)) AS detalle_venta,COUNT(*) AS detalle_tickets,SUM(pax_ticket) AS detalle_pax FROM d GROUP BY unidad_negocio_id,fecha_operacion) SELECT r.unidad_negocio_id,r.fecha_operacion,r.ventas_total AS runtime_venta,a.detalle_venta,CAST(ISNULL(a.detalle_venta,0)-ISNULL(r.ventas_total,0) AS decimal(18,2)) AS delta_venta,r.tickets_total AS runtime_tickets,a.detalle_tickets,ISNULL(a.detalle_tickets,0)-ISNULL(r.tickets_total,0) AS delta_tickets,r.pax_total AS runtime_pax,a.detalle_pax,ISNULL(a.detalle_pax,0)-ISNULL(r.pax_total,0) AS delta_pax FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime r LEFT JOIN a ON a.unidad_negocio_id=r.unidad_negocio_id AND a.fecha_operacion=r.fecha_operacion WHERE r.unidad_negocio_id IN ('130MID','ESTELAR') AND r.fecha_operacion='2026-10-19' ORDER BY r.unidad_negocio_id;"
+        }
+      ]
+    }
+  ]
+}
