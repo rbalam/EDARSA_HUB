@@ -1,0 +1,303 @@
+{
+  "base_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-20T19:14:48Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-POST-CLOSE-RECHECK-R28-CARLOS-20261020T1914Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T19:16:10Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "max_turno_apertura",
+              "max_turno_cierre",
+              "max_cheque_fecha",
+              "max_cheque_cierre",
+              "tempcheques_rows",
+              "max_tempcheque_fecha"
+            ],
+            "name": "cienfuegos_current_freshness_after_close",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "softrestaurant12",
+                "2026-10-19T15:53:22",
+                "2026-10-20T13:08:51",
+                "2026-10-19T21:35:34",
+                "2026-10-20T10:43:27",
+                "0",
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "tickets",
+              "total",
+              "propina",
+              "pax",
+              "tickets_sin_cierre",
+              "apertura_min",
+              "apertura_max",
+              "turno_cierre_min",
+              "turno_cierre_max",
+              "cheque_fecha_min",
+              "cheque_fecha_max",
+              "cheque_cierre_min",
+              "cheque_cierre_max"
+            ],
+            "name": "cienfuegos_closed_aggregate_oct19",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                13,
+                "55100.00",
+                "5850.52",
+                "38",
+                0,
+                "2026-10-19T15:53:22",
+                "2026-10-19T15:53:22",
+                "2026-10-20T13:08:51",
+                "2026-10-20T13:08:51",
+                "2026-10-19T14:03:56",
+                "2026-10-19T21:35:34",
+                "2026-10-19T15:53:54",
+                "2026-10-20T10:43:27"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "folio",
+              "numcheque",
+              "idturno",
+              "apertura",
+              "turno_cierre",
+              "fecha",
+              "cheque_cierre",
+              "total",
+              "propina",
+              "pax",
+              "cancelado"
+            ],
+            "name": "cienfuegos_closed_tickets_oct19",
+            "row_count_returned": 13,
+            "rows": [
+              [
+                "107109",
+                "104558",
+                "2726",
+                "2026-10-19T15:53:22",
+                "2026-10-20T13:08:51",
+                "2026-10-19T14:03:56",
+                "2026-10-19T15:54:27",
+                "3039.00",
+                "455.85",
+                "1",
+                false
+              ],
+              [
+                "107110",
+                "104557",
+                "2726",
+                "2026-10-19T15:53:22",
+                "2026-10-20T13:08:51",
+                "2026-10-19T14:14:48",
+                "2026-10-19T15:53:54",
+                "4219.00",
+                "421.90",
+                "3",
+                false
+              ],
+              [
+                "107111",
+                "104559",
+                "2726",
+                "2026-10-19T15:53:22",
+                "2026-10-20T13:08:51",
+                "2026-10-19T14:48:21",
+                "2026-10-19T16:01:35",
+                "2187.00",
+                "0.00",
+                "2",
+                false
+              ],
+              [
+                "107112",
+                "104561",
+                "2726",
+                "2026-10-19T15:53:22",
+                "2026-10-20T13:08:51",
+                "2026-10-19T14:59:53",
+                "2026-10-19T17:41:59",
+                "7045.00",
+                "1056.75",
+                "4",
+                false
+              ],
+              [
+                "107113",
+                "104562",
+                "2726",
+                "2026-10-19T15:53:22",
+                "2026-10-20T13:08:51",
+                "2026-10-19T15:46:17",
+                "2026-10-19T17:59:07",
+                "10830.00",
+                "1624.50",
+                "6",
+                false
+              ],
+              [
+                "107114",
+                "104560",
+                "2726",
+                "2026-10-19T15:53:22",
+                "2026-10-20T13:08:51",
+                "2026-10-19T16:04:53",
+                "2026-10-19T17:41:24",
+                "1815.00",
+                "272.25",
+                "2",
+                false
+              ],
+              [
+                "107115",
+                "104563",
+                "2726",
+                "2026-10-19T15:53:22",
+                "2026-10-20T13:08:51",
+                "2026-10-19T16:10:11",
+                "2026-10-19T20:04:04",
+                "440.00",
+                "0.00",
+                "1",
+                false
+              ],
+              [
+                "107116",
+                "104565",
+                "2726",
+                "2026-10-19T15:53:22",
+                "2026-10-20T13:08:51",
+                "2026-10-19T18:38:08",
+                "2026-10-19T20:42:37",
+                "6746.00",
+                "809.52",
+                "4",
+                false
+              ],
+              [
+                "107117",
+                "104566",
+                "2726",
+                "2026-10-19T15:53:22",
+                "2026-10-20T13:08:51",
+                "2026-10-19T19:47:59",
+                "2026-10-19T21:07:53",
+                "4245.00",
+                "636.75",
+                "2",
+                false
+              ],
+              [
+                "107120",
+                "104569",
+                "2726",
+                "2026-10-19T15:53:22",
+                "2026-10-20T13:08:51",
+                "2026-10-19T20:05:06",
+                "2026-10-19T22:07:54",
+                "9084.00",
+                "0.00",
+                "9",
+                false
+              ],
+              [
+                "107119",
+                "104568",
+                "2726",
+                "2026-10-19T15:53:22",
+                "2026-10-20T13:08:51",
+                "2026-10-19T20:09:00",
+                "2026-10-19T21:40:22",
+                "3820.00",
+                "573.00",
+                "2",
+                false
+              ],
+              [
+                "107121",
+                "104570",
+                "2726",
+                "2026-10-19T15:53:22",
+                "2026-10-20T13:08:51",
+                "2026-10-19T21:18:29",
+                "2026-10-20T10:43:27",
+                "330.00",
+                "0.00",
+                "1",
+                false
+              ],
+              [
+                "107122",
+                "104567",
+                "2726",
+                "2026-10-19T15:53:22",
+                "2026-10-20T13:08:51",
+                "2026-10-19T21:35:34",
+                "2026-10-19T21:35:56",
+                "1300.00",
+                "0.00",
+                "1",
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "idturno",
+              "apertura",
+              "cierre"
+            ],
+            "name": "cienfuegos_turnos_oct19",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2726",
+                "2026-10-19T15:53:22",
+                "2026-10-20T13:08:51"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-20T19:14:47Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
