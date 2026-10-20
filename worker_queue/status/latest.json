@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "d8f913bb87a0c3d1fb7e2ca9a31ca572c5dd5662",
-  "generated_at_utc": "2026-10-20T05:52:34Z",
+  "generated_at_utc": "2026-10-20T05:54:04Z",
   "history": {
     "done_total_local": 1470,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2859,
+      "age_seconds": 2949,
       "job_id": "SERVIDORES6-CHAPUR-EXTERNAL-READINESS-R1-20261019",
       "reasons": [
         "INVALID_TARGET_REPO",
@@ -28,19 +28,19 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1543,
+      "age_seconds": 1633,
       "job_id": "SERVIDORES6-CHAPUR-API-LOCAL-HEALTH-TEST-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 60,
+      "age_seconds": 150,
       "job_id": "SERVIDORES6-CHAPUR-API-LOCAL-HEALTH-TEST-R2-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2531,
+      "age_seconds": 2621,
       "job_id": "SERVIDORES6-CHAPUR-EXTERNAL-READINESS-R2-20261019",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,12 +60,12 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-20T05:52:23Z",
-    "last_receive_utc": "2026-10-20T05:52:18Z",
+    "last_cycle_utc": "2026-10-20T05:53:53Z",
+    "last_receive_utc": "2026-10-20T05:53:48Z",
     "last_terminal_utc": "2026-10-20T05:51:34Z",
-    "pid": "40056",
+    "pid": "54587",
     "runtime_fingerprint": {
-      "active_worker_code_tree_sha": "725d2fe897d2eedf0bd73900ca5772eacaf54f54",
+      "active_worker_code_tree_sha": "ab43b7589f40bf27cebcc3b86598e29c61c12637",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
       "development_sha": "d8f913bb87a0c3d1fb7e2ca9a31ca572c5dd5662",
@@ -82,7 +82,7 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": false,
+      "worker_code_tree_aligned": true,
       "worker_code_tree_sha": "ab43b7589f40bf27cebcc3b86598e29c61c12637"
     }
   },
