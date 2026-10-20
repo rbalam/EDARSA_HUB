@@ -1,0 +1,33 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-TOAST-GATE4-CANONICAL-SCHEMA-READONLY-R2-20261020",
+  "created_at_utc": "2026-10-20T22:19:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "7dabee9cd5de2b7e8b51fa16fc033793beeaaac6",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Recuperacion quirurgica Toast Gate4 R2: auditoria SQL exclusivamente metadata canónica de columnas, constraints y FK usando INFORMATION_SCHEMA, con consultas independientes para aislar cualquier fallo. No DDL/DML, no secrets, no pruebas Toast, no Production. Preparar plan de alta sin ejecutar.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "TOAST_G4_R2_COLUMNS",
+          "sql": "SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE,IS_NULLABLE,COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME IN ('Sistema_Tipos','Sistema_TiposVariantes','Sistema_VersionesSistemas','Sistema_Capacidades','Sistema_Sync_Catalogo','Sistema_Sync_Capacidades','Servidores_Conexiones','Sistema_IdentificadoresExternos') ORDER BY TABLE_NAME,ORDINAL_POSITION;"
+        },
+        {
+          "name": "TOAST_G4_R2_CONSTRAINTS",
+          "sql": "SELECT tc.TABLE_NAME,tc.CONSTRAINT_NAME,tc.CONSTRAINT_TYPE,kcu.COLUMN_NAME,kcu.ORDINAL_POSITION FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc LEFT JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu ON kcu.CONSTRAINT_NAME=tc.CONSTRAINT_NAME AND kcu.TABLE_NAME=tc.TABLE_NAME AND kcu.TABLE_SCHEMA=tc.TABLE_SCHEMA WHERE tc.TABLE_SCHEMA='dbo' AND tc.TABLE_NAME IN ('Sistema_Tipos','Sistema_TiposVariantes','Sistema_VersionesSistemas','Sistema_Capacidades','Sistema_Sync_Catalogo','Sistema_Sync_Capacidades','Servidores_Conexiones','Sistema_IdentificadoresExternos') ORDER BY tc.TABLE_NAME,tc.CONSTRAINT_NAME,kcu.ORDINAL_POSITION;"
+        },
+        {
+          "name": "TOAST_G4_R2_REFERENCES",
+          "sql": "SELECT fk.TABLE_NAME,fk.COLUMN_NAME,fk.CONSTRAINT_NAME,pk.TABLE_NAME AS REFERENCED_TABLE,pk.COLUMN_NAME AS REFERENCED_COLUMN FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE fk ON fk.CONSTRAINT_NAME=rc.CONSTRAINT_NAME JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE pk ON pk.CONSTRAINT_NAME=rc.UNIQUE_CONSTRAINT_NAME AND pk.ORDINAL_POSITION=fk.ORDINAL_POSITION WHERE fk.TABLE_SCHEMA='dbo' AND fk.TABLE_NAME IN ('Sistema_Tipos','Sistema_TiposVariantes','Sistema_VersionesSistemas','Sistema_Capacidades','Sistema_Sync_Catalogo','Sistema_Sync_Capacidades','Servidores_Conexiones','Sistema_IdentificadoresExternos') ORDER BY fk.TABLE_NAME,fk.CONSTRAINT_NAME,fk.ORDINAL_POSITION;"
+        }
+      ]
+    }
+  ]
+}
