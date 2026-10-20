@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-TOAST-GATE5-CANONICAL-ONBOARDING-PLAN-READONLY-R1-20261020",
+  "created_at_utc": "2026-10-20T22:19:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "dc7d2eecad33d3c8c730b3ac2924e3a4a67d8978",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "objective": "Preparar diseño exacto y reversible para dar de alta Toast exclusivamente en catálogos universales existentes. Usar Gate3 y Gate4 R2 certificados. Comprobar si Toast ya existe antes de cualquier futura inserción, enumerar requisitos NOT NULL/default/PK/FK, verificar correspondencia de Sistema_Tipos, Sistema_VersionesSistemas, Sistema_Capacidades, Sistema_Sync_Catalogo, Sistema_Sync_Capacidades, Servidores_Conexiones y Sistema_IdentificadoresExternos. Identificar si adapter/executor Toast existe sin suponerlo; señalar bloqueo si no existe. NO ejecutar DML/DDL ni crear conexiones o secretos. No tocar Production.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "TOAST_G5_PREEXISTENCE",
+          "sql": "SELECT SistemaTipoID,CodigoSistema,NombreSistema,Activo FROM dbo.Sistema_Tipos WHERE UPPER(CodigoSistema) LIKE '%TOAST%' OR UPPER(NombreSistema) LIKE '%TOAST%';"
+        },
+        {
+          "name": "TOAST_G5_VERSIONS",
+          "sql": "SELECT sistema_version_id,tipo_sistema,nombre_sistema,version_sistema,proveedor,activo FROM dbo.Sistema_VersionesSistemas WHERE UPPER(tipo_sistema) LIKE '%TOAST%' OR UPPER(nombre_sistema) LIKE '%TOAST%';"
+        },
+        {
+          "name": "TOAST_G5_SYNC",
+          "sql": "SELECT Codigo,Nombre,Handler,HandlerImplementado,TablaDestino,Activo FROM dbo.Sistema_Sync_Catalogo WHERE UPPER(Codigo) LIKE '%TOAST%' OR UPPER(Nombre) LIKE '%TOAST%';"
+        },
+        {
+          "name": "TOAST_G5_CONNECTIONS",
+          "sql": "SELECT id,nombre,system_type,tipo_conexion,activo,sistema_version_id FROM dbo.Servidores_Conexiones WHERE UPPER(system_type) LIKE '%TOAST%' OR UPPER(nombre) LIKE '%TOAST%';"
+        }
+      ]
+    }
+  ]
+}
