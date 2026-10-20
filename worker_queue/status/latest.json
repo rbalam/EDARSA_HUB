@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "7dabee9cd5de2b7e8b51fa16fc033793beeaaac6",
-  "generated_at_utc": "2026-10-20T21:35:19Z",
+  "generated_at_utc": "2026-10-20T21:36:51Z",
   "history": {
     "done_total_local": 1505,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 885,
+      "age_seconds": 977,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-CONNECTION-ROLE-AUDIT-PROFILE-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 11,
+      "age_seconds": 103,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-CONNECTION-ROLE-AUDIT-PROFILE-R2-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 549,
+      "age_seconds": 641,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-FINAL-READONLY-AUDIT-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,12 +48,12 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-20T21:35:04Z",
-    "last_receive_utc": "2026-10-20T21:35:15Z",
+    "last_cycle_utc": "2026-10-20T21:36:38Z",
+    "last_receive_utc": "2026-10-20T21:36:32Z",
     "last_terminal_utc": "2026-10-20T21:35:07Z",
-    "pid": "13264",
+    "pid": "74149",
     "runtime_fingerprint": {
-      "active_worker_code_tree_sha": "2669bbfa1875cafe7a7432249065f347f516cde1",
+      "active_worker_code_tree_sha": "1aa0273f9ae1d36d83e9243634c50fe2742009be",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
       "development_sha": "7dabee9cd5de2b7e8b51fa16fc033793beeaaac6",
@@ -70,7 +70,7 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": false,
+      "worker_code_tree_aligned": true,
       "worker_code_tree_sha": "1aa0273f9ae1d36d83e9243634c50fe2742009be"
     }
   },
