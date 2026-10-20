@@ -1,0 +1,59 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-CHAPUR-GATE4D-HEALTH-TIMEOUT-CANONICAL-R1-20261020",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "8e8bac78c048f93ccd0ebe4a86ce02d140296e27",
+  "objective": "Canonizar el timeout API_LOCAL para que health reutilice el mismo valor por defecto del transporte canonico. Mantener autenticacion, masking, persistencia y contratos existentes. No modificar credenciales, no SQL, no Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "Conexiones y Comunicaciones",
+    "chat": "Menu Servidores 6"
+  },
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/integrations_runtime/api_local_sync.py",
+      "old": "class ApiLocalSyncError(RuntimeError):\n    \"\"\"Fallo controlado del transport API_LOCAL de sincronizacion.\"\"\"\n\n\n@dataclass(frozen=True)",
+      "new": "class ApiLocalSyncError(RuntimeError):\n    \"\"\"Fallo controlado del transport API_LOCAL de sincronizacion.\"\"\"\n\n\nDEFAULT_API_LOCAL_TIMEOUT_SECONDS = 30\n\n\n@dataclass(frozen=True)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/integrations_runtime/api_local_sync.py",
+      "old": "    timeout_seconds: int = 30,",
+      "new": "    timeout_seconds: int = DEFAULT_API_LOCAL_TIMEOUT_SECONDS,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/repository.py",
+      "old": "        response = requests.get(\n            url,\n            headers=headers,\n            params={\"sql\": \"SELECT 1 as test\"},\n            timeout=5\n        )",
+      "new": "        from modules.integrations_runtime.api_local_sync import (\n            DEFAULT_API_LOCAL_TIMEOUT_SECONDS,\n        )\n        response = requests.get(\n            url,\n            headers=headers,\n            params={\"sql\": \"SELECT 1 as test\"},\n            timeout=DEFAULT_API_LOCAL_TIMEOUT_SECONDS,\n        )",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_api_connection_health_canonical_timeout.py",
+      "content": "import sys\nfrom types import SimpleNamespace\n\nimport pytest\n\nimport modules.api_connections.repository as repository\nfrom modules.integrations_runtime.api_local_sync import DEFAULT_API_LOCAL_TIMEOUT_SECONDS\n\n\n@pytest.mark.asyncio\nasync def test_health_reuses_canonical_api_local_timeout(monkeypatch):\n    captured = {}\n\n    monkeypatch.setattr(\n        repository,\n        \"get_api_connection_with_decrypted_key\",\n        lambda api_id: {\n            \"id\": api_id,\n            \"url\": \"http://example.invalid/query\",\n            \"api_key_decrypted\": \"fixture-value\",\n            \"activo\": True,\n        },\n    )\n\n    class Response:\n        status_code = 200\n        elapsed = SimpleNamespace(total_seconds=lambda: 0.012)\n\n    def fake_get(url, *, headers, params, timeout):\n        captured[\"timeout\"] = timeout\n        return Response()\n\n    import requests\n    monkeypatch.setattr(requests, \"get\", fake_get)\n\n    monkeypatch.setitem(\n        sys.modules,\n        \"modules.integrations_runtime.health\",\n        SimpleNamespace(persist_connection_health=lambda *a, **k: None),\n    )\n\n    result = await repository.test_api_connection_health(\n        api_id=\"00000000-0000-4000-8000-000000000703\"\n    )\n\n    assert result[\"success\"] is True\n    assert captured[\"timeout\"] == DEFAULT_API_LOCAL_TIMEOUT_SECONDS\n    assert DEFAULT_API_LOCAL_TIMEOUT_SECONDS == 30\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_api_connection_health_internal_auth.py",
+        "backend/tests/test_api_connection_health_canonical_timeout.py",
+        "backend/tests/test_integrations_runtime_api_local_sync.py",
+        "backend/tests/test_integrations_runtime_health_transaction.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
