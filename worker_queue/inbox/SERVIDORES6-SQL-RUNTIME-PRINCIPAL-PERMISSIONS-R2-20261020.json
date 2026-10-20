@@ -1,0 +1,30 @@
+{
+  "actions": [],
+  "audit_profile": "sql_runtime_principal_permissions_v1",
+  "checks": [],
+  "human_summary_language": "es",
+  "job_id": "SERVIDORES6-SQL-RUNTIME-PRINCIPAL-PERMISSIONS-R2-20261020",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar exclusivamente en READ_ONLY los principals SQL candidatos de escritura runtime en EDARSAHUB Development y sus roles/permisos efectivos, para identificar el writer real antes de modificar edarsahub_writer_connection.py. No cambiar permisos, no ejecutar DDL/DML, no SQL inline, no secretos, no Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Menu Servidores 6",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "Conexiones y Comunicaciones",
+    "source": "chatgpt-classic"
+  },
+  "scheduling": {
+    "bounded_context": "Conexiones y Comunicaciones",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "Conexiones y Comunicaciones",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
