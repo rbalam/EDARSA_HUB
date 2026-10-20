@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-REGISTRY-AUDIT-R24-CARLOS-20261020T1907Z",
+  "created_at_utc": "2026-10-20T19:07:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
+  "production_allowed": false,
+  "objective": "Auditar en solo lectura el catálogo EDARSAHUB para identificar todas las conexiones SQL, DATA_SOURCE y API_LOCAL relacionadas con CIENFUEGOS, sin exponer credenciales. Determinar cuál está vinculada actualmente a Unidades_Negocio y si existe una conexión alternativa activa para ventas.",
+  "acceptance": [
+    "Listar todos los servidores cuyo nombre o unidad relacionada contenga CIENFUEGOS",
+    "Mostrar server_id, nombre, system_type, tipo_conexion, puerto, database_name, presencia de host/API URL y activo",
+    "Mostrar la unidad actualmente vinculada a cada server_id",
+    "No mostrar host, usuario, password, api_key o secretos",
+    "Cero DDL, cero DML y production_touched=false"
+  ],
+  "constraints": [
+    "No tocar los sincronizadores de Ventas del dia o Ventas cerradas",
+    "No modificar Servidores_Conexiones ni Unidades_Negocio",
+    "No ejecutar sincronizaciones",
+    "Mantener enfoque atomico, canonico y transversal",
+    "Trabajar solo en Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_registry_candidates",
+          "sql": "SELECT CONVERT(varchar(36),s.id) AS server_id,CONVERT(varchar(200),s.nombre) AS servidor_nombre,CONVERT(varchar(100),s.system_type) AS system_type,CONVERT(varchar(50),s.tipo_conexion) AS tipo_conexion,s.port,CONVERT(varchar(200),s.database_name) AS database_name,CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(varchar(max),s.api_url))),'') IS NULL THEN 0 ELSE 1 END AS tiene_api_url,CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(varchar(max),s.host))),'') IS NULL THEN 0 ELSE 1 END AS tiene_host,s.activo,CONVERT(varchar(100),u.codigo) AS unidad_codigo,CONVERT(varchar(200),u.nombre) AS unidad_nombre,CASE WHEN u.server_id=s.id THEN 1 ELSE 0 END AS vinculada_actualmente FROM dbo.Servidores_Conexiones s LEFT JOIN dbo.Unidades_Negocio u ON u.server_id=s.id WHERE UPPER(ISNULL(CONVERT(varchar(200),s.nombre),'')) LIKE '%CIENFUEGOS%' OR UPPER(ISNULL(CONVERT(varchar(100),u.codigo),''))='CIENFUEGOS' OR UPPER(ISNULL(CONVERT(varchar(200),u.nombre),'')) LIKE '%CIENFUEGOS%' ORDER BY s.activo DESC,s.tipo_conexion,s.nombre;"
+        },
+        {
+          "name": "cienfuegos_unit_current_mapping",
+          "sql": "SELECT CONVERT(varchar(36),u.id) AS unidad_pk,CONVERT(varchar(100),u.codigo) AS unidad_codigo,CONVERT(varchar(200),u.nombre) AS unidad_nombre,CONVERT(varchar(100),u.system_type) AS unidad_system_type,CONVERT(varchar(36),u.server_id) AS server_id,CONVERT(varchar(200),s.nombre) AS servidor_nombre,CONVERT(varchar(100),s.system_type) AS servidor_system_type,CONVERT(varchar(50),s.tipo_conexion) AS tipo_conexion,s.port,CONVERT(varchar(200),s.database_name) AS database_name,s.activo AS servidor_activo FROM dbo.Unidades_Negocio u LEFT JOIN dbo.Servidores_Conexiones s ON s.id=u.server_id WHERE UPPER(LTRIM(RTRIM(CONVERT(varchar(100),u.codigo))))='CIENFUEGOS';"
+        }
+      ]
+    }
+  ]
+}
