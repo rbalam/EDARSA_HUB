@@ -509,13 +509,18 @@ async def test_api_connection_health(api_id: str = None, url: str = None, api_ke
     """
     import requests
     
-    # Si se proporciona api_id, obtener config desde EDARSAHUB SQL
+    # Si se proporciona api_id, resolver autenticacion exclusivamente
+    # por el helper interno. El lector publico enmascara api_key y nunca
+    # debe alimentar autenticacion runtime.
     if api_id:
-        api = get_api_connection_sql(api_id)
+        api = get_api_connection_with_decrypted_key(api_id)
         if not api:
-            return {"success": False, "error": "API no encontrada en EDARSAHUB SQL"}
+            return {
+                "success": False,
+                "error": "API no encontrada o credencial no descifrable en EDARSAHUB SQL",
+            }
         url = api.get('url')
-        api_key = api.get('api_key')
+        api_key = api.get('api_key_decrypted')
     
     if not url:
         return {"success": False, "error": "URL no proporcionada"}
@@ -582,8 +587,8 @@ async def test_api_connection_health(api_id: str = None, url: str = None, api_ke
 def get_api_connection_with_decrypted_key(api_id: str) -> Optional[Dict]:
     """
     Obtiene una conexión API con la API key descifrada.
-    SOLO PARA USO INTERNO EN TEST-QUERY.
-    NUNCA exponer en responses de API.
+    SOLO PARA USO INTERNO de health/test-query.
+    NUNCA exponer en responses de API ni logs.
     """
     try:
         query = f"""
