@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "7dabee9cd5de2b7e8b51fa16fc033793beeaaac6",
-  "generated_at_utc": "2026-10-20T21:55:54Z",
+  "generated_at_utc": "2026-10-20T21:57:16Z",
   "history": {
     "done_total_local": 1506,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 109,
+      "age_seconds": 192,
       "job_id": "SERVIDORES6-API-CONNECTIONS-DECOUPLE-LEGACY-SOLO-VENTAS-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2120,
+      "age_seconds": 2203,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-CONNECTION-ROLE-AUDIT-PROFILE-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1246,
+      "age_seconds": 1329,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-CONNECTION-ROLE-AUDIT-PROFILE-R2-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1784,
+      "age_seconds": 1866,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-FINAL-READONLY-AUDIT-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 811,
+      "age_seconds": 894,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-FINAL-READONLY-AUDIT-R2-20261020",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-20T21:55:45Z",
-    "last_receive_utc": "2026-10-20T21:55:40Z",
+    "last_cycle_utc": "2026-10-20T21:57:11Z",
+    "last_receive_utc": "2026-10-20T21:57:05Z",
     "last_terminal_utc": "2026-10-20T21:54:04Z",
     "pid": "74149",
     "runtime_fingerprint": {
