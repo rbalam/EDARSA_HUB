@@ -1,0 +1,66 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-SOFT-BASE-RUNTIME-PARITY-R9-CARLOS-20261020T1817Z",
+  "created_at_utc": "2026-10-20T18:17:00Z",
+  "requested_by": "chatgpt",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ed99b9ced84f20243445690bf4ffa109873e8d90",
+  "production_allowed": false,
+  "objective": "Auditar en solo lectura la paridad entre dbo.Comercial_KPIs_Diarios_v2 y dbo.vw_Comercial_KPIs_Diarios_v2_Runtime para 130MID, ESTELAR y CIENFUEGOS el 19 de octubre de 2026. Determinar si la resta de propina y la poblacion de tickets ya estan almacenadas en tabla base o si se transforman en la vista Runtime. Incluir hash, version, run_id, fuente y snapshots vigentes. No modificar datos ni sincronizadores.",
+  "acceptance": [
+    "Mostrar ventas_total, ventas_sin_propina, propinas_total, tickets_total y pax_total de tabla base",
+    "Mostrar los mismos campos de Runtime",
+    "Mostrar la diferencia base versus Runtime",
+    "Mostrar snapshots recientes que pudieran hacer overlay",
+    "Confirmar la definicion SQL activa de la vista Runtime mediante OBJECT_DEFINITION sin secretos",
+    "Cero DDL, cero DML, cero cambios y production_touched=false"
+  ],
+  "constraints": [
+    "No tocar el sincronizador de Ventas del dia",
+    "No tocar el sincronizador de Ventas cerradas",
+    "No ejecutar sincronizaciones ni backfills",
+    "No escribir en SQL ni POS",
+    "No exponer credenciales o secretos",
+    "Mantener enfoque atomico, canonico y transversal",
+    "Trabajar solo en Edarsahub_Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "tecnico-ejecutivo",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "soft_kpi_base_20261019",
+          "sql": "SELECT unidad_negocio_pk,unidad_negocio_id,unidad_negocio_nombre,fecha_operacion,ventas_total,ventas_sin_propina,propinas_total,tickets_total,pax_total,ventas_cerradas,ventas_abiertas,total_estimado_dia,es_venta_abierta,es_corte_cerrado,fuente_original,hash_origen,sync_run_id,fecha_sincronizacion,fecha_ultima_actualizacion,version FROM dbo.Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_id IN ('130MID','ESTELAR','CIENFUEGOS') AND fecha_operacion='2026-10-19' AND ISNULL(activo,1)=1 ORDER BY unidad_negocio_id;"
+        },
+        {
+          "name": "soft_kpi_runtime_20261019",
+          "sql": "SELECT unidad_negocio_pk,unidad_negocio_id,unidad_negocio_nombre,fecha_operacion,ventas_total,ventas_sin_propina,propinas_total,tickets_total,pax_total,ventas_cerradas,ventas_abiertas,total_estimado_dia,es_venta_abierta,es_corte_cerrado,fuente_original,hash_origen,sync_run_id,fecha_sincronizacion,fecha_ultima_actualizacion,version FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id IN ('130MID','ESTELAR','CIENFUEGOS') AND fecha_operacion='2026-10-19' ORDER BY unidad_negocio_id;"
+        },
+        {
+          "name": "soft_base_runtime_delta_20261019",
+          "sql": "SELECT b.unidad_negocio_id,b.ventas_total AS base_ventas,r.ventas_total AS runtime_ventas,CAST(ISNULL(r.ventas_total,0)-ISNULL(b.ventas_total,0) AS decimal(18,2)) AS delta_ventas,b.ventas_sin_propina AS base_sin_propina,r.ventas_sin_propina AS runtime_sin_propina,b.propinas_total AS base_propina,r.propinas_total AS runtime_propina,b.tickets_total AS base_tickets,r.tickets_total AS runtime_tickets,b.pax_total AS base_pax,r.pax_total AS runtime_pax,r.fuente_original AS runtime_fuente FROM dbo.Comercial_KPIs_Diarios_v2 b LEFT JOIN dbo.vw_Comercial_KPIs_Diarios_v2_Runtime r ON r.unidad_negocio_id=b.unidad_negocio_id AND r.fecha_operacion=b.fecha_operacion WHERE b.unidad_negocio_id IN ('130MID','ESTELAR','CIENFUEGOS') AND b.fecha_operacion='2026-10-19' AND ISNULL(b.activo,1)=1 ORDER BY b.unidad_negocio_id;"
+        },
+        {
+          "name": "soft_snapshots_20261019",
+          "sql": "SELECT unidad_negocio_id,fecha_operacion,snapshot_timestamp,ventas_abiertas,ventas_cerradas_dia,total_estimado_dia,propinas_total,tickets_abiertos,tickets_cerrados_dia,pax_abiertos,pax_cerrados_dia,sync_run_id,fecha_ultima_actualizacion FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WHERE unidad_negocio_id IN ('130MID','ESTELAR','CIENFUEGOS') AND fecha_operacion='2026-10-19' ORDER BY unidad_negocio_id,snapshot_timestamp DESC;"
+        },
+        {
+          "name": "runtime_view_definition",
+          "sql": "SELECT OBJECT_DEFINITION(OBJECT_ID('dbo.vw_Comercial_KPIs_Diarios_v2_Runtime')) AS view_definition;"
+        }
+      ]
+    }
+  ]
+}
