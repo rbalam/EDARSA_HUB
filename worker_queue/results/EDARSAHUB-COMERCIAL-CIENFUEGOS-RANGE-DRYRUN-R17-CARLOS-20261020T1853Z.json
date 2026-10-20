@@ -1,0 +1,56 @@
+{
+  "base_sha": "d652050b9bb8f7e9f860eacb8b18658d575a60a9",
+  "blockers": [
+    "comercial_range_resync_failed_units:CIENFUEGOS"
+  ],
+  "canonical_sql_mutation": false,
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-20T18:52:59Z",
+  "dry_run": true,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-RANGE-DRYRUN-R17-CARLOS-20261020T1853Z",
+  "operation": "COMERCIAL_RANGE_RESYNC",
+  "operation_summary": {
+    "fecha_fin": "2026-10-19",
+    "fecha_inicio": "2026-10-19",
+    "unidades": [
+      {
+        "detail_success": false,
+        "header_success": true,
+        "records_errored": 0,
+        "records_inserted": 0,
+        "records_processed": 1,
+        "records_skipped": 0,
+        "records_updated": 0,
+        "returncode": 5,
+        "stage": "HEADER_KPI",
+        "success": true,
+        "unidad": "CIENFUEGOS",
+        "warning": "El detalle ISCAM tiene días/tickets bloqueados que no conciliaron contra Runtime V2."
+      }
+    ],
+    "unidades_fallidas": [
+      "CIENFUEGOS"
+    ],
+    "unidades_ok": 0,
+    "unidades_total": 1
+  },
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T18:53:43Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-20T18:52:54Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "work_completion": "NOT_CERTIFIED"
+}
