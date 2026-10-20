@@ -1,0 +1,95 @@
+{
+  "base_sha": "21b8326d9a65acee99af9f98d9451527f9427555",
+  "blockers": [
+    "iscam_detail_backfill_failed:rc=1"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-20T18:12:11Z",
+  "dry_run": true,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-DRYRUN-R7-CARLOS-20261020T1811Z",
+  "operation": "ISCAM_DETAIL_BACKFILL",
+  "operation_summary": {
+    "dias_bloqueados": 2,
+    "dias_candidatos": 2,
+    "dias_evaluados": 2,
+    "dias_reparables": 0,
+    "dias_sin_runtime": 0,
+    "dias_ya_ok": 0,
+    "fecha_fin_exclusivo": "2026-10-20",
+    "fecha_inicio": "2026-10-19",
+    "filas_insertadas": 0,
+    "modo": "DRY_RUN",
+    "unidades": [
+      {
+        "bloqueados": 1,
+        "candidatos": 1,
+        "dias": [
+          {
+            "delta_pax": 0,
+            "delta_tickets": 0,
+            "delta_ventas": "5426.4000",
+            "fecha_operacion": "2026-10-19",
+            "filas_insertadas": 0,
+            "pax_pos": 22,
+            "pax_runtime": 22,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 8,
+            "tickets_runtime": 8,
+            "ventas_pos": "55983.0000",
+            "ventas_runtime": "50556.60"
+          }
+        ],
+        "filas_insertadas": 0,
+        "reparables": 0,
+        "sin_runtime": 0,
+        "unidad": "130MID",
+        "ya_ok": 0
+      },
+      {
+        "bloqueados": 1,
+        "candidatos": 1,
+        "dias": [
+          {
+            "delta_pax": 5,
+            "delta_tickets": 4,
+            "delta_ventas": "3951.4000",
+            "fecha_operacion": "2026-10-19",
+            "filas_insertadas": 0,
+            "pax_pos": 47,
+            "pax_runtime": 42,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 18,
+            "tickets_runtime": 14,
+            "ventas_pos": "25128.0000",
+            "ventas_runtime": "21176.60"
+          }
+        ],
+        "filas_insertadas": 0,
+        "reparables": 0,
+        "sin_runtime": 0,
+        "unidad": "ESTELAR",
+        "ya_ok": 0
+      }
+    ]
+  },
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T18:12:59Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-20T18:12:06Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "units": [
+    "ESTELAR",
+    "130MID"
+  ],
+  "work_completion": "NOT_CERTIFIED"
+}
