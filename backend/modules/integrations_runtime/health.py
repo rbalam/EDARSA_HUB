@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
-from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
+from core.connections.edarsahub_writer_connection import open_validated_writer_connection
 
 
 def _uuid_text(value: str) -> str:
@@ -34,7 +34,7 @@ def persist_connection_health(
     status = "CONNECTED" if success else "ERROR"
     legacy_mongo_id = f"SQLHEALTH:{connection_id}"
 
-    conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=10)
+    conn, _identity = open_validated_writer_connection()
     try:
         cur = conn.cursor(as_dict=True)
         cur.execute("SET XACT_ABORT ON")

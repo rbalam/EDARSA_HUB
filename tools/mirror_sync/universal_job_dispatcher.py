@@ -1879,6 +1879,29 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                         break
             result["checks"] = check_results
 
+            post_health_ids = set()
+            for check_result in check_results:
+                payload = check_result.get("sql_evidence") if isinstance(check_result, dict) else None
+                if not isinstance(payload, dict):
+                    continue
+                for entry in payload.get("evidence") or []:
+                    if not isinstance(entry, dict):
+                        continue
+                    columns = [str(value) for value in (entry.get("columns") or [])]
+                    if "connection_id" not in columns:
+                        continue
+                    if not any(name in columns for name in ("EstadoConexion", "UltimaPruebaUTC", "FechaActualizacionUTC")):
+                        continue
+                    idx = columns.index("connection_id")
+                    for row in entry.get("rows") or []:
+                        if isinstance(row, list) and idx < len(row) and row[idx]:
+                            post_health_ids.add(str(row[idx]).strip().lower())
+
+            expected_health_ids = {value.lower() for value in connection_ids}
+            post_audit_complete = post_health_ids == expected_health_ids
+            if not post_audit_complete:
+                result["blockers"].append("API_LOCAL_HEALTH_TEST_POST_AUDIT_INCOMPLETE")
+
             persisted_all = (
                 len(health_results) == len(connection_ids)
                 and all(item.get("health_persisted") for item in health_results)
@@ -1888,9 +1911,10 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                 and check_results
                 and all(item["status"] == "PASS" for item in preflight_results + check_results)
                 and persisted_all
+                and post_audit_complete
             ) else "FAIL"
-            result["quality_gate"] = "PASS" if not result["blockers"] and persisted_all else "FAIL"
-            if not result["blockers"] and persisted_all:
+            result["quality_gate"] = "PASS" if not result["blockers"] and persisted_all and post_audit_complete else "FAIL"
+            if not result["blockers"] and persisted_all and post_audit_complete:
                 result["status"] = "OPERATIONAL_COMPLETE"
                 result["percent_complete"] = 100
                 result["certification"] = "CERTIFIED_OPERATIONAL"

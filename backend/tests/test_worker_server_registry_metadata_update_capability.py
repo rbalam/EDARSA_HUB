@@ -118,3 +118,17 @@ def test_bridge_rejects_secret_or_inline_execution_fields_for_api_local_health_t
         job[field] = "forbidden"
         errors = BRIDGE.validate(job)
         assert f"API_LOCAL_HEALTH_TEST_FORBIDDEN_FIELD:{field}" in errors
+
+
+def test_api_local_health_dispatcher_requires_post_audit_rows():
+    text = (ROOT / "tools/mirror_sync/universal_job_dispatcher.py").read_text(encoding="utf-8")
+    block = text.split("if mode == API_LOCAL_HEALTH_TEST_MODE:", 1)[1].split("if mode == SQL_MIGRATION_DEVELOPMENT_MODE:", 1)[0]
+    assert "API_LOCAL_HEALTH_TEST_POST_AUDIT_INCOMPLETE" in block
+    assert "post_health_ids" in block
+    assert "post_audit_complete" in block
+
+
+def test_health_writer_uses_validated_canonical_writer_connection():
+    text = (ROOT / "backend/modules/integrations_runtime/health.py").read_text(encoding="utf-8")
+    assert "open_validated_writer_connection" in text
+    assert "get_edarsahub_pymssql_connection" not in text
