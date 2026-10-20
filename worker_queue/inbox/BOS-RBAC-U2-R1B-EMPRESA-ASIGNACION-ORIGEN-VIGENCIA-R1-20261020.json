@@ -1,0 +1,91 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-RBAC-U2-R1B-EMPRESA-ASIGNACION-ORIGEN-VIGENCIA-R1-20261020",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Cruzar contrato estructural RBAC con evidencia SQL de solo lectura para determinar origen, vigencia y distribucion de Usuario_EmpresasAsignacion. Identificar si hay evidencia de migracion incompleta, decision administrativa o regla de negocio, sin asumir causalidad. Si la conexion apunta a Produccion o no se puede identificar entorno, detener consultas de datos y reportar bloqueo. No modificar SQL, permisos, sesiones, codigo ni Produccion.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "20. Seguridad",
+    "chat": "Menu Usuarios RBAC U2-R1B"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB",
+    "bounded_context": "AUTH_RBAC_U2_R1B",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "AUTH_RBAC",
+      "USER_ACCESS_CONTEXT",
+      "CORPORATE_IDENTITY"
+    ]
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/admin_sql/routes.py",
+          "backend/core/user_access_context.py",
+          "backend/core/access_context/sql_context.py",
+          "backend/core/auth/user_repository_sql.py",
+          "backend/core/corporate_identity_resolver.py",
+          "backend/modules/auth/routes.py",
+          "backend/migrations",
+          "migrations"
+        ],
+        "search_terms": [
+          "Usuario_EmpresasAsignacion",
+          "FechaInicio",
+          "FechaFin",
+          "UpdatedAt",
+          "UpdatedBy",
+          "Activo",
+          "EmpresaID",
+          "RBAC_ADMIN",
+          "SUPERADMIN",
+          "toggle-activo",
+          "empresas_permitidas",
+          "INSERT INTO Usuario_EmpresasAsignacion",
+          "UPDATE Usuario_EmpresasAsignacion"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [],
+        "max_results": 1500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "database_identity",
+          "sql": "SELECT DB_NAME() AS database_name, @@SERVERNAME AS server_name, SUSER_SNAME() AS login_name"
+        },
+        {
+          "name": "assignment_columns",
+          "sql": "SELECT c.name AS column_name, t.name AS data_type, c.is_nullable FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Usuario_EmpresasAsignacion') ORDER BY c.column_id"
+        },
+        {
+          "name": "assignment_status_counts",
+          "sql": "SELECT Activo, COUNT_BIG(*) AS assignments FROM dbo.Usuario_EmpresasAsignacion GROUP BY Activo ORDER BY Activo"
+        },
+        {
+          "name": "assignment_user_distribution",
+          "sql": "SELECT UsuarioID, COUNT_BIG(*) AS assignments, SUM(CASE WHEN Activo=1 THEN 1 ELSE 0 END) AS active_assignments FROM dbo.Usuario_EmpresasAsignacion GROUP BY UsuarioID ORDER BY UsuarioID"
+        },
+        {
+          "name": "assignment_company_distribution",
+          "sql": "SELECT EmpresaID, COUNT_BIG(*) AS assignments, SUM(CASE WHEN Activo=1 THEN 1 ELSE 0 END) AS active_assignments FROM dbo.Usuario_EmpresasAsignacion GROUP BY EmpresaID ORDER BY EmpresaID"
+        }
+      ]
+    }
+  ]
+}
