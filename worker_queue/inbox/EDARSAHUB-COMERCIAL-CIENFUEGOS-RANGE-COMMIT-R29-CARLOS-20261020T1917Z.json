@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-RANGE-COMMIT-R29-CARLOS-20261020T1917Z",
+  "created_at_utc": "2026-10-20T19:17:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
+  "production_allowed": false,
+  "objective": "Ejecutar el resync comercial oficial y atómico únicamente para CIENFUEGOS en la fecha operativa 19 de octubre de 2026, ahora que el turno 2726 está cerrado y las 13 cuentas se encuentran en cheques. Usar los handlers oficiales para actualizar primero el encabezado canónico y después materializar el detalle por producto, validando contra Runtime. No modificar código ni los sincronizadores protegidos.",
+  "acceptance": [
+    "Procesar exclusivamente CIENFUEGOS y 2026-10-19",
+    "El encabezado debe registrar $55,100.00 de ventas POS, $5,850.52 de propina, 13 tickets y 38 PAX conforme al contrato comercial vigente",
+    "La venta visible sin propina debe quedar en $49,249.48 donde aplique el contrato del dashboard",
+    "El detalle debe materializarse únicamente si concilia contra el encabezado/Runtime canónico",
+    "La escritura debe ser atómica por unidad, fecha y sistema con rollback ante error",
+    "La auditoría posterior closed_ticket_metadata debe quedar PASS",
+    "No modificar 130MID, ESTELAR ni ninguna otra unidad",
+    "production_touched=false"
+  ],
+  "constraints": [
+    "No tocar, modificar, reparar o actualizar el sincronizador de Ventas del día",
+    "No tocar, modificar, reparar o actualizar el sincronizador de Ventas cerradas",
+    "No modificar scheduler, consultas protegidas, extractores ni mappers",
+    "No usar reglas especiales por sucursal",
+    "No forzar tickets ni ajustes manuales",
+    "No ampliar el rango ni procesar otra unidad",
+    "Usar exclusivamente resync_comercial_range_worker.py y handlers oficiales",
+    "Mantener enfoque atómico, canónico y transversal",
+    "Trabajar solo en Edarsahub_Desarrollo y no tocar Producción"
+  ],
+  "human_summary_language": "es",
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "actions": [],
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "fecha_inicio": "2026-10-19",
+  "fecha_fin": "2026-10-19",
+  "dry_run": false,
+  "confirm_comercial_range_resync": true,
+  "audit_profile": "closed_ticket_metadata",
+  "checks": []
+}
