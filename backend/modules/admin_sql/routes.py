@@ -570,7 +570,7 @@ async def get_catalogos_disponibles(current_user: dict = Depends(get_current_use
 
 
 @router.post("/permisos-catalogos")
-async def save_permisos_catalogos(payload: dict, current_user: dict = Depends(get_current_user)):
+async def save_permisos_catalogos(payload: dict, current_user: dict = Depends(get_current_user), _rbac_admin: dict = Depends(require_explicit_permission("RBAC_ADMIN"))):
     """
     Guarda permisos de catálogos en fuentes canónicas SQL.
     - Usuario_PermisosCatalogosFlujo: flags globales del flujo.
