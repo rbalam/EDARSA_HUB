@@ -1,0 +1,75 @@
+{
+  "base_sha": "0447cfd74243d665e40fb96562f15c7ba261b32b",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-10-20T02:34:07Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES-CHAPUR-NORTE-DISABLE-OPERATIONS-R2-20261019",
+  "operation": "SERVER_REGISTRY_METADATA_UPDATE",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T02:34:56Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "connection_id",
+              "nombre",
+              "tipo_conexion",
+              "system_type",
+              "activo",
+              "visible_en_operaciones"
+            ],
+            "name": "chapur_norte_connection",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "CHAPUR NORTE",
+                "API_LOCAL",
+                "ENTERPRISE",
+                true,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_pk",
+              "codigo",
+              "nombre",
+              "server_id",
+              "sucursal_origen_id",
+              "system_type",
+              "activo"
+            ],
+            "name": "chapur_norte_units",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-20T02:34:04Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker actualizo exclusivamente metadata permitida de Servidores_Conexiones mediante server_registry, con preflight y post-audit SQL de solo lectura, sin SQL inline, secretos ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
