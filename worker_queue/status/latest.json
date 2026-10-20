@@ -4,20 +4,26 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "8d26590dde130c2dc8592660882f3b0e6022a247",
-  "generated_at_utc": "2026-10-20T21:25:44Z",
+  "generated_at_utc": "2026-10-20T21:27:06Z",
   "history": {
     "done_total_local": 1504,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1270,
-    "results_total_local": 2544
+    "rejected_total_local": 1271,
+    "results_total_local": 2545
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 311,
+      "age_seconds": 392,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-CONNECTION-ROLE-AUDIT-PROFILE-R1-20261020",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 56,
+      "job_id": "SERVIDORES6-CHAPUR-GATE4D-FINAL-READONLY-AUDIT-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -30,15 +36,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "remote_development_sha": "8d26590dde130c2dc8592660882f3b0e6022a247",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-20T21:25:39Z",
-    "last_receive_utc": "2026-10-20T21:25:34Z",
-    "last_terminal_utc": "2026-10-20T21:20:33Z",
+    "last_cycle_utc": "2026-10-20T21:26:53Z",
+    "last_receive_utc": "2026-10-20T21:27:03Z",
+    "last_terminal_utc": "2026-10-20T21:26:09Z",
     "pid": "13264",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "2669bbfa1875cafe7a7432249065f347f516cde1",
