@@ -1,0 +1,81 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-SOFT-POS-TICKET-AUDIT-R8-CARLOS-20261020T1815Z",
+  "created_at_utc": "2026-10-20T18:15:00Z",
+  "requested_by": "chatgpt",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "21b8326d9a65acee99af9f98d9451527f9427555",
+  "production_allowed": false,
+  "objective": "Auditar en solo lectura y con la misma consulta transversal las unidades SoftRestaurant 130MID, ESTELAR y CIENFUEGOS para el dia operativo 2026-10-19. Comparar configuracion operativa EDARSAHUB, poblacion de cheques por turnos.apertura, suma de cheques.total, propina, subtotal, impuestos, tickets y PAX; listar por ticket los importes de encabezado y detalle calculado para identificar la diferencia de 130MID y los cuatro tickets adicionales de ESTELAR. No modificar datos ni sincronizadores.",
+  "acceptance": [
+    "Mostrar turnos operativos configurados de 130MID, ESTELAR y CIENFUEGOS",
+    "Ejecutar exactamente la misma consulta POS en las tres unidades",
+    "Mostrar suma de total, propina, total menos propina, tickets y PAX para la ventana 09:00 a 09:00",
+    "Listar folio, numcheque, apertura, fecha, cierre, total, propina, PAX, detalle neto y delta detalle menos encabezado",
+    "Cero DDL, cero DML, cero cambios y production_touched=false"
+  ],
+  "constraints": [
+    "No tocar el sincronizador de Ventas del dia",
+    "No tocar el sincronizador de Ventas cerradas",
+    "No ejecutar backfill ni sincronizacion",
+    "No escribir en EDARSAHUB ni en POS",
+    "Usar una sola consulta por software, sin condiciones por sucursal",
+    "No exponer credenciales o secretos",
+    "Mantener enfoque atomico, canonico y transversal",
+    "Trabajar solo en Edarsahub_Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "tecnico-ejecutivo",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "soft_configuracion_operativa",
+          "sql": "SELECT unidad_negocio_id,turno_codigo,turno_nombre,CAST(hora_inicio AS varchar(8)) AS hora_inicio,CAST(hora_fin AS varchar(8)) AS hora_fin,cruza_medianoche,aplica_ventas_dia,es_turno_principal,orden,activo FROM dbo.Sistema_TurnosOperativosUnidad WHERE unidad_negocio_id IN ('130MID','ESTELAR','CIENFUEGOS') ORDER BY unidad_negocio_id,orden;"
+        },
+        {
+          "name": "soft_runtime_20261019_control",
+          "sql": "SELECT unidad_negocio_id,fecha_operacion,ventas_total,ventas_cerradas,ventas_abiertas,propinas_total,tickets_total,pax_total,es_venta_abierta,es_corte_cerrado,sync_run_id,fecha_ultima_actualizacion FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id IN ('130MID','ESTELAR','CIENFUEGOS') AND fecha_operacion='2026-10-19' ORDER BY unidad_negocio_id;"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "130MID",
+        "ESTELAR",
+        "CIENFUEGOS"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "soft_aggregate_window_20261019",
+          "sql": "SELECT COUNT(DISTINCT ch.folio) AS tickets,SUM(ISNULL(ch.total,0)) AS total,SUM(ISNULL(ch.propina,0)) AS propina,SUM(ISNULL(ch.total,0)-ISNULL(ch.propina,0)) AS total_menos_propina,SUM(ISNULL(ch.subtotal,0)) AS subtotal,SUM(ISNULL(ch.totalimpuesto1,0)) AS impuestos,SUM(ISNULL(ch.nopersonas,0)) AS pax,MIN(tr.apertura) AS apertura_min,MAX(tr.apertura) AS apertura_max,MIN(ch.fecha) AS cheque_fecha_min,MAX(ch.fecha) AS cheque_fecha_max,MIN(ch.cierre) AS cierre_min,MAX(ch.cierre) AS cierre_max FROM cheques ch WITH (NOLOCK) INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno WHERE tr.apertura>='2026-10-19 09:00:00' AND tr.apertura<'2026-10-20 09:00:00' AND ISNULL(ch.cancelado,0)=0;"
+        },
+        {
+          "name": "soft_ticket_window_20261019",
+          "sql": "SELECT ch.folio,ch.numcheque,tr.apertura,ch.fecha,ch.cierre,CAST(ISNULL(ch.total,0) AS decimal(18,2)) AS total,CAST(ISNULL(ch.propina,0) AS decimal(18,2)) AS propina,CAST(ISNULL(ch.total,0)-ISNULL(ch.propina,0) AS decimal(18,2)) AS total_menos_propina,ISNULL(ch.nopersonas,0) AS pax,CAST(SUM(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0)*(1-(ISNULL(dc.descuento,0)/100.0))) AS decimal(18,2)) AS detalle_neto,CAST(SUM(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0)*(1-(ISNULL(dc.descuento,0)/100.0)))-ISNULL(ch.total,0) AS decimal(18,2)) AS delta_detalle_menos_total,COUNT(dc.movimiento) AS lineas FROM cheques ch WITH (NOLOCK) INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno LEFT JOIN cheqdet dc WITH (NOLOCK) ON dc.foliodet=ch.folio WHERE tr.apertura>='2026-10-19 09:00:00' AND tr.apertura<'2026-10-20 09:00:00' AND ISNULL(ch.cancelado,0)=0 GROUP BY ch.folio,ch.numcheque,tr.apertura,ch.fecha,ch.cierre,ch.total,ch.propina,ch.nopersonas ORDER BY tr.apertura,ch.folio;"
+        },
+        {
+          "name": "soft_boundary_tickets_20261019",
+          "sql": "SELECT ch.folio,ch.numcheque,tr.apertura,ch.fecha,ch.cierre,CAST(ISNULL(ch.total,0) AS decimal(18,2)) AS total,CAST(ISNULL(ch.propina,0) AS decimal(18,2)) AS propina,ISNULL(ch.nopersonas,0) AS pax,CASE WHEN tr.apertura>='2026-10-19 09:00:00' AND tr.apertura<'2026-10-20 09:00:00' THEN 1 ELSE 0 END AS dentro_ventana_09 FROM cheques ch WITH (NOLOCK) INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno WHERE tr.apertura>='2026-10-19 06:00:00' AND tr.apertura<'2026-10-20 13:00:00' AND ISNULL(ch.cancelado,0)=0 ORDER BY tr.apertura,ch.folio;"
+        }
+      ]
+    }
+  ]
+}
