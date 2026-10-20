@@ -1,0 +1,185 @@
+{
+  "base_sha": "ed99b9ced84f20243445690bf4ffa109873e8d90",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-20T18:22:48Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES6-CHAPUR-GATE4D-QUERY-CONTRACT-AUDIT-R1-20261020",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T18:23:35Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "connection_id",
+              "nombre",
+              "tipo_conexion",
+              "system_type",
+              "activo",
+              "visible_en_operaciones",
+              "queries_configured",
+              "api_key_configured",
+              "password_configured",
+              "corporate_scope_configured"
+            ],
+            "name": "chapur_external_readiness",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "CHAPUR BACKOFFICE",
+                "API_LOCAL",
+                "ENTERPRISE",
+                true,
+                false,
+                true,
+                "[REDACTED]",
+                "[REDACTED]",
+                false
+              ],
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "CHAPUR NORTE",
+                "API_LOCAL",
+                "ENTERPRISE",
+                true,
+                false,
+                true,
+                "[REDACTED]",
+                "[REDACTED]",
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "connection_id",
+              "EstadoConexion",
+              "UltimoCheck",
+              "UltimaPruebaUTC",
+              "UltimoExitoUTC",
+              "UltimoErrorUTC",
+              "UltimoErrorCodigo",
+              "LatenciaMs",
+              "UltimoSyncUTC",
+              "UltimoSyncExitosoUTC",
+              "FechaActualizacionUTC"
+            ],
+            "name": "chapur_external_health",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "ERROR",
+                "2026-10-20T12:03:49.487000",
+                "2026-10-20 18:03:49.017",
+                null,
+                "2026-10-20 18:03:49.017",
+                "HTTP_500",
+                null,
+                null,
+                null,
+                "2026-10-20 18:03:49.017"
+              ],
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "ERROR",
+                "2026-10-20T12:03:33.307000",
+                "2026-10-20 18:03:32.780",
+                null,
+                "2026-10-20 18:03:32.780",
+                "HTTP_500",
+                null,
+                null,
+                null,
+                "2026-10-20 18:03:32.780"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "connection_id",
+              "nombre",
+              "system_type",
+              "queries_configured",
+              "query_ventas_present",
+              "query_ventas_json",
+              "query_ventas_validated",
+              "query_ventas_len",
+              "query_inventario_present",
+              "query_inventario_json",
+              "query_inventario_validated",
+              "query_inventario_len",
+              "query_movimientos_present",
+              "query_movimientos_json",
+              "query_movimientos_validated",
+              "query_movimientos_len"
+            ],
+            "name": "chapur_query_contract_metadata",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "CHAPUR BACKOFFICE",
+                "ENTERPRISE",
+                true,
+                false,
+                false,
+                null,
+                "0",
+                false,
+                false,
+                null,
+                "0",
+                false,
+                false,
+                null,
+                "0"
+              ],
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                true,
+                false,
+                false,
+                null,
+                "0",
+                false,
+                false,
+                null,
+                "0",
+                false,
+                false,
+                null,
+                "0"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-20T18:22:47Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
