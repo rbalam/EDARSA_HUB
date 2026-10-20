@@ -1,0 +1,775 @@
+{
+  "base_sha": "21b8326d9a65acee99af9f98d9451527f9427555",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-20T17:59:18Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-DATA-AUDIT-R4-CARLOS-20261020T1759Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T18:00:45Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_pk",
+              "unidad_codigo",
+              "unidad_nombre",
+              "system_type",
+              "server_id",
+              "sucursal_origen_id",
+              "turno_codigo",
+              "turno_nombre",
+              "hora_inicio",
+              "hora_fin",
+              "cruza_medianoche",
+              "aplica_ventas_dia",
+              "es_turno_principal",
+              "orden",
+              "turno_activo"
+            ],
+            "name": "origen_configuracion_canonica",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "ORIGEN",
+                "ORIGEN",
+                "MPRO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0023",
+                "DESAYUNO",
+                "Desayuno",
+                "07:00:00",
+                "12:59:00",
+                false,
+                true,
+                false,
+                1,
+                true
+              ],
+              [
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "ORIGEN",
+                "ORIGEN",
+                "MPRO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0023",
+                "COMIDA",
+                "Comida",
+                "13:00:00",
+                "18:59:00",
+                false,
+                true,
+                false,
+                2,
+                true
+              ],
+              [
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "ORIGEN",
+                "ORIGEN",
+                "MPRO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0023",
+                "CENA",
+                "Cena",
+                "19:00:00",
+                "06:59:00",
+                true,
+                true,
+                true,
+                3,
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_total",
+              "ventas_cerradas",
+              "ventas_abiertas",
+              "tickets_total",
+              "pax_total",
+              "es_venta_abierta",
+              "es_corte_cerrado",
+              "sync_run_id",
+              "fecha_sincronizacion",
+              "fecha_ultima_actualizacion"
+            ],
+            "name": "origen_kpi_base_20261016_20261019",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "2026-10-16",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2026-10-17",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2026-10-18",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2026-10-19",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_total",
+              "ventas_cerradas",
+              "ventas_abiertas",
+              "tickets_total",
+              "pax_total",
+              "es_venta_abierta",
+              "es_corte_cerrado",
+              "sync_run_id",
+              "fecha_ultima_actualizacion"
+            ],
+            "name": "origen_runtime_20261016_20261019",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "2026-10-16",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2026-10-17",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2026-10-18",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2026-10-19",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_operacion",
+              "filas_fisicas",
+              "tickets_fisicos",
+              "venta_fisica",
+              "filas_visibles",
+              "tickets_visibles",
+              "venta_visible",
+              "pax_visible",
+              "ultima_sincronizacion",
+              "ultimo_run_id"
+            ],
+            "name": "origen_detalle_fisico_visible_20261016_20261019",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "2026-10-16",
+                "0",
+                0,
+                "0.00",
+                0,
+                0,
+                "0.00",
+                0,
+                null,
+                null
+              ],
+              [
+                "2026-10-17",
+                "0",
+                0,
+                "0.00",
+                0,
+                0,
+                "0.00",
+                0,
+                null,
+                null
+              ],
+              [
+                "2026-10-18",
+                "0",
+                0,
+                "0.00",
+                0,
+                0,
+                "0.00",
+                0,
+                null,
+                null
+              ],
+              [
+                "2026-10-19",
+                "0",
+                0,
+                "0.00",
+                0,
+                0,
+                "0.00",
+                0,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_operacion",
+              "filas_totales",
+              "filas_inactivas",
+              "filas_no_kpi",
+              "filas_canceladas",
+              "filas_sin_ticket",
+              "sistemas_distintos",
+              "codigos_unidad_distintos"
+            ],
+            "name": "origen_detalle_motivos_exclusion_20261016_20261019",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "unidad_negocio_nombre",
+              "sucursal_id",
+              "sucursal_nombre",
+              "sistema_origen",
+              "fecha_operacion",
+              "filas",
+              "tickets",
+              "venta"
+            ],
+            "name": "origen_identidades_alternas_20261016_20261019",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_kpi",
+              "ventas_detalle",
+              "delta_venta",
+              "tickets_kpi",
+              "tickets_detalle",
+              "delta_tickets",
+              "pax_kpi",
+              "pax_detalle",
+              "delta_pax"
+            ],
+            "name": "origen_kpi_vs_detalle_visible_20261016_20261019",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "2026-10-16",
+                null,
+                null,
+                "0.00",
+                null,
+                null,
+                0,
+                null,
+                null,
+                0
+              ],
+              [
+                "2026-10-17",
+                null,
+                null,
+                "0.00",
+                null,
+                null,
+                0,
+                null,
+                null,
+                0
+              ],
+              [
+                "2026-10-18",
+                null,
+                null,
+                "0.00",
+                null,
+                null,
+                0,
+                null,
+                null,
+                0
+              ],
+              [
+                "2026-10-19",
+                null,
+                null,
+                "0.00",
+                null,
+                null,
+                0,
+                null,
+                null,
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_minima",
+              "fecha_maxima",
+              "dias",
+              "tickets",
+              "filas",
+              "ultima_sincronizacion"
+            ],
+            "name": "origen_cobertura_detalle_octubre",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-10-01",
+                "2026-10-15",
+                15,
+                465,
+                "8101",
+                "2026-10-17 01:12:38.8140000"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "FechaAccion",
+              "RunID",
+              "Accion",
+              "Exito",
+              "MensajeError",
+              "status_job",
+              "mensaje",
+              "estatus_general",
+              "detalle_exitosos",
+              "detalle_fallidos",
+              "detalle_omitidos"
+            ],
+            "name": "bitacora_sync_comercial_v2_reciente",
+            "row_count_returned": 20,
+            "rows": [
+              [
+                "2026-10-20T17:55:36.770000",
+                "a48975f57c83",
+                "FINISH",
+                false,
+                null,
+                "partial",
+                "Unidades: 4/5, Insertados: 0, Actualizados: 0, Omitidos: 16, Detalle OK: 13, Detalle fallido: 2, Detalle omitido: 1",
+                "PARCIAL",
+                "13",
+                "2",
+                "1"
+              ],
+              [
+                "2026-10-20T17:54:35.003000",
+                "a48975f57c83",
+                "START",
+                null,
+                null,
+                "running",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2026-10-20T17:41:08.663000",
+                "5fb8a90b565c",
+                "FINISH",
+                false,
+                null,
+                "partial",
+                "Unidades: 4/5, Insertados: 0, Actualizados: 0, Omitidos: 16, Detalle OK: 13, Detalle fallido: 2, Detalle omitido: 1",
+                "PARCIAL",
+                "13",
+                "2",
+                "1"
+              ],
+              [
+                "2026-10-20T17:39:26.333000",
+                "5fb8a90b565c",
+                "START",
+                null,
+                null,
+                "running",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2026-10-20T17:25:14.657000",
+                "9ccdce9880af",
+                "FINISH",
+                false,
+                null,
+                "partial",
+                "Unidades: 4/5, Insertados: 0, Actualizados: 0, Omitidos: 16, Detalle OK: 13, Detalle fallido: 2, Detalle omitido: 1",
+                "PARCIAL",
+                "13",
+                "2",
+                "1"
+              ],
+              [
+                "2026-10-20T17:24:05.620000",
+                "9ccdce9880af",
+                "START",
+                null,
+                null,
+                "running",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2026-10-20T17:10:21.123000",
+                "90ef95076441",
+                "FINISH",
+                false,
+                null,
+                "partial",
+                "Unidades: 4/5, Insertados: 0, Actualizados: 0, Omitidos: 16, Detalle OK: 13, Detalle fallido: 2, Detalle omitido: 1",
+                "PARCIAL",
+                "13",
+                "2",
+                "1"
+              ],
+              [
+                "2026-10-20T17:09:07.850000",
+                "90ef95076441",
+                "START",
+                null,
+                null,
+                "running",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2026-10-20T16:54:57.283000",
+                "2d0cae4c64fc",
+                "FINISH",
+                false,
+                null,
+                "partial",
+                "Unidades: 4/5, Insertados: 0, Actualizados: 0, Omitidos: 16, Detalle OK: 13, Detalle fallido: 2, Detalle omitido: 1",
+                "PARCIAL",
+                "13",
+                "2",
+                "1"
+              ],
+              [
+                "2026-10-20T16:53:45.237000",
+                "2d0cae4c64fc",
+                "START",
+                null,
+                null,
+                "running",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2026-10-20T16:39:32.443000",
+                "4587a2c37ca3",
+                "FINISH",
+                false,
+                null,
+                "partial",
+                "Unidades: 4/5, Insertados: 0, Actualizados: 0, Omitidos: 16, Detalle OK: 13, Detalle fallido: 2, Detalle omitido: 1",
+                "PARCIAL",
+                "13",
+                "2",
+                "1"
+              ],
+              [
+                "2026-10-20T16:38:47.863000",
+                "4587a2c37ca3",
+                "START",
+                null,
+                null,
+                "running",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2026-10-20T16:25:18.270000",
+                "be7a56dbdb95",
+                "FINISH",
+                false,
+                null,
+                "partial",
+                "Unidades: 4/5, Insertados: 0, Actualizados: 0, Omitidos: 16, Detalle OK: 13, Detalle fallido: 2, Detalle omitido: 1",
+                "PARCIAL",
+                "13",
+                "2",
+                "1"
+              ],
+              [
+                "2026-10-20T16:23:40.460000",
+                "be7a56dbdb95",
+                "START",
+                null,
+                null,
+                "running",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2026-10-20T16:09:29.890000",
+                "7dc55c7cdd39",
+                "FINISH",
+                false,
+                null,
+                "partial",
+                "Unidades: 4/5, Insertados: 0, Actualizados: 0, Omitidos: 16, Detalle OK: 13, Detalle fallido: 2, Detalle omitido: 1",
+                "PARCIAL",
+                "13",
+                "2",
+                "1"
+              ],
+              [
+                "2026-10-20T16:08:16.287000",
+                "7dc55c7cdd39",
+                "START",
+                null,
+                null,
+                "running",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2026-10-20T15:54:34.577000",
+                "745df51aa523",
+                "FINISH",
+                false,
+                null,
+                "partial",
+                "Unidades: 4/5, Insertados: 0, Actualizados: 0, Omitidos: 16, Detalle OK: 13, Detalle fallido: 2, Detalle omitido: 1",
+                "PARCIAL",
+                "13",
+                "2",
+                "1"
+              ],
+              [
+                "2026-10-20T15:53:21.997000",
+                "745df51aa523",
+                "START",
+                null,
+                null,
+                "running",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2026-10-20T15:38:47.923000",
+                "3aee0e1cbe3c",
+                "FINISH",
+                false,
+                null,
+                "partial",
+                "Unidades: 4/5, Insertados: 0, Actualizados: 0, Omitidos: 16, Detalle OK: 13, Detalle fallido: 2, Detalle omitido: 1",
+                "PARCIAL",
+                "13",
+                "2",
+                "1"
+              ],
+              [
+                "2026-10-20T15:38:03.680000",
+                "3aee0e1cbe3c",
+                "START",
+                null,
+                null,
+                "running",
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-20T17:59:12Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
