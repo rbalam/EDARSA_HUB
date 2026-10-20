@@ -1,0 +1,67 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-SOFT-FINAL-CERT-R30-CARLOS-20261020T1920Z",
+  "created_at_utc": "2026-10-20T19:20:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
+  "production_allowed": false,
+  "objective": "Certificar en solo lectura el cierre final del bloque SoftRestaurant para CIENFUEGOS, ESTELAR y 130MID en la fecha operativa 19 de octubre de 2026. Comparar KPI base, vista Runtime y detalle visible reconstruido por ticket usando exactamente los filtros del drill-down. Confirmar importes, tickets, PAX, propina, metadatos y ausencia de filas excluidas. No modificar datos ni código.",
+  "acceptance": [
+    "Las tres unidades tienen KPI base y Runtime cerrados para 2026-10-19",
+    "Las tres unidades tienen detalle visible con tickets, importes y PAX",
+    "Delta de venta, tickets y PAX entre Runtime y detalle es cero por unidad",
+    "CIENFUEGOS contiene 13 tickets, 38 PAX y el importe cerrado certificado del POS",
+    "130MID contiene 8 tickets, 22 PAX y $55,983.00",
+    "ESTELAR contiene 18 tickets, 47 PAX y $25,128.00",
+    "Cero filas inactivas, no KPI, canceladas o sin numero_ticket dentro del conjunto visible",
+    "Metadatos de ticket presentes en todas las líneas materializadas",
+    "Cero DDL, cero DML y production_touched=false"
+  ],
+  "constraints": [
+    "No tocar, modificar, reparar o actualizar el sincronizador de Ventas del día",
+    "No tocar, modificar, reparar o actualizar el sincronizador de Ventas cerradas",
+    "No ejecutar nuevas sincronizaciones o backfills",
+    "No escribir en EDARSAHUB ni POS",
+    "No usar reglas especiales por sucursal",
+    "Mantener enfoque atómico, canónico y transversal",
+    "Trabajar solo en Edarsahub_Desarrollo y no tocar Producción"
+  ],
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "soft_final_base_runtime_oct19",
+          "sql": "SELECT b.unidad_negocio_id,b.fecha_operacion,b.ventas_total AS base_venta,b.propinas_total AS base_propina,b.tickets_total AS base_tickets,b.pax_total AS base_pax,b.ventas_abiertas AS base_abiertas,b.es_venta_abierta AS base_es_abierta,b.es_corte_cerrado AS base_cerrado,b.sync_run_id AS base_run,r.ventas_total AS runtime_venta,r.propinas_total AS runtime_propina,r.tickets_total AS runtime_tickets,r.pax_total AS runtime_pax,r.ventas_abiertas AS runtime_abiertas,r.es_venta_abierta AS runtime_es_abierta,r.es_corte_cerrado AS runtime_cerrado,r.fuente_original AS runtime_fuente,r.sync_run_id AS runtime_run FROM dbo.Comercial_KPIs_Diarios_v2 b LEFT JOIN dbo.vw_Comercial_KPIs_Diarios_v2_Runtime r ON r.unidad_negocio_id=b.unidad_negocio_id AND r.fecha_operacion=b.fecha_operacion WHERE b.unidad_negocio_id IN ('CIENFUEGOS','ESTELAR','130MID') AND b.fecha_operacion='2026-10-19' AND ISNULL(b.activo,1)=1 ORDER BY b.unidad_negocio_id;"
+        },
+        {
+          "name": "soft_final_visible_detail_by_ticket_oct19",
+          "sql": "WITH tickets AS (SELECT unidad_negocio_id,fecha_operacion,id_transaccion,MAX(numero_ticket) AS numero_ticket,SUM(ISNULL(importe_neto,0)) AS venta_ticket,MAX(ISNULL(pax,0)) AS pax_ticket,SUM(ISNULL(propina,0)) AS propina_ticket,COUNT_BIG(*) AS lineas_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('CIENFUEGOS','ESTELAR','130MID') AND fecha_operacion='2026-10-19' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND numero_ticket IS NOT NULL GROUP BY unidad_negocio_id,fecha_operacion,id_transaccion) SELECT unidad_negocio_id,fecha_operacion,COUNT(*) AS tickets_visibles,CAST(SUM(venta_ticket) AS decimal(18,2)) AS venta_visible,SUM(pax_ticket) AS pax_visible,CAST(SUM(propina_ticket) AS decimal(18,2)) AS propina_visible,SUM(lineas_ticket) AS lineas_visibles FROM tickets GROUP BY unidad_negocio_id,fecha_operacion ORDER BY unidad_negocio_id;"
+        },
+        {
+          "name": "soft_final_runtime_detail_deltas_oct19",
+          "sql": "WITH tickets AS (SELECT unidad_negocio_id,fecha_operacion,id_transaccion,SUM(ISNULL(importe_neto,0)) AS venta_ticket,MAX(ISNULL(pax,0)) AS pax_ticket,SUM(ISNULL(propina,0)) AS propina_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('CIENFUEGOS','ESTELAR','130MID') AND fecha_operacion='2026-10-19' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND numero_ticket IS NOT NULL GROUP BY unidad_negocio_id,fecha_operacion,id_transaccion),d AS (SELECT unidad_negocio_id,fecha_operacion,CAST(SUM(venta_ticket) AS decimal(18,2)) AS detalle_venta,COUNT(*) AS detalle_tickets,SUM(pax_ticket) AS detalle_pax,CAST(SUM(propina_ticket) AS decimal(18,2)) AS detalle_propina FROM tickets GROUP BY unidad_negocio_id,fecha_operacion) SELECT r.unidad_negocio_id,r.fecha_operacion,r.ventas_total AS runtime_venta,d.detalle_venta,CAST(ISNULL(d.detalle_venta,0)-ISNULL(r.ventas_total,0) AS decimal(18,2)) AS delta_venta,r.tickets_total AS runtime_tickets,d.detalle_tickets,ISNULL(d.detalle_tickets,0)-ISNULL(r.tickets_total,0) AS delta_tickets,r.pax_total AS runtime_pax,d.detalle_pax,ISNULL(d.detalle_pax,0)-ISNULL(r.pax_total,0) AS delta_pax,r.propinas_total AS runtime_propina,d.detalle_propina,CAST(ISNULL(d.detalle_propina,0)-ISNULL(r.propinas_total,0) AS decimal(18,2)) AS delta_propina FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime r LEFT JOIN d ON d.unidad_negocio_id=r.unidad_negocio_id AND d.fecha_operacion=r.fecha_operacion WHERE r.unidad_negocio_id IN ('CIENFUEGOS','ESTELAR','130MID') AND r.fecha_operacion='2026-10-19' ORDER BY r.unidad_negocio_id;"
+        },
+        {
+          "name": "soft_final_physical_visibility_flags_oct19",
+          "sql": "SELECT unidad_negocio_id,COUNT_BIG(*) AS filas_fisicas,COUNT(DISTINCT id_transaccion) AS tickets_fisicos,COUNT(DISTINCT numero_ticket) AS numeros_ticket,SUM(CASE WHEN ISNULL(activo,1)<>1 THEN 1 ELSE 0 END) AS filas_inactivas,SUM(CASE WHEN ISNULL(es_kpi_valido,1)<>1 THEN 1 ELSE 0 END) AS filas_no_kpi,SUM(CASE WHEN ISNULL(cancelado_origen,0)=1 THEN 1 ELSE 0 END) AS filas_canceladas,SUM(CASE WHEN numero_ticket IS NULL OR LTRIM(RTRIM(CONVERT(varchar(100),numero_ticket)))='' THEN 1 ELSE 0 END) AS filas_sin_ticket,MAX(fecha_sincronizacion) AS ultima_sincronizacion,MAX(sync_run_id) AS ultimo_run_id FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('CIENFUEGOS','ESTELAR','130MID') AND fecha_operacion='2026-10-19' GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id;"
+        },
+        {
+          "name": "soft_final_metadata_oct19",
+          "sql": "SELECT unidad_negocio_id,COUNT_BIG(*) AS lineas,SUM(CASE WHEN partida_origen_id IS NOT NULL THEN 1 ELSE 0 END) AS con_partida_origen,SUM(CASE WHEN ticket_fecha IS NOT NULL THEN 1 ELSE 0 END) AS con_ticket_fecha,SUM(CASE WHEN cliente_id IS NOT NULL THEN 1 ELSE 0 END) AS con_cliente_id,SUM(CASE WHEN cliente_rfc IS NOT NULL THEN 1 ELSE 0 END) AS con_cliente_rfc,SUM(CASE WHEN precio_unitario IS NOT NULL THEN 1 ELSE 0 END) AS con_precio_unitario,SUM(CASE WHEN importe_bruto IS NOT NULL THEN 1 ELSE 0 END) AS con_importe_bruto FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('CIENFUEGOS','ESTELAR','130MID') AND fecha_operacion='2026-10-19' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND numero_ticket IS NOT NULL GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id;"
+        }
+      ]
+    }
+  ]
+}
