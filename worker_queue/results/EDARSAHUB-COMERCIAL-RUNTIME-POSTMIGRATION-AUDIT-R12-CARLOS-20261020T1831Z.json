@@ -1,0 +1,283 @@
+{
+  "base_sha": "d652050b9bb8f7e9f860eacb8b18658d575a60a9",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-20T18:30:41Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-POSTMIGRATION-AUDIT-R12-CARLOS-20261020T1831Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T18:32:09Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "snapshot_por_unidad",
+              "overlay_solo_abiertas",
+              "tiene_max_global",
+              "longitud_definicion"
+            ],
+            "name": "runtime_view_contract_after_r11",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1,
+                1,
+                0,
+                "6934"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "base_ventas",
+              "runtime_ventas",
+              "delta_ventas",
+              "base_propinas",
+              "runtime_propinas",
+              "base_tickets",
+              "runtime_tickets",
+              "base_pax",
+              "runtime_pax",
+              "base_cerrado",
+              "runtime_cerrado",
+              "runtime_abierta",
+              "runtime_fuente"
+            ],
+            "name": "soft_base_runtime_after_r11",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                "2026-10-19",
+                "55983.00",
+                "55983.00",
+                "0.00",
+                "5426.40",
+                "5426.40",
+                8,
+                8,
+                22,
+                22,
+                true,
+                true,
+                false,
+                "API_LOCAL"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-19",
+                "0.00",
+                "49249.48",
+                "49249.48",
+                "0.00",
+                "5850.52",
+                0,
+                13,
+                0,
+                38,
+                true,
+                false,
+                true,
+                "Comercial_Ventas_Dia_Abiertas_v2"
+              ],
+              [
+                "ESTELAR",
+                "2026-10-19",
+                "25128.00",
+                "25128.00",
+                "0.00",
+                "3346.40",
+                "3346.40",
+                18,
+                18,
+                47,
+                47,
+                true,
+                true,
+                false,
+                "API_LOCAL"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "ventas_total",
+              "ventas_sin_propina",
+              "propinas_total",
+              "tickets_total",
+              "pax_total",
+              "ventas_cerradas",
+              "ventas_abiertas",
+              "total_estimado_dia",
+              "es_venta_abierta",
+              "es_corte_cerrado",
+              "fuente_original",
+              "sync_run_id",
+              "fecha_ultima_actualizacion"
+            ],
+            "name": "soft_runtime_after_r11",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                "2026-10-19",
+                "55983.00",
+                "55983.00",
+                "5426.40",
+                8,
+                22,
+                "55983.00",
+                "0.00",
+                "55983.00",
+                false,
+                true,
+                "API_LOCAL",
+                "INCR-20261020-060158-5211",
+                "2026-10-20 06:02:00.1962939"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-19",
+                "49249.48",
+                "49249.48",
+                "5850.52",
+                13,
+                38,
+                "0.00",
+                "49249.48",
+                "49249.48",
+                true,
+                false,
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                "INCR-20261019-185548-ec82",
+                "2026-10-20 18:26:25.2623549"
+              ],
+              [
+                "ESTELAR",
+                "2026-10-19",
+                "25128.00",
+                "25128.00",
+                "3346.40",
+                18,
+                47,
+                "25128.00",
+                "0.00",
+                "25128.00",
+                false,
+                true,
+                "API_LOCAL",
+                "INCR-20261020-070224-61a2",
+                "2026-10-20 07:02:31.0045957"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "ventas_abiertas",
+              "ventas_cerradas_dia",
+              "total_estimado_dia",
+              "propinas_total",
+              "tickets_abiertos",
+              "tickets_cerrados_dia",
+              "pax_abiertos",
+              "pax_cerrados_dia",
+              "snapshot_timestamp",
+              "fecha_ultima_actualizacion"
+            ],
+            "name": "soft_snapshot_after_r11",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                "2026-10-19",
+                "0.00",
+                "50556.60",
+                "50556.60",
+                "5426.40",
+                0,
+                8,
+                0,
+                22,
+                "2026-10-20 18:26:22.3068950",
+                "2026-10-20 18:26:22.4260715"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-10-19",
+                "49249.48",
+                "0.00",
+                "49249.48",
+                "5850.52",
+                13,
+                0,
+                38,
+                0,
+                "2026-10-20 18:26:24.7113470",
+                "2026-10-20 18:26:25.2623549"
+              ],
+              [
+                "ESTELAR",
+                "2026-10-19",
+                "0.00",
+                "21176.60",
+                "21176.60",
+                "3321.40",
+                0,
+                14,
+                0,
+                42,
+                "2026-10-20 18:26:26.9439610",
+                "2026-10-20 18:26:27.0142110"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "filas",
+              "tickets",
+              "venta",
+              "pax",
+              "ultima_sincronizacion",
+              "ultimo_run_id"
+            ],
+            "name": "soft_detail_before_backfill_after_r11",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-20T18:30:40Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
