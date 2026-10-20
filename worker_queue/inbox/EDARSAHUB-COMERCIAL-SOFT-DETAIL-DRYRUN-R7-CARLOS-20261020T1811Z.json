@@ -1,0 +1,62 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-DRYRUN-R7-CARLOS-20261020T1811Z",
+  "created_at_utc": "2026-10-20T18:11:00Z",
+  "requested_by": "chatgpt",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "21b8326d9a65acee99af9f98d9451527f9427555",
+  "production_allowed": false,
+  "objective": "Ejecutar el backfill canonico de detalle exclusivamente en dry-run para ESTELAR y 130MID el dia operativo 2026-10-19. Obtener por unidad los valores Runtime y POS, deltas de venta, tickets y PAX, estado de conciliacion y codigo de error. No escribir detalle, no ejecutar encabezados, no tocar Ventas del dia ni Ventas cerradas y no modificar codigo.",
+  "acceptance": [
+    "Publicar para ESTELAR y 130MID ventas_runtime, ventas_pos y delta_ventas",
+    "Publicar tickets_runtime, tickets_pos y delta_tickets",
+    "Publicar pax_runtime, pax_pos y delta_pax",
+    "Confirmar status diario y error_code si aplica",
+    "filas_insertadas debe ser 0 por dry-run",
+    "Cero DDL, cero DML de negocio, cero cambios y production_touched=false"
+  ],
+  "constraints": [
+    "No tocar el sincronizador de Ventas del dia",
+    "No tocar el sincronizador de Ventas cerradas",
+    "No ejecutar sincronizacion de encabezados",
+    "No escribir en Comercial_Inteligencia_VentasDetalleProducto",
+    "No forzar tickets ni aplicar ajustes manuales",
+    "Usar exactamente el extractor, validador y ventana actuales del flujo canonico",
+    "Mantener enfoque atomico, canonico y transversal",
+    "Trabajar solo en Edarsahub_Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "tecnico-ejecutivo",
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "actions": [],
+  "units": [
+    "ESTELAR",
+    "130MID"
+  ],
+  "fecha_inicio": "2026-10-19",
+  "fecha_fin": "2026-10-20",
+  "dry_run": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "soft_runtime_20261019",
+          "sql": "SELECT unidad_negocio_id,unidad_negocio_nombre,fecha_operacion,ventas_total,ventas_cerradas,ventas_abiertas,tickets_total,pax_total,es_venta_abierta,es_corte_cerrado,sync_run_id,fecha_ultima_actualizacion FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id IN ('ESTELAR','130MID') AND fecha_operacion='2026-10-19' ORDER BY unidad_negocio_id;"
+        },
+        {
+          "name": "soft_detalle_antes_despues_dryrun_20261019",
+          "sql": "SELECT unidad_negocio_id,fecha_operacion,COUNT_BIG(*) AS filas,COUNT(DISTINCT id_transaccion) AS tickets,CAST(SUM(ISNULL(importe_neto,0)) AS decimal(18,2)) AS venta,SUM(ISNULL(pax,0)) AS pax,MAX(fecha_sincronizacion) AS ultima_sincronizacion,MAX(sync_run_id) AS ultimo_run_id FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('ESTELAR','130MID') AND fecha_operacion='2026-10-19' GROUP BY unidad_negocio_id,fecha_operacion ORDER BY unidad_negocio_id;"
+        }
+      ]
+    }
+  ]
+}
