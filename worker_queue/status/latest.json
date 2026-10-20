@@ -4,139 +4,151 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
-  "generated_at_utc": "2026-10-20T19:07:14Z",
+  "generated_at_utc": "2026-10-20T19:08:38Z",
   "history": {
-    "done_total_local": 1496,
+    "done_total_local": 1498,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1270,
-    "results_total_local": 2536
+    "results_total_local": 2538
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 655,
+      "age_seconds": 22,
+      "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-POS-FRESHNESS-R25-CARLOS-20261020T1907Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 739,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-POS-PREFLIGHT-R18-CARLOS-20261020T1855Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 855,
+      "age_seconds": 939,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-RANGE-DRYRUN-R17-CARLOS-20261020T1853Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1150,
+      "age_seconds": 46,
+      "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-REGISTRY-AUDIT-R24-CARLOS-20261020T1907Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1235,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-RUNTIME-AUDIT-R16-CARLOS-20261020T1850Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 159,
+      "age_seconds": 244,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-SOURCE-REGISTRY-R22-CARLOS-20261020T1908Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 463,
+      "age_seconds": 548,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-SOURCE-WINDOW-AUDIT-R20-CARLOS-20261020T1901Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3481,
+      "age_seconds": 3565,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-API-LOCAL-METADATA-R6-CARLOS-20261020T1807Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 565,
+      "age_seconds": 650,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-CLOSED-NONZERO-PRECEDENCE-R19-CARLOS-20261020T1858Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2347,
+      "age_seconds": 2431,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-CLOSED-PRECEDENCE-MIGRATION-R11-CARLOS-20261020T1828Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2474,
+      "age_seconds": 2558,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-CLOSED-PRECEDENCE-R10-CARLOS-20261020T1823Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 244,
+      "age_seconds": 328,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-NONZERO-PRECEDENCE-MIGRATION-R21-CARLOS-20261020T1905Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2193,
+      "age_seconds": 2277,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-POSTMIGRATION-AUDIT-R12-CARLOS-20261020T1831Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 80,
+      "age_seconds": 164,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-SOFT-POSTMIGRATION-R23-CARLOS-20261020T1910Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2812,
+      "age_seconds": 2896,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-BASE-RUNTIME-PARITY-R9-CARLOS-20261020T1817Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1310,
+      "age_seconds": 1395,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-CERT-R15-CARLOS-20261020T1843Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1895,
+      "age_seconds": 1980,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-COMMIT-R14-CARLOS-20261020T1835Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2072,
+      "age_seconds": 2156,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-DRYRUN-POSTRUNTIME-R13-CARLOS-20261020T1833Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3303,
+      "age_seconds": 3387,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-DRYRUN-R7-CARLOS-20261020T1811Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3136,
+      "age_seconds": 3220,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-POS-TICKET-AUDIT-R8-CARLOS-20261020T1815Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2666,
+      "age_seconds": 2750,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-QUERY-CONTRACT-AUDIT-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3401,
+      "age_seconds": 3485,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-QUERY-METADATA-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3085,
+      "age_seconds": 3170,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-QUERY-METADATA-R2-20261020",
       "reason": null,
       "state": "RESULT_READY"
@@ -150,15 +162,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 21,
+  "queue_result_ready_recent": 23,
   "queue_running": 0,
   "remote_development_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-20T19:07:09Z",
-    "last_receive_utc": "2026-10-20T19:07:04Z",
-    "last_terminal_utc": "2026-10-20T19:05:54Z",
+    "last_cycle_utc": "2026-10-20T19:08:35Z",
+    "last_receive_utc": "2026-10-20T19:08:30Z",
+    "last_terminal_utc": "2026-10-20T19:08:16Z",
     "pid": "493708",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "bacb6a1760aa6f9e6e3a8bc2220cccdf26b9cb08",
