@@ -1,0 +1,13 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-CHAPUR-ENTERPRISE-SCOPE-DISCOVERY-R1-20261019",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Descubrir exclusivamente en modo READ_ONLY el scope empresarial canonico existente para conexiones CHAPUR/ENTERPRISE: conexiones, unidades vinculadas, candidatos de empresa, candidatos de sucursal y version del sistema. No crear ni modificar Empresa, Sucursal, Unidad, conexiones o metadata. No SQL inline, no secretos, no Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "audit_profile": "chapur_connection_discovery_v1",
+  "checks": []
+}
