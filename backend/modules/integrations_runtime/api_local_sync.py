@@ -13,6 +13,9 @@ class ApiLocalSyncError(RuntimeError):
     """Fallo controlado del transport API_LOCAL de sincronizacion."""
 
 
+DEFAULT_API_LOCAL_TIMEOUT_SECONDS = 30
+
+
 @dataclass(frozen=True)
 class ApiLocalSyncConfig:
     server_id: str
@@ -67,7 +70,7 @@ def execute_api_local_readonly(
     config: ApiLocalSyncConfig,
     sql: str,
     *,
-    timeout_seconds: int = 30,
+    timeout_seconds: int = DEFAULT_API_LOCAL_TIMEOUT_SECONDS,
     request_get=requests.get,
 ) -> List[Dict[str, Any]]:
     """Ejecuta una unica consulta READ_ONLY mediante el contrato API_LOCAL.

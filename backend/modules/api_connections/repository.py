@@ -528,11 +528,14 @@ async def test_api_connection_health(api_id: str = None, url: str = None, api_ke
     result = {}
     try:
         headers = {"x-api-key": api_key} if api_key else {}
+        from modules.integrations_runtime.api_local_sync import (
+            DEFAULT_API_LOCAL_TIMEOUT_SECONDS,
+        )
         response = requests.get(
             url,
             headers=headers,
             params={"sql": "SELECT 1 as test"},
-            timeout=5
+            timeout=DEFAULT_API_LOCAL_TIMEOUT_SECONDS,
         )
         
         if response.status_code == 200:
