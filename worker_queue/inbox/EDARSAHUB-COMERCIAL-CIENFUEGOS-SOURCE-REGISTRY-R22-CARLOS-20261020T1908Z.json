@@ -1,0 +1,79 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-SOURCE-REGISTRY-R22-CARLOS-20261020T1908Z",
+  "created_at_utc": "2026-10-20T19:08:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
+  "production_allowed": false,
+  "objective": "Auditar en solo lectura todas las conexiones SQL y API registradas para CIENFUEGOS y la frescura real del POS canónico. Determinar si la unidad apunta a una base atrasada, si existe una API local o conexión alternativa activa para ventas, y si los tickets cerrados posteriores al 18 de octubre están en otra tabla de SoftRestaurant. No cambiar metadatos, código ni datos.",
+  "acceptance": [
+    "Listar sin secretos todas las conexiones cuyo nombre, unidad o relación corresponda a CIENFUEGOS",
+    "Mostrar tipo_conexion, system_type, database_name, puerto, activo y relación con Unidades_Negocio",
+    "Mostrar MAX de apertura en turnos, MAX de fecha/cierre en cheques y estado de tempcheques",
+    "Inventariar tablas del POS cuyo nombre contenga cheque, turno, venta, historico o respaldo",
+    "Detectar si existe tabla alternativa con datos posteriores al 18 de octubre sin hacer escaneos destructivos",
+    "Emitir dictamen SOURCE_MAPPING_STALE, POS_DATABASE_STALE, API_LOCAL_AVAILABLE o NO_ALTERNATIVE_SOURCE",
+    "Cero DDL, cero DML y production_touched=false"
+  ],
+  "constraints": [
+    "No tocar el sincronizador de Ventas del dia",
+    "No tocar el sincronizador de Ventas cerradas",
+    "No ejecutar sincronizacion ni backfill",
+    "No modificar Servidores_Conexiones ni Unidades_Negocio",
+    "No exponer host completo, usuarios, passwords, API keys o secretos",
+    "No usar condiciones especiales en código",
+    "Mantener enfoque atomico, canonico y transversal",
+    "Trabajar solo en Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_all_registry_candidates",
+          "sql": "SELECT CONVERT(varchar(36),s.id) AS server_id,CONVERT(varchar(200),s.nombre) AS servidor_nombre,CONVERT(varchar(100),s.system_type) AS system_type,CONVERT(varchar(50),s.tipo_conexion) AS tipo_conexion,s.port,CONVERT(varchar(200),s.database_name) AS database_name,CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(varchar(max),s.api_url))),'') IS NULL THEN 0 ELSE 1 END AS tiene_api_url,CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(varchar(max),s.host))),'') IS NULL THEN 0 ELSE 1 END AS tiene_host,s.activo,CONVERT(varchar(100),u.codigo) AS unidad_codigo,CONVERT(varchar(200),u.nombre) AS unidad_nombre FROM dbo.Servidores_Conexiones s LEFT JOIN dbo.Unidades_Negocio u ON u.server_id=s.id WHERE UPPER(ISNULL(CONVERT(varchar(200),s.nombre),'')) LIKE '%CIENFUEGOS%' OR UPPER(ISNULL(CONVERT(varchar(100),u.codigo),''))='CIENFUEGOS' OR UPPER(ISNULL(CONVERT(varchar(200),u.nombre),'')) LIKE '%CIENFUEGOS%' ORDER BY s.activo DESC,s.tipo_conexion,s.nombre;"
+        },
+        {
+          "name": "cienfuegos_recent_sync_sources",
+          "sql": "SELECT TOP (50) run_id,unidad_negocio_id,server_id,sistema_origen,fecha_inicio,fecha_fin,status,source_connection_status,records_processed,records_inserted,records_updated,records_skipped,records_errored,created_at,completed_at,error_message FROM dbo.Comercial_SyncLog_v2 WHERE unidad_negocio_id='CIENFUEGOS' OR server_id IN (SELECT CONVERT(varchar(36),id) FROM dbo.Servidores_Conexiones WHERE UPPER(ISNULL(CONVERT(varchar(200),nombre),'')) LIKE '%CIENFUEGOS%') ORDER BY created_at DESC;"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "CIENFUEGOS"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "cienfuegos_pos_freshness",
+          "sql": "SELECT DB_NAME() AS database_name,(SELECT MAX(apertura) FROM turnos WITH (NOLOCK)) AS max_turno_apertura,(SELECT MAX(fecha) FROM cheques WITH (NOLOCK)) AS max_cheque_fecha,(SELECT MAX(cierre) FROM cheques WITH (NOLOCK)) AS max_cheque_cierre,(SELECT COUNT_BIG(*) FROM tempcheques WITH (NOLOCK)) AS tempcheques_rows,(SELECT MAX(fecha) FROM tempcheques WITH (NOLOCK)) AS max_tempcheque_fecha;"
+        },
+        {
+          "name": "cienfuegos_candidate_tables",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' AND (LOWER(TABLE_NAME) LIKE '%cheque%' OR LOWER(TABLE_NAME) LIKE '%turno%' OR LOWER(TABLE_NAME) LIKE '%venta%' OR LOWER(TABLE_NAME) LIKE '%histor%' OR LOWER(TABLE_NAME) LIKE '%respal%') ORDER BY TABLE_SCHEMA,TABLE_NAME;"
+        },
+        {
+          "name": "cienfuegos_columns_for_candidate_tables",
+          "sql": "SELECT TOP (500) TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE (LOWER(TABLE_NAME) LIKE '%cheque%' OR LOWER(TABLE_NAME) LIKE '%turno%' OR LOWER(TABLE_NAME) LIKE '%venta%' OR LOWER(TABLE_NAME) LIKE '%histor%' OR LOWER(TABLE_NAME) LIKE '%respal%') AND (LOWER(COLUMN_NAME) LIKE '%fecha%' OR LOWER(COLUMN_NAME) LIKE '%cierre%' OR LOWER(COLUMN_NAME) LIKE '%apertura%' OR LOWER(COLUMN_NAME) LIKE '%folio%' OR LOWER(COLUMN_NAME) LIKE '%total%') ORDER BY TABLE_SCHEMA,TABLE_NAME,ORDINAL_POSITION;"
+        }
+      ]
+    }
+  ]
+}
