@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-CHAPUR-GATE4D-CONNECTION-ROLE-AUDIT-PROFILE-R2-20261020",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "8d26590dde130c2dc8592660882f3b0e6022a247",
+  "objective": "Corregir exclusivamente el perfil READ_ONLY chapur_external_integration_readiness_v1 para usar la columna canonica ServidorID de dbo.Sistema_EmpresasServidores en chapur_connection_roles. Mantener alcance READ_ONLY, sin DML, sin secretos y sin tocar Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "Conexiones y Comunicaciones",
+    "chat": "Menu Servidores 6"
+  },
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/readonly_audit_profiles.py",
+      "old": "                            \"SELECT CONVERT(varchar(36),ses.ServerID) AS connection_id,\"\n                            \"ses.EmpresaID,ses.RolConexion,ses.NumeroSucursalSistema,ses.Activo \"\n                            \"FROM dbo.Sistema_EmpresasServidores ses \"\n                            \"WHERE ses.ServerID IN ('8CBDCC89-6495-49C3-BE9C-A965DB82C77F','D8B2D1EB-2E1F-4E43-B7D9-822BF671E315') \"\n                            \"ORDER BY ses.ServerID,ses.RolConexion\"",
+      "new": "                            \"SELECT CONVERT(varchar(36),ses.ServidorID) AS connection_id,\"\n                            \"ses.EmpresaID,ses.RolConexion,ses.NumeroSucursalSistema,ses.Activo \"\n                            \"FROM dbo.Sistema_EmpresasServidores ses \"\n                            \"WHERE ses.ServidorID IN ('8CBDCC89-6495-49C3-BE9C-A965DB82C77F','D8B2D1EB-2E1F-4E43-B7D9-822BF671E315') \"\n                            \"ORDER BY ses.ServidorID,ses.RolConexion\"",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_named_readonly_audit_profiles.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
