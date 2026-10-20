@@ -1,0 +1,99 @@
+{
+  "base_sha": "d8f913bb87a0c3d1fb7e2ca9a31ca572c5dd5662",
+  "blockers": [
+    "API_LOCAL_HEALTH_TEST_POST_AUDIT_INCOMPLETE"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-20T05:51:34Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES6-CHAPUR-API-LOCAL-HEALTH-TEST-R2-20261020",
+  "operation": "API_LOCAL_HEALTH_TEST",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T05:53:19Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "connection_id",
+              "nombre",
+              "tipo_conexion",
+              "system_type",
+              "activo",
+              "visible_en_operaciones",
+              "queries_configured",
+              "api_key_configured",
+              "password_configured",
+              "corporate_scope_configured"
+            ],
+            "name": "chapur_external_readiness",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "CHAPUR BACKOFFICE",
+                "API_LOCAL",
+                "ENTERPRISE",
+                true,
+                false,
+                true,
+                "[REDACTED]",
+                "[REDACTED]",
+                false
+              ],
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "CHAPUR NORTE",
+                "API_LOCAL",
+                "ENTERPRISE",
+                true,
+                false,
+                true,
+                "[REDACTED]",
+                "[REDACTED]",
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "connection_id",
+              "EstadoConexion",
+              "UltimoCheck",
+              "UltimaPruebaUTC",
+              "UltimoExitoUTC",
+              "UltimoErrorUTC",
+              "UltimoErrorCodigo",
+              "LatenciaMs",
+              "UltimoSyncUTC",
+              "UltimoSyncExitosoUTC",
+              "FechaActualizacionUTC"
+            ],
+            "name": "chapur_external_health",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-20T05:51:30Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
