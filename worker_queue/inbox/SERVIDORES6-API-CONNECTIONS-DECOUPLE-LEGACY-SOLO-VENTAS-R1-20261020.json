@@ -1,0 +1,110 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-API-CONNECTIONS-DECOUPLE-LEGACY-SOLO-VENTAS-R1-20261020",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "7dabee9cd5de2b7e8b51fa16fc033793beeaaac6",
+  "objective": "Desacoplar solo_ventas_dia de queries_configured en API connections. Leer solo_ventas_dia desde Sistema_EmpresasServidores.RolConexion=VENTAS_DIA_API_LOCAL, derivar queries_configured exclusivamente de query_* reales, dejar de persistir el campo legacy y retirar su edicion/envio desde Servidores.js. No crear columnas ni relaciones, no DML de datos existentes y no Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "Conexiones y Comunicaciones",
+    "chat": "Menu Servidores 6"
+  },
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/repository.py",
+      "old": "    # API-SEC1: NO exponer api_key descifrada en el listado\n    # Solo indicar si existe o no\n    api_key_masked = '***CONFIGURED***' if api_key_decrypted else ''\n    \n    return {",
+      "new": "    # API-SEC1: NO exponer api_key descifrada en el listado\n    # Solo indicar si existe o no\n    api_key_masked = '***CONFIGURED***' if api_key_decrypted else ''\n\n    queries_configured = any(\n        bool(str(row.get(field) or '').strip())\n        for field in ('query_ventas', 'query_inventario', 'query_movimientos')\n    )\n\n    return {",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/repository.py",
+      "old": "        'hora_replica': row.get('port', 4),  # Reutilizado para hora de réplica\n        'solo_ventas_dia': bool(row.get('queries_configured', True)),\n        'activo': bool(row.get('activo', True)),",
+      "new": "        'hora_replica': row.get('port', 4),  # Reutilizado para hora de réplica\n        'solo_ventas_dia': bool(row.get('solo_ventas_dia', False)),\n        'queries_configured': queries_configured,\n        'activo': bool(row.get('activo', True)),",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/repository.py",
+      "old": "        query = f\"\"\"\n        SELECT * FROM Servidores_Conexiones\n        {where_clause}\n        ORDER BY nombre\n        \"\"\"",
+      "new": "        query = f\"\"\"\n        SELECT\n            sc.*,\n            CASE WHEN EXISTS (\n                SELECT 1\n                FROM dbo.Sistema_EmpresasServidores ses\n                WHERE ses.ServidorID = sc.id\n                  AND ses.RolConexion = 'VENTAS_DIA_API_LOCAL'\n                  AND ses.Activo = 1\n            ) THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS solo_ventas_dia\n        FROM Servidores_Conexiones sc\n        {where_clause.replace(\"tipo_conexion\", \"sc.tipo_conexion\").replace(\"activo\", \"sc.activo\")}\n        ORDER BY sc.nombre\n        \"\"\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/repository.py",
+      "old": "        query = f\"\"\"\n        SELECT * FROM Servidores_Conexiones\n        WHERE id = '{_escape_sql(api_id)}'\n          AND tipo_conexion = 'API_LOCAL'\n        \"\"\"",
+      "new": "        query = f\"\"\"\n        SELECT\n            sc.*,\n            CASE WHEN EXISTS (\n                SELECT 1\n                FROM dbo.Sistema_EmpresasServidores ses\n                WHERE ses.ServidorID = sc.id\n                  AND ses.RolConexion = 'VENTAS_DIA_API_LOCAL'\n                  AND ses.Activo = 1\n            ) THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS solo_ventas_dia\n        FROM Servidores_Conexiones sc\n        WHERE sc.id = '{_escape_sql(api_id)}'\n          AND sc.tipo_conexion = 'API_LOCAL'\n        \"\"\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/repository.py",
+      "old": "        N'{_escape_sql(config_json)}',\n        {1 if data.get(\"solo_ventas_dia\", True) else 0},\n        GETDATE(), GETDATE(),",
+      "new": "        N'{_escape_sql(config_json)}',\n        0,\n        GETDATE(), GETDATE(),",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/repository.py",
+      "old": "    if 'solo_ventas_dia' in data:\n        set_parts.append(f\"queries_configured = {1 if data['solo_ventas_dia'] else 0}\")\n    if 'activo' in data:",
+      "new": "    if 'solo_ventas_dia' in data:\n        logging.warning(\n            \"[API_CONNECTIONS] solo_ventas_dia es legado; \"\n            \"la fuente canonica es Sistema_EmpresasServidores.RolConexion\"\n        )\n    if 'activo' in data:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "    hora_replica: '04:00',\n    solo_ventas_dia: true,\n    activo: true,",
+      "new": "    hora_replica: '04:00',\n    activo: true,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "        hora_replica: detail.hora_replica || apiConn.hora_replica || '04:00',\n        solo_ventas_dia: detail.solo_ventas_dia ?? true,\n        activo: detail.activo !== false,",
+      "new": "        hora_replica: detail.hora_replica || apiConn.hora_replica || '04:00',\n        activo: detail.activo !== false,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "                  hora_replica: '04:00',\n                  solo_ventas_dia: true,\n                  activo: true,",
+      "new": "                  hora_replica: '04:00',\n                  activo: true,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "            <div className=\"flex items-center space-x-2\">\n              <Checkbox \n                id=\"api_solo_ventas\"\n                checked={apiFormData.solo_ventas_dia}\n                onCheckedChange={(checked) => setApiFormData({...apiFormData, solo_ventas_dia: checked})}\n              />\n              <Label htmlFor=\"api_solo_ventas\" className=\"text-sm\">\n                Solo obtener ventas del día actual (evita duplicación)\n              </Label>\n            </div>\n            \n            <div className=\"bg-amber-50 border border-amber-200 rounded-md p-3\">\n              <p className=\"text-xs text-amber-900\">\n                <strong>Nota:</strong> Esta conexión obtiene ventas del día que se suman a las del servidor padre. \n                Por la noche (a las {apiFormData.hora_replica || '04:00'}) los datos se replican al servidor en la nube, \n                momento en que esta API deja de sumar para evitar duplicación.\n              </p>\n            </div>",
+      "new": "            <div className=\"bg-blue-50 border border-blue-200 rounded-md p-3\">\n              <p className=\"text-xs text-blue-900\">\n                <strong>Ventas del día:</strong> esta capacidad ya no se configura desde este formulario.\n                Se deriva del rol canónico VENTAS_DIA_API_LOCAL asociado a la conexión.\n              </p>\n            </div>",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_api_connections_canonical_semantics.py",
+      "content": "from modules.api_connections.repository import _sql_row_to_api_dict\n\n\ndef test_api_mapper_derives_queries_configured_only_from_query_fields():\n    row = {\n        \"id\": \"00000000-0000-4000-8000-000000000711\",\n        \"nombre\": \"API Test\",\n        \"tipo_conexion\": \"API_LOCAL\",\n        \"queries_configured\": True,\n        \"query_ventas\": None,\n        \"query_inventario\": \"\",\n        \"query_movimientos\": None,\n        \"solo_ventas_dia\": False,\n    }\n\n    mapped = _sql_row_to_api_dict(row)\n\n    assert mapped[\"queries_configured\"] is False\n    assert mapped[\"solo_ventas_dia\"] is False\n\n\ndef test_api_mapper_keeps_role_derived_solo_ventas_separate_from_queries():\n    row = {\n        \"id\": \"00000000-0000-4000-8000-000000000712\",\n        \"nombre\": \"API Test\",\n        \"tipo_conexion\": \"API_LOCAL\",\n        \"queries_configured\": False,\n        \"query_ventas\": '{\"validated\": true}',\n        \"query_inventario\": None,\n        \"query_movimientos\": None,\n        \"solo_ventas_dia\": True,\n    }\n\n    mapped = _sql_row_to_api_dict(row)\n\n    assert mapped[\"queries_configured\"] is True\n    assert mapped[\"solo_ventas_dia\"] is True\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_api_connections_canonical_semantics.py",
+        "backend/tests/test_api_connection_health_internal_auth.py",
+        "backend/tests/test_api_connection_health_canonical_timeout.py"
+      ]
+    },
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
