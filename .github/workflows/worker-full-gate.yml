@@ -48,6 +48,7 @@ jobs:
             backend/tests/test_sync_historical_api_contract.py \
             backend/tests/test_rbac_create_permiso_fail_closed.py \
             backend/tests/test_admin_sql_rbac_mutations_contract.py \
+            backend/tests/test_admin_sql_catalog_permissions_behavior.py \
             -q --tb=short
       - name: Run legacy full backend suite (diagnostic only)
         continue-on-error: true
