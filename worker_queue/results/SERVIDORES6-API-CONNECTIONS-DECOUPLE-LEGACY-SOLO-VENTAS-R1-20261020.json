@@ -1,0 +1,23 @@
+{
+  "base_sha": "7dabee9cd5de2b7e8b51fa16fc033793beeaaac6",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:REPLACE_COUNT_MISMATCH:backend/modules/api_connections/repository.py:expected=1:actual=2"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-20T21:54:04Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES6-API-CONNECTIONS-DECOUPLE-LEGACY-SOLO-VENTAS-R1-20261020",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T21:55:00Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-20T21:54:02Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
