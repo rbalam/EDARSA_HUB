@@ -1,0 +1,66 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-POSTMIGRATION-AUDIT-R12-CARLOS-20261020T1831Z",
+  "created_at_utc": "2026-10-20T18:31:00Z",
+  "requested_by": "chatgpt",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d652050b9bb8f7e9f860eacb8b18658d575a60a9",
+  "production_allowed": false,
+  "objective": "Certificar en SQL de solo lectura el resultado de la migracion Runtime R11. Verificar la definicion activa de dbo.vw_Comercial_KPIs_Diarios_v2_Runtime y comprobar que 130MID y ESTELAR cerrados ahora toman el KPI base completo, mientras CIENFUEGOS conserva overlay solo por tener ventas abiertas. Verificar asimismo que el detalle del 19 sigue sin escribirse antes del backfill. No modificar datos ni sincronizadores.",
+  "acceptance": [
+    "La vista activa usa snapshot por unidad y no MAX global",
+    "La union de snapshot sobre base exige ventas_abiertas > 0",
+    "130MID Runtime = 55983.00, 8 tickets, 22 PAX",
+    "ESTELAR Runtime = 25128.00, 18 tickets, 47 PAX",
+    "CIENFUEGOS permanece representado por snapshot abierto",
+    "No existen inserciones nuevas de detalle por esta migracion",
+    "Cero DDL, cero DML y production_touched=false"
+  ],
+  "constraints": [
+    "No tocar el sincronizador de Ventas del dia",
+    "No tocar el sincronizador de Ventas cerradas",
+    "No ejecutar sincronizaciones ni backfills",
+    "No escribir en SQL ni POS",
+    "Mantener enfoque atomico, canonico y transversal",
+    "Trabajar solo en Edarsahub_Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "tecnico-ejecutivo",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "runtime_view_contract_after_r11",
+          "sql": "SELECT CASE WHEN CHARINDEX('PARTITION BY a.unidad_negocio_id',OBJECT_DEFINITION(OBJECT_ID('dbo.vw_Comercial_KPIs_Diarios_v2_Runtime'))) > 0 THEN 1 ELSE 0 END AS snapshot_por_unidad, CASE WHEN CHARINDEX('AND ISNULL(s.ventas_abiertas, 0) > 0',OBJECT_DEFINITION(OBJECT_ID('dbo.vw_Comercial_KPIs_Diarios_v2_Runtime'))) > 0 THEN 1 ELSE 0 END AS overlay_solo_abiertas, CASE WHEN CHARINDEX('SELECT MAX(fecha_operacion)',OBJECT_DEFINITION(OBJECT_ID('dbo.vw_Comercial_KPIs_Diarios_v2_Runtime'))) > 0 THEN 1 ELSE 0 END AS tiene_max_global, LEN(OBJECT_DEFINITION(OBJECT_ID('dbo.vw_Comercial_KPIs_Diarios_v2_Runtime'))) AS longitud_definicion;"
+        },
+        {
+          "name": "soft_base_runtime_after_r11",
+          "sql": "SELECT b.unidad_negocio_id,b.fecha_operacion,b.ventas_total AS base_ventas,r.ventas_total AS runtime_ventas,CAST(ISNULL(r.ventas_total,0)-ISNULL(b.ventas_total,0) AS decimal(18,2)) AS delta_ventas,b.propinas_total AS base_propinas,r.propinas_total AS runtime_propinas,b.tickets_total AS base_tickets,r.tickets_total AS runtime_tickets,b.pax_total AS base_pax,r.pax_total AS runtime_pax,b.es_corte_cerrado AS base_cerrado,r.es_corte_cerrado AS runtime_cerrado,r.es_venta_abierta AS runtime_abierta,r.fuente_original AS runtime_fuente FROM dbo.Comercial_KPIs_Diarios_v2 b LEFT JOIN dbo.vw_Comercial_KPIs_Diarios_v2_Runtime r ON r.unidad_negocio_id=b.unidad_negocio_id AND r.fecha_operacion=b.fecha_operacion WHERE b.unidad_negocio_id IN ('130MID','ESTELAR','CIENFUEGOS') AND b.fecha_operacion='2026-10-19' AND ISNULL(b.activo,1)=1 ORDER BY b.unidad_negocio_id;"
+        },
+        {
+          "name": "soft_runtime_after_r11",
+          "sql": "SELECT unidad_negocio_id,fecha_operacion,ventas_total,ventas_sin_propina,propinas_total,tickets_total,pax_total,ventas_cerradas,ventas_abiertas,total_estimado_dia,es_venta_abierta,es_corte_cerrado,fuente_original,sync_run_id,fecha_ultima_actualizacion FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id IN ('130MID','ESTELAR','CIENFUEGOS') AND fecha_operacion='2026-10-19' ORDER BY unidad_negocio_id;"
+        },
+        {
+          "name": "soft_snapshot_after_r11",
+          "sql": "SELECT unidad_negocio_id,fecha_operacion,ventas_abiertas,ventas_cerradas_dia,total_estimado_dia,propinas_total,tickets_abiertos,tickets_cerrados_dia,pax_abiertos,pax_cerrados_dia,snapshot_timestamp,fecha_ultima_actualizacion FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WHERE unidad_negocio_id IN ('130MID','ESTELAR','CIENFUEGOS') AND fecha_operacion='2026-10-19' ORDER BY unidad_negocio_id,snapshot_timestamp DESC;"
+        },
+        {
+          "name": "soft_detail_before_backfill_after_r11",
+          "sql": "SELECT unidad_negocio_id,fecha_operacion,COUNT_BIG(*) AS filas,COUNT(DISTINCT id_transaccion) AS tickets,CAST(SUM(ISNULL(importe_neto,0)) AS decimal(18,2)) AS venta,SUM(ISNULL(pax,0)) AS pax,MAX(fecha_sincronizacion) AS ultima_sincronizacion,MAX(sync_run_id) AS ultimo_run_id FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('130MID','ESTELAR') AND fecha_operacion='2026-10-19' GROUP BY unidad_negocio_id,fecha_operacion ORDER BY unidad_negocio_id;"
+        }
+      ]
+    }
+  ]
+}
