@@ -1,0 +1,21 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-DASHBOARD-INSIGHTS-RESUME-PREFLIGHT-R1C-CARLOS-20261020",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "dc7d2eecad33d3c8c730b3ac2924e3a4a67d8978",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Reanudar mejora de KPIs Comercial y Ejecutivo con autorizacion de Carlos. R1B del 20261016 termino BLOCKED por check_failed:sql_readonly_audit y NO esta certificado. Este R1C solo verifica conexion, estructura monetaria y dependencias antes de fragmentar el perfilado. Restriccion expresa 20261020: NO tocar, modificar ni actualizar sincronizador de ventas diarias, sincronizador de ventas cerradas ni su logica, consultas, dependencias, scheduler, parametros, ventanas, configuracion o datos. NO cambiar la visualizacion ni comportamiento del detalle de ventas de Comercial y Ejecutivo, ni KpiDrilldownDialog, TicketVentaModal o servicios compartidos usados por ese flujo. No DML, DDL, migraciones, resync, deploy, builds, reinicios, SQL externo, otro Worker ni interferencia en jobs ajenos. Solo SELECT contra EDARSAHUB mediante conexion canonica de lectura y examen estatico del repositorio. Descuento total aprobado = descuento monetario detalle MAS descuento adicional encabezado una sola vez por cuenta; factor sobre TODA la venta antes de descuentos incluyendo cuentas sin descuento y al 100 por ciento. No catalogo semantico, no inferir descuentos de ajustes ambiguos, no convertir datos faltantes en cero. No extraer clientes, usuarios, RFC, direcciones, credenciales o referencias de pago. La certificacion de estas consultas NO equivale a certificar la suficiencia de KPIs.",
+  "requester": {"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1.0","chat":"Soporte Worker - Mejora KPIs tableros"},
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {"type":"sql_readonly_audit","source":"EDARSAHUB","max_rows":150,"queries":[
+      {"name":"read_context","sql":"SELECT DB_NAME() AS database_name,SYSUTCDATETIME() AS observed_at_utc"},
+      {"name":"pilot_identity","sql":"SELECT codigo,nombre,system_type,server_id,sucursal_origen_id,timezone_iana,activo FROM dbo.Unidades_Negocio WHERE codigo IN ('CIENFUEGOS','ORIGEN') ORDER BY codigo"},
+      {"name":"money_columns_current","sql":"SELECT OBJECT_NAME(c.object_id) AS objeto,c.name AS columna,t.name AS tipo,c.precision,c.scale,c.is_nullable FROM sys.columns c INNER JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id IN (OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto'),OBJECT_ID('dbo.Comercial_Ventas_Dia_Abiertas_v2'),OBJECT_ID('dbo.Finanzas_CortesCaja_DetallePagos')) AND (c.name IN ('id','unidad_negocio_id','sistema_origen','fecha_operacion','numero_ticket','id_transaccion','folio_origen','documento_origen','partida_origen_id','producto_id','producto_codigo_fuente','importe_bruto','importe_neto','ticket_total','ticket_subtotal','ticket_impuesto','propina','cantidad','activo','es_kpi_valido','detalle_abiertas_json','snapshot_timestamp','UnidadNegocio','NumeroTicket','FechaHora','FormaPagoCodigo','Importe','SistemaOrigen','HashOrigen','IdOrigen') OR c.name LIKE '%descuento%' OR c.name LIKE '%cancelad%') ORDER BY objeto,c.column_id"}
+    ]},
+    {"type":"repository_contract_audit","request":{"paths":["backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py","backend/core/scheduler/jobs/sync_comercial_v2_job.py","backend/scripts/poblar_ventas_detalle_producto_canonico.py","backend/modules/comercial_v2/ticket_snapshot.py","backend/modules/comercial_v2/ticket_contract.py","backend/modules/comercial/ticket_service.py","backend/modules/comercial_analytics/repository_tickets.py","frontend/src/components/comercial/KpiDrilldownDialog.jsx","frontend/src/components/comercial/TicketVentaModal.jsx","frontend/src/pages/Comercial.js","frontend/src/pages/TableroEjecutivo.js"],"search_terms":["sync_comercial","ticket","descuento","Comercial_Inteligencia_VentasDetalleProducto"],"include_patterns":["*.py","*.js","*.jsx"],"exclude_patterns":[],"max_results":40}}
+  ]
+}
