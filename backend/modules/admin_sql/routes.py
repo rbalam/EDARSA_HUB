@@ -610,6 +610,30 @@ async def save_permisos_catalogos(payload: dict, current_user: dict = Depends(ge
 
         usuario_id = usuario["UsuarioID"]
 
+        # FAIL CLOSED: los registros escritos abajo tienen EmpresaID NULL
+        # (alcance global). No se permite a un administrador de alcance
+        # limitado crear o modificar concesiones globales.
+        actor_email = str(current_user.get("email") or "").strip()
+        if not actor_email:
+            raise HTTPException(status_code=403, detail="Identidad SQL del actor requerida")
+
+        cur.execute("""
+            SELECT TOP 1 1 AS Autorizado
+            FROM dbo.Usuario_Catalogo actor
+            INNER JOIN dbo.Usuario_RolesAsignacion ra
+                ON ra.UsuarioID = actor.UsuarioID AND ra.Activo = 1
+            INNER JOIN dbo.Usuario_Roles rol
+                ON rol.RolID = ra.RolID AND rol.Activo = 1
+            WHERE actor.Activo = 1
+              AND LOWER(actor.Email) = LOWER(%s)
+              AND rol.CodigoRol IN ('SUPERADMIN', 'SUPERADMINISTRADOR')
+        """, (actor_email,))
+        if not cur.fetchone():
+            raise HTTPException(
+                status_code=403,
+                detail="Permisos globales de catálogos requieren SUPERADMIN SQL",
+            )
+
         cur.execute("""
             UPDATE dbo.Usuario_PermisosCatalogosFlujo
             SET PuedeSolicitar = %s,
