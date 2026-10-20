@@ -81,6 +81,15 @@ base_overlay AS (
         ON s.fecha_operacion = k.fecha_operacion
        AND s.unidad_negocio_id = k.unidad_negocio_id
        AND ISNULL(s.ventas_abiertas, 0) > 0
+       AND NOT (
+            ISNULL(k.es_corte_cerrado, 0) = 1
+        AND ISNULL(k.es_venta_abierta, 0) = 0
+        AND (
+               ABS(ISNULL(k.ventas_total, 0)) > 0.0001
+            OR ISNULL(k.tickets_total, 0) > 0
+            OR ISNULL(k.pax_total, 0) > 0
+        )
+       )
     WHERE ISNULL(k.activo, 1) = 1
       AND ISNULL(k.es_demo, 0) = 0
 ),
