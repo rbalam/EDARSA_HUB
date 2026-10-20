@@ -1,0 +1,61 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-POS-FRESHNESS-R25-CARLOS-20261020T1907Z",
+  "created_at_utc": "2026-10-20T19:07:15Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
+  "production_allowed": false,
+  "objective": "Auditar en solo lectura la frescura de la base SoftRestaurant canónica de CIENFUEGOS y localizar posibles tablas históricas o de respaldo con cierres posteriores al 18 de octubre de 2026. No modificar datos ni código.",
+  "acceptance": [
+    "Mostrar DB_NAME, MAX turnos.apertura, MAX cheques.fecha, MAX cheques.cierre, filas y MAX fecha de tempcheques",
+    "Inventariar tablas relacionadas con cheques, turnos, ventas, históricos o respaldos",
+    "Mostrar columnas temporales y de folio de las tablas candidatas",
+    "No ejecutar consultas dinámicas sobre tablas desconocidas",
+    "Cero DDL, cero DML y production_touched=false"
+  ],
+  "constraints": [
+    "No tocar los sincronizadores de Ventas del dia o Ventas cerradas",
+    "No ejecutar sincronizaciones ni backfills",
+    "No escribir en el POS",
+    "No exponer secretos",
+    "Mantener enfoque atomico, canonico y transversal",
+    "Trabajar solo en Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "CIENFUEGOS"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "max_rows": 1000,
+      "queries": [
+        {
+          "name": "cienfuegos_pos_freshness",
+          "sql": "SELECT DB_NAME() AS database_name,(SELECT MAX(apertura) FROM turnos WITH (NOLOCK)) AS max_turno_apertura,(SELECT MAX(fecha) FROM cheques WITH (NOLOCK)) AS max_cheque_fecha,(SELECT MAX(cierre) FROM cheques WITH (NOLOCK)) AS max_cheque_cierre,(SELECT COUNT_BIG(*) FROM tempcheques WITH (NOLOCK)) AS tempcheques_rows,(SELECT MAX(fecha) FROM tempcheques WITH (NOLOCK)) AS max_tempcheque_fecha;"
+        },
+        {
+          "name": "cienfuegos_candidate_tables",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' AND (LOWER(TABLE_NAME) LIKE '%cheque%' OR LOWER(TABLE_NAME) LIKE '%turno%' OR LOWER(TABLE_NAME) LIKE '%venta%' OR LOWER(TABLE_NAME) LIKE '%histor%' OR LOWER(TABLE_NAME) LIKE '%respal%') ORDER BY TABLE_SCHEMA,TABLE_NAME;"
+        },
+        {
+          "name": "cienfuegos_candidate_columns",
+          "sql": "SELECT TOP (1000) TABLE_SCHEMA,TABLE_NAME,COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE (LOWER(TABLE_NAME) LIKE '%cheque%' OR LOWER(TABLE_NAME) LIKE '%turno%' OR LOWER(TABLE_NAME) LIKE '%venta%' OR LOWER(TABLE_NAME) LIKE '%histor%' OR LOWER(TABLE_NAME) LIKE '%respal%') AND (LOWER(COLUMN_NAME) LIKE '%fecha%' OR LOWER(COLUMN_NAME) LIKE '%cierre%' OR LOWER(COLUMN_NAME) LIKE '%apertura%' OR LOWER(COLUMN_NAME) LIKE '%folio%' OR LOWER(COLUMN_NAME) LIKE '%total%' OR LOWER(COLUMN_NAME) LIKE '%cheque%') ORDER BY TABLE_SCHEMA,TABLE_NAME,ORDINAL_POSITION;"
+        }
+      ]
+    }
+  ]
+}
