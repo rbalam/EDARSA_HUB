@@ -4,121 +4,121 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "d652050b9bb8f7e9f860eacb8b18658d575a60a9",
-  "generated_at_utc": "2026-10-20T18:55:58Z",
+  "generated_at_utc": "2026-10-20T18:57:23Z",
   "history": {
-    "done_total_local": 1491,
+    "done_total_local": 1492,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1269,
-    "results_total_local": 2530
+    "results_total_local": 2531
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 179,
+      "age_seconds": 64,
+      "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-POS-PREFLIGHT-R18-CARLOS-20261020T1855Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 264,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-RANGE-DRYRUN-R17-CARLOS-20261020T1853Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 474,
+      "age_seconds": 559,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-RUNTIME-AUDIT-R16-CARLOS-20261020T1850Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2804,
+      "age_seconds": 2890,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-API-LOCAL-METADATA-R6-CARLOS-20261020T1807Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3399,
+      "age_seconds": 3484,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-DATA-AUDIT-R4-CARLOS-20261020T1759Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3158,
+      "age_seconds": 3243,
       "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-IDENTITY-RUNTIME-R5-CARLOS-20261020T1803Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3590,
-      "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-SCHEMA-PREFLIGHT-R3-CARLOS-20261020T1756Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1670,
+      "age_seconds": 1756,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-CLOSED-PRECEDENCE-MIGRATION-R11-CARLOS-20261020T1828Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1798,
+      "age_seconds": 1883,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-CLOSED-PRECEDENCE-R10-CARLOS-20261020T1823Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1516,
+      "age_seconds": 1601,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-POSTMIGRATION-AUDIT-R12-CARLOS-20261020T1831Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2136,
+      "age_seconds": 2221,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-BASE-RUNTIME-PARITY-R9-CARLOS-20261020T1817Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 634,
+      "age_seconds": 719,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-CERT-R15-CARLOS-20261020T1843Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1219,
+      "age_seconds": 1304,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-COMMIT-R14-CARLOS-20261020T1835Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1395,
+      "age_seconds": 1481,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-DRYRUN-POSTRUNTIME-R13-CARLOS-20261020T1833Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2626,
+      "age_seconds": 2712,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-DRYRUN-R7-CARLOS-20261020T1811Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2459,
+      "age_seconds": 2544,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-POS-TICKET-AUDIT-R8-CARLOS-20261020T1815Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1989,
+      "age_seconds": 2075,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-QUERY-CONTRACT-AUDIT-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2724,
+      "age_seconds": 2810,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-QUERY-METADATA-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2409,
+      "age_seconds": 2494,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-QUERY-METADATA-R2-20261020",
       "reason": null,
       "state": "RESULT_READY"
@@ -138,9 +138,9 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-20T18:55:45Z",
-    "last_receive_utc": "2026-10-20T18:55:57Z",
-    "last_terminal_utc": "2026-10-20T18:52:59Z",
+    "last_cycle_utc": "2026-10-20T18:57:11Z",
+    "last_receive_utc": "2026-10-20T18:57:06Z",
+    "last_terminal_utc": "2026-10-20T18:56:18Z",
     "pid": "493708",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "bacb6a1760aa6f9e6e3a8bc2220cccdf26b9cb08",
