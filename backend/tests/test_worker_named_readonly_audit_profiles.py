@@ -166,13 +166,20 @@ def test_api_factory_persistence_profile_is_named_and_readonly():
 
 
 def test_chapur_external_integration_readiness_profile_is_sanitized_and_readonly():
-    profiles = _load("tools/mirror_sync/readonly_audit_profiles.py")
+    profiles = _load(
+        "readonly_audit_profiles_chapur_external",
+        "tools/mirror_sync/readonly_audit_profiles.py",
+    )
     checks = profiles.build_readonly_audit_checks("chapur_external_integration_readiness_v1")
     assert len(checks) == 1
     check = checks[0]
     assert check["type"] == "sql_readonly_audit"
     names = {query["name"] for query in check["queries"]}
-    assert names == {"chapur_external_readiness", "chapur_external_health"}
+    assert names == {
+        "chapur_external_readiness",
+        "chapur_external_health",
+        "chapur_query_contract_metadata",
+    }
     sql = "\n".join(query["sql"] for query in check["queries"]).lower()
     assert "api_key_configured" in sql
     assert "password_configured" in sql

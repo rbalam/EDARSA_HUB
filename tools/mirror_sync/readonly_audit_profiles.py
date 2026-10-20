@@ -184,6 +184,27 @@ def build_readonly_audit_checks(profile: str) -> List[Dict[str, Any]]:
                             "ORDER BY e.ServidorID"
                         ),
                     },
+                    {
+                        "name": "chapur_query_contract_metadata",
+                        "sql": (
+                            "SELECT CONVERT(varchar(36),sc.id) AS connection_id,sc.nombre,sc.system_type,sc.queries_configured,"
+                            "CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.query_ventas,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS query_ventas_present,"
+                            "CASE WHEN ISJSON(sc.query_ventas)=1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS query_ventas_json,"
+                            "CASE WHEN ISJSON(sc.query_ventas)=1 THEN JSON_VALUE(sc.query_ventas,'$.validated') ELSE NULL END AS query_ventas_validated,"
+                            "LEN(ISNULL(sc.query_ventas,'')) AS query_ventas_len,"
+                            "CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.query_inventario,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS query_inventario_present,"
+                            "CASE WHEN ISJSON(sc.query_inventario)=1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS query_inventario_json,"
+                            "CASE WHEN ISJSON(sc.query_inventario)=1 THEN JSON_VALUE(sc.query_inventario,'$.validated') ELSE NULL END AS query_inventario_validated,"
+                            "LEN(ISNULL(sc.query_inventario,'')) AS query_inventario_len,"
+                            "CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.query_movimientos,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS query_movimientos_present,"
+                            "CASE WHEN ISJSON(sc.query_movimientos)=1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS query_movimientos_json,"
+                            "CASE WHEN ISJSON(sc.query_movimientos)=1 THEN JSON_VALUE(sc.query_movimientos,'$.validated') ELSE NULL END AS query_movimientos_validated,"
+                            "LEN(ISNULL(sc.query_movimientos,'')) AS query_movimientos_len "
+                            "FROM dbo.Servidores_Conexiones sc "
+                            "WHERE sc.id IN ('8CBDCC89-6495-49C3-BE9C-A965DB82C77F','D8B2D1EB-2E1F-4E43-B7D9-822BF671E315') "
+                            "ORDER BY sc.nombre"
+                        ),
+                    },
                 ],
             }
         ]
