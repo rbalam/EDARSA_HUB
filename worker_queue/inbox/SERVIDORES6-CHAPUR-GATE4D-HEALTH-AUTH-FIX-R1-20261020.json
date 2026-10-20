@@ -1,0 +1,61 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "new": "    # Si se proporciona api_id, resolver autenticacion exclusivamente\n    # por el helper interno. El lector publico enmascara api_key y nunca\n    # debe alimentar autenticacion runtime.\n    if api_id:\n        api = get_api_connection_with_decrypted_key(api_id)\n        if not api:\n            return {\n                \"success\": False,\n                \"error\": \"API no encontrada o credencial no descifrable en EDARSAHUB SQL\",\n            }\n        url = api.get('url')\n        api_key = api.get('api_key_decrypted')",
+      "old": "    # Si se proporciona api_id, obtener config desde EDARSAHUB SQL\n    if api_id:\n        api = get_api_connection_sql(api_id)\n        if not api:\n            return {\"success\": False, \"error\": \"API no encontrada en EDARSAHUB SQL\"}\n        url = api.get('url')\n        api_key = api.get('api_key')",
+      "path": "backend/modules/api_connections/repository.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "    SOLO PARA USO INTERNO de health/test-query.\n    NUNCA exponer en responses de API ni logs.",
+      "old": "    SOLO PARA USO INTERNO EN TEST-QUERY.\n    NUNCA exponer en responses de API.",
+      "path": "backend/modules/api_connections/repository.py",
+      "type": "replace_text"
+    },
+    {
+      "content": "import sys\nfrom types import SimpleNamespace\n\nimport pytest\n\nimport modules.api_connections.repository as repository\n\n\n@pytest.mark.asyncio\nasync def test_health_uses_internal_auth_value_not_public_mask(monkeypatch):\n    captured = {}\n    internal_value = \"fixture-value\"\n\n    monkeypatch.setattr(\n        repository,\n        \"get_api_connection_with_decrypted_key\",\n        lambda api_id: {\n            \"id\": api_id,\n            \"url\": \"http://example.invalid/query\",\n            \"api_key_decrypted\": internal_value,\n            \"activo\": True,\n        },\n    )\n\n    def public_path_must_not_be_used(_api_id):\n        raise AssertionError(\"public masked connection path used for runtime auth\")\n\n    monkeypatch.setattr(\n        repository,\n        \"get_api_connection_sql\",\n        public_path_must_not_be_used,\n    )\n\n    class Response:\n        status_code = 200\n        elapsed = SimpleNamespace(total_seconds=lambda: 0.012)\n\n    def fake_get(url, *, headers, params, timeout):\n        captured.update(url=url, headers=headers, params=params, timeout=timeout)\n        return Response()\n\n    import requests\n    monkeypatch.setattr(requests, \"get\", fake_get)\n\n    persisted = {}\n\n    def fake_persist(connection_id, **kwargs):\n        persisted[\"connection_id\"] = connection_id\n        persisted.update(kwargs)\n\n    monkeypatch.setitem(\n        sys.modules,\n        \"modules.integrations_runtime.health\",\n        SimpleNamespace(persist_connection_health=fake_persist),\n    )\n\n    result = await repository.test_api_connection_health(\n        api_id=\"00000000-0000-4000-8000-000000000701\"\n    )\n\n    assert result[\"success\"] is True\n    assert result[\"health_persisted\"] is True\n    assert captured[\"headers\"] == {\"x-api-key\": internal_value}\n    assert captured[\"params\"] == {\"sql\": \"SELECT 1 as test\"}\n    assert persisted[\"connection_id\"] == \"00000000-0000-4000-8000-000000000701\"\n    assert internal_value not in repr(result)\n",
+      "path": "backend/tests/test_api_connection_health_internal_auth.py",
+      "type": "write_file"
+    }
+  ],
+  "base_sha": "7dfb4cf507af267ddc0f9c7a25637483034c00d3",
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_api_connection_health_internal_auth.py",
+        "backend/tests/test_integrations_runtime_health_transaction.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SERVIDORES6-CHAPUR-GATE4D-HEALTH-AUTH-FIX-R1-20261020",
+  "mode": "MUTATION",
+  "objective": "Corregir exclusivamente el health API_LOCAL para que use el helper interno existente de credenciales y no el marcador publico enmascarado. Mantener masking de UI/API. No modificar credenciales, no exponer secretos y no tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Menu Servidores 6",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "Conexiones y Comunicaciones",
+    "source": "chatgpt-classic"
+  },
+  "scheduling": {
+    "bounded_context": "Conexiones y Comunicaciones",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "Conexiones y Comunicaciones",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
