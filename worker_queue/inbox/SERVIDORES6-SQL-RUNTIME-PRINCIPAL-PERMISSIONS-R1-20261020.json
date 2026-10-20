@@ -1,0 +1,13 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-SQL-RUNTIME-PRINCIPAL-PERMISSIONS-R1-20261020",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Auditar exclusivamente en READ_ONLY los principals SQL candidatos de escritura runtime en EDARSAHUB Development y sus roles/permisos efectivos, para identificar el writer real antes de modificar edarsahub_writer_connection.py. No cambiar permisos, no ejecutar DDL/DML, no SQL inline, no secretos, no Produccion.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "audit_profile": "sql_runtime_principal_permissions_v1",
+  "checks": []
+}
