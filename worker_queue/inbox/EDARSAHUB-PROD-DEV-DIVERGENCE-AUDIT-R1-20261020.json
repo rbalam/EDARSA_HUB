@@ -1,0 +1,66 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PROD-DEV-DIVERGENCE-AUDIT-R1-20261020",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "base_sha": "7dabee9cd5de2b7e8b51fa16fc033793beeaaac6",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en solo lectura la divergencia bidireccional actual entre Edarsahub_Produccion y Edarsahub_Desarrollo. Produccion esta en e1daa7fdc075b6404c071d9ec160da477cc85c02 y Desarrollo en 7dabee9cd5de2b7e8b51fa16fc033793beeaaac6, con merge-base 935ea169613aa9f010e0ae92eedfd2870c18a2a7. Clasificar los 38 commits exclusivos de Produccion, en especial hotfixes P0 de scheduler, wake loop, health probe y build, y determinar para cada cambio si ya existe equivalente funcional en Desarrollo, si debe preservarse como production-only, si requiere port/reimplementacion, o si entra en conflicto con implementaciones posteriores de Desarrollo. No modificar archivos, no tocar Produccion, no hacer merge/rebase/cherry-pick, no promover P4. Emitir evidencia suficiente para una estrategia de reconciliacion segura y una nueva base de promocion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          ".github/workflows",
+          "backend/modules/scheduler_runtime",
+          "backend/modules/scheduler_trigger",
+          "backend/modules/scheduler_trigger_preview",
+          "backend/core/scheduler",
+          "backend/scheduler_service.py",
+          "backend/server.py",
+          "backend/tests",
+          "docs/SCHEDULER",
+          "frontend/package.json",
+          "frontend/yarn.lock",
+          "frontend/scripts/validate_enterprise_navigation.js"
+        ],
+        "search_terms": [
+          "PRODUCTION_SCHEDULER",
+          "scheduler_trigger",
+          "wake_loop",
+          "Ventas del Dia",
+          "EDARSA_RUNTIME_ROLE",
+          "health",
+          "Node 20.18",
+          "@eslint/js",
+          "prod-scheduler-hotfix-gate",
+          "prod-scheduler-http-trigger-gate",
+          "preview_scoped_scheduler",
+          "preview_sales_wake"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.yml",
+          "*.yaml",
+          "*.md",
+          "*.js",
+          "*.json",
+          "*.lock"
+        ],
+        "exclude_patterns": [
+          "node_modules/**",
+          "build/**",
+          "dist/**",
+          ".git/**"
+        ],
+        "max_results": 400
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
