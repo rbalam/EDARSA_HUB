@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
-  "generated_at_utc": "2026-10-20T19:18:30Z",
+  "generated_at_utc": "2026-10-20T19:19:53Z",
   "history": {
     "done_total_local": 1502,
     "pending_total_local": 0,
@@ -16,133 +16,133 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 614,
+      "age_seconds": 697,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-POS-FRESHNESS-R25-CARLOS-20261020T1907Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1331,
+      "age_seconds": 1414,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-POS-PREFLIGHT-R18-CARLOS-20261020T1855Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 221,
+      "age_seconds": 304,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-POST-CLOSE-RECHECK-R28-CARLOS-20261020T1914Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 52,
+      "age_seconds": 135,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-RANGE-COMMIT-R29-CARLOS-20261020T1917Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1531,
+      "age_seconds": 1614,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-RANGE-DRYRUN-R17-CARLOS-20261020T1853Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 637,
+      "age_seconds": 720,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-REGISTRY-AUDIT-R24-CARLOS-20261020T1907Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1826,
+      "age_seconds": 1909,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-RUNTIME-AUDIT-R16-CARLOS-20261020T1850Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 463,
+      "age_seconds": 546,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-SNAPSHOT-HISTORY-R26-CARLOS-20261020T1912Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 835,
+      "age_seconds": 918,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-SOURCE-REGISTRY-R22-CARLOS-20261020T1908Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1139,
+      "age_seconds": 1222,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-SOURCE-WINDOW-AUDIT-R20-CARLOS-20261020T1901Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 361,
+      "age_seconds": 444,
       "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-TEMP-CLOSED-AUDIT-R27-CARLOS-20261020T1910Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1241,
+      "age_seconds": 1324,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-CLOSED-NONZERO-PRECEDENCE-R19-CARLOS-20261020T1858Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3022,
+      "age_seconds": 3105,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-CLOSED-PRECEDENCE-MIGRATION-R11-CARLOS-20261020T1828Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3150,
+      "age_seconds": 3233,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-CLOSED-PRECEDENCE-R10-CARLOS-20261020T1823Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 919,
+      "age_seconds": 1002,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-NONZERO-PRECEDENCE-MIGRATION-R21-CARLOS-20261020T1905Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2868,
+      "age_seconds": 2951,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-POSTMIGRATION-AUDIT-R12-CARLOS-20261020T1831Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 756,
+      "age_seconds": 839,
       "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-SOFT-POSTMIGRATION-R23-CARLOS-20261020T1910Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3488,
+      "age_seconds": 3571,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-BASE-RUNTIME-PARITY-R9-CARLOS-20261020T1817Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1986,
+      "age_seconds": 2069,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-CERT-R15-CARLOS-20261020T1843Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2571,
+      "age_seconds": 2654,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-COMMIT-R14-CARLOS-20261020T1835Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2748,
+      "age_seconds": 2831,
       "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-DRYRUN-POSTRUNTIME-R13-CARLOS-20261020T1833Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3342,
+      "age_seconds": 3425,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-QUERY-CONTRACT-AUDIT-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
@@ -162,8 +162,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-20T19:18:20Z",
-    "last_receive_utc": "2026-10-20T19:18:15Z",
+    "last_cycle_utc": "2026-10-20T19:19:42Z",
+    "last_receive_utc": "2026-10-20T19:19:52Z",
     "last_terminal_utc": "2026-10-20T19:17:38Z",
     "pid": "493708",
     "runtime_fingerprint": {
