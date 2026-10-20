@@ -24,6 +24,7 @@ import re
 from typing import Dict, Any, List
 from core.security import get_current_user
 from core.rbac_helper_sql import es_admin
+from core.rbac.middleware import require_explicit_permission
 from core.config.edarsahub_sql import get_edarsahub_connection
 from modules.admin_sql import rbac_pilot_service
 import logging
@@ -735,7 +736,7 @@ async def save_permisos_catalogos(payload: dict, current_user: dict = Depends(ge
         conn.close()
 
 @router.put("/roles/{role_id}")
-async def update_role_sql(role_id: str, role_data: dict, current_user: dict = Depends(get_current_user)):
+async def update_role_sql(role_id: str, role_data: dict, current_user: dict = Depends(get_current_user), _rbac_admin: dict = Depends(require_explicit_permission("RBAC_ADMIN"))):
     """
     Actualiza rol y permisos en EDARSAHUB SQL.
     Fuente única: Usuario_Roles + Usuario_PermisosRolModulo.
@@ -841,7 +842,7 @@ async def update_role_sql(role_id: str, role_data: dict, current_user: dict = De
 
 
 @router.post("/roles")
-async def create_role_sql(role_data: dict, current_user: dict = Depends(get_current_user)):
+async def create_role_sql(role_data: dict, current_user: dict = Depends(get_current_user), _rbac_admin: dict = Depends(require_explicit_permission("RBAC_ADMIN"))):
     require_admin(current_user)
 
     nombre = role_data.get("nombre")
@@ -872,7 +873,7 @@ async def create_role_sql(role_data: dict, current_user: dict = Depends(get_curr
 
 
 @router.delete("/roles/{role_id}")
-async def delete_role_sql(role_id: str, current_user: dict = Depends(get_current_user)):
+async def delete_role_sql(role_id: str, current_user: dict = Depends(get_current_user), _rbac_admin: dict = Depends(require_explicit_permission("RBAC_ADMIN"))):
     require_admin(current_user)
     execute_write("""
         UPDATE dbo.Usuario_Roles

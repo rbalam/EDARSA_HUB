@@ -12,11 +12,13 @@ from typing import Any, Dict, List
 CHAPUR_CONNECTION_DISCOVERY_V1 = "chapur_connection_discovery_v1"
 CHAPUR_NORTE_OPERATIONAL_VISIBILITY_V1 = "chapur_norte_operational_visibility_v1"
 API_FACTORY_PERSISTENCE_STATE_V1 = "api_factory_persistence_state_v1"
+CHAPUR_EXTERNAL_INTEGRATION_READINESS_V1 = "chapur_external_integration_readiness_v1"
 
 _ALLOWED = {
     CHAPUR_CONNECTION_DISCOVERY_V1,
     CHAPUR_NORTE_OPERATIONAL_VISIBILITY_V1,
     API_FACTORY_PERSISTENCE_STATE_V1,
+    CHAPUR_EXTERNAL_INTEGRATION_READINESS_V1,
 }
 
 
@@ -83,6 +85,42 @@ def build_readonly_audit_checks(profile: str) -> List[Dict[str, Any]]:
                             "CONVERT(varchar(36),server_id) AS server_id,sucursal_origen_id,system_type,activo "
                             "FROM dbo.Unidades_Negocio "
                             "WHERE server_id='d8b2d1eb-2e1f-4e43-b7d9-822bf671e315' ORDER BY id"
+                        ),
+                    },
+                ],
+            }
+        ]
+    if name == CHAPUR_EXTERNAL_INTEGRATION_READINESS_V1:
+        return [
+            {
+                "type": "sql_readonly_audit",
+                "source": "EDARSAHUB",
+                "max_rows": 20,
+                "queries": [
+                    {
+                        "name": "chapur_external_readiness",
+                        "sql": (
+                            "SELECT CONVERT(varchar(36), sc.id) AS connection_id,"
+                            "sc.nombre,sc.tipo_conexion,sc.system_type,sc.activo,"
+                            "sc.visible_en_operaciones,sc.queries_configured,"
+                            "CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.api_key_encrypted,''))), '') IS NOT NULL THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS api_key_configured,"
+                            "CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.password_encrypted,''))), '') IS NOT NULL THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS password_configured,"
+                            "CASE WHEN sc.EmpresaID IS NULL AND NULLIF(LTRIM(RTRIM(ISNULL(sc.empresa_id,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS corporate_scope_configured "
+                            "FROM dbo.Servidores_Conexiones sc "
+                            "WHERE sc.id IN ('8CBDCC89-6495-49C3-BE9C-A965DB82C77F','D8B2D1EB-2E1F-4E43-B7D9-822BF671E315') "
+                            "ORDER BY sc.nombre"
+                        ),
+                    },
+                    {
+                        "name": "chapur_external_health",
+                        "sql": (
+                            "SELECT CONVERT(varchar(36), e.ServidorID) AS connection_id,"
+                            "e.EstadoConexion,e.UltimoCheck,e.UltimaPruebaUTC,e.UltimoExitoUTC,"
+                            "e.UltimoErrorUTC,e.UltimoErrorCodigo,e.LatenciaMs,e.UltimoSyncUTC,"
+                            "e.UltimoSyncExitosoUTC,e.FechaActualizacionUTC "
+                            "FROM dbo.Servidores_ConexionEstado e "
+                            "WHERE e.ServidorID IN ('8CBDCC89-6495-49C3-BE9C-A965DB82C77F','D8B2D1EB-2E1F-4E43-B7D9-822BF671E315') "
+                            "ORDER BY e.ServidorID"
                         ),
                     },
                 ],

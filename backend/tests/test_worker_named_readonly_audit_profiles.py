@@ -163,3 +163,21 @@ def test_api_factory_persistence_profile_is_named_and_readonly():
             " EXEC ",
         ):
             assert forbidden not in f" {upper} "
+
+
+def test_chapur_external_integration_readiness_profile_is_sanitized_and_readonly():
+    profiles = _load("tools/mirror_sync/readonly_audit_profiles.py")
+    checks = profiles.build_readonly_audit_checks("chapur_external_integration_readiness_v1")
+    assert len(checks) == 1
+    check = checks[0]
+    assert check["type"] == "sql_readonly_audit"
+    names = {query["name"] for query in check["queries"]}
+    assert names == {"chapur_external_readiness", "chapur_external_health"}
+    sql = "\n".join(query["sql"] for query in check["queries"]).lower()
+    assert "api_key_configured" in sql
+    assert "password_configured" in sql
+    assert "api_key_encrypted" in sql
+    assert "password_encrypted" in sql
+    assert "select" in sql
+    for forbidden in (" update ", " insert ", " delete ", " merge ", " drop ", " alter "):
+        assert forbidden not in f" {sql} "
