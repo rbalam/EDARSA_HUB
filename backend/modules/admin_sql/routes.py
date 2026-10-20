@@ -200,67 +200,118 @@ async def get_users(
 
 
 @router.patch("/users/{user_id}/toggle-activo")
-async def toggle_user_activo(user_id: str, current_user: dict = Depends(get_current_user)):
-    """
-    Activa/Inactiva un usuario (Usuario_Catalogo.Activo).
-
-    - Al INACTIVAR, además se revocan todas sus sesiones activas
-      (no podrá seguir usando el sistema; el refresh token deja de servir).
-    - No se permite que un admin se inactive a sí mismo.
-    """
+async def toggle_user_activo(
+    user_id: str,
+    current_user: dict = Depends(get_current_user),
+    _rbac_admin: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
+):
+    """Toggle a user atomically, enforcing canonical SQL corporate scope."""
     require_admin(current_user)
+    actor_email = str(current_user.get("email") or "").strip()
+    if not actor_email:
+        raise HTTPException(status_code=403, detail="Identidad SQL requerida")
 
-    # Obtener estado y PublicUUID actuales
-    rows = execute_query(
-        "SELECT CAST(UsuarioID AS NVARCHAR(100)) AS UsuarioID, PublicUUID, "
-        "ISNULL(Activo, 1) AS activo, Email FROM Usuario_Catalogo WHERE UsuarioID = %s",
-        (user_id,),
-    )
-    if not rows:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+    try:
+        cur = conn.cursor(as_dict=True)
+        cur.execute("""
+            SELECT TOP 1 UsuarioID
+            FROM dbo.Usuario_Catalogo
+            WHERE LOWER(Email) = LOWER(%s) AND Activo = 1
+        """, (actor_email,))
+        actor_row = cur.fetchone()
+        if not actor_row:
+            raise HTTPException(status_code=403, detail="Actor SQL no autorizado")
+        actor_id = actor_row["UsuarioID"]
 
-    u = rows[0]
-    actual = bool(u.get("activo"))
-    nuevo = 0 if actual else 1
+        cur.execute("""
+            SELECT TOP 1 UsuarioID, PublicUUID, ISNULL(Activo, 1) AS Activo, Email
+            FROM dbo.Usuario_Catalogo WITH (UPDLOCK, HOLDLOCK)
+            WHERE UsuarioID = TRY_CONVERT(INT, %s)
+               OR LOWER(CAST(PublicUUID AS NVARCHAR(36))) = LOWER(%s)
+        """, (user_id, user_id))
+        target = cur.fetchone()
+        if not target:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        target_id = target["UsuarioID"]
+        if str(actor_id) == str(target_id):
+            raise HTTPException(status_code=403, detail="No se permite modificar el propio estado")
 
-    # Evitar auto-inactivación
-    if nuevo == 0:
-        me = str(current_user.get("id") or current_user.get("_id") or "")
-        if str(u.get("UsuarioID")) == me or str(u.get("PublicUUID")) == me:
-            raise HTTPException(status_code=400, detail="No puedes inactivar tu propio usuario")
+        cur.execute("""
+            SELECT TOP 1 1 AS Autorizado
+            FROM dbo.Usuario_RolesAsignacion ra
+            JOIN dbo.Usuario_Roles r ON r.RolID = ra.RolID
+            WHERE ra.UsuarioID = %s AND ra.Activo = 1 AND r.Activo = 1
+              AND r.CodigoRol IN ('SUPERADMIN', 'SUPERADMINISTRADOR')
+        """, (actor_id,))
+        actor_global = bool(cur.fetchone())
 
-    # Actualizar estado
-    execute_write(
-        "UPDATE Usuario_Catalogo SET Activo = %s WHERE UsuarioID = %s",
-        (nuevo, user_id),
-    )
+        # A scoped ADMIN cannot change a SUPERADMIN, even when companies overlap.
+        if not actor_global:
+            cur.execute("""
+                SELECT TOP 1 1 AS Protegido
+                FROM dbo.Usuario_RolesAsignacion ra
+                JOIN dbo.Usuario_Roles r ON r.RolID = ra.RolID
+                WHERE ra.UsuarioID = %s AND ra.Activo = 1 AND r.Activo = 1
+                  AND r.CodigoRol IN ('SUPERADMIN', 'SUPERADMINISTRADOR')
+            """, (target_id,))
+            if cur.fetchone():
+                raise HTTPException(status_code=403, detail="Usuario de autoridad superior")
 
-    sesiones_revocadas = 0
-    if nuevo == 0:
-        # Revocar sesiones activas (la sesión guarda UsuarioID = PublicUUID;
-        # se incluye también el id numérico por compatibilidad con sesiones antiguas).
-        public_uuid = str(u.get("PublicUUID") or "")
-        try:
-            res = execute_write(
-                "UPDATE Sesiones SET EstaActiva = 0, FechaRevocacion = GETUTCDATE(), "
-                "MotivoRevocacion = 'user_deactivated', FechaModificacion = GETUTCDATE() "
-                "OUTPUT INSERTED.SesionID "
-                "WHERE EstaActiva = 1 AND UsuarioID IN (%s, %s)",
-                (public_uuid, str(user_id)),
-                fetch=True,
-            )
-            sesiones_revocadas = len(res or [])
-        except Exception as e:
-            logging.warning(f"[ADMIN_SQL] No se pudieron revocar sesiones de {user_id}: {e}")
+            # Require at least one active company on the target, and EVERY
+            # target company must be explicitly assigned to the actor.
+            cur.execute("""
+                SELECT COUNT(DISTINCT EmpresaID) AS Total
+                FROM dbo.Usuario_EmpresasAsignacion
+                WHERE UsuarioID = %s AND Activo = 1
+            """, (target_id,))
+            total = int((cur.fetchone() or {}).get("Total") or 0)
+            if total == 0:
+                raise HTTPException(status_code=403, detail="Usuario sin alcance corporativo verificable")
+            cur.execute("""
+                SELECT COUNT(DISTINCT target.EmpresaID) AS FueraAlcance
+                FROM dbo.Usuario_EmpresasAsignacion target
+                WHERE target.UsuarioID = %s AND target.Activo = 1
+                  AND NOT EXISTS (
+                    SELECT 1 FROM dbo.Usuario_EmpresasAsignacion actor
+                    WHERE actor.UsuarioID = %s AND actor.Activo = 1
+                      AND actor.EmpresaID = target.EmpresaID
+                  )
+            """, (target_id, actor_id))
+            if int((cur.fetchone() or {}).get("FueraAlcance") or 0):
+                raise HTTPException(status_code=403, detail="Usuario fuera del alcance corporativo")
 
-    return {
-        "success": True,
-        "id": str(user_id),
-        "email": u.get("Email"),
-        "activo": bool(nuevo),
-        "active": bool(nuevo),
-        "sesiones_revocadas": sesiones_revocadas,
-    }
+        nuevo = 0 if bool(target["Activo"]) else 1
+        cur.execute(
+            "UPDATE dbo.Usuario_Catalogo SET Activo = %s WHERE UsuarioID = %s",
+            (nuevo, target_id),
+        )
+        sesiones_revocadas = 0
+        if nuevo == 0:
+            cur.execute("""
+                UPDATE dbo.Sesiones
+                SET EstaActiva = 0, FechaRevocacion = GETUTCDATE(),
+                    MotivoRevocacion = 'user_deactivated',
+                    FechaModificacion = GETUTCDATE()
+                OUTPUT INSERTED.SesionID
+                WHERE EstaActiva = 1 AND UsuarioID IN (%s, %s)
+            """, (str(target.get("PublicUUID") or ""), str(target_id)))
+            sesiones_revocadas = len(cur.fetchall() or [])
+        conn.commit()
+        return {
+            "success": True, "id": str(target_id), "email": target["Email"],
+            "activo": bool(nuevo), "active": bool(nuevo),
+            "sesiones_revocadas": sesiones_revocadas,
+        }
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception:
+        conn.rollback()
+        logging.exception("[ADMIN_SQL] toggle-activo SQL failed; rolled back")
+        raise HTTPException(status_code=500, detail="Error transaccional al modificar usuario")
+    finally:
+        conn.close()
 
 
 @router.get("/roles")
