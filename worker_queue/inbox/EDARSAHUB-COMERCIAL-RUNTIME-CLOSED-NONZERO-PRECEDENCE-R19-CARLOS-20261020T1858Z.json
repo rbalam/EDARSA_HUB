@@ -1,0 +1,70 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-CLOSED-NONZERO-PRECEDENCE-R19-CARLOS-20261020T1858Z",
+  "created_at_utc": "2026-10-20T18:58:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d652050b9bb8f7e9f860eacb8b18658d575a60a9",
+  "production_allowed": false,
+  "objective": "Corregir exclusivamente la migracion idempotente de la vista dbo.vw_Comercial_KPIs_Diarios_v2_Runtime para que un KPI base certificado como cerrado y con evidencia comercial no sea sobrescrito por un snapshot residual con ventas abiertas. Una fila base cerrada en cero y sin tickets/PAX debe seguir permitiendo temporalmente el overlay hasta que el encabezado oficial sea reparado. Agregar prueba estatica de regresion. No modificar sincronizadores, scheduler, extractores, mappers ni tablas de origen.",
+  "acceptance": [
+    "El snapshot conserva overlay cuando la base cerrada esta vacia: ventas=0, tickets=0 y PAX=0",
+    "El snapshot deja de hacer overlay cuando la base esta cerrada, no abierta y tiene ventas, tickets o PAX",
+    "La regla aplica transversalmente a cualquier unidad y motor, sin nombres de sucursal",
+    "snapshot_only conserva la jornada cuando no existe una fila KPI base",
+    "La migracion sigue siendo CREATE OR ALTER VIEW e idempotente",
+    "Pruebas de regresion PASS",
+    "No se modifican los sincronizadores protegidos",
+    "production_touched=false"
+  ],
+  "constraints": [
+    "No tocar backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+    "No tocar backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+    "No tocar backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+    "No ejecutar SQL ni sincronizaciones en este job",
+    "No usar condiciones por CIENFUEGOS, ESTELAR o 130MID",
+    "No modificar Produccion",
+    "Mantener solucion atomica, canonica y transversal"
+  ],
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/database/migrations/20261020_001_runtime_closed_base_precedence_apply.sql",
+      "old": "       AND ISNULL(s.ventas_abiertas, 0) > 0\n    WHERE ISNULL(k.activo, 1) = 1",
+      "new": "       AND ISNULL(s.ventas_abiertas, 0) > 0\n       AND NOT (\n            ISNULL(k.es_corte_cerrado, 0) = 1\n        AND ISNULL(k.es_venta_abierta, 0) = 0\n        AND (\n               ABS(ISNULL(k.ventas_total, 0)) > 0.0001\n            OR ISNULL(k.tickets_total, 0) > 0\n            OR ISNULL(k.pax_total, 0) > 0\n        )\n       )\n    WHERE ISNULL(k.activo, 1) = 1",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_runtime_closed_base_precedence_r10.py",
+      "old": "    assert 'AND ISNULL(s.ventas_abiertas, 0) > 0' in sql\n    assert 'WHERE NOT EXISTS (' in sql",
+      "new": "    assert 'AND ISNULL(s.ventas_abiertas, 0) > 0' in sql\n    assert 'ISNULL(k.es_corte_cerrado, 0) = 1' in sql\n    assert 'ISNULL(k.es_venta_abierta, 0) = 0' in sql\n    assert 'ABS(ISNULL(k.ventas_total, 0)) > 0.0001' in sql\n    assert 'OR ISNULL(k.tickets_total, 0) > 0' in sql\n    assert 'OR ISNULL(k.pax_total, 0) > 0' in sql\n    assert 'AND NOT (' in sql\n    assert 'WHERE NOT EXISTS (' in sql",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_runtime_closed_base_precedence_r10.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_runtime_closed_base_precedence_r10.py"
+      ]
+    }
+  ]
+}
