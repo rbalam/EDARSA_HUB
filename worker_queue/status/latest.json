@@ -3,78 +3,51 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "8152f9d10f4431dbcc0d2d6c802ca22d9bcd6e7a",
-  "generated_at_utc": "2026-10-19T23:09:47Z",
+  "development_sha": "7c17328e127043005da22b4356df3b954e98aa98",
+  "generated_at_utc": "2026-10-20T00:14:31Z",
   "history": {
     "done_total_local": 1466,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1260,
+    "rejected_total_local": 1261,
     "results_total_local": 2500
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1265,
-      "job_id": "SERVIDORES-API-FACTORY-H8-MIGRATION-R1-20261019",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1028,
-      "job_id": "SERVIDORES-API-FACTORY-H8-READONLY-RUNTIME-CERT-R1-20261019",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 799,
-      "job_id": "SERVIDORES-API-FACTORY-H8-READONLY-RUNTIME-CERT-R2-20261019",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 579,
-      "job_id": "SERVIDORES-API-FACTORY-H8-UI-CERT-R1-20261019",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1857,
-      "job_id": "SERVIDORES-SQL-MIGRATION-NAMED-AUDITS-CERT-R1-20261019",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1579,
-      "job_id": "SERVIDORES-SQL-MIGRATION-NAMED-AUDITS-CERT-R2-20261019",
-      "reason": null,
-      "state": "RESULT_READY"
+      "age_seconds": 16,
+      "job_id": "SERVIDORES-CHAPUR-NORTE-DISABLE-OPERATIONS-R1-20261019",
+      "reasons": [
+        "SERVER_REGISTRY_METADATA_UPDATE_POST_AUDIT_REQUIRED"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     }
   ],
-  "local_development_sha": "8152f9d10f4431dbcc0d2d6c802ca22d9bcd6e7a",
+  "local_development_sha": "7c17328e127043005da22b4356df3b954e98aa98",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_rejected_recent": 1,
+  "queue_result_ready_recent": 0,
   "queue_running": 0,
-  "remote_development_sha": "8152f9d10f4431dbcc0d2d6c802ca22d9bcd6e7a",
+  "remote_development_sha": "7c17328e127043005da22b4356df3b954e98aa98",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-19T23:09:34Z",
-    "last_receive_utc": "2026-10-19T23:09:45Z",
+    "last_cycle_utc": "2026-10-20T00:14:22Z",
+    "last_receive_utc": "2026-10-20T00:14:17Z",
     "last_terminal_utc": "2026-10-19T23:00:08Z",
-    "pid": "175074",
+    "pid": "2015",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "ae9ebc1d1120a14bc75923e30f0276b0f7bdc0cb",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "8152f9d10f4431dbcc0d2d6c802ca22d9bcd6e7a",
+      "development_sha": "7c17328e127043005da22b4356df3b954e98aa98",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
