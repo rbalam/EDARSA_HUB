@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-API-LOCAL-METADATA-R6-CARLOS-20261020T1807Z",
+  "created_at_utc": "2026-10-20T18:07:00Z",
+  "requested_by": "chatgpt",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "21b8326d9a65acee99af9f98d9451527f9427555",
+  "production_allowed": false,
+  "objective": "Auditar en SQL de solo lectura la ruta canonica de API local usada por ventas cerradas ManagementPro para ORIGEN y compararla con 130QRO: unidad, alias de empresa, empresa, relacion Sistema_EmpresasServidores con RolConexion VENTAS_DIA_API_LOCAL, Servidores_Conexiones API_LOCAL y ultimo estado de health. Identificar si ORIGEN carece de relacion, apunta a connection_id incorrecto, tiene sucursal distinta a 0023, URL ausente, conexion inactiva o health con error. No ejecutar health, sync, backfill, DDL ni DML.",
+  "acceptance": [
+    "Resolver empresas y aliases de ORIGEN y 130QRO",
+    "Mostrar la relacion VENTAS_DIA_API_LOCAL de cada empresa y el connection_id resultante",
+    "Comparar codigo/numero de sucursal, prioridad, principal, activo, tipo_conexion y system_type",
+    "Mostrar si URL y autenticacion estan configuradas sin exponer secretos",
+    "Mostrar el ultimo estado de Servidores_ConexionEstado para cada API local",
+    "Cero DDL, cero DML, cero cambios y production_touched=false"
+  ],
+  "constraints": [
+    "No tocar el sincronizador de Ventas del dia",
+    "No tocar el sincronizador de Ventas cerradas",
+    "No ejecutar pruebas HTTP en esta fase",
+    "No escribir en SQL ni POS",
+    "No mostrar api_key_encrypted, password_encrypted ni secretos",
+    "Mantener enfoque atomico, canonico y transversal",
+    "Trabajar solo en Edarsahub_Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "tecnico-ejecutivo",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "mpro_unidades_origen_qro",
+          "sql": "SELECT CONVERT(varchar(36),id) AS unidad_pk, CONVERT(varchar(100),codigo) AS unidad_codigo, CONVERT(varchar(200),nombre) AS unidad_nombre, CONVERT(varchar(100),system_type) AS system_type, CONVERT(varchar(200),server_id) AS direct_server_id, CONVERT(varchar(100),sucursal_origen_id) AS sucursal_origen_id, activo FROM dbo.Unidades_Negocio WHERE UPPER(LTRIM(RTRIM(CONVERT(varchar(100),codigo)))) IN ('ORIGEN','130QRO') ORDER BY codigo;"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "mpro_empresas_alias_origen_qro",
+          "sql": "SELECT e.EmpresaID,e.CodigoEmpresa,e.NombreComercial,e.NombreEmpresa,e.Activo AS empresa_activa,ea.AliasNormalizado,ea.Activo AS alias_activo FROM dbo.Sistema_Empresas e LEFT JOIN dbo.Sistema_EmpresasAlias ea ON ea.EmpresaID=e.EmpresaID WHERE UPPER(LTRIM(RTRIM(e.CodigoEmpresa))) IN ('ORIGEN','130QRO','130QUERETARO') OR ea.AliasNormalizado IN ('ORIGEN','130QRO','130QUERETARO') ORDER BY e.EmpresaID,ea.AliasNormalizado;"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "mpro_api_local_relaciones_origen_qro",
+          "sql": "WITH empresas_objetivo AS (SELECT DISTINCT e.EmpresaID FROM dbo.Sistema_Empresas e LEFT JOIN dbo.Sistema_EmpresasAlias ea ON ea.EmpresaID=e.EmpresaID WHERE UPPER(LTRIM(RTRIM(e.CodigoEmpresa))) IN ('ORIGEN','130QRO','130QUERETARO') OR ea.AliasNormalizado IN ('ORIGEN','130QRO','130QUERETARO')) SELECT e.EmpresaID,e.CodigoEmpresa,e.NombreComercial,es.EmpresaServidorID,CONVERT(varchar(36),es.ServidorID) AS connection_id,es.RolConexion,es.NumeroSucursalSistema,es.CodigoSucursalSistema,es.NombreSucursalSistema,es.Prioridad,es.EsPrincipal,es.Activo AS relacion_activa,sc.nombre AS conexion_nombre,sc.tipo_conexion,sc.system_type,sc.activo AS conexion_activa,CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.api_url,''))),'') IS NULL THEN 0 ELSE 1 END AS url_configured,CASE WHEN sc.api_key_encrypted IS NULL OR DATALENGTH(sc.api_key_encrypted)=0 THEN 0 ELSE 1 END AS auth_configured FROM empresas_objetivo x JOIN dbo.Sistema_Empresas e ON e.EmpresaID=x.EmpresaID LEFT JOIN dbo.Sistema_EmpresasServidores es ON es.EmpresaID=e.EmpresaID LEFT JOIN dbo.Servidores_Conexiones sc ON sc.id=es.ServidorID WHERE es.RolConexion='VENTAS_DIA_API_LOCAL' OR es.RolConexion IS NULL ORDER BY e.EmpresaID,es.EsPrincipal DESC,es.Prioridad;"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "mpro_api_local_health_origen_qro",
+          "sql": "WITH ids AS (SELECT DISTINCT es.ServidorID FROM dbo.Sistema_Empresas e LEFT JOIN dbo.Sistema_EmpresasAlias ea ON ea.EmpresaID=e.EmpresaID JOIN dbo.Sistema_EmpresasServidores es ON es.EmpresaID=e.EmpresaID WHERE (UPPER(LTRIM(RTRIM(e.CodigoEmpresa))) IN ('ORIGEN','130QRO','130QUERETARO') OR ea.AliasNormalizado IN ('ORIGEN','130QRO','130QUERETARO')) AND es.RolConexion='VENTAS_DIA_API_LOCAL' AND es.Activo=1), ranked AS (SELECT CONVERT(varchar(36),h.ServidorID) AS connection_id,h.EstadoConexion,h.UltimoCheck,h.UltimaPruebaUTC,h.UltimoExitoUTC,h.UltimoErrorUTC,h.UltimoErrorCodigo,h.LatenciaMs,h.FechaActualizacionUTC,ROW_NUMBER() OVER (PARTITION BY h.ServidorID ORDER BY COALESCE(h.FechaActualizacionUTC,h.UltimaPruebaUTC,h.UltimoCheck) DESC) AS rn FROM dbo.Servidores_ConexionEstado h JOIN ids i ON i.ServidorID=h.ServidorID) SELECT connection_id,EstadoConexion,UltimoCheck,UltimaPruebaUTC,UltimoExitoUTC,UltimoErrorUTC,UltimoErrorCodigo,LatenciaMs,FechaActualizacionUTC FROM ranked WHERE rn=1 ORDER BY connection_id;"
+        }
+      ]
+    }
+  ]
+}
