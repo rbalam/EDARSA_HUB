@@ -39,7 +39,9 @@ def persist_connection_health(
         cur = conn.cursor(as_dict=True)
         cur.execute("SET XACT_ABORT ON")
         cur.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
-        cur.execute("BEGIN TRANSACTION")
+        # pymssql con autocommit=False ya mantiene la transaccion del driver.
+        # BEGIN TRANSACTION aqui la anidaria y dejaria @@TRANCOUNT abierto
+        # despues de conn.commit(), haciendo no durable la persistencia.
         cur.execute(
             """
             SELECT TOP (1) Id
