@@ -766,6 +766,7 @@ async def update_role_sql(role_id: str, role_data: dict, current_user: dict = De
     Fuente única: Usuario_Roles + Usuario_PermisosRolModulo.
     """
     require_admin(current_user)
+    _require_global_role_admin(current_user)
 
     nombre = role_data.get("nombre")
     descripcion = role_data.get("descripcion")
@@ -865,9 +866,46 @@ async def update_role_sql(role_id: str, role_data: dict, current_user: dict = De
         conn.close()
 
 
+def _require_global_role_admin(current_user: dict) -> None:
+    """Fail closed: Usuario_Roles/Usuario_PermisosRolModulo are global tables.
+
+    RBAC_ADMIN is separately enforced by each route's dependency.
+    Scoped ADMIN must use a future company-scoped assignment endpoint.
+    """
+    actor_email = str(current_user.get("email") or "").strip()
+    if not actor_email:
+        raise HTTPException(status_code=403, detail="Identidad SQL del actor requerida")
+    conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+    try:
+        cur = conn.cursor(as_dict=True)
+        cur.execute("""
+            SELECT TOP 1 1 AS Autorizado
+            FROM dbo.Usuario_Catalogo actor
+            JOIN dbo.Usuario_RolesAsignacion ra
+              ON ra.UsuarioID = actor.UsuarioID AND ra.Activo = 1
+            JOIN dbo.Usuario_Roles rol
+              ON rol.RolID = ra.RolID AND rol.Activo = 1
+            WHERE actor.Activo = 1
+              AND LOWER(actor.Email) = LOWER(%s)
+              AND rol.CodigoRol IN ('SUPERADMIN', 'SUPERADMINISTRADOR')
+        """, (actor_email,))
+        if not cur.fetchone():
+            raise HTTPException(
+                status_code=403,
+                detail="Mutaciones de roles globales requieren SUPERADMIN SQL",
+            )
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=503, detail="No se pudo validar autoridad SQL")
+    finally:
+        conn.close()
+
+
 @router.post("/roles")
 async def create_role_sql(role_data: dict, current_user: dict = Depends(get_current_user), _rbac_admin: dict = Depends(require_explicit_permission("RBAC_ADMIN"))):
     require_admin(current_user)
+    _require_global_role_admin(current_user)
 
     nombre = role_data.get("nombre")
     descripcion = role_data.get("descripcion") or nombre or ""
@@ -899,6 +937,7 @@ async def create_role_sql(role_data: dict, current_user: dict = Depends(get_curr
 @router.delete("/roles/{role_id}")
 async def delete_role_sql(role_id: str, current_user: dict = Depends(get_current_user), _rbac_admin: dict = Depends(require_explicit_permission("RBAC_ADMIN"))):
     require_admin(current_user)
+    _require_global_role_admin(current_user)
     execute_write("""
         UPDATE dbo.Usuario_Roles
         SET Activo = 0, FechaModificacion = GETDATE()
