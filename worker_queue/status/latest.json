@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
-  "generated_at_utc": "2026-10-20T19:32:21Z",
+  "generated_at_utc": "2026-10-20T21:11:06Z",
   "history": {
     "done_total_local": 1503,
     "pending_total_local": 0,
@@ -14,116 +14,7 @@
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [
-    {
-      "age_seconds": 1444,
-      "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-POS-FRESHNESS-R25-CARLOS-20261020T1907Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2162,
-      "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-POS-PREFLIGHT-R18-CARLOS-20261020T1855Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1052,
-      "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-POST-CLOSE-RECHECK-R28-CARLOS-20261020T1914Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 883,
-      "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-RANGE-COMMIT-R29-CARLOS-20261020T1917Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2362,
-      "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-RANGE-DRYRUN-R17-CARLOS-20261020T1853Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1468,
-      "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-REGISTRY-AUDIT-R24-CARLOS-20261020T1907Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2657,
-      "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-RUNTIME-AUDIT-R16-CARLOS-20261020T1850Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1294,
-      "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-SNAPSHOT-HISTORY-R26-CARLOS-20261020T1912Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1666,
-      "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-SOURCE-REGISTRY-R22-CARLOS-20261020T1908Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1970,
-      "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-SOURCE-WINDOW-AUDIT-R20-CARLOS-20261020T1901Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1192,
-      "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-TEMP-CLOSED-AUDIT-R27-CARLOS-20261020T1910Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2072,
-      "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-CLOSED-NONZERO-PRECEDENCE-R19-CARLOS-20261020T1858Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1750,
-      "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-NONZERO-PRECEDENCE-MIGRATION-R21-CARLOS-20261020T1905Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1587,
-      "job_id": "EDARSAHUB-COMERCIAL-RUNTIME-SOFT-POSTMIGRATION-R23-CARLOS-20261020T1910Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2817,
-      "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-CERT-R15-CARLOS-20261020T1843Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3402,
-      "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-COMMIT-R14-CARLOS-20261020T1835Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3578,
-      "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-DRYRUN-POSTRUNTIME-R13-CARLOS-20261020T1833Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 698,
-      "job_id": "EDARSAHUB-COMERCIAL-SOFT-FINAL-CERT-R30-CARLOS-20261020T1920Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    }
-  ],
+  "jobs": [],
   "local_development_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
@@ -132,16 +23,16 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 18,
+  "queue_result_ready_recent": 0,
   "queue_running": 0,
   "remote_development_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-20T19:32:12Z",
-    "last_receive_utc": "2026-10-20T19:32:07Z",
+    "last_cycle_utc": "2026-10-20T21:10:48Z",
+    "last_receive_utc": "2026-10-20T21:11:01Z",
     "last_terminal_utc": "2026-10-20T19:20:42Z",
-    "pid": "493708",
+    "pid": "315",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "bacb6a1760aa6f9e6e3a8bc2220cccdf26b9cb08",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
