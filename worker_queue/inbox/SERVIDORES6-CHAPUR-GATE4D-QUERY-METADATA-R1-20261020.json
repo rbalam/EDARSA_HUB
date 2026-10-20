@@ -1,0 +1,48 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "new": "                    {\n                        \"name\": \"chapur_external_health\",\n                        \"sql\": (\n                            \"SELECT CONVERT(varchar(36), e.ServidorID) AS connection_id,\"\n                            \"e.EstadoConexion,e.UltimoCheck,e.UltimaPruebaUTC,e.UltimoExitoUTC,\"\n                            \"e.UltimoErrorUTC,e.UltimoErrorCodigo,e.LatenciaMs,e.UltimoSyncUTC,\"\n                            \"e.UltimoSyncExitosoUTC,e.FechaActualizacionUTC \"\n                            \"FROM dbo.Servidores_ConexionEstado e \"\n                            \"WHERE e.ServidorID IN ('8CBDCC89-6495-49C3-BE9C-A965DB82C77F','D8B2D1EB-2E1F-4E43-B7D9-822BF671E315') \"\n                            \"ORDER BY e.ServidorID\"\n                        ),\n                    },\n                    {\n                        \"name\": \"chapur_query_contract_metadata\",\n                        \"sql\": (\n                            \"SELECT CONVERT(varchar(36),sc.id) AS connection_id,sc.nombre,sc.system_type,sc.queries_configured,\"\n                            \"CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.query_ventas,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS query_ventas_present,\"\n                            \"CASE WHEN ISJSON(sc.query_ventas)=1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS query_ventas_json,\"\n                            \"CASE WHEN ISJSON(sc.query_ventas)=1 THEN JSON_VALUE(sc.query_ventas,'$.validated') ELSE NULL END AS query_ventas_validated,\"\n                            \"LEN(ISNULL(sc.query_ventas,'')) AS query_ventas_len,\"\n                            \"CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.query_inventario,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS query_inventario_present,\"\n                            \"CASE WHEN ISJSON(sc.query_inventario)=1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS query_inventario_json,\"\n                            \"CASE WHEN ISJSON(sc.query_inventario)=1 THEN JSON_VALUE(sc.query_inventario,'$.validated') ELSE NULL END AS query_inventario_validated,\"\n                            \"LEN(ISNULL(sc.query_inventario,'')) AS query_inventario_len,\"\n                            \"CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.query_movimientos,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS query_movimientos_present,\"\n                            \"CASE WHEN ISJSON(sc.query_movimientos)=1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS query_movimientos_json,\"\n                            \"CASE WHEN ISJSON(sc.query_movimientos)=1 THEN JSON_VALUE(sc.query_movimientos,'$.validated') ELSE NULL END AS query_movimientos_validated,\"\n                            \"LEN(ISNULL(sc.query_movimientos,'')) AS query_movimientos_len \"\n                            \"FROM dbo.Servidores_Conexiones sc \"\n                            \"WHERE sc.id IN ('8CBDCC89-6495-49C3-BE9C-A965DB82C77F','D8B2D1EB-2E1F-4E43-B7D9-822BF671E315') \"\n                            \"ORDER BY sc.nombre\"\n                        ),\n                    },",
+      "old": "                    {\n                        \"name\": \"chapur_external_health\",\n                        \"sql\": (\n                            \"SELECT CONVERT(varchar(36), e.ServidorID) AS connection_id,\"\n                            \"e.EstadoConexion,e.UltimoCheck,e.UltimaPruebaUTC,e.UltimoExitoUTC,\"\n                            \"e.UltimoErrorUTC,e.UltimoErrorCodigo,e.LatenciaMs,e.UltimoSyncUTC,\"\n                            \"e.UltimoSyncExitosoUTC,e.FechaActualizacionUTC \"\n                            \"FROM dbo.Servidores_ConexionEstado e \"\n                            \"WHERE e.ServidorID IN ('8CBDCC89-6495-49C3-BE9C-A965DB82C77F','D8B2D1EB-2E1F-4E43-B7D9-822BF671E315') \"\n                            \"ORDER BY e.ServidorID\"\n                        ),\n                    },",
+      "path": "tools/mirror_sync/readonly_audit_profiles.py",
+      "type": "replace_text"
+    }
+  ],
+  "base_sha": "21b8326d9a65acee99af9f98d9451527f9427555",
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_worker_named_readonly_audit_profiles.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SERVIDORES6-CHAPUR-GATE4D-QUERY-METADATA-R1-20261020",
+  "mode": "MUTATION",
+  "objective": "Extender exclusivamente el perfil canónico chapur_external_integration_readiness_v1 para auditar metadatos de las consultas configuradas de CHAPUR sin devolver SQL, credenciales ni secretos. No ejecutar DML y no tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Menu Servidores 6",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "Conexiones y Comunicaciones",
+    "source": "chatgpt-classic"
+  },
+  "scheduling": {
+    "bounded_context": "Conexiones y Comunicaciones",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "Conexiones y Comunicaciones",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
