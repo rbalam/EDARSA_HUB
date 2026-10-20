@@ -1,0 +1,46 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-RANGE-DRYRUN-R17-CARLOS-20261020T1853Z",
+  "created_at_utc": "2026-10-20T18:53:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d652050b9bb8f7e9f860eacb8b18658d575a60a9",
+  "production_allowed": false,
+  "objective": "Ejecutar el resync comercial oficial en modo dry-run exclusivamente para CIENFUEGOS y la fecha operativa 19 de octubre de 2026. Certificar mediante los handlers canonicos existentes el encabezado de ventas cerradas y el detalle por producto, sin escribir. Determinar el importe, tickets y PAX reales del POS y cualquier blocker antes de autorizar el commit. No modificar codigo ni los sincronizadores protegidos.",
+  "acceptance": [
+    "La unidad resuelta debe ser CIENFUEGOS con sistema SOFTRESTAURANT",
+    "El rango debe limitarse exactamente a 2026-10-19",
+    "El encabezado debe extraerse mediante el handler oficial existente",
+    "El detalle debe extraerse y validarse mediante el handler canonico existente",
+    "El resultado debe exponer header_success, detail_success, importes y blockers sin secretos",
+    "No se deben insertar, actualizar ni borrar filas",
+    "production_touched=false"
+  ],
+  "constraints": [
+    "No tocar, modificar, reparar o actualizar el sincronizador de Ventas del dia",
+    "No tocar, modificar, reparar o actualizar el sincronizador de Ventas cerradas",
+    "No ejecutar commit en esta fase",
+    "No usar reglas especiales por sucursal",
+    "No forzar tickets ni ajustes manuales",
+    "Usar exclusivamente resync_comercial_range_worker.py y handlers oficiales",
+    "Mantener enfoque atomico, canonico y transversal",
+    "Trabajar solo en Edarsahub_Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "actions": [],
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "fecha_inicio": "2026-10-19",
+  "fecha_fin": "2026-10-19",
+  "dry_run": true,
+  "audit_profile": "closed_ticket_metadata",
+  "checks": []
+}
