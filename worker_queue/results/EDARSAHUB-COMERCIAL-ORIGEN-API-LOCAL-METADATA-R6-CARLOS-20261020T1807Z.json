@@ -1,0 +1,235 @@
+{
+  "base_sha": "21b8326d9a65acee99af9f98d9451527f9427555",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-20T18:09:13Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-API-LOCAL-METADATA-R6-CARLOS-20261020T1807Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T18:10:34Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_pk",
+              "unidad_codigo",
+              "unidad_nombre",
+              "system_type",
+              "direct_server_id",
+              "sucursal_origen_id",
+              "activo"
+            ],
+            "name": "mpro_unidades_origen_qro",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "130QRO",
+                "130° QUERETARO",
+                "MPRO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0021",
+                true
+              ],
+              [
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "ORIGEN",
+                "ORIGEN",
+                "MPRO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0023",
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "EmpresaID",
+              "CodigoEmpresa",
+              "NombreComercial",
+              "NombreEmpresa",
+              "empresa_activa",
+              "AliasNormalizado",
+              "alias_activo"
+            ],
+            "name": "mpro_empresas_alias_origen_qro",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                1,
+                "ORIGEN",
+                "Restaurante Origen S.A. de C.V.",
+                "ORIGEN",
+                true,
+                "ORIGEN",
+                true
+              ],
+              [
+                2,
+                "130QRO",
+                "130 Grados Querétaro S.A. de C.V.",
+                "130 QRO",
+                true,
+                "130QRO",
+                true
+              ],
+              [
+                2,
+                "130QRO",
+                "130 Grados Querétaro S.A. de C.V.",
+                "130 QRO",
+                true,
+                "130QUERETARO",
+                true
+              ],
+              [
+                2,
+                "130QRO",
+                "130 Grados Querétaro S.A. de C.V.",
+                "130 QRO",
+                true,
+                "QRO",
+                true
+              ],
+              [
+                2,
+                "130QRO",
+                "130 Grados Querétaro S.A. de C.V.",
+                "130 QRO",
+                true,
+                "QUERETARO",
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "EmpresaID",
+              "CodigoEmpresa",
+              "NombreComercial",
+              "EmpresaServidorID",
+              "connection_id",
+              "RolConexion",
+              "NumeroSucursalSistema",
+              "CodigoSucursalSistema",
+              "NombreSucursalSistema",
+              "Prioridad",
+              "EsPrincipal",
+              "relacion_activa",
+              "conexion_nombre",
+              "tipo_conexion",
+              "system_type",
+              "conexion_activa",
+              "url_configured",
+              "auth_configured"
+            ],
+            "name": "mpro_api_local_relaciones_origen_qro",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                1,
+                "ORIGEN",
+                "Restaurante Origen S.A. de C.V.",
+                2,
+                "817A0AA8-6170-4738-A8F6-A72AC36BA0DF",
+                "VENTAS_DIA_API_LOCAL",
+                23,
+                "0023",
+                "ORIGEN",
+                2,
+                false,
+                true,
+                "ORIGEN LOCAL",
+                "API_LOCAL",
+                "MPRO",
+                true,
+                1,
+                1
+              ],
+              [
+                2,
+                "130QRO",
+                "130 Grados Querétaro S.A. de C.V.",
+                4,
+                "72F6E9A7-8EA2-4EB2-802E-4EE31753435E",
+                "VENTAS_DIA_API_LOCAL",
+                21,
+                "0021",
+                "130° QUERETARO",
+                2,
+                false,
+                true,
+                "130° QRO LOCAL",
+                "API_LOCAL",
+                "MPRO",
+                true,
+                1,
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "connection_id",
+              "EstadoConexion",
+              "UltimoCheck",
+              "UltimaPruebaUTC",
+              "UltimoExitoUTC",
+              "UltimoErrorUTC",
+              "UltimoErrorCodigo",
+              "LatenciaMs",
+              "FechaActualizacionUTC"
+            ],
+            "name": "mpro_api_local_health_origen_qro",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-20T18:09:09Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
