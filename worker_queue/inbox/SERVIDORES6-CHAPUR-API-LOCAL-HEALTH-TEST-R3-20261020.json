@@ -1,0 +1,21 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-CHAPUR-API-LOCAL-HEALTH-TEST-R3-20261020",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Reejecutar la prueba gobernada de health para CHAPUR BACKOFFICE y CHAPUR NORTE usando exclusivamente connection_id canonicos, ya con el writer runtime corregido. Certificar solo si el post-audit encuentra evidencia fisica para ambos IDs en dbo.Servidores_ConexionEstado. No ejecutar sync, no habilitar Operaciones, no crear scope corporativo, no exponer secretos y no tocar Produccion.",
+  "human_summary_language": "es",
+  "mode": "API_LOCAL_HEALTH_TEST",
+  "base_sha": "7dfb4cf507af267ddc0f9c7a25637483034c00d3",
+  "actions": [],
+  "connection_ids": [
+    "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+    "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315"
+  ],
+  "confirm_api_local_health_test": true,
+  "preflight_audit_profile": "chapur_external_integration_readiness_v1",
+  "post_audit_profile": "chapur_external_integration_readiness_v1",
+  "preflight_checks": [],
+  "checks": []
+}
