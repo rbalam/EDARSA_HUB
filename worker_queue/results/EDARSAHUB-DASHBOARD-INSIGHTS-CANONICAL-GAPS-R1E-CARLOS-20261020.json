@@ -1,0 +1,371 @@
+{
+  "base_sha": "dc7d2eecad33d3c8c730b3ac2924e3a4a67d8978",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-20T22:32:48Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-DASHBOARD-INSIGHTS-CANONICAL-GAPS-R1E-CARLOS-20261020",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T22:33:48Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "codigos_distintos",
+              "filas_totales",
+              "filas_clave_exacta_unica",
+              "filas_sin_clave_exacta",
+              "filas_clave_ambigua",
+              "filas_clasificadas_por_clave",
+              "neto_clave_unica"
+            ],
+            "name": "exact_existing_product_key_coverage",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "CIENFUEGOS",
+                "193",
+                "950",
+                "907",
+                "43",
+                "0",
+                "904",
+                "201250.3363"
+              ],
+              [
+                "ORIGEN",
+                "103",
+                "268",
+                "228",
+                "40",
+                "0",
+                "228",
+                "29763.7800"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "sistema_origen",
+              "tickets_cancelados",
+              "filas",
+              "tickets_header_consistente",
+              "tickets_header_conflictivo",
+              "tickets_sin_header",
+              "tickets_header_positivo",
+              "monto_header_cancelado",
+              "neto_detalle_cancelado"
+            ],
+            "name": "cancelled_ticket_original_headers",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "ORIGEN",
+                "MPRO",
+                "1",
+                "31",
+                1,
+                0,
+                0,
+                1,
+                "3875.0000",
+                "0.0000"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "producto_codigo_fuente",
+              "filas",
+              "cantidad_minima",
+              "cantidad_maxima",
+              "bruto",
+              "neto",
+              "descuento",
+              "porcentaje_minimo",
+              "porcentaje_maximo"
+            ],
+            "name": "zero_quantity_or_negative_discount_diagnostic",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "CIENFUEGOS",
+                "__ISCAM_AJUSTE_ENCABEZADO__",
+                "38",
+                "0.0000",
+                "0.0000",
+                "0.0000",
+                "-0.3363",
+                "0.3363",
+                "0.0000",
+                "0.0000"
+              ],
+              [
+                "ORIGEN",
+                "__ISCAM_AJUSTE_ENCABEZADO__",
+                "23",
+                "0.0000",
+                "0.0000",
+                "0.0000",
+                "4040.0497",
+                "-4040.0497",
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "periodo",
+              "snapshots",
+              "fechas",
+              "fecha_minima",
+              "fecha_maxima",
+              "snapshots_con_json_no_nulo"
+            ],
+            "name": "snapshot_retention_dates_only",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "CIENFUEGOS",
+                "2026-10",
+                "1",
+                1,
+                "2026-10-20",
+                "2026-10-20",
+                "1"
+              ],
+              [
+                "ORIGEN",
+                "2026-10",
+                "1",
+                1,
+                "2026-10-20",
+                "2026-10-20",
+                "1"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "esquema",
+              "tabla",
+              "columna",
+              "tipo"
+            ],
+            "name": "alternate_discount_columns_metadata",
+            "row_count_returned": 25,
+            "rows": [
+              [
+                "dbo",
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "cancelado_origen",
+                "bit"
+              ],
+              [
+                "dbo",
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "descuento",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "descuento_pct",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "partida_comentario_cancelacion",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "partida_comentario_descuento",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "ticket_comentario_descuento",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "tipo_descuento_descripcion",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "tipo_descuento_id",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Comercial_Inteligencia_VentasDetalleProducto",
+                "tipo_descuento_valor",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Sync_Control_Ejecuciones",
+                "CancelRequested",
+                "bit"
+              ],
+              [
+                "dbo",
+                "Sync_Movimientos_Detalle",
+                "Cancelado",
+                "bit"
+              ],
+              [
+                "dbo",
+                "Sync_Movimientos_Detalle",
+                "Descuento",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Venta_Cotizaciones",
+                "DescuentoTotal",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Venta_CotizacionesDetalle",
+                "DescuentoImporte",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Venta_CotizacionesDetalle",
+                "DescuentoPorcentaje",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Venta_Detalle",
+                "DescuentoImporte",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Venta_Detalle",
+                "DescuentoPorcentaje",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Venta_Encabezado",
+                "DescuentoTotal",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Venta_ListasPreciosDetalle",
+                "DescuentoPorcentaje",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Venta_Pedidos",
+                "DescuentoTotal",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Venta_PedidosDetalle",
+                "DescuentoImporte",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Venta_PedidosDetalle",
+                "DescuentoPorcentaje",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Venta_Remisiones",
+                "DescuentoTotal",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Venta_RemisionesDetalle",
+                "DescuentoImporte",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Venta_RemisionesDetalle",
+                "DescuentoPorcentaje",
+                "decimal"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-20T22:32:44Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
