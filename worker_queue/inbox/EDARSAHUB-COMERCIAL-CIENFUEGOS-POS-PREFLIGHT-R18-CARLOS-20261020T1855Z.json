@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-POS-PREFLIGHT-R18-CARLOS-20261020T1855Z",
+  "created_at_utc": "2026-10-20T18:55:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d652050b9bb8f7e9f860eacb8b18658d575a60a9",
+  "production_allowed": false,
+  "objective": "Certificar en solo lectura las ventas cerradas reales de CIENFUEGOS para la fecha operativa 19 de octubre de 2026 directamente desde el POS SoftRestaurant, usando la misma consulta transversal por turnos.apertura y ventana 09:00 a 09:00. Obtener total, propina, tickets, PAX, detalle por ticket y estado de cierre. No modificar datos ni sincronizadores.",
+  "acceptance": [
+    "Obtener conteo exacto de tickets cerrados no cancelados",
+    "Obtener suma exacta de cheques.total, propina, subtotal, impuestos y PAX",
+    "Listar cada folio con fecha, cierre, total, propina y detalle neto",
+    "Confirmar que todos los tickets tienen cierre no nulo",
+    "Cero DDL, cero DML y production_touched=false"
+  ],
+  "constraints": [
+    "No tocar el sincronizador de Ventas del dia",
+    "No tocar el sincronizador de Ventas cerradas",
+    "No ejecutar backfill ni resync",
+    "No escribir en EDARSAHUB ni POS",
+    "Usar la misma consulta SoftRestaurant sin reglas por sucursal",
+    "No exponer secretos",
+    "Trabajar solo en Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "CIENFUEGOS"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "cienfuegos_aggregate_20261019",
+          "sql": "SELECT COUNT(DISTINCT ch.folio) AS tickets,SUM(ISNULL(ch.total,0)) AS total,SUM(ISNULL(ch.propina,0)) AS propina,SUM(ISNULL(ch.total,0)-ISNULL(ch.propina,0)) AS total_menos_propina,SUM(ISNULL(ch.subtotal,0)) AS subtotal,SUM(ISNULL(ch.totalimpuesto1,0)) AS impuestos,SUM(ISNULL(ch.nopersonas,0)) AS pax,SUM(CASE WHEN ch.cierre IS NULL THEN 1 ELSE 0 END) AS tickets_sin_cierre,MIN(tr.apertura) AS apertura_min,MAX(tr.apertura) AS apertura_max,MIN(ch.cierre) AS cierre_min,MAX(ch.cierre) AS cierre_max FROM cheques ch WITH (NOLOCK) INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno WHERE tr.apertura>='2026-10-19 09:00:00' AND tr.apertura<'2026-10-20 09:00:00' AND ISNULL(ch.cancelado,0)=0;"
+        },
+        {
+          "name": "cienfuegos_tickets_20261019",
+          "sql": "SELECT ch.folio,ch.numcheque,tr.apertura,ch.fecha,ch.cierre,CAST(ISNULL(ch.total,0) AS decimal(18,2)) AS total,CAST(ISNULL(ch.propina,0) AS decimal(18,2)) AS propina,CAST(ISNULL(ch.total,0)-ISNULL(ch.propina,0) AS decimal(18,2)) AS total_menos_propina,ISNULL(ch.nopersonas,0) AS pax,CAST(SUM(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0)*(1-(ISNULL(dc.descuento,0)/100.0))) AS decimal(18,2)) AS detalle_neto,CAST(SUM(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0)*(1-(ISNULL(dc.descuento,0)/100.0)))-ISNULL(ch.total,0) AS decimal(18,2)) AS delta_detalle_menos_total,COUNT(dc.movimiento) AS lineas FROM cheques ch WITH (NOLOCK) INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno LEFT JOIN cheqdet dc WITH (NOLOCK) ON dc.foliodet=ch.folio WHERE tr.apertura>='2026-10-19 09:00:00' AND tr.apertura<'2026-10-20 09:00:00' AND ISNULL(ch.cancelado,0)=0 GROUP BY ch.folio,ch.numcheque,tr.apertura,ch.fecha,ch.cierre,ch.total,ch.propina,ch.nopersonas ORDER BY tr.apertura,ch.folio;"
+        }
+      ]
+    }
+  ]
+}
