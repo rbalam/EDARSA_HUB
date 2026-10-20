@@ -3,54 +3,57 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "d8f913bb87a0c3d1fb7e2ca9a31ca572c5dd5662",
-  "generated_at_utc": "2026-10-20T06:16:41Z",
+  "development_sha": "2074b0a7bc74f65e236ad91a1e350e69bf3a7e10",
+  "generated_at_utc": "2026-10-20T06:28:50Z",
   "history": {
     "done_total_local": 1470,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1263,
+    "rejected_total_local": 1264,
     "results_total_local": 2505
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2990,
-      "job_id": "SERVIDORES6-CHAPUR-API-LOCAL-HEALTH-TEST-R1-20261020",
-      "reason": null,
-      "state": "RESULT_READY"
+      "age_seconds": 76,
+      "job_id": "SERVIDORES6-SQL-RUNTIME-PRINCIPAL-PERMISSIONS-R1-20261020",
+      "reasons": [
+        "READ_ONLY_SQL_AUDIT_PROFILE_INVALID"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1507,
+      "age_seconds": 2236,
       "job_id": "SERVIDORES6-CHAPUR-API-LOCAL-HEALTH-TEST-R2-20261020",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "d8f913bb87a0c3d1fb7e2ca9a31ca572c5dd5662",
+  "local_development_sha": "2074b0a7bc74f65e236ad91a1e350e69bf3a7e10",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_rejected_recent": 1,
+  "queue_result_ready_recent": 1,
   "queue_running": 0,
-  "remote_development_sha": "d8f913bb87a0c3d1fb7e2ca9a31ca572c5dd5662",
+  "remote_development_sha": "2074b0a7bc74f65e236ad91a1e350e69bf3a7e10",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-20T06:16:26Z",
-    "last_receive_utc": "2026-10-20T06:16:38Z",
+    "last_cycle_utc": "2026-10-20T06:28:28Z",
+    "last_receive_utc": "2026-10-20T06:28:49Z",
     "last_terminal_utc": "2026-10-20T05:51:34Z",
-    "pid": "54587",
+    "pid": "6056",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "ab43b7589f40bf27cebcc3b86598e29c61c12637",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "d8f913bb87a0c3d1fb7e2ca9a31ca572c5dd5662",
+      "development_sha": "2074b0a7bc74f65e236ad91a1e350e69bf3a7e10",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
@@ -64,8 +67,8 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": true,
-      "worker_code_tree_sha": "ab43b7589f40bf27cebcc3b86598e29c61c12637"
+      "worker_code_tree_aligned": false,
+      "worker_code_tree_sha": "66986ac55972fac9633f274cb447d9101c49402a"
     }
   },
   "schema": "edarsahub.worker-health.v3",
