@@ -70,7 +70,7 @@ class RecordingConnection:
 
 
 def canonical_config(
-    user="HRLectura",
+    user="GptEscritura",
     database="EDARSAHUB",
 ):
     return EdarsaHubSQLConfig(
@@ -79,15 +79,15 @@ def canonical_config(
         database=database,
         user=user,
         password="test-secret",
-        profile="default",
+        profile="writer",
     )
 
 
 def canonical_identity():
     return SQLWriterIdentity(
         database_name="EDARSAHUB",
-        login_name="HRLectura",
-        user_name="HRLectura",
+        login_name="GptEscritura",
+        user_name="HUB_Escritura",
     )
 
 
@@ -95,8 +95,8 @@ def test_writer_identity_accepts_canonical_contract():
     conn = IdentityConnection(
         (
             "EDARSAHUB",
-            "HRLectura",
-            "HRLectura",
+            "GptEscritura",
+            "HUB_Escritura",
         )
     )
 
@@ -106,7 +106,7 @@ def test_writer_identity_accepts_canonical_contract():
     )
 
     assert identity.database_name == "EDARSAHUB"
-    assert identity.login_name == "HRLectura"
+    assert identity.login_name == "GptEscritura"
     assert identity.user_name == "HRLectura"
 
 
@@ -256,7 +256,7 @@ def test_config_uses_only_canonical_prefix(
         ValueError,
         match="no soportado",
     ):
-        get_edarsahub_sql_config("writer")
+        get_edarsahub_sql_config("legacy-writer")
 
 
 def test_pymssql_profile_is_keyword_only():
@@ -270,15 +270,15 @@ def test_pymssql_profile_is_keyword_only():
     )
 
 
-def test_open_writer_uses_canonical_default_profile(
+def test_open_writer_uses_canonical_writer_profile(
     monkeypatch,
 ):
     calls = []
     conn = IdentityConnection(
         (
             "EDARSAHUB",
-            "HRLectura",
-            "HRLectura",
+            "GptEscritura",
+            "HUB_Escritura",
         )
     )
 
@@ -308,8 +308,8 @@ def test_open_writer_uses_canonical_default_profile(
     assert opened is conn
     assert identity.login_name == "HRLectura"
     assert calls == [
-        ("config", "default"),
-        ("connect", "default"),
+        ("config", "writer"),
+        ("connect", "writer"),
     ]
 
 

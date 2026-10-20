@@ -11,10 +11,10 @@ from core.sql_first.connection_factory import (
 )
 
 
-CANONICAL_PROFILE = "default"
+CANONICAL_PROFILE = "writer"
 EXPECTED_DATABASE = "EDARSAHUB"
-EXPECTED_LOGIN = "HRLectura"
-EXPECTED_USER = "HRLectura"
+EXPECTED_LOGIN = "GptEscritura"
+EXPECTED_USER = "HUB_Escritura"
 
 
 @dataclass(frozen=True)
@@ -35,9 +35,10 @@ def validate_writer_config(
     """
     Valida la configuracion canonica antes de abrir SQL.
 
-    HRLectura es la identidad canonica confirmada para
-    EDARSAHUB y dispone de los permisos requeridos.
-    No se admiten perfiles o credenciales paralelas.
+    El writer runtime usa un perfil dedicado y separado
+    del reader canonico. La identidad SQL esperada es el
+    login GptEscritura mapeado al usuario HUB_Escritura
+    dentro de EDARSAHUB.
     """
     cfg = config or get_edarsahub_sql_config(
         CANONICAL_PROFILE
@@ -45,8 +46,8 @@ def validate_writer_config(
 
     if cfg.profile != CANONICAL_PROFILE:
         raise RuntimeError(
-            "La conexion debe usar el perfil canonico "
-            "default."
+            "La conexion writer debe usar el perfil "
+            "canonico writer."
         )
 
     if cfg.database.casefold() != (
@@ -61,7 +62,7 @@ def validate_writer_config(
         EXPECTED_LOGIN.casefold()
     ):
         raise RuntimeError(
-            "El login canonico debe ser HRLectura."
+            "El login writer canonico debe ser GptEscritura."
         )
 
     return cfg
