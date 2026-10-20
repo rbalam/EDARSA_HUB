@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "dc7d2eecad33d3c8c730b3ac2924e3a4a67d8978",
-  "generated_at_utc": "2026-10-20T22:38:18Z",
+  "generated_at_utc": "2026-10-20T22:39:34Z",
   "history": {
     "done_total_local": 1512,
     "pending_total_local": 0,
@@ -16,55 +16,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 927,
+      "age_seconds": 1002,
       "job_id": "BOS-AGENTS-IA-TRANSVERSAL-IMPLEMENTATION-GATE1-FINANCE-COA-R2-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 435,
+      "age_seconds": 511,
       "job_id": "BOS-TOAST-GATE4-CANONICAL-SCHEMA-READONLY-R2-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 330,
+      "age_seconds": 405,
       "job_id": "EDARSAHUB-DASHBOARD-INSIGHTS-CANONICAL-GAPS-R1E-CARLOS-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 499,
+      "age_seconds": 575,
       "job_id": "EDARSAHUB-DASHBOARD-INSIGHTS-PILOT-DAY-AUDIT-R1D-CARLOS-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 671,
+      "age_seconds": 747,
       "job_id": "EDARSAHUB-DASHBOARD-INSIGHTS-RESUME-PREFLIGHT-R1C-CARLOS-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 922,
+      "age_seconds": 998,
       "job_id": "EDARSAHUB-PROD-DEV-DIVERGENCE-AUDIT-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2654,
+      "age_seconds": 2730,
       "job_id": "SERVIDORES6-API-CONNECTIONS-DECOUPLE-LEGACY-SOLO-VENTAS-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1580,
+      "age_seconds": 1656,
       "job_id": "SERVIDORES6-API-CONNECTIONS-DECOUPLE-LEGACY-SOLO-VENTAS-R2-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3356,
+      "age_seconds": 3431,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-FINAL-READONLY-AUDIT-R2-20261020",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,8 +84,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-20T22:38:08Z",
-    "last_receive_utc": "2026-10-20T22:38:14Z",
+    "last_cycle_utc": "2026-10-20T22:39:26Z",
+    "last_receive_utc": "2026-10-20T22:39:33Z",
     "last_terminal_utc": "2026-10-20T22:32:48Z",
     "pid": "317",
     "runtime_fingerprint": {
