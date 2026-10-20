@@ -69,3 +69,52 @@ def test_bridge_does_not_require_inline_post_checks_for_server_registry_metadata
     assert "SERVER_REGISTRY_METADATA_UPDATE_POST_AUDIT_REQUIRED" not in post_validation_block
     assert "SERVER_REGISTRY_METADATA_UPDATE_POST_ONLY_SQL_AUDIT_ALLOWED" not in post_validation_block
     assert "checks = []" in post_validation_block
+
+
+def test_bridge_accepts_governed_api_local_health_test():
+    job = {
+        "schema": "edarsahub.worker-job.v2",
+        "job_id": "api-local-health-test-contract",
+        "target_repo": "rbalam/EDARSA_HUB",
+        "target_branch": "Edarsahub_Desarrollo",
+        "production_allowed": False,
+        "objective": "Test API_LOCAL health",
+        "human_summary_language": "es",
+        "mode": "API_LOCAL_HEALTH_TEST",
+        "actions": [],
+        "connection_ids": [
+            "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+            "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+        ],
+        "confirm_api_local_health_test": True,
+        "preflight_audit_profile": "chapur_external_integration_readiness_v1",
+        "post_audit_profile": "chapur_external_integration_readiness_v1",
+        "preflight_checks": [],
+        "checks": [],
+    }
+    assert BRIDGE.validate(job) == []
+
+
+def test_bridge_rejects_secret_or_inline_execution_fields_for_api_local_health_test():
+    base = {
+        "schema": "edarsahub.worker-job.v2",
+        "job_id": "api-local-health-test-secret-reject",
+        "target_repo": "rbalam/EDARSA_HUB",
+        "target_branch": "Edarsahub_Desarrollo",
+        "production_allowed": False,
+        "objective": "Test API_LOCAL health",
+        "human_summary_language": "es",
+        "mode": "API_LOCAL_HEALTH_TEST",
+        "actions": [],
+        "connection_ids": ["8CBDCC89-6495-49C3-BE9C-A965DB82C77F"],
+        "confirm_api_local_health_test": True,
+        "preflight_audit_profile": "chapur_external_integration_readiness_v1",
+        "post_audit_profile": "chapur_external_integration_readiness_v1",
+        "preflight_checks": [],
+        "checks": [],
+    }
+    for field in ("sql", "url", "api_key", "password", "secret", "username"):
+        job = dict(base)
+        job[field] = "forbidden"
+        errors = BRIDGE.validate(job)
+        assert f"API_LOCAL_HEALTH_TEST_FORBIDDEN_FIELD:{field}" in errors

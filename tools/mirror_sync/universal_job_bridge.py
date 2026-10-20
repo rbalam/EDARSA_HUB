@@ -66,6 +66,7 @@ COMERCIAL_OPEN_DAY_AUDIT_PROFILE = "open_day_ticket_metadata"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
 ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
 SERVER_REGISTRY_METADATA_UPDATE_MODE = "SERVER_REGISTRY_METADATA_UPDATE"
+API_LOCAL_HEALTH_TEST_MODE = "API_LOCAL_HEALTH_TEST"
 SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
 FRONTEND_BUILD_CERTIFICATION_MODE = "FRONTEND_BUILD_CERTIFICATION"
 SYNC_HISTORICAL_PARENT_MODE = "SYNC_HISTORICAL_PARENT"
@@ -450,6 +451,32 @@ def validate(job: Any) -> list[str]:
             errors.append("SERVER_REGISTRY_METADATA_UPDATE_POST_PROFILE_REQUIRED")
         if job.get("preflight_checks") not in (None, []) or job.get("checks") not in (None, []):
             errors.append("SERVER_REGISTRY_METADATA_UPDATE_INLINE_SQL_FORBIDDEN")
+    elif mode == API_LOCAL_HEALTH_TEST_MODE:
+        if actions not in (None, []):
+            errors.append("API_LOCAL_HEALTH_TEST_ACTIONS_FORBIDDEN")
+        for forbidden_field in ("sql", "command", "shell", "script", "path", "url", "api_key", "password", "secret", "username"):
+            if job.get(forbidden_field) is not None:
+                errors.append(f"API_LOCAL_HEALTH_TEST_FORBIDDEN_FIELD:{forbidden_field}")
+        connection_ids = job.get("connection_ids")
+        uuid_re = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+        if (
+            not isinstance(connection_ids, list)
+            or not connection_ids
+            or len(connection_ids) > 8
+            or not all(isinstance(value, str) and uuid_re.fullmatch(value.strip()) for value in connection_ids)
+            or len({value.strip().lower() for value in connection_ids}) != len(connection_ids)
+        ):
+            errors.append("API_LOCAL_HEALTH_TEST_CONNECTION_IDS_INVALID")
+        if job.get("confirm_api_local_health_test") is not True:
+            errors.append("API_LOCAL_HEALTH_TEST_CONFIRMATION_REQUIRED")
+        preflight_profile = str(job.get("preflight_audit_profile") or "").strip()
+        post_profile = str(job.get("post_audit_profile") or "").strip()
+        if not preflight_profile or not is_allowed_readonly_audit_profile(preflight_profile):
+            errors.append("API_LOCAL_HEALTH_TEST_PREFLIGHT_PROFILE_REQUIRED")
+        if not post_profile or not is_allowed_readonly_audit_profile(post_profile):
+            errors.append("API_LOCAL_HEALTH_TEST_POST_PROFILE_REQUIRED")
+        if job.get("preflight_checks") not in (None, []) or job.get("checks") not in (None, []):
+            errors.append("API_LOCAL_HEALTH_TEST_INLINE_SQL_FORBIDDEN")
     elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:
         if actions not in (None, []):
             errors.append("SQL_MIGRATION_ACTIONS_FORBIDDEN")

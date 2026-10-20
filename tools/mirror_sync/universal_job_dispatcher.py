@@ -72,6 +72,7 @@ COMERCIAL_OPEN_DAY_AUDIT_PROFILE = "open_day_ticket_metadata"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
 ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
 SERVER_REGISTRY_METADATA_UPDATE_MODE = "SERVER_REGISTRY_METADATA_UPDATE"
+API_LOCAL_HEALTH_TEST_MODE = "API_LOCAL_HEALTH_TEST"
 SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
 FRONTEND_BUILD_CERTIFICATION_MODE = "FRONTEND_BUILD_CERTIFICATION"
 SYNC_HISTORICAL_PARENT_MODE = "SYNC_HISTORICAL_PARENT"
@@ -1783,6 +1784,117 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                 result["percent_complete"] = 100
                 result["certification"] = "CERTIFIED_OPERATIONAL"
                 result["summary_es"] = "El Worker actualizo exclusivamente metadata permitida de Servidores_Conexiones mediante server_registry, con preflight y post-audit SQL de solo lectura, sin SQL inline, secretos ni Produccion."
+            else:
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
+
+        if mode == API_LOCAL_HEALTH_TEST_MODE:
+            if expected_base and expected_base != current_head:
+                raise RuntimeError(f"BASE_SHA_MISMATCH_OPERATIONAL_MODE:expected={expected_base}:actual={current_head}")
+            if job.get("actions") not in (None, []):
+                raise RuntimeError("API_LOCAL_HEALTH_TEST_ACTIONS_FORBIDDEN")
+            for forbidden_field in ("sql", "command", "shell", "script", "path", "url", "api_key", "password", "secret", "username"):
+                if job.get(forbidden_field) is not None:
+                    raise RuntimeError(f"API_LOCAL_HEALTH_TEST_FORBIDDEN_FIELD:{forbidden_field}")
+            connection_ids = [str(value).strip() for value in (job.get("connection_ids") or [])]
+            uuid_re = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+            if (
+                not connection_ids
+                or len(connection_ids) > 8
+                or not all(uuid_re.fullmatch(value) for value in connection_ids)
+                or len({value.lower() for value in connection_ids}) != len(connection_ids)
+            ):
+                raise RuntimeError("API_LOCAL_HEALTH_TEST_CONNECTION_IDS_INVALID")
+            if job.get("confirm_api_local_health_test") is not True:
+                raise RuntimeError("API_LOCAL_HEALTH_TEST_CONFIRMATION_REQUIRED")
+            preflight_profile = str(job.get("preflight_audit_profile") or "").strip()
+            post_profile = str(job.get("post_audit_profile") or "").strip()
+            if not is_allowed_readonly_audit_profile(preflight_profile):
+                raise RuntimeError("API_LOCAL_HEALTH_TEST_PREFLIGHT_PROFILE_REQUIRED")
+            if not is_allowed_readonly_audit_profile(post_profile):
+                raise RuntimeError("API_LOCAL_HEALTH_TEST_POST_PROFILE_REQUIRED")
+            if job.get("preflight_checks") not in (None, []) or job.get("checks") not in (None, []):
+                raise RuntimeError("API_LOCAL_HEALTH_TEST_INLINE_SQL_FORBIDDEN")
+
+            preflight_checks = build_readonly_audit_checks(preflight_profile)
+            preflight_results = []
+            for check in preflight_checks:
+                check_result = run_check(ROOT, check)
+                preflight_results.append(check_result)
+                if check_result["status"] != "PASS":
+                    result["blockers"].append("check_failed:api_local_health_test_preflight")
+                    break
+            result["preflight_checks"] = preflight_results
+            result["operation"] = API_LOCAL_HEALTH_TEST_MODE
+            result["canonical_health_mutation"] = True
+            result["files_changed"] = []
+            health_results = []
+
+            if not result["blockers"]:
+                backend = ROOT / "backend"
+                backend_text = str(backend)
+                if backend_text not in sys.path:
+                    sys.path.insert(0, backend_text)
+                for key, value in load_backend_runtime_env().items():
+                    os.environ.setdefault(key, value)
+                import asyncio
+                from modules.api_connections.repository import test_api_connection_health
+
+                for connection_id in connection_ids:
+                    try:
+                        raw = asyncio.run(test_api_connection_health(api_id=connection_id))
+                        health_results.append({
+                            "connection_id": connection_id,
+                            "success": bool(raw.get("success")),
+                            "status_code": raw.get("status_code"),
+                            "response_time_ms": raw.get("response_time_ms"),
+                            "health_persisted": bool(raw.get("health_persisted")),
+                            "error_class": None if raw.get("success") else (
+                                "HTTP_ERROR" if raw.get("status_code") else "CONNECTION_ERROR"
+                            ),
+                        })
+                    except Exception as exc:
+                        health_results.append({
+                            "connection_id": connection_id,
+                            "success": False,
+                            "status_code": None,
+                            "response_time_ms": None,
+                            "health_persisted": False,
+                            "error_class": type(exc).__name__,
+                        })
+                        result["blockers"].append(
+                            f"api_local_health_test_exception:{connection_id}:{type(exc).__name__}"
+                        )
+
+            result["health_tests"] = health_results
+            checks = build_readonly_audit_checks(post_profile)
+            check_results = []
+            if not result["blockers"]:
+                for check in checks:
+                    check_result = run_check(ROOT, check)
+                    check_results.append(check_result)
+                    if check_result["status"] != "PASS":
+                        result["blockers"].append("check_failed:api_local_health_test_post_audit")
+                        break
+            result["checks"] = check_results
+
+            persisted_all = (
+                len(health_results) == len(connection_ids)
+                and all(item.get("health_persisted") for item in health_results)
+            )
+            result["tests"] = "PASS" if (
+                preflight_results
+                and check_results
+                and all(item["status"] == "PASS" for item in preflight_results + check_results)
+                and persisted_all
+            ) else "FAIL"
+            result["quality_gate"] = "PASS" if not result["blockers"] and persisted_all else "FAIL"
+            if not result["blockers"] and persisted_all:
+                result["status"] = "OPERATIONAL_COMPLETE"
+                result["percent_complete"] = 100
+                result["certification"] = "CERTIFIED_OPERATIONAL"
+                result["summary_es"] = "El Worker probo exclusivamente conexiones API_LOCAL canonicas por connection_id, persistio health en la tabla existente y certifico el estado con auditorias de solo lectura. No ejecuto sync, no expuso secretos y no toco Produccion."
             else:
                 result["percent_complete"] = 0
                 result["certification"] = "NOT_CERTIFIED"
