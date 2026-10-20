@@ -1,0 +1,89 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-ORIGEN-IDENTITY-RUNTIME-R5-CARLOS-20261020T1803Z",
+  "created_at_utc": "2026-10-20T18:03:00Z",
+  "requested_by": "chatgpt",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "21b8326d9a65acee99af9f98d9451527f9427555",
+  "production_allowed": false,
+  "objective": "Auditoria SQL de solo lectura para localizar los encabezados y detalles de ORIGEN del 16 al 19 de octubre de 2026 mediante todas sus identidades canonicas certificadas: unidad_pk 23CA0B76-6580-4874-BA9B-672B122CA197, codigo ORIGEN, server_id 1b230a06-ffaf-4c70-bd27-b1be3579dea6 y sucursal_origen_id 0023. Desglosar asimismo los ultimos resultados de sync_comercial_v2 por unidad y fecha para identificar exactamente la quinta unidad fallida y sus estados de detalle. No modificar datos, codigo ni sincronizadores.",
+  "acceptance": [
+    "Localizar o descartar KPI base y Runtime por PK, codigo, nombre, servidor y sucursal",
+    "Localizar o descartar detalle por codigo, nombre, servidor y sucursal",
+    "Desglosar los ultimos ciclos sync_comercial_v2 por unidad, estatus, mensaje_error y detalle_producto_status",
+    "Exponer los estados diarios de detalle de ORIGEN si existen",
+    "Cero DDL, cero DML, cero cambios y production_touched=false"
+  ],
+  "constraints": [
+    "No tocar el sincronizador de Ventas del dia",
+    "No tocar el sincronizador de Ventas cerradas",
+    "No ejecutar sincronizaciones ni backfills",
+    "No escribir en SQL ni POS",
+    "No exponer contrasenas, tokens o secretos",
+    "Mantener enfoque atomico, canonico y transversal",
+    "Trabajar solo en Edarsahub_Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "tecnico-ejecutivo",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "origen_kpi_todas_identidades_20261016_20261019",
+          "sql": "SELECT CONVERT(varchar(36),unidad_negocio_pk) AS unidad_negocio_pk, CONVERT(varchar(100),unidad_negocio_id) AS unidad_negocio_id, CONVERT(varchar(200),unidad_negocio_nombre) AS unidad_negocio_nombre, CONVERT(varchar(200),server_id) AS server_id, CONVERT(varchar(100),sucursal_id) AS sucursal_id, CONVERT(varchar(200),sucursal_nombre) AS sucursal_nombre, fecha_operacion, ventas_total, ventas_cerradas, ventas_abiertas, tickets_total, pax_total, es_venta_abierta, es_corte_cerrado, sync_run_id, fecha_sincronizacion, fecha_ultima_actualizacion FROM dbo.Comercial_KPIs_Diarios_v2 WHERE fecha_operacion>='2026-10-16' AND fecha_operacion<'2026-10-20' AND (CONVERT(varchar(36),unidad_negocio_pk)='23CA0B76-6580-4874-BA9B-672B122CA197' OR UPPER(LTRIM(RTRIM(CONVERT(varchar(100),unidad_negocio_id))))='ORIGEN' OR UPPER(CONVERT(varchar(200),ISNULL(unidad_negocio_nombre,''))) LIKE '%ORIGEN%' OR CONVERT(varchar(200),server_id)='1b230a06-ffaf-4c70-bd27-b1be3579dea6' OR CONVERT(varchar(100),sucursal_id)='0023') ORDER BY fecha_operacion,unidad_negocio_id;"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "origen_runtime_todas_identidades_20261016_20261019",
+          "sql": "SELECT CONVERT(varchar(36),unidad_negocio_pk) AS unidad_negocio_pk, CONVERT(varchar(100),unidad_negocio_id) AS unidad_negocio_id, CONVERT(varchar(200),unidad_negocio_nombre) AS unidad_negocio_nombre, CONVERT(varchar(200),server_id) AS server_id, CONVERT(varchar(100),sucursal_id) AS sucursal_id, CONVERT(varchar(200),sucursal_nombre) AS sucursal_nombre, fecha_operacion, ventas_total, ventas_cerradas, ventas_abiertas, tickets_total, pax_total, es_venta_abierta, es_corte_cerrado, sync_run_id, fecha_ultima_actualizacion FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE fecha_operacion>='2026-10-16' AND fecha_operacion<'2026-10-20' AND (CONVERT(varchar(36),unidad_negocio_pk)='23CA0B76-6580-4874-BA9B-672B122CA197' OR UPPER(LTRIM(RTRIM(CONVERT(varchar(100),unidad_negocio_id))))='ORIGEN' OR UPPER(CONVERT(varchar(200),ISNULL(unidad_negocio_nombre,''))) LIKE '%ORIGEN%' OR CONVERT(varchar(200),server_id)='1b230a06-ffaf-4c70-bd27-b1be3579dea6' OR CONVERT(varchar(100),sucursal_id)='0023') ORDER BY fecha_operacion,unidad_negocio_id;"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "origen_detalle_todas_identidades_20261016_20261019",
+          "sql": "SELECT CONVERT(varchar(100),unidad_negocio_id) AS unidad_negocio_id, CONVERT(varchar(200),unidad_negocio_nombre) AS unidad_negocio_nombre, CONVERT(varchar(200),server_id) AS server_id, CONVERT(varchar(100),sucursal_id) AS sucursal_id, CONVERT(varchar(200),sucursal_nombre) AS sucursal_nombre, CONVERT(varchar(100),sistema_origen) AS sistema_origen, fecha_operacion, COUNT_BIG(*) AS filas, COUNT(DISTINCT id_transaccion) AS tickets, CAST(SUM(ISNULL(importe_neto,0)) AS decimal(18,2)) AS venta, SUM(ISNULL(pax,0)) AS pax, MAX(fecha_sincronizacion) AS ultima_sincronizacion, MAX(sync_run_id) AS ultimo_run_id FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE fecha_operacion>='2026-10-16' AND fecha_operacion<'2026-10-20' AND (UPPER(LTRIM(RTRIM(CONVERT(varchar(100),unidad_negocio_id))))='ORIGEN' OR UPPER(CONVERT(varchar(200),ISNULL(unidad_negocio_nombre,''))) LIKE '%ORIGEN%' OR UPPER(CONVERT(varchar(200),ISNULL(sucursal_nombre,''))) LIKE '%ORIGEN%' OR CONVERT(varchar(200),server_id)='1b230a06-ffaf-4c70-bd27-b1be3579dea6' OR CONVERT(varchar(100),sucursal_id)='0023') GROUP BY unidad_negocio_id,unidad_negocio_nombre,server_id,sucursal_id,sucursal_nombre,sistema_origen,fecha_operacion ORDER BY fecha_operacion,unidad_negocio_id;"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "sync_comercial_v2_ultimos_resultados_por_unidad",
+          "sql": "WITH ultimos AS (SELECT TOP (5) FechaAccion,RunID,DetallesJSON FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' AND Accion='FINISH' ORDER BY FechaAccion DESC) SELECT u.FechaAccion,u.RunID,j.unidad_negocio_id,j.unidad,j.sistema,j.fecha_inicio,j.fecha_fin,j.estatus,j.mensaje_error,j.detalle_producto_status,j.detalle_producto_error,j.detalle_producto_filas_insertadas,j.detalle_producto_dias,j.pagos_iscam_status FROM ultimos u CROSS APPLY OPENJSON(JSON_QUERY(u.DetallesJSON,'$.metadata.result_summary.detalles_unidades')) WITH (unidad_negocio_id nvarchar(100) '$.unidad_negocio_id', unidad nvarchar(200) '$.unidad', sistema nvarchar(50) '$.sistema', fecha_inicio nvarchar(20) '$.fecha_inicio', fecha_fin nvarchar(20) '$.fecha_fin', estatus nvarchar(50) '$.estatus', mensaje_error nvarchar(1000) '$.mensaje_error', detalle_producto_status nvarchar(100) '$.detalle_producto_status', detalle_producto_error nvarchar(1000) '$.detalle_producto_error', detalle_producto_filas_insertadas int '$.detalle_producto_filas_insertadas', detalle_producto_dias nvarchar(max) '$.detalle_producto_dias' AS JSON, pagos_iscam_status nvarchar(50) '$.pagos_iscam_status') j ORDER BY u.FechaAccion DESC,j.unidad;"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "sync_comercial_v2_ultimos_errores",
+          "sql": "SELECT TOP (10) FechaAccion,RunID,JSON_QUERY(DetallesJSON,'$.metadata.result_summary.errores') AS errores,JSON_VALUE(DetallesJSON,'$.metadata.result_summary.estatus_general') AS estatus_general,JSON_VALUE(DetallesJSON,'$.metadata.result_summary.unidades_exitosas') AS unidades_exitosas,JSON_VALUE(DetallesJSON,'$.metadata.result_summary.unidades_fallidas') AS unidades_fallidas,JSON_VALUE(DetallesJSON,'$.metadata.result_summary.detalle_producto_fallidos') AS detalle_producto_fallidos FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' AND Accion='FINISH' ORDER BY FechaAccion DESC;"
+        }
+      ]
+    }
+  ]
+}
