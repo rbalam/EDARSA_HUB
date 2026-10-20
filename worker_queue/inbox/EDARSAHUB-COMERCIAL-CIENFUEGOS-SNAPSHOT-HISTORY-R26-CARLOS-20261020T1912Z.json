@@ -1,0 +1,63 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-SNAPSHOT-HISTORY-R26-CARLOS-20261020T1912Z",
+  "created_at_utc": "2026-10-20T19:12:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
+  "production_allowed": false,
+  "objective": "Auditar en solo lectura si EDARSAHUB conserva versiones históricas, tablas de auditoría, temporal history, CDC o bitácoras que permitan recuperar el snapshot de CIENFUEGOS del 19 de octubre de 2026, incluyendo detalle_abiertas_json, después de que la fila vigente fue sustituida por el snapshot del día 20. No recuperar mediante log transaccional ni ejecutar cambios.",
+  "acceptance": [
+    "Determinar si Comercial_Ventas_Dia_Abiertas_v2 es temporal o está rastreada por CDC",
+    "Identificar history table, triggers y tablas relacionadas por nombre",
+    "Identificar columnas de las tablas relacionadas que puedan conservar fecha_operacion, snapshot o detalle JSON",
+    "Consultar versiones del 19 de octubre solo si existe una tabla histórica explícita y segura",
+    "Emitir dictamen SNAPSHOT_RECOVERABLE o SNAPSHOT_NOT_PERSISTED",
+    "Cero DDL, cero DML y production_touched=false"
+  ],
+  "constraints": [
+    "No tocar los sincronizadores de Ventas del dia o Ventas cerradas",
+    "No usar fn_dblog, DBCC, restore, backup ni log transaccional",
+    "No escribir datos ni código",
+    "No exponer secretos",
+    "Mantener enfoque atomico, canonico y transversal",
+    "Trabajar solo en Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "snapshot_table_history_features",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,t.temporal_type_desc,OBJECT_SCHEMA_NAME(t.history_table_id) AS history_schema,OBJECT_NAME(t.history_table_id) AS history_table,t.is_tracked_by_cdc,t.is_memory_optimized FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.object_id=OBJECT_ID('dbo.Comercial_Ventas_Dia_Abiertas_v2');"
+        },
+        {
+          "name": "snapshot_table_triggers",
+          "sql": "SELECT tr.name AS trigger_name,tr.is_disabled,OBJECT_SCHEMA_NAME(tr.parent_id) AS parent_schema,OBJECT_NAME(tr.parent_id) AS parent_table FROM sys.triggers tr WHERE tr.parent_id=OBJECT_ID('dbo.Comercial_Ventas_Dia_Abiertas_v2') ORDER BY tr.name;"
+        },
+        {
+          "name": "snapshot_related_tables",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,t.temporal_type_desc,t.is_tracked_by_cdc FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE LOWER(t.name) LIKE '%comercial%ventas%dia%abierta%' OR LOWER(t.name) LIKE '%snapshot%venta%' OR LOWER(t.name) LIKE '%ventas%dia%histor%' ORDER BY s.name,t.name;"
+        },
+        {
+          "name": "snapshot_related_columns",
+          "sql": "SELECT TOP (500) s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (LOWER(t.name) LIKE '%comercial%ventas%dia%abierta%' OR LOWER(t.name) LIKE '%snapshot%venta%' OR LOWER(t.name) LIKE '%ventas%dia%histor%') AND (LOWER(c.name) LIKE '%fecha%' OR LOWER(c.name) LIKE '%snapshot%' OR LOWER(c.name) LIKE '%detalle%' OR LOWER(c.name) LIKE '%json%' OR LOWER(c.name) LIKE '%unidad%' OR LOWER(c.name) LIKE '%run%') ORDER BY s.name,t.name,c.column_id;"
+        },
+        {
+          "name": "snapshot_current_row_cienfuegos",
+          "sql": "SELECT unidad_negocio_id,fecha_operacion,ventas_abiertas,ventas_cerradas_dia,total_estimado_dia,tickets_abiertos,tickets_cerrados_dia,pax_abiertos,pax_cerrados_dia,CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(detalle_abiertas_json,''))),'') IS NULL THEN 0 ELSE 1 END AS tiene_detalle_json,LEN(ISNULL(detalle_abiertas_json,'')) AS detalle_json_length,snapshot_timestamp,fecha_ultima_actualizacion,sync_run_id FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WHERE unidad_negocio_id='CIENFUEGOS';"
+        }
+      ]
+    }
+  ]
+}
