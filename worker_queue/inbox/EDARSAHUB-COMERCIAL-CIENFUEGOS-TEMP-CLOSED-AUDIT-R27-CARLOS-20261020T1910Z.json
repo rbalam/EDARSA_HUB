@@ -1,0 +1,66 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-CIENFUEGOS-TEMP-CLOSED-AUDIT-R27-CARLOS-20261020T1910Z",
+  "created_at_utc": "2026-10-20T19:10:30Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b35b30b63589504dce42b7fd37b34e27f0ca9d0f",
+  "production_allowed": false,
+  "objective": "Auditar en solo lectura las cuentas de CIENFUEGOS del 19 de octubre de 2026 que permanecen en tempcheques y compararlas contra cheques y chequesf. Determinar si fueron cerradas en una tabla alternativa, si siguen únicamente como temporales o si existen duplicadas. No modificar el POS ni EDARSAHUB.",
+  "acceptance": [
+    "Obtener importe, tickets y PAX válidos de tempcheques del 19 de octubre",
+    "Listar los folios temporales y sus estados básicos",
+    "Obtener cobertura de chequesf del 19 de octubre",
+    "Comparar cada folio temporal contra cheques y chequesf",
+    "Clasificar cada folio como EN_CHEQUES, EN_CHEQUESF, SOLO_TEMP o DUPLICADO",
+    "Cero DDL, cero DML y production_touched=false"
+  ],
+  "constraints": [
+    "No tocar los sincronizadores de Ventas del dia o Ventas cerradas",
+    "No escribir en tempcheques, cheques, chequesf o turnos",
+    "No ejecutar corte, cierre, backfill o sincronizacion",
+    "No forzar la clasificación de una cuenta como cerrada sin evidencia",
+    "Mantener enfoque atomico, canonico y transversal",
+    "Trabajar solo en Desarrollo y no tocar Produccion"
+  ],
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "CIENFUEGOS"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "cienfuegos_tempcheques_oct19_aggregate",
+          "sql": "SELECT COUNT(DISTINCT folio) AS tickets,CAST(SUM(ISNULL(total,0)) AS decimal(18,2)) AS total,CAST(SUM(ISNULL(propina,0)) AS decimal(18,2)) AS propina,SUM(ISNULL(nopersonas,0)) AS pax,SUM(CASE WHEN ISNULL(cancelado,0)=1 THEN 1 ELSE 0 END) AS canceladas,MIN(fecha) AS fecha_min,MAX(fecha) AS fecha_max FROM tempcheques WITH (NOLOCK) WHERE fecha>='2026-10-19 00:00:00' AND fecha<'2026-10-20 00:00:00';"
+        },
+        {
+          "name": "cienfuegos_tempcheques_oct19_rows",
+          "sql": "SELECT folio,numcheque,fecha,CAST(ISNULL(total,0) AS decimal(18,2)) AS total,CAST(ISNULL(propina,0) AS decimal(18,2)) AS propina,ISNULL(nopersonas,0) AS pax,ISNULL(cancelado,0) AS cancelado,idturno FROM tempcheques WITH (NOLOCK) WHERE fecha>='2026-10-19 00:00:00' AND fecha<'2026-10-20 00:00:00' ORDER BY fecha,folio;"
+        },
+        {
+          "name": "cienfuegos_chequesf_oct19_aggregate",
+          "sql": "SELECT COUNT(DISTINCT folio) AS tickets,CAST(SUM(ISNULL(total,0)) AS decimal(18,2)) AS total,SUM(ISNULL(nopersonas,0)) AS pax,SUM(CASE WHEN ISNULL(cancelado,0)=1 THEN 1 ELSE 0 END) AS canceladas,MIN(fecha) AS fecha_min,MAX(fecha) AS fecha_max,MIN(cierre) AS cierre_min,MAX(cierre) AS cierre_max FROM chequesf WITH (NOLOCK) WHERE fecha>='2026-10-19 00:00:00' AND fecha<'2026-10-20 00:00:00';"
+        },
+        {
+          "name": "cienfuegos_temp_folio_location",
+          "sql": "SELECT t.folio,t.numcheque,t.fecha,CAST(ISNULL(t.total,0) AS decimal(18,2)) AS total_temp,CASE WHEN c.folio IS NULL THEN 0 ELSE 1 END AS en_cheques,CASE WHEN cf.folio IS NULL THEN 0 ELSE 1 END AS en_chequesf,c.fecha AS cheque_fecha,c.cierre AS cheque_cierre,CAST(ISNULL(c.total,0) AS decimal(18,2)) AS total_cheques,cf.fecha AS chequef_fecha,cf.cierre AS chequef_cierre,CAST(ISNULL(cf.total,0) AS decimal(18,2)) AS total_chequesf,CASE WHEN c.folio IS NOT NULL AND cf.folio IS NOT NULL THEN 'DUPLICADO' WHEN c.folio IS NOT NULL THEN 'EN_CHEQUES' WHEN cf.folio IS NOT NULL THEN 'EN_CHEQUESF' ELSE 'SOLO_TEMP' END AS ubicacion FROM tempcheques t WITH (NOLOCK) LEFT JOIN cheques c WITH (NOLOCK) ON c.folio=t.folio LEFT JOIN chequesf cf WITH (NOLOCK) ON cf.folio=t.folio WHERE t.fecha>='2026-10-19 00:00:00' AND t.fecha<'2026-10-20 00:00:00' ORDER BY t.fecha,t.folio;"
+        }
+      ]
+    }
+  ]
+}
