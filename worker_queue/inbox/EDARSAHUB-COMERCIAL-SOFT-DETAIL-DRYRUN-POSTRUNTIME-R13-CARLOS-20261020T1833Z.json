@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-DRYRUN-POSTRUNTIME-R13-CARLOS-20261020T1833Z",
+  "created_at_utc": "2026-10-20T18:33:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "EDARSAHUB-COMERCIAL-DETAIL-CLOSED-SALES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d652050b9bb8f7e9f860eacb8b18658d575a60a9",
+  "production_allowed": false,
+  "objective": "Ejecutar nuevamente el backfill canonico de detalle en dry-run para ESTELAR y 130MID el 19 de octubre de 2026, despues de corregir la precedencia de la vista Runtime. Confirmar que Runtime, POS, tickets y PAX concilian exactamente antes de autorizar cualquier escritura. No insertar filas, no ejecutar encabezados y no tocar los sincronizadores protegidos.",
+  "acceptance": [
+    "130MID debe conciliar 55983.00, 8 tickets y 22 PAX",
+    "ESTELAR debe conciliar 25128.00, 18 tickets y 47 PAX",
+    "Ambas unidades deben reportar OK_HEADER_CANONICO o explicar un bloqueo concreto",
+    "filas_insertadas=0 por dry-run",
+    "production_touched=false"
+  ],
+  "constraints": [
+    "No tocar el sincronizador de Ventas del dia",
+    "No tocar el sincronizador de Ventas cerradas",
+    "No ejecutar sincronizacion de encabezados",
+    "No escribir en Comercial_Inteligencia_VentasDetalleProducto",
+    "No forzar tickets ni ajustes manuales",
+    "Usar el extractor y validador canonicos existentes",
+    "Mantener enfoque atomico, canonico y transversal"
+  ],
+  "human_summary_language": "es",
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "actions": [],
+  "units": [
+    "ESTELAR",
+    "130MID"
+  ],
+  "fecha_inicio": "2026-10-19",
+  "fecha_fin": "2026-10-20",
+  "dry_run": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "soft_runtime_postruntime_dryrun",
+          "sql": "SELECT unidad_negocio_id,fecha_operacion,ventas_total,propinas_total,tickets_total,pax_total,ventas_abiertas,es_venta_abierta,es_corte_cerrado,fuente_original FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id IN ('130MID','ESTELAR') AND fecha_operacion='2026-10-19' ORDER BY unidad_negocio_id;"
+        },
+        {
+          "name": "soft_detail_unchanged_before_commit",
+          "sql": "SELECT unidad_negocio_id,fecha_operacion,COUNT_BIG(*) AS filas,COUNT(DISTINCT id_transaccion) AS tickets,CAST(SUM(ISNULL(importe_neto,0)) AS decimal(18,2)) AS venta,SUM(ISNULL(pax,0)) AS pax FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('130MID','ESTELAR') AND fecha_operacion='2026-10-19' GROUP BY unidad_negocio_id,fecha_operacion ORDER BY unidad_negocio_id;"
+        }
+      ]
+    }
+  ]
+}
