@@ -3,32 +3,38 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "8d26590dde130c2dc8592660882f3b0e6022a247",
-  "generated_at_utc": "2026-10-20T21:33:55Z",
+  "development_sha": "7dabee9cd5de2b7e8b51fa16fc033793beeaaac6",
+  "generated_at_utc": "2026-10-20T21:35:19Z",
   "history": {
-    "done_total_local": 1504,
+    "done_total_local": 1505,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1271,
-    "results_total_local": 2545
+    "results_total_local": 2546
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 801,
+      "age_seconds": 885,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-CONNECTION-ROLE-AUDIT-PROFILE-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 465,
+      "age_seconds": 11,
+      "job_id": "SERVIDORES6-CHAPUR-GATE4D-CONNECTION-ROLE-AUDIT-PROFILE-R2-20261020",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 549,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-FINAL-READONLY-AUDIT-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "8d26590dde130c2dc8592660882f3b0e6022a247",
+  "local_development_sha": "7dabee9cd5de2b7e8b51fa16fc033793beeaaac6",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -36,21 +42,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
-  "remote_development_sha": "8d26590dde130c2dc8592660882f3b0e6022a247",
+  "remote_development_sha": "7dabee9cd5de2b7e8b51fa16fc033793beeaaac6",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-20T21:33:43Z",
-    "last_receive_utc": "2026-10-20T21:33:53Z",
-    "last_terminal_utc": "2026-10-20T21:26:09Z",
+    "last_cycle_utc": "2026-10-20T21:35:04Z",
+    "last_receive_utc": "2026-10-20T21:35:15Z",
+    "last_terminal_utc": "2026-10-20T21:35:07Z",
     "pid": "13264",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "2669bbfa1875cafe7a7432249065f347f516cde1",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "8d26590dde130c2dc8592660882f3b0e6022a247",
+      "development_sha": "7dabee9cd5de2b7e8b51fa16fc033793beeaaac6",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
@@ -64,8 +70,8 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": true,
-      "worker_code_tree_sha": "2669bbfa1875cafe7a7432249065f347f516cde1"
+      "worker_code_tree_aligned": false,
+      "worker_code_tree_sha": "1aa0273f9ae1d36d83e9243634c50fe2742009be"
     }
   },
   "schema": "edarsahub.worker-health.v3",
