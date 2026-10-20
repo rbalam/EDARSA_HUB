@@ -1,0 +1,162 @@
+{
+  "base_sha": "d652050b9bb8f7e9f860eacb8b18658d575a60a9",
+  "blockers": [],
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-10-20T18:32:42Z",
+  "dry_run": true,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-SOFT-DETAIL-DRYRUN-POSTRUNTIME-R13-CARLOS-20261020T1833Z",
+  "operation": "ISCAM_DETAIL_BACKFILL",
+  "operation_summary": {
+    "dias_bloqueados": 0,
+    "dias_candidatos": 2,
+    "dias_evaluados": 2,
+    "dias_reparables": 2,
+    "dias_sin_runtime": 0,
+    "dias_ya_ok": 0,
+    "fecha_fin_exclusivo": "2026-10-20",
+    "fecha_inicio": "2026-10-19",
+    "filas_insertadas": 0,
+    "modo": "DRY_RUN",
+    "unidades": [
+      {
+        "bloqueados": 0,
+        "candidatos": 1,
+        "dias": [
+          {
+            "delta_pax": 0,
+            "delta_tickets": 0,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-10-19",
+            "filas_insertadas": 0,
+            "pax_pos": 22,
+            "pax_runtime": 22,
+            "status": "OK_HEADER_CANONICO",
+            "tickets_pos": 8,
+            "tickets_runtime": 8,
+            "ventas_pos": "55983.0000",
+            "ventas_runtime": "55983.00"
+          }
+        ],
+        "filas_insertadas": 0,
+        "reparables": 1,
+        "sin_runtime": 0,
+        "unidad": "130MID",
+        "ya_ok": 0
+      },
+      {
+        "bloqueados": 0,
+        "candidatos": 1,
+        "dias": [
+          {
+            "delta_pax": 0,
+            "delta_tickets": 0,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-10-19",
+            "filas_insertadas": 0,
+            "pax_pos": 47,
+            "pax_runtime": 47,
+            "status": "OK_HEADER_CANONICO",
+            "tickets_pos": 18,
+            "tickets_runtime": 18,
+            "ventas_pos": "25128.0000",
+            "ventas_runtime": "25128.00"
+          }
+        ],
+        "filas_insertadas": 0,
+        "reparables": 1,
+        "sin_runtime": 0,
+        "unidad": "ESTELAR",
+        "ya_ok": 0
+      }
+    ]
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-20T18:34:10Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "ventas_total",
+              "propinas_total",
+              "tickets_total",
+              "pax_total",
+              "ventas_abiertas",
+              "es_venta_abierta",
+              "es_corte_cerrado",
+              "fuente_original"
+            ],
+            "name": "soft_runtime_postruntime_dryrun",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "130MID",
+                "2026-10-19",
+                "55983.00",
+                "5426.40",
+                8,
+                22,
+                "0.00",
+                false,
+                true,
+                "API_LOCAL"
+              ],
+              [
+                "ESTELAR",
+                "2026-10-19",
+                "25128.00",
+                "3346.40",
+                18,
+                47,
+                "0.00",
+                false,
+                true,
+                "API_LOCAL"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "filas",
+              "tickets",
+              "venta",
+              "pax"
+            ],
+            "name": "soft_detail_unchanged_before_commit",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-20T18:32:37Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto el backfill cerrado de detalle ISCAM para las unidades y fechas autorizadas y certifico el resultado con SQL de solo lectura. No acepto shell, rutas ni comandos externos y no toco Produccion.",
+  "tests": "PASS",
+  "units": [
+    "ESTELAR",
+    "130MID"
+  ],
+  "work_completion": "COMPLETE"
+}
