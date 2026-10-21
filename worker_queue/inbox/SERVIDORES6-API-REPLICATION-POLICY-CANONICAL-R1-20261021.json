@@ -1,0 +1,165 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-API-REPLICATION-POLICY-CANONICAL-R1-20261021",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "a71a5039e4e151b75f8b56296fd3f487f7352cdc",
+  "objective": "Restaurar Horario de Replica como politica canonica de API_LOCAL sin reutilizar port. Persistir enabled/cutoff_time/timezone dentro de config existente preservando otras claves, exponer GET/PUT admin, mostrar politica en modal y hacer que Comercial use la politica por connection ID con zona IANA y precision HH:MM. Mantener fallback mediante HORA_REPLICA_DEFAULT/TIMEZONE_MEXICO para conexiones antiguas. Sin schema SQL nuevo, sin migrar datos existentes y sin Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "Conexiones y Comunicaciones",
+    "chat": "Menu Servidores 6"
+  },
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/repository.py",
+      "old": "async def get_api_connection_by_id_full(api_id: str) -> Optional[Dict]:",
+      "new": "\n\ndef _default_api_replication_policy() -> Dict[str, Any]:\n    from core.cerebro import HORA_REPLICA_DEFAULT, TIMEZONE_MEXICO\n\n    return {\n        \"enabled\": True,\n        \"cutoff_time\": f\"{int(HORA_REPLICA_DEFAULT):02d}:00\",\n        \"timezone\": TIMEZONE_MEXICO,\n    }\n\n\ndef normalize_api_replication_policy(policy: Optional[Dict[str, Any]]) -> Dict[str, Any]:\n    from zoneinfo import ZoneInfo\n\n    defaults = _default_api_replication_policy()\n    raw = dict(policy or {})\n\n    enabled = bool(raw.get(\"enabled\", defaults[\"enabled\"]))\n    cutoff_time = str(raw.get(\"cutoff_time\") or defaults[\"cutoff_time\"]).strip()\n    timezone_name = str(raw.get(\"timezone\") or defaults[\"timezone\"]).strip()\n\n    try:\n        datetime.strptime(cutoff_time, \"%H:%M\")\n    except ValueError as exc:\n        raise ValueError(\"REPLICATION_CUTOFF_TIME_INVALID\") from exc\n\n    try:\n        ZoneInfo(timezone_name)\n    except Exception as exc:\n        raise ValueError(\"REPLICATION_TIMEZONE_INVALID\") from exc\n\n    return {\n        \"enabled\": enabled,\n        \"cutoff_time\": cutoff_time,\n        \"timezone\": timezone_name,\n    }\n\n\ndef get_api_replication_policy(api_id: str) -> Dict[str, Any]:\n    api = get_api_connection_sql(api_id)\n    if not api:\n        raise ValueError(\"API_LOCAL_NOT_FOUND\")\n\n    config = api.get(\"config\") if isinstance(api.get(\"config\"), dict) else {}\n    return normalize_api_replication_policy(config.get(\"replication_policy\"))\n\n\nasync def update_api_replication_policy(\n    api_id: str,\n    policy: Dict[str, Any],\n    updated_by: str = \"system\",\n) -> Dict[str, Any]:\n    existing = get_api_connection_sql(api_id)\n    if not existing:\n        raise ValueError(\"API_LOCAL_NOT_FOUND\")\n\n    normalized = normalize_api_replication_policy(policy)\n    config = dict(existing.get(\"config\") or {})\n    config[\"replication_policy\"] = normalized\n\n    await update_api_connection(\n        api_id,\n        {\"config\": config},\n        updated_by=updated_by,\n    )\n    return normalized\n\n\nasync def get_api_connection_by_id_full(api_id: str) -> Optional[Dict]:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/routes.py",
+      "old": "    test_api_connection_health,\n    check_duplicate_api\n)",
+      "new": "    test_api_connection_health,\n    check_duplicate_api,\n    get_api_replication_policy,\n    update_api_replication_policy,\n)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/routes.py",
+      "old": "class TestConnectionRequest(BaseModel):\n    url: str\n    api_key: Optional[str] = None",
+      "new": "class ApiReplicationPolicyRequest(BaseModel):\n    enabled: bool\n    cutoff_time: str = Field(..., pattern=r\"^([01]\\d|2[0-3]):[0-5]\\d$\")\n    timezone: str = Field(..., min_length=1)\n\n\nclass TestConnectionRequest(BaseModel):\n    url: str\n    api_key: Optional[str] = None",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/routes.py",
+      "old": "# ============================================================================\n# ENDPOINTS - ESCRITURA (PRIMERO EDARSAHUB SQL, LUEGO CACHÉ)\n# ============================================================================",
+      "new": "# ============================================================================\n# POLITICA DE REPLICA API_LOCAL\n# ============================================================================\n\n@router.get(\"/{api_id}/replication-policy\")\nasync def get_replication_policy(\n    api_id: str,\n    credentials: HTTPAuthorizationCredentials = Depends(security),\n):\n    get_current_user(credentials)\n    try:\n        return {\n            \"success\": True,\n            \"data\": get_api_replication_policy(api_id),\n            \"source\": \"API_CONNECTION_CONFIG\",\n        }\n    except ValueError:\n        raise HTTPException(status_code=404, detail=\"Conexión API no encontrada\")\n\n\n@router.put(\"/{api_id}/replication-policy\")\nasync def put_replication_policy(\n    api_id: str,\n    data: ApiReplicationPolicyRequest,\n    credentials: HTTPAuthorizationCredentials = Depends(security),\n    _admin: dict = Depends(require_explicit_permission(\"RBAC_ADMIN\")),\n):\n    user = get_current_user(credentials)\n    try:\n        policy = await update_api_replication_policy(\n            api_id,\n            data.model_dump(),\n            updated_by=user.get(\"email\", \"system\"),\n        )\n        return {\"success\": True, \"data\": policy}\n    except ValueError as exc:\n        code = str(exc)\n        if code == \"API_LOCAL_NOT_FOUND\":\n            raise HTTPException(status_code=404, detail=\"Conexión API no encontrada\")\n        raise HTTPException(status_code=400, detail=\"Política de réplica inválida\")\n\n\n# ============================================================================\n# ENDPOINTS - ESCRITURA (PRIMERO EDARSAHUB SQL, LUEGO CACHÉ)\n# ============================================================================",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/adapters.py",
+      "old": "# Alias para compatibilidad con código existente\nAPIS_MPRO_LOCALES = APIS_MPRO_LOCALES_LEGACY",
+      "new": "\n\ndef _default_replication_policy() -> Dict[str, Any]:\n    from core.cerebro import HORA_REPLICA_DEFAULT, TIMEZONE_MEXICO\n\n    return {\n        \"enabled\": True,\n        \"cutoff_time\": f\"{int(HORA_REPLICA_DEFAULT):02d}:00\",\n        \"timezone\": TIMEZONE_MEXICO,\n    }\n\n\ndef _normalize_runtime_replication_policy(\n    policy: Optional[Dict[str, Any]],\n) -> Dict[str, Any]:\n    from zoneinfo import ZoneInfo\n\n    defaults = _default_replication_policy()\n    raw = dict(policy or {})\n    enabled = bool(raw.get(\"enabled\", defaults[\"enabled\"]))\n    cutoff_time = str(raw.get(\"cutoff_time\") or defaults[\"cutoff_time\"]).strip()\n    timezone_name = str(raw.get(\"timezone\") or defaults[\"timezone\"]).strip()\n\n    try:\n        datetime.strptime(cutoff_time, \"%H:%M\")\n    except ValueError:\n        cutoff_time = defaults[\"cutoff_time\"]\n\n    try:\n        ZoneInfo(timezone_name)\n    except Exception:\n        timezone_name = defaults[\"timezone\"]\n\n    return {\n        \"enabled\": enabled,\n        \"cutoff_time\": cutoff_time,\n        \"timezone\": timezone_name,\n    }\n\n\ndef _replication_cutoff_reached(\n    policy: Optional[Dict[str, Any]],\n    now_utc: Optional[datetime] = None,\n) -> bool:\n    from zoneinfo import ZoneInfo\n\n    normalized = _normalize_runtime_replication_policy(policy)\n    if not normalized[\"enabled\"]:\n        return False\n\n    current_utc = now_utc or datetime.now(timezone.utc)\n    if current_utc.tzinfo is None:\n        current_utc = current_utc.replace(tzinfo=timezone.utc)\n\n    local_now = current_utc.astimezone(ZoneInfo(normalized[\"timezone\"]))\n    cutoff = datetime.strptime(\n        normalized[\"cutoff_time\"],\n        \"%H:%M\",\n    ).time()\n\n    return local_now.time().replace(tzinfo=None) >= cutoff\n\n\n# Alias para compatibilidad con código existente\nAPIS_MPRO_LOCALES = APIS_MPRO_LOCALES_LEGACY",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/adapters.py",
+      "old": "        \"empresa_id\": 1,  # ORIGEN\n        \"hora_replica\": 4,\n        \"activo\": True",
+      "new": "        \"empresa_id\": 1,  # ORIGEN\n        \"replication_policy\": _default_replication_policy(),\n        \"activo\": True",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/adapters.py",
+      "old": "        \"empresa_id\": 2,  # 130QRO\n        \"hora_replica\": 4,\n        \"activo\": True",
+      "new": "        \"empresa_id\": 2,  # 130QRO\n        \"replication_policy\": _default_replication_policy(),\n        \"activo\": True",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/adapters.py",
+      "old": "                \"nombre_sucursal\": connection.nombre_sucursal_sistema,\n                \"hora_replica\": 4,  # Configurable en el futuro\n                \"activo\": connection.activo\n            }",
+      "new": "                \"nombre_sucursal\": connection.nombre_sucursal_sistema,\n                \"activo\": connection.activo\n            }\n\n            try:\n                from modules.api_connections.repository import (\n                    get_api_replication_policy,\n                )\n                api_config[\"replication_policy\"] = get_api_replication_policy(\n                    str(connection.servidor_id)\n                )\n            except Exception as policy_exc:\n                logging.warning(\n                    \"API Local EmpresaID=%s: política de réplica no disponible (%s)\",\n                    empresa_id,\n                    type(policy_exc).__name__,\n                )\n                api_config[\"replication_policy\"] = _default_replication_policy()",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/adapters.py",
+      "old": "    # Usar zona horaria de México (UTC-6) para determinar si ya pasó la hora de réplica\n    mexico_tz = timezone(timedelta(hours=-6))\n    ahora_mexico = datetime.now(timezone.utc).astimezone(mexico_tz)\n    hora_actual = ahora_mexico.hour\n    hora_replica = api_config.get(\"hora_replica\", 4)\n    \n    logging.info(f\"API Local {api_config['nombre']}: Hora México = {ahora_mexico.strftime('%H:%M')}, Hora réplica = {hora_replica}:00, forzar={forzar_consulta}\")\n    \n    # Si ya pasó la hora de réplica EN MÉXICO Y no es modo forzado, los datos ya están en la nube\n    if hora_actual >= hora_replica and not forzar_consulta:\n        logging.info(f\"API Local {api_config['nombre']}: Hora actual ({hora_actual}) >= hora réplica ({hora_replica}), omitiendo (datos ya replicados)\")\n        return {\"ventas\": 0, \"cheques\": 0, \"pax\": 0, \"omitido\": True, \"razon\": \"post_replica\"}",
+      "new": "    replication_policy = _normalize_runtime_replication_policy(\n        api_config.get(\"replication_policy\")\n    )\n    cutoff_reached = _replication_cutoff_reached(replication_policy)\n\n    logging.info(\n        \"API Local %s: política réplica enabled=%s cutoff=%s timezone=%s forzar=%s\",\n        api_config[\"nombre\"],\n        replication_policy[\"enabled\"],\n        replication_policy[\"cutoff_time\"],\n        replication_policy[\"timezone\"],\n        forzar_consulta,\n    )\n\n    if cutoff_reached and not forzar_consulta:\n        logging.info(\n            \"API Local %s: corte de réplica alcanzado; omitiendo datos locales\",\n            api_config[\"nombre\"],\n        )\n        return {\n            \"ventas\": 0,\n            \"cheques\": 0,\n            \"pax\": 0,\n            \"omitido\": True,\n            \"razon\": \"post_replica\",\n        }",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/adapters.py",
+      "old": "        logging.info(f\"API Local {api_config['nombre']}: Consultando ventas del día (hora {hora_actual} < {hora_replica})\")",
+      "new": "        logging.info(\n            \"API Local %s: consultando ventas del día antes del corte configurado\",\n            api_config[\"nombre\"],\n        )",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "  const [loadingApiAssignments, setLoadingApiAssignments] = useState(false);",
+      "new": "  const [loadingApiAssignments, setLoadingApiAssignments] = useState(false);\n  const [apiReplicationPolicy, setApiReplicationPolicy] = useState({\n    enabled: true,\n    cutoff_time: '',\n    timezone: ''\n  });\n  const [savingApiReplicationPolicy, setSavingApiReplicationPolicy] = useState(false);\n  const [apiTimezoneOptions] = useState(() => {\n    try {\n      return Intl.supportedValuesOf('timeZone') || [];\n    } catch {\n      return [];\n    }\n  });",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "  const openEditApi = async (apiConn) => {",
+      "new": "  const loadApiReplicationPolicy = async (apiId) => {\n    try {\n      const response = await api.get(`/api-connections/${apiId}/replication-policy`);\n      const policy = response.data?.data || {};\n      setApiReplicationPolicy({\n        enabled: policy.enabled !== false,\n        cutoff_time: policy.cutoff_time || '',\n        timezone: policy.timezone || ''\n      });\n    } catch (error) {\n      console.error('Error cargando política de réplica:', error);\n      toast.error('No se pudo cargar la política de réplica');\n    }\n  };\n\n  const saveApiReplicationPolicy = async () => {\n    if (!editingApi?.id) return;\n    setSavingApiReplicationPolicy(true);\n    try {\n      const response = await api.put(\n        `/api-connections/${editingApi.id}/replication-policy`,\n        apiReplicationPolicy\n      );\n      setApiReplicationPolicy(response.data?.data || apiReplicationPolicy);\n      toast.success('Política de réplica guardada');\n    } catch (error) {\n      console.error('Error guardando política de réplica:', error);\n      toast.error(error.response?.data?.detail || 'No se pudo guardar la política de réplica');\n    } finally {\n      setSavingApiReplicationPolicy(false);\n    }\n  };\n\n  const openEditApi = async (apiConn) => {",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "      await loadApiAssignments(apiConn.id);\n      setQueryTestData({",
+      "new": "      await Promise.all([\n        loadApiAssignments(apiConn.id),\n        loadApiReplicationPolicy(apiConn.id)\n      ]);\n      setQueryTestData({",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "                setApiOperationalUnits([]);\n                setApiAssignments([]);\n                setSelectedApiUnitId('');",
+      "new": "                setApiOperationalUnits([]);\n                setApiAssignments([]);\n                setSelectedApiUnitId('');\n                setApiReplicationPolicy({\n                  enabled: true,\n                  cutoff_time: '',\n                  timezone: ''\n                });",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "            <div className=\"bg-blue-50 border border-blue-200 rounded-md p-3\">",
+      "new": "            <div className=\"border border-zinc-200 rounded-md p-3 space-y-3\">\n              <div>\n                <Label>Política de réplica (opcional)</Label>\n                <p className=\"text-xs text-zinc-500 mt-1\">\n                  Define cuándo esta fuente local deja de usarse porque sus datos ya fueron replicados a nube.\n                </p>\n              </div>\n\n              {editingApi ? (\n                <>\n                  <div className=\"flex items-center justify-between\">\n                    <Label htmlFor=\"api_replication_enabled\">Réplica a nube</Label>\n                    <Switch\n                      id=\"api_replication_enabled\"\n                      checked={apiReplicationPolicy.enabled}\n                      onCheckedChange={(checked) => setApiReplicationPolicy({\n                        ...apiReplicationPolicy,\n                        enabled: checked\n                      })}\n                    />\n                  </div>\n\n                  {apiReplicationPolicy.enabled && (\n                    <div className=\"grid grid-cols-2 gap-3\">\n                      <div className=\"space-y-2\">\n                        <Label htmlFor=\"api_replication_cutoff\">Hora de réplica</Label>\n                        <Input\n                          id=\"api_replication_cutoff\"\n                          type=\"time\"\n                          value={apiReplicationPolicy.cutoff_time}\n                          onChange={(e) => setApiReplicationPolicy({\n                            ...apiReplicationPolicy,\n                            cutoff_time: e.target.value\n                          })}\n                        />\n                      </div>\n                      <div className=\"space-y-2\">\n                        <Label>Zona horaria</Label>\n                        <Select\n                          value={apiReplicationPolicy.timezone}\n                          onValueChange={(value) => setApiReplicationPolicy({\n                            ...apiReplicationPolicy,\n                            timezone: value\n                          })}\n                        >\n                          <SelectTrigger>\n                            <SelectValue placeholder=\"Seleccionar zona...\" />\n                          </SelectTrigger>\n                          <SelectContent>\n                            {[\n                              ...(apiReplicationPolicy.timezone &&\n                              !apiTimezoneOptions.includes(apiReplicationPolicy.timezone)\n                                ? [apiReplicationPolicy.timezone]\n                                : []),\n                              ...apiTimezoneOptions\n                            ].map((timezoneName) => (\n                              <SelectItem key={timezoneName} value={timezoneName}>\n                                {timezoneName}\n                              </SelectItem>\n                            ))}\n                          </SelectContent>\n                        </Select>\n                      </div>\n                    </div>\n                  )}\n\n                  <div className=\"flex justify-end\">\n                    <Button\n                      type=\"button\"\n                      variant=\"outline\"\n                      onClick={saveApiReplicationPolicy}\n                      disabled={\n                        savingApiReplicationPolicy ||\n                        (apiReplicationPolicy.enabled &&\n                          (!apiReplicationPolicy.cutoff_time || !apiReplicationPolicy.timezone))\n                      }\n                    >\n                      {savingApiReplicationPolicy && (\n                        <Loader2 className=\"h-4 w-4 mr-2 animate-spin\" />\n                      )}\n                      Guardar política\n                    </Button>\n                  </div>\n                </>\n              ) : (\n                <p className=\"text-xs text-zinc-500\">\n                  Guarda primero la conexión. Después podrás definir su horario y zona horaria de réplica.\n                </p>\n              )}\n            </div>\n\n            <div className=\"bg-blue-50 border border-blue-200 rounded-md p-3\">",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_api_replication_policy_contract.py",
+      "content": "from datetime import datetime, timezone\nfrom pathlib import Path\n\nfrom modules.comercial.adapters import _replication_cutoff_reached\n\n\nROOT = Path(__file__).resolve().parents[2]\nREPOSITORY = ROOT / \"backend\" / \"modules\" / \"api_connections\" / \"repository.py\"\nROUTES = ROOT / \"backend\" / \"modules\" / \"api_connections\" / \"routes.py\"\nADAPTERS = ROOT / \"backend\" / \"modules\" / \"comercial\" / \"adapters.py\"\nSERVIDORES = ROOT / \"frontend\" / \"src\" / \"pages\" / \"Servidores.js\"\n\n\ndef test_replication_policy_uses_config_not_port_alias():\n    repo = REPOSITORY.read_text(encoding=\"utf-8\")\n    assert \"replication_policy\" in repo\n    assert \"get_api_replication_policy\" in repo\n    assert \"update_api_replication_policy\" in repo\n    assert '\"cutoff_time\"' in repo\n    assert '\"timezone\"' in repo\n\n\ndef test_replication_policy_routes_are_admin_guarded():\n    routes = ROUTES.read_text(encoding=\"utf-8\")\n    assert '@router.get(\"/{api_id}/replication-policy\")' in routes\n    assert '@router.put(\"/{api_id}/replication-policy\")' in routes\n    assert 'require_explicit_permission(\"RBAC_ADMIN\")' in routes\n\n\ndef test_comercial_uses_iana_timezone_and_no_fixed_utc_minus_six_cutoff():\n    text = ADAPTERS.read_text(encoding=\"utf-8\")\n    assert \"get_api_replication_policy\" in text\n    assert \"_replication_cutoff_reached\" in text\n    assert \"ZoneInfo\" in text\n    assert \"timezone(timedelta(hours=-6))\" not in text\n    assert '\"hora_replica\": 4' not in text\n    assert 'api_config.get(\"hora_replica\", 4)' not in text\n\n\ndef test_cutoff_is_timezone_aware_and_supports_minutes():\n    policy = {\n        \"enabled\": True,\n        \"cutoff_time\": \"04:15\",\n        \"timezone\": \"America/Mexico_City\",\n    }\n\n    before = datetime(2026, 10, 21, 10, 14, tzinfo=timezone.utc)\n    after = datetime(2026, 10, 21, 10, 16, tzinfo=timezone.utc)\n\n    assert _replication_cutoff_reached(policy, before) is False\n    assert _replication_cutoff_reached(policy, after) is True\n\n\ndef test_disabled_replication_policy_never_cuts_off_local_api():\n    policy = {\n        \"enabled\": False,\n        \"cutoff_time\": \"04:00\",\n        \"timezone\": \"America/Mexico_City\",\n    }\n    now = datetime(2026, 10, 21, 18, 0, tzinfo=timezone.utc)\n    assert _replication_cutoff_reached(policy, now) is False\n\n\ndef test_modal_exposes_replication_policy_without_legacy_hour_alias():\n    text = SERVIDORES.read_text(encoding=\"utf-8\")\n    assert \"Política de réplica\" in text\n    assert \"cutoff_time\" in text\n    assert \"timezone\" in text\n    assert \"/replication-policy\" in text\n    assert \"hora_replica\" not in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_api_replication_policy_contract.py",
+        "backend/tests/test_api_connection_legacy_aliases_retired_contract.py",
+        "backend/tests/test_api_connection_operational_assignments_contract.py",
+        "backend/tests/test_connection_resolver_api_local_canonical_contract.py"
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/api_connections/repository.py",
+        "backend/modules/api_connections/routes.py",
+        "backend/modules/comercial/adapters.py"
+      ]
+    },
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "scheduling": {
+    "project_id": "Conexiones y Comunicaciones",
+    "bounded_context": "Conexiones y Comunicaciones",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "resource_claims": [],
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1
+  }
+}
