@@ -1,0 +1,56 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R1-20261020",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "925cae19999bae4088641f555683a7118747fee4",
+  "objective": "Corregir exclusivamente el cierre idempotente del slot runtime del Universal Worker: si update_slot_state falla con SlotRuntimeError:SLOT_NOT_FOUND durante TERMINALIZING, tratarlo como slot ya liberado sin invalidar una integración ya certificada; cualquier otro error de slot debe seguir fallando cerrado. No tocar Produccion ni codigo funcional de Servidores.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "Conexiones y Comunicaciones",
+    "chat": "Menu Servidores 6"
+  },
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state",
+      "new": "from worker_slot_runtime import SlotRuntimeError, create_slot, reclaim_stale_slot, release_slot, update_slot_state",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        if slot_id is not None:\n            try:\n                update_slot_state(slot_id, \"TERMINALIZING\", execution_pid=os.getpid())\n                release_slot(slot_id)\n                result[\"slot_release\"] = \"PASS\"\n            except Exception as exc:\n                result[\"slot_release\"] = \"FAIL\"\n                result[\"blockers\"].append(f\"slot_release_failed:{type(exc).__name__}:{exc}\")\n                result[\"quality_gate\"] = \"FAIL\"\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n        else:",
+      "new": "        if slot_id is not None:\n            try:\n                update_slot_state(slot_id, \"TERMINALIZING\", execution_pid=os.getpid())\n                release_slot(slot_id)\n                result[\"slot_release\"] = \"PASS\"\n            except SlotRuntimeError as exc:\n                if str(exc) == \"SLOT_NOT_FOUND\":\n                    result[\"slot_release\"] = \"ALREADY_RELEASED\"\n                else:\n                    result[\"slot_release\"] = \"FAIL\"\n                    result[\"blockers\"].append(f\"slot_release_failed:{type(exc).__name__}:{exc}\")\n                    result[\"quality_gate\"] = \"FAIL\"\n                    result[\"certification\"] = \"NOT_CERTIFIED\"\n            except Exception as exc:\n                result[\"slot_release\"] = \"FAIL\"\n                result[\"blockers\"].append(f\"slot_release_failed:{type(exc).__name__}:{exc}\")\n                result[\"quality_gate\"] = \"FAIL\"\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n        else:",
+      "expected_count": 1
+    },
+    {
+      "type": "append_once",
+      "path": "backend/tests/test_worker_universal_queue_sla_contract.py",
+      "content": "\n\n\ndef test_dispatcher_treats_missing_slot_as_already_released_only_during_cleanup():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'from worker_slot_runtime import SlotRuntimeError, create_slot, reclaim_stale_slot, release_slot, update_slot_state' in text\n    assert 'except SlotRuntimeError as exc:' in text\n    assert 'if str(exc) == \"SLOT_NOT_FOUND\":' in text\n    assert 'result[\"slot_release\"] = \"ALREADY_RELEASED\"' in text\n    assert 'slot_release_failed:{type(exc).__name__}:{exc}' in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_slot_runtime_contract.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py"
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
