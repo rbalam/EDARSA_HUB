@@ -4,48 +4,48 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "1fef5b04d9f8fa5ec3ccb928bea5446621562d1e",
-  "generated_at_utc": "2026-10-21T04:43:18Z",
+  "generated_at_utc": "2026-10-21T04:48:10Z",
   "history": {
     "done_total_local": 1523,
-    "pending_total_local": 1,
+    "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1282,
-    "results_total_local": 2574
+    "rejected_total_local": 1283,
+    "results_total_local": 2575
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3,
-      "job_id": "SERVIDORES6-API-MODAL-CANONICAL-ASSIGNMENTS-R2-20261020",
+      "age_seconds": 1611,
+      "job_id": "SERVIDORES6-API-MODAL-CANONICAL-ASSIGNMENTS-R1-20261020",
       "reason": null,
-      "state": "PENDING"
+      "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1319,
-      "job_id": "SERVIDORES6-API-MODAL-CANONICAL-ASSIGNMENTS-R1-20261020",
+      "age_seconds": 45,
+      "job_id": "SERVIDORES6-API-MODAL-CANONICAL-ASSIGNMENTS-R2-20261020",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
   "local_development_sha": "1fef5b04d9f8fa5ec3ccb928bea5446621562d1e",
-  "oldest_pending_age_seconds": 3,
+  "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
-  "queue_pending": 1,
+  "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "remote_development_sha": "1fef5b04d9f8fa5ec3ccb928bea5446621562d1e",
   "runtime": {
     "current_job_id": "SERVIDORES6-API-MODAL-CANONICAL-ASSIGNMENTS-R2-20261020",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-21T04:43:07Z",
-    "last_receive_utc": "2026-10-21T04:43:02Z",
-    "last_terminal_utc": "2026-10-21T04:21:19Z",
-    "pid": "337",
+    "last_cycle_utc": "2026-10-21T04:47:49Z",
+    "last_receive_utc": "2026-10-21T04:47:44Z",
+    "last_terminal_utc": "2026-10-21T04:47:24Z",
+    "pid": "453",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "aa003a0a639218bf4d9ea5db32f1499cd8687cf4",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
