@@ -1,0 +1,124 @@
+name: Production Inventory Sync Trigger
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - ".github/workflows/prod-sync-inventarios-trigger.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-sync-inventarios-trigger
+  cancel-in-progress: false
+
+jobs:
+  trigger-production-inventory-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      EDARSA_TRIGGER_URL: https://hub.edarsa.com.mx/api/internal/inventory-scheduler-trigger
+      EDARSA_TRIGGER_KEY: ${{ secrets.EDARSA_PROD_SCHEDULER_TRIGGER_KEY }}
+
+    steps:
+      - name: Verify trigger secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${EDARSA_TRIGGER_KEY}"
+
+      - name: Verify inventory trigger health
+        shell: bash
+        run: |
+          set -euo pipefail
+          response_file="$(mktemp)"
+          http_code="$(
+            curl --silent --show-error \
+              --output "${response_file}" \
+              --write-out "%{http_code}" \
+              --connect-timeout 30 \
+              --max-time 60 \
+              --header "X-EDARSA-Scheduler-Key: ${EDARSA_TRIGGER_KEY}" \
+              "${EDARSA_TRIGGER_URL}/health"
+          )"
+          cat "${response_file}"
+          echo
+          test "${http_code}" = "200"
+          python - "${response_file}" <<'PY'
+          import json
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as fh:
+              payload = json.load(fh)
+
+          expected = {
+              "status": "ready",
+              "environment": "PRODUCTION",
+              "runtime_role": "PRODUCTION_WEB",
+              "trigger_enabled": True,
+              "job_enabled": True,
+              "execution_enabled": True,
+              "job_id": "sync_compras",
+          }
+
+          mismatches = {
+              key: {"expected": value, "actual": payload.get(key)}
+              for key, value in expected.items()
+              if payload.get(key) != value
+          }
+          if mismatches:
+              raise SystemExit(f"INVENTORY_TRIGGER_HEALTH_FAILED={mismatches}")
+
+          print("PRODUCTION_INVENTORY_TRIGGER_HEALTH=PASS")
+          PY
+
+      - name: Trigger canonical inventory sync
+        shell: bash
+        run: |
+          set -euo pipefail
+          response_file="$(mktemp)"
+          http_code="$(
+            curl --silent --show-error \
+              --output "${response_file}" \
+              --write-out "%{http_code}" \
+              --connect-timeout 30 \
+              --max-time 2100 \
+              --request POST \
+              --header "X-EDARSA-Scheduler-Key: ${EDARSA_TRIGGER_KEY}" \
+              "${EDARSA_TRIGGER_URL}/sync-compras"
+          )"
+          cat "${response_file}"
+          echo
+          test "${http_code}" = "200"
+          python - "${response_file}" <<'PY'
+          import json
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as fh:
+              payload = json.load(fh)
+
+          status = str(payload.get("status") or "").upper()
+          if payload.get("job_id") != "sync_compras":
+              raise SystemExit(f"WRONG_JOB_ID={payload.get('job_id')}")
+
+          if status == "SUCCESS":
+              print(
+                  "PRODUCTION_SYNC_COMPRAS=SUCCESS "
+                  f"processed={payload.get('total_processed')} "
+                  f"errors={payload.get('total_errors')}"
+              )
+          elif status == "SKIPPED" and "lock" in str(
+              payload.get("reason") or ""
+          ).lower():
+              print("PRODUCTION_SYNC_COMPRAS=SKIPPED_ACTIVE_LOCK")
+          else:
+              raise SystemExit(
+                  f"PRODUCTION_SYNC_COMPRAS_UNHEALTHY status={status} "
+                  f"payload={payload}"
+              )
+          PY

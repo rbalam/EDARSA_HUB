@@ -439,16 +439,22 @@ class SchedulerManager:
         finally:
             await lock.release()
     
-    async def _run_sync_compras_job(self):
-        """Wrapper async para sincronización canónica de Compras."""
+    async def _run_sync_compras_job(self) -> Dict[str, Any]:
+        """Wrapper async para sincronización canónica de Compras.
+
+        Devuelve el resultado real del job para que callers externos y
+        diagnósticos no confundan una ejecución bloqueada con éxito.
+        """
         logger.warning("[SYNC_COMPRAS] Ejecución solicitada por scheduler")
         job_config = self.config.jobs.get("sync_compras")
         if not job_config or not job_config.enabled:
             logger.debug("[SYNC_COMPRAS] Deshabilitado por configuración")
-            return
+            return {
+                "status": "DISABLED",
+                "reason": "scheduler_config",
+            }
 
         try:
-            import asyncio
             result = await run_sync_compras_job()
             logger.warning(
                 "[SYNC_COMPRAS] Finalizado: status=%s procesados=%s errores=%s",
@@ -456,8 +462,13 @@ class SchedulerManager:
                 result.get("total_processed"),
                 result.get("total_errors"),
             )
+            return result
         except Exception as e:
             logger.error(f"[SYNC_COMPRAS] Error: {e}")
+            return {
+                "status": "FAILED",
+                "reason": "wrapper_exception",
+            }
 
     async def _run_sync_cxp_facturas_job(self):
         """Wrapper async: sincroniza Cuentas por Pagar hacia dbo.Finanzas_CxP_Sync (canónico)."""
@@ -1984,8 +1995,17 @@ class SchedulerManager:
             await self._run_sync_propinas_tpv_incremental_job()
             return {"status": "executed", "job_id": job_id}
         elif job_id == "sync_compras":
-            await self._run_sync_compras_job()
-            return {"status": "executed", "job_id": job_id}
+            result = await self._run_sync_compras_job()
+            if not isinstance(result, dict):
+                return {
+                    "status": "error",
+                    "job_id": job_id,
+                    "message": "SYNC_COMPRAS_RESULT_INVALID",
+                }
+            return {
+                "job_id": job_id,
+                **result,
+            }
         elif job_id == "sync_cxp_facturas":
             await self._run_sync_cxp_facturas_job()
             return {"status": "executed", "job_id": job_id}

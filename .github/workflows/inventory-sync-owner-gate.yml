@@ -1,0 +1,84 @@
+name: Inventory Sync External Owner Gate
+
+on:
+  pull_request:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - "backend/core/scheduler/scheduler_manager.py"
+      - "backend/modules/scheduler_trigger_inventarios/**"
+      - "backend/server.py"
+      - "backend/tests/test_inventory_scheduler_trigger.py"
+      - "backend/tests/test_sync_compras_run_job_now_status.py"
+      - ".github/workflows/prod-sync-inventarios-trigger.yml"
+      - ".github/workflows/inventory-sync-owner-gate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory-owner-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-inventory-owner.txt
+          python -m pip install -r /tmp/requirements-inventory-owner.txt
+
+      - name: Compile inventory owner surface
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          python -m py_compile \
+            backend/core/scheduler/scheduler_manager.py \
+            backend/modules/scheduler_trigger_inventarios/routes.py \
+            backend/tests/test_inventory_scheduler_trigger.py \
+            backend/tests/test_sync_compras_run_job_now_status.py
+
+      - name: Run inventory owner tests
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          python -m pytest -q --tb=short \
+            tests/test_inventory_scheduler_trigger.py \
+            tests/test_sync_compras_run_job_now_status.py
+
+      - name: Protect commercial synchronizers
+        run: |
+          set -euo pipefail
+          git diff --name-only origin/Edarsahub_Desarrollo...HEAD > /tmp/inventory-owner-files.txt
+          cat /tmp/inventory-owner-files.txt
+
+          forbidden=(
+            "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py"
+            "backend/core/scheduler/jobs/sync_comercial_v2_job.py"
+            "backend/modules/comercial_v2/"
+          )
+
+          for path in "${forbidden[@]}"; do
+            if grep -Fxq "$path" /tmp/inventory-owner-files.txt; then
+              echo "FORBIDDEN_COMMERCIAL_CHANGE=$path"
+              exit 1
+            fi
+          done
+
+          if grep -Eq '^backend/modules/comercial_v2/' /tmp/inventory-owner-files.txt; then
+            echo "FORBIDDEN_COMMERCIAL_MODULE_CHANGE"
+            exit 1
+          fi
+
+          echo "COMMERCIAL_SYNCHRONIZERS_UNTOUCHED=PASS"
