@@ -4,19 +4,19 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "925cae19999bae4088641f555683a7118747fee4",
-  "generated_at_utc": "2026-10-21T00:17:48Z",
+  "generated_at_utc": "2026-10-21T00:19:08Z",
   "history": {
     "done_total_local": 1513,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1276,
-    "results_total_local": 2558
+    "rejected_total_local": 1277,
+    "results_total_local": 2559
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 673,
+      "age_seconds": 752,
       "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R1-20261020",
       "reasons": [
         "ACTION_3_SOURCE_SHA256_REQUIRED_OR_INVALID",
@@ -26,14 +26,20 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 971,
+      "age_seconds": 1051,
       "job_id": "SERVIDORES6-API-CONNECTIONS-DECOUPLE-LEGACY-SOLO-VENTAS-R3-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 371,
+      "age_seconds": 450,
       "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R2-20261020",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 61,
+      "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R3-20261020",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -46,16 +52,16 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "remote_development_sha": "925cae19999bae4088641f555683a7118747fee4",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-21T00:17:39Z",
-    "last_receive_utc": "2026-10-21T00:17:46Z",
-    "last_terminal_utc": "2026-10-21T00:11:37Z",
-    "pid": "123590",
+    "last_cycle_utc": "2026-10-21T00:19:01Z",
+    "last_receive_utc": "2026-10-21T00:18:58Z",
+    "last_terminal_utc": "2026-10-21T00:18:06Z",
+    "pid": "140053",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "1aa0273f9ae1d36d83e9243634c50fe2742009be",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
