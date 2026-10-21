@@ -1,0 +1,23 @@
+{
+  "base_sha": "89635a525efa448dec9222f7d1397d73b0e89265",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:REPLACE_COUNT_MISMATCH:backend/tests/test_worker_named_readonly_audit_profiles.py:expected=1:actual=0"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-21T01:58:51Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES6-CHAPUR-UPSTREAM-SQL-CONFIG-SHAPE-PROFILE-R1-20261021",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-21T01:59:47Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-21T01:58:47Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
