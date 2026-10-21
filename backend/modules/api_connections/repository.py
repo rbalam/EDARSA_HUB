@@ -128,7 +128,6 @@ def _sql_row_to_api_dict(row: Dict) -> Dict:
         'servidor_padre': row.get('host', ''),
         'servidor_padre_id': row.get('empresa_id', ''),
         'sucursal_destino': row.get('database_name', ''),
-        'hora_replica': row.get('port', 4),  # Reutilizado para hora de réplica
         'solo_ventas_dia': bool(row.get('solo_ventas_dia', False)),
         'queries_configured': any(
             bool(str(row.get(field) or '').strip())
@@ -394,7 +393,6 @@ async def update_api_connection(api_id: str, data: Dict, updated_by: str = "syst
         'servidor_padre',
         'servidor_padre_id',
         'sucursal_destino',
-        'hora_replica',
     ):
         if legacy_field in data:
             logging.warning(
@@ -652,6 +650,75 @@ def get_api_connection_with_decrypted_key(api_id: str) -> Optional[Dict]:
     except Exception as e:
         logging.error(f"[API_CONNECTIONS] Error obteniendo conexión con key: {e}")
         return None
+
+
+
+
+def _default_api_replication_policy() -> Dict[str, Any]:
+    from core.cerebro import HORA_REPLICA_DEFAULT, TIMEZONE_MEXICO
+
+    return {
+        "enabled": True,
+        "cutoff_time": f"{int(HORA_REPLICA_DEFAULT):02d}:00",
+        "timezone": TIMEZONE_MEXICO,
+    }
+
+
+def normalize_api_replication_policy(policy: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    from zoneinfo import ZoneInfo
+
+    defaults = _default_api_replication_policy()
+    raw = dict(policy or {})
+
+    enabled = bool(raw.get("enabled", defaults["enabled"]))
+    cutoff_time = str(raw.get("cutoff_time") or defaults["cutoff_time"]).strip()
+    timezone_name = str(raw.get("timezone") or defaults["timezone"]).strip()
+
+    try:
+        datetime.strptime(cutoff_time, "%H:%M")
+    except ValueError as exc:
+        raise ValueError("REPLICATION_CUTOFF_TIME_INVALID") from exc
+
+    try:
+        ZoneInfo(timezone_name)
+    except Exception as exc:
+        raise ValueError("REPLICATION_TIMEZONE_INVALID") from exc
+
+    return {
+        "enabled": enabled,
+        "cutoff_time": cutoff_time,
+        "timezone": timezone_name,
+    }
+
+
+def get_api_replication_policy(api_id: str) -> Dict[str, Any]:
+    api = get_api_connection_sql(api_id)
+    if not api:
+        raise ValueError("API_LOCAL_NOT_FOUND")
+
+    config = api.get("config") if isinstance(api.get("config"), dict) else {}
+    return normalize_api_replication_policy(config.get("replication_policy"))
+
+
+async def update_api_replication_policy(
+    api_id: str,
+    policy: Dict[str, Any],
+    updated_by: str = "system",
+) -> Dict[str, Any]:
+    existing = get_api_connection_sql(api_id)
+    if not existing:
+        raise ValueError("API_LOCAL_NOT_FOUND")
+
+    normalized = normalize_api_replication_policy(policy)
+    config = dict(existing.get("config") or {})
+    config["replication_policy"] = normalized
+
+    await update_api_connection(
+        api_id,
+        {"config": config},
+        updated_by=updated_by,
+    )
+    return normalized
 
 
 async def get_api_connection_by_id_full(api_id: str) -> Optional[Dict]:

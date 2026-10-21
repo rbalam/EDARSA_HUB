@@ -192,6 +192,19 @@ const Servidores = () => {
   const [apiAssignments, setApiAssignments] = useState([]);
   const [selectedApiUnitId, setSelectedApiUnitId] = useState('');
   const [loadingApiAssignments, setLoadingApiAssignments] = useState(false);
+  const [apiReplicationPolicy, setApiReplicationPolicy] = useState({
+    enabled: true,
+    cutoff_time: '',
+    timezone: ''
+  });
+  const [savingApiReplicationPolicy, setSavingApiReplicationPolicy] = useState(false);
+  const [apiTimezoneOptions] = useState(() => {
+    try {
+      return Intl.supportedValuesOf('timeZone') || [];
+    } catch {
+      return [];
+    }
+  });
   
   // Estado para sección de consulta de prueba en el modal de conexión API
   // CONSULTA DEFAULT para nuevas conexiones: prueba técnica básica
@@ -1362,6 +1375,39 @@ const Servidores = () => {
     }
   };
 
+  const loadApiReplicationPolicy = async (apiId) => {
+    try {
+      const response = await api.get(`/api-connections/${apiId}/replication-policy`);
+      const policy = response.data?.data || {};
+      setApiReplicationPolicy({
+        enabled: policy.enabled !== false,
+        cutoff_time: policy.cutoff_time || '',
+        timezone: policy.timezone || ''
+      });
+    } catch (error) {
+      console.error('Error cargando política de réplica:', error);
+      toast.error('No se pudo cargar la política de réplica');
+    }
+  };
+
+  const saveApiReplicationPolicy = async () => {
+    if (!editingApi?.id) return;
+    setSavingApiReplicationPolicy(true);
+    try {
+      const response = await api.put(
+        `/api-connections/${editingApi.id}/replication-policy`,
+        apiReplicationPolicy
+      );
+      setApiReplicationPolicy(response.data?.data || apiReplicationPolicy);
+      toast.success('Política de réplica guardada');
+    } catch (error) {
+      console.error('Error guardando política de réplica:', error);
+      toast.error(error.response?.data?.detail || 'No se pudo guardar la política de réplica');
+    } finally {
+      setSavingApiReplicationPolicy(false);
+    }
+  };
+
   const openEditApi = async (apiConn) => {
     try {
       const response = await api.get(`/api-connections/${apiConn.id}`);
@@ -1376,7 +1422,10 @@ const Servidores = () => {
         visible_en_operaciones: detail.visible_en_operaciones === true
       });
       setSelectedApiUnitId('');
-      await loadApiAssignments(apiConn.id);
+      await Promise.all([
+        loadApiAssignments(apiConn.id),
+        loadApiReplicationPolicy(apiConn.id)
+      ]);
       setQueryTestData({
         tipo_uso: detail.tipo_uso || 'Otro',
         nombre_consulta: detail.nombre_consulta || '',
@@ -1907,6 +1956,11 @@ const Servidores = () => {
                 setApiOperationalUnits([]);
                 setApiAssignments([]);
                 setSelectedApiUnitId('');
+                setApiReplicationPolicy({
+                  enabled: true,
+                  cutoff_time: '',
+                  timezone: ''
+                });
                 setQueryTestData({
                   tipo_uso: 'Otro',
                   nombre_consulta: '',
@@ -2950,6 +3004,97 @@ const Servidores = () => {
               ) : (
                 <p className="text-xs text-zinc-500">
                   Guarda primero la conexión. Después podrás asignarla a una o varias unidades desde este mismo formulario.
+                </p>
+              )}
+            </div>
+
+            <div className="border border-zinc-200 rounded-md p-3 space-y-3">
+              <div>
+                <Label>Política de réplica (opcional)</Label>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Define cuándo esta fuente local deja de usarse porque sus datos ya fueron replicados a nube.
+                </p>
+              </div>
+
+              {editingApi ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="api_replication_enabled">Réplica a nube</Label>
+                    <Switch
+                      id="api_replication_enabled"
+                      checked={apiReplicationPolicy.enabled}
+                      onCheckedChange={(checked) => setApiReplicationPolicy({
+                        ...apiReplicationPolicy,
+                        enabled: checked
+                      })}
+                    />
+                  </div>
+
+                  {apiReplicationPolicy.enabled && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="api_replication_cutoff">Hora de réplica</Label>
+                        <Input
+                          id="api_replication_cutoff"
+                          type="time"
+                          value={apiReplicationPolicy.cutoff_time}
+                          onChange={(e) => setApiReplicationPolicy({
+                            ...apiReplicationPolicy,
+                            cutoff_time: e.target.value
+                          })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Zona horaria</Label>
+                        <Select
+                          value={apiReplicationPolicy.timezone}
+                          onValueChange={(value) => setApiReplicationPolicy({
+                            ...apiReplicationPolicy,
+                            timezone: value
+                          })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar zona..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {[
+                              ...(apiReplicationPolicy.timezone &&
+                              !apiTimezoneOptions.includes(apiReplicationPolicy.timezone)
+                                ? [apiReplicationPolicy.timezone]
+                                : []),
+                              ...apiTimezoneOptions
+                            ].map((timezoneName) => (
+                              <SelectItem key={timezoneName} value={timezoneName}>
+                                {timezoneName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={saveApiReplicationPolicy}
+                      disabled={
+                        savingApiReplicationPolicy ||
+                        (apiReplicationPolicy.enabled &&
+                          (!apiReplicationPolicy.cutoff_time || !apiReplicationPolicy.timezone))
+                      }
+                    >
+                      {savingApiReplicationPolicy && (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      )}
+                      Guardar política
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-zinc-500">
+                  Guarda primero la conexión. Después podrás definir su horario y zona horaria de réplica.
                 </p>
               )}
             </div>

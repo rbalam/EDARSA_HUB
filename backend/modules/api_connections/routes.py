@@ -27,7 +27,9 @@ from .repository import (
     delete_api_connection,
     sync_all_to_mongo_cache,
     test_api_connection_health,
-    check_duplicate_api
+    check_duplicate_api,
+    get_api_replication_policy,
+    update_api_replication_policy,
 )
 from .assignment_repository import (
     list_api_operational_assignments,
@@ -72,6 +74,12 @@ class ApiOperationalAssignmentRequest(BaseModel):
     nombre_sucursal_sistema: Optional[str] = None
     prioridad: int = Field(1, ge=1)
     es_principal: bool = True
+
+
+class ApiReplicationPolicyRequest(BaseModel):
+    enabled: bool
+    cutoff_time: str = Field(..., pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    timezone: str = Field(..., min_length=1)
 
 
 class TestConnectionRequest(BaseModel):
@@ -223,6 +231,48 @@ async def remove_api_assignment(
         rol_conexion=rol_conexion,
     )
     return {"success": True, "changed": changed}
+
+
+# ============================================================================
+# POLITICA DE REPLICA API_LOCAL
+# ============================================================================
+
+@router.get("/{api_id}/replication-policy")
+async def get_replication_policy(
+    api_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    get_current_user(credentials)
+    try:
+        return {
+            "success": True,
+            "data": get_api_replication_policy(api_id),
+            "source": "API_CONNECTION_CONFIG",
+        }
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Conexión API no encontrada")
+
+
+@router.put("/{api_id}/replication-policy")
+async def put_replication_policy(
+    api_id: str,
+    data: ApiReplicationPolicyRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    _admin: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
+):
+    user = get_current_user(credentials)
+    try:
+        policy = await update_api_replication_policy(
+            api_id,
+            data.model_dump(),
+            updated_by=user.get("email", "system"),
+        )
+        return {"success": True, "data": policy}
+    except ValueError as exc:
+        code = str(exc)
+        if code == "API_LOCAL_NOT_FOUND":
+            raise HTTPException(status_code=404, detail="Conexión API no encontrada")
+        raise HTTPException(status_code=400, detail="Política de réplica inválida")
 
 
 # ============================================================================
