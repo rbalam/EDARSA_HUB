@@ -49,11 +49,7 @@ class ApiConnectionCreate(BaseModel):
     url: str = Field(..., description="URL del endpoint API (único)")
     api_key: Optional[str] = Field(None, description="API Key para autenticación")
     tipo: str = Field("MPRO", description="Tipo de sistema (MPRO, SoftRestaurant)")
-    servidor_padre: Optional[str] = Field(None, description="Host del servidor padre en nube")
-    servidor_padre_id: Optional[str] = Field(None, description="ID del servidor padre")
-    sucursal_destino: Optional[str] = Field(None, description="Nombre de la sucursal destino")
-    hora_replica: str = Field("04:00", description="Hora de réplica diaria (HH:MM)")
-    solo_ventas_dia: bool = Field(True, description="Solo obtener ventas del día actual")
+    solo_ventas_dia: bool = Field(True, description="Compatibilidad de lectura; la relación operativa se administra por assignments")
     activo: bool = Field(True, description="Si la conexión está activa")
     visible_en_operaciones: bool = Field(False, description="Visible en módulo Operaciones")
 
@@ -63,10 +59,6 @@ class ApiConnectionUpdate(BaseModel):
     url: Optional[str] = None
     api_key: Optional[str] = None
     tipo: Optional[str] = None
-    servidor_padre: Optional[str] = None
-    servidor_padre_id: Optional[str] = None
-    sucursal_destino: Optional[str] = None
-    hora_replica: Optional[str] = None
     solo_ventas_dia: Optional[bool] = None
     activo: Optional[bool] = None
     visible_en_operaciones: Optional[bool] = None

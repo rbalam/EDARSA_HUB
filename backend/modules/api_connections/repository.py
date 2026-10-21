@@ -292,14 +292,9 @@ async def create_api_connection(data: Dict, created_by: str = "system") -> Dict:
     except Exception as e:
         logging.warning(f"[API_CONNECTIONS] No se pudo cifrar API key: {e}")
     
-    # 3. Preparar datos
-    hora_replica = data.get('hora_replica', '04:00')
-    if isinstance(hora_replica, str):
-        try:
-            hora_replica = int(hora_replica.split(':')[0])
-        except Exception:
-            hora_replica = 4
-    
+    # 3. Preparar datos.
+    # API_LOCAL no reutiliza host/port/database_name/EmpresaID para semánticas
+    # de negocio. La asignación operativa vive en Sistema_EmpresasServidores.
     config_json = json.dumps(data.get('config') or {})
     
     # 4. INSERT en EDARSAHUB SQL
@@ -315,15 +310,15 @@ async def create_api_connection(data: Dict, created_by: str = "system") -> Dict:
         N'{_escape_sql(data.get("name", ""))}',
         N'{_escape_sql(data.get("tipo", "MPRO"))}',
         'API_LOCAL',
-        N'{_escape_sql(data.get("servidor_padre", ""))}',
-        {hora_replica},
-        N'{_escape_sql(data.get("sucursal_destino", ""))}',
+        NULL,
+        NULL,
+        NULL,
         N'{_escape_sql(data.get("url", ""))}',
         N'{_escape_sql(api_key_encrypted)}',
         {1 if data.get("activo", True) else 0},
         {1 if data.get("visible_en_operaciones", False) else 0},
         1, 1, 1,
-        N'{_escape_sql(data.get("servidor_padre_id", ""))}',
+        NULL,
         N'{_escape_sql(config_json)}',
         0,
         GETDATE(), GETDATE(),
@@ -395,16 +390,18 @@ async def update_api_connection(api_id: str, data: Dict, updated_by: str = "syst
         set_parts.append(f"api_key_encrypted = N'{_escape_sql(api_key_encrypted)}'")
     if 'tipo' in data:
         set_parts.append(f"system_type = N'{_escape_sql(data['tipo'])}'")
-    if 'servidor_padre' in data:
-        set_parts.append(f"host = N'{_escape_sql(data['servidor_padre'])}'")
-    if 'servidor_padre_id' in data:
-        set_parts.append(f"empresa_id = N'{_escape_sql(data['servidor_padre_id'])}'")
-    if 'sucursal_destino' in data:
-        set_parts.append(f"database_name = N'{_escape_sql(data['sucursal_destino'])}'")
-    if 'hora_replica' in data:
-        hr = data['hora_replica']
-        hr_int = int(hr.split(':')[0]) if isinstance(hr, str) else hr
-        set_parts.append(f"port = {hr_int}")
+    for legacy_field in (
+        'servidor_padre',
+        'servidor_padre_id',
+        'sucursal_destino',
+        'hora_replica',
+    ):
+        if legacy_field in data:
+            logging.warning(
+                "[API_CONNECTIONS] %s ignorado: la relación operativa "
+                "se administra mediante Sistema_EmpresasServidores",
+                legacy_field,
+            )
     if 'solo_ventas_dia' in data:
         logging.warning(
             "[API_CONNECTIONS] solo_ventas_dia ignorado como campo legacy; "

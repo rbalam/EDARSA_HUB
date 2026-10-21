@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import QueryConfigWizard from '@/components/QueryConfigWizard';
 import UniversalQueryTester from '@/components/UniversalQueryTester';
 import { formatNombreSucursal } from '@/lib/formatSucursal';
+import { fetchUnidadesNegocio } from '@/services/unidadesNegocioService';
 
 // Helper: Renderiza indicador de estado del servidor
 const StatusIndicator = ({ pingStatus }) => {
@@ -184,13 +185,13 @@ const Servidores = () => {
     url: '',
     api_key: '',
     tipo: 'MPRO',
-    servidor_padre: '',
-    servidor_padre_id: '',
-    sucursal_destino: '',
-    hora_replica: '04:00',
     activo: true,
     visible_en_operaciones: false
   });
+  const [apiOperationalUnits, setApiOperationalUnits] = useState([]);
+  const [apiAssignments, setApiAssignments] = useState([]);
+  const [selectedApiUnitId, setSelectedApiUnitId] = useState('');
+  const [loadingApiAssignments, setLoadingApiAssignments] = useState(false);
   
   // Estado para sección de consulta de prueba en el modal de conexión API
   // CONSULTA DEFAULT para nuevas conexiones: prueba técnica básica
@@ -368,14 +369,7 @@ const Servidores = () => {
     try {
       const response = await api.get('/api-connections');
       if (response.data.success) {
-        // Formatear hora_replica a string "HH:00"
-        const formatted = response.data.data.map(conn => ({
-          ...conn,
-          hora_replica: typeof conn.hora_replica === 'number' 
-            ? `${String(conn.hora_replica).padStart(2, '0')}:00`
-            : conn.hora_replica
-        }));
-        setApiConnections(formatted);
+        setApiConnections(response.data.data || []);
       }
     } catch (error) {
       console.error('Error cargando conexiones API:', error);
@@ -919,7 +913,6 @@ const Servidores = () => {
           activo: conn.active,
           visible_en_operaciones: conn.visible,
           url: conn.api_url,
-          servidor_padre: conn.host,
           sucursales: conn.scope?.sucursales || []
         }));
 
@@ -1316,6 +1309,59 @@ const Servidores = () => {
     }
   };
 
+  const loadApiAssignments = async (apiId) => {
+    setLoadingApiAssignments(true);
+    try {
+      const [units, assignmentsResponse] = await Promise.all([
+        fetchUnidadesNegocio(),
+        api.get(`/api-connections/${apiId}/assignments`)
+      ]);
+      setApiOperationalUnits(units || []);
+      setApiAssignments(assignmentsResponse.data?.data || []);
+    } catch (error) {
+      console.error('Error cargando asignaciones operativas:', error);
+      setApiOperationalUnits([]);
+      setApiAssignments([]);
+      toast.error('No se pudieron cargar las asignaciones operativas');
+    } finally {
+      setLoadingApiAssignments(false);
+    }
+  };
+
+  const addApiAssignment = async () => {
+    if (!editingApi?.id || !selectedApiUnitId) return;
+    try {
+      await api.post(`/api-connections/${editingApi.id}/assignments`, {
+        empresa_id: Number(selectedApiUnitId),
+        rol_conexion: 'VENTAS_DIA_API_LOCAL',
+        prioridad: 1,
+        es_principal: true
+      });
+      setSelectedApiUnitId('');
+      await loadApiAssignments(editingApi.id);
+      await loadServers();
+      toast.success('Unidad asignada');
+    } catch (error) {
+      console.error('Error asignando unidad:', error);
+      toast.error(error.response?.data?.detail || 'No se pudo asignar la unidad');
+    }
+  };
+
+  const removeApiAssignment = async (assignment) => {
+    if (!editingApi?.id) return;
+    try {
+      await api.delete(
+        `/api-connections/${editingApi.id}/assignments/${assignment.empresa_id}/${assignment.rol_conexion}`
+      );
+      await loadApiAssignments(editingApi.id);
+      await loadServers();
+      toast.success('Unidad desasignada');
+    } catch (error) {
+      console.error('Error desasignando unidad:', error);
+      toast.error(error.response?.data?.detail || 'No se pudo desasignar la unidad');
+    }
+  };
+
   const openEditApi = async (apiConn) => {
     try {
       const response = await api.get(`/api-connections/${apiConn.id}`);
@@ -1326,13 +1372,11 @@ const Servidores = () => {
         url: detail.url || apiConn.url || '',
         api_key: '',
         tipo: detail.tipo || apiConn.tipo || '',
-        servidor_padre: detail.servidor_padre || apiConn.servidor_padre || '',
-        servidor_padre_id: detail.servidor_padre_id || '',
-        sucursal_destino: detail.sucursal_destino || apiConn.sucursal_destino || '',
-        hora_replica: detail.hora_replica || apiConn.hora_replica || '04:00',
         activo: detail.activo !== false,
         visible_en_operaciones: detail.visible_en_operaciones === true
       });
+      setSelectedApiUnitId('');
+      await loadApiAssignments(apiConn.id);
       setQueryTestData({
         tipo_uso: detail.tipo_uso || 'Otro',
         nombre_consulta: detail.nombre_consulta || '',
@@ -1857,12 +1901,12 @@ const Servidores = () => {
                   url: '',
                   api_key: '',
                   tipo: 'MPRO',
-                  servidor_padre: '',
-                  sucursal_destino: '',
-                  hora_replica: '04:00',
                   activo: true,
                   visible_en_operaciones: false
                 });
+                setApiOperationalUnits([]);
+                setApiAssignments([]);
+                setSelectedApiUnitId('');
                 setQueryTestData({
                   tipo_uso: 'Otro',
                   nombre_consulta: '',
@@ -1939,8 +1983,7 @@ const Servidores = () => {
                       <th className="px-3 py-2 text-left font-medium text-zinc-600">Nombre</th>
                       <th className="px-3 py-2 text-left font-medium text-zinc-600">Sistema</th>
                       <th className="px-3 py-2 text-left font-medium text-zinc-600">URL/Host</th>
-                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Sucursal</th>
-                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Hora Réplica</th>
+                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Asignación</th>
                       <th className="px-3 py-2 text-left font-medium text-zinc-600">Homologación</th>
                       <th className="px-3 py-2 text-left font-medium text-zinc-600">Activo</th>
                       <th className="px-3 py-2 text-right font-medium text-zinc-600">Acciones</th>
@@ -1988,10 +2031,12 @@ const Servidores = () => {
                         <td className="px-3 py-2 text-zinc-600 text-xs font-mono max-w-40 truncate" title={apiConn.url}>
                           {apiConn.url ? apiConn.url.replace(/^https?:\/\//, '').substring(0, 30) + (apiConn.url.length > 30 ? '...' : '') : '-'}
                         </td>
-                        {/* Sucursal */}
-                        <td className="px-3 py-2 text-zinc-600">{apiConn.sucursal_destino || '-'}</td>
-                        {/* Hora Réplica */}
-                        <td className="px-3 py-2 text-zinc-600">{apiConn.hora_replica || '04:00'}</td>
+                        {/* Asignación operativa */}
+                        <td className="px-3 py-2 text-zinc-600">
+                          {apiConn.scope?.unidad_negocio_ids?.length
+                            ? `${apiConn.scope.unidad_negocio_ids.length} unidad(es)`
+                            : 'Sin asignación'}
+                        </td>
                         {/* Homologación */}
                         <td className="px-3 py-2">
                           {renderHomologationBadge(apiConn)}
@@ -2119,12 +2164,12 @@ const Servidores = () => {
                       <span className="font-mono text-zinc-900 text-xs truncate max-w-[180px]">{apiConn.url}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-zinc-600">Servidor Padre:</span>
-                      <span className="text-zinc-900">{apiConn.servidor_padre}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-zinc-600">Sucursal Destino:</span>
-                      <span className="font-medium text-zinc-900">{apiConn.sucursal_destino}</span>
+                      <span className="text-zinc-600">Asignación operativa:</span>
+                      <span className="text-zinc-900">
+                        {apiConn.scope?.unidad_negocio_ids?.length
+                          ? `${apiConn.scope.unidad_negocio_ids.length} unidad(es)`
+                          : 'Sin asignación'}
+                      </span>
                     </div>
                     
                     <div className="pt-2 border-t border-zinc-100">
@@ -2139,16 +2184,6 @@ const Servidores = () => {
                       )}
                     </div>
 
-                    <div className="pt-2 border-t border-zinc-100">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-zinc-500 flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Hora de Réplica:
-                        </span>
-                        <span className="text-xs font-mono bg-zinc-100 px-2 py-0.5 rounded">{apiConn.hora_replica}</span>
-                      </div>
-                    </div>
-                    
                     <div className="pt-2 border-t border-zinc-100">
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-zinc-500">Solo Ventas del Día:</span>
@@ -2260,9 +2295,7 @@ const Servidores = () => {
                           name: apiConn.name,
                           system_type: apiConn.tipo,
                           tipo_conexion: 'API_LOCAL',
-                          host: apiConn.servidor_padre,
-                          port: 0,
-                          database: apiConn.sucursal_destino,
+                          url: apiConn.url,
                           queries_configured: true,
                           is_api_connection: true
                         });
@@ -2312,9 +2345,7 @@ const Servidores = () => {
                             name: apiConn.name,
                             system_type: apiConn.tipo,
                             tipo_conexion: 'API_LOCAL',
-                            host: apiConn.servidor_padre,
-                            port: 0,
-                            database: apiConn.sucursal_destino,
+                            url: apiConn.url,
                             is_api_connection: true,
                             // Copiar filtros existentes si los hay
                             tipos_movimiento: apiConn.config?.tipos_movimiento || [],
@@ -2834,57 +2865,98 @@ const Servidores = () => {
                 </Select>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="api_hora">Hora de Réplica</Label>
-                <Input
-                  id="api_hora"
-                  type="time"
-                  value={apiFormData.hora_replica}
-                  onChange={(e) => setApiFormData({...apiFormData, hora_replica: e.target.value})}
-                />
-              </div>
             </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="api_servidor">Servidor Padre (Nube)</Label>
-                <Select 
-                  value={apiFormData.servidor_padre} 
-                  onValueChange={(value) => setApiFormData({...apiFormData, servidor_padre: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {servers.map(s => (
-                      <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+
+            <div className="border border-zinc-200 rounded-md p-3 space-y-3">
+              <div>
+                <Label>Asignación operativa (opcional)</Label>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Una conexión puede quedar sin asignación si es de pruebas o infraestructura.
+                  Las relaciones operativas se guardan en el catálogo canónico de unidades.
+                </p>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="api_sucursal">Sucursal Destino</Label>
-                <Input
-                  id="api_sucursal"
-                  value={apiFormData.sucursal_destino}
-                  onChange={(e) => setApiFormData({...apiFormData, sucursal_destino: e.target.value})}
-                  placeholder="Querétaro"
-                />
-              </div>
+
+              {editingApi ? (
+                <>
+                  {loadingApiAssignments ? (
+                    <div className="flex items-center gap-2 text-sm text-zinc-500">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Cargando asignaciones...
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex gap-2">
+                        <Select
+                          value={selectedApiUnitId}
+                          onValueChange={setSelectedApiUnitId}
+                        >
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Seleccionar unidad..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {apiOperationalUnits
+                              .filter(unit => !apiAssignments.some(
+                                assignment => String(assignment.empresa_id) === String(unit.id)
+                              ))
+                              .map(unit => (
+                                <SelectItem key={unit.id} value={String(unit.id)}>
+                                  {unit.nombre || unit.codigo || unit.id}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={addApiAssignment}
+                          disabled={!selectedApiUnitId}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Asignar
+                        </Button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {apiAssignments.length === 0 ? (
+                          <p className="text-xs text-zinc-500">Sin asignación operativa.</p>
+                        ) : apiAssignments.map(assignment => (
+                          <div
+                            key={`${assignment.empresa_id}-${assignment.rol_conexion}`}
+                            className="flex items-center justify-between rounded border border-zinc-200 px-3 py-2"
+                          >
+                            <div>
+                              <p className="text-sm font-medium">
+                                {assignment.empresa_nombre || assignment.empresa_codigo || assignment.empresa_id}
+                              </p>
+                              <p className="text-xs text-zinc-500">
+                                {assignment.rol_conexion}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeApiAssignment(assignment)}
+                              title="Quitar asignación"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <p className="text-xs text-zinc-500">
+                  Guarda primero la conexión. Después podrás asignarla a una o varias unidades desde este mismo formulario.
+                </p>
+              )}
             </div>
-            
+
             <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
               <p className="text-xs text-blue-900">
-                <strong>Ventas del día:</strong> esta capacidad se deriva del rol canónico VENTAS_DIA_API_LOCAL asociado a la conexión.
-              </p>
-            </div>
-            
-            <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
-              <p className="text-xs text-amber-900">
-                <strong>Nota:</strong> Esta conexión obtiene ventas del día que se suman a las del servidor padre. 
-                Por la noche (a las {apiFormData.hora_replica || '04:00'}) los datos se replican al servidor en la nube, 
-                momento en que esta API deja de sumar para evitar duplicación.
+                <strong>Ventas del día:</strong> se habilita mediante la relación canónica VENTAS_DIA_API_LOCAL; no depende de host, puerto ni nombre de sucursal.
               </p>
             </div>
             
