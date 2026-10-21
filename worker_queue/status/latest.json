@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "fd257af698c0b833cd219b0d02fcc000f47ef9ad",
-  "generated_at_utc": "2026-10-21T06:21:58Z",
+  "generated_at_utc": "2026-10-21T06:23:33Z",
   "history": {
     "done_total_local": 1525,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3254,
+      "age_seconds": 3349,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-GATE1-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2333,
+      "age_seconds": 2428,
       "job_id": "BOS-USUARIOS-RBAC-IMPLEMENTATION-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2971,
+      "age_seconds": 3066,
       "job_id": "SERVIDORES6-API-REPLICATION-POLICY-CANONICAL-R2-20261021",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2344,
+      "age_seconds": 2439,
       "job_id": "SERVIDORES6-API-REPLICATION-POLICY-CANONICAL-R3-20261021",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 20,
+      "age_seconds": 115,
       "job_id": "SERVIDORES7-API-REPLICATION-POLICY-CANONICAL-R4-20261021",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": "SERVIDORES7-API-REPLICATION-POLICY-CANONICAL-R4-20261021",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-21T06:21:56Z",
-    "last_receive_utc": "2026-10-21T06:21:51Z",
+    "last_cycle_utc": "2026-10-21T06:23:21Z",
+    "last_receive_utc": "2026-10-21T06:23:16Z",
     "last_terminal_utc": "2026-10-21T06:21:38Z",
     "pid": "287",
     "runtime_fingerprint": {
