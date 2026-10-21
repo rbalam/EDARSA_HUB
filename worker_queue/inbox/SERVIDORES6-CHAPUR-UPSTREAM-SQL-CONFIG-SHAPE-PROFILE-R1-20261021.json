@@ -1,0 +1,64 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-CHAPUR-UPSTREAM-SQL-CONFIG-SHAPE-PROFILE-R1-20261021",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "89635a525efa448dec9222f7d1397d73b0e89265",
+  "objective": "Agregar exclusivamente un perfil READ_ONLY sanitizado para determinar si CHAPUR BACKOFFICE y NORTE contienen configuracion SQL directa en EDARSAHUB o solo configuracion API. Exponer unicamente booleanos de presencia para host, port, database, username, password, api_url y api_key; no devolver valores, secretos ni URLs. No DML ni Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "Conexiones y Comunicaciones",
+    "chat": "Menu Servidores 6"
+  },
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/readonly_audit_profiles.py",
+      "old": "SQL_RUNTIME_PRINCIPAL_PERMISSIONS_V1 = \"sql_runtime_principal_permissions_v1\"\n\n_ALLOWED = {",
+      "new": "SQL_RUNTIME_PRINCIPAL_PERMISSIONS_V1 = \"sql_runtime_principal_permissions_v1\"\nCHAPUR_UPSTREAM_SQL_CONFIG_SHAPE_V1 = \"chapur_upstream_sql_config_shape_v1\"\n\n_ALLOWED = {",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/readonly_audit_profiles.py",
+      "old": "    SQL_RUNTIME_PRINCIPAL_PERMISSIONS_V1,\n}",
+      "new": "    SQL_RUNTIME_PRINCIPAL_PERMISSIONS_V1,\n    CHAPUR_UPSTREAM_SQL_CONFIG_SHAPE_V1,\n}",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/readonly_audit_profiles.py",
+      "old": "def build_readonly_audit_checks(profile: str) -> List[Dict[str, Any]]:\n    name = str(profile or \"\").strip()\n    if name == SQL_RUNTIME_PRINCIPAL_PERMISSIONS_V1:",
+      "new": "def build_readonly_audit_checks(profile: str) -> List[Dict[str, Any]]:\n    name = str(profile or \"\").strip()\n    if name == CHAPUR_UPSTREAM_SQL_CONFIG_SHAPE_V1:\n        return [\n            {\n                \"type\": \"sql_readonly_audit\",\n                \"source\": \"EDARSAHUB\",\n                \"max_rows\": 20,\n                \"queries\": [\n                    {\n                        \"name\": \"chapur_upstream_sql_config_shape\",\n                        \"sql\": (\n                            \"SELECT CONVERT(varchar(36),sc.id) AS connection_id,sc.nombre,sc.tipo_conexion,sc.system_type,\"\n                            \"CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.host,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS host_present,\"\n                            \"CASE WHEN sc.port IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS port_present,\"\n                            \"CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.database_name,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS database_present,\"\n                            \"CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.username,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS username_present,\"\n                            \"CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.password_encrypted,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS password_present,\"\n                            \"CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.api_url,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS api_url_present,\"\n                            \"CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.api_key_encrypted,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS api_key_present \"\n                            \"FROM dbo.Servidores_Conexiones sc \"\n                            \"WHERE sc.id IN ('8CBDCC89-6495-49C3-BE9C-A965DB82C77F','D8B2D1EB-2E1F-4E43-B7D9-822BF671E315') \"\n                            \"ORDER BY sc.nombre\"\n                        ),\n                    }\n                ],\n            }\n        ]\n    if name == SQL_RUNTIME_PRINCIPAL_PERMISSIONS_V1:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_named_readonly_audit_profiles.py",
+      "old": "    assert profiles.is_allowed_readonly_audit_profile(\n        \"chapur_external_integration_readiness_v1\"\n    )",
+      "new": "    assert profiles.is_allowed_readonly_audit_profile(\n        \"chapur_external_integration_readiness_v1\"\n    )\n    assert profiles.is_allowed_readonly_audit_profile(\n        \"chapur_upstream_sql_config_shape_v1\"\n    )",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_named_readonly_audit_profiles.py"
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/readonly_audit_profiles.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
