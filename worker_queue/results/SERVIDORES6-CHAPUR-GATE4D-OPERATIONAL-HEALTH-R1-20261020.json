@@ -1,0 +1,199 @@
+{
+  "base_sha": "6b040926ce4f4abccbf4cbae206c1b49d70fc1d9",
+  "blockers": [],
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-10-21T00:49:37Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES6-CHAPUR-GATE4D-OPERATIONAL-HEALTH-R1-20261020",
+  "operation": "API_LOCAL_HEALTH_TEST",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-21T00:50:45Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "connection_id",
+              "nombre",
+              "tipo_conexion",
+              "system_type",
+              "activo",
+              "visible_en_operaciones",
+              "queries_configured",
+              "api_key_configured",
+              "password_configured",
+              "corporate_scope_configured"
+            ],
+            "name": "chapur_external_readiness",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "CHAPUR BACKOFFICE",
+                "API_LOCAL",
+                "ENTERPRISE",
+                true,
+                false,
+                true,
+                "[REDACTED]",
+                "[REDACTED]",
+                false
+              ],
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "CHAPUR NORTE",
+                "API_LOCAL",
+                "ENTERPRISE",
+                true,
+                false,
+                true,
+                "[REDACTED]",
+                "[REDACTED]",
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "connection_id",
+              "EstadoConexion",
+              "UltimoCheck",
+              "UltimaPruebaUTC",
+              "UltimoExitoUTC",
+              "UltimoErrorUTC",
+              "UltimoErrorCodigo",
+              "LatenciaMs",
+              "UltimoSyncUTC",
+              "UltimoSyncExitosoUTC",
+              "FechaActualizacionUTC"
+            ],
+            "name": "chapur_external_health",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "ERROR",
+                "2026-10-20T18:49:36.437000",
+                "2026-10-21 00:49:36.025",
+                null,
+                "2026-10-21 00:49:36.025",
+                "HTTP_500",
+                null,
+                null,
+                null,
+                "2026-10-21 00:49:36.025"
+              ],
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "ERROR",
+                "2026-10-20T18:49:20.330000",
+                "2026-10-21 00:49:19.890",
+                null,
+                "2026-10-21 00:49:19.890",
+                "HTTP_500",
+                null,
+                null,
+                null,
+                "2026-10-21 00:49:19.890"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "connection_id",
+              "nombre",
+              "system_type",
+              "queries_configured",
+              "query_ventas_present",
+              "query_ventas_json",
+              "query_ventas_validated",
+              "query_ventas_len",
+              "query_inventario_present",
+              "query_inventario_json",
+              "query_inventario_validated",
+              "query_inventario_len",
+              "query_movimientos_present",
+              "query_movimientos_json",
+              "query_movimientos_validated",
+              "query_movimientos_len"
+            ],
+            "name": "chapur_query_contract_metadata",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "CHAPUR BACKOFFICE",
+                "ENTERPRISE",
+                true,
+                false,
+                false,
+                null,
+                "0",
+                false,
+                false,
+                null,
+                "0",
+                false,
+                false,
+                null,
+                "0"
+              ],
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                true,
+                false,
+                false,
+                null,
+                "0",
+                false,
+                false,
+                null,
+                "0",
+                false,
+                false,
+                null,
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "connection_id",
+              "EmpresaID",
+              "RolConexion",
+              "NumeroSucursalSistema",
+              "Activo"
+            ],
+            "name": "chapur_connection_roles",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-21T00:49:01Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker probo exclusivamente conexiones API_LOCAL canonicas por connection_id, persistio health en la tabla existente y certifico el estado con auditorias de solo lectura. No ejecuto sync, no expuso secretos y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
