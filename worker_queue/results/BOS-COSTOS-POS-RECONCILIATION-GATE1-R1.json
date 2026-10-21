@@ -1,0 +1,517 @@
+{
+  "base_sha": "a71a5039e4e151b75f8b56296fd3f487f7352cdc",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-21T05:27:44Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-GATE1-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-21T05:28:57Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.connections.edarsahub_writer_connection",
+              "core.sql_first.db",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "serverid",
+              "unidades_negocio",
+              "unidadnegocioid"
+            ],
+            "path": "backend/modules/costos_margenes/configuracion_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_fetchone",
+              "_leer_config_empresa",
+              "_leer_config_unidad",
+              "_leer_config_usuario",
+              "guardar_configuracion_usuario",
+              "resolver_configuracion_efectiva",
+              "resolver_empresa_id_desde_unidad"
+            ],
+            "tables_referenced": [
+              "Comercial_CostosMargenesConfiguracion",
+              "Comercial_CostosMargenesConfiguracionUsuario",
+              "Sistema_Empresas",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "logging",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "serverid"
+            ],
+            "path": "backend/modules/costos_margenes/reglas_margen_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_conn",
+              "_safe_decimal",
+              "_safe_isoformat",
+              "actualizar_regla",
+              "cargar_reglas_margen_vigentes",
+              "crear_regla",
+              "desactivar_regla",
+              "determinar_severidad",
+              "listar_reglas",
+              "obtener_estadisticas_reglas",
+              "obtener_regla_por_id",
+              "obtener_umbrales_severidad",
+              "resolver_regla_aplicable",
+              "verificar_duplicado_regla"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "cantidadcomponentesreceta",
+              "costoreceta",
+              "preciosinimpuestos",
+              "serverid",
+              "sync_productos",
+              "sync_productos_elaborados",
+              "sync_productos_insumos",
+              "sync_productos_recetas",
+              "unidades_negocio",
+              "unidadnegocioid"
+            ],
+            "path": "backend/modules/costos_margenes/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_edarsahub_connection",
+              "_mpro_comercial_where",
+              "_mpro_menu_pos_where",
+              "_safe_decimal",
+              "get_familias_productos",
+              "get_insumos_producto",
+              "get_producto_by_id",
+              "get_productos_con_costos",
+              "get_receta_elaborado",
+              "get_receta_producto",
+              "get_resumen_costos_margenes",
+              "get_subfamilias_productos",
+              "get_sync_status",
+              "get_unidades_negocio"
+            ],
+            "tables_referenced": [
+              "Comercial_ClasificacionesProducto",
+              "Comercial_MPRO_MenuPOS_Sync",
+              "Producto_MapeoOrigen"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "core.server_registry",
+              "datetime",
+              "decimal",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "costoreceta",
+              "preciosinimpuestos",
+              "serverid",
+              "sync_productos",
+              "sync_productos_recetas",
+              "unidadnegocioid"
+            ],
+            "path": "backend/modules/costos_margenes/repository_precios.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_generar_folio",
+              "_get_edarsahub_connection",
+              "_mapear_solicitud",
+              "_registrar_historial",
+              "_safe_decimal",
+              "calcular_simulacion",
+              "cambiar_estatus_solicitud",
+              "crear_solicitud_cambio_precio",
+              "guardar_simulacion",
+              "listar_solicitudes",
+              "obtener_datos_producto_para_simulacion",
+              "obtener_historial_solicitud",
+              "obtener_solicitud"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.request_resolver",
+              "core.rbac_helper_sql",
+              "core.rbac_sql.service",
+              "core.security",
+              "csv",
+              "datetime",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "logging",
+              "math",
+              "modules.costos_margenes.configuracion_repository",
+              "modules.costos_margenes.reglas_margen_service",
+              "modules.costos_margenes.repository",
+              "modules.costos_margenes.schemas",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "serverid",
+              "sync_productos",
+              "sync_productos_elaborados",
+              "unidades_negocio"
+            ],
+            "path": "backend/modules/costos_margenes/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/configuracion/usuario",
+              "/exportar",
+              "/familias",
+              "/productos",
+              "/productos/{producto_id}/insumos",
+              "/productos/{producto_id}/receta",
+              "/resumen",
+              "/subfamilias",
+              "/sync-status",
+              "/unidades-negocio"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_check_admin_or_comercial",
+              "_contar_productos_margen_bajo_canonico",
+              "_fetch_productos",
+              "_get_sql_usuario_id",
+              "_resolve_configuracion_efectiva",
+              "_resolve_receta_servidor_filtro",
+              "_resolve_servidor_filtro",
+              "_resolver_margen_efectivo_productos",
+              "_verify_costos_margenes_access",
+              "actualizar_configuracion_personal",
+              "exportar_productos_csv",
+              "listar_familias",
+              "listar_productos",
+              "listar_subfamilias",
+              "listar_unidades_negocio",
+              "obtener_insumos_producto",
+              "obtener_receta_producto",
+              "obtener_resumen",
+              "obtener_sync_status"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.sync_recetas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "dataclasses",
+              "datetime",
+              "decimal",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "sync_productos"
+            ],
+            "path": "backend/modules/sync_recetas/models.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ElaboradoLineaSync",
+              "FamiliaSync",
+              "InsumoSync",
+              "ProductoSync",
+              "RecetaLineaSync",
+              "SubFamiliaSync",
+              "SyncRecetasConfig",
+              "SyncRecetasResult"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.sync_recetas",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "core.server_registry",
+              "core.sql_first.connection_factory",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "models",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "cantidadcomponentesreceta",
+              "preciosinimpuestos",
+              "serverid",
+              "sync_productos",
+              "sync_productos_compuestos",
+              "sync_productos_elaborados",
+              "sync_productos_insumos",
+              "sync_productos_recetas",
+              "tienereceta"
+            ],
+            "path": "backend/modules/sync_recetas/sync_recetas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_cat",
+              "_contar_productos_con_receta_mpro",
+              "_contar_productos_con_receta_sr",
+              "_dec",
+              "_ejecutar_sync",
+              "_execute_pos_query_strict",
+              "_guardar_catalogo_filtros",
+              "_guardar_compuestos",
+              "_guardar_elaborados",
+              "_guardar_familias",
+              "_guardar_insumos",
+              "_guardar_productos",
+              "_guardar_recetas",
+              "_guardar_subfamilias",
+              "_obtener_compuestos_mpro",
+              "_obtener_compuestos_sr",
+              "_obtener_elaborados_sr",
+              "_obtener_familias_mpro",
+              "_obtener_familias_sr",
+              "_obtener_filtros_catalogo_sr",
+              "_obtener_insumos_mpro",
+              "_obtener_insumos_sr",
+              "_obtener_productos_mpro",
+              "_obtener_productos_sr",
+              "_obtener_recetas_mpro",
+              "_obtener_recetas_sr",
+              "_obtener_subfamilias_mpro",
+              "_obtener_subfamilias_sr",
+              "_registrar_ejecucion",
+              "_sql_text",
+              "_sync_mpro",
+              "_sync_servidor",
+              "_sync_softrestaurant",
+              "ejecutar_sync_recetas_dry_run",
+              "ejecutar_sync_recetas_real"
+            ],
+            "tables_referenced": [
+              "Sync_Productos",
+              "Sync_Productos_Recetas"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.recetas_service.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "core.server_registry",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "costoreceta",
+              "serverid",
+              "sync_productos",
+              "sync_productos_recetas"
+            ],
+            "path": "backend/core/recetas_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RecetasService",
+              "_conn",
+              "get_componentes",
+              "get_componentes_by_producto_id",
+              "get_costo_total"
+            ],
+            "tables_referenced": [
+              "Sync_Productos_Recetas"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.insumos_service.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "core.server_registry",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "serverid",
+              "sync_productos",
+              "sync_productos_insumos"
+            ],
+            "path": "backend/core/insumos_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "InsumosService",
+              "_conn",
+              "get_by_codigo",
+              "get_by_id",
+              "listar"
+            ],
+            "tables_referenced": [
+              "Sync_Productos_Insumos"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.consumo_receta_service.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.recetas_service",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "serverid",
+              "sync_productos",
+              "sync_productos_recetas"
+            ],
+            "path": "backend/core/consumo_receta_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConsumoRecetaService",
+              "_key",
+              "calcular_consumo",
+              "calcular_consumo_agregado"
+            ],
+            "tables_referenced": [
+              "Sync_Productos_Recetas"
+            ]
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "serverid",
+              "tienereceta",
+              "unidades_negocio"
+            ],
+            "path": "frontend/src/pages/comercial/CostosMargenes.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 11,
+          "scanned_files": 18,
+          "skipped_sensitive": 11
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-21T05:27:41Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
