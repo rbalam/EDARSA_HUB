@@ -3,62 +3,68 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "6b040926ce4f4abccbf4cbae206c1b49d70fc1d9",
-  "generated_at_utc": "2026-10-21T01:06:40Z",
+  "development_sha": "e6e14238933320a22228087c75a0ecab07557dc9",
+  "generated_at_utc": "2026-10-21T01:08:43Z",
   "history": {
-    "done_total_local": 1516,
+    "done_total_local": 1517,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1279,
-    "results_total_local": 2564
+    "results_total_local": 2565
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 619,
+      "age_seconds": 742,
       "job_id": "SERVIDORES6-CHAPUR-ENDPOINT-SHAPE-AUDIT-PROFILE-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1659,
+      "age_seconds": 104,
+      "job_id": "SERVIDORES6-CHAPUR-ENDPOINT-SHAPE-AUDIT-PROFILE-R2-20261021",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1782,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-FINAL-READONLY-AUDIT-R3-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1023,
+      "age_seconds": 1145,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-OPERATIONAL-HEALTH-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3302,
+      "age_seconds": 3425,
       "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R2-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2913,
+      "age_seconds": 3036,
       "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R3-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2495,
+      "age_seconds": 2618,
       "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R4-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2036,
+      "age_seconds": 2159,
       "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R5-20261020",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "6b040926ce4f4abccbf4cbae206c1b49d70fc1d9",
+  "local_development_sha": "e6e14238933320a22228087c75a0ecab07557dc9",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -66,21 +72,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 7,
+  "queue_result_ready_recent": 8,
   "queue_running": 0,
-  "remote_development_sha": "6b040926ce4f4abccbf4cbae206c1b49d70fc1d9",
+  "remote_development_sha": "e6e14238933320a22228087c75a0ecab07557dc9",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-21T01:06:34Z",
-    "last_receive_utc": "2026-10-21T01:06:29Z",
-    "last_terminal_utc": "2026-10-21T00:56:20Z",
-    "pid": "283",
+    "last_cycle_utc": "2026-10-21T01:08:37Z",
+    "last_receive_utc": "2026-10-21T01:08:32Z",
+    "last_terminal_utc": "2026-10-21T01:06:58Z",
+    "pid": "20484",
     "runtime_fingerprint": {
-      "active_worker_code_tree_sha": "a739863e5e988c352476886ed00bd0236a561c07",
+      "active_worker_code_tree_sha": "f9c3d932f1e099478cbbf7d5e758eb70a9a968b5",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "6b040926ce4f4abccbf4cbae206c1b49d70fc1d9",
+      "development_sha": "e6e14238933320a22228087c75a0ecab07557dc9",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
@@ -95,7 +101,7 @@
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
       "worker_code_tree_aligned": true,
-      "worker_code_tree_sha": "a739863e5e988c352476886ed00bd0236a561c07"
+      "worker_code_tree_sha": "f9c3d932f1e099478cbbf7d5e758eb70a9a968b5"
     }
   },
   "schema": "edarsahub.worker-health.v3",
