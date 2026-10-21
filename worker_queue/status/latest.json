@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "6b040926ce4f4abccbf4cbae206c1b49d70fc1d9",
-  "generated_at_utc": "2026-10-21T00:53:27Z",
+  "generated_at_utc": "2026-10-21T00:55:02Z",
   "history": {
     "done_total_local": 1516,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2811,
+      "age_seconds": 2907,
       "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R1-20261020",
       "reasons": [
         "ACTION_3_SOURCE_SHA256_REQUIRED_OR_INVALID",
@@ -26,43 +26,43 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3110,
+      "age_seconds": 3206,
       "job_id": "SERVIDORES6-API-CONNECTIONS-DECOUPLE-LEGACY-SOLO-VENTAS-R3-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 866,
+      "age_seconds": 962,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-FINAL-READONLY-AUDIT-R3-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 229,
+      "age_seconds": 325,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-OPERATIONAL-HEALTH-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2509,
+      "age_seconds": 2605,
       "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R2-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2120,
+      "age_seconds": 2215,
       "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R3-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1702,
+      "age_seconds": 1798,
       "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R4-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1243,
+      "age_seconds": 1338,
       "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R5-20261020",
       "reason": null,
       "state": "RESULT_READY"
@@ -82,10 +82,10 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-21T00:53:16Z",
-    "last_receive_utc": "2026-10-21T00:53:10Z",
+    "last_cycle_utc": "2026-10-21T00:54:50Z",
+    "last_receive_utc": "2026-10-21T00:54:59Z",
     "last_terminal_utc": "2026-10-21T00:49:37Z",
-    "pid": "96380",
+    "pid": "99462",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "a739863e5e988c352476886ed00bd0236a561c07",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
