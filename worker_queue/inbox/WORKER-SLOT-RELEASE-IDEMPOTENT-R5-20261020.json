@@ -1,0 +1,65 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R5-20261020",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "925cae19999bae4088641f555683a7118747fee4",
+  "objective": "Corregir exclusivamente el cierre idempotente del slot runtime y actualizar las expectativas obsoletas del test del bridge al contrato canonico actual de RESULTS y REJECTED. No modificar la logica del bridge, no tocar Servidores funcional ni Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "Conexiones y Comunicaciones",
+    "chat": "Menu Servidores 6"
+  },
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state",
+      "new": "from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state\nfrom worker_slot_runtime import SlotRuntimeError",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        if slot_id is not None:\n            try:\n                update_slot_state(slot_id, \"TERMINALIZING\", execution_pid=os.getpid())\n                release_slot(slot_id)\n                result[\"slot_release\"] = \"PASS\"\n            except Exception as exc:\n                result[\"slot_release\"] = \"FAIL\"\n                result[\"blockers\"].append(f\"slot_release_failed:{type(exc).__name__}:{exc}\")\n                result[\"quality_gate\"] = \"FAIL\"\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n        else:",
+      "new": "        if slot_id is not None:\n            try:\n                update_slot_state(slot_id, \"TERMINALIZING\", execution_pid=os.getpid())\n                release_slot(slot_id)\n                result[\"slot_release\"] = \"PASS\"\n            except SlotRuntimeError as exc:\n                if str(exc) == \"SLOT_NOT_FOUND\":\n                    result[\"slot_release\"] = \"ALREADY_RELEASED\"\n                else:\n                    result[\"slot_release\"] = \"FAIL\"\n                    result[\"blockers\"].append(f\"slot_release_failed:{type(exc).__name__}:{exc}\")\n                    result[\"quality_gate\"] = \"FAIL\"\n                    result[\"certification\"] = \"NOT_CERTIFIED\"\n            except Exception as exc:\n                result[\"slot_release\"] = \"FAIL\"\n                result[\"blockers\"].append(f\"slot_release_failed:{type(exc).__name__}:{exc}\")\n                result[\"quality_gate\"] = \"FAIL\"\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n        else:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_universal_queue_sla_contract.py",
+      "old": "def test_inbox_is_history_and_results_deduplicate_jobs():\n    text = BRIDGE.read_text(encoding='utf-8')\n    assert 'for folder in (PENDING, PROCESSING, DONE, RESULTS)' in text\n    assert 'worker_queue/inbox is immutable audit history' in text\n    assert 'REJECTED is evaluated' in text",
+      "new": "def test_inbox_is_history_and_results_deduplicate_jobs():\n    text = BRIDGE.read_text(encoding='utf-8')\n    assert 'for folder in (PENDING, PROCESSING, DONE)' in text\n    assert 'result_retry = preexecution_infrastructure_retry_decision(name)' in text\n    assert 'worker_queue/inbox is immutable audit history' in text\n    assert 'retry_decision = rejected_correction_retry_decision(name, raw, job)' in text\n    assert 'REJECTED_REASON_NOT_CORRECTABLE' in text",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_universal_queue_sla_contract.py",
+      "old": "def test_health_exposes_sla_metrics():\n    text = HEALTH.read_text(encoding='utf-8')\n    for token in ('queue_depth','oldest_pending_age_seconds','intake_sla_seconds','intake_sla_breached','current_job_id','last_terminal_utc'):\n        assert token in text",
+      "new": "def test_health_exposes_sla_metrics():\n    text = HEALTH.read_text(encoding='utf-8')\n    for token in ('queue_depth','oldest_pending_age_seconds','intake_sla_seconds','intake_sla_breached','current_job_id','last_terminal_utc'):\n        assert token in text\n\n\ndef test_dispatcher_treats_missing_slot_as_already_released_only_during_cleanup():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state' in text\n    assert 'from worker_slot_runtime import SlotRuntimeError' in text\n    assert 'except SlotRuntimeError as exc:' in text\n    assert 'if str(exc) == \"SLOT_NOT_FOUND\":' in text\n    assert 'result[\"slot_release\"] = \"ALREADY_RELEASED\"' in text\n    assert 'slot_release_failed:{type(exc).__name__}:{exc}' in text",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_slot_runtime_contract.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py"
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
