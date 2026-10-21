@@ -4,61 +4,61 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "e6e14238933320a22228087c75a0ecab07557dc9",
-  "generated_at_utc": "2026-10-21T01:10:16Z",
+  "generated_at_utc": "2026-10-21T01:11:39Z",
   "history": {
-    "done_total_local": 1517,
+    "done_total_local": 1518,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1279,
-    "results_total_local": 2565
+    "results_total_local": 2566
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 835,
+      "age_seconds": 919,
       "job_id": "SERVIDORES6-CHAPUR-ENDPOINT-SHAPE-AUDIT-PROFILE-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 197,
+      "age_seconds": 281,
       "job_id": "SERVIDORES6-CHAPUR-ENDPOINT-SHAPE-AUDIT-PROFILE-R2-20261021",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1875,
+      "age_seconds": 57,
+      "job_id": "SERVIDORES6-CHAPUR-ENDPOINT-SHAPE-READONLY-R1-20261021",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1959,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-FINAL-READONLY-AUDIT-R3-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1239,
+      "age_seconds": 1322,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-OPERATIONAL-HEALTH-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3519,
-      "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R2-20261020",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3129,
+      "age_seconds": 3212,
       "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R3-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2712,
+      "age_seconds": 2795,
       "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R4-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2252,
+      "age_seconds": 2335,
       "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R5-20261020",
       "reason": null,
       "state": "RESULT_READY"
@@ -78,9 +78,9 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-21T01:10:11Z",
-    "last_receive_utc": "2026-10-21T01:10:06Z",
-    "last_terminal_utc": "2026-10-21T01:06:58Z",
+    "last_cycle_utc": "2026-10-21T01:11:27Z",
+    "last_receive_utc": "2026-10-21T01:11:38Z",
+    "last_terminal_utc": "2026-10-21T01:10:42Z",
     "pid": "20484",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "f9c3d932f1e099478cbbf7d5e758eb70a9a968b5",
