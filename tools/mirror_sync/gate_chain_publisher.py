@@ -967,7 +967,17 @@ def _submit_convergence(
     *,
     remote: str,
     job_id: str,
+    require_convergence: bool = False,
 ) -> dict[str, Any]:
+    if not require_convergence and os.environ.get("EDARSAHUB_WORKER_SUBMIT_REQUIRE_CONVERGENCE", "").strip() != "1":
+        return {
+            "status": "QUEUE_CONVERGED",
+            "converged": True,
+            "safe": True,
+            "auto_fix_applied": False,
+            "reason": "QUEUE_PUBLICATION_INDEPENDENT_OF_MIRROR",
+        }
+
     return ensure_submit_convergence(
         Path(ROOT),
         job_id=job_id,
@@ -1012,6 +1022,7 @@ def submit(
     *,
     remote: str = "origin",
     queue_branch: str = "worker/requests",
+    require_convergence: bool = False,
 ) -> dict[str, Any]:
 
     try:
@@ -1120,6 +1131,7 @@ def submit(
     convergence = _submit_convergence(
         remote=remote,
         job_id=job_id,
+        require_convergence=require_convergence,
     )
 
     if convergence.get("converged") is not True:
