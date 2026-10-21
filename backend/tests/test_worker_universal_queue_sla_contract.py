@@ -9,9 +9,11 @@ HEALTH = ROOT / 'tools/mirror_sync/runtime_health_publisher.py'
 
 def test_inbox_is_history_and_results_deduplicate_jobs():
     text = BRIDGE.read_text(encoding='utf-8')
-    assert 'for folder in (PENDING, PROCESSING, DONE, RESULTS)' in text
+    assert 'for folder in (PENDING, PROCESSING, DONE)' in text
+    assert 'result_retry = preexecution_infrastructure_retry_decision(name)' in text
     assert 'worker_queue/inbox is immutable audit history' in text
-    assert 'REJECTED is evaluated' in text
+    assert 'retry_decision = rejected_correction_retry_decision(name, raw, job)' in text
+    assert 'REJECTED_REASON_NOT_CORRECTABLE' in text
 
 
 def test_dispatcher_tracks_runtime_and_only_releases_created_claims():
@@ -68,3 +70,13 @@ def test_health_exposes_sla_metrics():
     text = HEALTH.read_text(encoding='utf-8')
     for token in ('queue_depth','oldest_pending_age_seconds','intake_sla_seconds','intake_sla_breached','current_job_id','last_terminal_utc'):
         assert token in text
+
+
+def test_dispatcher_treats_missing_slot_as_already_released_only_during_cleanup():
+    text = DISPATCHER.read_text(encoding='utf-8')
+    assert 'from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state' in text
+    assert 'from worker_slot_runtime import SlotRuntimeError' in text
+    assert 'except SlotRuntimeError as exc:' in text
+    assert 'if str(exc) == "SLOT_NOT_FOUND":' in text
+    assert 'result["slot_release"] = "ALREADY_RELEASED"' in text
+    assert 'slot_release_failed:{type(exc).__name__}:{exc}' in text

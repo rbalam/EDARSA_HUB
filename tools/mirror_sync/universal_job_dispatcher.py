@@ -41,6 +41,7 @@ except ModuleNotFoundError:
 from worker_concurrency import evaluate_scope_advance
 from worker_scheduling import normalize_metadata
 from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state
+from worker_slot_runtime import SlotRuntimeError
 from git_divergence_guard import (GitGuardError, acquire_writer_lock, compare_and_swap, inspect_repository, mutation_policy, post_push_verify, recover_authorized_local_ahead, release_writer_lock, requires_writer_lock, scoped_push_env, validate_commit_scope)
 
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
@@ -2616,6 +2617,14 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                 update_slot_state(slot_id, "TERMINALIZING", execution_pid=os.getpid())
                 release_slot(slot_id)
                 result["slot_release"] = "PASS"
+            except SlotRuntimeError as exc:
+                if str(exc) == "SLOT_NOT_FOUND":
+                    result["slot_release"] = "ALREADY_RELEASED"
+                else:
+                    result["slot_release"] = "FAIL"
+                    result["blockers"].append(f"slot_release_failed:{type(exc).__name__}:{exc}")
+                    result["quality_gate"] = "FAIL"
+                    result["certification"] = "NOT_CERTIFIED"
             except Exception as exc:
                 result["slot_release"] = "FAIL"
                 result["blockers"].append(f"slot_release_failed:{type(exc).__name__}:{exc}")
