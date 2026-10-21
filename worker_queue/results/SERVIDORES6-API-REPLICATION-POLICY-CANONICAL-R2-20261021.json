@@ -1,0 +1,23 @@
+{
+  "base_sha": "a71a5039e4e151b75f8b56296fd3f487f7352cdc",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:REPLACE_COUNT_MISMATCH:frontend/src/pages/Servidores.js:expected=1:actual=2"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-10-21T05:32:26Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES6-API-REPLICATION-POLICY-CANONICAL-R2-20261021",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-21T05:33:30Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-21T05:32:24Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
