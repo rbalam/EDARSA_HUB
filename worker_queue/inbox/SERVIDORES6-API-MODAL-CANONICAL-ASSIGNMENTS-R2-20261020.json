@@ -1,0 +1,191 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-API-MODAL-CANONICAL-ASSIGNMENTS-R2-20261020",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "1fef5b04d9f8fa5ec3ccb928bea5446621562d1e",
+  "objective": "Completar el desacoplamiento del modal/listado API_LOCAL eliminando todas las referencias UI legacy servidor_padre/sucursal_destino/hora_replica y su persistencia en host/database_name/port/EmpresaID. Mantener asignaciones operativas opcionales 0..N mediante Sistema_EmpresasServidores y fetchUnidadesNegocio. No debilitar pruebas, no migrar datos existentes, no tocar esquema SQL ni Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "Conexiones y Comunicaciones",
+    "chat": "Menu Servidores 6"
+  },
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/routes.py",
+      "old": "    servidor_padre: Optional[str] = Field(None, description=\"Host del servidor padre en nube\")\n    servidor_padre_id: Optional[str] = Field(None, description=\"ID del servidor padre\")\n    sucursal_destino: Optional[str] = Field(None, description=\"Nombre de la sucursal destino\")\n    hora_replica: str = Field(\"04:00\", description=\"Hora de réplica diaria (HH:MM)\")\n    solo_ventas_dia: bool = Field(True, description=\"Solo obtener ventas del día actual\")",
+      "new": "    solo_ventas_dia: bool = Field(True, description=\"Compatibilidad de lectura; la relación operativa se administra por assignments\")",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/routes.py",
+      "old": "    servidor_padre: Optional[str] = None\n    servidor_padre_id: Optional[str] = None\n    sucursal_destino: Optional[str] = None\n    hora_replica: Optional[str] = None\n    solo_ventas_dia: Optional[bool] = None",
+      "new": "    solo_ventas_dia: Optional[bool] = None",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/repository.py",
+      "old": "    # 3. Preparar datos\n    hora_replica = data.get('hora_replica', '04:00')\n    if isinstance(hora_replica, str):\n        try:\n            hora_replica = int(hora_replica.split(':')[0])\n        except Exception:\n            hora_replica = 4\n    \n    config_json = json.dumps(data.get('config') or {})",
+      "new": "    # 3. Preparar datos.\n    # API_LOCAL no reutiliza host/port/database_name/EmpresaID para semánticas\n    # de negocio. La asignación operativa vive en Sistema_EmpresasServidores.\n    config_json = json.dumps(data.get('config') or {})",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/repository.py",
+      "old": "        N'{_escape_sql(data.get(\"servidor_padre\", \"\"))}',\n        {hora_replica},\n        N'{_escape_sql(data.get(\"sucursal_destino\", \"\"))}',\n        N'{_escape_sql(data.get(\"url\", \"\"))}',",
+      "new": "        NULL,\n        NULL,\n        NULL,\n        N'{_escape_sql(data.get(\"url\", \"\"))}',",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/repository.py",
+      "old": "        1, 1, 1,\n        N'{_escape_sql(data.get(\"servidor_padre_id\", \"\"))}',\n        N'{_escape_sql(config_json)}',",
+      "new": "        1, 1, 1,\n        NULL,\n        N'{_escape_sql(config_json)}',",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/repository.py",
+      "old": "    if 'servidor_padre' in data:\n        set_parts.append(f\"host = N'{_escape_sql(data['servidor_padre'])}'\")\n    if 'servidor_padre_id' in data:\n        set_parts.append(f\"empresa_id = N'{_escape_sql(data['servidor_padre_id'])}'\")\n    if 'sucursal_destino' in data:\n        set_parts.append(f\"database_name = N'{_escape_sql(data['sucursal_destino'])}'\")\n    if 'hora_replica' in data:\n        hr = data['hora_replica']\n        hr_int = int(hr.split(':')[0]) if isinstance(hr, str) else hr\n        set_parts.append(f\"port = {hr_int}\")\n",
+      "new": "    for legacy_field in (\n        'servidor_padre',\n        'servidor_padre_id',\n        'sucursal_destino',\n        'hora_replica',\n    ):\n        if legacy_field in data:\n            logging.warning(\n                \"[API_CONNECTIONS] %s ignorado: la relación operativa \"\n                \"se administra mediante Sistema_EmpresasServidores\",\n                legacy_field,\n            )\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "import { formatNombreSucursal } from '@/lib/formatSucursal';",
+      "new": "import { formatNombreSucursal } from '@/lib/formatSucursal';\nimport { fetchUnidadesNegocio } from '@/services/unidadesNegocioService';",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "  const [apiFormData, setApiFormData] = useState({\n    name: '',\n    url: '',\n    api_key: '',\n    tipo: 'MPRO',\n    servidor_padre: '',\n    servidor_padre_id: '',\n    sucursal_destino: '',\n    hora_replica: '04:00',\n    activo: true,\n    visible_en_operaciones: false\n  });",
+      "new": "  const [apiFormData, setApiFormData] = useState({\n    name: '',\n    url: '',\n    api_key: '',\n    tipo: 'MPRO',\n    activo: true,\n    visible_en_operaciones: false\n  });\n  const [apiOperationalUnits, setApiOperationalUnits] = useState([]);\n  const [apiAssignments, setApiAssignments] = useState([]);\n  const [selectedApiUnitId, setSelectedApiUnitId] = useState('');\n  const [loadingApiAssignments, setLoadingApiAssignments] = useState(false);",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "  const openEditApi = async (apiConn) => {\n    try {\n      const response = await api.get(`/api-connections/${apiConn.id}`);\n      const detail = response.data?.data || {};\n      setEditingApi({ ...apiConn, ...detail });\n      setApiFormData({\n        name: detail.name || apiConn.name || '',\n        url: detail.url || apiConn.url || '',\n        api_key: '',\n        tipo: detail.tipo || apiConn.tipo || '',\n        servidor_padre: detail.servidor_padre || apiConn.servidor_padre || '',\n        servidor_padre_id: detail.servidor_padre_id || '',\n        sucursal_destino: detail.sucursal_destino || apiConn.sucursal_destino || '',\n        hora_replica: detail.hora_replica || apiConn.hora_replica || '04:00',\n        activo: detail.activo !== false,\n        visible_en_operaciones: detail.visible_en_operaciones === true\n      });\n      setQueryTestData({\n        tipo_uso: detail.tipo_uso || 'Otro',\n        nombre_consulta: detail.nombre_consulta || '',\n        sql_query: detail.sql_query || DEFAULT_SQL_QUERY,\n        timeout: 30\n      });\n      setQueryTestResult(null);\n      setApiDialogOpen(true);\n    } catch (error) {\n      console.error('Error cargando detalle de la conexión API:', error);\n      toast.error('No se pudo cargar el detalle de la conexión API');\n    }\n  };",
+      "new": "  const loadApiAssignments = async (apiId) => {\n    setLoadingApiAssignments(true);\n    try {\n      const [units, assignmentsResponse] = await Promise.all([\n        fetchUnidadesNegocio(),\n        api.get(`/api-connections/${apiId}/assignments`)\n      ]);\n      setApiOperationalUnits(units || []);\n      setApiAssignments(assignmentsResponse.data?.data || []);\n    } catch (error) {\n      console.error('Error cargando asignaciones operativas:', error);\n      setApiOperationalUnits([]);\n      setApiAssignments([]);\n      toast.error('No se pudieron cargar las asignaciones operativas');\n    } finally {\n      setLoadingApiAssignments(false);\n    }\n  };\n\n  const addApiAssignment = async () => {\n    if (!editingApi?.id || !selectedApiUnitId) return;\n    try {\n      await api.post(`/api-connections/${editingApi.id}/assignments`, {\n        empresa_id: Number(selectedApiUnitId),\n        rol_conexion: 'VENTAS_DIA_API_LOCAL',\n        prioridad: 1,\n        es_principal: true\n      });\n      setSelectedApiUnitId('');\n      await loadApiAssignments(editingApi.id);\n      await loadServers();\n      toast.success('Unidad asignada');\n    } catch (error) {\n      console.error('Error asignando unidad:', error);\n      toast.error(error.response?.data?.detail || 'No se pudo asignar la unidad');\n    }\n  };\n\n  const removeApiAssignment = async (assignment) => {\n    if (!editingApi?.id) return;\n    try {\n      await api.delete(\n        `/api-connections/${editingApi.id}/assignments/${assignment.empresa_id}/${assignment.rol_conexion}`\n      );\n      await loadApiAssignments(editingApi.id);\n      await loadServers();\n      toast.success('Unidad desasignada');\n    } catch (error) {\n      console.error('Error desasignando unidad:', error);\n      toast.error(error.response?.data?.detail || 'No se pudo desasignar la unidad');\n    }\n  };\n\n  const openEditApi = async (apiConn) => {\n    try {\n      const response = await api.get(`/api-connections/${apiConn.id}`);\n      const detail = response.data?.data || {};\n      setEditingApi({ ...apiConn, ...detail });\n      setApiFormData({\n        name: detail.name || apiConn.name || '',\n        url: detail.url || apiConn.url || '',\n        api_key: '',\n        tipo: detail.tipo || apiConn.tipo || '',\n        activo: detail.activo !== false,\n        visible_en_operaciones: detail.visible_en_operaciones === true\n      });\n      setSelectedApiUnitId('');\n      await loadApiAssignments(apiConn.id);\n      setQueryTestData({\n        tipo_uso: detail.tipo_uso || 'Otro',\n        nombre_consulta: detail.nombre_consulta || '',\n        sql_query: detail.sql_query || DEFAULT_SQL_QUERY,\n        timeout: 30\n      });\n      setQueryTestResult(null);\n      setApiDialogOpen(true);\n    } catch (error) {\n      console.error('Error cargando detalle de la conexión API:', error);\n      toast.error('No se pudo cargar el detalle de la conexión API');\n    }\n  };",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "                setApiFormData({\n                  name: '',\n                  url: '',\n                  api_key: '',\n                  tipo: 'MPRO',\n                  servidor_padre: '',\n                  sucursal_destino: '',\n                  hora_replica: '04:00',\n                  activo: true,\n                  visible_en_operaciones: false\n                });",
+      "new": "                setApiFormData({\n                  name: '',\n                  url: '',\n                  api_key: '',\n                  tipo: 'MPRO',\n                  activo: true,\n                  visible_en_operaciones: false\n                });\n                setApiOperationalUnits([]);\n                setApiAssignments([]);\n                setSelectedApiUnitId('');",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "              <div className=\"space-y-2\">\n                <Label htmlFor=\"api_hora\">Hora de Réplica</Label>\n                <Input\n                  id=\"api_hora\"\n                  type=\"time\"\n                  value={apiFormData.hora_replica}\n                  onChange={(e) => setApiFormData({...apiFormData, hora_replica: e.target.value})}\n                />\n              </div>\n            </div>\n            \n            <div className=\"grid grid-cols-2 gap-4\">\n              <div className=\"space-y-2\">\n                <Label htmlFor=\"api_servidor\">Servidor Padre (Nube)</Label>\n                <Select \n                  value={apiFormData.servidor_padre} \n                  onValueChange={(value) => setApiFormData({...apiFormData, servidor_padre: value})}\n                >\n                  <SelectTrigger>\n                    <SelectValue placeholder=\"Seleccionar...\" />\n                  </SelectTrigger>\n                  <SelectContent>\n                    {servers.map(s => (\n                      <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>\n                    ))}\n                  </SelectContent>\n                </Select>\n              </div>\n              \n              <div className=\"space-y-2\">\n                <Label htmlFor=\"api_sucursal\">Sucursal Destino</Label>\n                <Input\n                  id=\"api_sucursal\"\n                  value={apiFormData.sucursal_destino}\n                  onChange={(e) => setApiFormData({...apiFormData, sucursal_destino: e.target.value})}\n                  placeholder=\"Querétaro\"\n                />\n              </div>\n            </div>\n            \n            <div className=\"bg-blue-50 border border-blue-200 rounded-md p-3\">\n              <p className=\"text-xs text-blue-900\">\n                <strong>Ventas del día:</strong> esta capacidad se deriva del rol canónico VENTAS_DIA_API_LOCAL asociado a la conexión.\n              </p>\n            </div>\n            \n            <div className=\"bg-amber-50 border border-amber-200 rounded-md p-3\">\n              <p className=\"text-xs text-amber-900\">\n                <strong>Nota:</strong> Esta conexión obtiene ventas del día que se suman a las del servidor padre. \n                Por la noche (a las {apiFormData.hora_replica || '04:00'}) los datos se replican al servidor en la nube, \n                momento en que esta API deja de sumar para evitar duplicación.\n              </p>\n            </div>",
+      "new": "            </div>\n\n            <div className=\"border border-zinc-200 rounded-md p-3 space-y-3\">\n              <div>\n                <Label>Asignación operativa (opcional)</Label>\n                <p className=\"text-xs text-zinc-500 mt-1\">\n                  Una conexión puede quedar sin asignación si es de pruebas o infraestructura.\n                  Las relaciones operativas se guardan en el catálogo canónico de unidades.\n                </p>\n              </div>\n\n              {editingApi ? (\n                <>\n                  {loadingApiAssignments ? (\n                    <div className=\"flex items-center gap-2 text-sm text-zinc-500\">\n                      <Loader2 className=\"h-4 w-4 animate-spin\" />\n                      Cargando asignaciones...\n                    </div>\n                  ) : (\n                    <>\n                      <div className=\"flex gap-2\">\n                        <Select\n                          value={selectedApiUnitId}\n                          onValueChange={setSelectedApiUnitId}\n                        >\n                          <SelectTrigger className=\"flex-1\">\n                            <SelectValue placeholder=\"Seleccionar unidad...\" />\n                          </SelectTrigger>\n                          <SelectContent>\n                            {apiOperationalUnits\n                              .filter(unit => !apiAssignments.some(\n                                assignment => String(assignment.empresa_id) === String(unit.id)\n                              ))\n                              .map(unit => (\n                                <SelectItem key={unit.id} value={String(unit.id)}>\n                                  {unit.nombre || unit.codigo || unit.id}\n                                </SelectItem>\n                              ))}\n                          </SelectContent>\n                        </Select>\n                        <Button\n                          type=\"button\"\n                          variant=\"outline\"\n                          onClick={addApiAssignment}\n                          disabled={!selectedApiUnitId}\n                        >\n                          <Plus className=\"h-4 w-4 mr-1\" />\n                          Asignar\n                        </Button>\n                      </div>\n\n                      <div className=\"space-y-2\">\n                        {apiAssignments.length === 0 ? (\n                          <p className=\"text-xs text-zinc-500\">Sin asignación operativa.</p>\n                        ) : apiAssignments.map(assignment => (\n                          <div\n                            key={`${assignment.empresa_id}-${assignment.rol_conexion}`}\n                            className=\"flex items-center justify-between rounded border border-zinc-200 px-3 py-2\"\n                          >\n                            <div>\n                              <p className=\"text-sm font-medium\">\n                                {assignment.empresa_nombre || assignment.empresa_codigo || assignment.empresa_id}\n                              </p>\n                              <p className=\"text-xs text-zinc-500\">\n                                {assignment.rol_conexion}\n                              </p>\n                            </div>\n                            <Button\n                              type=\"button\"\n                              variant=\"ghost\"\n                              size=\"sm\"\n                              onClick={() => removeApiAssignment(assignment)}\n                              title=\"Quitar asignación\"\n                            >\n                              <X className=\"h-4 w-4\" />\n                            </Button>\n                          </div>\n                        ))}\n                      </div>\n                    </>\n                  )}\n                </>\n              ) : (\n                <p className=\"text-xs text-zinc-500\">\n                  Guarda primero la conexión. Después podrás asignarla a una o varias unidades desde este mismo formulario.\n                </p>\n              )}\n            </div>\n\n            <div className=\"bg-blue-50 border border-blue-200 rounded-md p-3\">\n              <p className=\"text-xs text-blue-900\">\n                <strong>Ventas del día:</strong> se habilita mediante la relación canónica VENTAS_DIA_API_LOCAL; no depende de host, puerto ni nombre de sucursal.\n              </p>\n            </div>",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "          servidor_padre: conn.host,\n",
+      "new": "",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "        // Formatear hora_replica a string \"HH:00\"\n        const formatted = response.data.data.map(conn => ({\n          ...conn,\n          hora_replica: typeof conn.hora_replica === 'number' \n            ? `${String(conn.hora_replica).padStart(2, '0')}:00`\n            : conn.hora_replica\n        }));\n        setApiConnections(formatted);",
+      "new": "        setApiConnections(response.data.data || []);",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "                      <th className=\"px-3 py-2 text-left font-medium text-zinc-600\">Sucursal</th>\n                      <th className=\"px-3 py-2 text-left font-medium text-zinc-600\">Hora Réplica</th>",
+      "new": "                      <th className=\"px-3 py-2 text-left font-medium text-zinc-600\">Asignación</th>",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "                        {/* Sucursal */}\n                        <td className=\"px-3 py-2 text-zinc-600\">{apiConn.sucursal_destino || '-'}</td>\n                        {/* Hora Réplica */}\n                        <td className=\"px-3 py-2 text-zinc-600\">{apiConn.hora_replica || '04:00'}</td>",
+      "new": "                        {/* Asignación operativa */}\n                        <td className=\"px-3 py-2 text-zinc-600\">\n                          {apiConn.scope?.unidad_negocio_ids?.length\n                            ? `${apiConn.scope.unidad_negocio_ids.length} unidad(es)`\n                            : 'Sin asignación'}\n                        </td>",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "                    <div className=\"flex justify-between\">\n                      <span className=\"text-zinc-600\">Servidor Padre:</span>\n                      <span className=\"text-zinc-900\">{apiConn.servidor_padre}</span>\n                    </div>\n                    <div className=\"flex justify-between\">\n                      <span className=\"text-zinc-600\">Sucursal Destino:</span>\n                      <span className=\"font-medium text-zinc-900\">{apiConn.sucursal_destino}</span>\n                    </div>",
+      "new": "                    <div className=\"flex justify-between\">\n                      <span className=\"text-zinc-600\">Asignación operativa:</span>\n                      <span className=\"text-zinc-900\">\n                        {apiConn.scope?.unidad_negocio_ids?.length\n                          ? `${apiConn.scope.unidad_negocio_ids.length} unidad(es)`\n                          : 'Sin asignación'}\n                      </span>\n                    </div>",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "                    <div className=\"pt-2 border-t border-zinc-100\">\n                      <div className=\"flex items-center justify-between\">\n                        <span className=\"text-xs text-zinc-500 flex items-center gap-1\">\n                          <Clock className=\"h-3 w-3\" />\n                          Hora de Réplica:\n                        </span>\n                        <span className=\"text-xs font-mono bg-zinc-100 px-2 py-0.5 rounded\">{apiConn.hora_replica}</span>\n                      </div>\n                    </div>\n                    \n",
+      "new": "",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "                          host: apiConn.servidor_padre,\n                          port: 0,\n                          database: apiConn.sucursal_destino,\n",
+      "new": "                          url: apiConn.url,\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "                            host: apiConn.servidor_padre,\n                            port: 0,\n                            database: apiConn.sucursal_destino,\n",
+      "new": "                            url: apiConn.url,\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_api_connection_legacy_aliases_retired_contract.py",
+      "content": "from pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nROUTES = ROOT / \"backend\" / \"modules\" / \"api_connections\" / \"routes.py\"\nREPOSITORY = ROOT / \"backend\" / \"modules\" / \"api_connections\" / \"repository.py\"\nSERVIDORES = ROOT / \"frontend\" / \"src\" / \"pages\" / \"Servidores.js\"\n\n\ndef test_api_write_schemas_do_not_accept_legacy_business_aliases():\n    text = ROUTES.read_text(encoding=\"utf-8\")\n    create_block = text.split(\"class ApiConnectionCreate\", 1)[1].split(\n        \"class ApiConnectionUpdate\", 1\n    )[0]\n    update_block = text.split(\"class ApiConnectionUpdate\", 1)[1].split(\n        \"class ApiOperationalAssignmentRequest\", 1\n    )[0]\n    for legacy in (\"servidor_padre\", \"servidor_padre_id\", \"sucursal_destino\", \"hora_replica\"):\n        assert legacy not in create_block\n        assert legacy not in update_block\n\n\ndef test_api_create_does_not_store_business_aliases_in_sql_fields():\n    text = REPOSITORY.read_text(encoding=\"utf-8\")\n    assert \"data.get(\\\"servidor_padre\\\"\" not in text\n    assert \"data.get(\\\"sucursal_destino\\\"\" not in text\n    assert \"hora_replica = data.get(\" not in text\n    assert \"NULL,\\n        NULL,\\n        NULL,\" in text\n\n\ndef test_api_ui_has_no_legacy_business_aliases_and_uses_assignments():\n    text = SERVIDORES.read_text(encoding=\"utf-8\")\n    assert \"fetchUnidadesNegocio\" in text\n    assert \"Asignación operativa (opcional)\" in text\n    assert \"/assignments\" in text\n    assert \"servidor_padre\" not in text\n    assert \"sucursal_destino\" not in text\n    assert \"hora_replica\" not in text\n    assert \"Servidor Padre\" not in text\n    assert \"Sucursal Destino\" not in text\n    assert \"Hora de Réplica\" not in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_api_connection_legacy_aliases_retired_contract.py",
+        "backend/tests/test_api_connection_operational_assignments_contract.py",
+        "backend/tests/test_connection_resolver_api_local_canonical_contract.py"
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/api_connections/routes.py",
+        "backend/modules/api_connections/repository.py"
+      ]
+    },
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "scheduling": {
+    "project_id": "Conexiones y Comunicaciones",
+    "bounded_context": "Conexiones y Comunicaciones",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "resource_claims": [],
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1
+  }
+}
