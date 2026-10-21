@@ -4,26 +4,32 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "REMOTE_AHEAD_ONLY",
   "development_sha": "a71a5039e4e151b75f8b56296fd3f487f7352cdc",
-  "generated_at_utc": "2026-10-21T05:14:45Z",
+  "generated_at_utc": "2026-10-21T05:16:08Z",
   "history": {
     "done_total_local": 1523,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1283,
-    "results_total_local": 2575
+    "rejected_total_local": 1284,
+    "results_total_local": 2576
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3205,
+      "age_seconds": 3289,
       "job_id": "SERVIDORES6-API-MODAL-CANONICAL-ASSIGNMENTS-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1348,
+      "age_seconds": 1432,
       "job_id": "SERVIDORES6-API-MODAL-CANONICAL-ASSIGNMENTS-R2-20261020",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 25,
+      "job_id": "SERVIDORES6-API-REPLICATION-POLICY-CANONICAL-R1-20261021",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -36,15 +42,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "remote_development_sha": "a71a5039e4e151b75f8b56296fd3f487f7352cdc",
   "runtime": {
-    "current_job_id": "SERVIDORES6-API-MODAL-CANONICAL-ASSIGNMENTS-R2-20261020",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-21T05:14:33Z",
-    "last_receive_utc": "2026-10-21T05:14:44Z",
-    "last_terminal_utc": "2026-10-21T04:47:24Z",
+    "last_cycle_utc": "2026-10-21T05:15:59Z",
+    "last_receive_utc": "2026-10-21T05:15:54Z",
+    "last_terminal_utc": "2026-10-21T05:15:42Z",
     "pid": "453",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "aa003a0a639218bf4d9ea5db32f1499cd8687cf4",
