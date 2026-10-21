@@ -21,9 +21,10 @@ FECHA: Junio 2026
 from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
 from fastapi import APIRouter, Depends, HTTPException
 import re
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from core.security import get_current_user
-from core.rbac_helper_sql import es_admin
+from core.auth.sql_user_identity import enrich_current_user_with_sql_id
+from core.rbac_helper_sql import es_admin, es_superadmin
 from core.rbac.middleware import require_explicit_permission
 from core.config.edarsahub_sql import get_edarsahub_connection
 from modules.admin_sql import rbac_pilot_service
@@ -41,6 +42,62 @@ def require_admin(user: Dict[str, Any]) -> None:
     """Lanza excepción si el usuario no es admin."""
     if not is_admin(user):
         raise HTTPException(status_code=403, detail="No autorizado - Se requiere rol de administrador")
+
+
+def _has_explicit_users_menu_permission(user: Dict[str, Any]) -> bool:
+    """Verifica fail-closed si el usuario posee permiso SQL explícito en Usuario_PermisosRolModulo para Usuarios."""
+    actor_id = user.get("usuario_id") or user.get("UsuarioID")
+    actor_email = str(user.get("email") or "").strip()
+    if actor_id is None and not actor_email:
+        return False
+    try:
+        rows = execute_query(
+            """
+            SELECT TOP 1 1 AS Permitido
+            FROM dbo.Usuario_Catalogo u
+            INNER JOIN (
+                SELECT UsuarioID, RolID
+                FROM dbo.Usuario_RolesContexto
+                WHERE ISNULL(Activo, 1) = 1
+                UNION
+                SELECT UsuarioID, RolID
+                FROM dbo.Usuario_RolesAsignacion
+                WHERE ISNULL(Activo, 1) = 1
+            ) ra
+                ON ra.UsuarioID = u.UsuarioID
+            INNER JOIN dbo.Usuario_Roles r
+                ON r.RolID = ra.RolID AND ISNULL(r.Activo, 1) = 1
+            INNER JOIN dbo.Usuario_PermisosRolModulo prm
+                ON prm.RolID = r.RolID
+               AND ISNULL(prm.Activo, 1) = 1
+               AND prm.Permitido = 1
+            INNER JOIN dbo.Usuario_Modulos m
+                ON m.ModuloID = prm.ModuloID AND ISNULL(m.Activo, 1) = 1
+            INNER JOIN dbo.Usuario_Acciones a
+                ON a.AccionID = prm.AccionID AND ISNULL(a.Activo, 1) = 1
+            WHERE ISNULL(u.Activo, 1) = 1
+              AND (%s IS NOT NULL AND u.UsuarioID = %s OR LOWER(u.Email) = LOWER(%s))
+              AND (
+                    UPPER(CONCAT(m.CodigoModulo, '_', a.CodigoAccion)) IN (
+                        'USUARIOS_VER', 'SISTEMA_USUARIOS_VER', 'USUARIOS_EDITAR', 'RBAC_ADMIN'
+                    )
+                 OR UPPER(m.CodigoModulo) IN ('USUARIOS', 'SISTEMA_USUARIOS', 'RBAC_ADMIN')
+              )
+            """,
+            (actor_id, actor_id, actor_email),
+        )
+        return bool(rows)
+    except Exception:
+        return False
+
+
+def require_users_menu_access(user: Dict[str, Any]) -> Dict[str, Any]:
+    """Valida autorización para el menú Usuarios (admin canónico o permiso SQL explícito)."""
+    enriched = enrich_current_user_with_sql_id(dict(user or {}))
+    if is_admin(enriched) or _has_explicit_users_menu_permission(enriched):
+        return enriched
+    require_admin(enriched)
+    return enriched
 
 
 def execute_query(sql: str, params: tuple = ()) -> List[Dict[str, Any]]:
@@ -80,22 +137,29 @@ def execute_write(sql: str, params: tuple = (), fetch: bool = False) -> List[Dic
 @router.get("/users")
 async def get_users(
     incluir_inactivos: bool = False,
+    empresa_id: Optional[int] = None,
+    unidad_negocio_id: Optional[str] = None,
+    sucursal_id: Optional[int] = None,
     current_user: dict = Depends(get_current_user),
 ):
     """
     Lista todos los usuarios del sistema desde EDARSAHUB SQL.
 
     Incluye:
-    - Datos básicos del usuario
+    - Datos básicos del usuario con identidad SQL canónica (usuario_id, public_uuid)
     - Rol principal asignado (deduplicado: 1 fila por usuario)
-    - Servidores asignados
-    - Sucursales asignadas
+    - Roles contextuales desde dbo.Usuario_RolesContexto
+    - Servidores, empresas y sucursales asignadas
+    - Aislamiento por empresa, unidad de negocio y sucursal
 
     Args:
         incluir_inactivos: si True, también devuelve usuarios con Activo=0
                            (para poder reactivarlos desde la pantalla Usuarios).
     """
-    require_admin(current_user)
+    actor = require_users_menu_access(current_user)
+    actor_id_raw = actor.get("usuario_id") or actor.get("UsuarioID")
+    actor_id_str = str(actor_id_raw) if actor_id_raw is not None else ""
+    actor_is_global = es_superadmin(actor)
 
     # Filtro de estado: por defecto solo activos (comportamiento legacy).
     where_estado = "" if incluir_inactivos else "WHERE ISNULL(u.Activo, 1) = 1"
@@ -155,6 +219,38 @@ async def get_users(
     WHERE ISNULL(Activo, 1) = 1
     """)
 
+    # Obtener roles contextuales desde dbo.Usuario_RolesContexto y empresas desde dbo.Usuario_EmpresasAsignacion
+    try:
+        roles_ctx_rows = execute_query("""
+        SELECT
+            CAST(urc.UsuarioID AS NVARCHAR(100)) AS UsuarioID,
+            urc.UsuarioRolContextoID,
+            urc.RolID,
+            r.CodigoRol,
+            r.NombreRol,
+            urc.EmpresaID,
+            urc.UnidadNegocioID,
+            urc.SucursalID,
+            ISNULL(urc.EsRolPrimario, 0) AS EsRolPrimario,
+            ISNULL(urc.Activo, 1) AS Activo
+        FROM dbo.Usuario_RolesContexto urc
+        LEFT JOIN dbo.Usuario_Roles r ON r.RolID = urc.RolID
+        WHERE ISNULL(urc.Activo, 1) = 1
+        """)
+    except Exception:
+        roles_ctx_rows = []
+
+    try:
+        empresas_rows = execute_query("""
+        SELECT
+            CAST(UsuarioID AS NVARCHAR(100)) AS UsuarioID,
+            EmpresaID
+        FROM dbo.Usuario_EmpresasAsignacion
+        WHERE ISNULL(Activo, 1) = 1
+        """)
+    except Exception:
+        empresas_rows = []
+
     # Mapear servidores por usuario
     map_serv = {}
     for s in servidores:
@@ -175,10 +271,71 @@ async def get_users(
             if codigo not in map_suc[uid][sid]:
                 map_suc[uid][sid].append(codigo)
 
-    # Enriquecer usuarios con asignaciones
+    map_roles_ctx: Dict[str, List[Dict[str, Any]]] = {}
+    map_empresas: Dict[str, set] = {}
+    map_unidades: Dict[str, set] = {}
+    map_sucursales_ctx: Dict[str, set] = {}
+    for rc in roles_ctx_rows or []:
+        uid = str(rc.get("UsuarioID", "") or "")
+        if not uid:
+            continue
+        map_roles_ctx.setdefault(uid, []).append({
+            "usuario_rol_contexto_id": rc.get("UsuarioRolContextoID"),
+            "rol_id": rc.get("RolID"),
+            "codigo_rol": rc.get("CodigoRol"),
+            "nombre_rol": rc.get("NombreRol"),
+            "empresa_id": rc.get("EmpresaID"),
+            "unidad_negocio_id": rc.get("UnidadNegocioID"),
+            "sucursal_id": rc.get("SucursalID"),
+            "es_rol_primario": bool(rc.get("EsRolPrimario", False)),
+            "activo": bool(rc.get("Activo", True)),
+        })
+        if rc.get("EmpresaID") is not None:
+            map_empresas.setdefault(uid, set()).add(int(rc["EmpresaID"]))
+        if rc.get("UnidadNegocioID"):
+            map_unidades.setdefault(uid, set()).add(str(rc["UnidadNegocioID"]).strip().upper())
+        if rc.get("SucursalID") is not None:
+            map_sucursales_ctx.setdefault(uid, set()).add(int(rc["SucursalID"]))
+
+    for er in empresas_rows or []:
+        uid = str(er.get("UsuarioID", "") or "")
+        if uid and er.get("EmpresaID") is not None:
+            map_empresas.setdefault(uid, set()).add(int(er["EmpresaID"]))
+
+    actor_empresas = map_empresas.get(actor_id_str, set()) if actor_id_str else set()
+    actor_unidades = map_unidades.get(actor_id_str, set()) if actor_id_str else set()
+    actor_sucursales = map_sucursales_ctx.get(actor_id_str, set()) if actor_id_str else set()
+
+    if not actor_is_global:
+        if empresa_id is not None and actor_empresas and int(empresa_id) not in actor_empresas:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Aislamiento corporativo: sin acceso a EmpresaID={empresa_id}",
+            )
+        if unidad_negocio_id is not None and actor_unidades:
+            if str(unidad_negocio_id).strip().upper() not in actor_unidades:
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Aislamiento por unidad de negocio: sin acceso a UnidadNegocioID={unidad_negocio_id}",
+                )
+        if sucursal_id is not None and actor_sucursales and int(sucursal_id) not in actor_sucursales:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Aislamiento por sucursal: sin acceso a SucursalID={sucursal_id}",
+            )
+
+    has_actor_scope = not actor_is_global and bool(actor_empresas or actor_unidades or actor_sucursales)
+
+    # Enriquecer usuarios con asignaciones e identidad canónica
     rbac_map = rbac_pilot_service.get_rbac_map()
+    result_users: List[Dict[str, Any]] = []
     for u in users:
         uid = str(u.get("UsuarioID", ""))
+        u["usuario_id"] = int(uid) if uid.isdigit() else None
+        raw_uuid = u.get("PublicUUID")
+        u["public_uuid"] = str(raw_uuid).strip() if raw_uuid is not None and str(raw_uuid).strip() else None
+        u["roles_contexto"] = map_roles_ctx.get(uid, [])
+        u["empresas_ids"] = sorted(map_empresas.get(uid, set()))
         # Normalizar estado: el frontend lee `active` (booleano). Antes solo
         # existía `activo` → todos se mostraban "Inactivo". Exponemos ambos.
         u["active"] = bool(u.get("activo"))
@@ -196,7 +353,28 @@ async def get_users(
         u["sec_roles"] = rbac.get("sec_roles", [])
         u["sec_permisos"] = rbac.get("sec_permisos", [])
 
-    return users
+        u_empresas = map_empresas.get(uid, set())
+        u_unidades = map_unidades.get(uid, set())
+        u_sucursales = map_sucursales_ctx.get(uid, set())
+
+        if has_actor_scope and uid != actor_id_str:
+            if actor_empresas and u_empresas and not (actor_empresas & u_empresas):
+                continue
+            if actor_unidades and u_unidades and not (actor_unidades & u_unidades):
+                continue
+            if actor_sucursales and u_sucursales and not (actor_sucursales & u_sucursales):
+                continue
+
+        if empresa_id is not None and int(empresa_id) not in u_empresas:
+            continue
+        if unidad_negocio_id is not None and str(unidad_negocio_id).strip().upper() not in u_unidades:
+            continue
+        if sucursal_id is not None and int(sucursal_id) not in u_sucursales:
+            continue
+
+        result_users.append(u)
+
+    return result_users
 
 
 @router.patch("/users/{user_id}/toggle-activo")

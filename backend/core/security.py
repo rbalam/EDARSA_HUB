@@ -149,7 +149,39 @@ def verify_password(password: str, hashed: str) -> bool:
 # FUNCIONES JWT
 # ============================================================================
 
-def create_token(user_id: str, email: str, role: str) -> str:
+def _normalize_jwt_identity_claims(
+    user_id: str,
+    usuario_id: Optional[int] = None,
+    public_uuid: Optional[str] = None,
+) -> tuple:
+    resolved_usuario_id: Optional[int] = None
+    if usuario_id is not None and not isinstance(usuario_id, bool):
+        try:
+            resolved_usuario_id = int(usuario_id)
+        except Exception:
+            resolved_usuario_id = None
+    elif user_id is not None and str(user_id).strip().isdigit():
+        try:
+            resolved_usuario_id = int(str(user_id).strip())
+        except Exception:
+            resolved_usuario_id = None
+
+    resolved_public_uuid: Optional[str] = None
+    if public_uuid and str(public_uuid).strip():
+        resolved_public_uuid = str(public_uuid).strip()
+    elif isinstance(user_id, str) and "-" in user_id and len(user_id.strip()) >= 32:
+        resolved_public_uuid = user_id.strip()
+
+    return resolved_usuario_id, resolved_public_uuid
+
+
+def create_token(
+    user_id: str,
+    email: str,
+    role: str,
+    usuario_id: Optional[int] = None,
+    public_uuid: Optional[str] = None,
+) -> str:
     """
     Crea un token JWT firmado con duración LEGACY (72 horas).
     
@@ -160,12 +192,20 @@ def create_token(user_id: str, email: str, role: str) -> str:
         user_id: ID del usuario
         email: Email del usuario
         role: Rol del usuario (Administrador, Supervisor, Usuario)
+        usuario_id: UsuarioID entero canónico de dbo.Usuario_Catalogo
+        public_uuid: PublicUUID canónico de dbo.Usuario_Catalogo
         
     Returns:
         Token JWT firmado como string
     """
+    resolved_usuario_id, resolved_public_uuid = _normalize_jwt_identity_claims(
+        user_id, usuario_id=usuario_id, public_uuid=public_uuid
+    )
     payload = {
+        'sub': str(resolved_public_uuid or user_id),
         'user_id': user_id,
+        'usuario_id': resolved_usuario_id,
+        'public_uuid': resolved_public_uuid,
         'email': email,
         'role': role,
         'exp': datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
@@ -173,7 +213,14 @@ def create_token(user_id: str, email: str, role: str) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-def create_access_token(user_id: str, email: str, role: str, token_type: str = "internal") -> str:
+def create_access_token(
+    user_id: str,
+    email: str,
+    role: str,
+    token_type: str = "internal",
+    usuario_id: Optional[int] = None,
+    public_uuid: Optional[str] = None,
+) -> str:
     """
     FASE A P1-REFRESH-TOKENS: Crea un access token JWT de corta duración.
     
@@ -182,12 +229,20 @@ def create_access_token(user_id: str, email: str, role: str, token_type: str = "
         email: Email del usuario
         role: Rol del usuario
         token_type: Tipo de token ('internal' o 'portal_supplier')
+        usuario_id: UsuarioID entero canónico de dbo.Usuario_Catalogo
+        public_uuid: PublicUUID canónico de dbo.Usuario_Catalogo
         
     Returns:
         Token JWT firmado (duración: ACCESS_TOKEN_MINUTES)
     """
+    resolved_usuario_id, resolved_public_uuid = _normalize_jwt_identity_claims(
+        user_id, usuario_id=usuario_id, public_uuid=public_uuid
+    )
     payload = {
+        'sub': str(resolved_public_uuid or user_id),
         'user_id': user_id,
+        'usuario_id': resolved_usuario_id,
+        'public_uuid': resolved_public_uuid,
         'email': email,
         'role': role,
         'type': token_type,  # Para separación interno/portal
@@ -300,7 +355,12 @@ async def get_current_user(
     token = credentials.credentials
     payload = verify_token(token)
     email = payload.get('email')
-    user_id_from_token = payload.get('user_id')
+    user_id_from_token = (
+        payload.get('public_uuid')
+        or payload.get('user_id')
+        or payload.get('usuario_id')
+        or payload.get('sub')
+    )
     
     # FASE 2-G: SQL-only (sin fallback MongoDB)
     user, auth_source = await _get_user_sql_only(email, user_id_from_token)
@@ -320,6 +380,18 @@ async def get_current_user(
             detail="Usuario desactivado"
         )
     
+    resolved_uid, resolved_puuid = _normalize_jwt_identity_claims(
+        str(user.get("id") or user_id_from_token or ""),
+        usuario_id=user.get("usuario_id") or user.get("UsuarioID") or payload.get("usuario_id"),
+        public_uuid=user.get("public_uuid") or user.get("PublicUUID") or payload.get("public_uuid"),
+    )
+    if resolved_uid is not None:
+        user["usuario_id"] = resolved_uid
+        user.setdefault("UsuarioID", resolved_uid)
+    if resolved_puuid:
+        user["public_uuid"] = resolved_puuid
+        user.setdefault("PublicUUID", resolved_puuid)
+
     # Log de auditoría seguro (sin secretos)
     logging.info(f"[AUTH] auth_source={auth_source}, email={email}, role={user.get('role', 'N/A')}")
     
@@ -445,7 +517,12 @@ async def get_current_user_dual(request) -> Dict[str, Any]:
         raise  # Re-lanzar 401 de verify_token
     
     email = payload.get('email')
-    user_id_from_token = payload.get('user_id')
+    user_id_from_token = (
+        payload.get('public_uuid')
+        or payload.get('user_id')
+        or payload.get('usuario_id')
+        or payload.get('sub')
+    )
     
     # FASE 2-G: SQL-only (sin fallback MongoDB)
     user, auth_source = await _get_user_sql_only(email, user_id_from_token)
@@ -465,6 +542,18 @@ async def get_current_user_dual(request) -> Dict[str, Any]:
             detail="Usuario desactivado"
         )
     
+    resolved_uid, resolved_puuid = _normalize_jwt_identity_claims(
+        str(user.get("id") or user_id_from_token or ""),
+        usuario_id=user.get("usuario_id") or user.get("UsuarioID") or payload.get("usuario_id"),
+        public_uuid=user.get("public_uuid") or user.get("PublicUUID") or payload.get("public_uuid"),
+    )
+    if resolved_uid is not None:
+        user["usuario_id"] = resolved_uid
+        user.setdefault("UsuarioID", resolved_uid)
+    if resolved_puuid:
+        user["public_uuid"] = resolved_puuid
+        user.setdefault("PublicUUID", resolved_puuid)
+
     # Log de auditoría seguro
     logging.info(f"[AUTH-DUAL] auth_source={auth_source}, email={email}")
     

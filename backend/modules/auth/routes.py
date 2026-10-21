@@ -128,10 +128,25 @@ async def login(credentials: UserLogin, request: Request, response: Response):
     user_id = user_data.get("id", user_data.get("_id", ""))
     email = user_data.get("email", credentials.email)
     role = user_data.get("role", "Usuario")
+    raw_uid = user_data.get("usuario_id") if user_data.get("usuario_id") is not None else user_data.get("UsuarioID")
+    try:
+        canonical_uid = int(raw_uid) if raw_uid is not None and not isinstance(raw_uid, bool) else None
+    except Exception:
+        canonical_uid = None
+    canonical_puuid = user_data.get("public_uuid") or user_data.get("PublicUUID")
+    if not canonical_puuid and isinstance(user_id, str) and "-" in user_id:
+        canonical_puuid = user_id
     
     # FASE A P1-REFRESH-TOKENS: Crear tokens
-    # Access token corto (15 minutos por defecto)
-    access_token = create_access_token(str(user_id), email, role, token_type="internal")
+    # Access token corto (15 minutos por defecto) con identidad SQL canónica
+    access_token = create_access_token(
+        str(user_id),
+        email,
+        role,
+        token_type="internal",
+        usuario_id=canonical_uid,
+        public_uuid=str(canonical_puuid) if canonical_puuid else None,
+    )
     
     # Refresh token (7 días por defecto)
     refresh_token = generate_refresh_token()
@@ -294,9 +309,24 @@ async def refresh_tokens(request: Request, response: Response):
     
     email = user_data.get("email", "")
     role = user_data.get("role", "Usuario")
-    
-    # Generar nuevos tokens
-    new_access_token = create_access_token(str(user_id), email, role, token_type="internal")
+    raw_uid = user_data.get("usuario_id") if user_data.get("usuario_id") is not None else user_data.get("UsuarioID")
+    try:
+        canonical_uid = int(raw_uid) if raw_uid is not None and not isinstance(raw_uid, bool) else None
+    except Exception:
+        canonical_uid = None
+    canonical_puuid = user_data.get("public_uuid") or user_data.get("PublicUUID")
+    if not canonical_puuid and isinstance(user_id, str) and "-" in str(user_id):
+        canonical_puuid = str(user_id)
+
+    # Generar nuevos tokens con identidad SQL canónica
+    new_access_token = create_access_token(
+        str(user_id),
+        email,
+        role,
+        token_type="internal",
+        usuario_id=canonical_uid,
+        public_uuid=str(canonical_puuid) if canonical_puuid else None,
+    )
     new_refresh_token = generate_refresh_token()
     
     # Rotar refresh token en BD
@@ -401,9 +431,28 @@ async def get_me(request: Request):
     user_id = safe_user.get("id", safe_user.get("_id", ""))
     email = safe_user.get("email", "")
     role = safe_user.get("role", safe_user.get("rol", ""))
+    raw_uid = safe_user.get("usuario_id") if safe_user.get("usuario_id") is not None else safe_user.get("UsuarioID")
+    try:
+        canonical_uid = int(raw_uid) if raw_uid is not None and not isinstance(raw_uid, bool) else None
+    except Exception:
+        canonical_uid = None
+    canonical_puuid = safe_user.get("public_uuid") or safe_user.get("PublicUUID")
+    if not canonical_puuid and isinstance(user_id, str) and "-" in str(user_id):
+        canonical_puuid = str(user_id)
+    if canonical_uid is not None:
+        safe_user["usuario_id"] = canonical_uid
+    if canonical_puuid:
+        safe_user["public_uuid"] = str(canonical_puuid)
     
     from core.security import create_access_token
-    fresh_token = create_access_token(str(user_id), email, role, token_type="internal")
+    fresh_token = create_access_token(
+        str(user_id),
+        email,
+        role,
+        token_type="internal",
+        usuario_id=canonical_uid,
+        public_uuid=str(canonical_puuid) if canonical_puuid else None,
+    )
     
     return {
         **safe_user,
@@ -637,7 +686,40 @@ async def _build_effective_permissions_payload(current_user: Dict) -> Dict:
     db = service.repo.get_db()
     rbac_payload = get_rbac_user_permissions(db, current_user)
 
-    permisos_originales = rbac_payload.get("permisos", []) or []
+    permisos_originales = list(rbac_payload.get("permisos", []) or [])
+    raw_uid = current_user.get("usuario_id") if current_user.get("usuario_id") is not None else current_user.get("UsuarioID")
+    try:
+        canonical_uid = int(raw_uid) if raw_uid is not None and not isinstance(raw_uid, bool) else None
+    except Exception:
+        canonical_uid = None
+    canonical_puuid = (
+        current_user.get("public_uuid")
+        or current_user.get("PublicUUID")
+        or (str(context.user_id) if context.user_id and "-" in str(context.user_id) else None)
+    )
+
+    roles_contexto = []
+    if canonical_uid is not None:
+        try:
+            from core.rbac_sql.service import RBACSQLService
+            sql_perms = RBACSQLService.get_effective_permissions(canonical_uid) or []
+            for sp in sql_perms:
+                if sp and sp not in permisos_originales:
+                    permisos_originales.append(sp)
+        except Exception:
+            pass
+        try:
+            from modules.rbac_context_sql.context_service import RBACContextService
+            ctx_info = RBACContextService().get_user_context(current_user)
+            if isinstance(ctx_info, dict):
+                roles_contexto = list(ctx_info.get("roles_contexto") or [])
+                for p in ctx_info.get("permisos_efectivos") or []:
+                    code = p.get("CodigoPermiso") or p.get("codigo_permiso")
+                    if code and code not in permisos_originales:
+                        permisos_originales.append(code)
+        except Exception:
+            roles_contexto = []
+
     permisos_flat = _normalize_permission_codes(permisos_originales)
     permissions_by_module = _group_permissions_by_module(permisos_flat)
 
@@ -654,10 +736,13 @@ async def _build_effective_permissions_payload(current_user: Dict) -> Dict:
 
     return {
         "user_id": context.user_id,
+        "usuario_id": canonical_uid,
+        "public_uuid": canonical_puuid,
         "email": context.email,
         "role_legacy": current_user.get("role"),
         "source": "RBAC_SQL_CANONICAL_WITH_LEGACY_COMPAT",
         "roles": roles,
+        "roles_contexto": roles_contexto,
         "permissions": permissions_by_module,
         "permissions_flat": permisos_flat,
         "scope": {

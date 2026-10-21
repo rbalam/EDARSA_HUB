@@ -133,10 +133,20 @@ class AuthRepository:
         # canónico en `role_code`/`_sql_rol_codigo` para el código RBAC canónico-aware.
         role_code = user.get("CodigoRol") or ""
         role = user.get("NombreRol") or user.get("CodigoRol") or "Usuario"
+        raw_usuario_id = user.get("UsuarioID")
+        try:
+            canonical_usuario_id = int(raw_usuario_id) if raw_usuario_id is not None else None
+        except Exception:
+            canonical_usuario_id = None
+        raw_public_uuid = user.get("PublicUUID")
+        canonical_public_uuid = str(raw_public_uuid) if raw_public_uuid else None
         
         return {
             "id": str(user.get("PublicUUID") or user.get("MongoLegacyID") or user.get("UsuarioID")),
-            "UsuarioID": user.get("UsuarioID"),
+            "usuario_id": canonical_usuario_id,
+            "UsuarioID": canonical_usuario_id if canonical_usuario_id is not None else raw_usuario_id,
+            "public_uuid": canonical_public_uuid,
+            "PublicUUID": canonical_public_uuid,
             "email": user.get("Email"),
             "username": user.get("Username"),
             "nombre": user.get("NombreCompleto") or user.get("Nombre") or user.get("Username"),
@@ -147,7 +157,7 @@ class AuthRepository:
             "password_hash": user.get("PasswordHashTexto"),
             "password": user.get("PasswordHashTexto"),  # Compatibilidad con service.py
             "auth_source": "SQL_USUARIO_CATALOGO",
-            "_sql_usuario_id": user.get("UsuarioID"),
+            "_sql_usuario_id": canonical_usuario_id if canonical_usuario_id is not None else raw_usuario_id,
             "_sql_rol_codigo": role_code,
         }
     
@@ -159,6 +169,8 @@ class AuthRepository:
         
         return {
             "id": user.get("id"),
+            "usuario_id": user.get("usuario_id") if user.get("usuario_id") is not None else user.get("UsuarioID"),
+            "public_uuid": user.get("public_uuid") or user.get("PublicUUID"),
             "email": user.get("email"),
             "nombre": user.get("nombre"),
             "name": user.get("name"),
