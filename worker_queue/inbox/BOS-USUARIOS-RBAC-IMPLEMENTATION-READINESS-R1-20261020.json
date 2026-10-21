@@ -1,0 +1,90 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "request": {
+        "max_results": 30,
+        "paths": [
+          "backend/modules/auth",
+          "backend/modules/rbac_context_sql",
+          "backend/modules/sistema_users_sql",
+          "backend/core/auth",
+          "frontend/src/pages/Usuarios.jsx",
+          "frontend/src/pages/Usuarios.js"
+        ],
+        "search_terms": [
+          "Usuario_Catalogo",
+          "Usuario_RolesContexto",
+          "Usuario_PermisosRolModulo",
+          "UnidadNegocioID",
+          "EmpresaID",
+          "SucursalID",
+          "enrich_current_user_with_sql_id"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-USUARIOS-RBAC-IMPLEMENTATION-READINESS-R1-20261020",
+  "mode": "READ_ONLY",
+  "objective": "Analizar resultados históricos y preparar la propuesta concreta de implementación y alineación canónica de Usuarios y RBAC en EDARSAHUB BOS, abordando: 1) Autenticación e identidad SQL-first contra Usuario_Catalogo sin dependencia de MongoDB, 2) Jerarquía corporativa de 3 niveles Sistema_Empresas -> Unidades_Negocio -> Sistema_Sucursales, 3) Resolución contextual de alcance mediante Usuario_RolesContexto, 4) Matriz de permisos efectivos fail-closed vía Usuario_PermisosRolModulo, 5) Aislamiento corporativo multiempresa/multiunidad transversal, y 6) Menú Usuarios y frontend desacoplados de rutas legacy.",
+  "production_allowed": false,
+  "readiness_proposals": {
+    "1_autenticacion_identidad": {
+      "estado_actual": "Autenticación parcialmente dividida entre tokens con UUID y UsuarioID entero; residuos históricos de colecciones MongoDB documentados en memory/usuarios_rbac_fix_log.md.",
+      "fuente_canonica": "dbo.Usuario_Catalogo (UsuarioID INT IDENTITY PK, PublicUUID UNIQUEIDENTIFIER, Email NVARCHAR, NombreCompleto NVARCHAR, Activo BIT).",
+      "propuesta_correccion": "Eliminar de forma definitiva cualquier lectura/escritura hacia MongoDB en módulos de usuario. Homologar el token JWT y el objeto current_user para incluir obligatoriamente usuario_id (entero canónico de SQL), public_uuid y email. Desechar endpoints de rescate no canónicos."
+    },
+    "2_jerarquia_empresas_unidades_sucursales": {
+      "estado_actual": "Unidades de negocio canónicas residen en dbo.Unidades_Negocio, pero existen mezclas con Sistema_Empresas y Sistema_Sucursales sin FKs estrictas en vistas runtime.",
+      "fuente_canonica": "Nivel 1: dbo.Sistema_Empresas (EmpresaID) -> Nivel 2: dbo.Unidades_Negocio (id / UnidadNegocioID) -> Nivel 3: dbo.Sistema_Sucursales (SucursalID).",
+      "propuesta_correccion": "Implementar validación formal de pertenencia jerárquica (Sucursal pertenece a Unidad, Unidad pertenece a Empresa). Prohibir consultas que asuman empresa=unidad o que utilicen strings de unidad cuando existe llave foránea operativa."
+    },
+    "3_contexto_roles_alcance": {
+      "estado_actual": "dbo.Usuario_RolesContexto existe y es utilizado por RBACContextService, pero algunos módulos aún resuelven rol directamente como campo plano en el usuario (e.g. user['role']).",
+      "fuente_canonica": "dbo.Usuario_RolesContexto (UsuarioRolContextoID, UsuarioID, RolID, EmpresaID, UnidadNegocioID, SucursalID, EsRolPrimario, Activo).",
+      "propuesta_correccion": "Desacoplar el rol plano del usuario. La identidad es el usuario; la autorización es contextual al par (UsuarioID, UnidadNegocioID). Los permisos se resuelven contra la unidad activa seleccionada por el usuario en su sesión."
+    },
+    "4_permisos_efectivos": {
+      "estado_actual": "Matriz de permisos en dbo.Usuario_PermisosRolModulo implementada pero con bypasses hardcodeados en ciertos endpoints donde se verifica rol == 'SuperAdministrador' o emails específicos.",
+      "fuente_canonica": "dbo.Usuario_PermisosRolModulo (RolID, ModuloID, AccionID, Permitido, RestriccionPropietario, RestriccionSucursal, RequiereAutorizacion).",
+      "propuesta_correccion": "Eliminar todos los chequeos de email hardcodeados. Implementar resolución estricta fail-closed en el decorador/dependencia de ruta: si (RolID, ModuloID, AccionID) no tiene Permitido = 1 en la unidad activa, denegar con HTTP 403. Mantener bypass exclusivo y canónico únicamente para rol_codigo == 'SUPERADMIN' verificado contra catálogo SQL."
+    },
+    "5_aislamiento_corporativo": {
+      "estado_actual": "Si un endpoint no recibe unidad_negocio_id o el usuario no selecciona una, algunos servicios toman por omisión la primera unidad de la lista o devuelven datos globales sin filtrar.",
+      "fuente_canonica": "core.corporate_filters.service.CorporateFilterService y dbo.Usuario_RolesContexto con verificación fail-closed.",
+      "propuesta_correccion": "Hacer obligatorio el contexto de unidad en todas las solicitudes que manejen datos operacionales. Si la unidad solicitada no está asignada con Activo=1 al usuario en Usuario_RolesContexto, abortar de inmediato (fail-closed, retornar 403 Forbidden)."
+    },
+    "6_menu_usuarios": {
+      "estado_actual": "El menú de Usuarios y el componente frontend consumen rutas heterogéneas y en algunos casos esperan contratos de MongoDB (/api/users).",
+      "fuente_canonica": "API canónica: /api/sistema/usuarios y /api/rbac/context (módulo SEGURIDAD o SISTEMA_USUARIOS).",
+      "propuesta_correccion": "Alinear el frontend (Usuarios.jsx / Servidores / Roles) para consumir exclusivamente las rutas SQL canónicas de /api/sistema/usuarios y el catálogo contextual de roles /api/rbac/context, filtrando la visualización del menú en función de los permisos efectivos del usuario activo."
+    }
+  },
+  "requester": {
+    "chat": "usuarios-rbac",
+    "email": "carlosruz@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "bos-orchestrator"
+  },
+  "scheduling": {
+    "bounded_context": "USUARIOS_RBAC",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": [
+      "usuarios_rbac_readiness"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
