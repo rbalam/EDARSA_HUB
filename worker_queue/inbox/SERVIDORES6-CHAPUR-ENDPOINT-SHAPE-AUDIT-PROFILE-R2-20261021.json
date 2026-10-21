@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-CHAPUR-ENDPOINT-SHAPE-AUDIT-PROFILE-R2-20261021",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "6b040926ce4f4abccbf4cbae206c1b49d70fc1d9",
+  "objective": "Extender exclusivamente el perfil READ_ONLY chapur_external_integration_readiness_v1 con evidencia sanitizada de forma del endpoint CHAPUR y actualizar el test contractual para incluir chapur_endpoint_contract_shape. No exponer host, URL completa, credenciales ni secretos. No DML ni Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "Conexiones y Comunicaciones",
+    "chat": "Menu Servidores 6"
+  },
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/readonly_audit_profiles.py",
+      "old": "                    {\n                        \"name\": \"chapur_external_health\",\n                        \"sql\": (",
+      "new": "                    {\n                        \"name\": \"chapur_endpoint_contract_shape\",\n                        \"sql\": (\n                            \"SELECT CONVERT(varchar(36),sc.id) AS connection_id,sc.nombre,sc.system_type,\"\n                            \"CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.api_url,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS url_present,\"\n                            \"CASE WHEN RIGHT(LOWER(RTRIM(ISNULL(sc.api_url,''))),6)='/query' THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS ends_with_query,\"\n                            \"LEN(ISNULL(sc.api_url,'')) AS url_length \"\n                            \"FROM dbo.Servidores_Conexiones sc \"\n                            \"WHERE sc.id IN ('8CBDCC89-6495-49C3-BE9C-A965DB82C77F','D8B2D1EB-2E1F-4E43-B7D9-822BF671E315') \"\n                            \"ORDER BY sc.nombre\"\n                        ),\n                    },\n                    {\n                        \"name\": \"chapur_external_health\",\n                        \"sql\": (",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_named_readonly_audit_profiles.py",
+      "old": "    assert names == {\n        \"chapur_external_readiness\",\n        \"chapur_external_health\",\n        \"chapur_query_contract_metadata\",\n        \"chapur_connection_roles\",\n    }",
+      "new": "    assert names == {\n        \"chapur_external_readiness\",\n        \"chapur_endpoint_contract_shape\",\n        \"chapur_external_health\",\n        \"chapur_query_contract_metadata\",\n        \"chapur_connection_roles\",\n    }",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_named_readonly_audit_profiles.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
