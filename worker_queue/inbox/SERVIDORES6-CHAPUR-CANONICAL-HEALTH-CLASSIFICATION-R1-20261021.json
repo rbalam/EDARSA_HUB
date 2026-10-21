@@ -1,0 +1,27 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-CHAPUR-CANONICAL-HEALTH-CLASSIFICATION-R1-20261021",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "89635a525efa448dec9222f7d1397d73b0e89265",
+  "objective": "Ejecutar una unica prueba gobernada API_LOCAL_HEALTH_TEST sobre CHAPUR BACKOFFICE y CHAPUR NORTE usando el transporte canonico integrado en 89635a525efa448dec9222f7d1397d73b0e89265, para clasificar sanitizadamente cualquier HTTP 500 sin exponer cuerpo remoto, URL, host ni secretos. Sin sync, sin DML de negocio y sin Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "Conexiones y Comunicaciones",
+    "chat": "Menu Servidores 6"
+  },
+  "mode": "API_LOCAL_HEALTH_TEST",
+  "actions": [],
+  "connection_ids": [
+    "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+    "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315"
+  ],
+  "confirm_api_local_health_test": true,
+  "preflight_audit_profile": "chapur_external_integration_readiness_v1",
+  "post_audit_profile": "chapur_external_integration_readiness_v1",
+  "preflight_checks": [],
+  "checks": []
+}
