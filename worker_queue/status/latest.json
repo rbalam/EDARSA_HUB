@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "e6e14238933320a22228087c75a0ecab07557dc9",
-  "generated_at_utc": "2026-10-21T01:24:24Z",
+  "generated_at_utc": "2026-10-21T01:25:47Z",
   "history": {
     "done_total_local": 1518,
     "pending_total_local": 0,
@@ -16,43 +16,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1683,
+      "age_seconds": 1767,
       "job_id": "SERVIDORES6-CHAPUR-ENDPOINT-SHAPE-AUDIT-PROFILE-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1046,
+      "age_seconds": 1129,
       "job_id": "SERVIDORES6-CHAPUR-ENDPOINT-SHAPE-AUDIT-PROFILE-R2-20261021",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 822,
+      "age_seconds": 905,
       "job_id": "SERVIDORES6-CHAPUR-ENDPOINT-SHAPE-READONLY-R1-20261021",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2724,
+      "age_seconds": 2807,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-FINAL-READONLY-AUDIT-R3-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2087,
+      "age_seconds": 2170,
       "job_id": "SERVIDORES6-CHAPUR-GATE4D-OPERATIONAL-HEALTH-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3560,
-      "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R4-20261020",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3100,
+      "age_seconds": 3183,
       "job_id": "WORKER-SLOT-RELEASE-IDEMPOTENT-R5-20261020",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,14 +60,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 7,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
   "remote_development_sha": "e6e14238933320a22228087c75a0ecab07557dc9",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-21T01:24:19Z",
-    "last_receive_utc": "2026-10-21T01:24:14Z",
+    "last_cycle_utc": "2026-10-21T01:25:41Z",
+    "last_receive_utc": "2026-10-21T01:25:36Z",
     "last_terminal_utc": "2026-10-21T01:10:42Z",
     "pid": "37745",
     "runtime_fingerprint": {
