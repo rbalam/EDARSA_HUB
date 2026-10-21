@@ -173,6 +173,18 @@ def build_readonly_audit_checks(profile: str) -> List[Dict[str, Any]]:
                         ),
                     },
                     {
+                        "name": "chapur_endpoint_contract_shape",
+                        "sql": (
+                            "SELECT CONVERT(varchar(36),sc.id) AS connection_id,sc.nombre,sc.system_type,"
+                            "CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.api_url,''))), '') IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS url_present,"
+                            "CASE WHEN RIGHT(LOWER(RTRIM(ISNULL(sc.api_url,''))),6)='/query' THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS ends_with_query,"
+                            "LEN(ISNULL(sc.api_url,'')) AS url_length "
+                            "FROM dbo.Servidores_Conexiones sc "
+                            "WHERE sc.id IN ('8CBDCC89-6495-49C3-BE9C-A965DB82C77F','D8B2D1EB-2E1F-4E43-B7D9-822BF671E315') "
+                            "ORDER BY sc.nombre"
+                        ),
+                    },
+                    {
                         "name": "chapur_external_health",
                         "sql": (
                             "SELECT CONVERT(varchar(36), e.ServidorID) AS connection_id,"

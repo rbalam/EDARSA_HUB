@@ -177,6 +177,7 @@ def test_chapur_external_integration_readiness_profile_is_sanitized_and_readonly
     names = {query["name"] for query in check["queries"]}
     assert names == {
         "chapur_external_readiness",
+        "chapur_endpoint_contract_shape",
         "chapur_external_health",
         "chapur_query_contract_metadata",
         "chapur_connection_roles",
