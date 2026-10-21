@@ -1,0 +1,20 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-CHAPUR-ENDPOINT-SHAPE-READONLY-R1-20261021",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "e6e14238933320a22228087c75a0ecab07557dc9",
+  "objective": "Ejecutar exclusivamente el perfil READ_ONLY chapur_external_integration_readiness_v1 ya extendido para obtener evidencia sanitizada de forma del endpoint CHAPUR, incluyendo url_present y ends_with_query. Sin SQL inline, DML, secretos ni Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "Conexiones y Comunicaciones",
+    "chat": "Menu Servidores 6"
+  },
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "audit_profile": "chapur_external_integration_readiness_v1",
+  "checks": []
+}
