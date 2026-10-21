@@ -4,34 +4,47 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "c23ec5a7f489ce5d6ac47f81bb02137c5f2db9ca",
-  "generated_at_utc": "2026-10-21T03:13:57Z",
+  "generated_at_utc": "2026-10-21T03:15:24Z",
   "history": {
-    "done_total_local": 1520,
+    "done_total_local": 1521,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 1281,
-    "results_total_local": 2570
+    "results_total_local": 2571
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [],
+  "jobs": [
+    {
+      "age_seconds": 27,
+      "job_id": "BOS-USUARIOS-RBAC-IMPLEMENTATION-READINESS-R1-20261020",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 4,
+      "job_id": "SERVIDORES6-CONNECTION-RESOLVER-API-LOCAL-CANONICAL-ID-R1-20261020",
+      "reason": null,
+      "state": "RUNNING"
+    }
+  ],
   "local_development_sha": "c23ec5a7f489ce5d6ac47f81bb02137c5f2db9ca",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 0,
-  "queue_running": 0,
+  "queue_result_ready_recent": 1,
+  "queue_running": 1,
   "remote_development_sha": "c23ec5a7f489ce5d6ac47f81bb02137c5f2db9ca",
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "SERVIDORES6-CONNECTION-RESOLVER-API-LOCAL-CANONICAL-ID-R1-20261020",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-21T03:13:45Z",
-    "last_receive_utc": "2026-10-21T03:13:56Z",
-    "last_terminal_utc": "2026-10-21T01:58:51Z",
+    "last_cycle_utc": "2026-10-21T03:15:09Z",
+    "last_receive_utc": "2026-10-21T03:15:20Z",
+    "last_terminal_utc": "2026-10-21T03:14:56Z",
     "pid": "232590",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "f9c3d932f1e099478cbbf7d5e758eb70a9a968b5",
