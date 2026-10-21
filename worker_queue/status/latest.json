@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "d9af41f1d096f00bdf992aeec114b09e4a184c61",
-  "generated_at_utc": "2026-10-21T06:41:47Z",
+  "generated_at_utc": "2026-10-21T06:43:01Z",
   "history": {
     "done_total_local": 1525,
     "pending_total_local": 0,
@@ -16,25 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3522,
+      "age_seconds": 3596,
       "job_id": "BOS-USUARIOS-RBAC-IMPLEMENTATION-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3533,
-      "job_id": "SERVIDORES6-API-REPLICATION-POLICY-CANONICAL-R3-20261021",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1209,
+      "age_seconds": 1283,
       "job_id": "SERVIDORES7-API-REPLICATION-POLICY-CANONICAL-R4-20261021",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 652,
+      "age_seconds": 726,
       "job_id": "SERVIDORES7-API-REPLICATION-POLICY-CANONICAL-R5-20261021",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,14 +42,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "remote_development_sha": "d9af41f1d096f00bdf992aeec114b09e4a184c61",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-21T06:41:44Z",
-    "last_receive_utc": "2026-10-21T06:41:39Z",
+    "last_cycle_utc": "2026-10-21T06:42:52Z",
+    "last_receive_utc": "2026-10-21T06:42:57Z",
     "last_terminal_utc": "2026-10-21T06:28:40Z",
     "pid": "384",
     "runtime_fingerprint": {
