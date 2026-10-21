@@ -1,0 +1,88 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/costos_margenes",
+          "backend/modules/sync_recetas",
+          "backend/core/recetas_service.py",
+          "backend/core/insumos_service.py",
+          "backend/core/consumo_receta_service.py",
+          "frontend/src/pages/comercial/CostosMargenes.jsx"
+        ],
+        "search_terms": [
+          "Sync_Productos",
+          "Sync_Productos_Recetas",
+          "Sync_Productos_Insumos",
+          "Sync_Productos_Elaborados",
+          "Sync_Productos_Compuestos",
+          "Unidades_Negocio",
+          "UnidadNegocioID",
+          "ServerID",
+          "CantidadComponentesReceta",
+          "TieneReceta",
+          "CostoReceta",
+          "PrecioSinImpuestos"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "backend/modules/costos_margenes/routes.py",
+        "backend/modules/costos_margenes/routes_precios.py",
+        "backend/modules/costos_margenes/repository.py",
+        "backend/modules/costos_margenes/configuracion_repository.py",
+        "backend/modules/costos_margenes/reglas_margen_service.py",
+        "backend/modules/costos_margenes/reglas_margen_repository.py",
+        "backend/modules/sync_recetas/sync_recetas.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_sync_recetas_transactional_reconciliation.py",
+        "backend/tests/test_sync_recetas_empty_snapshot_orchestration.py",
+        "backend/tests/test_sync_recetas_result_status.py",
+        "backend/tests/test_sync_recetas_strict_query.py",
+        "backend/tests/test_costos_margenes_domain_ownership.py",
+        "backend/tests/test_costos_margenes_catalogo_server_scope.py",
+        "backend/tests/test_costos_margenes_resumen_canonico.py",
+        "backend/tests/test_costos_margenes_formula_canonica.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-GATE1-R1",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 R1 READ_ONLY para BOS Costos y Margenes - Conciliacion POS vs EDARSAHUB SQL. Auditar el contrato del repositorio para sincronizacion y conciliacion transaccional de productos, recetas, insumos y elaborados entre POS (SoftRestaurant / MPRO) y EDARSAHUB SQL (Sync_Productos, Sync_Productos_Recetas, Sync_Productos_Insumos, Sync_Productos_Elaborados, Sync_Productos_Compuestos), verificar compilacion y pruebas de contrato y conciliacion de Costos y Margenes y Sync Recetas, sin ejecutar mutaciones ni tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "bos-costos-pos-reconciliation",
+    "email": "carlosruz@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "bos-orchestrator"
+  },
+  "scheduling": {
+    "bounded_context": "COSTOS_MARGENES",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": [
+      "costos_pos_reconciliation_gate1"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
