@@ -29,6 +29,12 @@ from .repository import (
     test_api_connection_health,
     check_duplicate_api
 )
+from .assignment_repository import (
+    list_api_operational_assignments,
+    upsert_api_operational_assignment,
+    deactivate_api_operational_assignment,
+)
+from core.rbac.middleware import require_explicit_permission
 
 router = APIRouter(prefix="/api-connections", tags=["API Connections"])
 security = HTTPBearer()
@@ -64,6 +70,16 @@ class ApiConnectionUpdate(BaseModel):
     solo_ventas_dia: Optional[bool] = None
     activo: Optional[bool] = None
     visible_en_operaciones: Optional[bool] = None
+
+
+class ApiOperationalAssignmentRequest(BaseModel):
+    empresa_id: int
+    rol_conexion: str = Field("VENTAS_DIA_API_LOCAL")
+    numero_sucursal_sistema: Optional[int] = None
+    codigo_sucursal_sistema: Optional[str] = None
+    nombre_sucursal_sistema: Optional[str] = None
+    prioridad: int = Field(1, ge=1)
+    es_principal: bool = True
 
 
 class TestConnectionRequest(BaseModel):
@@ -166,6 +182,55 @@ async def get_api(api_id: str, credentials: HTTPAuthorizationCredentials = Depen
         raise HTTPException(status_code=503, detail=f"Error accediendo a base de datos")
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+# ============================================================================
+# ASIGNACIONES OPERATIVAS OPCIONALES
+# ============================================================================
+
+@router.get("/{api_id}/assignments")
+async def list_api_assignments(
+    api_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    get_current_user(credentials)
+    return {
+        "success": True,
+        "data": list_api_operational_assignments(api_id),
+        "source": "SISTEMA_EMPRESASSERVIDORES",
+    }
+
+
+@router.post("/{api_id}/assignments")
+async def create_or_reactivate_api_assignment(
+    api_id: str,
+    data: ApiOperationalAssignmentRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    _admin: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
+):
+    get_current_user(credentials)
+    assignment = upsert_api_operational_assignment(
+        api_id,
+        **data.model_dump(),
+    )
+    return {"success": True, "data": assignment}
+
+
+@router.delete("/{api_id}/assignments/{empresa_id}/{rol_conexion}")
+async def remove_api_assignment(
+    api_id: str,
+    empresa_id: int,
+    rol_conexion: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    _admin: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
+):
+    get_current_user(credentials)
+    changed = deactivate_api_operational_assignment(
+        api_id,
+        empresa_id=empresa_id,
+        rol_conexion=rol_conexion,
+    )
+    return {"success": True, "changed": changed}
 
 
 # ============================================================================
