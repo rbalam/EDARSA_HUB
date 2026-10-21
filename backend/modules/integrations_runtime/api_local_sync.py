@@ -66,6 +66,51 @@ async def resolve_api_local_sync_config(server_id: str) -> ApiLocalSyncConfig:
     )
 
 
+def classify_api_local_http_error(response: Any) -> str:
+    """Clasifica errores HTTP API_LOCAL sin exponer el cuerpo remoto."""
+    status = int(getattr(response, "status_code", 0) or 0)
+    base = f"API_LOCAL_HTTP_{status}"
+
+    if status in (401, 403):
+        return f"{base}_AUTH"
+    if status == 404:
+        return f"{base}_ENDPOINT"
+
+    try:
+        text = str(getattr(response, "text", "") or "").lower()
+    except Exception:
+        text = ""
+
+    if status >= 500:
+        if any(token in text for token in (
+            "login failed",
+            "authentication failed",
+            "invalid login",
+            "password",
+        )):
+            return f"{base}_UPSTREAM_SQL_AUTH"
+        if any(token in text for token in (
+            "unable to connect",
+            "connection refused",
+            "server unavailable",
+            "network",
+            "timed out",
+            "timeout",
+            "db-lib error",
+            "adaptive server is unavailable",
+        )):
+            return f"{base}_UPSTREAM_SQL_CONNECTIVITY"
+        if any(token in text for token in (
+            "invalid object name",
+            "invalid column name",
+            "incorrect syntax",
+            "syntax error",
+        )):
+            return f"{base}_UPSTREAM_SQL_QUERY"
+
+    return base
+
+
 def execute_api_local_readonly(
     config: ApiLocalSyncConfig,
     sql: str,
@@ -100,9 +145,7 @@ def execute_api_local_readonly(
         raise ApiLocalSyncError("API_LOCAL_OFFLINE") from exc
 
     if int(getattr(response, "status_code", 0) or 0) != 200:
-        raise ApiLocalSyncError(
-            f"API_LOCAL_HTTP_{int(getattr(response, 'status_code', 0) or 0)}"
-        )
+        raise ApiLocalSyncError(classify_api_local_http_error(response))
 
     try:
         payload = response.json()

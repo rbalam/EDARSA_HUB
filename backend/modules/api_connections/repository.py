@@ -529,59 +529,57 @@ async def sync_all_to_mongo_cache() -> Dict:
 
 async def test_api_connection_health(api_id: str = None, url: str = None, api_key: str = None) -> Dict:
     """
-    Prueba la conexión a una API local.
-    Devuelve el resultado de salud sin persistencia MongoDB.
+    Prueba la conexión a una API local usando el transporte canónico READ_ONLY.
     """
-    import requests
-    
-    # Si se proporciona api_id, resolver autenticacion exclusivamente
-    # por el helper interno. El lector publico enmascara api_key y nunca
-    # debe alimentar autenticacion runtime.
+    import re
+    import time
+
+    from modules.integrations_runtime.api_local_sync import (
+        ApiLocalSyncConfig,
+        ApiLocalSyncError,
+        DEFAULT_API_LOCAL_TIMEOUT_SECONDS,
+        execute_api_local_readonly,
+        resolve_api_local_sync_config,
+    )
+
     if api_id:
-        api = get_api_connection_with_decrypted_key(api_id)
-        if not api:
-            return {
-                "success": False,
-                "error": "API no encontrada o credencial no descifrable en EDARSAHUB SQL",
-            }
-        url = api.get('url')
-        api_key = api.get('api_key_decrypted')
-    
-    if not url:
-        return {"success": False, "error": "URL no proporcionada"}
-    
+        try:
+            config = await resolve_api_local_sync_config(api_id)
+        except ApiLocalSyncError as exc:
+            return {"success": False, "error": str(exc)}
+    else:
+        if not url:
+            return {"success": False, "error": "URL no proporcionada"}
+        config = ApiLocalSyncConfig(
+            server_id="adhoc",
+            server_name="adhoc",
+            api_url=str(url),
+            api_key=str(api_key or ""),
+        )
+
+    started = time.time()
     result = {}
     try:
-        headers = {"x-api-key": api_key} if api_key else {}
-        from modules.integrations_runtime.api_local_sync import (
-            DEFAULT_API_LOCAL_TIMEOUT_SECONDS,
+        execute_api_local_readonly(
+            config,
+            "SELECT 1 as test",
+            timeout_seconds=DEFAULT_API_LOCAL_TIMEOUT_SECONDS,
         )
-        response = requests.get(
-            url,
-            headers=headers,
-            params={"sql": "SELECT 1 as test"},
-            timeout=DEFAULT_API_LOCAL_TIMEOUT_SECONDS,
-        )
-        
-        if response.status_code == 200:
-            result = {
-                "success": True,
-                "status_code": 200,
-                "message": "Conexión exitosa",
-                "response_time_ms": round(response.elapsed.total_seconds() * 1000, 2)
-            }
-        else:
-            result = {
-                "success": False,
-                "status_code": response.status_code,
-                "error": f"HTTP {response.status_code}"
-            }
-    except requests.exceptions.Timeout:
-        result = {"success": False, "error": "Timeout (5s)"}
-    except requests.exceptions.ConnectionError:
-        result = {"success": False, "error": "Sin conexión"}
-    except Exception as e:
-        result = {"success": False, "error": str(e)}
+        result = {
+            "success": True,
+            "status_code": 200,
+            "message": "Conexión exitosa",
+            "response_time_ms": round((time.time() - started) * 1000, 2),
+        }
+    except ApiLocalSyncError as exc:
+        error_code = str(exc)
+        match = re.match(r"API_LOCAL_HTTP_(\d+)", error_code)
+        result = {
+            "success": False,
+            "status_code": int(match.group(1)) if match else None,
+            "error": error_code,
+            "response_time_ms": round((time.time() - started) * 1000, 2),
+        }
 
     # Gate 5C: solo una prueba asociada a ConexionID canonico persiste health.
     # Las pruebas ad-hoc por URL siguen siendo efimeras y no fabrican identidad.
@@ -592,9 +590,7 @@ async def test_api_connection_health(api_id: str = None, url: str = None, api_ke
                 api_id,
                 success=bool(result.get("success")),
                 latency_ms=result.get("response_time_ms"),
-                error_code=None if result.get("success") else (
-                    f"HTTP_{result.get('status_code')}" if result.get("status_code") else "API_CONNECTION_ERROR"
-                ),
+                error_code=None if result.get("success") else result.get("error"),
                 error_message=None if result.get("success") else result.get("error"),
             )
             result["health_persisted"] = True

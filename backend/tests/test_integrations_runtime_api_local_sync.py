@@ -7,9 +7,10 @@ import modules.integrations_runtime.api_local_sync as transport
 
 
 class FakeResponse:
-    def __init__(self, status_code=200, payload=None):
+    def __init__(self, status_code=200, payload=None, text=""):
         self.status_code = status_code
         self._payload = payload
+        self.text = text
 
     def json(self):
         if isinstance(self._payload, Exception):
@@ -154,6 +155,28 @@ def test_resolver_uses_canonical_registry_and_decryption(monkeypatch):
     assert cfg.server_id == "srv"
     assert cfg.system_type == "ENTERPRISE"
     assert cfg.config_origin == "EDARSAHUB_SQL"
+
+
+def test_http_500_classifier_never_returns_raw_error_text():
+    response = FakeResponse(
+        500,
+        text="Login failed for user sensitive-user on secret-host",
+    )
+
+    code = transport.classify_api_local_http_error(response)
+
+    assert code == "API_LOCAL_HTTP_500_UPSTREAM_SQL_AUTH"
+    assert "sensitive-user" not in code
+    assert "secret-host" not in code
+
+
+def test_http_500_classifier_distinguishes_connectivity_and_query():
+    assert transport.classify_api_local_http_error(
+        FakeResponse(500, text="DB-Lib error: server unavailable")
+    ) == "API_LOCAL_HTTP_500_UPSTREAM_SQL_CONNECTIVITY"
+    assert transport.classify_api_local_http_error(
+        FakeResponse(500, text="Invalid object name dbo.Missing")
+    ) == "API_LOCAL_HTTP_500_UPSTREAM_SQL_QUERY"
 
 
 def test_resolver_rejects_non_api_local(monkeypatch):

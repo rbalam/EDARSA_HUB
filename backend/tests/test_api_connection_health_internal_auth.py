@@ -4,43 +4,37 @@ from types import SimpleNamespace
 import pytest
 
 import modules.api_connections.repository as repository
+import modules.integrations_runtime.api_local_sync as transport
 
 
 @pytest.mark.asyncio
-async def test_health_uses_internal_auth_value_not_public_mask(monkeypatch):
-    captured = {}
+async def test_health_uses_canonical_api_local_transport(monkeypatch):
     internal_value = "fixture-value"
+    captured = {}
 
-    monkeypatch.setattr(
-        repository,
-        "get_api_connection_with_decrypted_key",
-        lambda api_id: {
-            "id": api_id,
-            "url": "http://example.invalid/query",
-            "api_key_decrypted": internal_value,
-            "activo": True,
-        },
-    )
+    async def fake_resolve(api_id):
+        return transport.ApiLocalSyncConfig(
+            server_id=api_id,
+            server_name="API Test",
+            api_url="http://example.invalid/query",
+            api_key=internal_value,
+            system_type="ENTERPRISE",
+            config_origin="EDARSAHUB_SQL",
+        )
+
+    def fake_execute(config, sql, *, timeout_seconds):
+        captured["config"] = config
+        captured["sql"] = sql
+        captured["timeout"] = timeout_seconds
+        return [{"test": 1}]
+
+    monkeypatch.setattr(transport, "resolve_api_local_sync_config", fake_resolve)
+    monkeypatch.setattr(transport, "execute_api_local_readonly", fake_execute)
 
     def public_path_must_not_be_used(_api_id):
         raise AssertionError("public masked connection path used for runtime auth")
 
-    monkeypatch.setattr(
-        repository,
-        "get_api_connection_sql",
-        public_path_must_not_be_used,
-    )
-
-    class Response:
-        status_code = 200
-        elapsed = SimpleNamespace(total_seconds=lambda: 0.012)
-
-    def fake_get(url, *, headers, params, timeout):
-        captured.update(url=url, headers=headers, params=params, timeout=timeout)
-        return Response()
-
-    import requests
-    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(repository, "get_api_connection_sql", public_path_must_not_be_used)
 
     persisted = {}
 
@@ -60,7 +54,8 @@ async def test_health_uses_internal_auth_value_not_public_mask(monkeypatch):
 
     assert result["success"] is True
     assert result["health_persisted"] is True
-    assert captured["headers"] == {"x-api-key": internal_value}
-    assert captured["params"] == {"sql": "SELECT 1 as test"}
+    assert captured["config"].api_key == internal_value
+    assert captured["sql"] == "SELECT 1 as test"
+    assert captured["timeout"] == transport.DEFAULT_API_LOCAL_TIMEOUT_SECONDS
     assert persisted["connection_id"] == "00000000-0000-4000-8000-000000000701"
     assert internal_value not in repr(result)
