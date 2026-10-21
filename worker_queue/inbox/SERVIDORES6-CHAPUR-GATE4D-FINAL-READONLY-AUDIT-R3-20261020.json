@@ -1,0 +1,20 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-CHAPUR-GATE4D-FINAL-READONLY-AUDIT-R3-20261020",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "6b040926ce4f4abccbf4cbae206c1b49d70fc1d9",
+  "objective": "Certificar en READ_ONLY_SQL el estado final CHAPUR tras desacoplar solo_ventas_dia de queries_configured y corregir el cierre idempotente del Universal Worker. Auditar readiness, health, query_* sanitizados y roles canonicos para BACKOFFICE y NORTE. Sin SQL inline, DML, secretos ni Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "Conexiones y Comunicaciones",
+    "chat": "Menu Servidores 6"
+  },
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "audit_profile": "chapur_external_integration_readiness_v1",
+  "checks": []
+}
