@@ -1,0 +1,31 @@
+{
+  "base_sha": "e6e14238933320a22228087c75a0ecab07557dc9",
+  "blockers": [],
+  "candidate_sha": "89635a525efa448dec9222f7d1397d73b0e89265",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-10-21T01:35:59Z",
+  "development_sha": "89635a525efa448dec9222f7d1397d73b0e89265",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/api_connections/repository.py",
+    "backend/modules/integrations_runtime/api_local_sync.py",
+    "backend/tests/test_api_connection_health_canonical_timeout.py",
+    "backend/tests/test_api_connection_health_internal_auth.py",
+    "backend/tests/test_integrations_runtime_api_local_sync.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES6-API-LOCAL-HEALTH-CANONICAL-TRANSPORT-R2-20261021",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-10-21T01:36:46Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-21T01:35:48Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
