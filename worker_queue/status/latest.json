@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "89635a525efa448dec9222f7d1397d73b0e89265",
-  "generated_at_utc": "2026-10-21T02:18:12Z",
+  "generated_at_utc": "2026-10-21T02:19:41Z",
   "history": {
     "done_total_local": 1520,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3056,
+      "age_seconds": 3145,
       "job_id": "SERVIDORES6-API-LOCAL-HEALTH-CANONICAL-TRANSPORT-R1-20261021",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2532,
+      "age_seconds": 2622,
       "job_id": "SERVIDORES6-API-LOCAL-HEALTH-CANONICAL-TRANSPORT-R2-20261021",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1922,
+      "age_seconds": 2011,
       "job_id": "SERVIDORES6-CHAPUR-CANONICAL-HEALTH-CLASSIFICATION-R1-20261021",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1161,
+      "age_seconds": 1250,
       "job_id": "SERVIDORES6-CHAPUR-UPSTREAM-SQL-CONFIG-SHAPE-PROFILE-R1-20261021",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,8 +54,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-21T02:17:54Z",
-    "last_receive_utc": "2026-10-21T02:18:07Z",
+    "last_cycle_utc": "2026-10-21T02:19:31Z",
+    "last_receive_utc": "2026-10-21T02:19:26Z",
     "last_terminal_utc": "2026-10-21T01:58:51Z",
     "pid": "232590",
     "runtime_fingerprint": {
