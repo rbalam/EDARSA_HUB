@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "fd257af698c0b833cd219b0d02fcc000f47ef9ad",
-  "generated_at_utc": "2026-10-21T06:11:41Z",
+  "generated_at_utc": "2026-10-21T06:13:10Z",
   "history": {
     "done_total_local": 1525,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2636,
+      "age_seconds": 2726,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-GATE1-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1715,
+      "age_seconds": 1805,
       "job_id": "BOS-USUARIOS-RBAC-IMPLEMENTATION-R1-20261020",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3358,
+      "age_seconds": 3447,
       "job_id": "SERVIDORES6-API-REPLICATION-POLICY-CANONICAL-R1-20261021",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2354,
+      "age_seconds": 2443,
       "job_id": "SERVIDORES6-API-REPLICATION-POLICY-CANONICAL-R2-20261021",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1726,
+      "age_seconds": 1816,
       "job_id": "SERVIDORES6-API-REPLICATION-POLICY-CANONICAL-R3-20261021",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-21T06:11:30Z",
-    "last_receive_utc": "2026-10-21T06:11:25Z",
+    "last_cycle_utc": "2026-10-21T06:13:07Z",
+    "last_receive_utc": "2026-10-21T06:13:02Z",
     "last_terminal_utc": "2026-10-21T05:43:05Z",
     "pid": "287",
     "runtime_fingerprint": {
