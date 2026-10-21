@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "89635a525efa448dec9222f7d1397d73b0e89265",
-  "generated_at_utc": "2026-10-21T02:02:13Z",
+  "generated_at_utc": "2026-10-21T02:03:44Z",
   "history": {
     "done_total_local": 1520,
     "pending_total_local": 0,
@@ -16,37 +16,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2097,
+      "age_seconds": 2187,
       "job_id": "SERVIDORES6-API-LOCAL-HEALTH-CANONICAL-TRANSPORT-R1-20261021",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1574,
+      "age_seconds": 1664,
       "job_id": "SERVIDORES6-API-LOCAL-HEALTH-CANONICAL-TRANSPORT-R2-20261021",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 964,
+      "age_seconds": 1054,
       "job_id": "SERVIDORES6-CHAPUR-CANONICAL-HEALTH-CLASSIFICATION-R1-20261021",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3315,
+      "age_seconds": 3405,
       "job_id": "SERVIDORES6-CHAPUR-ENDPOINT-SHAPE-AUDIT-PROFILE-R2-20261021",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3091,
+      "age_seconds": 3181,
       "job_id": "SERVIDORES6-CHAPUR-ENDPOINT-SHAPE-READONLY-R1-20261021",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 202,
+      "age_seconds": 292,
       "job_id": "SERVIDORES6-CHAPUR-UPSTREAM-SQL-CONFIG-SHAPE-PROFILE-R1-20261021",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,8 +66,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-21T02:01:55Z",
-    "last_receive_utc": "2026-10-21T02:02:09Z",
+    "last_cycle_utc": "2026-10-21T02:03:31Z",
+    "last_receive_utc": "2026-10-21T02:03:26Z",
     "last_terminal_utc": "2026-10-21T01:58:51Z",
     "pid": "232590",
     "runtime_fingerprint": {
