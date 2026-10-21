@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-API-OPERATIONAL-ASSIGNMENTS-BACKEND-R1-20261020",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "30f1bbf36a6e2c84d5a1d865c516c761b566199c",
+  "objective": "Crear exclusivamente el backend canónico de asignaciones operativas opcionales entre API_LOCAL y unidades/empresas mediante Sistema_EmpresasServidores. Soportar 0..N relaciones, alta/reactivación atómica y desasignación por Activo=0. Usar writer validado, transacción serializable y RBAC_ADMIN explícito para mutaciones. No modificar frontend, esquema SQL, datos existentes ni Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "Conexiones y Comunicaciones",
+    "chat": "Menu Servidores 6"
+  },
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/api_connections/assignment_repository.py",
+      "content": "from __future__ import annotations\n\nfrom typing import Any, Dict, List, Optional\nfrom uuid import UUID\n\nfrom core.connections.edarsahub_writer_connection import (\n    open_validated_writer_connection,\n)\nfrom core.sql_first.db import fetch_all_dict_readonly\n\n\ndef _uuid_text(value: str) -> str:\n    return str(UUID(str(value)))\n\n\ndef list_api_operational_assignments(api_id: str) -> List[Dict[str, Any]]:\n    \"\"\"Lista relaciones activas de una API_LOCAL con empresas/unidades canónicas.\"\"\"\n    connection_id = _uuid_text(api_id)\n    return fetch_all_dict_readonly(\n        \"\"\"\n        SELECT\n            es.EmpresaServidorID AS assignment_id,\n            es.EmpresaID AS empresa_id,\n            e.CodigoEmpresa AS empresa_codigo,\n            e.NombreComercial AS empresa_nombre,\n            CONVERT(varchar(36), es.ServidorID) AS servidor_id,\n            es.RolConexion AS rol_conexion,\n            es.NumeroSucursalSistema AS numero_sucursal_sistema,\n            es.CodigoSucursalSistema AS codigo_sucursal_sistema,\n            es.NombreSucursalSistema AS nombre_sucursal_sistema,\n            es.Prioridad AS prioridad,\n            es.EsPrincipal AS es_principal,\n            es.Activo AS activo\n        FROM dbo.Sistema_EmpresasServidores es\n        JOIN dbo.Sistema_Empresas e\n          ON e.EmpresaID = es.EmpresaID\n        JOIN dbo.Servidores_Conexiones sc\n          ON sc.id = es.ServidorID\n        WHERE es.ServidorID = %s\n          AND es.Activo = 1\n          AND sc.tipo_conexion = 'API_LOCAL'\n        ORDER BY e.NombreComercial, es.RolConexion, es.Prioridad\n        \"\"\",\n        (connection_id,),\n    )\n\n\ndef upsert_api_operational_assignment(\n    api_id: str,\n    *,\n    empresa_id: int,\n    rol_conexion: str,\n    numero_sucursal_sistema: Optional[int] = None,\n    codigo_sucursal_sistema: Optional[str] = None,\n    nombre_sucursal_sistema: Optional[str] = None,\n    prioridad: int = 1,\n    es_principal: bool = True,\n) -> Dict[str, Any]:\n    \"\"\"Crea o reactiva una relación canónica Empresa <-> API_LOCAL.\"\"\"\n    connection_id = _uuid_text(api_id)\n    role = str(rol_conexion or \"\").strip().upper()\n    if not role:\n        raise ValueError(\"ROL_CONEXION_REQUIRED\")\n    if int(prioridad) < 1:\n        raise ValueError(\"PRIORIDAD_INVALID\")\n\n    conn, _identity = open_validated_writer_connection()\n    try:\n        cur = conn.cursor(as_dict=True)\n        cur.execute(\"SET XACT_ABORT ON\")\n        cur.execute(\"SET TRANSACTION ISOLATION LEVEL SERIALIZABLE\")\n\n        cur.execute(\n            \"\"\"\n            SELECT TOP (1) id\n            FROM dbo.Servidores_Conexiones WITH (UPDLOCK, HOLDLOCK)\n            WHERE id = %s\n              AND tipo_conexion = 'API_LOCAL'\n            \"\"\",\n            (connection_id,),\n        )\n        if not cur.fetchone():\n            raise ValueError(\"API_LOCAL_NOT_FOUND\")\n\n        cur.execute(\n            \"\"\"\n            SELECT TOP (1) EmpresaID\n            FROM dbo.Sistema_Empresas WITH (UPDLOCK, HOLDLOCK)\n            WHERE EmpresaID = %s\n              AND Activo = 1\n            \"\"\",\n            (int(empresa_id),),\n        )\n        if not cur.fetchone():\n            raise ValueError(\"EMPRESA_NOT_FOUND\")\n\n        cur.execute(\n            \"\"\"\n            SELECT TOP (1) EmpresaServidorID\n            FROM dbo.Sistema_EmpresasServidores WITH (UPDLOCK, HOLDLOCK)\n            WHERE EmpresaID = %s\n              AND ServidorID = %s\n              AND RolConexion = %s\n            ORDER BY EmpresaServidorID\n            \"\"\",\n            (int(empresa_id), connection_id, role),\n        )\n        existing = cur.fetchone()\n\n        values = (\n            numero_sucursal_sistema,\n            (str(codigo_sucursal_sistema).strip() if codigo_sucursal_sistema else None),\n            (str(nombre_sucursal_sistema).strip() if nombre_sucursal_sistema else None),\n            int(prioridad),\n            1 if es_principal else 0,\n        )\n\n        if existing:\n            cur.execute(\n                \"\"\"\n                UPDATE dbo.Sistema_EmpresasServidores\n                SET NumeroSucursalSistema = %s,\n                    CodigoSucursalSistema = %s,\n                    NombreSucursalSistema = %s,\n                    Prioridad = %s,\n                    EsPrincipal = %s,\n                    Activo = 1\n                WHERE EmpresaServidorID = %s\n                \"\"\",\n                values + (existing[\"EmpresaServidorID\"],),\n            )\n            assignment_id = existing[\"EmpresaServidorID\"]\n        else:\n            cur.execute(\n                \"\"\"\n                INSERT INTO dbo.Sistema_EmpresasServidores (\n                    EmpresaID,\n                    ServidorID,\n                    RolConexion,\n                    NumeroSucursalSistema,\n                    CodigoSucursalSistema,\n                    NombreSucursalSistema,\n                    Prioridad,\n                    EsPrincipal,\n                    Activo\n                )\n                OUTPUT INSERTED.EmpresaServidorID\n                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,1)\n                \"\"\",\n                (\n                    int(empresa_id),\n                    connection_id,\n                    role,\n                    numero_sucursal_sistema,\n                    (str(codigo_sucursal_sistema).strip() if codigo_sucursal_sistema else None),\n                    (str(nombre_sucursal_sistema).strip() if nombre_sucursal_sistema else None),\n                    int(prioridad),\n                    1 if es_principal else 0,\n                ),\n            )\n            assignment_id = cur.fetchone()[\"EmpresaServidorID\"]\n\n        conn.commit()\n        return {\n            \"assignment_id\": assignment_id,\n            \"empresa_id\": int(empresa_id),\n            \"servidor_id\": connection_id,\n            \"rol_conexion\": role,\n            \"activo\": True,\n        }\n    except Exception:\n        conn.rollback()\n        raise\n    finally:\n        conn.close()\n\n\ndef deactivate_api_operational_assignment(\n    api_id: str,\n    *,\n    empresa_id: int,\n    rol_conexion: str,\n) -> bool:\n    \"\"\"Desasigna sin borrar historia: Activo=0.\"\"\"\n    connection_id = _uuid_text(api_id)\n    role = str(rol_conexion or \"\").strip().upper()\n    if not role:\n        raise ValueError(\"ROL_CONEXION_REQUIRED\")\n\n    conn, _identity = open_validated_writer_connection()\n    try:\n        cur = conn.cursor(as_dict=True)\n        cur.execute(\"SET XACT_ABORT ON\")\n        cur.execute(\"SET TRANSACTION ISOLATION LEVEL SERIALIZABLE\")\n        cur.execute(\n            \"\"\"\n            UPDATE dbo.Sistema_EmpresasServidores\n            SET Activo = 0\n            WHERE EmpresaID = %s\n              AND ServidorID = %s\n              AND RolConexion = %s\n              AND Activo = 1\n            \"\"\",\n            (int(empresa_id), connection_id, role),\n        )\n        changed = int(cur.rowcount or 0) > 0\n        conn.commit()\n        return changed\n    except Exception:\n        conn.rollback()\n        raise\n    finally:\n        conn.close()\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/routes.py",
+      "old": "from .repository import (\n    list_api_connections,\n    get_api_connection,\n    create_api_connection,\n    update_api_connection,\n    delete_api_connection,\n    sync_all_to_mongo_cache,\n    test_api_connection_health,\n    check_duplicate_api\n)",
+      "new": "from .repository import (\n    list_api_connections,\n    get_api_connection,\n    create_api_connection,\n    update_api_connection,\n    delete_api_connection,\n    sync_all_to_mongo_cache,\n    test_api_connection_health,\n    check_duplicate_api\n)\nfrom .assignment_repository import (\n    list_api_operational_assignments,\n    upsert_api_operational_assignment,\n    deactivate_api_operational_assignment,\n)\nfrom core.rbac.middleware import require_explicit_permission",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/routes.py",
+      "old": "class TestConnectionRequest(BaseModel):\n    url: str\n    api_key: Optional[str] = None",
+      "new": "class ApiOperationalAssignmentRequest(BaseModel):\n    empresa_id: int\n    rol_conexion: str = Field(\"VENTAS_DIA_API_LOCAL\")\n    numero_sucursal_sistema: Optional[int] = None\n    codigo_sucursal_sistema: Optional[str] = None\n    nombre_sucursal_sistema: Optional[str] = None\n    prioridad: int = Field(1, ge=1)\n    es_principal: bool = True\n\n\nclass TestConnectionRequest(BaseModel):\n    url: str\n    api_key: Optional[str] = None",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/routes.py",
+      "old": "# ============================================================================\n# ENDPOINTS - ESCRITURA (PRIMERO EDARSAHUB SQL, LUEGO CACHÉ)\n# ============================================================================",
+      "new": "# ============================================================================\n# ASIGNACIONES OPERATIVAS OPCIONALES\n# ============================================================================\n\n@router.get(\"/{api_id}/assignments\")\nasync def list_api_assignments(\n    api_id: str,\n    credentials: HTTPAuthorizationCredentials = Depends(security),\n):\n    get_current_user(credentials)\n    return {\n        \"success\": True,\n        \"data\": list_api_operational_assignments(api_id),\n        \"source\": \"SISTEMA_EMPRESASSERVIDORES\",\n    }\n\n\n@router.post(\"/{api_id}/assignments\")\nasync def create_or_reactivate_api_assignment(\n    api_id: str,\n    data: ApiOperationalAssignmentRequest,\n    credentials: HTTPAuthorizationCredentials = Depends(security),\n    _admin: dict = Depends(require_explicit_permission(\"RBAC_ADMIN\")),\n):\n    get_current_user(credentials)\n    assignment = upsert_api_operational_assignment(\n        api_id,\n        **data.model_dump(),\n    )\n    return {\"success\": True, \"data\": assignment}\n\n\n@router.delete(\"/{api_id}/assignments/{empresa_id}/{rol_conexion}\")\nasync def remove_api_assignment(\n    api_id: str,\n    empresa_id: int,\n    rol_conexion: str,\n    credentials: HTTPAuthorizationCredentials = Depends(security),\n    _admin: dict = Depends(require_explicit_permission(\"RBAC_ADMIN\")),\n):\n    get_current_user(credentials)\n    changed = deactivate_api_operational_assignment(\n        api_id,\n        empresa_id=empresa_id,\n        rol_conexion=rol_conexion,\n    )\n    return {\"success\": True, \"changed\": changed}\n\n\n# ============================================================================\n# ENDPOINTS - ESCRITURA (PRIMERO EDARSAHUB SQL, LUEGO CACHÉ)\n# ============================================================================",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_api_connection_operational_assignments_contract.py",
+      "content": "from pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nREPO = ROOT / \"backend\" / \"modules\" / \"api_connections\" / \"assignment_repository.py\"\nROUTES = ROOT / \"backend\" / \"modules\" / \"api_connections\" / \"routes.py\"\n\n\ndef test_assignment_repository_uses_canonical_tables_and_writer():\n    text = REPO.read_text(encoding=\"utf-8\")\n    assert \"Sistema_EmpresasServidores\" in text\n    assert \"Servidores_Conexiones\" in text\n    assert \"Sistema_Empresas\" in text\n    assert \"open_validated_writer_connection\" in text\n    assert \"SET TRANSACTION ISOLATION LEVEL SERIALIZABLE\" in text\n    assert \"tipo_conexion = 'API_LOCAL'\" in text\n\n\ndef test_assignment_removal_is_soft_not_delete():\n    text = REPO.read_text(encoding=\"utf-8\").upper()\n    assert \"SET ACTIVO = 0\" in text\n    assert \"DELETE FROM DBO.SISTEMA_EMPRESASSERVIDORES\" not in text\n\n\ndef test_assignment_routes_are_explicitly_admin_guarded():\n    text = ROUTES.read_text(encoding=\"utf-8\")\n    assert 'require_explicit_permission(\"RBAC_ADMIN\")' in text\n    assert '@router.get(\"/{api_id}/assignments\")' in text\n    assert '@router.post(\"/{api_id}/assignments\")' in text\n    assert '@router.delete(\"/{api_id}/assignments/{empresa_id}/{rol_conexion}\")' in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_api_connection_operational_assignments_contract.py",
+        "backend/tests/test_connection_resolver_api_local_canonical_contract.py"
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/api_connections/assignment_repository.py",
+        "backend/modules/api_connections/routes.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "scheduling": {
+    "project_id": "Conexiones y Comunicaciones",
+    "bounded_context": "Conexiones y Comunicaciones",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "resource_claims": [],
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1
+  }
+}
