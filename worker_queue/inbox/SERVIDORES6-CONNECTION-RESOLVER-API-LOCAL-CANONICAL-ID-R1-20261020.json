@@ -1,0 +1,74 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES6-CONNECTION-RESOLVER-API-LOCAL-CANONICAL-ID-R1-20261020",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "89635a525efa448dec9222f7d1397d73b0e89265",
+  "objective": "Auditar y desacoplar exclusivamente backend/core/connection_resolver.py del matching legacy por host para API_LOCAL. Resolver API_LOCAL mediante Sistema_EmpresasServidores + RolConexion=VENTAS_DIA_API_LOCAL + Servidores_Conexiones.id, consumir api_url canónica y corregir la discordancia api_url/api_base_url. No crear resolver paralelo, no cambiar esquema SQL, no tocar frontend, datos, secretos ni Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "Conexiones y Comunicaciones",
+    "chat": "Menu Servidores 6"
+  },
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/connection_resolver.py",
+      "old": "    def _get_api_config(self, server_host: str, sucursal: str) -> Optional[Dict[str, Any]]:\n        \"\"\"\n        Obtiene configuración de API local desde EDARSAHUB SQL.\n        P2-02: Migrado de MongoDB a SQL Server (Servidores_Conexiones con tipo_conexion='API_LOCAL').\n        \"\"\"\n        try:\n            cn = get_edarsahub_connection(timeout=20)\n            cur = cn.cursor(as_dict=True)\n            \n            # Buscar API_LOCAL que coincida con host y tenga la sucursal\n            cur.execute(\"\"\"\n                SELECT TOP 1 *\n                FROM Servidores_Conexiones\n                WHERE tipo_conexion = 'API_LOCAL'\n                  AND activo = 1\n                  AND (host = %s OR api_url LIKE %s)\n            \"\"\", (server_host, f\"%{server_host}%\"))\n            \n            row = cur.fetchone()\n            cn.close()\n            \n            if not row:\n                logger.warning(f\"[ConnectionResolver] API config no encontrada en SQL: host={server_host}, sucursal={sucursal}\")\n                return None\n            \n            return {\n                \"id\": str(row.get(\"id\", \"\")),\n                \"server_host\": row.get(\"host\"),\n                \"api_url\": row.get(\"api_url\"),\n                \"api_key\": row.get(\"api_key_encrypted\"),\n                \"sucursal\": sucursal,\n                \"tipo\": \"api_mpro\",\n                \"activo\": row.get(\"activo\", False),\n            }\n            \n        except Exception as e:\n            logger.error(f\"[ConnectionResolver] Error SQL obteniendo API config: {e}\")\n            return None",
+      "new": "    def _get_api_config(self, server_id: str) -> Optional[Dict[str, Any]]:\n        \"\"\"\n        Resuelve una API_LOCAL exclusivamente por relaciones canónicas.\n\n        Flujo:\n        Servidor solicitado -> Sistema_EmpresasServidores.EmpresaID\n        -> RolConexion=VENTAS_DIA_API_LOCAL -> Servidores_Conexiones.id\n        -> api_url.\n\n        No usa host, nombres ni LIKE sobre api_url para identificar la conexión.\n        \"\"\"\n        try:\n            cn = get_edarsahub_connection(timeout=20)\n            cur = cn.cursor(as_dict=True)\n            cur.execute(\n                \"\"\"\n                SELECT DISTINCT ses.EmpresaID\n                FROM dbo.Sistema_EmpresasServidores ses\n                WHERE ses.ServidorID = %s\n                  AND ses.Activo = 1\n                \"\"\",\n                (server_id,),\n            )\n            rows = cur.fetchall() or []\n            cn.close()\n\n            empresa_ids = sorted({\n                row.get(\"EmpresaID\")\n                for row in rows\n                if row.get(\"EmpresaID\") is not None\n            })\n            if len(empresa_ids) != 1:\n                logger.warning(\n                    \"[ConnectionResolver] No se pudo resolver una EmpresaID única \"\n                    \"para server_id=%s (count=%s)\",\n                    server_id,\n                    len(empresa_ids),\n                )\n                return None\n\n            from core.empresa_resolver import get_connection_for_role\n\n            relation = get_connection_for_role(\n                empresa_ids[0],\n                \"VENTAS_DIA_API_LOCAL\",\n            )\n            if not relation:\n                logger.warning(\n                    \"[ConnectionResolver] Sin relación VENTAS_DIA_API_LOCAL \"\n                    \"para EmpresaID=%s\",\n                    empresa_ids[0],\n                )\n                return None\n\n            cn = get_edarsahub_connection(timeout=20)\n            cur = cn.cursor(as_dict=True)\n            cur.execute(\n                \"\"\"\n                SELECT TOP (1)\n                    id,\n                    api_url,\n                    api_key_encrypted,\n                    activo\n                FROM dbo.Servidores_Conexiones\n                WHERE id = %s\n                  AND tipo_conexion = 'API_LOCAL'\n                  AND activo = 1\n                \"\"\",\n                (str(relation.servidor_id),),\n            )\n            row = cur.fetchone()\n            cn.close()\n\n            api_url = str((row or {}).get(\"api_url\") or \"\").strip()\n            if not row or not api_url:\n                logger.warning(\n                    \"[ConnectionResolver] API_LOCAL canónica no disponible \"\n                    \"para server_id=%s\",\n                    relation.servidor_id,\n                )\n                return None\n\n            return {\n                \"id\": str(row.get(\"id\", \"\")),\n                \"api_url\": api_url,\n                \"api_base_url\": api_url,\n                \"api_key\": row.get(\"api_key_encrypted\"),\n                \"empresa_id\": empresa_ids[0],\n                \"rol_conexion\": \"VENTAS_DIA_API_LOCAL\",\n                \"activo\": bool(row.get(\"activo\", False)),\n            }\n\n        except Exception as e:\n            logger.error(\n                \"[ConnectionResolver] Error resolviendo API_LOCAL canónica: %s\",\n                type(e).__name__,\n            )\n            return None",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/connection_resolver.py",
+      "old": "            # Para API local, buscar configuración específica\n            api_config = self._get_api_config(\n                server_config.get('host', ''),\n                sucursal_nombre or server_config.get('name', '')\n            )",
+      "new": "            # Para API local, resolver exclusivamente por ID/relación canónica.\n            api_config = self._get_api_config(server_id)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/connection_resolver.py",
+      "old": "                    api_base_url=api_config.get('api_base_url'),",
+      "new": "                    api_base_url=api_config.get('api_url'),",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_connection_resolver_api_local_canonical_contract.py",
+      "content": "from pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nRESOLVER = ROOT / \"backend\" / \"core\" / \"connection_resolver.py\"\n\n\ndef _text():\n    return RESOLVER.read_text(encoding=\"utf-8\")\n\n\ndef test_api_local_resolution_does_not_match_legacy_host_or_url_substrings():\n    text = _text()\n\n    assert \"host = %s OR api_url LIKE %s\" not in text\n    assert \"api_url LIKE %s\" not in text\n    assert \"self._get_api_config(server_config.get('host'\" not in text\n\n\ndef test_api_local_resolution_uses_canonical_company_role_and_server_id():\n    text = _text()\n\n    assert \"Sistema_EmpresasServidores\" in text\n    assert \"ses.ServidorID = %s\" in text\n    assert '\"VENTAS_DIA_API_LOCAL\"' in text\n    assert \"get_connection_for_role(\" in text\n    assert \"WHERE id = %s\" in text\n    assert \"tipo_conexion = 'API_LOCAL'\" in text\n\n\ndef test_resolved_api_url_comes_from_canonical_api_url_field():\n    text = _text()\n\n    assert '\"api_url\": api_url' in text\n    assert '\"api_base_url\": api_url' in text\n    assert \"api_base_url=api_config.get('api_url')\" in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_connection_resolver_api_local_canonical_contract.py",
+        "backend/tests/test_mpro_closed_api_isolation_contract.py"
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/connection_resolver.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "scheduling": {
+    "project_id": "Conexiones y Comunicaciones",
+    "bounded_context": "Conexiones y Comunicaciones",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "resource_claims": [],
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1
+  }
+}
