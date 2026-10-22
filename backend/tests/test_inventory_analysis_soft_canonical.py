@@ -101,3 +101,36 @@ def test_soft_sync_prefixes_movsinv_natural_references():
     assert "'I:C:' + CAST(i.idcompra AS VARCHAR(24))" in movement_source
     assert "'I:F:' + CAST(i.invfisico AS VARCHAR(24))" in movement_source
 
+def test_soft_movement_sync_uses_server_authorized_origin_concepts():
+    movement_source = (
+        ROOT / "core" / "inventarios" / "sync_movimientos_canonico.py"
+    ).read_text(encoding="utf-8")
+    job_source = (
+        ROOT / "core" / "scheduler" / "jobs" / "sync_compras_job.py"
+    ).read_text(encoding="utf-8")
+
+    # La configuración viene de la autoridad canónica por servidor.
+    assert "s.tipos_movimiento" in job_source
+    assert "'tipos_movimiento': server.get('tipos_movimiento', [])" in job_source
+
+    # SoftRestaurant filtra antes de homologar ConceptoOrigen -> TipoMovimientoID.
+    assert "tipos_movimiento_autorizados" in movement_source
+    assert "if is_softrestaurant:" in movement_source
+    assert "concepto_origen in tipos_movimiento_autorizados" in movement_source
+    assert "filtrados_no_autorizados" in movement_source
+    assert "Sin tipos de movimiento autorizados para este servidor" in movement_source
+
+
+def test_inventory_movement_authorization_does_not_touch_commercial_syncs():
+    movement_source = (
+        ROOT / "core" / "inventarios" / "sync_movimientos_canonico.py"
+    ).read_text(encoding="utf-8")
+    job_source = (
+        ROOT / "core" / "scheduler" / "jobs" / "sync_compras_job.py"
+    ).read_text(encoding="utf-8")
+
+    protected_names = ("sync_comercial_abiertas_v2", "sync_comercial_v2")
+    for protected_name in protected_names:
+        assert protected_name not in movement_source
+        assert protected_name not in job_source
+
