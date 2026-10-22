@@ -1,0 +1,75 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "new": "                        break\n\n            result[\"checks\"] = check_results\n            if _native_decision_contract_required(job):\n                _promote_native_decision_from_semantic_extract(result, check_results)\n            result[\"tests\"] = (\n                \"PASS\"\n",
+      "old": "                        break\n\n            result[\"checks\"] = check_results\n            result[\"tests\"] = (\n                \"PASS\"\n",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "                        break\n            result[\"checks\"] = check_results\n            if _native_decision_contract_required(job):\n                _promote_native_decision_from_semantic_extract(result, check_results)\n\n",
+      "old": "                        break\n            result[\"checks\"] = check_results\n\n",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "                    \"sync_historical_parent_failed:\"\n                    f\"rc={execution.returncode}\"\n                )\n\n            check_results = []\n            if not result[\"blockers\"]:\n                for check in checks:\n                    check_result = run_check(ROOT, check)\n                    check_results.append(check_result)\n                    if check_result[\"status\"] != \"PASS\":\n                        result[\"blockers\"].append(\n                            \"check_failed:sql_readonly_audit\"\n                        )\n                        break\n            result[\"checks\"] = check_results\n            if _native_decision_contract_required(job):\n                _promote_native_decision_from_semantic_extract(result, check_results)\n            result[\"tests\"] = (\n                \"PASS\"\n                if check_results\n                and all(\n                    item[\"status\"] == \"PASS\"\n                    for item in check_results\n                )\n                else \"FAIL\"\n            )\n            result[\"quality_gate\"] = (\n                \"PASS\" if not result[\"blockers\"] else \"FAIL\"\n            )\n            if not result[\"blockers\"]:\n                result[\"status\"] = \"OPERATIONAL_COMPLETE\"\n",
+      "old": "                    \"sync_historical_parent_failed:\"\n                    f\"rc={execution.returncode}\"\n                )\n\n            check_results = []\n            if not result[\"blockers\"]:\n                for check in checks:\n                    check_result = run_check(ROOT, check)\n                    check_results.append(check_result)\n                    if check_result[\"status\"] != \"PASS\":\n                        result[\"blockers\"].append(\n                            \"check_failed:sql_readonly_audit\"\n                        )\n                        break\n            result[\"checks\"] = check_results\n            result[\"tests\"] = (\n                \"PASS\"\n                if check_results\n                and all(\n                    item[\"status\"] == \"PASS\"\n                    for item in check_results\n                )\n                else \"FAIL\"\n            )\n            result[\"quality_gate\"] = (\n                \"PASS\" if not result[\"blockers\"] else \"FAIL\"\n            )\n            if not result[\"blockers\"]:\n                result[\"status\"] = \"OPERATIONAL_COMPLETE\"\n",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "                    \"sync_historical_atomic_failed:\"\n                    f\"rc={execution.returncode}\"\n                )\n\n            check_results = []\n            if not result[\"blockers\"]:\n                for check in checks:\n                    check_result = run_check(ROOT, check)\n                    check_results.append(check_result)\n                    if check_result[\"status\"] != \"PASS\":\n                        result[\"blockers\"].append(\n                            \"check_failed:sql_readonly_audit\"\n                        )\n                        break\n            result[\"checks\"] = check_results\n            if _native_decision_contract_required(job):\n                _promote_native_decision_from_semantic_extract(result, check_results)\n            result[\"tests\"] = (\n                \"PASS\"\n                if check_results\n                and all(\n                    item[\"status\"] == \"PASS\"\n                    for item in check_results\n                )\n                else \"FAIL\"\n            )\n            result[\"quality_gate\"] = (\n                \"PASS\" if not result[\"blockers\"] else \"FAIL\"\n            )\n            if not result[\"blockers\"]:\n                result[\"status\"] = \"OPERATIONAL_COMPLETE\"\n",
+      "old": "                    \"sync_historical_atomic_failed:\"\n                    f\"rc={execution.returncode}\"\n                )\n\n            check_results = []\n            if not result[\"blockers\"]:\n                for check in checks:\n                    check_result = run_check(ROOT, check)\n                    check_results.append(check_result)\n                    if check_result[\"status\"] != \"PASS\":\n                        result[\"blockers\"].append(\n                            \"check_failed:sql_readonly_audit\"\n                        )\n                        break\n            result[\"checks\"] = check_results\n            result[\"tests\"] = (\n                \"PASS\"\n                if check_results\n                and all(\n                    item[\"status\"] == \"PASS\"\n                    for item in check_results\n                )\n                else \"FAIL\"\n            )\n            result[\"quality_gate\"] = (\n                \"PASS\" if not result[\"blockers\"] else \"FAIL\"\n            )\n            if not result[\"blockers\"]:\n                result[\"status\"] = \"OPERATIONAL_COMPLETE\"\n",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    }
+  ],
+  "base_sha": "53cb69b5de19518a71d648601670c329fd299c56",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_generic_readonly.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-DISPATCHER-SEMANTIC-PROMOTION-COVERAGE-FIX-R1-20261022",
+  "mode": "MUTATION",
+  "objective": "Cerrar exclusivamente las cuatro brechas restantes de promocion semantica del dispatcher. Insertar el helper _promote_native_decision_from_semantic_extract despues de cada result[\"checks\"] = check_results que carece del contrato canonico. No modificar ninguna otra funcionalidad.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Conexiones y Comunicaciones",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
