@@ -1,0 +1,63 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "interseccion_faltantes",
+          "sql": "\nWITH productos AS (\n    SELECT ServerID, SystemType, CodigoFuente\n    FROM dbo.Sync_Productos\n    GROUP BY ServerID, SystemType, CodigoFuente\n),\ninsumos AS (\n    SELECT ServerID, SystemType, CodigoFuente\n    FROM dbo.Sync_Productos_Insumos\n    GROUP BY ServerID, SystemType, CodigoFuente\n)\nSELECT\n    CONVERT(varchar(36), r.ServerID) AS ServerID,\n    r.SystemType,\n    COUNT_BIG(*) AS componentes,\n    SUM(CASE WHEN p.CodigoFuente IS NULL\n        THEN 1 ELSE 0 END) AS sin_producto,\n    SUM(CASE WHEN i.CodigoFuente IS NULL\n        THEN 1 ELSE 0 END) AS sin_insumo,\n    SUM(CASE WHEN p.CodigoFuente IS NULL\n              AND i.CodigoFuente IS NULL\n        THEN 1 ELSE 0 END) AS sin_ambos,\n    SUM(CASE WHEN p.CodigoFuente IS NOT NULL\n              AND i.CodigoFuente IS NOT NULL\n        THEN 1 ELSE 0 END) AS ambos_vinculados\nFROM dbo.Sync_Productos_Recetas r\nLEFT JOIN productos p\n  ON p.ServerID = r.ServerID\n AND p.SystemType = r.SystemType\n AND p.CodigoFuente = r.ProductoCodigoFuente\nLEFT JOIN insumos i\n  ON i.ServerID = r.ServerID\n AND i.SystemType = r.SystemType\n AND i.CodigoFuente = r.ComponenteCodigoFuente\nGROUP BY r.ServerID, r.SystemType\nORDER BY r.ServerID, r.SystemType\n"
+        },
+        {
+          "name": "costos_cero_por_actividad",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), ServerID) AS ServerID,\n    SystemType,\n    Activo,\n    COUNT_BIG(*) AS componentes,\n    SUM(CASE WHEN CostoUnitario = 0\n        THEN 1 ELSE 0 END) AS costo_unitario_cero,\n    SUM(CASE WHEN CostoTotal = 0\n        THEN 1 ELSE 0 END) AS costo_total_cero,\n    SUM(CASE WHEN CostoUnitario < 0\n        THEN 1 ELSE 0 END) AS costo_unitario_negativo,\n    SUM(CASE WHEN CostoTotal < 0\n        THEN 1 ELSE 0 END) AS costo_total_negativo,\n    SUM(CASE WHEN CostoUnitario IS NULL\n        THEN 1 ELSE 0 END) AS costo_unitario_nulo\nFROM dbo.Sync_Productos_Recetas\nGROUP BY ServerID, SystemType, Activo\nORDER BY ServerID, SystemType, Activo\n"
+        },
+        {
+          "name": "consistencia_matematica",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), ServerID) AS ServerID,\n    SystemType,\n    COUNT_BIG(*) AS componentes,\n    SUM(CASE WHEN\n        ABS(\n            CONVERT(decimal(28,6), Cantidad)\n            * CONVERT(decimal(28,6), CostoUnitario)\n            - CONVERT(decimal(28,6), CostoTotal)\n        ) > 0.01\n        THEN 1 ELSE 0 END) AS diferencias_mayores_centavo,\n    SUM(CASE WHEN\n        ABS(\n            CONVERT(decimal(28,6), Cantidad)\n            * CONVERT(decimal(28,6), CostoUnitario)\n            - CONVERT(decimal(28,6), CostoTotal)\n        ) > 1.00\n        THEN 1 ELSE 0 END) AS diferencias_mayores_peso\nFROM dbo.Sync_Productos_Recetas\nWHERE CostoUnitario IS NOT NULL\n  AND CostoTotal IS NOT NULL\nGROUP BY ServerID, SystemType\nORDER BY ServerID, SystemType\n"
+        },
+        {
+          "name": "costo_receta_vs_insumo",
+          "sql": "\nWITH insumos AS (\n    SELECT\n        ServerID,\n        SystemType,\n        CodigoFuente,\n        MAX(Costo) AS Costo,\n        COUNT_BIG(*) AS registros\n    FROM dbo.Sync_Productos_Insumos\n    GROUP BY ServerID, SystemType, CodigoFuente\n)\nSELECT\n    CONVERT(varchar(36), r.ServerID) AS ServerID,\n    r.SystemType,\n    COUNT_BIG(*) AS componentes,\n    SUM(CASE WHEN i.CodigoFuente IS NULL\n        THEN 1 ELSE 0 END) AS sin_insumo,\n    SUM(CASE WHEN i.registros = 1\n              AND i.Costo IS NOT NULL\n              AND r.CostoUnitario IS NOT NULL\n              AND ABS(i.Costo - r.CostoUnitario) > 0.01\n        THEN 1 ELSE 0 END) AS costo_diferente,\n    SUM(CASE WHEN i.registros = 1\n              AND i.Costo IS NOT NULL\n              AND r.CostoUnitario IS NOT NULL\n              AND ABS(i.Costo - r.CostoUnitario) <= 0.01\n        THEN 1 ELSE 0 END) AS costo_equivalente\nFROM dbo.Sync_Productos_Recetas r\nLEFT JOIN insumos i\n  ON i.ServerID = r.ServerID\n AND i.SystemType = r.SystemType\n AND i.CodigoFuente = r.ComponenteCodigoFuente\nGROUP BY r.ServerID, r.SystemType\nORDER BY r.ServerID, r.SystemType\n"
+        },
+        {
+          "name": "unidades_medida_componentes",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), ServerID) AS ServerID,\n    SystemType,\n    UnidadMedida,\n    COUNT_BIG(*) AS componentes,\n    SUM(CASE WHEN CostoUnitario = 0\n        THEN 1 ELSE 0 END) AS costo_cero\nFROM dbo.Sync_Productos_Recetas\nGROUP BY ServerID, SystemType, UnidadMedida\nORDER BY ServerID, SystemType, UnidadMedida\n"
+        },
+        {
+          "name": "cobertura_costos_insumos",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), ServerID) AS ServerID,\n    SystemType,\n    COUNT_BIG(*) AS insumos,\n    SUM(CASE WHEN Costo = 0\n        THEN 1 ELSE 0 END) AS costo_cero,\n    SUM(CASE WHEN Costo < 0\n        THEN 1 ELSE 0 END) AS costo_negativo,\n    SUM(CASE WHEN CostoPromedio = 0\n        THEN 1 ELSE 0 END) AS promedio_cero,\n    SUM(CASE WHEN UltimoCosto = 0\n        THEN 1 ELSE 0 END) AS ultimo_cero,\n    SUM(CASE WHEN Activo = 1\n        THEN 1 ELSE 0 END) AS activos\nFROM dbo.Sync_Productos_Insumos\nGROUP BY ServerID, SystemType\nORDER BY ServerID, SystemType\n"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-READINESS-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar preparacion para reconciliacion de costos POS: faltantes de producto e insumo, costos cero, consistencia matematica y diferencias de costo. Exclusivamente lectura.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "bos-costos-pos-reconciliation",
+    "email": "carlosruz@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "bos-orchestrator"
+  },
+  "scheduling": {
+    "bounded_context": "COSTOS_MARGENES",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": [
+      "costos_pos_reconciliation_readiness_r1"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
