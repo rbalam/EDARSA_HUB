@@ -12,6 +12,7 @@ on:
       - "backend/core/inventarios/analysis_soft_sources.py"
       - "backend/core/recetas_service.py"
       - "backend/tests/test_inventory_analysis_mpro_canonical.py"
+      - "backend/tests/test_inventory_analysis_soft_canonical.py"
       - "backend/tests/test_inventory_scheduler_trigger.py"
       - "backend/tests/test_sync_compras_run_job_now_status.py"
       - ".github/workflows/prod-sync-inventarios-trigger.yml"
@@ -53,6 +54,7 @@ jobs:
             backend/core/inventarios/analysis_soft_sources.py \
             backend/core/recetas_service.py \
             backend/tests/test_inventory_analysis_mpro_canonical.py \
+            backend/tests/test_inventory_analysis_soft_canonical.py \
             backend/tests/test_inventory_scheduler_trigger.py \
             backend/tests/test_sync_compras_run_job_now_status.py
 
@@ -70,6 +72,7 @@ jobs:
         run: |
           python -m pytest -q --tb=short \
             tests/test_inventory_analysis_mpro_canonical.py \
+            tests/test_inventory_analysis_soft_canonical.py \
             tests/test_inventory_scheduler_trigger.py \
             tests/test_sync_compras_run_job_now_status.py
 
