@@ -38,7 +38,8 @@ from modules.compras.sync_service import (
 )
 
 
-REPORT_DIR = Path("docs/reports/inventarios")
+REPO_ROOT = BACKEND_ROOT.parent
+REPORT_DIR = REPO_ROOT / "docs" / "reports" / "inventarios"
 
 
 def _load_sync_compras_job_module():
