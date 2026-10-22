@@ -1,0 +1,43 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "max_rows": 100,
+      "queries": [
+        {
+          "name": "tipos_columnas_sql",
+          "sql": "\nSELECT\n    t.name AS tabla,\n    c.name AS columna,\n    ty.name AS tipo_sql,\n    c.max_length,\n    c.is_nullable\nFROM sys.schemas s\nJOIN sys.tables t ON t.schema_id = s.schema_id\nJOIN sys.columns c ON c.object_id = t.object_id\nJOIN sys.types ty ON ty.user_type_id = c.user_type_id\nWHERE s.name = 'dbo'\nAND (\n    (t.name = 'Unidades_Negocio'\n     AND c.name IN ('id','codigo','server_id','activo'))\n OR (t.name = 'Sistema_Empresas'\n     AND c.name IN ('EmpresaID','CodigoEmpresa','Activo'))\n OR (t.name = 'Sync_Productos'\n     AND c.name IN ('ProductoID','UnidadNegocioID','ServerID'))\n OR (t.name = 'Sync_Productos_Insumos'\n     AND c.name IN ('InsumoID','ServerID'))\n OR (t.name = 'Sync_Productos_Recetas'\n     AND c.name IN ('RecetaDetalleID','ServerID','Activo'))\n)\nORDER BY t.name, c.name\n"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-SCHEMA-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Verificar tipos SQL de identificadores de unidades, empresas, productos, insumos y recetas. Solo metadatos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "bos-costos-pos-reconciliation",
+    "email": "carlosruz@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "bos-orchestrator"
+  },
+  "scheduling": {
+    "bounded_context": "COSTOS_MARGENES",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": [
+      "costos_pos_reconciliation_schema_r1"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
