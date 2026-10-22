@@ -413,7 +413,6 @@ def _extended_sync_steps():
     return [
         ("almacenes", sync_almacenes_from_server, "ALMACENES"),
         ("existencias", sync_existencias_from_server, "EXISTENCIAS"),
-        ("movimientos", sync_movimientos_from_server, "MOVIMIENTOS"),
         ("pedidos", sync_pedidos_from_server, "PEDIDOS"),
         ("ordenes", sync_ordenes_from_server, "ORDENES"),
         ("recepciones", sync_recepciones_from_server, "RECEPCIONES"),
@@ -679,11 +678,17 @@ def execute_sync_compras(dry_run: bool = False) -> Dict[str, Any]:
             # =================================================================
             # SQL-FIRST FASE 2: Sincronizaciones adicionales Compras/Inventarios
             # =================================================================
-            sync_steps = _extended_sync_steps()
-            if not sync_steps:
+            # Movimientos son dependencia canónica del Análisis de Inventarios
+            # y forman parte del núcleo seguro. No deben apagarse junto con
+            # Existencias/Pedidos/Ordenes/Recepciones.
+            sync_steps = [
+                ("movimientos", sync_movimientos_from_server, "MOVIMIENTOS"),
+                *_extended_sync_steps(),
+            ]
+            if not _sync_compras_extended_enabled():
                 logger.warning(
-                    "[SYNC-COMPRAS] Pasos extendidos omitidos por "
-                    "SCHEDULER_SYNC_COMPRAS_EXTENDED_ENABLED=false"
+                    "[SYNC-COMPRAS] Pasos extendidos omitidos; "
+                    "MOVIMIENTOS permanece activo como núcleo de Inventarios"
                 )
 
             for step_name, step_func, sync_type_label in sync_steps:
