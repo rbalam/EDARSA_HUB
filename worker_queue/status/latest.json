@@ -4,31 +4,37 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "1d059edba3dea91b6bcc86f6303eb0a96a2b9b9c",
-  "generated_at_utc": "2026-10-22T23:37:01Z",
+  "generated_at_utc": "2026-10-22T23:40:40Z",
   "history": {
     "done_total_local": 1547,
     "pending_total_local": 0,
-    "processing_total_local": 1,
-    "rejected_total_local": 1292,
-    "results_total_local": 2608
+    "processing_total_local": 0,
+    "rejected_total_local": 1294,
+    "results_total_local": 2610
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 233,
-      "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-CANONICAL-INVENTORY-UI-FIX-R3-20261022",
-      "reason": "El worker no termino esta orden dentro del tiempo esperado.",
-      "state": "BLOCKED"
+      "age_seconds": 197,
+      "job_id": "BOS-COSTOS-POS-RECONCILIATION-GATE4-R1",
+      "reason": null,
+      "state": "RESULT_READY"
     },
     {
-      "age_seconds": 993,
+      "age_seconds": 1212,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-CANONICAL-INVENTORY-UI-FIX-R2-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 613,
+      "age_seconds": 43,
+      "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-CANONICAL-INVENTORY-UI-FIX-R3-20261022",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 832,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-KNOWLEDGE-GATE3-READONLY-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
@@ -37,21 +43,21 @@
   "local_development_sha": "1d059edba3dea91b6bcc86f6303eb0a96a2b9b9c",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
-  "queue_blocked": 1,
-  "queue_depth": 1,
+  "queue_blocked": 0,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "remote_development_sha": "1d059edba3dea91b6bcc86f6303eb0a96a2b9b9c",
   "runtime": {
-    "current_job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-CANONICAL-INVENTORY-UI-FIX-R3-20261022",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-22T23:36:58Z",
-    "last_receive_utc": "2026-10-22T23:36:53Z",
-    "last_terminal_utc": "2026-10-22T23:26:47Z",
-    "pid": "11476",
+    "last_cycle_utc": "2026-10-22T23:40:20Z",
+    "last_receive_utc": "2026-10-22T23:40:36Z",
+    "last_terminal_utc": "2026-10-22T23:39:57Z",
+    "pid": "337",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "2829d2801e7a30fa8cef29adb938c3991fd5f121",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
