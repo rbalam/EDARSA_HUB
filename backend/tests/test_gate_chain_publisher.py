@@ -31,6 +31,12 @@ def template(job="job-next"):
                 "type": "git_diff_check",
             }
         ],
+        "requester": {
+            "email": "ricardo@edarsa.com.mx",
+            "source": "chatgpt",
+            "project": "EDARSAHUB BOS",
+            "chat": "Conexiones y Comunicaciones",
+        },
     }
 
 
@@ -109,7 +115,7 @@ def test_production_forbidden():
 
     with pytest.raises(
         ValueError,
-        match="PRODUCTION_FORBIDDEN",
+        match="CANONICAL_FIELD_CONFLICT:production_allowed",
     ):
         build_plan(
             chain(value),
@@ -124,7 +130,7 @@ def test_invalid_schema():
 
     with pytest.raises(
         ValueError,
-        match="INVALID_JOB_TEMPLATE_SCHEMA",
+        match="CANONICAL_FIELD_CONFLICT:schema",
     ):
         validate_template(value)
 
@@ -180,7 +186,27 @@ def test_repository_contract_audit_supported():
         }
     ]
 
-    assert validate_template(value) is value
+    validated = validate_template(value)
+
+    assert validated["job_id"] == value["job_id"]
+    assert validated["mode"] == value["mode"]
+    assert validated["actions"] == value["actions"]
+    assert validated["checks"] == value["checks"]
+    assert validated["requester"] == value["requester"]
+
+    assert validated["target_repo"] == "rbalam/EDARSA_HUB"
+    assert validated["target_branch"] == "Edarsahub_Desarrollo"
+    assert validated["production_allowed"] is False
+    assert validated["human_summary_language"] == "es"
+
+    assert validated["checks"][0]["type"] == "repository_contract_audit"
+    assert validated["checks"][0]["request"] == {
+        "paths": ["backend"],
+        "search_terms": ["finanzas"],
+        "max_results": 10,
+    }
+
+    assert isinstance(validated.get("scheduling"), dict)
 
 
 def test_unsupported_check_rejected():
