@@ -406,6 +406,13 @@ def _execute_inventory_sql_with_timeout(
     )
 
 
+def _core_inventory_sync_steps():
+    """Dependencias mínimas del análisis de inventarios que siempre permanecen activas."""
+    return [
+        ("movimientos", sync_movimientos_from_server, "MOVIMIENTOS"),
+    ]
+
+
 def _extended_sync_steps():
     """Pasos extendidos opcionales; no duplican el owner de inventarios."""
     if not _sync_compras_extended_enabled():
@@ -682,7 +689,7 @@ def execute_sync_compras(dry_run: bool = False) -> Dict[str, Any]:
             # y forman parte del núcleo seguro. No deben apagarse junto con
             # Existencias/Pedidos/Ordenes/Recepciones.
             sync_steps = [
-                ("movimientos", sync_movimientos_from_server, "MOVIMIENTOS"),
+                *_core_inventory_sync_steps(),
                 *_extended_sync_steps(),
             ]
             if not _sync_compras_extended_enabled():
