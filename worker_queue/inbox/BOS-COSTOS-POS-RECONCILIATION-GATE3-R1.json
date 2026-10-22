@@ -1,0 +1,63 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "gate3_componentes_sin_producto_padre",
+          "sql": "\nSELECT TOP (100)\n    r.ServerID,\n    r.SystemType,\n    r.ProductoCodigoFuente,\n    COUNT_BIG(*) AS Componentes\nFROM dbo.Sync_Productos_Recetas AS r\nWHERE NOT EXISTS (\n    SELECT 1\n    FROM dbo.Sync_Productos AS p\n    WHERE p.ServerID = r.ServerID\n      AND p.SystemType = r.SystemType\n      AND p.CodigoFuente = r.ProductoCodigoFuente\n)\nGROUP BY\n    r.ServerID,\n    r.SystemType,\n    r.ProductoCodigoFuente\nORDER BY Componentes DESC,\n         r.ProductoCodigoFuente\n"
+        },
+        {
+          "name": "gate3_componentes_sin_insumo",
+          "sql": "\nSELECT TOP (100)\n    r.ServerID,\n    r.SystemType,\n    r.ComponenteCodigoFuente,\n    COUNT_BIG(*) AS Componentes\nFROM dbo.Sync_Productos_Recetas AS r\nWHERE NOT EXISTS (\n    SELECT 1\n    FROM dbo.Sync_Productos_Insumos AS i\n    WHERE i.ServerID = r.ServerID\n      AND i.SystemType = r.SystemType\n      AND i.CodigoFuente = r.ComponenteCodigoFuente\n)\nGROUP BY\n    r.ServerID,\n    r.SystemType,\n    r.ComponenteCodigoFuente\nORDER BY Componentes DESC,\n         r.ComponenteCodigoFuente\n"
+        },
+        {
+          "name": "gate3_costos_cero_por_servidor",
+          "sql": "\nSELECT\n    ServerID,\n    SystemType,\n    COUNT_BIG(*) AS TotalInsumos,\n    SUM(CASE WHEN Costo = 0 THEN 1 ELSE 0 END)\n        AS CostoCero,\n    SUM(CASE WHEN CostoPromedio = 0 THEN 1 ELSE 0 END)\n        AS PromedioCero,\n    SUM(CASE WHEN UltimoCosto = 0 THEN 1 ELSE 0 END)\n        AS UltimoCostoCero,\n    SUM(CASE WHEN Costo IS NULL THEN 1 ELSE 0 END)\n        AS CostoNulo\nFROM dbo.Sync_Productos_Insumos\nGROUP BY ServerID, SystemType\nORDER BY TotalInsumos DESC\n"
+        },
+        {
+          "name": "gate3_insumos_costos_negativos",
+          "sql": "\nSELECT TOP (100)\n    ServerID,\n    SystemType,\n    CodigoFuente,\n    Costo,\n    CostoPromedio,\n    UltimoCosto\nFROM dbo.Sync_Productos_Insumos\nWHERE Costo < 0\n   OR CostoPromedio < 0\n   OR UltimoCosto < 0\nORDER BY ServerID, CodigoFuente\n"
+        },
+        {
+          "name": "gate3_distribucion_unidades_receta",
+          "sql": "\nSELECT TOP (100)\n    ServerID,\n    SystemType,\n    UnidadMedida,\n    COUNT_BIG(*) AS Componentes\nFROM dbo.Sync_Productos_Recetas\nGROUP BY\n    ServerID,\n    SystemType,\n    UnidadMedida\nORDER BY Componentes DESC\n"
+        },
+        {
+          "name": "gate3_identidad_servidor_compartido",
+          "sql": "\nSELECT\n    ServerID,\n    SystemType,\n    COUNT_BIG(*) AS Productos,\n    SUM(CASE WHEN EmpresaID IS NULL\n        THEN 1 ELSE 0 END) AS SinEmpresaID,\n    SUM(CASE WHEN UnidadNegocioID IS NULL\n        THEN 1 ELSE 0 END) AS SinUnidadNegocioID\nFROM dbo.Sync_Productos\nGROUP BY ServerID, SystemType\nORDER BY Productos DESC\n"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-GATE3-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 3 R1: diagnosticar causas de componentes sin correspondencia, costos cero y negativos, unidades de medida e identidad empresarial por servidor. Solo lectura. No realizar correcciones ni atribuciones no demostradas.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "bos-costos-pos-reconciliation",
+    "email": "carlosruz@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "bos-orchestrator"
+  },
+  "scheduling": {
+    "bounded_context": "COSTOS_MARGENES",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": [
+      "costos_pos_reconciliation_gate3_r1"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
