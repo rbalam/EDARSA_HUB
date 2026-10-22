@@ -1,0 +1,68 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "new": "REPO_ROOT = BACKEND_ROOT.parent\nREPORT_DIR = REPO_ROOT / \"docs\" / \"reports\" / \"inventarios\"",
+      "old": "REPORT_DIR = Path(\"docs/reports/inventarios\")",
+      "path": "backend/tools/resync_inventarios_fisicos.py",
+      "type": "replace_text"
+    },
+    {
+      "content": "from pathlib import Path\nimport importlib.util\nimport os\n\n\nROOT = Path(__file__).resolve().parents[2]\nSCRIPT = ROOT / \"backend\" / \"tools\" / \"resync_inventarios_fisicos.py\"\n\n\ndef _load_module():\n    spec = importlib.util.spec_from_file_location(\n        \"resync_inventarios_fisicos_report_path_contract\",\n        SCRIPT,\n    )\n    module = importlib.util.module_from_spec(spec)\n    assert spec.loader is not None\n    spec.loader.exec_module(module)\n    return module\n\n\ndef test_report_dir_is_absolute_and_repository_rooted():\n    module = _load_module()\n    expected = ROOT / \"docs\" / \"reports\" / \"inventarios\"\n\n    assert module.REPO_ROOT == ROOT\n    assert module.REPORT_DIR == expected\n    assert module.REPORT_DIR.is_absolute()\n\n\ndef test_report_dir_does_not_depend_on_current_working_directory(tmp_path):\n    previous = Path.cwd()\n    try:\n        os.chdir(tmp_path)\n        module = _load_module()\n    finally:\n        os.chdir(previous)\n\n    assert module.REPORT_DIR == ROOT / \"docs\" / \"reports\" / \"inventarios\"\n\n\ndef test_report_dir_never_targets_backend_docs():\n    module = _load_module()\n\n    assert module.REPORT_DIR != (\n        ROOT / \"backend\" / \"docs\" / \"reports\" / \"inventarios\"\n    )\n",
+      "path": "backend/tests/test_resync_inventarios_fisicos_report_path.py",
+      "type": "write_file"
+    }
+  ],
+  "allowed_paths": [
+    "backend/tools/resync_inventarios_fisicos.py",
+    "backend/tests/test_resync_inventarios_fisicos_report_path.py"
+  ],
+  "base_sha": "5bf1b88d6022bd7d941fcad072098832c0ec7096",
+  "branch": "Edarsahub_Desarrollo",
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_resync_inventarios_fisicos_report_path.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "paths": [
+        "backend/tools/resync_inventarios_fisicos.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-PREVIEW-MIRROR-CANONICAL-RESEED-CAPABILITY-R3-20261021",
+  "metadata": {
+    "goal": "Canonicalize inventarios runtime report sink under repository-root docs/reports independently of cwd.",
+    "production_forbidden": true
+  },
+  "mode": "MUTATION",
+  "objective": "Implementar de forma canónica y fail-closed la capacidad de reseed del Preview Mirror desde Edarsahub_Desarrollo, preservando la seguridad del mirror, sin habilitar sincronización automática ni tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Conexiones y Comunicaciones",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
