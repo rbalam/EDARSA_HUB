@@ -1,0 +1,289 @@
+{
+  "base_sha": "adbd7d2531fd15a474a4f9f12f4977cd38942c8c",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-22T05:26:07Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-RECIPE-LINKAGE-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-22T05:26:36Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "ServerID",
+              "SystemType",
+              "TipoComponente",
+              "componentes",
+              "con_insumo_id",
+              "con_subreceta_id",
+              "con_codigo_producto"
+            ],
+            "name": "distribucion_referencias_recetas",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "INSUMO",
+                "2779",
+                0,
+                0,
+                2779
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "INSUMO",
+                "4234",
+                0,
+                0,
+                4234
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "INSUMO",
+                "4999",
+                0,
+                0,
+                4999
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "SOFTRESTAURANT_PRO",
+                "INSUMO",
+                "1583",
+                0,
+                0,
+                1583
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "SystemType",
+              "componentes",
+              "sin_producto_codigo",
+              "coincidencia_unica",
+              "coincidencia_ambigua"
+            ],
+            "name": "vinculacion_producto_codigo",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "4999",
+                0,
+                4999,
+                0
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "4234",
+                1,
+                4233,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "2779",
+                101,
+                2678,
+                0
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "SOFTRESTAURANT_PRO",
+                "1583",
+                0,
+                1583,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "componentes",
+              "sin_producto_id",
+              "coincidencia_unica",
+              "coincidencia_ambigua"
+            ],
+            "name": "vinculacion_producto_id",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "4999",
+                4999,
+                0,
+                0
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "4234",
+                4234,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "2779",
+                2779,
+                0,
+                0
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "1583",
+                1583,
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "subrecetas_referenciadas",
+              "sin_producto_subreceta",
+              "coincidencia_unica",
+              "coincidencia_ambigua"
+            ],
+            "name": "vinculacion_subrecetas",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "componentes_con_insumo",
+              "sin_insumo",
+              "coincidencia_unica",
+              "coincidencia_ambigua"
+            ],
+            "name": "integridad_insumos_referenciados",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EmpresaID",
+              "CodigoEmpresa",
+              "ServerID",
+              "CodigoSucursalSistema",
+              "NumeroSucursalSistema",
+              "RolConexion",
+              "Activo",
+              "EsPrincipal"
+            ],
+            "name": "empresas_sucursales_servidor",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                1,
+                "ORIGEN",
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "0023",
+                23,
+                "PRINCIPAL_SQL",
+                true,
+                true
+              ],
+              [
+                1,
+                "ORIGEN",
+                "817A0AA8-6170-4738-A8F6-A72AC36BA0DF",
+                "0023",
+                23,
+                "VENTAS_DIA_API_LOCAL",
+                true,
+                false
+              ],
+              [
+                2,
+                "130QRO",
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "0021",
+                21,
+                "PRINCIPAL_SQL",
+                true,
+                true
+              ],
+              [
+                2,
+                "130QRO",
+                "72F6E9A7-8EA2-4EB2-802E-4EE31753435E",
+                "0021",
+                21,
+                "VENTAS_DIA_API_LOCAL",
+                true,
+                false
+              ],
+              [
+                3,
+                "CIENFUEGOS",
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                null,
+                null,
+                "PRINCIPAL_SQL",
+                true,
+                true
+              ],
+              [
+                4,
+                "ESTELAR",
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                null,
+                null,
+                "PRINCIPAL_SQL",
+                true,
+                true
+              ],
+              [
+                5,
+                "130MID",
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                null,
+                null,
+                "PRINCIPAL_SQL",
+                true,
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-22T05:26:05Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
