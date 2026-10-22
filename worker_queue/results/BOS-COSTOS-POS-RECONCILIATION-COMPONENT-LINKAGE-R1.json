@@ -1,0 +1,466 @@
+{
+  "base_sha": "adbd7d2531fd15a474a4f9f12f4977cd38942c8c",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-22T05:37:08Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-COMPONENT-LINKAGE-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-22T05:38:08Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "ServerID",
+              "SystemType",
+              "componentes",
+              "sin_insumo",
+              "coincidencia_unica",
+              "coincidencia_ambigua"
+            ],
+            "name": "componentes_insumos_por_codigo",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "4999",
+                0,
+                4999,
+                0
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "4234",
+                4,
+                4230,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "2779",
+                73,
+                2706,
+                0
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "SOFTRESTAURANT_PRO",
+                "1583",
+                0,
+                1583,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "SystemType",
+              "componentes",
+              "codigos_distintos",
+              "codigos_vacios",
+              "activos",
+              "inactivos",
+              "activo_desconocido"
+            ],
+            "name": "cobertura_codigos_componentes",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "2779",
+                481,
+                0,
+                2723,
+                56,
+                0
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "4234",
+                1505,
+                0,
+                4234,
+                0,
+                0
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "4999",
+                1196,
+                0,
+                4999,
+                0,
+                0
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "SOFTRESTAURANT_PRO",
+                "1583",
+                525,
+                0,
+                1583,
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "SystemType",
+              "ProductoCodigoFuente",
+              "componentes_sin_producto",
+              "activos",
+              "inactivos",
+              "estado_desconocido"
+            ],
+            "name": "productos_padre_sin_match",
+            "row_count_returned": 20,
+            "rows": [
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010129",
+                "13",
+                13,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010105",
+                "12",
+                12,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010033",
+                "10",
+                10,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010099",
+                "7",
+                7,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010128",
+                "7",
+                7,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010067",
+                "6",
+                6,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010098",
+                "6",
+                6,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010032",
+                "5",
+                5,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010135",
+                "5",
+                5,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010096",
+                "4",
+                4,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010106",
+                "4",
+                3,
+                1,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010031",
+                "3",
+                3,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010034",
+                "3",
+                3,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010097",
+                "3",
+                3,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010131",
+                "3",
+                3,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010134",
+                "3",
+                3,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010159",
+                "3",
+                3,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010091",
+                "2",
+                2,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "0000010130",
+                "2",
+                2,
+                0,
+                0
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "B160493",
+                "1",
+                1,
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "SystemType",
+              "insumos",
+              "activos",
+              "inactivos",
+              "estado_desconocido",
+              "con_costo",
+              "con_costo_promedio",
+              "con_ultimo_costo"
+            ],
+            "name": "insumos_actividad_y_costos",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "5414",
+                5414,
+                0,
+                0,
+                5414,
+                5414,
+                5414
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "2499",
+                2499,
+                0,
+                0,
+                2499,
+                2499,
+                2499
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "2629",
+                2629,
+                0,
+                0,
+                2629,
+                2629,
+                2629
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "SOFTRESTAURANT_PRO",
+                "1199",
+                1199,
+                0,
+                0,
+                1199,
+                1199,
+                1199
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "SystemType",
+              "componentes",
+              "sin_costo_unitario",
+              "sin_costo_total",
+              "costo_unitario_cero",
+              "costo_total_cero",
+              "cantidad_no_positiva"
+            ],
+            "name": "integridad_costos_recetas",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "2779",
+                0,
+                0,
+                273,
+                265,
+                0
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "4234",
+                0,
+                0,
+                302,
+                302,
+                0
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "4999",
+                0,
+                0,
+                290,
+                290,
+                0
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "SOFTRESTAURANT_PRO",
+                "1583",
+                0,
+                0,
+                86,
+                86,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "SystemType",
+              "codigos_duplicados",
+              "registros_implicados"
+            ],
+            "name": "insumos_codigos_duplicados",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-22T05:37:07Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
