@@ -1217,19 +1217,53 @@ const Servidores = () => {
 
   const saveFilters = async () => {
     if (!selectedServer) return;
+
+    const normalizeFilterValues = (values) => (
+      Array.isArray(values)
+        ? [...new Set(values.map(value => String(value).trim()).filter(Boolean))].sort()
+        : []
+    );
+
+    const expectedFilters = {
+      tipos_movimiento: normalizeFilterValues(selectedFilters.tipos_movimiento),
+      categorias: normalizeFilterValues(selectedFilters.categorias),
+      departamentos: normalizeFilterValues(selectedFilters.departamentos)
+    };
     
     try {
       await api.put(`/servers/${selectedServer.id}`, {
-        tipos_movimiento: selectedFilters.tipos_movimiento,
-        categorias: selectedFilters.categorias,
-        departamentos: selectedFilters.departamentos
+        tipos_movimiento: expectedFilters.tipos_movimiento,
+        categorias: expectedFilters.categorias,
+        departamentos: expectedFilters.departamentos
       });
-      
-      toast.success('Filtros guardados correctamente');
+
+      // Verificación read-after-write contra la fuente canónica EDARSAHUB SQL.
+      // No anunciar éxito si el backend aceptó el PUT pero la configuración
+      // no quedó realmente persistida/recuperable por el Server Registry.
+      const verifyResponse = await api.get(`/servers/${selectedServer.id}`);
+      const persistedServer = verifyResponse.data || {};
+      const persistedFilters = {
+        tipos_movimiento: normalizeFilterValues(persistedServer.tipos_movimiento),
+        categorias: normalizeFilterValues(persistedServer.categorias),
+        departamentos: normalizeFilterValues(persistedServer.departamentos)
+      };
+
+      const persistedCorrectly = Object.keys(expectedFilters).every(
+        key => JSON.stringify(expectedFilters[key]) === JSON.stringify(persistedFilters[key])
+      );
+
+      if (!persistedCorrectly) {
+        throw new Error('La configuración no quedó persistida en EDARSAHUB. No se cerró el modal.');
+      }
+
+      setSelectedServer(persistedServer);
+      setSelectedFilters(persistedFilters);
+      toast.success('Filtros guardados y verificados correctamente');
       setConfigDialogOpen(false);
-      loadServers();
+      await loadServers();
     } catch (error) {
-      toast.error('Error al guardar filtros');
+      logger.error('Error guardando/verificando filtros del servidor:', error);
+      toast.error(error.response?.data?.detail || error.message || 'Error al guardar filtros');
     }
   };
 
@@ -3769,8 +3803,9 @@ const Servidores = () => {
                       }`}
                       onClick={() => toggleFilter('tipos_movimiento', tipo.codigo)}
                     >
-                      <Checkbox 
+                      <Checkbox
                         checked={selectedFilters.tipos_movimiento.includes(tipo.codigo)}
+                        onClick={(event) => event.stopPropagation()}
                         onCheckedChange={() => toggleFilter('tipos_movimiento', tipo.codigo)}
                       />
                       <div className="flex-1">
