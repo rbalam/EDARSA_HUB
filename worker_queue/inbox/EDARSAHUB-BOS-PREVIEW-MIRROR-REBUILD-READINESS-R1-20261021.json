@@ -1,0 +1,104 @@
+{
+  "actions": [],
+  "base_sha": "804fe61a4f2fe34091e1dc4d8f669ff102bc10d0",
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [
+          ".git/**",
+          "node_modules/**",
+          "__pycache__/**",
+          "dist/**",
+          "build/**"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh"
+        ],
+        "max_results": 500,
+        "paths": [
+          "tools/bootstrap/recover_preview_runtime.sh",
+          "tools/mirror_sync/shared_app_safety_guard.sh",
+          "tools/mirror_sync/mirror_sync_guard.sh",
+          "tools/mirror_sync/mirror_sync_worker.sh",
+          "tools/mirror_sync/publish_local_snapshot.sh",
+          "tools/mirror_sync/finalize_local_snapshot.sh",
+          "tools/mirror_sync/check_remote_update.sh",
+          "tools/mirror_sync/apply_remote_update.sh",
+          "tools/mirror_sync/git_divergence_guard.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "backend/tests/test_universal_job_result_lineage_certification.py",
+          "backend/tests/test_worker_control_plane_contract.py",
+          "backend/tests/test_worker_mirror_single_owner_contract.py"
+        ],
+        "search_terms": [
+          "mirror/emergent-live",
+          "Edarsahub_Desarrollo",
+          "MIRROR_SYNC_ENABLED",
+          "PERSISTENT_STOP",
+          "STOP",
+          "ENABLED",
+          "SAFE_SNAPSHOT_READY",
+          "SAFE_REMOTE_FAST_FORWARD_AVAILABLE",
+          "FAST_FORWARD",
+          "force",
+          "PRODUCTION_TOUCHED",
+          "shared_app_safety_guard",
+          "compare_and_swap",
+          "authorized_push",
+          "branches_preserve_job_artifacts",
+          "artifact convergence",
+          "preview_backend_tree_sha",
+          "BLOCKED_PRODUCTION_ENV",
+          "BLOCKED_WRONG_BRANCH",
+          "DEFERRED_LOCAL_DIRTY"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "tools/mirror_sync/git_divergence_guard.py",
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "tools/mirror_sync/worker_control_plane.py",
+        "tools/mirror_sync/gate_chain_publisher.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_universal_job_result_lineage_certification.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_mirror_single_owner_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-PREVIEW-MIRROR-REBUILD-READINESS-R1-20261021",
+  "mode": "READ_ONLY",
+  "objective": "Certificar en modo exclusivamente READ_ONLY si el Preview/Mirror de EDARSAHUB puede reconstruirse de forma canónica desde la rama Edarsahub_Desarrollo actual. Auditar el mecanismo existente de mirror-sync, safety guards, STOP/ENABLE fail-closed, publicación de snapshots, finalización, runtime recovery, certificación de resultados y protección contra divergencia. Confirmar que la reconstrucción puede preservar Development como única fuente canónica de código sin rescatar payload histórico obsoleto del mirror. No modificar refs, no quitar STOP, no habilitar mirror-sync, no reiniciar Preview por este job, no hacer merge/rebase/force push y no tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Conexiones y Comunicaciones",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "git_mirror_infrastructure",
+    "conflict_domains": [],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "HIGH",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
