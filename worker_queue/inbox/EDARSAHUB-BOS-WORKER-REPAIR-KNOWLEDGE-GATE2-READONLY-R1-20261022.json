@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 500,
+        "paths": [
+          "tools/mirror_sync/worker_repair_capability_registry.py",
+          "tools/mirror_sync/worker_repair_planner.py",
+          "tools/mirror_sync/worker_repair_execution.py",
+          "tools/mirror_sync/worker_result_reader.py",
+          "tools/mirror_sync/gate_chain_publisher.py",
+          "tools/mirror_sync/universal_job_bridge.py"
+        ],
+        "search_terms": [
+          "certification",
+          "certified",
+          "learned",
+          "signature",
+          "retry",
+          "integrated",
+          "worker_result_semantic_extract",
+          "allowed_checks"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-KNOWLEDGE-GATE2-READONLY-R1-20261022",
+  "mode": "READ_ONLY",
+  "objective": "Auditar los contratos existentes de Worker Repair, certificacion, aprendizaje, registro de capacidades, reintentos y conciliacion de resultados. Identificar brechas para una auditoria historica posterior. No modificar archivos ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "WORKER-REPAIR-KNOWLEDGE-GATE2",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "CHATGPT"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
