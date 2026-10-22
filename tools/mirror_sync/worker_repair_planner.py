@@ -386,6 +386,7 @@ def build_deterministic_repair_job(
     incident_id: str,
     *,
     capability_code: str | None = None,
+    problem_signature: str | None = None,
 ) -> dict[str, Any]:
     incident = (
         maintenance.read_runtime_incident(
@@ -410,6 +411,7 @@ def build_deterministic_repair_job(
         _resolve_capability(
             incident_id,
             capability_code,
+            problem_signature=problem_signature,
         )
     )
 
@@ -557,12 +559,16 @@ def publish_planned_repair(
     incident_id: str,
     *,
     capability_code: str | None = None,
+    problem_signature: str | None = None,
 ) -> dict[str, Any]:
     planned = (
         build_deterministic_repair_job(
             incident_id,
             capability_code=(
                 capability_code
+            ),
+            problem_signature=(
+                problem_signature
             ),
         )
     )
