@@ -26,6 +26,7 @@ Fecha: 2026-05-23
 """
 
 import os
+import json
 import uuid
 import logging
 import pymssql
@@ -442,6 +443,7 @@ def _get_servers_to_sync() -> List[Dict]:
             SELECT 
                 s.id, s.nombre as server_name, s.host, s.port, s.database_name,
                 s.username, s.password_encrypted, s.system_type, s.activo,
+                s.tipos_movimiento,
                 u.id as unidad_id, u.codigo as unidad_codigo, u.nombre as unidad_nombre,
                 u.sucursal_origen_id as sucursal_origen_id
             FROM Servidores_Conexiones s
@@ -470,6 +472,28 @@ def _get_servers_to_sync() -> List[Dict]:
                     logger.warning(f"[SYNC-COMPRAS] No se pudo desencriptar password de {row['server_name']}: {e}")
                     continue
             
+            tipos_movimiento = []
+            raw_tipos_movimiento = row.get('tipos_movimiento')
+            if raw_tipos_movimiento:
+                try:
+                    parsed_tipos = (
+                        raw_tipos_movimiento
+                        if isinstance(raw_tipos_movimiento, list)
+                        else json.loads(raw_tipos_movimiento)
+                    )
+                    if isinstance(parsed_tipos, list):
+                        tipos_movimiento = [
+                            str(item).strip()
+                            for item in parsed_tipos
+                            if str(item).strip()
+                        ]
+                except (TypeError, ValueError, json.JSONDecodeError):
+                    logger.warning(
+                        "[SYNC-COMPRAS] tipos_movimiento inválido para %s; "
+                        "se aplica fail-closed (sin movimientos autorizados)",
+                        row.get('server_name', ''),
+                    )
+
             servers.append({
                 'id': str(row.get('id', '')),
                 'name': row.get('server_name', ''),
@@ -479,6 +503,7 @@ def _get_servers_to_sync() -> List[Dict]:
                 'username': row.get('username', ''),
                 'password': password,
                 'system_type': row.get('system_type', ''),
+                'tipos_movimiento': tipos_movimiento,
                 'unidad_id': str(row.get('unidad_id', '')),
                 'unidad_codigo': row.get('unidad_codigo', ''),
                 'unidad_nombre': row.get('unidad_nombre', ''),
@@ -567,6 +592,7 @@ def execute_sync_compras(dry_run: bool = False) -> Dict[str, Any]:
                 'username': server['username'],
                 'password': server['password'],
                 'system_type': server['system_type'],
+                'tipos_movimiento': server.get('tipos_movimiento', []),
             }
             unidad_info = {
                 'id': server['unidad_id'],
