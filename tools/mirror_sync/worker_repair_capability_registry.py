@@ -27,6 +27,10 @@ CODE_RE = re.compile(r"^[A-Z0-9][A-Z0-9_]{2,95}$")
 SIGNATURE_RE = re.compile(r"^[A-Z0-9][A-Z0-9_.:-]{2,191}$")
 
 REGISTRY_DIR = maintenance.STATE_DIR / "learned_capabilities"
+SEED_DIR = (
+    Path(__file__).resolve().parent
+    / "worker_repair_capabilities"
+)
 
 FORBIDDEN_RECIPE_KEYS = {
     "command",
@@ -286,14 +290,22 @@ def register_learned_capability(
 
 
 def iter_learned_capabilities() -> tuple[LearnedCapability, ...]:
-    if not REGISTRY_DIR.is_dir():
-        return ()
+    rows: dict[str, LearnedCapability] = {}
 
-    rows: list[LearnedCapability] = []
-    for path in sorted(REGISTRY_DIR.glob("*.json")):
-        payload = json.loads(path.read_text(encoding="utf-8"))
-        rows.append(normalize_learned_capability(payload))
-    return tuple(rows)
+    for directory in (SEED_DIR, REGISTRY_DIR):
+        if not directory.is_dir():
+            continue
+        for path in sorted(directory.glob("*.json")):
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            capability = normalize_learned_capability(payload)
+            existing = rows.get(capability.code)
+            if existing is not None and _payload(existing) != _payload(capability):
+                raise ValueError(
+                    "LEARNED_CAPABILITY_REGISTRY_CONFLICT"
+                )
+            rows[capability.code] = capability
+
+    return tuple(rows[key] for key in sorted(rows))
 
 
 def _matches(
