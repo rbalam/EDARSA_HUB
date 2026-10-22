@@ -1,0 +1,539 @@
+{
+  "base_sha": "adbd7d2531fd15a474a4f9f12f4977cd38942c8c",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-22T05:21:57Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-SOURCE-MAPPING-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-22T05:22:38Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "tabla",
+              "column_id",
+              "columna",
+              "tipo_sql",
+              "is_nullable"
+            ],
+            "name": "esquema_tablas_mapeo",
+            "row_count_returned": 46,
+            "rows": [
+              [
+                "Producto_MapeoOrigen",
+                1,
+                "MapeoOrigenID",
+                "int",
+                false
+              ],
+              [
+                "Producto_MapeoOrigen",
+                2,
+                "ServerID",
+                "uniqueidentifier",
+                false
+              ],
+              [
+                "Producto_MapeoOrigen",
+                3,
+                "SystemType",
+                "varchar",
+                false
+              ],
+              [
+                "Producto_MapeoOrigen",
+                4,
+                "CodigoFuente",
+                "varchar",
+                false
+              ],
+              [
+                "Producto_MapeoOrigen",
+                5,
+                "ProductoID",
+                "int",
+                false
+              ],
+              [
+                "Producto_MapeoOrigen",
+                6,
+                "OrigenInsumoID",
+                "uniqueidentifier",
+                true
+              ],
+              [
+                "Producto_MapeoOrigen",
+                7,
+                "Activo",
+                "bit",
+                false
+              ],
+              [
+                "Producto_MapeoOrigen",
+                8,
+                "FechaCreacion",
+                "datetime2",
+                false
+              ],
+              [
+                "Sistema_Empresas",
+                1,
+                "EmpresaID",
+                "int",
+                false
+              ],
+              [
+                "Sistema_Empresas",
+                2,
+                "CodigoEmpresa",
+                "varchar",
+                false
+              ],
+              [
+                "Sistema_Empresas",
+                3,
+                "NombreEmpresa",
+                "nvarchar",
+                false
+              ],
+              [
+                "Sistema_Empresas",
+                4,
+                "NombreComercial",
+                "nvarchar",
+                true
+              ],
+              [
+                "Sistema_Empresas",
+                5,
+                "RFC",
+                "varchar",
+                true
+              ],
+              [
+                "Sistema_Empresas",
+                6,
+                "Activo",
+                "bit",
+                false
+              ],
+              [
+                "Sistema_Empresas",
+                7,
+                "FechaAlta",
+                "datetime2",
+                false
+              ],
+              [
+                "Sistema_Empresas",
+                8,
+                "FechaModificacion",
+                "datetime2",
+                true
+              ],
+              [
+                "Sistema_Empresas",
+                9,
+                "CreatedBy",
+                "varchar",
+                true
+              ],
+              [
+                "Sistema_Empresas",
+                10,
+                "UpdatedBy",
+                "varchar",
+                true
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                1,
+                "EmpresaServidorID",
+                "int",
+                false
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                2,
+                "EmpresaID",
+                "int",
+                false
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                3,
+                "ServidorID",
+                "uniqueidentifier",
+                false
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                4,
+                "SistemaTipoID",
+                "int",
+                true
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                5,
+                "RolConexion",
+                "varchar",
+                false
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                6,
+                "NumeroSucursalSistema",
+                "int",
+                true
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                7,
+                "CodigoSucursalSistema",
+                "varchar",
+                true
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                8,
+                "NombreSucursalSistema",
+                "nvarchar",
+                true
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                9,
+                "Prioridad",
+                "int",
+                false
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                10,
+                "EsPrincipal",
+                "bit",
+                false
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                11,
+                "Activo",
+                "bit",
+                false
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                12,
+                "FechaCreacion",
+                "datetime2",
+                false
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                13,
+                "FechaActualizacion",
+                "datetime2",
+                true
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                14,
+                "CreatedBy",
+                "varchar",
+                true
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                15,
+                "UpdatedBy",
+                "varchar",
+                true
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                16,
+                "Observaciones",
+                "nvarchar",
+                true
+              ],
+              [
+                "Unidades_Negocio",
+                1,
+                "id",
+                "uniqueidentifier",
+                false
+              ],
+              [
+                "Unidades_Negocio",
+                2,
+                "nombre",
+                "nvarchar",
+                false
+              ],
+              [
+                "Unidades_Negocio",
+                3,
+                "codigo",
+                "nvarchar",
+                false
+              ],
+              [
+                "Unidades_Negocio",
+                4,
+                "server_id",
+                "nvarchar",
+                false
+              ],
+              [
+                "Unidades_Negocio",
+                5,
+                "sucursal_origen_id",
+                "nvarchar",
+                true
+              ],
+              [
+                "Unidades_Negocio",
+                6,
+                "system_type",
+                "nvarchar",
+                false
+              ],
+              [
+                "Unidades_Negocio",
+                7,
+                "activo",
+                "bit",
+                true
+              ],
+              [
+                "Unidades_Negocio",
+                8,
+                "orden",
+                "int",
+                true
+              ],
+              [
+                "Unidades_Negocio",
+                9,
+                "created_at",
+                "datetime",
+                true
+              ],
+              [
+                "Unidades_Negocio",
+                10,
+                "updated_at",
+                "datetime",
+                true
+              ],
+              [
+                "Unidades_Negocio",
+                11,
+                "timezone_iana",
+                "nvarchar",
+                true
+              ],
+              [
+                "Unidades_Negocio",
+                12,
+                "locale_operativo",
+                "nvarchar",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EmpresaID",
+              "registros",
+              "codigos_sucursal",
+              "numeros_sucursal"
+            ],
+            "name": "empresas_servidores_registros",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                1,
+                "2",
+                1,
+                1
+              ],
+              [
+                2,
+                "2",
+                1,
+                1
+              ],
+              [
+                3,
+                "1",
+                0,
+                0
+              ],
+              [
+                4,
+                "1",
+                0,
+                0
+              ],
+              [
+                5,
+                "1",
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "registros_mapeo"
+            ],
+            "name": "producto_mapeo_origen_muestra",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "5414"
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "3640"
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "2629"
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "1202"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "codigo",
+              "nombre",
+              "unidad_guid",
+              "server_id",
+              "sucursal_origen_id",
+              "activo"
+            ],
+            "name": "unidades_sucursal_origen",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                "130° MERIDA",
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                null,
+                true
+              ],
+              [
+                "130QRO",
+                "130° QUERETARO",
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0021",
+                true
+              ],
+              [
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                null,
+                true
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                null,
+                true
+              ],
+              [
+                "ORIGEN",
+                "ORIGEN",
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0023",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "componentes",
+              "producto_no_encontrado"
+            ],
+            "name": "integridad_recetas_productos",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "4999",
+                4999
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "4234",
+                4234
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "2779",
+                2779
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "1583",
+                1583
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "componentes_con_insumo",
+              "insumo_no_encontrado"
+            ],
+            "name": "integridad_recetas_insumos",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-22T05:21:56Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
