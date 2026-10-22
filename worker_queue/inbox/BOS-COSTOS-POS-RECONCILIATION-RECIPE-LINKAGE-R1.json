@@ -1,0 +1,63 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "distribucion_referencias_recetas",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), ServerID) AS ServerID,\n    SystemType,\n    TipoComponente,\n    COUNT_BIG(*) AS componentes,\n    SUM(CASE WHEN InsumoID IS NOT NULL THEN 1 ELSE 0 END)\n        AS con_insumo_id,\n    SUM(CASE WHEN SubRecetaProductoID IS NOT NULL THEN 1 ELSE 0 END)\n        AS con_subreceta_id,\n    SUM(CASE WHEN ProductoCodigoFuente IS NOT NULL\n              AND LTRIM(RTRIM(ProductoCodigoFuente)) <> ''\n             THEN 1 ELSE 0 END) AS con_codigo_producto\nFROM dbo.Sync_Productos_Recetas\nGROUP BY ServerID, SystemType, TipoComponente\nORDER BY ServerID, SystemType, TipoComponente\n"
+        },
+        {
+          "name": "vinculacion_producto_codigo",
+          "sql": "\nWITH productos AS (\n    SELECT\n        ServerID,\n        SystemType,\n        CodigoFuente,\n        COUNT_BIG(*) AS coincidencias\n    FROM dbo.Sync_Productos\n    GROUP BY ServerID, SystemType, CodigoFuente\n)\nSELECT\n    CONVERT(varchar(36), r.ServerID) AS ServerID,\n    r.SystemType,\n    COUNT_BIG(*) AS componentes,\n    SUM(CASE WHEN p.coincidencias IS NULL\n             THEN 1 ELSE 0 END) AS sin_producto_codigo,\n    SUM(CASE WHEN p.coincidencias = 1\n             THEN 1 ELSE 0 END) AS coincidencia_unica,\n    SUM(CASE WHEN p.coincidencias > 1\n             THEN 1 ELSE 0 END) AS coincidencia_ambigua\nFROM dbo.Sync_Productos_Recetas r\nLEFT JOIN productos p\n    ON p.ServerID = r.ServerID\n   AND p.SystemType = r.SystemType\n   AND p.CodigoFuente = r.ProductoCodigoFuente\nGROUP BY r.ServerID, r.SystemType\nORDER BY r.ServerID, r.SystemType\n"
+        },
+        {
+          "name": "vinculacion_producto_id",
+          "sql": "\nWITH productos AS (\n    SELECT\n        ServerID,\n        ProductoID,\n        COUNT_BIG(*) AS coincidencias\n    FROM dbo.Sync_Productos\n    GROUP BY ServerID, ProductoID\n)\nSELECT\n    CONVERT(varchar(36), r.ServerID) AS ServerID,\n    COUNT_BIG(*) AS componentes,\n    SUM(CASE WHEN p.coincidencias IS NULL\n             THEN 1 ELSE 0 END) AS sin_producto_id,\n    SUM(CASE WHEN p.coincidencias = 1\n             THEN 1 ELSE 0 END) AS coincidencia_unica,\n    SUM(CASE WHEN p.coincidencias > 1\n             THEN 1 ELSE 0 END) AS coincidencia_ambigua\nFROM dbo.Sync_Productos_Recetas r\nLEFT JOIN productos p\n    ON p.ServerID = r.ServerID\n   AND p.ProductoID = r.ProductoID\nGROUP BY r.ServerID\nORDER BY r.ServerID\n"
+        },
+        {
+          "name": "vinculacion_subrecetas",
+          "sql": "\nWITH productos AS (\n    SELECT\n        ServerID,\n        ProductoID,\n        COUNT_BIG(*) AS coincidencias\n    FROM dbo.Sync_Productos\n    GROUP BY ServerID, ProductoID\n)\nSELECT\n    CONVERT(varchar(36), r.ServerID) AS ServerID,\n    COUNT_BIG(*) AS subrecetas_referenciadas,\n    SUM(CASE WHEN p.coincidencias IS NULL\n             THEN 1 ELSE 0 END) AS sin_producto_subreceta,\n    SUM(CASE WHEN p.coincidencias = 1\n             THEN 1 ELSE 0 END) AS coincidencia_unica,\n    SUM(CASE WHEN p.coincidencias > 1\n             THEN 1 ELSE 0 END) AS coincidencia_ambigua\nFROM dbo.Sync_Productos_Recetas r\nLEFT JOIN productos p\n    ON p.ServerID = r.ServerID\n   AND p.ProductoID = r.SubRecetaProductoID\nWHERE r.SubRecetaProductoID IS NOT NULL\nGROUP BY r.ServerID\nORDER BY r.ServerID\n"
+        },
+        {
+          "name": "integridad_insumos_referenciados",
+          "sql": "\nWITH insumos AS (\n    SELECT\n        ServerID,\n        InsumoID,\n        COUNT_BIG(*) AS coincidencias\n    FROM dbo.Sync_Productos_Insumos\n    GROUP BY ServerID, InsumoID\n)\nSELECT\n    CONVERT(varchar(36), r.ServerID) AS ServerID,\n    COUNT_BIG(*) AS componentes_con_insumo,\n    SUM(CASE WHEN i.coincidencias IS NULL\n             THEN 1 ELSE 0 END) AS sin_insumo,\n    SUM(CASE WHEN i.coincidencias = 1\n             THEN 1 ELSE 0 END) AS coincidencia_unica,\n    SUM(CASE WHEN i.coincidencias > 1\n             THEN 1 ELSE 0 END) AS coincidencia_ambigua\nFROM dbo.Sync_Productos_Recetas r\nLEFT JOIN insumos i\n    ON i.ServerID = r.ServerID\n   AND i.InsumoID = r.InsumoID\nWHERE r.InsumoID IS NOT NULL\nGROUP BY r.ServerID\nORDER BY r.ServerID\n"
+        },
+        {
+          "name": "empresas_sucursales_servidor",
+          "sql": "\nSELECT\n    e.EmpresaID,\n    e.CodigoEmpresa,\n    CONVERT(varchar(36), es.ServidorID) AS ServerID,\n    es.CodigoSucursalSistema,\n    es.NumeroSucursalSistema,\n    es.RolConexion,\n    es.Activo,\n    es.EsPrincipal\nFROM dbo.Sistema_EmpresasServidores es\nJOIN dbo.Sistema_Empresas e\n    ON e.EmpresaID = es.EmpresaID\nORDER BY\n    e.EmpresaID,\n    es.CodigoSucursalSistema,\n    es.NumeroSucursalSistema\n"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-RECIPE-LINKAGE-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Diagnosticar exclusivamente en lectura las claves de vinculacion entre productos, recetas, insumos y subrecetas sincronizadas. No modificar datos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "bos-costos-pos-reconciliation",
+    "email": "carlosruz@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "bos-orchestrator"
+  },
+  "scheduling": {
+    "bounded_context": "COSTOS_MARGENES",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": [
+      "costos_pos_recipe_linkage_r1"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
