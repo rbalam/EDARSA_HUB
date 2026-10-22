@@ -1,9 +1,9 @@
 name: Inventory Writer Profile PR84 Temp Gate
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/inventarios-writer-profile-r1-20261021
+      - Edarsahub_Desarrollo
     paths:
       - "backend/modules/compras/sync_service.py"
       - "backend/core/inventarios/sync_movimientos_canonico.py"
