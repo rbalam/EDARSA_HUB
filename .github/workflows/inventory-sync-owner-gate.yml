@@ -9,6 +9,7 @@ on:
       - "backend/modules/scheduler_trigger_inventarios/**"
       - "backend/server.py"
       - "backend/core/inventarios/analysis_mpro_canonical.py"
+      - "backend/core/inventarios/analysis_soft_sources.py"
       - "backend/core/recetas_service.py"
       - "backend/tests/test_inventory_analysis_mpro_canonical.py"
       - "backend/tests/test_inventory_scheduler_trigger.py"
@@ -49,6 +50,7 @@ jobs:
             backend/core/scheduler/scheduler_manager.py \
             backend/modules/scheduler_trigger_inventarios/routes.py \
             backend/core/inventarios/analysis_mpro_canonical.py \
+            backend/core/inventarios/analysis_soft_sources.py \
             backend/core/recetas_service.py \
             backend/tests/test_inventory_analysis_mpro_canonical.py \
             backend/tests/test_inventory_scheduler_trigger.py \
