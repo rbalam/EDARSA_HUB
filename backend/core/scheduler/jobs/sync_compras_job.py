@@ -57,9 +57,57 @@ logger = logging.getLogger(__name__)
 JOB_NAME = "sync_compras"
 SYNC_INTERVAL_SECONDS = int(os.environ.get("SCHEDULER_SYNC_COMPRAS_INTERVAL_SECONDS", "1800"))  # 30 min default
 SYNC_TYPE = "COMPRAS_SYNC"
-LOCK_TIMEOUT_MINUTES = int(
-    os.environ.get("SCHEDULER_SYNC_COMPRAS_LOCK_TIMEOUT_MINUTES", "5")
-)
+
+
+def _sync_compras_lock_timeout_minutes() -> int:
+    """
+    TTL del lock anti-concurrencia.
+
+    El default previo de 5 minutos era menor que una ejecución real de
+    sync_compras y podía permitir que otra corrida considerara vencido un job
+    todavía activo. Se conserva override explícito por ENV.
+    """
+    default_minutes = max(90, ((SYNC_INTERVAL_SECONDS + 59) // 60) * 2)
+    try:
+        value = int(
+            os.environ.get(
+                "SCHEDULER_SYNC_COMPRAS_LOCK_TIMEOUT_MINUTES",
+                str(default_minutes),
+            )
+        )
+    except (TypeError, ValueError):
+        value = default_minutes
+    return max(5, value)
+
+
+def _inventory_query_timeout_seconds() -> int:
+    """Timeout dedicado para consultas de inventario físico en el POS."""
+    try:
+        value = int(
+            os.environ.get(
+                "SYNC_INVENTARIOS_FISICOS_QUERY_TIMEOUT_SECONDS",
+                "120",
+            )
+        )
+    except (TypeError, ValueError):
+        value = 120
+    return max(45, min(value, 600))
+
+
+def _sync_compras_extended_enabled() -> bool:
+    """
+    Controla los pasos extendidos de Compras.
+
+    Default true para conservar compatibilidad. Preview puede operar el owner
+    de inventarios/requisiciones con este flag en false sin crear otro writer.
+    """
+    return (
+        os.environ.get(
+            "SCHEDULER_SYNC_COMPRAS_EXTENDED_ENABLED",
+            "true",
+        ).strip().lower()
+        == "true"
+    )
 
 # P2-01: Config centralizado
 from core.config.edarsahub_config import get_edarsahub_sql_config
@@ -119,8 +167,9 @@ def _acquire_sync_lock(run_id: str) -> bool:
         cursor = conn.cursor(as_dict=True)
         now_mx = datetime.now(ZoneInfo("America/Mexico_City"))
         now_sql = now_mx.replace(tzinfo=None)
+        lock_timeout_minutes = _sync_compras_lock_timeout_minutes()
         timeout_threshold = (
-            now_mx - timedelta(minutes=LOCK_TIMEOUT_MINUTES)
+            now_mx - timedelta(minutes=lock_timeout_minutes)
         ).replace(tzinfo=None)
 
         cursor.execute("SET XACT_ABORT ON")
@@ -328,6 +377,40 @@ def _execute_sql_with_timeout(host, port, database, username, password, query, t
                 pass
 
 
+def _execute_inventory_sql_with_timeout(
+    host,
+    port,
+    database,
+    username,
+    password,
+    query,
+):
+    """Ejecutor dedicado a inventarios con timeout mayor al genérico."""
+    return _execute_sql_with_timeout(
+        host,
+        port,
+        database,
+        username,
+        password,
+        query,
+        timeout_seconds=_inventory_query_timeout_seconds(),
+    )
+
+
+def _extended_sync_steps():
+    """Pasos extendidos opcionales; no duplican el owner de inventarios."""
+    if not _sync_compras_extended_enabled():
+        return []
+    return [
+        ("almacenes", sync_almacenes_from_server, "ALMACENES"),
+        ("existencias", sync_existencias_from_server, "EXISTENCIAS"),
+        ("movimientos", sync_movimientos_from_server, "MOVIMIENTOS"),
+        ("pedidos", sync_pedidos_from_server, "PEDIDOS"),
+        ("ordenes", sync_ordenes_from_server, "ORDENES"),
+        ("recepciones", sync_recepciones_from_server, "RECEPCIONES"),
+    ]
+
+
 def _get_servers_to_sync() -> List[Dict]:
     """
     Obtiene la lista de servidores activos configurados para sincronización.
@@ -483,7 +566,9 @@ def execute_sync_compras(dry_run: bool = False) -> Dict[str, Any]:
                 
                 if not dry_run:
                     inv_result = sync_inventarios_fisicos_from_server(
-                        server_info, unidad_info, _execute_sql_with_timeout
+                        server_info,
+                        unidad_info,
+                        _execute_inventory_sql_with_timeout,
                     )
                 else:
                     inv_result = {"status": "DRY_RUN", "records_synced": 0, "error": None}
@@ -585,15 +670,13 @@ def execute_sync_compras(dry_run: bool = False) -> Dict[str, Any]:
             # =================================================================
             # SQL-FIRST FASE 2: Sincronizaciones adicionales Compras/Inventarios
             # =================================================================
-            sync_steps = [
-                ("almacenes", sync_almacenes_from_server, "ALMACENES"),
-                ("existencias", sync_existencias_from_server, "EXISTENCIAS"),
-                ("movimientos", sync_movimientos_from_server, "MOVIMIENTOS"),
-                ("pedidos", sync_pedidos_from_server, "PEDIDOS"),
-                ("ordenes", sync_ordenes_from_server, "ORDENES"),
-                ("recepciones", sync_recepciones_from_server, "RECEPCIONES"),
-            ]
-            
+            sync_steps = _extended_sync_steps()
+            if not sync_steps:
+                logger.warning(
+                    "[SYNC-COMPRAS] Pasos extendidos omitidos por "
+                    "SCHEDULER_SYNC_COMPRAS_EXTENDED_ENABLED=false"
+                )
+
             for step_name, step_func, sync_type_label in sync_steps:
                 try:
                     sync_start = datetime.now(ZoneInfo("America/Mexico_City"))
