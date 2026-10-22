@@ -1,0 +1,63 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "gate4_negativos_por_campo_servidor",
+          "sql": "\nSELECT\n ServerID, SystemType,\n COUNT_BIG(*) AS Total,\n SUM(CASE WHEN Costo < 0 THEN 1 ELSE 0 END) AS CostoNegativo,\n SUM(CASE WHEN CostoPromedio < 0 THEN 1 ELSE 0 END) AS PromedioNegativo,\n SUM(CASE WHEN UltimoCosto < 0 THEN 1 ELSE 0 END) AS UltimoNegativo,\n SUM(CASE WHEN Costo = 0 AND CostoPromedio > 0\n          THEN 1 ELSE 0 END) AS CeroConPromedioPositivo\nFROM dbo.Sync_Productos_Insumos\nGROUP BY ServerID, SystemType\nORDER BY Total DESC\n"
+        },
+        {
+          "name": "gate4_insumos_costo_cero_alternativas",
+          "sql": "\nSELECT TOP (100)\n ServerID, SystemType, CodigoFuente,\n Costo, CostoPromedio, UltimoCosto\nFROM dbo.Sync_Productos_Insumos\nWHERE (Costo = 0 AND CostoPromedio > 0)\n   OR (CostoPromedio = 0 AND Costo > 0)\nORDER BY ServerID, CodigoFuente\n"
+        },
+        {
+          "name": "gate4_recetas_huerfanas_por_servidor",
+          "sql": "\nSELECT\n r.ServerID, r.SystemType,\n COUNT_BIG(*) AS TotalComponentes,\n SUM(CASE WHEN NOT EXISTS (\n   SELECT 1 FROM dbo.Sync_Productos p\n   WHERE p.ServerID = r.ServerID\n     AND p.SystemType = r.SystemType\n     AND p.CodigoFuente = r.ProductoCodigoFuente\n ) THEN 1 ELSE 0 END) AS SinProductoPadre,\n SUM(CASE WHEN NOT EXISTS (\n   SELECT 1 FROM dbo.Sync_Productos_Insumos i\n   WHERE i.ServerID = r.ServerID\n     AND i.SystemType = r.SystemType\n     AND i.CodigoFuente = r.ComponenteCodigoFuente\n ) THEN 1 ELSE 0 END) AS SinInsumo\nFROM dbo.Sync_Productos_Recetas r\nGROUP BY r.ServerID, r.SystemType\nORDER BY TotalComponentes DESC\n"
+        },
+        {
+          "name": "gate4_costos_receta_vs_insumo",
+          "sql": "\nSELECT TOP (100)\n r.ServerID, r.SystemType,\n r.ProductoCodigoFuente,\n r.ComponenteCodigoFuente,\n r.UnidadMedida,\n r.Cantidad,\n r.CostoUnitario AS CostoReceta,\n i.Costo AS CostoInsumo,\n i.CostoPromedio,\n ABS(r.CostoUnitario - i.Costo) AS Diferencia\nFROM dbo.Sync_Productos_Recetas r\nJOIN dbo.Sync_Productos_Insumos i\n ON i.ServerID = r.ServerID\n AND i.SystemType = r.SystemType\n AND i.CodigoFuente = r.ComponenteCodigoFuente\nWHERE r.CostoUnitario > 0\n  AND i.Costo > 0\n  AND ABS(r.CostoUnitario - i.Costo) > 0.01\nORDER BY Diferencia DESC\n"
+        },
+        {
+          "name": "gate4_unidades_costos_cero",
+          "sql": "\nSELECT TOP (100)\n ServerID, SystemType, UnidadMedida,\n COUNT_BIG(*) AS Componentes,\n SUM(CASE WHEN CostoUnitario = 0\n          THEN 1 ELSE 0 END) AS CostoUnitarioCero,\n SUM(CASE WHEN CostoTotal = 0\n          THEN 1 ELSE 0 END) AS CostoTotalCero\nFROM dbo.Sync_Productos_Recetas\nGROUP BY ServerID, SystemType, UnidadMedida\nORDER BY CostoUnitarioCero DESC\n"
+        },
+        {
+          "name": "gate4_mpro_identidad_empresarial",
+          "sql": "\nSELECT\n ServerID, SystemType, EmpresaID,\n COUNT_BIG(*) AS Productos,\n SUM(CASE WHEN UnidadNegocioID IS NULL\n          THEN 1 ELSE 0 END) AS SinUnidadNegocio\nFROM dbo.Sync_Productos\nWHERE SystemType = 'MPRO'\nGROUP BY ServerID, SystemType, EmpresaID\nORDER BY Productos DESC\n"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-GATE4-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 4 R1: investigar causas raiz de costos cero, costos negativos, componentes de recetas sin correspondencia, diferencias de unidades de medida y ambiguedad del servidor MPRO compartido. No realizar correcciones ni escrituras SQL.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "bos-costos-pos-reconciliation",
+    "email": "carlosruz@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "bos-orchestrator"
+  },
+  "scheduling": {
+    "bounded_context": "COSTOS_MARGENES",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": [
+      "costos_pos_reconciliation_gate4_r1"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
