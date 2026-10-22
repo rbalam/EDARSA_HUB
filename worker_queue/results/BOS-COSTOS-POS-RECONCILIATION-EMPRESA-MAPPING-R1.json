@@ -1,0 +1,232 @@
+{
+  "base_sha": "adbd7d2531fd15a474a4f9f12f4977cd38942c8c",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-22T04:55:31Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-EMPRESA-MAPPING-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-22T04:56:10Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "EmpresaID",
+              "CodigoEmpresa",
+              "NombreEmpresa",
+              "Activo"
+            ],
+            "name": "empresas_catalogo",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                1,
+                "ORIGEN",
+                "ORIGEN",
+                true
+              ],
+              [
+                2,
+                "130QRO",
+                "130 QRO",
+                true
+              ],
+              [
+                3,
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                true
+              ],
+              [
+                4,
+                "ESTELAR",
+                "LA ESTELAR",
+                true
+              ],
+              [
+                5,
+                "130MID",
+                "130 MID",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "EmpresaID",
+              "productos"
+            ],
+            "name": "productos_empresa_servidor",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                null,
+                "1866"
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                null,
+                "2033"
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                null,
+                "7957"
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                null,
+                "620"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EmpresaID",
+              "CodigoEmpresa",
+              "NombreEmpresa",
+              "productos",
+              "servidores"
+            ],
+            "name": "productos_empresa_catalogo",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                null,
+                null,
+                null,
+                "12476",
+                4
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_codigo",
+              "unidad_nombre",
+              "ServerID",
+              "EmpresaID",
+              "CodigoEmpresa",
+              "NombreEmpresa"
+            ],
+            "name": "unidades_empresas_codigo",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                "130° MERIDA",
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                5,
+                "130MID",
+                "130 MID"
+              ],
+              [
+                "130QRO",
+                "130° QUERETARO",
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                2,
+                "130QRO",
+                "130 QRO"
+              ],
+              [
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                3,
+                "CIENFUEGOS",
+                "CIENFUEGOS"
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                4,
+                "ESTELAR",
+                "LA ESTELAR"
+              ],
+              [
+                "ORIGEN",
+                "ORIGEN",
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                1,
+                "ORIGEN",
+                "ORIGEN"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EmpresaID",
+              "CodigoEmpresa",
+              "NombreEmpresa",
+              "productos"
+            ],
+            "name": "servidor_compartido_empresa",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                null,
+                null,
+                null,
+                "7957"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "productos_sin_empresa_valida"
+            ],
+            "name": "productos_sin_empresa_valida",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "7957"
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "2033"
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "1866"
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "620"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-22T04:55:30Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
