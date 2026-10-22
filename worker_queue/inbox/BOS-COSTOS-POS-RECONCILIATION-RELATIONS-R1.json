@@ -1,0 +1,59 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "servidores_unidades",
+          "sql": "\nSELECT\n    u.codigo,\n    u.nombre,\n    CONVERT(varchar(36), u.id) AS unidad_guid,\n    u.server_id AS server_id_texto,\n    CONVERT(\n        varchar(36),\n        TRY_CONVERT(uniqueidentifier, u.server_id)\n    ) AS server_guid,\n    CASE\n        WHEN TRY_CONVERT(uniqueidentifier, u.server_id) IS NULL\n        THEN 'INVALID_GUID'\n        ELSE 'VALID_GUID'\n    END AS conversion_estado\nFROM dbo.Unidades_Negocio u\nWHERE u.activo = 1\nORDER BY u.nombre\n"
+        },
+        {
+          "name": "servidores_compartidos",
+          "sql": "\nSELECT\n    u.server_id,\n    COUNT(*) AS unidades_activas\nFROM dbo.Unidades_Negocio u\nWHERE u.activo = 1\nGROUP BY u.server_id\nHAVING COUNT(*) > 1\nORDER BY unidades_activas DESC\n"
+        },
+        {
+          "name": "coincidencia_servidores",
+          "sql": "\nSELECT\n    u.codigo,\n    u.nombre,\n    CONVERT(varchar(36),\n        TRY_CONVERT(uniqueidentifier, u.server_id)\n    ) AS server_guid,\n    (\n        SELECT COUNT_BIG(*)\n        FROM dbo.Sync_Productos p\n        WHERE p.ServerID =\n            TRY_CONVERT(uniqueidentifier, u.server_id)\n    ) AS productos,\n    (\n        SELECT COUNT_BIG(*)\n        FROM dbo.Sync_Productos_Insumos i\n        WHERE i.ServerID =\n            TRY_CONVERT(uniqueidentifier, u.server_id)\n    ) AS insumos,\n    (\n        SELECT COUNT_BIG(*)\n        FROM dbo.Sync_Productos_Recetas r\n        WHERE r.ServerID =\n            TRY_CONVERT(uniqueidentifier, u.server_id)\n    ) AS componentes_receta\nFROM dbo.Unidades_Negocio u\nWHERE u.activo = 1\nORDER BY u.nombre\n"
+        },
+        {
+          "name": "producto_unidad_id_distribucion",
+          "sql": "\nSELECT\n    p.UnidadNegocioID,\n    COUNT_BIG(*) AS productos,\n    COUNT(DISTINCT p.ServerID) AS servidores_distintos\nFROM dbo.Sync_Productos p\nGROUP BY p.UnidadNegocioID\nORDER BY productos DESC\n"
+        },
+        {
+          "name": "catalogo_relaciones_candidatas",
+          "sql": "\nSELECT\n    t.name AS tabla,\n    c.name AS columna,\n    ty.name AS tipo_sql\nFROM sys.tables t\nJOIN sys.schemas s\n    ON s.schema_id = t.schema_id\nJOIN sys.columns c\n    ON c.object_id = t.object_id\nJOIN sys.types ty\n    ON ty.user_type_id = c.user_type_id\nWHERE s.name = 'dbo'\nAND (\n    t.name IN (\n        'Unidades_Negocio',\n        'Sistema_Empresas',\n        'Sync_Productos'\n    )\n)\nAND (\n    c.name LIKE '%Unidad%'\n    OR c.name LIKE '%Empresa%'\n    OR c.name LIKE '%Server%'\n    OR c.name IN ('id', 'codigo')\n)\nORDER BY t.name, c.name\n"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-RELATIONS-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar relaciones canonicas entre unidades operativas, servidores, productos, insumos y recetas. Verificar tipos, conversiones, correspondencias y cardinalidades sin modificar SQL ni consultar POS LIVE.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "bos-costos-pos-reconciliation",
+    "email": "carlosruz@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "bos-orchestrator"
+  },
+  "scheduling": {
+    "bounded_context": "COSTOS_MARGENES",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": [
+      "costos_pos_reconciliation_relations_r1"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
