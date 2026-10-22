@@ -1423,6 +1423,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                         break
 
             result["checks"] = check_results
+            if _native_decision_contract_required(job):
+                _promote_native_decision_from_semantic_extract(result, check_results)
             result["tests"] = (
                 "PASS"
                 if (
@@ -1879,6 +1881,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                         result["blockers"].append("check_failed:api_local_health_test_post_audit")
                         break
             result["checks"] = check_results
+            if _native_decision_contract_required(job):
+                _promote_native_decision_from_semantic_extract(result, check_results)
 
             post_health_ids = set()
             for check_result in check_results:
@@ -2162,6 +2166,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                         )
                         break
             result["checks"] = check_results
+            if _native_decision_contract_required(job):
+                _promote_native_decision_from_semantic_extract(result, check_results)
             result["tests"] = (
                 "PASS"
                 if check_results
@@ -2308,6 +2314,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                         )
                         break
             result["checks"] = check_results
+            if _native_decision_contract_required(job):
+                _promote_native_decision_from_semantic_extract(result, check_results)
             result["tests"] = (
                 "PASS"
                 if check_results
