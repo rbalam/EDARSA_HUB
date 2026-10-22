@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "46d16fad813f24b5fcf0bea3df72acabea8c96ff",
-  "generated_at_utc": "2026-10-22T05:51:34Z",
+  "generated_at_utc": "2026-10-22T05:52:50Z",
   "history": {
     "done_total_local": 1539,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 865,
+      "age_seconds": 942,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-COMPONENT-LINKAGE-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3363,
+      "age_seconds": 3439,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-EMPRESA-MAPPING-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2910,
+      "age_seconds": 2986,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-IDENTITY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1527,
+      "age_seconds": 1603,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-RECIPE-LINKAGE-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1777,
+      "age_seconds": 1853,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-SOURCE-MAPPING-R1",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-22T05:51:32Z",
-    "last_receive_utc": "2026-10-22T05:51:27Z",
+    "last_cycle_utc": "2026-10-22T05:52:41Z",
+    "last_receive_utc": "2026-10-22T05:52:49Z",
     "last_terminal_utc": "2026-10-22T05:37:08Z",
     "pid": "290",
     "runtime_fingerprint": {
