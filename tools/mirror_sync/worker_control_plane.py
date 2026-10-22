@@ -28,6 +28,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from tools.mirror_sync.worker_slot_runtime import (
+    load_slot,
+    slot_is_live,
+)
 from tools.mirror_sync.worker_maintenance_runtime import (
     audit_runtime_incident,
     declare_runtime_incident,
@@ -426,6 +430,110 @@ def reconcile_agent_guard_orphans() -> dict[str, int]:
     return {"live": live, "recent": recent, "quarantined": quarantined}
 
 
+def active_execution_ownership(
+    job_id: str,
+    *,
+    heartbeat_stale_seconds: int,
+) -> dict[str, Any]:
+    """Return only fresh/live canonical ownership evidence for one job."""
+    evidence: dict[str, Any] = {
+        "active": False,
+        "job_id": job_id,
+        "sources": [],
+    }
+
+    reconciler_path = RUNTIME / "reconciler.json"
+    try:
+        reconciler = json.loads(
+            reconciler_path.read_text(encoding="utf-8")
+        )
+    except Exception:
+        reconciler = {}
+
+    generated_at = str(
+        reconciler.get("generated_at_utc") or ""
+    ).strip()
+    reconciler_age = parse_iso_age(generated_at)
+    reconciler_fresh = (
+        reconciler_age is not None
+        and reconciler_age <= heartbeat_stale_seconds
+    )
+
+    if reconciler_fresh:
+        for claim in reconciler.get("claims") or []:
+            if not isinstance(claim, dict):
+                continue
+            if str(claim.get("task_id") or "").strip() != job_id:
+                continue
+            decision = str(claim.get("decision") or "").strip()
+            released = claim.get("released") is True
+            if not released and decision in {
+                "CLAIM_NOT_STALE",
+                "LIVE_PROCESS_REFERENCES_WORKTREE",
+                "WORK_NOT_TERMINAL_OR_INTEGRATED",
+            }:
+                evidence["active"] = True
+                evidence["sources"].append(
+                    {
+                        "kind": "agent_claim",
+                        "decision": decision,
+                        "reconciler_age_seconds": int(reconciler_age),
+                    }
+                )
+
+    try:
+        slot = load_slot("mutation-1")
+    except Exception as exc:
+        evidence["slot_error"] = type(exc).__name__
+        slot = None
+
+    if (
+        isinstance(slot, dict)
+        and str(slot.get("job_id") or "").strip() == job_id
+    ):
+        try:
+            live_slot = slot_is_live(
+                slot,
+                heartbeat_stale_seconds=heartbeat_stale_seconds,
+            )
+        except Exception as exc:
+            evidence["slot_error"] = type(exc).__name__
+            live_slot = False
+
+        if live_slot:
+            evidence["active"] = True
+            evidence["sources"].append(
+                {
+                    "kind": "slot",
+                    "slot_id": slot.get("slot_id"),
+                    "state": slot.get("state"),
+                }
+            )
+
+    writer_owner = STATE / "git-writer.lock.d" / "owner.json"
+    try:
+        writer = json.loads(
+            writer_owner.read_text(encoding="utf-8")
+        )
+    except Exception:
+        writer = {}
+
+    if str(writer.get("job_id") or "").strip() == job_id:
+        owner_pid = int(writer.get("owner_pid") or 0)
+        owner_alive = pid_alive(owner_pid) if owner_pid > 0 else False
+        if owner_alive:
+            evidence["active"] = True
+            evidence["sources"].append(
+                {
+                    "kind": "git_writer_lock",
+                    "owner_pid": owner_pid,
+                    "owner_pid_alive": True,
+                }
+            )
+
+    return evidence
+
+
 def requeue_stale_processing() -> int:
     PENDING.mkdir(parents=True, exist_ok=True)
     PROCESSING.mkdir(parents=True, exist_ok=True)
@@ -452,6 +560,19 @@ def requeue_stale_processing() -> int:
         )
 
         if age < processing_grace:
+            continue
+
+        ownership = active_execution_ownership(
+            str(job.get("job_id") or path.stem),
+            heartbeat_stale_seconds=processing_grace,
+        )
+        if ownership.get("active") is True:
+            audit(
+                "STALE_PROCESSING_DEFERRED_ACTIVE_OWNERSHIP",
+                job_file=path.name,
+                age_seconds=int(age),
+                ownership=ownership,
+            )
             continue
 
         retry_count = int(envelope.get("_worker_stale_requeue_count") or 0)

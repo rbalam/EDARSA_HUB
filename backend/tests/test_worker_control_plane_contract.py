@@ -63,6 +63,16 @@ def test_stale_processing_is_idempotently_requeued():
     assert "os.replace(path, target)" in text
 
 
+def test_stale_processing_defers_only_for_live_canonical_ownership():
+    text = CONTROL.read_text(encoding="utf-8")
+    assert "active_execution_ownership" in text
+    assert "STALE_PROCESSING_DEFERRED_ACTIVE_OWNERSHIP" in text
+    assert "load_slot" in text
+    assert "slot_is_live" in text
+    assert "reconciler_fresh" in text
+    assert "owner_pid_alive" in text
+
+
 def test_production_is_explicitly_out_of_scope():
     text = CONTROL.read_text(encoding="utf-8")
     assert '"production_touched": False' in text
