@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "b75573024d170c4be20b785069f539d87a4ab3fc",
-  "generated_at_utc": "2026-10-22T07:29:42Z",
+  "generated_at_utc": "2026-10-22T07:31:03Z",
   "history": {
     "done_total_local": 1541,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2354,
+      "age_seconds": 2435,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-READINESS-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1441,
+      "age_seconds": 1522,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-CANONICAL-INVENTORY-UI-FIX-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2895,
+      "age_seconds": 2975,
       "job_id": "EDARSAHUB-BOS-WORKER-DISPATCHER-SEMANTIC-PROMOTION-COVERAGE-FIX-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-CANONICAL-INVENTORY-UI-FIX-R1-20261022",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-22T07:29:34Z",
-    "last_receive_utc": "2026-10-22T07:29:29Z",
+    "last_cycle_utc": "2026-10-22T07:30:57Z",
+    "last_receive_utc": "2026-10-22T07:30:52Z",
     "last_terminal_utc": "2026-10-22T07:05:41Z",
     "pid": "334",
     "runtime_fingerprint": {
