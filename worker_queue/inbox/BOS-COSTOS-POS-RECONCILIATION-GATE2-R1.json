@@ -1,0 +1,55 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "unidades_operativas",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), u.id) AS unidad_id,\n    u.codigo,\n    u.nombre,\n    CONVERT(varchar(36), u.server_id) AS server_id,\n    u.system_type,\n    u.sucursal_origen_id,\n    e.EmpresaID\nFROM dbo.Unidades_Negocio u\nLEFT JOIN dbo.Sistema_Empresas e\n    ON UPPER(LTRIM(RTRIM(e.CodigoEmpresa))) =\n       UPPER(LTRIM(RTRIM(u.codigo)))\n    AND ISNULL(e.Activo, 1) = 1\nWHERE u.activo = 1\nORDER BY u.nombre\n"
+        },
+        {
+          "name": "productos_por_unidad",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), u.id) AS unidad_id,\n    u.codigo,\n    u.nombre,\n    COUNT(p.ProductoID) AS productos,\n    COUNT(DISTINCT NULLIF(p.FamiliaNombre, '')) AS familias,\n    SUM(CASE WHEN p.CostoReceta IS NULL\n             OR p.CostoReceta = 0\n             THEN 1 ELSE 0 END) AS productos_sin_costo,\n    MAX(p.SyncedAtMexico) AS ultima_sincronizacion\nFROM dbo.Unidades_Negocio u\nLEFT JOIN dbo.Sync_Productos p\n    ON p.UnidadNegocioID = u.id\nWHERE u.activo = 1\nGROUP BY u.id, u.codigo, u.nombre\nORDER BY u.nombre\n"
+        },
+        {
+          "name": "insumos_por_servidor",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), u.id) AS unidad_id,\n    u.codigo,\n    u.nombre,\n    COUNT(i.InsumoID) AS insumos,\n    MAX(i.SyncedAtMexico) AS ultima_sincronizacion\nFROM dbo.Unidades_Negocio u\nLEFT JOIN dbo.Sync_Productos_Insumos i\n    ON i.ServerID = u.server_id\nWHERE u.activo = 1\nGROUP BY u.id, u.codigo, u.nombre\nORDER BY u.nombre\n"
+        },
+        {
+          "name": "recetas_por_servidor",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), u.id) AS unidad_id,\n    u.codigo,\n    u.nombre,\n    COUNT(r.RecetaDetalleID) AS componentes_receta,\n    COUNT(DISTINCT r.ProductoCodigoFuente) AS productos_con_receta,\n    SUM(CASE WHEN r.CostoTotal IS NULL\n             OR r.CostoTotal = 0\n             THEN 1 ELSE 0 END) AS componentes_sin_costo\nFROM dbo.Unidades_Negocio u\nLEFT JOIN dbo.Sync_Productos_Recetas r\n    ON r.ServerID = u.server_id\n    AND ISNULL(r.Activo, 1) = 1\nWHERE u.activo = 1\nGROUP BY u.id, u.codigo, u.nombre\nORDER BY u.nombre\n"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-GATE2-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditoria SQL de todas las unidades operativas: sincronizacion, productos, insumos, familias, recetas y discrepancias de costos. Sin POS LIVE y sin modificaciones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "bos-costos-pos-reconciliation",
+    "email": "carlosruz@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "bos-orchestrator"
+  },
+  "scheduling": {
+    "bounded_context": "COSTOS_MARGENES",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": [
+      "costos_pos_reconciliation_gate2"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
