@@ -1,0 +1,186 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-MINIMAL-REPAIR-GATE-R1-20261022",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "adbd7d2531fd15a474a4f9f12f4977cd38942c8c",
+  "mode": "READ_ONLY",
+  "objective": "Derivar exclusivamente del resultado ya completado EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-RECONCILIATION-AUDIT-R1-20261022 el Gate minimo de reparacion para el bounded context Conexiones y Comunicaciones. No repetir una auditoria general ni crear inventarios paralelos. Reconciliar la evidencia de backend, frontend y Universal Worker para identificar la brecha operativa minima que explique conexiones SQL Server/API faltantes o visibles con error, y la ubicacion/estado canonico de Cavas, Cienfuegos, Twilio/WhatsApp, Toast y GitHub/Universal Worker. Entregar una sola propuesta quirurgica: causa raiz sustentada, archivos exactos a tocar, archivos prohibidos, contratos canonicos a reutilizar, pruebas exactas, criterios PASS/FAIL y decision de si el siguiente Gate debe ser MUTATION. No modificar codigo, datos, credenciales, runtime, mirror, permisos, SQL ni Produccion.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS",
+    "chat": "Conexiones y Comunicaciones"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend"
+        ],
+        "search_terms": [
+          "Servidores_Conexiones",
+          "Servidores_ConexionEstado",
+          "server registry",
+          "conexiones",
+          "sql server",
+          "twilio",
+          "whatsapp",
+          "toast",
+          "cavas",
+          "cienfuegos"
+        ],
+        "max_results": 180
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend"
+        ],
+        "search_terms": [
+          "servidores",
+          "conexiones",
+          "sql server",
+          "twilio",
+          "whatsapp",
+          "toast",
+          "cavas",
+          "cienfuegos",
+          "api"
+        ],
+        "max_results": 180
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync",
+          ".github"
+        ],
+        "search_terms": [
+          "universal worker",
+          "worker/requests",
+          "worker_queue",
+          "github",
+          "runtime",
+          "server registry"
+        ],
+        "max_results": 120
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "required_deliverables": [
+    "ROOT_CAUSE_EVIDENCE",
+    "CANONICAL_COMPONENTS_TO_REUSE",
+    "MINIMAL_REPAIR_SCOPE",
+    "FILES_TO_TOUCH_NEXT_GATE",
+    "FILES_NOT_TO_TOUCH",
+    "TESTS_REQUIRED",
+    "NEXT_GATE_MUTATION_DECISION"
+  ],
+  "deliverable_specs": {
+    "ROOT_CAUSE_EVIDENCE": {
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 1
+      },
+      "selector": {
+        "type": "json_path",
+        "path": [
+          "repository_evidence"
+        ]
+      }
+    },
+    "CANONICAL_COMPONENTS_TO_REUSE": {
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 1
+      },
+      "selector": {
+        "type": "json_path",
+        "path": [
+          "repository_evidence"
+        ]
+      }
+    },
+    "MINIMAL_REPAIR_SCOPE": {
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 2
+      },
+      "selector": {
+        "type": "json_path",
+        "path": [
+          "repository_evidence"
+        ]
+      }
+    },
+    "FILES_TO_TOUCH_NEXT_GATE": {
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 2
+      },
+      "selector": {
+        "type": "json_path",
+        "path": [
+          "repository_evidence"
+        ]
+      }
+    },
+    "FILES_NOT_TO_TOUCH": {
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 3
+      },
+      "selector": {
+        "type": "json_path",
+        "path": [
+          "repository_evidence"
+        ]
+      }
+    },
+    "TESTS_REQUIRED": {
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 3
+      },
+      "selector": {
+        "type": "json_path",
+        "path": [
+          "repository_evidence"
+        ]
+      }
+    },
+    "NEXT_GATE_MUTATION_DECISION": {
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 3
+      },
+      "selector": {
+        "type": "json_path",
+        "path": [
+          "repository_evidence"
+        ]
+      }
+    }
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB BOS",
+    "bounded_context": "Conexiones y Comunicaciones",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "conflict_domains": [],
+    "resource_claims": []
+  }
+}
