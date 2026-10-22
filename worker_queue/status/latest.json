@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "53cb69b5de19518a71d648601670c329fd299c56",
-  "generated_at_utc": "2026-10-22T06:34:45Z",
+  "generated_at_utc": "2026-10-22T06:36:03Z",
   "history": {
     "done_total_local": 1539,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3456,
+      "age_seconds": 3535,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-COMPONENT-LINKAGE-R1",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,8 +36,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-22T06:34:42Z",
-    "last_receive_utc": "2026-10-22T06:34:37Z",
+    "last_cycle_utc": "2026-10-22T06:35:58Z",
+    "last_receive_utc": "2026-10-22T06:35:53Z",
     "last_terminal_utc": "2026-10-22T05:37:08Z",
     "pid": "290",
     "runtime_fingerprint": {
