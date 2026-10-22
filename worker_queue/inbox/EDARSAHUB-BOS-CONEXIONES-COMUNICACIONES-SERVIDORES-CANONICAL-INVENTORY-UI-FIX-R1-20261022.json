@@ -1,0 +1,47 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-CANONICAL-INVENTORY-UI-FIX-R1-20261022",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Corregir la regresion del menu Servidores sin abandonar la fachada canonica unificada: mantener /integrations-center/connections como lectura primaria y aplicar failover operativo a los contratos canonicos existentes /servers y /api-connections solo cuando la fachada falle, evitando que SQL y API queden simultaneamente vacios. No tocar backend, SQL, Mongo, Produccion ni secretos.",
+  "mode": "MUTATION",
+  "base_sha": "b75573024d170c4be20b785069f539d87a4ab3fc",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "    } catch (error) {\n      console.error('Error cargando inventario canonico de conexiones:', error);\n      setServers([]);\n      setApiConnections([]);\n      toast.error('Error al cargar conexiones');\n    } finally {",
+      "new": "    } catch (error) {\n      console.error('Error cargando inventario canonico de conexiones:', error);\n\n      // Failover operativo: conservar la fachada unificada como ruta primaria,\n      // pero no vaciar ambos inventarios si una dependencia de composicion falla.\n      // Estos endpoints existentes siguen leyendo EDARSAHUB SQL y no exponen secretos.\n      try {\n        const sqlResponse = await api.get('/servers');\n        setServers(Array.isArray(sqlResponse.data) ? sqlResponse.data : []);\n      } catch (sqlError) {\n        console.error('Error cargando servidores SQL por fallback canonico:', sqlError);\n        setServers([]);\n      }\n\n      await loadApiConnections();\n      toast.warning('Inventario unificado no disponible; se usaron contratos canonicos de compatibilidad.');\n    } finally {",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS",
+    "chat": "Conexiones y Comunicaciones"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB BOS",
+    "bounded_context": "Conexiones y Comunicaciones",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [
+      "frontend/src/pages/Servidores.js"
+    ],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
