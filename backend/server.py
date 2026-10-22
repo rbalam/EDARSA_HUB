@@ -5031,23 +5031,40 @@ WHERE t._rn = 1
 
             detail_rows = _fetch_inventory_detail_rows(detail_filters, detail_params, "almacen")
 
-            if not detail_rows and (almacen_ids or almacen_names):
+            detail_folios = {
+                _as_text(row.get("folio"))
+                for row in detail_rows
+                if _as_text(row.get("folio"))
+            }
+            missing_detail_folios = [
+                folio for folio in folios_all
+                if _as_text(folio) not in detail_folios
+            ]
+
+            if missing_detail_folios and (almacen_ids or almacen_names):
                 folio_only_filters = [
                     "server_id = %s",
                     f"folio IN ({folio_placeholders})",
                     "sync_status IN ('ACTIVE', 'REPLACED')",
                 ]
                 folio_only_params = [server_id, *folios_all]
-                detail_rows = _fetch_inventory_detail_rows(
+                folio_rows = _fetch_inventory_detail_rows(
                     folio_only_filters,
                     folio_only_params,
                     "folio",
                 )
-                if detail_rows:
+                folio_coverage = {
+                    _as_text(row.get("folio"))
+                    for row in folio_rows
+                    if _as_text(row.get("folio"))
+                }
+                if all(_as_text(f) in folio_coverage for f in folios_all):
+                    detail_rows = folio_rows
                     logging.warning(
-                        "[SOFT-CANONICAL-NOLIVE] detalle recuperado por folio sin filtro de almacen; server_id=%s folios=%s almacenes=%s",
+                        "[SOFT-CANONICAL-NOLIVE] detalle recuperado por folio para completar cobertura; server_id=%s folios=%s faltaban=%s almacenes=%s",
                         server_id,
                         folios_all,
+                        missing_detail_folios,
                         sorted(almacen_ids or almacen_names),
                     )
 
@@ -5091,116 +5108,39 @@ WHERE t._rn = 1
                 if folio in fin_set:
                     inv_final[codigo] = inv_final.get(codigo, 0.0) + cantidad
 
-            movimientos = {}
-            movement_params = [server_id, period_start, period_end]
-            movement_filters = [
-                "server_id = %s",
-                "fecha >= %s",
-                "fecha <= %s",
-                "sync_status = 'ACTIVE'",
-                "ISNULL(idconcepto, '') NOT IN ('', 'SPV', 'SCP', 'SCS')",
-                _soft_date_only_final_day_guard("fecha"),
-            ]
-            movement_params.extend([period_end, period_end])
-            if almacen_ids:
-                ids = sorted(almacen_ids)
-                movement_filters.append(f"almacen_id IN ({','.join(['%s'] * len(ids))})")
-                movement_params.extend(ids)
-            elif almacen_names:
-                names = sorted(almacen_names)
-                movement_filters.append(f"almacen IN ({','.join(['%s'] * len(names))})")
-                movement_params.extend(names)
+            from core.inventarios.analysis_soft_sources import (
+                fetch_soft_activity_canonical,
+            )
 
-            try:
-                m_exec_started = perf_counter()
-                cursor.execute(
-                    f"""
-SELECT
-    codigo_producto,
-    SUM(cantidad) AS cantidad
-FROM Compras_Inventarios_Movimientos_Sync
-WHERE {' AND '.join(movement_filters)}
-GROUP BY codigo_producto
-""",
-                    tuple(movement_params),
-                )
-                m_exec_ms = int((perf_counter() - m_exec_started) * 1000)
-                m_fetch_started = perf_counter()
-                movimientos = {
-                    _as_text(row.get('codigo_producto')): _as_float(row.get('cantidad'))
-                    for row in cursor.fetchall()
-                    if _as_text(row.get('codigo_producto'))
-                }
-                m_fetch_ms = int((perf_counter() - m_fetch_started) * 1000)
-                logging.info(
-                    "[INV-STAGE] stage=MOVIMIENTOS execute_ms=%s fetch_ms=%s rows=%s classification=OK",
-                    m_exec_ms,
-                    m_fetch_ms,
-                    len(movimientos),
-                )
-            except Exception as mov_error:
-                mov_class = _classify_inventory_sql_error(mov_error)
-                logging.exception(
-                    "[INV-STAGE] stage=MOVIMIENTOS classification=%s error_type=%s",
-                    mov_class,
-                    type(mov_error).__name__,
-                )
-                raise
+            scope_unidad_codigo = (
+                unidad_scope.unidad_codigo
+                if unidad_scope is not None
+                else _as_text(unidad_token)
+            )
+            scope_sucursal_origen = (
+                unidad_scope.sucursal_origen_id
+                if unidad_scope is not None
+                else _as_text(report_params.get("sucursal_id"))
+            )
+            activity_warehouses = sorted(almacen_ids or almacen_names)
 
-            ventas = {}
-            sales_params = [server_id, sales_start, sales_end]
-            sales_filters = [
-                "server_id = %s",
-                "fecha >= %s",
-                "fecha <= %s",
-                "sync_status = 'ACTIVE'",
-                "ISNULL(idconcepto, '') IN ('SPV', 'SCP', 'SCS')",
-                _soft_date_only_final_day_guard("fecha"),
-            ]
-            sales_params.extend([sales_end, sales_end])
-            if almacen_ids:
-                ids = sorted(almacen_ids)
-                sales_filters.append(f"almacen_id IN ({','.join(['%s'] * len(ids))})")
-                sales_params.extend(ids)
-            elif almacen_names:
-                names = sorted(almacen_names)
-                sales_filters.append(f"almacen IN ({','.join(['%s'] * len(names))})")
-                sales_params.extend(names)
-
-            try:
-                s_exec_started = perf_counter()
-                cursor.execute(
-                    f"""
-SELECT
-    codigo_producto,
-    SUM(cantidad) AS cantidad
-FROM Compras_Inventarios_Movimientos_Sync
-WHERE {' AND '.join(sales_filters)}
-GROUP BY codigo_producto
-""",
-                    tuple(sales_params),
-                )
-                s_exec_ms = int((perf_counter() - s_exec_started) * 1000)
-                s_fetch_started = perf_counter()
-                ventas = {
-                    _as_text(row.get('codigo_producto')): abs(_as_float(row.get('cantidad')))
-                    for row in cursor.fetchall()
-                    if _as_text(row.get('codigo_producto'))
-                }
-                s_fetch_ms = int((perf_counter() - s_fetch_started) * 1000)
-                logging.info(
-                    "[INV-STAGE] stage=VENTAS execute_ms=%s fetch_ms=%s rows=%s classification=OK",
-                    s_exec_ms,
-                    s_fetch_ms,
-                    len(ventas),
-                )
-            except Exception as sales_error:
-                sales_class = _classify_inventory_sql_error(sales_error)
-                logging.warning(
-                    "[INV-STAGE] stage=VENTAS classification=%s error_type=%s",
-                    sales_class,
-                    type(sales_error).__name__,
-                )
+            movimientos, ventas = fetch_soft_activity_canonical(
+                cursor,
+                server_id=server_id,
+                unidad_codigo=scope_unidad_codigo,
+                sucursal_origen_id=scope_sucursal_origen,
+                movement_start=period_start,
+                movement_end=period_end,
+                sales_start=sales_start,
+                sales_end=sales_end,
+                warehouses=activity_warehouses,
+            )
+            logging.info(
+                "[SOFT-CANONICAL-NOLIVE] actividad canonica movimientos=%s ventas=%s unidad=%s",
+                len(movimientos),
+                len(ventas),
+                scope_unidad_codigo,
+            )
 
             all_codes = sorted(set(productos.keys()) | set(inv_inicial.keys()) | set(inv_final.keys()) | set(movimientos.keys()) | set(ventas.keys()))
             catalogo_productos = {}
