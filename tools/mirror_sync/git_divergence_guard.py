@@ -1098,6 +1098,282 @@ def ensure_submit_convergence(
 
 
 
+def reseed_mirror_from_development(
+    repo: Path,
+    *,
+    development: str,
+    mirror: str,
+    job_id: str,
+    owner: str,
+    remote: str = REMOTE,
+    owner_pid: int | None = None,
+) -> dict[str, Any]:
+    """Converge Preview Mirror hacia el árbol exacto de Desarrollo.
+
+    Desarrollo permanece inmutable. El commit de convergencia utiliza el
+    árbol exacto de development y conserva el mirror anterior como segundo
+    padre, por lo que la actualización remota del mirror es fast-forward.
+    """
+
+    token = acquire_writer_lock(
+        repo,
+        job_id=job_id,
+        owner=owner,
+        owner_pid=owner_pid,
+    )
+
+    try:
+        index_lock_recovery = recover_orphan_index_lock(repo)
+
+        dirty = _status_counts(repo)
+        if dirty["worktree_dirty"]:
+            raise GitGuardError(
+                "GIT_WORKTREE_NOT_CLEAN",
+                {
+                    "reason":
+                        "MIRROR_RESEED_REQUIRES_CLEAN_SHARED_WORKTREE",
+                    **dirty,
+                },
+            )
+
+        _run(repo, "fetch", remote, DEV_BRANCH)
+        _run(repo, "fetch", remote, MIRROR_BRANCH)
+
+        development_now = _run(
+            repo,
+            "rev-parse",
+            f"{remote}/{DEV_BRANCH}",
+        ).stdout.strip()
+
+        mirror_now = _run(
+            repo,
+            "rev-parse",
+            f"{remote}/{MIRROR_BRANCH}",
+        ).stdout.strip()
+
+        if development_now != development or mirror_now != mirror:
+            raise GitGuardError(
+                "REMOTE_MOVED_RETRY_REQUIRED",
+                {
+                    "development_expected": development,
+                    "development_now": development_now,
+                    "mirror_expected": mirror,
+                    "mirror_now": mirror_now,
+                },
+            )
+
+        if development == mirror:
+            return {
+                "status": "MIRROR_ALREADY_CONVERGED",
+                "development": development,
+                "mirror_before": mirror,
+                "mirror_after": mirror,
+                "development_moved": False,
+                "history_preserved": True,
+                "index_lock_recovery": index_lock_recovery,
+            }
+
+        development_tree = _run(
+            repo,
+            "rev-parse",
+            f"{development}^{{tree}}",
+        ).stdout.strip()
+
+        commit_env = dict(os.environ)
+        commit_env.update(
+            {
+                "GIT_AUTHOR_NAME": "EDARSAHUB Worker",
+                "GIT_AUTHOR_EMAIL": "worker@edarsahub.local",
+                "GIT_COMMITTER_NAME": "EDARSAHUB Worker",
+                "GIT_COMMITTER_EMAIL": "worker@edarsahub.local",
+            }
+        )
+
+        reseed_commit = _run(
+            repo,
+            "commit-tree",
+            development_tree,
+            "-p",
+            development,
+            "-p",
+            mirror,
+            "-m",
+            "chore(mirror): canonical reseed from development",
+            env=commit_env,
+        ).stdout.strip()
+
+        parents = _run(
+            repo,
+            "show",
+            "-s",
+            "--format=%P",
+            reseed_commit,
+        ).stdout.strip().split()
+
+        if parents != [development, mirror]:
+            raise GitGuardError(
+                "MIRROR_RESEED_PARENT_CONTRACT_FAILED",
+                {
+                    "expected": [development, mirror],
+                    "actual": parents,
+                },
+            )
+
+        candidate_tree = _run(
+            repo,
+            "rev-parse",
+            f"{reseed_commit}^{{tree}}",
+        ).stdout.strip()
+
+        if candidate_tree != development_tree:
+            raise GitGuardError(
+                "MIRROR_RESEED_TREE_MISMATCH",
+                {
+                    "development_tree": development_tree,
+                    "candidate_tree": candidate_tree,
+                },
+            )
+
+        _run(repo, "fetch", remote, DEV_BRANCH)
+        _run(repo, "fetch", remote, MIRROR_BRANCH)
+
+        development_pre_push = _run(
+            repo,
+            "rev-parse",
+            f"{remote}/{DEV_BRANCH}",
+        ).stdout.strip()
+
+        mirror_pre_push = _run(
+            repo,
+            "rev-parse",
+            f"{remote}/{MIRROR_BRANCH}",
+        ).stdout.strip()
+
+        if (
+            development_pre_push != development
+            or mirror_pre_push != mirror
+        ):
+            raise GitGuardError(
+                "REMOTE_MOVED_RETRY_REQUIRED",
+                {
+                    "reason":
+                        "REF_MOVED_BEFORE_MIRROR_RESEED_PUBLICATION",
+                    "development_expected": development,
+                    "development_now": development_pre_push,
+                    "mirror_expected": mirror,
+                    "mirror_now": mirror_pre_push,
+                },
+            )
+
+        push = authorized_push(
+            repo,
+            args=[
+                "push",
+                remote,
+                f"{reseed_commit}:refs/heads/{MIRROR_BRANCH}",
+            ],
+            job_id=job_id,
+            owner=owner,
+        )
+
+        if push.returncode != 0:
+            raise GitGuardError(
+                "GIT_PUSH_FAILED",
+                {
+                    "reason":
+                        "MIRROR_RESEED_FAST_FORWARD_PUBLICATION_FAILED",
+                    "output":
+                        (push.stdout or "")[-2000:],
+                },
+            )
+
+        _run(repo, "fetch", remote, DEV_BRANCH)
+        _run(repo, "fetch", remote, MIRROR_BRANCH)
+
+        final_development = _run(
+            repo,
+            "rev-parse",
+            f"{remote}/{DEV_BRANCH}",
+        ).stdout.strip()
+
+        final_mirror = _run(
+            repo,
+            "rev-parse",
+            f"{remote}/{MIRROR_BRANCH}",
+        ).stdout.strip()
+
+        final_tree = _run(
+            repo,
+            "rev-parse",
+            f"{final_mirror}^{{tree}}",
+        ).stdout.strip()
+
+        if final_development != development:
+            raise GitGuardError(
+                "MIRROR_RESEED_DEVELOPMENT_MOVED",
+                {
+                    "expected": development,
+                    "actual": final_development,
+                },
+            )
+
+        if final_mirror != reseed_commit:
+            raise GitGuardError(
+                "MIRROR_RESEED_REMOTE_MISMATCH",
+                {
+                    "expected": reseed_commit,
+                    "actual": final_mirror,
+                },
+            )
+
+        if final_tree != development_tree:
+            raise GitGuardError(
+                "MIRROR_RESEED_TREE_MISMATCH",
+                {
+                    "development_tree": development_tree,
+                    "mirror_tree": final_tree,
+                },
+            )
+
+        ancestor = _run(
+            repo,
+            "merge-base",
+            "--is-ancestor",
+            mirror,
+            final_mirror,
+            check=False,
+        )
+
+        if ancestor.returncode != 0:
+            raise GitGuardError(
+                "MIRROR_RESEED_HISTORY_NOT_PRESERVED",
+                {
+                    "mirror_before": mirror,
+                    "mirror_after": final_mirror,
+                },
+            )
+
+        return {
+            "status": "CERTIFIED_MIRROR_RESEEDED",
+            "development": development,
+            "development_after": final_development,
+            "development_moved": False,
+            "mirror_before": mirror,
+            "mirror_after": final_mirror,
+            "history_preserved": True,
+            "reseed_commit": reseed_commit,
+            "development_tree": development_tree,
+            "mirror_tree_after": final_tree,
+            "tree_matches_development": True,
+            "development_ref_updated": False,
+            "index_lock_recovery": index_lock_recovery,
+        }
+
+    finally:
+        release_writer_lock(repo, token)
+
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(
