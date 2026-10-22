@@ -1,0 +1,63 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "columnas_identidad_productos",
+          "sql": "\nSELECT\n    c.column_id,\n    c.name AS columna,\n    t.name AS tipo_sql,\n    c.is_nullable\nFROM sys.columns c\nJOIN sys.tables tb ON tb.object_id = c.object_id\nJOIN sys.types t ON t.user_type_id = c.user_type_id\nWHERE tb.name = 'Sync_Productos'\nORDER BY c.column_id\n"
+        },
+        {
+          "name": "columnas_identidad_insumos_recetas",
+          "sql": "\nSELECT\n    tb.name AS tabla,\n    c.name AS columna,\n    t.name AS tipo_sql,\n    c.is_nullable\nFROM sys.tables tb\nJOIN sys.columns c ON c.object_id = tb.object_id\nJOIN sys.types t ON t.user_type_id = c.user_type_id\nWHERE tb.name IN (\n    'Sync_Productos_Insumos',\n    'Sync_Productos_Recetas'\n)\nORDER BY tb.name, c.column_id\n"
+        },
+        {
+          "name": "tablas_relacion_empresas",
+          "sql": "\nSELECT\n    tb.name AS tabla,\n    c.name AS columna,\n    t.name AS tipo_sql\nFROM sys.tables tb\nJOIN sys.columns c ON c.object_id = tb.object_id\nJOIN sys.types t ON t.user_type_id = c.user_type_id\nWHERE (\n    c.name LIKE '%Empresa%'\n    OR c.name LIKE '%Sucursal%'\n    OR c.name LIKE '%UnidadNegocio%'\n    OR c.name LIKE '%ServerID%'\n)\nAND (\n    tb.name LIKE '%Producto%'\n    OR tb.name LIKE '%Receta%'\n    OR tb.name LIKE '%Insumo%'\n    OR tb.name LIKE '%Empresa%'\n    OR tb.name LIKE '%Unidad%'\n    OR tb.name LIKE '%Sync%'\n)\nORDER BY tb.name, c.name\n"
+        },
+        {
+          "name": "relaciones_fk_existentes",
+          "sql": "\nSELECT\n    fk.name AS foreign_key,\n    OBJECT_NAME(fk.parent_object_id) AS tabla_origen,\n    pc.name AS columna_origen,\n    OBJECT_NAME(fk.referenced_object_id) AS tabla_destino,\n    rc.name AS columna_destino\nFROM sys.foreign_keys fk\nJOIN sys.foreign_key_columns fkc\n    ON fkc.constraint_object_id = fk.object_id\nJOIN sys.columns pc\n    ON pc.object_id = fkc.parent_object_id\n    AND pc.column_id = fkc.parent_column_id\nJOIN sys.columns rc\n    ON rc.object_id = fkc.referenced_object_id\n    AND rc.column_id = fkc.referenced_column_id\nWHERE OBJECT_NAME(fk.parent_object_id) IN (\n    'Sync_Productos',\n    'Sync_Productos_Insumos',\n    'Sync_Productos_Recetas',\n    'Unidades_Negocio',\n    'Sistema_Empresas'\n)\nORDER BY tabla_origen, foreign_key\n"
+        },
+        {
+          "name": "servidores_y_unidades",
+          "sql": "\nSELECT\n    CONVERT(varchar(36),\n        TRY_CONVERT(uniqueidentifier, u.server_id)\n    ) AS ServerID,\n    COUNT(*) AS unidades,\n    STRING_AGG(\n        CONVERT(nvarchar(max), u.codigo),\n        ', '\n    ) AS codigos\nFROM dbo.Unidades_Negocio u\nWHERE u.activo = 1\nGROUP BY TRY_CONVERT(uniqueidentifier, u.server_id)\nORDER BY unidades DESC\n"
+        },
+        {
+          "name": "distribucion_productos_servidor",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), p.ServerID) AS ServerID,\n    COUNT_BIG(*) AS productos,\n    COUNT(DISTINCT p.ProductoID) AS producto_ids_distintos,\n    SUM(CASE WHEN p.EmpresaID IS NULL THEN 1 ELSE 0 END)\n        AS empresa_id_null,\n    SUM(CASE WHEN p.UnidadNegocioID IS NULL THEN 1 ELSE 0 END)\n        AS unidad_id_null\nFROM dbo.Sync_Productos p\nGROUP BY p.ServerID\nORDER BY productos DESC\n"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-IDENTITY-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Identificar relaciones canonicas entre productos, empresas, unidades, servidores, insumos y recetas. Auditoria exclusivamente READ_ONLY de metadatos y distribucion de identificadores. Sin cambios.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "bos-costos-pos-reconciliation",
+    "email": "carlosruz@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "bos-orchestrator"
+  },
+  "scheduling": {
+    "bounded_context": "COSTOS_MARGENES",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": [
+      "costos_pos_identity_r1"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
