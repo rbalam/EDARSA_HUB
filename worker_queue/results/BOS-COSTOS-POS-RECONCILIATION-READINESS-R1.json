@@ -1,0 +1,523 @@
+{
+  "base_sha": "b75573024d170c4be20b785069f539d87a4ab3fc",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-22T06:50:28Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-READINESS-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-22T06:50:54Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "ServerID",
+              "SystemType",
+              "componentes",
+              "sin_producto",
+              "sin_insumo",
+              "sin_ambos",
+              "ambos_vinculados"
+            ],
+            "name": "interseccion_faltantes",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "4999",
+                0,
+                0,
+                0,
+                4999
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "4234",
+                1,
+                4,
+                0,
+                4229
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "2779",
+                101,
+                73,
+                8,
+                2613
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "SOFTRESTAURANT_PRO",
+                "1583",
+                0,
+                0,
+                0,
+                1583
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "SystemType",
+              "Activo",
+              "componentes",
+              "costo_unitario_cero",
+              "costo_total_cero",
+              "costo_unitario_negativo",
+              "costo_total_negativo",
+              "costo_unitario_nulo"
+            ],
+            "name": "costos_cero_por_actividad",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                false,
+                "56",
+                3,
+                5,
+                0,
+                0,
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                true,
+                "2723",
+                270,
+                260,
+                0,
+                0,
+                0
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                true,
+                "4234",
+                302,
+                302,
+                1,
+                1,
+                0
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                true,
+                "4999",
+                290,
+                290,
+                0,
+                0,
+                0
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "SOFTRESTAURANT_PRO",
+                true,
+                "1583",
+                86,
+                86,
+                0,
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "SystemType",
+              "componentes",
+              "diferencias_mayores_centavo",
+              "diferencias_mayores_peso"
+            ],
+            "name": "consistencia_matematica",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "2779",
+                0,
+                0
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "4234",
+                0,
+                0
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "4999",
+                0,
+                0
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "SOFTRESTAURANT_PRO",
+                "1583",
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "SystemType",
+              "componentes",
+              "sin_insumo",
+              "costo_diferente",
+              "costo_equivalente"
+            ],
+            "name": "costo_receta_vs_insumo",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "4999",
+                0,
+                179,
+                4820
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "4234",
+                4,
+                88,
+                4142
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "2779",
+                73,
+                2354,
+                352
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "SOFTRESTAURANT_PRO",
+                "1583",
+                0,
+                4,
+                1579
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "SystemType",
+              "UnidadMedida",
+              "componentes",
+              "costo_cero"
+            ],
+            "name": "unidades_medida_componentes",
+            "row_count_returned": 29,
+            "rows": [
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "GR",
+                "1935",
+                178
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "KG",
+                "241",
+                6
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "LT",
+                "5",
+                0
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "ML",
+                "485",
+                53
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "PORC",
+                "8",
+                3
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "PZ",
+                "105",
+                33
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "GR",
+                "104",
+                1
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "KG",
+                "1403",
+                10
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "LT",
+                "169",
+                1
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "ML",
+                "1912",
+                103
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "PZ",
+                "581",
+                137
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "SERVICIO",
+                "64",
+                50
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "UNIDAD",
+                "1",
+                0
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "16",
+                "2",
+                2
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "GRS",
+                "1259",
+                2
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "KGS",
+                "1497",
+                10
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "LTS",
+                "148",
+                0
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "MLS",
+                "1270",
+                45
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "MTS",
+                "1",
+                0
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "PAQ",
+                "6",
+                0
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "PORCION",
+                "100",
+                1
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "PZA",
+                "687",
+                226
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "REBANADA",
+                "12",
+                0
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "SERVICIO",
+                "17",
+                4
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "SOFTRESTAURANT_PRO",
+                "GR",
+                "832",
+                36
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "SOFTRESTAURANT_PRO",
+                "ML",
+                "580",
+                14
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "SOFTRESTAURANT_PRO",
+                "PORC",
+                "8",
+                0
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "SOFTRESTAURANT_PRO",
+                "PZ",
+                "161",
+                34
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "SOFTRESTAURANT_PRO",
+                "SERVICIO",
+                "2",
+                2
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "SystemType",
+              "insumos",
+              "costo_cero",
+              "costo_negativo",
+              "promedio_cero",
+              "ultimo_cero",
+              "activos"
+            ],
+            "name": "cobertura_costos_insumos",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "MPRO",
+                "5414",
+                3087,
+                0,
+                3236,
+                3089,
+                5414
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "SOFTRESTAURANT_PRO",
+                "2499",
+                508,
+                13,
+                608,
+                2499,
+                2499
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "SOFTRESTAURANT_PRO",
+                "2629",
+                584,
+                16,
+                746,
+                2629,
+                2629
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "SOFTRESTAURANT_PRO",
+                "1199",
+                263,
+                8,
+                278,
+                1199,
+                1199
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-22T06:50:27Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
