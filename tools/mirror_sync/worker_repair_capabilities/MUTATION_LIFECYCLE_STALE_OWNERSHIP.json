@@ -1,0 +1,54 @@
+{
+  "schema": "edarsahub.worker-repair-learned-capability.v1",
+  "code": "MUTATION_LIFECYCLE_STALE_OWNERSHIP",
+  "problem_signature": "PROCESSING_STALE_WITH_LIVE_EXECUTION_OWNERSHIP",
+  "incident_ids": [
+    "EDARSAHUB-BOS-WORKER-MUTATION-LIFECYCLE-STALE-OWNERSHIP-R1"
+  ],
+  "incident_patterns": [
+    "EDARSAHUB-BOS-WORKER-MUTATION-LIFECYCLE-*"
+  ],
+  "required_paths": [
+    "backend/tests/test_worker_control_plane_contract.py",
+    "backend/tests/test_worker_universal_queue_sla_contract.py",
+    "tools/mirror_sync/worker_control_plane.py"
+  ],
+  "objective": "Impedir que el control plane reencole o termine un processing aparentemente stale mientras el mismo job conserva ownership canonico vivo; conservar fail-closed y un unico reintento cuando el ownership sea realmente stale.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/worker_control_plane.py",
+      "old": "        retry_count = int(envelope.get(\"_worker_stale_requeue_count\") or 0)\n        if retry_count >= 1:\n",
+      "new": "        ownership = active_execution_ownership(job_id=str(job.get(\"job_id\") or path.stem))\n        if ownership.get(\"active\") is True:\n            audit(\"STALE_PROCESSING_DEFERRED_ACTIVE_OWNERSHIP\", job_file=path.name, age_seconds=int(age), ownership=ownership)\n            continue\n\n        retry_count = int(envelope.get(\"_worker_stale_requeue_count\") or 0)\n        if retry_count >= 1:\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/worker_control_plane.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "evidence": {
+    "source_job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-CANONICAL-INVENTORY-UI-FIX-R1-20261022",
+    "blocker_signature": "processing_stale_after_single_requeue",
+    "observed_claim_decision": "CLAIM_NOT_STALE",
+    "observed_slot": "mutation-1",
+    "observed_writer_lock_owner_same_job": true
+  },
+  "learned_from_incident": "EDARSAHUB-BOS-WORKER-MUTATION-LIFECYCLE-STALE-OWNERSHIP-R1",
+  "reusable": true,
+  "production_allowed": false
+}
