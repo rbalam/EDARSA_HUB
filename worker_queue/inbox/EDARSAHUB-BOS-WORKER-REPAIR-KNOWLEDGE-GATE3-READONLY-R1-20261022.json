@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 500,
+        "paths": [
+          "tools/mirror_sync/worker_repair_capability_registry.py",
+          "tools/mirror_sync/worker_repair_planner.py",
+          "tools/mirror_sync/worker_repair_execution.py",
+          "backend/tests/test_worker_repair_learned_capability_registry.py"
+        ],
+        "search_terms": [
+          "register_learned_capability",
+          "resolve_learned_capability",
+          "certified",
+          "signature",
+          "dedup",
+          "cooldown",
+          "scope",
+          "retry"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-KNOWLEDGE-GATE3-READONLY-R1-20261022",
+  "mode": "READ_ONLY",
+  "objective": "Auditar el Knowledge Loop del Worker Repair existente. Verificar contratos de persistencia y resolucion de capacidades aprendidas, conexion con Repair Planner, criterios de certificacion previa, rechazo de soluciones fallidas, deduplicacion, RBAC y limites de seguridad. Identificar brechas para pruebas end-to-end. No registrar capacidades, no ejecutar reparaciones, no modificar codigo ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "WORKER-REPAIR-KNOWLEDGE-GATE3",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "CHATGPT"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
