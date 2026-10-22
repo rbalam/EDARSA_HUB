@@ -98,13 +98,22 @@ def _sync_compras_extended_enabled() -> bool:
     """
     Controla los pasos extendidos de Compras.
 
-    Default true para conservar compatibilidad. Preview puede operar el owner
-    de inventarios/requisiciones con este flag en false sin crear otro writer.
+    Preview prioriza el owner operativo de Inventarios/Requisiciones y omite
+    por default pasos extendidos incompatibles con algunos esquemas POS.
+    Fuera de Preview se conserva compatibilidad default=true.
+    El ENV explicito siempre prevalece.
     """
+    env_name = str(
+        os.environ.get("EDARSA_ENV")
+        or os.environ.get("APP_ENV")
+        or os.environ.get("ENVIRONMENT")
+        or ""
+    ).strip().upper()
+    default_value = "false" if env_name == "PREVIEW" else "true"
     return (
         os.environ.get(
             "SCHEDULER_SYNC_COMPRAS_EXTENDED_ENABLED",
-            "true",
+            default_value,
         ).strip().lower()
         == "true"
     )
