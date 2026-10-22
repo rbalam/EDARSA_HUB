@@ -4559,14 +4559,75 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     from core.server_registry import get_server_connection_info
     from core.inventarios.contracts import build_normalized_inventory_request
 
-    from core.corporate_filters.request_resolver import canonical_server_id
+    from core.corporate_filters.request_resolver import (
+        canonical_server_id,
+        resolve_authorized_unidad_scope,
+    )
 
-    server_id = str(canonical_server_id(report_params.get('server_id')) or '').strip()
-    if not server_id:
-        raise HTTPException(status_code=400, detail='server_id es requerido')
-    report_params['server_id'] = server_id
-    access_context = await validate_server_access_unified(current_user, server_id)
-    normalized_request = build_normalized_inventory_request(report_params, server_id)
+    unidad_token = str(
+        report_params.get('unidad')
+        or report_params.get('unidad_id')
+        or ''
+    ).strip()
+
+    if unidad_token:
+        unidad_scope = await resolve_authorized_unidad_scope(
+            current_user,
+            "OPERACIONES_VER",
+            unidad_token,
+        )
+        if unidad_scope.access_denied or not unidad_scope.server_id:
+            logging.warning(
+                "[RBAC-INVENTORY-ANALYSIS] Usuario=%s unidad=%s denegada reason=%s",
+                current_user.get("email"),
+                unidad_token,
+                unidad_scope.denial_reason,
+            )
+            raise HTTPException(
+                status_code=403,
+                detail="No tiene acceso a esta unidad de negocio",
+            )
+
+        server_id = str(unidad_scope.server_id).strip()
+        report_params['server_id'] = server_id
+        report_params['unidad'] = (
+            unidad_scope.unidad_codigo
+            or unidad_token
+        )
+
+        # En servidores compartidos (MPRO) la sucursal proviene siempre
+        # del catálogo canónico, nunca del frontend.
+        if unidad_scope.sucursal_origen_id:
+            report_params['sucursal_id'] = str(
+                unidad_scope.sucursal_origen_id
+            ).strip()
+
+        # Se conserva el contexto existente únicamente para restricciones
+        # adicionales de almacén. La autorización principal ya ocurrió
+        # por unidad canónica + OPERACIONES_VER.
+        access_context = await resolve_user_access_context(current_user)
+    else:
+        # Compatibilidad temporal para consumidores legacy que aún envían
+        # server_id directo. No ampliar este camino para servidores compartidos.
+        server_id = str(
+            canonical_server_id(report_params.get('server_id'))
+            or ''
+        ).strip()
+        if not server_id:
+            raise HTTPException(
+                status_code=400,
+                detail='unidad o server_id es requerido',
+            )
+        report_params['server_id'] = server_id
+        access_context = await validate_server_access_unified(
+            current_user,
+            server_id,
+        )
+
+    normalized_request = build_normalized_inventory_request(
+        report_params,
+        server_id,
+    )
 
     sucursal_id_param = normalized_request.sucursal_id_param
     sucursal = normalized_request.sucursal
