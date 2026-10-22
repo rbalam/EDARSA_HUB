@@ -18,15 +18,29 @@
     {
       "type": "replace_text",
       "path": "tools/mirror_sync/worker_control_plane.py",
+      "old": "from tools.mirror_sync.worker_maintenance_runtime import (\n",
+      "new": "from tools.mirror_sync.worker_slot_runtime import (\n    load_slot,\n    slot_is_live,\n)\nfrom tools.mirror_sync.worker_maintenance_runtime import (\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/worker_control_plane.py",
       "old": "def requeue_stale_processing() -> int:\n",
-      "new": "def active_execution_ownership(job_id: str) -> dict[str, Any]:\n    \"\"\"Return fail-closed ownership evidence for a processing job.\"\"\"\n    evidence: dict[str, Any] = {\n        \"active\": False,\n        \"job_id\": job_id,\n        \"sources\": [],\n    }\n\n    reconciler_path = RUNTIME / \"reconciler.json\"\n    try:\n        reconciler = json.loads(\n            reconciler_path.read_text(encoding=\"utf-8\")\n        )\n    except Exception:\n        reconciler = {}\n\n    for claim in reconciler.get(\"claims\") or []:\n        if not isinstance(claim, dict):\n            continue\n        if str(claim.get(\"task_id\") or \"\").strip() != job_id:\n            continue\n        decision = str(claim.get(\"decision\") or \"\").strip()\n        released = claim.get(\"released\") is True\n        if not released and decision in {\n            \"CLAIM_NOT_STALE\",\n            \"LIVE_PROCESS_REFERENCES_WORKTREE\",\n            \"WORK_NOT_TERMINAL_OR_INTEGRATED\",\n        }:\n            evidence[\"active\"] = True\n            evidence[\"sources\"].append(\n                {\"kind\": \"agent_claim\", \"decision\": decision}\n            )\n\n    slots_dir = RUNTIME / \"slots\"\n    if slots_dir.is_dir():\n        for slot_path in slots_dir.glob(\"*.json\"):\n            try:\n                slot = json.loads(\n                    slot_path.read_text(encoding=\"utf-8\")\n                )\n            except Exception:\n                continue\n            if str(slot.get(\"job_id\") or \"\").strip() != job_id:\n                continue\n            evidence[\"active\"] = True\n            evidence[\"sources\"].append(\n                {\n                    \"kind\": \"slot\",\n                    \"slot_id\": slot.get(\"slot_id\"),\n                    \"state\": slot.get(\"state\"),\n                }\n            )\n\n    writer_owner = STATE / \"git-writer.lock.d\" / \"owner.json\"\n    try:\n        writer = json.loads(\n            writer_owner.read_text(encoding=\"utf-8\")\n        )\n    except Exception:\n        writer = {}\n\n    if str(writer.get(\"job_id\") or \"\").strip() == job_id:\n        owner_pid = int(writer.get(\"owner_pid\") or 0)\n        owner_alive = pid_alive(owner_pid) if owner_pid > 0 else False\n        if owner_alive:\n            evidence[\"active\"] = True\n            evidence[\"sources\"].append(\n                {\n                    \"kind\": \"git_writer_lock\",\n                    \"owner_pid\": owner_pid,\n                    \"owner_pid_alive\": True,\n                }\n            )\n\n    return evidence\n\n\ndef requeue_stale_processing() -> int:\n",
+      "new": "def active_execution_ownership(\n    job_id: str,\n    *,\n    heartbeat_stale_seconds: int,\n) -> dict[str, Any]:\n    \"\"\"Return only fresh/live canonical ownership evidence for one job.\"\"\"\n    evidence: dict[str, Any] = {\n        \"active\": False,\n        \"job_id\": job_id,\n        \"sources\": [],\n    }\n\n    reconciler_path = RUNTIME / \"reconciler.json\"\n    try:\n        reconciler = json.loads(\n            reconciler_path.read_text(encoding=\"utf-8\")\n        )\n    except Exception:\n        reconciler = {}\n\n    generated_at = str(\n        reconciler.get(\"generated_at_utc\") or \"\"\n    ).strip()\n    reconciler_age = parse_iso_age(generated_at)\n    reconciler_fresh = (\n        reconciler_age is not None\n        and reconciler_age <= heartbeat_stale_seconds\n    )\n\n    if reconciler_fresh:\n        for claim in reconciler.get(\"claims\") or []:\n            if not isinstance(claim, dict):\n                continue\n            if str(claim.get(\"task_id\") or \"\").strip() != job_id:\n                continue\n            decision = str(claim.get(\"decision\") or \"\").strip()\n            released = claim.get(\"released\") is True\n            if not released and decision in {\n                \"CLAIM_NOT_STALE\",\n                \"LIVE_PROCESS_REFERENCES_WORKTREE\",\n                \"WORK_NOT_TERMINAL_OR_INTEGRATED\",\n            }:\n                evidence[\"active\"] = True\n                evidence[\"sources\"].append(\n                    {\n                        \"kind\": \"agent_claim\",\n                        \"decision\": decision,\n                        \"reconciler_age_seconds\": int(reconciler_age),\n                    }\n                )\n\n    try:\n        slot = load_slot(\"mutation-1\")\n    except Exception as exc:\n        evidence[\"slot_error\"] = type(exc).__name__\n        slot = None\n\n    if (\n        isinstance(slot, dict)\n        and str(slot.get(\"job_id\") or \"\").strip() == job_id\n    ):\n        try:\n            live_slot = slot_is_live(\n                slot,\n                heartbeat_stale_seconds=heartbeat_stale_seconds,\n            )\n        except Exception as exc:\n            evidence[\"slot_error\"] = type(exc).__name__\n            live_slot = False\n\n        if live_slot:\n            evidence[\"active\"] = True\n            evidence[\"sources\"].append(\n                {\n                    \"kind\": \"slot\",\n                    \"slot_id\": slot.get(\"slot_id\"),\n                    \"state\": slot.get(\"state\"),\n                }\n            )\n\n    writer_owner = STATE / \"git-writer.lock.d\" / \"owner.json\"\n    try:\n        writer = json.loads(\n            writer_owner.read_text(encoding=\"utf-8\")\n        )\n    except Exception:\n        writer = {}\n\n    if str(writer.get(\"job_id\") or \"\").strip() == job_id:\n        owner_pid = int(writer.get(\"owner_pid\") or 0)\n        owner_alive = pid_alive(owner_pid) if owner_pid > 0 else False\n        if owner_alive:\n            evidence[\"active\"] = True\n            evidence[\"sources\"].append(\n                {\n                    \"kind\": \"git_writer_lock\",\n                    \"owner_pid\": owner_pid,\n                    \"owner_pid_alive\": True,\n                }\n            )\n\n    return evidence\n\n\ndef requeue_stale_processing() -> int:\n",
       "expected_count": 1
     },
     {
       "type": "replace_text",
       "path": "tools/mirror_sync/worker_control_plane.py",
       "old": "        retry_count = int(envelope.get(\"_worker_stale_requeue_count\") or 0)\n        if retry_count >= 1:\n",
-      "new": "        ownership = active_execution_ownership(\n            str(job.get(\"job_id\") or path.stem)\n        )\n        if ownership.get(\"active\") is True:\n            audit(\n                \"STALE_PROCESSING_DEFERRED_ACTIVE_OWNERSHIP\",\n                job_file=path.name,\n                age_seconds=int(age),\n                ownership=ownership,\n            )\n            continue\n\n        retry_count = int(envelope.get(\"_worker_stale_requeue_count\") or 0)\n        if retry_count >= 1:\n",
+      "new": "        ownership = active_execution_ownership(\n            str(job.get(\"job_id\") or path.stem),\n            heartbeat_stale_seconds=processing_grace,\n        )\n        if ownership.get(\"active\") is True:\n            audit(\n                \"STALE_PROCESSING_DEFERRED_ACTIVE_OWNERSHIP\",\n                job_file=path.name,\n                age_seconds=int(age),\n                ownership=ownership,\n            )\n            continue\n\n        retry_count = int(envelope.get(\"_worker_stale_requeue_count\") or 0)\n        if retry_count >= 1:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_control_plane_contract.py",
+      "old": "def test_production_is_explicitly_out_of_scope():\n",
+      "new": "def test_stale_processing_defers_only_for_live_canonical_ownership():\n    text = CONTROL.read_text(encoding=\"utf-8\")\n    assert \"active_execution_ownership\" in text\n    assert \"STALE_PROCESSING_DEFERRED_ACTIVE_OWNERSHIP\" in text\n    assert \"load_slot\" in text\n    assert \"slot_is_live\" in text\n    assert \"reconciler_fresh\" in text\n    assert \"owner_pid_alive\" in text\n\n\ndef test_production_is_explicitly_out_of_scope():\n",
       "expected_count": 1
     }
   ],
@@ -40,8 +54,8 @@
     {
       "type": "pytest",
       "paths": [
-        "backend/tests/test_worker_universal_queue_sla_contract.py",
-        "backend/tests/test_worker_control_plane_contract.py"
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py"
       ]
     },
     {
@@ -53,7 +67,11 @@
     "blocker_signature": "processing_stale_after_single_requeue",
     "observed_claim_decision": "CLAIM_NOT_STALE",
     "observed_slot": "mutation-1",
-    "observed_writer_lock_owner_same_job": true
+    "observed_writer_lock_owner_same_job": true,
+    "ownership_policy": "LIVE_ONLY",
+    "slot_liveness_helper": "worker_slot_runtime.slot_is_live",
+    "reconciler_freshness_required": true,
+    "writer_lock_requires_live_pid": true
   },
   "learned_from_incident": "EDARSAHUB-BOS-WORKER-MUTATION-LIFECYCLE-STALE-OWNERSHIP-R1",
   "reusable": true,
