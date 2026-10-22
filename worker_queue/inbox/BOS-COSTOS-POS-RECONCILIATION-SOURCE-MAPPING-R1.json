@@ -1,0 +1,63 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "esquema_tablas_mapeo",
+          "sql": "\nSELECT\n    t.name AS tabla,\n    c.column_id,\n    c.name AS columna,\n    ty.name AS tipo_sql,\n    c.is_nullable\nFROM sys.tables t\nJOIN sys.columns c ON c.object_id = t.object_id\nJOIN sys.types ty ON ty.user_type_id = c.user_type_id\nWHERE t.name IN (\n    'Sistema_EmpresasServidores',\n    'Producto_MapeoOrigen',\n    'Unidades_Negocio',\n    'Sistema_Empresas'\n)\nORDER BY t.name, c.column_id\n"
+        },
+        {
+          "name": "empresas_servidores_registros",
+          "sql": "\nSELECT\n    EmpresaID,\n    COUNT_BIG(*) AS registros,\n    COUNT(DISTINCT CodigoSucursalSistema) AS codigos_sucursal,\n    COUNT(DISTINCT NumeroSucursalSistema) AS numeros_sucursal\nFROM dbo.Sistema_EmpresasServidores\nGROUP BY EmpresaID\nORDER BY EmpresaID\n"
+        },
+        {
+          "name": "producto_mapeo_origen_muestra",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), ServerID) AS ServerID,\n    COUNT_BIG(*) AS registros_mapeo\nFROM dbo.Producto_MapeoOrigen\nGROUP BY ServerID\nORDER BY registros_mapeo DESC\n"
+        },
+        {
+          "name": "unidades_sucursal_origen",
+          "sql": "\nSELECT\n    codigo,\n    nombre,\n    CONVERT(varchar(36), id) AS unidad_guid,\n    server_id,\n    sucursal_origen_id,\n    activo\nFROM dbo.Unidades_Negocio\nORDER BY codigo\n"
+        },
+        {
+          "name": "integridad_recetas_productos",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), r.ServerID) AS ServerID,\n    COUNT_BIG(*) AS componentes,\n    SUM(CASE WHEN p.ProductoID IS NULL THEN 1 ELSE 0 END)\n        AS producto_no_encontrado\nFROM dbo.Sync_Productos_Recetas r\nLEFT JOIN dbo.Sync_Productos p\n    ON p.ProductoID = r.ProductoID\n   AND p.ServerID = r.ServerID\nGROUP BY r.ServerID\nORDER BY componentes DESC\n"
+        },
+        {
+          "name": "integridad_recetas_insumos",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), r.ServerID) AS ServerID,\n    COUNT_BIG(*) AS componentes_con_insumo,\n    SUM(CASE WHEN i.InsumoID IS NULL THEN 1 ELSE 0 END)\n        AS insumo_no_encontrado\nFROM dbo.Sync_Productos_Recetas r\nLEFT JOIN dbo.Sync_Productos_Insumos i\n    ON i.InsumoID = r.InsumoID\n   AND i.ServerID = r.ServerID\nWHERE r.InsumoID IS NOT NULL\nGROUP BY r.ServerID\nORDER BY componentes_con_insumo DESC\n"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-SOURCE-MAPPING-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Diagnosticar las relaciones existentes entre empresas, servidores, sucursales, productos, recetas e insumos. Determinar si es posible separar Origen y 130QRO. Exclusivamente lectura, sin cambios ni produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "bos-costos-pos-reconciliation",
+    "email": "carlosruz@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "bos-orchestrator"
+  },
+  "scheduling": {
+    "bounded_context": "COSTOS_MARGENES",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": [
+      "costos_pos_source_mapping_r1"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
