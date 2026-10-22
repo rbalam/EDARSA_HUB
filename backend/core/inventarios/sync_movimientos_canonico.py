@@ -143,6 +143,13 @@ def sync_movimientos_canonico(
     server_id = server_info.get("id") or server_info.get("server_id")
     unidad_codigo = (unidad_info or {}).get("codigo", "")
     sucursal_origen = (unidad_info or {}).get("sucursal_origen_id")
+    system_type_upper = str(system_type or "").upper()
+    is_softrestaurant = "SOFT" in system_type_upper
+    tipos_movimiento_autorizados = {
+        str(value).strip().upper()
+        for value in (server_info.get("tipos_movimiento") or [])
+        if str(value).strip()
+    }
 
     pend = {"sucursal": 0, "tipo": 0, "almacen": 0, "producto": 0}
 
@@ -172,6 +179,46 @@ def sync_movimientos_canonico(
         conn.close()
         return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0,
                 "descartados": 0, "pendientes": pend, "message": "Sin datos o sin conexión en origen"}
+
+    # SoftRestaurant: la selección configurada en Servidores -> Filtros ->
+    # Tipos de Movimiento es la autoridad que decide qué conceptos origen
+    # participan en el ledger de análisis. Se filtra ANTES de homologar porque
+    # varios conceptos origen pueden mapear al mismo TipoMovimientoID canónico.
+    # Sin selección válida se aplica fail-closed: ningún movimiento participa.
+    filtrados_no_autorizados = 0
+    if is_softrestaurant:
+        if not tipos_movimiento_autorizados:
+            conn.close()
+            return {
+                "status": "OK",
+                "encabezados_synced": 0,
+                "detalles_synced": 0,
+                "descartados": 0,
+                "pendientes": pend,
+                "filtrados_no_autorizados": len(rows),
+                "message": "Sin tipos de movimiento autorizados para este servidor",
+            }
+
+        rows_autorizados = []
+        for row in rows:
+            concepto_origen = str(row.get("concepto") or "").strip().upper()
+            if concepto_origen in tipos_movimiento_autorizados:
+                rows_autorizados.append(row)
+            else:
+                filtrados_no_autorizados += 1
+        rows = rows_autorizados
+
+        if not rows:
+            conn.close()
+            return {
+                "status": "OK",
+                "encabezados_synced": 0,
+                "detalles_synced": 0,
+                "descartados": 0,
+                "pendientes": pend,
+                "filtrados_no_autorizados": filtrados_no_autorizados,
+                "message": "Ningún movimiento del periodo está autorizado por la configuración del servidor",
+            }
 
     # 3) Leer y RESOLVER todo en memoria (resolvers cacheados -> rápido).
     # Precarga masiva del mapeo de productos (1 query) para evitar round-trips por producto.
@@ -310,6 +357,7 @@ def sync_movimientos_canonico(
         "detalles_synced": detalles,
         "descartados": 0,
         "pendientes": pend,
+        "filtrados_no_autorizados": filtrados_no_autorizados,
     }
 
 
