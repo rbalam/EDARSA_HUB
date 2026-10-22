@@ -6,7 +6,7 @@ Fuentes exclusivas EDARSAHUB:
 - Inventario_Movimientos / Inventario_MovimientosDetalle / Inventario_TipoMovimiento
 - Producto_MapeoOrigen
 - Comercial_Inteligencia_VentasDetalleProducto
-- Sync_Productos / Sync_Productos_Recetas
+- Sync_Productos / Sync_Productos_Compuestos / Sync_Productos_Recetas
 
 Nunca conecta al POS.
 """
@@ -372,7 +372,78 @@ def _fetch_sales_rows(
     return list(cursor.fetchall() or [])
 
 
+def _fetch_mpro_sales_components(
+    cursor,
+    server_id: str,
+    product_codes: Sequence[str],
+) -> List[Dict[str, Any]]:
+    """
+    Fuente canónica de componentes para ventas MPRO.
+
+    Prioridad por producto:
+      1) Sync_Productos_Compuestos/FuenteDetalle=PRODUCTO_KIT
+         (equivale al histórico Producto_Kit.Pk_Cantidad).
+      2) Sync_Productos_Recetas para fórmulas de producción cuando el
+         producto no tiene kit activo.
+
+    No mezcla ambas fuentes para el mismo producto.
+    """
+    codes = _unique(product_codes)
+    if not codes:
+        return []
+
+    rows: List[Dict[str, Any]] = []
+    for offset in range(0, len(codes), 400):
+        chunk = codes[offset:offset + 400]
+        ph = ",".join(["%s"] * len(chunk))
+        params = tuple([server_id, *chunk, server_id, *chunk])
+        cursor.execute(
+            f"""
+            WITH kits AS (
+                SELECT
+                    ProductoCodigoFuente AS producto_codigo_fuente,
+                    ComponenteCodigoFuente AS componente_codigo_fuente,
+                    Cantidad AS cantidad,
+                    UnidadMedida AS unidad_medida,
+                    'PRODUCTO_KIT' AS fuente
+                FROM dbo.Sync_Productos_Compuestos
+                WHERE LOWER(CONVERT(varchar(36),ServerID))=LOWER(%s)
+                  AND ProductoCodigoFuente IN ({ph})
+                  AND ISNULL(Activo,1)=1
+                  AND UPPER(ISNULL(FuenteDetalle,''))='PRODUCTO_KIT'
+            ),
+            recetas AS (
+                SELECT
+                    r.ProductoCodigoFuente AS producto_codigo_fuente,
+                    r.ComponenteCodigoFuente AS componente_codigo_fuente,
+                    r.Cantidad AS cantidad,
+                    r.UnidadMedida AS unidad_medida,
+                    'RECETA' AS fuente
+                FROM dbo.Sync_Productos_Recetas r
+                WHERE LOWER(CONVERT(varchar(36),r.ServerID))=LOWER(%s)
+                  AND r.ProductoCodigoFuente IN ({ph})
+                  AND ISNULL(r.Activo,1)=1
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM dbo.Sync_Productos_Compuestos k
+                      WHERE k.ServerID=r.ServerID
+                        AND k.ProductoCodigoFuente=r.ProductoCodigoFuente
+                        AND ISNULL(k.Activo,1)=1
+                        AND UPPER(ISNULL(k.FuenteDetalle,''))='PRODUCTO_KIT'
+                  )
+            )
+            SELECT * FROM kits
+            UNION ALL
+            SELECT * FROM recetas
+            """,
+            params,
+        )
+        rows.extend(cursor.fetchall() or [])
+    return rows
+
+
 def _sales_consumption(
+    cursor,
     server_id: str,
     sales_rows: Sequence[Dict[str, Any]],
 ) -> Dict[str, float]:
@@ -384,24 +455,26 @@ def _sales_consumption(
     if not sold:
         return {}
 
-    components = RecetasService.get_componentes_bulk(server_id, list(sold))
+    components = _fetch_mpro_sales_components(cursor, server_id, list(sold))
     if not components:
         raise MproInventoryAnalysisSourceError(
-            "MPRO_RECIPES_SOURCE_INCOMPLETE",
-            "No se encontraron recetas canónicas para las ventas MPRO del periodo.",
+            "MPRO_COMPONENTS_SOURCE_INCOMPLETE",
+            (
+                "No se encontraron componentes canónicos MPRO para las ventas "
+                "del periodo (Producto_Kit/recetas)."
+            ),
         )
 
     consumption: Dict[str, float] = defaultdict(float)
-    products_with_recipe = set()
     for row in components:
         product_code = _text(row.get("producto_codigo_fuente"))
         component_code = _text(row.get("componente_codigo_fuente"))
         if not product_code or not component_code or product_code not in sold:
             continue
-        products_with_recipe.add(product_code)
-        consumption[component_code] += sold[product_code] * _float(row.get("cantidad"))
+        consumption[component_code] += (
+            sold[product_code] * _float(row.get("cantidad"))
+        )
 
-    # Productos sin receta no consumen inventario por receta; no son error.
     return dict(consumption)
 
 
@@ -547,7 +620,7 @@ def generate_mpro_inventory_analysis_canonical(
                 "MPRO_SALES_DETAIL_INCOMPLETE",
                 "No hay detalle canónico de ventas para el periodo seleccionado.",
             )
-        sales_consumption = _sales_consumption(server_id, sales_rows)
+        sales_consumption = _sales_consumption(cursor, server_id, sales_rows)
         metadata = _fetch_product_metadata(cursor, server_id, all_codes)
 
         selected_categories = set(_unique(
