@@ -15,7 +15,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 from core.inventarios.resolver_canonico import resolver_empresa_id, resolver_sucursal_id
-from core.recetas_service import RecetasService
 from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
 
 
