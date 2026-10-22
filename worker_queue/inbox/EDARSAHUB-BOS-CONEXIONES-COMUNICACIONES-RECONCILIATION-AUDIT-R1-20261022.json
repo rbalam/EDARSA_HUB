@@ -1,0 +1,151 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-RECONCILIATION-AUDIT-R1-20261022",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "adbd7d2531fd15a474a4f9f12f4977cd38942c8c",
+  "mode": "READ_ONLY",
+  "objective": "Auditar el estado real y actual del bounded context Conexiones y Comunicaciones en Edarsahub_Desarrollo. Reconciliar menu/frontend, backend/endpoints, registro/configuracion de conexiones e integraciones y Universal Worker. Identificar especificamente SQL Server, APIs, Cavas, Cienfuegos, Twilio/WhatsApp, Toast, GitHub/Universal Worker y cualquier otra conexion registrada; distinguir evidencia vigente de deuda historica; detectar conexiones faltantes, visibles con error, duplicadas o desacopladas; y producir evidencia suficiente para definir el siguiente Gate quirurgico sin modificar codigo, datos, credenciales, runtime ni Produccion.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS",
+    "chat": "Conexiones y Comunicaciones"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend"
+        ],
+        "search_terms": [
+          "conexiones",
+          "comunicaciones",
+          "servidores",
+          "conexion",
+          "connection",
+          "sql server",
+          "twilio",
+          "whatsapp",
+          "toast",
+          "cavas",
+          "cienfuegos",
+          "github",
+          "universal worker",
+          "worker",
+          "api"
+        ],
+        "max_results": 250
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend"
+        ],
+        "search_terms": [
+          "conexiones",
+          "comunicaciones",
+          "servidores",
+          "conexion",
+          "connection",
+          "sql server",
+          "twilio",
+          "whatsapp",
+          "toast",
+          "cavas",
+          "cienfuegos",
+          "github",
+          "worker",
+          "api"
+        ],
+        "max_results": 250
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync",
+          ".github",
+          "scripts"
+        ],
+        "search_terms": [
+          "universal worker",
+          "worker/requests",
+          "worker_queue",
+          "github",
+          "twilio",
+          "whatsapp",
+          "toast",
+          "connection",
+          "conexion",
+          "server registry",
+          "mirror",
+          "runtime"
+        ],
+        "max_results": 250
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "required_deliverables": [
+    "BACKEND_CONNECTIONS_EVIDENCE",
+    "FRONTEND_CONNECTIONS_EVIDENCE",
+    "WORKER_INTEGRATION_EVIDENCE"
+  ],
+  "deliverable_specs": {
+    "BACKEND_CONNECTIONS_EVIDENCE": {
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 1
+      },
+      "selector": {
+        "type": "json_path",
+        "path": [
+          "repository_evidence"
+        ]
+      }
+    },
+    "FRONTEND_CONNECTIONS_EVIDENCE": {
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 2
+      },
+      "selector": {
+        "type": "json_path",
+        "path": [
+          "repository_evidence"
+        ]
+      }
+    },
+    "WORKER_INTEGRATION_EVIDENCE": {
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 3
+      },
+      "selector": {
+        "type": "json_path",
+        "path": [
+          "repository_evidence"
+        ]
+      }
+    }
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB BOS",
+    "bounded_context": "Conexiones y Comunicaciones",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "conflict_domains": [],
+    "resource_claims": []
+  }
+}
