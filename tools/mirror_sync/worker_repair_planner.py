@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from tools.mirror_sync import worker_maintenance_runtime as maintenance
+from tools.mirror_sync import worker_repair_capability_registry as learned_registry
 from tools.mirror_sync.universal_job_bridge import validate as validate_worker_job
 from tools.mirror_sync.worker_job_factory import canonicalize_job
 from tools.mirror_sync.worker_repair_execution import (
@@ -189,36 +190,73 @@ def _canonical_requester(
     }
 
 
+def _learned_as_runtime_capability(
+    learned: learned_registry.LearnedCapability,
+) -> RepairCapability:
+    def builder(
+        _incident: Any,
+        _context: dict[str, Any],
+    ) -> dict[str, Any]:
+        return learned_registry.recipe_from_learned(
+            learned
+        )
+
+    return RepairCapability(
+        code=learned.code,
+        incident_ids=learned.incident_ids,
+        required_paths=learned.required_paths,
+        builder=builder,
+    )
+
+
 def _resolve_capability(
     incident_id: str,
     capability_code: str | None,
+    *,
+    problem_signature: str | None = None,
 ) -> RepairCapability:
-    if capability_code:
-        capability = _CAPABILITIES.get(
-            str(capability_code).strip()
-        )
+    code = str(capability_code or "").strip()
 
-        if capability is None:
+    if code:
+        capability = _CAPABILITIES.get(code)
+
+        if capability is not None:
+            if incident_id not in capability.incident_ids:
+                raise ValueError(
+                    "REPAIR_CAPABILITY_INCIDENT_MISMATCH"
+                )
+            return capability
+
+        learned = learned_registry.resolve_learned_capability(
+            incident_id=incident_id,
+            problem_signature=problem_signature,
+            capability_code=code,
+        )
+        if learned is None:
             raise ValueError(
                 "REPAIR_CAPABILITY_UNKNOWN"
             )
-
-        if (
-            incident_id
-            not in capability.incident_ids
-        ):
-            raise ValueError(
-                "REPAIR_CAPABILITY_INCIDENT_MISMATCH"
-            )
-
-        return capability
+        return _learned_as_runtime_capability(
+            learned
+        )
 
     matches = [
         item
         for item in _CAPABILITIES.values()
-        if incident_id
-        in item.incident_ids
+        if incident_id in item.incident_ids
     ]
+
+    learned = learned_registry.resolve_learned_capability(
+        incident_id=incident_id,
+        problem_signature=problem_signature,
+    )
+
+    if learned is not None:
+        matches.append(
+            _learned_as_runtime_capability(
+                learned
+            )
+        )
 
     if not matches:
         raise ValueError(
@@ -348,6 +386,7 @@ def build_deterministic_repair_job(
     incident_id: str,
     *,
     capability_code: str | None = None,
+    problem_signature: str | None = None,
 ) -> dict[str, Any]:
     incident = (
         maintenance.read_runtime_incident(
@@ -372,6 +411,7 @@ def build_deterministic_repair_job(
         _resolve_capability(
             incident_id,
             capability_code,
+            problem_signature=problem_signature,
         )
     )
 
@@ -519,12 +559,16 @@ def publish_planned_repair(
     incident_id: str,
     *,
     capability_code: str | None = None,
+    problem_signature: str | None = None,
 ) -> dict[str, Any]:
     planned = (
         build_deterministic_repair_job(
             incident_id,
             capability_code=(
                 capability_code
+            ),
+            problem_signature=(
+                problem_signature
             ),
         )
     )
