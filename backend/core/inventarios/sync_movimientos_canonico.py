@@ -175,10 +175,24 @@ def sync_movimientos_canonico(
         server_info["host"], server_info["port"], server_info["database"],
         server_info["username"], server_info["password"], _query_origen(system_type, dias_atras, sucursal_origen),
     )
-    if not rows:
+    if rows is None:
+        conn.close()
+        return {
+            "status": "ERROR",
+            "encabezados_synced": 0,
+            "detalles_synced": 0,
+            "descartados": 0,
+            "pendientes": pend,
+            "message": "No fue posible leer movimientos del origen; ledger conservado sin cambios",
+        }
+
+    # Una lista vacía es una lectura válida: no hay movimientos en la ventana.
+    # SoftRestaurant puede reconciliar el ledger a cero; MPRO conserva el
+    # comportamiento existente y simplemente termina sin cambios.
+    if not rows and not is_softrestaurant:
         conn.close()
         return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0,
-                "descartados": 0, "pendientes": pend, "message": "Sin datos o sin conexión en origen"}
+                "descartados": 0, "pendientes": pend, "message": "Sin movimientos en origen"}
 
     # SoftRestaurant: la selección configurada en Servidores -> Filtros ->
     # Tipos de Movimiento es la autoridad que decide qué conceptos origen
@@ -188,37 +202,24 @@ def sync_movimientos_canonico(
     filtrados_no_autorizados = 0
     if is_softrestaurant:
         if not tipos_movimiento_autorizados:
-            conn.close()
-            return {
-                "status": "OK",
-                "encabezados_synced": 0,
-                "detalles_synced": 0,
-                "descartados": 0,
-                "pendientes": pend,
-                "filtrados_no_autorizados": len(rows),
-                "message": "Sin tipos de movimiento autorizados para este servidor",
-            }
+            # La ausencia de selección significa que ningún concepto participa.
+            # La reconciliación a cero se ejecuta más abajo sobre la misma
+            # transacción y sólo para esta Empresa/Sucursal/ventana.
+            filtrados_no_autorizados = len(rows)
+            rows = []
+        else:
+            rows_autorizados = []
+            for row in rows:
+                concepto_origen = str(row.get("concepto") or "").strip().upper()
+                if concepto_origen in tipos_movimiento_autorizados:
+                    rows_autorizados.append(row)
+                else:
+                    filtrados_no_autorizados += 1
+            rows = rows_autorizados
 
-        rows_autorizados = []
-        for row in rows:
-            concepto_origen = str(row.get("concepto") or "").strip().upper()
-            if concepto_origen in tipos_movimiento_autorizados:
-                rows_autorizados.append(row)
-            else:
-                filtrados_no_autorizados += 1
-        rows = rows_autorizados
-
-        if not rows:
-            conn.close()
-            return {
-                "status": "OK",
-                "encabezados_synced": 0,
-                "detalles_synced": 0,
-                "descartados": 0,
-                "pendientes": pend,
-                "filtrados_no_autorizados": filtrados_no_autorizados,
-                "message": "Ningún movimiento del periodo está autorizado por la configuración del servidor",
-            }
+        # Con selección vacía o sin coincidencias, la reconciliación eliminará
+        # únicamente los MOVIMIENTO_POS SoftRestaurant de esta ventana.
+        # No se retorna todavía para poder limpiar el histórico canónico.
 
     # 3) Leer y RESOLVER todo en memoria (resolvers cacheados -> rápido).
     # Precarga masiva del mapeo de productos (1 query) para evitar round-trips por producto.
@@ -281,7 +282,24 @@ def sync_movimientos_canonico(
         resueltos.append((empresa_id, sucursal_id, alm.canonical_id, tip.canonical_id,
                           fecha, folio, prod.canonical_id, cantidad, costo))
 
-    if not resueltos:
+    pendientes_criticos = (
+        int(pend.get("tipo", 0))
+        + int(pend.get("almacen", 0))
+        + int(pend.get("producto", 0))
+    )
+    if is_softrestaurant and pendientes_criticos > 0:
+        conn.close()
+        return {
+            "status": "PENDIENTE",
+            "encabezados_synced": 0,
+            "detalles_synced": 0,
+            "descartados": 0,
+            "pendientes": pend,
+            "filtrados_no_autorizados": filtrados_no_autorizados,
+            "message": "Reconciliación SoftRestaurant cancelada: existen movimientos autorizados sin resolución canónica",
+        }
+
+    if not resueltos and not is_softrestaurant:
         conn.close()
         return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0,
                 "descartados": 0, "pendientes": pend, "message": "Sin movimientos resolubles"}
@@ -289,6 +307,37 @@ def sync_movimientos_canonico(
     # 4) Escritura SET-BASED (staging temporal + INSERT..SELECT). Reduce miles de
     #    round-trips a unas pocas sentencias. Idempotente por llave natural.
     cur_w = conn.cursor()
+
+    # SoftRestaurant se reconcilia por ventana en una sola transacción. Esto
+    # permite que una modificación en Servidores.tipos_movimiento también
+    # retire del cálculo movimientos históricos que dejaron de estar
+    # autorizados, sin tocar MPRO ni otras fuentes.
+    movimientos_reconciliados_eliminados = 0
+    if is_softrestaurant:
+        cur_w.execute(
+            """
+            DELETE d
+            FROM Inventario_MovimientosDetalle d
+            INNER JOIN Inventario_Movimientos m ON m.MovimientoID = d.MovimientoID
+            WHERE m.EmpresaID = %s
+              AND m.SucursalID = %s
+              AND m.ReferenciaTipo = 'MOVIMIENTO_POS'
+              AND m.FechaMovimiento >= DATEADD(DAY, -%s, GETDATE())
+            """,
+            (empresa_id, sucursal_id, int(dias_atras)),
+        )
+        cur_w.execute(
+            """
+            DELETE FROM Inventario_Movimientos
+            WHERE EmpresaID = %s
+              AND SucursalID = %s
+              AND ReferenciaTipo = 'MOVIMIENTO_POS'
+              AND FechaMovimiento >= DATEADD(DAY, -%s, GETDATE())
+            """,
+            (empresa_id, sucursal_id, int(dias_atras)),
+        )
+        movimientos_reconciliados_eliminados = cur_w.rowcount or 0
+
     cur_w.execute("""
         CREATE TABLE #stg_mov (
             EmpresaID int, SucursalID int, AlmacenID int, TipoMovimientoID tinyint,
@@ -358,6 +407,7 @@ def sync_movimientos_canonico(
         "descartados": 0,
         "pendientes": pend,
         "filtrados_no_autorizados": filtrados_no_autorizados,
+        "movimientos_reconciliados_eliminados": movimientos_reconciliados_eliminados,
     }
 
 
