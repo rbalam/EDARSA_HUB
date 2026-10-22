@@ -1,0 +1,154 @@
+{
+  "base_sha": "adbd7d2531fd15a474a4f9f12f4977cd38942c8c",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-22T04:44:00Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-SCHEMA-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-22T04:45:05Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "tabla",
+              "columna",
+              "tipo_sql",
+              "max_length",
+              "is_nullable"
+            ],
+            "name": "tipos_columnas_sql",
+            "row_count_returned": 15,
+            "rows": [
+              [
+                "Sistema_Empresas",
+                "Activo",
+                "bit",
+                1,
+                false
+              ],
+              [
+                "Sistema_Empresas",
+                "CodigoEmpresa",
+                "varchar",
+                20,
+                false
+              ],
+              [
+                "Sistema_Empresas",
+                "EmpresaID",
+                "int",
+                4,
+                false
+              ],
+              [
+                "Sync_Productos",
+                "ProductoID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "Sync_Productos",
+                "ServerID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "Sync_Productos",
+                "UnidadNegocioID",
+                "int",
+                4,
+                true
+              ],
+              [
+                "Sync_Productos_Insumos",
+                "InsumoID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "Sync_Productos_Insumos",
+                "ServerID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "Sync_Productos_Recetas",
+                "Activo",
+                "bit",
+                1,
+                true
+              ],
+              [
+                "Sync_Productos_Recetas",
+                "RecetaDetalleID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "Sync_Productos_Recetas",
+                "ServerID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "Unidades_Negocio",
+                "activo",
+                "bit",
+                1,
+                true
+              ],
+              [
+                "Unidades_Negocio",
+                "codigo",
+                "nvarchar",
+                100,
+                false
+              ],
+              [
+                "Unidades_Negocio",
+                "id",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "Unidades_Negocio",
+                "server_id",
+                "nvarchar",
+                200,
+                false
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-22T04:43:59Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
