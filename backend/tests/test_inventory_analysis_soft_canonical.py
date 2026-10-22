@@ -72,3 +72,32 @@ def test_inventory_backfill_does_not_hardcode_unit_exclusions():
     assert "s.activo = 1" in backfill
     assert "u.activo = 1" in backfill
 
+def test_soft_sync_reads_both_inventory_movement_sources_without_sales_sync():
+    movement_source = (
+        ROOT / "core" / "inventarios" / "sync_movimientos_canonico.py"
+    ).read_text(encoding="utf-8")
+
+    soft_block = movement_source[
+        movement_source.index("# SoftRestaurant usa DOS fuentes complementarias verificadas:"):
+        movement_source.index("def sync_movimientos_canonico")
+    ]
+
+    assert "FROM movsinv i" in soft_block
+    assert "FROM movtosalmacen m" in soft_block
+    assert "NOT EXISTS" in soft_block
+    assert "RTRIM(LTRIM(i.idinsumo)) AS producto_cod" in soft_block
+    assert "RTRIM(LTRIM(ip.idinsumo)) AS producto_cod" in soft_block
+    assert "SPV" not in soft_block
+    assert "Comercial_Inteligencia_VentasDetalleProducto" not in soft_block
+
+
+def test_soft_sync_prefixes_movsinv_natural_references():
+    movement_source = (
+        ROOT / "core" / "inventarios" / "sync_movimientos_canonico.py"
+    ).read_text(encoding="utf-8")
+
+    assert "'I:M:' + CAST(i.movto AS VARCHAR(24))" in movement_source
+    assert "'I:T:' + CAST(i.traspaso AS VARCHAR(24))" in movement_source
+    assert "'I:C:' + CAST(i.idcompra AS VARCHAR(24))" in movement_source
+    assert "'I:F:' + CAST(i.invfisico AS VARCHAR(24))" in movement_source
+
