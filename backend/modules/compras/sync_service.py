@@ -745,23 +745,39 @@ TIPO_MOVIMIENTO_SR_TO_EDARSAHUB = {
     "EPC": 1,  # ENTRADA_COMPRA
     "SPC": 2,  # SALIDA_DEV_PROV
 
-    # Traspasos
-    "ETA": 5,  # TRASPASO_ENTRADA
-    "STA": 6,  # TRASPASO_SALIDA
+    # Traspasos verificados
+    "ETA": 5,  # ENTRADA POR TABLAJERIA / TRASPASO
+    "ETR": 5,  # ENTRADA POR TRASPASO
+    "STA": 6,  # SALIDA POR TABLAJERIA / TRASPASO
+    "STR": 6,  # SALIDA POR TRASPASO
 
     # Inventario físico / ajustes
-    "ECI": 3,  # AJUSTE_ENTRADA
-    "SCI": 4,  # AJUSTE_SALIDA
+    "ECI": 3,
+    "SCI": 4,
 
-    # Otras entradas
+    # Otras entradas verificadas SoftRestaurant
+    "EAL": 3,  # ENTRADA DE ALMACEN
+    "ECA": 3,  # ENTRADA POR CANCELACION
+    "ECS": 3,  # ENTRADA POR CONSIGNA
+    "ECO": 3,  # ENTRADA POR CORTESIA
+    "EDE": 3,  # ENTRADA POR DEVOLUCION
+    "EEH": 3,  # ENTRADA POR EXHIBICION
+    "EPR": 3,  # ENTRADA POR PRODUCCION
     "EPA": 3,
     "EPL": 3,
     "EPB": 3,
 
-    # Otras salidas
+    # Otras salidas verificadas SoftRestaurant
+    "SDE": 4,  # SALIDA POR DESPERDICIO
+    "SDV": 4,  # SALIDA POR DEVOLUCION
+    "SPR": 4,  # SALIDA POR PRODUCCION
     "SPA": 4,
     "SPM": 4,
     "SPD": 4,
+
+    # SPV/SCP/SCS se excluyen deliberadamente de este mapa:
+    # en Análisis se reconstruyen como Ventas/consumo desde la fuente
+    # comercial canónica + recetas para evitar doble conteo.
 }
 
 

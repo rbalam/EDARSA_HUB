@@ -175,7 +175,6 @@ def test_extended_sync_steps_default_preserves_compatibility(monkeypatch):
     assert [name for name, _, _ in steps] == [
         "almacenes",
         "existencias",
-        "movimientos",
         "pedidos",
         "ordenes",
         "recepciones",
@@ -203,4 +202,18 @@ def test_extended_sync_steps_can_be_explicitly_enabled_in_preview(monkeypatch):
         "true",
     )
 
-    assert len(sync_compras_job._extended_sync_steps()) == 6
+    assert len(sync_compras_job._extended_sync_steps()) == 5
+
+
+def test_inventory_core_steps_always_include_movimientos(monkeypatch):
+    from core.scheduler.jobs import sync_compras_job
+
+    monkeypatch.setenv("EDARSA_ENV", "PREVIEW")
+    monkeypatch.setenv(
+        "SCHEDULER_SYNC_COMPRAS_EXTENDED_ENABLED",
+        "false",
+    )
+
+    assert [name for name, _, _ in sync_compras_job._core_inventory_sync_steps()] == [
+        "movimientos",
+    ]

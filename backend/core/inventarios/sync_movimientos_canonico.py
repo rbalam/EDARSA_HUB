@@ -147,8 +147,30 @@ def sync_movimientos_canonico(
             continue
         tip = resolver_tipo_movimiento_desde_concepto(system_type, concepto)
         if not tip.resuelto:
-            pend["tipo"] += 1
-            continue
+            # Compatibilidad controlada para conceptos SoftRestaurant
+            # ya verificados en el catálogo histórico. La tabla DB-driven
+            # sigue siendo la primera autoridad; este fallback evita perder
+            # movimientos válidos mientras se completa su seed persistente.
+            st_upper = str(system_type or "").upper()
+            if "SOFT" in st_upper:
+                from modules.compras.sync_service import (
+                    map_tipo_movimiento_softrestaurant,
+                )
+                fallback_tipo = map_tipo_movimiento_softrestaurant(
+                    concepto,
+                    cantidad,
+                )
+                if fallback_tipo is not None:
+                    class _FallbackTipo:
+                        resuelto = True
+                        canonical_id = fallback_tipo
+                    tip = _FallbackTipo()
+                else:
+                    pend["tipo"] += 1
+                    continue
+            else:
+                pend["tipo"] += 1
+                continue
         alm = resolver_almacen_id(empresa_id, sucursal_id, almacen_cod)
         if not alm.resuelto:
             pend["almacen"] += 1
