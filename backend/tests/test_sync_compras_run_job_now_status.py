@@ -97,3 +97,86 @@ def test_sync_compras_lock_uses_writer_profile(monkeypatch):
 
     assert sync_compras_job._acquire_sync_lock("TEST-RUN") is True
     assert ("profile", "writer") in calls
+
+
+def test_inventory_query_timeout_is_dedicated(monkeypatch):
+    from core.scheduler.jobs import sync_compras_job
+
+    monkeypatch.setenv(
+        "SYNC_INVENTARIOS_FISICOS_QUERY_TIMEOUT_SECONDS",
+        "150",
+    )
+
+    calls = []
+
+    def fake_execute(
+        host,
+        port,
+        database,
+        username,
+        password,
+        query,
+        timeout_seconds=45,
+    ):
+        calls.append(timeout_seconds)
+        return []
+
+    monkeypatch.setattr(
+        sync_compras_job,
+        "_execute_sql_with_timeout",
+        fake_execute,
+    )
+
+    result = sync_compras_job._execute_inventory_sql_with_timeout(
+        "host",
+        1433,
+        "db",
+        "user",
+        "password",
+        "SELECT 1",
+    )
+
+    assert result == []
+    assert calls == [150]
+
+
+def test_sync_compras_lock_timeout_default_covers_long_execution(monkeypatch):
+    from core.scheduler.jobs import sync_compras_job
+
+    monkeypatch.delenv(
+        "SCHEDULER_SYNC_COMPRAS_LOCK_TIMEOUT_MINUTES",
+        raising=False,
+    )
+
+    assert sync_compras_job._sync_compras_lock_timeout_minutes() >= 90
+
+
+def test_extended_sync_steps_can_be_disabled(monkeypatch):
+    from core.scheduler.jobs import sync_compras_job
+
+    monkeypatch.setenv(
+        "SCHEDULER_SYNC_COMPRAS_EXTENDED_ENABLED",
+        "false",
+    )
+
+    assert sync_compras_job._extended_sync_steps() == []
+
+
+def test_extended_sync_steps_default_preserves_compatibility(monkeypatch):
+    from core.scheduler.jobs import sync_compras_job
+
+    monkeypatch.delenv(
+        "SCHEDULER_SYNC_COMPRAS_EXTENDED_ENABLED",
+        raising=False,
+    )
+
+    steps = sync_compras_job._extended_sync_steps()
+
+    assert [name for name, _, _ in steps] == [
+        "almacenes",
+        "existencias",
+        "movimientos",
+        "pedidos",
+        "ordenes",
+        "recepciones",
+    ]
