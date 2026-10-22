@@ -1,0 +1,63 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "empresas_catalogo",
+          "sql": "\nSELECT\n    e.EmpresaID,\n    e.CodigoEmpresa,\n    e.NombreEmpresa,\n    e.Activo\nFROM dbo.Sistema_Empresas e\nORDER BY e.EmpresaID\n"
+        },
+        {
+          "name": "productos_empresa_servidor",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), p.ServerID) AS ServerID,\n    p.EmpresaID,\n    COUNT_BIG(*) AS productos\nFROM dbo.Sync_Productos p\nGROUP BY p.ServerID, p.EmpresaID\nORDER BY p.ServerID, p.EmpresaID\n"
+        },
+        {
+          "name": "productos_empresa_catalogo",
+          "sql": "\nSELECT\n    p.EmpresaID,\n    e.CodigoEmpresa,\n    e.NombreEmpresa,\n    COUNT_BIG(*) AS productos,\n    COUNT(DISTINCT p.ServerID) AS servidores\nFROM dbo.Sync_Productos p\nLEFT JOIN dbo.Sistema_Empresas e\n    ON e.EmpresaID = p.EmpresaID\nGROUP BY\n    p.EmpresaID,\n    e.CodigoEmpresa,\n    e.NombreEmpresa\nORDER BY productos DESC\n"
+        },
+        {
+          "name": "unidades_empresas_codigo",
+          "sql": "\nSELECT\n    u.codigo AS unidad_codigo,\n    u.nombre AS unidad_nombre,\n    CONVERT(varchar(36),\n        TRY_CONVERT(uniqueidentifier, u.server_id)\n    ) AS ServerID,\n    e.EmpresaID,\n    e.CodigoEmpresa,\n    e.NombreEmpresa\nFROM dbo.Unidades_Negocio u\nLEFT JOIN dbo.Sistema_Empresas e\n    ON UPPER(LTRIM(RTRIM(e.CodigoEmpresa))) =\n       UPPER(LTRIM(RTRIM(u.codigo)))\nWHERE u.activo = 1\nORDER BY u.nombre, e.EmpresaID\n"
+        },
+        {
+          "name": "servidor_compartido_empresa",
+          "sql": "\nSELECT\n    p.EmpresaID,\n    e.CodigoEmpresa,\n    e.NombreEmpresa,\n    COUNT_BIG(*) AS productos\nFROM dbo.Sync_Productos p\nLEFT JOIN dbo.Sistema_Empresas e\n    ON e.EmpresaID = p.EmpresaID\nWHERE p.ServerID =\n    TRY_CONVERT(\n        uniqueidentifier,\n        '1b230a06-ffaf-4c70-bd27-b1be3579dea6'\n    )\nGROUP BY\n    p.EmpresaID,\n    e.CodigoEmpresa,\n    e.NombreEmpresa\nORDER BY productos DESC\n"
+        },
+        {
+          "name": "productos_sin_empresa_valida",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), p.ServerID) AS ServerID,\n    COUNT_BIG(*) AS productos_sin_empresa_valida\nFROM dbo.Sync_Productos p\nLEFT JOIN dbo.Sistema_Empresas e\n    ON e.EmpresaID = p.EmpresaID\nWHERE p.EmpresaID IS NULL\n   OR e.EmpresaID IS NULL\nGROUP BY p.ServerID\nORDER BY productos_sin_empresa_valida DESC\n"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-EMPRESA-MAPPING-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar mapeo de EmpresaID, ServerID y unidades activas para reconciliacion de costos POS. Verificar distribucion, correspondencias, ambiguedades y registros sin empresa. Solo lectura SQL, sin POS LIVE ni modificaciones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "bos-costos-pos-reconciliation",
+    "email": "carlosruz@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "bos-orchestrator"
+  },
+  "scheduling": {
+    "bounded_context": "COSTOS_MARGENES",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": [
+      "costos_pos_empresa_mapping_r1"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
