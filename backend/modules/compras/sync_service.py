@@ -886,6 +886,15 @@ def get_edarsahub_connection():
     return get_sql_connection()
 
 
+def get_edarsahub_writer_connection():
+    """Obtiene conexión de escritura canónica a EDARSAHUB.
+
+    Las lecturas NO-LIVE conservan el perfil default (HRLectura).
+    Los jobs autorizados de sincronización usan exclusivamente el perfil writer.
+    """
+    return get_sql_connection("writer")
+
+
 # =============================================================================
 # LECTURA DE DATOS SINCRONIZADOS (Endpoints usan estas funciones)
 # =============================================================================
@@ -1382,7 +1391,7 @@ def sync_inventarios_fisicos_from_server(
             headers_without_detail = 0
         
         # Guardar en EDARSAHUB
-        conn = get_edarsahub_connection()
+        conn = get_edarsahub_writer_connection()
         cursor = conn.cursor()
 
         detail_result = {
@@ -1660,7 +1669,7 @@ def sync_requisiciones_from_server(
             return {"status": "OK", "records_synced": 0, "error": None}
         
         # Guardar en EDARSAHUB
-        conn = get_edarsahub_connection()
+        conn = get_edarsahub_writer_connection()
         cursor = conn.cursor()
         
         # Marcar registros anteriores como inactivos
@@ -1787,7 +1796,7 @@ def log_sync_operation(
 ):
     """Registra la operación de sincronización en el log"""
     try:
-        conn = get_edarsahub_connection()
+        conn = get_edarsahub_writer_connection()
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO Compras_Sync_Log
@@ -1901,7 +1910,7 @@ def sync_almacenes_from_server(
         if not result_origen:
             return {"status": "OK", "records_synced": 0, "message": "Sin datos en origen"}
         
-        conn = get_edarsahub_connection()
+        conn = get_edarsahub_writer_connection()
         cursor = conn.cursor()
         
         records_synced = 0
@@ -1997,7 +2006,7 @@ def sync_existencias_from_server(
         if not result_origen:
             return {"status": "OK", "records_synced": 0, "message": "Sin datos en origen"}
         
-        conn = get_edarsahub_connection()
+        conn = get_edarsahub_writer_connection()
         cursor = conn.cursor()
         
         records_synced = 0
@@ -2160,7 +2169,7 @@ def sync_pedidos_from_server(
             server_info['username'], server_info['password'], query_detalle
         ) or []
 
-        conn = get_edarsahub_connection()
+        conn = get_edarsahub_writer_connection()
         cursor = conn.cursor()
 
         enc_synced = 0
@@ -2345,7 +2354,7 @@ def sync_ordenes_from_server(
         if not result_enc:
             return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0, "message": "Sin ordenes en origen"}
 
-        conn = get_edarsahub_connection()
+        conn = get_edarsahub_writer_connection()
         cursor = conn.cursor()
 
         enc_synced = 0
@@ -2449,7 +2458,7 @@ def sync_recepciones_from_server(
         if not result_enc:
             return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0, "message": "Sin recepciones en origen"}
 
-        conn = get_edarsahub_connection()
+        conn = get_edarsahub_writer_connection()
         cursor = conn.cursor()
 
         enc_synced = 0
