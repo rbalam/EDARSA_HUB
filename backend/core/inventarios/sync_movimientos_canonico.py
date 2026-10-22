@@ -58,20 +58,72 @@ def _query_origen(system_type: str, dias_atras: int, sucursal_origen: str = None
             WHERE Mv_Fecha >= DATEADD(DAY, -{int(dias_atras)}, GETDATE())
               {filtro_suc}
         """
-    # SoftRestaurant Pro (esquema real verificado): movtosalmacen no tiene 'cancelado'
-    # ni 'idinsumo'; el código de producto se obtiene vía insumospresentaciones.idinsumo.
+    # SoftRestaurant usa DOS fuentes complementarias verificadas:
+    # - movsinv: movimientos de INSUMOS (almacenes operativos/consumo).
+    # - movtosalmacen: movimientos de PRESENTACIONES.
+    #
+    # El modelo canónico trabaja a nivel de insumo (Producto_MapeoOrigen.CodigoFuente
+    # = idinsumo). Por eso movtosalmacen resuelve la presentación -> idinsumo.
+    # Si el mismo movimiento existe en ambas tablas, movsinv tiene precedencia para
+    # evitar doble conteo al consolidar a nivel de insumo.
     return f"""
         SELECT
-            m.fecha             AS fecha,
+            i.fecha AS fecha,
+            CAST(i.idalmacen AS VARCHAR(50)) AS almacen_cod,
+            RTRIM(LTRIM(i.idconcepto)) AS concepto,
+            RTRIM(LTRIM(i.idinsumo)) AS producto_cod,
+            ISNULL(i.cantidad, 0) AS cantidad,
+            ISNULL(i.costo, 0) AS costo,
+            CAST(
+                CASE
+                    WHEN i.movto IS NOT NULL
+                        THEN 'I:M:' + CAST(i.movto AS VARCHAR(24))
+                    WHEN NULLIF(i.traspaso, 0) IS NOT NULL
+                        THEN 'I:T:' + CAST(i.traspaso AS VARCHAR(24))
+                    WHEN NULLIF(i.idcompra, 0) IS NOT NULL
+                        THEN 'I:C:' + CAST(i.idcompra AS VARCHAR(24))
+                    WHEN NULLIF(i.invfisico, 0) IS NOT NULL
+                        THEN 'I:F:' + CAST(i.invfisico AS VARCHAR(24))
+                    WHEN NULLIF(i.foliocheque, 0) IS NOT NULL
+                        THEN 'I:Q:' + CAST(i.foliocheque AS VARCHAR(24))
+                    WHEN NULLIF(i.idpedido, 0) IS NOT NULL
+                        THEN 'I:P:' + CAST(i.idpedido AS VARCHAR(24))
+                    ELSE 'I:D:' + REPLACE(REPLACE(REPLACE(
+                        CONVERT(VARCHAR(23), i.fecha, 121), '-', ''), ':', ''), ' ', '')
+                END
+                AS VARCHAR(30)
+            ) AS folio
+        FROM movsinv i
+        WHERE i.fecha >= DATEADD(DAY, -{int(dias_atras)}, GETDATE())
+          AND NULLIF(RTRIM(LTRIM(i.idinsumo)), '') IS NOT NULL
+
+        UNION ALL
+
+        SELECT
+            m.fecha AS fecha,
             CAST(m.idalmacen AS VARCHAR(50)) AS almacen_cod,
             RTRIM(LTRIM(m.idconcepto)) AS concepto,
-            CAST(ip.idinsumo AS VARCHAR(50)) AS producto_cod,
+            RTRIM(LTRIM(ip.idinsumo)) AS producto_cod,
             ISNULL(m.cantidad, 0) AS cantidad,
-            ISNULL(m.costo, 0)    AS costo,
-            CAST(m.movto AS VARCHAR(50)) AS folio
+            ISNULL(m.costo, 0) AS costo,
+            CAST(m.movto AS VARCHAR(30)) AS folio
         FROM movtosalmacen m
-        JOIN insumospresentaciones ip ON ip.idinsumospresentaciones = m.idinsumospresentaciones
+        JOIN insumospresentaciones ip
+          ON ip.idinsumospresentaciones = m.idinsumospresentaciones
         WHERE m.fecha >= DATEADD(DAY, -{int(dias_atras)}, GETDATE())
+          AND NULLIF(RTRIM(LTRIM(ip.idinsumo)), '') IS NOT NULL
+          AND NOT EXISTS (
+              SELECT 1
+              FROM movsinv i
+              WHERE i.fecha = m.fecha
+                AND RTRIM(LTRIM(i.idalmacen)) = RTRIM(LTRIM(m.idalmacen))
+                AND RTRIM(LTRIM(i.idconcepto)) = RTRIM(LTRIM(m.idconcepto))
+                AND RTRIM(LTRIM(i.idinsumo)) = RTRIM(LTRIM(ip.idinsumo))
+                AND (
+                    (i.movto = m.movto)
+                    OR (i.movto IS NULL AND m.movto IS NULL)
+                )
+          )
     """
 
 
