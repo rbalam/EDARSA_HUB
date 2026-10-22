@@ -57,3 +57,11 @@ def test_soft_verified_non_sales_concepts_are_covered_without_sales_double_count
         assert f'"{sales_code}":' not in mapping_block
 
     assert "map_tipo_movimiento_softrestaurant" in movement_source
+
+def test_soft_ledger_accepts_canonical_warehouse_id_scope():
+    source = SOFT.read_text(encoding="utf-8")
+    assert "CONVERT(varchar(50), a.AlmacenID)" in source
+    assert "a.CodigoAlmacen" in source
+    assert "a.NombreAlmacen" in source
+    assert "params.extend(warehouses)" in source
+
