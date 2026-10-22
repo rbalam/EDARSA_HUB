@@ -65,3 +65,10 @@ def test_soft_ledger_accepts_canonical_warehouse_id_scope():
     assert "a.NombreAlmacen" in source
     assert "params.extend(warehouses)" in source
 
+def test_inventory_backfill_does_not_hardcode_unit_exclusions():
+    backfill = (ROOT / "tests" / "backfill_inventario.py").read_text(encoding="utf-8")
+    assert "CIENFUEGOS se omite" not in backfill
+    assert "UNIDADES = [u.strip()" in backfill
+    assert "s.activo = 1" in backfill
+    assert "u.activo = 1" in backfill
+
