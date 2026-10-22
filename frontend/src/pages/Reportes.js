@@ -1812,6 +1812,10 @@ const Reportes = () => {
         .filter((a) => a.almacen_id || a.nombre);
 
       response = await api.post('/reports/inventory-analysis', {
+        // Contrato canónico: el backend autoriza la unidad y reconstruye
+        // server_id/sucursal internamente. server_id se conserva temporalmente
+        // por compatibilidad con consumidores legacy.
+        unidad: String(selectedUnidad || '').trim(),
         server_id: String(filters.server_id || '').trim(),
         sucursal_id: filters.sucursal_id,
         sucursal: filters.sucursal,
