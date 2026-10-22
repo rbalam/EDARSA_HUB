@@ -114,6 +114,7 @@ def _acquire_sync_lock(run_id: str) -> bool:
         conn = get_edarsahub_pymssql_connection(
             timeout=15,
             login_timeout=10,
+            profile="writer",
         )
         cursor = conn.cursor(as_dict=True)
         now_mx = datetime.now(ZoneInfo("America/Mexico_City"))
@@ -226,6 +227,7 @@ def _release_sync_lock(run_id: str, status: str, processed: int, errors: int, er
         conn = get_edarsahub_pymssql_connection(
             timeout=15,
             login_timeout=10,
+            profile="writer",
         )
         cursor = conn.cursor()
         now_mx = datetime.now(ZoneInfo("America/Mexico_City"))
