@@ -65,9 +65,15 @@ def _fetch_soft_ledger_net(
     warehouses = _unique(warehouses)
     if warehouses:
         ph = ",".join(["%s"] * len(warehouses))
+        # El scope puede llegar como AlmacenID canónico (int serializado), código
+        # de origen o nombre visible. Priorizar/aceptar los tres evita que un
+        # inventario físico válido deje movimientos en cero por discrepancia de
+        # identificador entre snapshots y el ledger canónico.
         warehouse_filter = (
-            f" AND (a.CodigoAlmacen IN ({ph}) OR a.NombreAlmacen IN ({ph}))"
+            f" AND (CONVERT(varchar(50), a.AlmacenID) IN ({ph}) "
+            f"OR a.CodigoAlmacen IN ({ph}) OR a.NombreAlmacen IN ({ph}))"
         )
+        params.extend(warehouses)
         params.extend(warehouses)
         params.extend(warehouses)
 
