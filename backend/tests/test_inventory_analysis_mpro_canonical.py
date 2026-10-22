@@ -36,7 +36,9 @@ def test_mpro_analysis_is_nolive_by_contract():
     assert "Compras_Inventarios_Fisicos_Sync" in source
     assert "Inventario_MovimientosDetalle" in source
     assert "Comercial_Inteligencia_VentasDetalleProducto" in source
-    assert "RecetasService.get_componentes_bulk" in source
+    assert "Sync_Productos_Compuestos" in source
+    assert "PRODUCTO_KIT" in source
+    assert "Sync_Productos_Recetas" in source
 
 
 def test_inventory_analysis_mpro_no_longer_returns_pending_guard():
@@ -57,3 +59,10 @@ def test_mpro_analysis_preserves_unit_and_branch_scope():
     assert "resolver_sucursal_id(server_id, sucursal_origen_id)" in source
     assert "m.SucursalID=%s" in source
     assert "m.EmpresaID=%s" in source
+
+
+def test_mpro_components_prefers_product_kit_contract():
+    source = MPRO.read_text(encoding="utf-8")
+    assert "FuenteDetalle" in source
+    assert "NOT EXISTS" in source
+    assert "MPRO_COMPONENTS_SOURCE_INCOMPLETE" in source
