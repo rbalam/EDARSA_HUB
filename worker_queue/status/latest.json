@@ -4,37 +4,43 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "adbd7d2531fd15a474a4f9f12f4977cd38942c8c",
-  "generated_at_utc": "2026-10-22T04:43:41Z",
+  "generated_at_utc": "2026-10-22T04:45:01Z",
   "history": {
-    "done_total_local": 1532,
+    "done_total_local": 1533,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1290,
-    "results_total_local": 2591
+    "results_total_local": 2592
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 451,
+      "age_seconds": 532,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-GATE2-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 298,
+      "age_seconds": 60,
+      "job_id": "BOS-COSTOS-POS-RECONCILIATION-SCHEMA-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 378,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-MINIMAL-REPAIR-GATE-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1438,
+      "age_seconds": 1519,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-RECONCILIATION-AUDIT-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3185,
+      "age_seconds": 3266,
       "job_id": "EDARSAHUB-BOS-MIRROR-RESEED-ARTIFACT-GUARD-REPAIR-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,15 +54,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "remote_development_sha": "adbd7d2531fd15a474a4f9f12f4977cd38942c8c",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-22T04:43:28Z",
-    "last_receive_utc": "2026-10-22T04:43:41Z",
-    "last_terminal_utc": "2026-10-22T04:38:42Z",
+    "last_cycle_utc": "2026-10-22T04:44:59Z",
+    "last_receive_utc": "2026-10-22T04:44:54Z",
+    "last_terminal_utc": "2026-10-22T04:44:00Z",
     "pid": "553263",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "70602c7c5cf6d0633d601992869b931fe42ae18d",
