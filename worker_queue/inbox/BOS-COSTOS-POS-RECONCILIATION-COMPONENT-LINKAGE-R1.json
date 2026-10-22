@@ -1,0 +1,63 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "componentes_insumos_por_codigo",
+          "sql": "\nWITH insumos AS (\n    SELECT ServerID, SystemType, CodigoFuente,\n           COUNT_BIG(*) AS coincidencias\n    FROM dbo.Sync_Productos_Insumos\n    GROUP BY ServerID, SystemType, CodigoFuente\n)\nSELECT CONVERT(varchar(36), r.ServerID) AS ServerID,\n       r.SystemType,\n       COUNT_BIG(*) AS componentes,\n       SUM(CASE WHEN i.coincidencias IS NULL\n           THEN 1 ELSE 0 END) AS sin_insumo,\n       SUM(CASE WHEN i.coincidencias = 1\n           THEN 1 ELSE 0 END) AS coincidencia_unica,\n       SUM(CASE WHEN i.coincidencias > 1\n           THEN 1 ELSE 0 END) AS coincidencia_ambigua\nFROM dbo.Sync_Productos_Recetas r\nLEFT JOIN insumos i\n  ON i.ServerID = r.ServerID\n AND i.SystemType = r.SystemType\n AND i.CodigoFuente = r.ComponenteCodigoFuente\nGROUP BY r.ServerID, r.SystemType\nORDER BY r.ServerID, r.SystemType\n"
+        },
+        {
+          "name": "cobertura_codigos_componentes",
+          "sql": "\nSELECT CONVERT(varchar(36), ServerID) AS ServerID,\n       SystemType,\n       COUNT_BIG(*) AS componentes,\n       COUNT(DISTINCT ComponenteCodigoFuente)\n           AS codigos_distintos,\n       SUM(CASE WHEN LTRIM(RTRIM(ComponenteCodigoFuente)) = ''\n           THEN 1 ELSE 0 END) AS codigos_vacios,\n       SUM(CASE WHEN Activo = 1 THEN 1 ELSE 0 END)\n           AS activos,\n       SUM(CASE WHEN Activo = 0 THEN 1 ELSE 0 END)\n           AS inactivos,\n       SUM(CASE WHEN Activo IS NULL THEN 1 ELSE 0 END)\n           AS activo_desconocido\nFROM dbo.Sync_Productos_Recetas\nGROUP BY ServerID, SystemType\nORDER BY ServerID, SystemType\n"
+        },
+        {
+          "name": "productos_padre_sin_match",
+          "sql": "\nWITH productos AS (\n    SELECT ServerID, SystemType, CodigoFuente,\n           COUNT_BIG(*) AS coincidencias\n    FROM dbo.Sync_Productos\n    GROUP BY ServerID, SystemType, CodigoFuente\n)\nSELECT TOP (100)\n       CONVERT(varchar(36), r.ServerID) AS ServerID,\n       r.SystemType,\n       r.ProductoCodigoFuente,\n       COUNT_BIG(*) AS componentes_sin_producto,\n       SUM(CASE WHEN r.Activo = 1\n           THEN 1 ELSE 0 END) AS activos,\n       SUM(CASE WHEN r.Activo = 0\n           THEN 1 ELSE 0 END) AS inactivos,\n       SUM(CASE WHEN r.Activo IS NULL\n           THEN 1 ELSE 0 END) AS estado_desconocido\nFROM dbo.Sync_Productos_Recetas r\nLEFT JOIN productos p\n  ON p.ServerID = r.ServerID\n AND p.SystemType = r.SystemType\n AND p.CodigoFuente = r.ProductoCodigoFuente\nWHERE p.coincidencias IS NULL\nGROUP BY r.ServerID, r.SystemType, r.ProductoCodigoFuente\nORDER BY componentes_sin_producto DESC,\n         r.SystemType, r.ProductoCodigoFuente\n"
+        },
+        {
+          "name": "insumos_actividad_y_costos",
+          "sql": "\nSELECT CONVERT(varchar(36), ServerID) AS ServerID,\n       SystemType,\n       COUNT_BIG(*) AS insumos,\n       SUM(CASE WHEN Activo = 1 THEN 1 ELSE 0 END)\n           AS activos,\n       SUM(CASE WHEN Activo = 0 THEN 1 ELSE 0 END)\n           AS inactivos,\n       SUM(CASE WHEN Activo IS NULL THEN 1 ELSE 0 END)\n           AS estado_desconocido,\n       SUM(CASE WHEN Costo IS NOT NULL THEN 1 ELSE 0 END)\n           AS con_costo,\n       SUM(CASE WHEN CostoPromedio IS NOT NULL\n           THEN 1 ELSE 0 END) AS con_costo_promedio,\n       SUM(CASE WHEN UltimoCosto IS NOT NULL\n           THEN 1 ELSE 0 END) AS con_ultimo_costo\nFROM dbo.Sync_Productos_Insumos\nGROUP BY ServerID, SystemType\nORDER BY ServerID, SystemType\n"
+        },
+        {
+          "name": "integridad_costos_recetas",
+          "sql": "\nSELECT CONVERT(varchar(36), ServerID) AS ServerID,\n       SystemType,\n       COUNT_BIG(*) AS componentes,\n       SUM(CASE WHEN CostoUnitario IS NULL\n           THEN 1 ELSE 0 END) AS sin_costo_unitario,\n       SUM(CASE WHEN CostoTotal IS NULL\n           THEN 1 ELSE 0 END) AS sin_costo_total,\n       SUM(CASE WHEN CostoUnitario = 0\n           THEN 1 ELSE 0 END) AS costo_unitario_cero,\n       SUM(CASE WHEN CostoTotal = 0\n           THEN 1 ELSE 0 END) AS costo_total_cero,\n       SUM(CASE WHEN Cantidad <= 0\n           THEN 1 ELSE 0 END) AS cantidad_no_positiva\nFROM dbo.Sync_Productos_Recetas\nGROUP BY ServerID, SystemType\nORDER BY ServerID, SystemType\n"
+        },
+        {
+          "name": "insumos_codigos_duplicados",
+          "sql": "\nWITH duplicados AS (\n    SELECT ServerID, SystemType, CodigoFuente,\n           COUNT_BIG(*) AS registros\n    FROM dbo.Sync_Productos_Insumos\n    GROUP BY ServerID, SystemType, CodigoFuente\n    HAVING COUNT_BIG(*) > 1\n)\nSELECT CONVERT(varchar(36), ServerID) AS ServerID,\n       SystemType,\n       COUNT_BIG(*) AS codigos_duplicados,\n       SUM(registros) AS registros_implicados\nFROM duplicados\nGROUP BY ServerID, SystemType\nORDER BY ServerID, SystemType\n"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-POS-RECONCILIATION-COMPONENT-LINKAGE-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Diagnosticar vinculacion de componentes de recetas con insumos por claves de origen, faltantes de productos y estado de actividad. Solo lectura.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "bos-costos-pos-reconciliation",
+    "email": "carlosruz@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "bos-orchestrator"
+  },
+  "scheduling": {
+    "bounded_context": "COSTOS_MARGENES",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": [
+      "costos_pos_component_linkage_r1"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
