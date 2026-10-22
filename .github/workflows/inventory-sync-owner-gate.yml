@@ -8,6 +8,9 @@ on:
       - "backend/core/scheduler/scheduler_manager.py"
       - "backend/modules/scheduler_trigger_inventarios/**"
       - "backend/server.py"
+      - "backend/core/inventarios/analysis_mpro_canonical.py"
+      - "backend/core/recetas_service.py"
+      - "backend/tests/test_inventory_analysis_mpro_canonical.py"
       - "backend/tests/test_inventory_scheduler_trigger.py"
       - "backend/tests/test_sync_compras_run_job_now_status.py"
       - ".github/workflows/prod-sync-inventarios-trigger.yml"
@@ -45,6 +48,9 @@ jobs:
           python -m py_compile \
             backend/core/scheduler/scheduler_manager.py \
             backend/modules/scheduler_trigger_inventarios/routes.py \
+            backend/core/inventarios/analysis_mpro_canonical.py \
+            backend/core/recetas_service.py \
+            backend/tests/test_inventory_analysis_mpro_canonical.py \
             backend/tests/test_inventory_scheduler_trigger.py \
             backend/tests/test_sync_compras_run_job_now_status.py
 
@@ -52,8 +58,16 @@ jobs:
         working-directory: backend
         env:
           PYTHONPATH: ${{ github.workspace }}/backend
+          EDARSAHUB_SQL_HOST: 127.0.0.1
+          EDARSAHUB_SQL_PORT: "1433"
+          EDARSAHUB_SQL_DATABASE: EDARSAHUB_TEST
+          EDARSAHUB_SQL_USER: test_reader
+          EDARSAHUB_SQL_PASSWORD: test_reader_password
+          EDARSAHUB_SQL_WRITER_USER: test_writer
+          EDARSAHUB_SQL_WRITER_PASSWORD: test_writer_password
         run: |
           python -m pytest -q --tb=short \
+            tests/test_inventory_analysis_mpro_canonical.py \
             tests/test_inventory_scheduler_trigger.py \
             tests/test_sync_compras_run_job_now_status.py
 

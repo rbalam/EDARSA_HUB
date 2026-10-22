@@ -4569,6 +4569,7 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
         or report_params.get('unidad_id')
         or ''
     ).strip()
+    unidad_scope = None
 
     if unidad_token:
         unidad_scope = await resolve_authorized_unidad_scope(
@@ -5825,17 +5826,62 @@ GROUP BY Codigo
             return await _generate_soft_inventory_analysis_canonical()
 
         if is_mpro_system(server.get('system_type')):
-            raise HTTPException(
-                status_code=503,
-                detail={
-                    "code": "INVENTORY_ANALYSIS_CANONICAL_PENDING",
-                    "message": (
-                        "Análisis de inventario MPRO pendiente de fuente canónica EDARSAHUB. "
-                        "Por regla NO-LIVE no se consulta POS en vivo."
-                    ),
-                    "source": "EDARSAHUB_SQL_CANONICAL",
-                },
+            if unidad_scope is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "code": "MPRO_CANONICAL_UNIT_REQUIRED",
+                        "message": (
+                            "ManagementPro requiere unidad canónica para "
+                            "desambiguar sucursal sin mezclar datos."
+                        ),
+                        "source": "EDARSAHUB_SQL_CANONICAL",
+                    },
+                )
+
+            from core.inventarios.analysis_mpro_canonical import (
+                MproInventoryAnalysisSourceError,
+                generate_mpro_inventory_analysis_canonical,
             )
+
+            logging.info(
+                "[MPRO-CANONICAL-NOLIVE] unidad=%s server=%s sucursal=%s "
+                "folios_ini=%s folios_fin=%s",
+                unidad_scope.unidad_codigo,
+                server_id,
+                unidad_scope.sucursal_origen_id,
+                lista_folios_ini,
+                lista_folios_fin,
+            )
+            try:
+                return generate_mpro_inventory_analysis_canonical(
+                    server_id=server_id,
+                    unidad_pk=unidad_scope.unidad_pk,
+                    unidad_codigo=unidad_scope.unidad_codigo,
+                    sucursal_origen_id=unidad_scope.sucursal_origen_id,
+                    folios_iniciales=lista_folios_ini,
+                    folios_finales=lista_folios_fin,
+                    fecha_ini=fecha_ini,
+                    fecha_fin=fecha_fin,
+                    almacenes=almacenes or ([almacen] if almacen else []),
+                    categorias=filtro_categorias_frontend,
+                    familias=filtro_familias_frontend,
+                    subfamilias=filtro_subfamilias_frontend,
+                )
+            except MproInventoryAnalysisSourceError as source_error:
+                logging.warning(
+                    "[MPRO-CANONICAL-NOLIVE] source_error code=%s message=%s",
+                    source_error.code,
+                    source_error.message,
+                )
+                raise HTTPException(
+                    status_code=source_error.status_code,
+                    detail={
+                        "code": source_error.code,
+                        "message": source_error.message,
+                        "source": "EDARSAHUB_SQL_CANONICAL",
+                    },
+                )
 
         raise HTTPException(
             status_code=400,
