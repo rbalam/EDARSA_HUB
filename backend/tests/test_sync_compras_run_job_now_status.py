@@ -180,3 +180,27 @@ def test_extended_sync_steps_default_preserves_compatibility(monkeypatch):
         "ordenes",
         "recepciones",
     ]
+
+
+def test_extended_sync_steps_default_disabled_in_preview(monkeypatch):
+    from core.scheduler.jobs import sync_compras_job
+
+    monkeypatch.setenv("EDARSA_ENV", "PREVIEW")
+    monkeypatch.delenv(
+        "SCHEDULER_SYNC_COMPRAS_EXTENDED_ENABLED",
+        raising=False,
+    )
+
+    assert sync_compras_job._extended_sync_steps() == []
+
+
+def test_extended_sync_steps_can_be_explicitly_enabled_in_preview(monkeypatch):
+    from core.scheduler.jobs import sync_compras_job
+
+    monkeypatch.setenv("EDARSA_ENV", "PREVIEW")
+    monkeypatch.setenv(
+        "SCHEDULER_SYNC_COMPRAS_EXTENDED_ENABLED",
+        "true",
+    )
+
+    assert len(sync_compras_job._extended_sync_steps()) == 6
