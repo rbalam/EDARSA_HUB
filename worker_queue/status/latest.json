@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "adbd7d2531fd15a474a4f9f12f4977cd38942c8c",
-  "generated_at_utc": "2026-10-22T05:23:37Z",
+  "generated_at_utc": "2026-10-22T05:24:54Z",
   "history": {
     "done_total_local": 1537,
     "pending_total_local": 0,
@@ -16,43 +16,43 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1686,
+      "age_seconds": 1763,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-EMPRESA-MAPPING-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2847,
+      "age_seconds": 2924,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-GATE2-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1233,
+      "age_seconds": 1310,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-IDENTITY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1979,
+      "age_seconds": 2056,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-RELATIONS-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2376,
+      "age_seconds": 2453,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-SCHEMA-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 100,
+      "age_seconds": 177,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-SOURCE-MAPPING-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2694,
+      "age_seconds": 2771,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-MINIMAL-REPAIR-GATE-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,8 +72,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-22T05:23:30Z",
-    "last_receive_utc": "2026-10-22T05:23:25Z",
+    "last_cycle_utc": "2026-10-22T05:24:53Z",
+    "last_receive_utc": "2026-10-22T05:24:48Z",
     "last_terminal_utc": "2026-10-22T05:21:57Z",
     "pid": "290",
     "runtime_fingerprint": {
