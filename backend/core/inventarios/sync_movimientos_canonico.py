@@ -22,7 +22,7 @@ from __future__ import annotations
 import logging
 from typing import Dict, Any, Callable, Optional
 
-from modules.compras.sync_service import get_edarsahub_connection
+from modules.compras.sync_service import get_edarsahub_writer_connection
 from core.inventarios.resolver_canonico import (
     resolver_producto_id,
     resolver_almacen_id,
@@ -108,7 +108,7 @@ def sync_movimientos_canonico(
                 "descartados": 0, "pendientes": {"empresa": "TODO", "motivo": emp.motivo}}
     empresa_id = emp.canonical_id
 
-    conn = get_edarsahub_connection()
+    conn = get_edarsahub_writer_connection()
     cur = conn.cursor(as_dict=True)
 
     # 3) Leer ORIGEN
