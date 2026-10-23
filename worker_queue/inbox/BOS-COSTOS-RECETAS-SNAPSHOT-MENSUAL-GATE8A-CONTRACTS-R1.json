@@ -1,0 +1,65 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 1500,
+        "paths": [
+          "backend/modules/sync_recetas",
+          "backend/modules/comercial",
+          "backend/core/scheduler",
+          "backend/modules/scheduler_runtime",
+          "backend/scheduler_service.py",
+          "backend/modules/costos",
+          "backend/modules/costos_margenes"
+        ],
+        "search_terms": [
+          "Comercial_RecetasSnapshot",
+          "Comercial_RecetasSnapshotDetalle",
+          "Sync_Productos_Recetas",
+          "Sync_Productos",
+          "CREATE TABLE",
+          "CREATE UNIQUE INDEX",
+          "snapshot_mensual",
+          "costo_receta",
+          "costo_unitario",
+          "costo_total",
+          "umbral",
+          "alertas_margen",
+          "SchedulerManager",
+          "register_jobs",
+          "Scheduler_DistributedLocks",
+          "Scheduler_BitacoraJobs",
+          "Sys_Scheduler_RuntimeState",
+          "require_explicit_permission"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8A-CONTRACTS-R1",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY los contratos existentes para preparar la implementacion quirurgica de snapshots mensuales inmutables de costos de recetas. Localizar definiciones y referencias de las tablas dbo.Comercial_RecetasSnapshot y dbo.Comercial_RecetasSnapshotDetalle; identificar columnas, claves, indices y restricciones cuando exista evidencia disponible. Examinar el origen canonico de costos desde Sync_Productos y Sync_Productos_Recetas. Identificar contratos de reglas de margen, umbrales, alertas y deduplicacion. Localizar puntos de registro en SchedulerManager, configuracion, locks SQL, bitacora y estado persistente. Evaluar requisitos de atomicidad, idempotencia, catch-up, concurrencia, RBAC, reversibilidad y aislamiento por unidad. Separar evidencia de repositorio, evidencia SQL fisica y supuestos no verificados. No crear tablas, no ejecutar migraciones, no modificar archivos, no alterar jobs, no tocar Produccion y no crear workers alternativos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Costos Recetas Snapshot Mensual R8A",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
