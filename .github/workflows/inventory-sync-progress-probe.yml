@@ -70,17 +70,17 @@ jobs:
 
           cur.execute("""
               SELECT TOP 20
-                  UnidadNegocioID,
-                  ServerID,
-                  SyncType,
-                  Status,
-                  RecordsSynced,
-                  ErrorMessage,
-                  SyncStart,
-                  SyncEnd
+                  unidad_negocio_id,
+                  server_id,
+                  sync_type,
+                  status,
+                  records_synced,
+                  error_message,
+                  sync_start,
+                  sync_end
               FROM dbo.Compras_Sync_Log
-              WHERE SyncType IN ('ALMACENES','MOVIMIENTOS')
-              ORDER BY SyncEnd DESC
+              WHERE sync_type IN ('ALMACENES','MOVIMIENTOS')
+              ORDER BY sync_end DESC
           """)
           print("INVENTORY_SYNC_LOGS=" + json.dumps(
               cur.fetchall() or [],
