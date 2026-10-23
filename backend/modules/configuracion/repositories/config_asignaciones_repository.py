@@ -423,6 +423,7 @@ class ConfigAsignacionesRepository:
                 LTRIM(RTRIM(a.NombreAlmacen)) AS nombre,
                 LTRIM(RTRIM(a.NombreAlmacen)) AS almacen,
                 a.TipoAlmacen AS tipo_almacen,
+                ISNULL(a.PermiteVentas, 0) AS permite_ventas,
                 'EDARSAHUB_SQL' AS source
             FROM dbo.Inventario_Almacenes a
             INNER JOIN sucursal_canonica s ON s.SucursalID = a.SucursalID

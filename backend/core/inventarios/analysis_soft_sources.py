@@ -203,6 +203,209 @@ def _explode_sales_to_consumption(
     return dict(consumption)
 
 
+def get_soft_movement_detail(
+    cursor,
+    *,
+    server_id: str,
+    unidad_codigo: str,
+    sucursal_origen_id: str,
+    componente_codigo: str,
+    fecha_ini,
+    fecha_fin,
+    warehouses: Sequence[str] = (),
+) -> Dict[str, Any]:
+    """Detalle NO-LIVE que reconcilia con _fetch_soft_ledger_net()."""
+    empresa = resolver_empresa_id(unidad_codigo)
+    sucursal = resolver_sucursal_id(server_id, sucursal_origen_id or None)
+    if not empresa.resuelto or not sucursal.resuelto:
+        return {"rows": [], "totales": {"entradas": 0.0, "salidas": 0.0, "neto": 0.0}}
+
+    codigo = _text(componente_codigo)
+    codigo_sin_prefijo = codigo[1:] if codigo and codigo[0].isalpha() else codigo
+    codigos = _unique([codigo, codigo_sin_prefijo])
+    if not codigos:
+        return {"rows": [], "totales": {"entradas": 0.0, "salidas": 0.0, "neto": 0.0}}
+
+    codigo_ph = ",".join(["%s"] * len(codigos))
+    cursor.execute(
+        f"""
+        SELECT DISTINCT ProductoID
+        FROM dbo.Producto_MapeoOrigen
+        WHERE LOWER(CONVERT(varchar(36),ServerID))=LOWER(%s)
+          AND UPPER(SystemType) IN ('SOFTRESTAURANT','SOFTRESTAURANT_PRO')
+          AND CodigoFuente IN ({codigo_ph})
+          AND Activo=1
+        """,
+        tuple([server_id, *codigos]),
+    )
+    producto_ids = [row.get("ProductoID") for row in (cursor.fetchall() or []) if row.get("ProductoID") is not None]
+    if not producto_ids:
+        return {"rows": [], "totales": {"entradas": 0.0, "salidas": 0.0, "neto": 0.0}}
+
+    prod_ph = ",".join(["%s"] * len(producto_ids))
+    params: List[Any] = [
+        *producto_ids,
+        int(empresa.canonical_id),
+        int(sucursal.canonical_id),
+        fecha_ini,
+        fecha_fin,
+    ]
+    warehouse_filter = ""
+    warehouses = _unique(warehouses)
+    if warehouses:
+        wh_ph = ",".join(["%s"] * len(warehouses))
+        warehouse_filter = (
+            f" AND (CONVERT(varchar(50),a.AlmacenID) IN ({wh_ph}) "
+            f"OR a.CodigoAlmacen IN ({wh_ph}) OR a.NombreAlmacen IN ({wh_ph}))"
+        )
+        params.extend(warehouses)
+        params.extend(warehouses)
+        params.extend(warehouses)
+
+    cursor.execute(
+        f"""
+        SELECT
+            m.FechaMovimiento AS fecha,
+            tm.Codigo AS concepto,
+            tm.Descripcion AS descripcion,
+            ISNULL(d.Cantidad,0) AS cantidad,
+            a.NombreAlmacen AS almacen,
+            ISNULL(m.FolioReferencia,'') AS referencia,
+            UPPER(LTRIM(RTRIM(ISNULL(tm.Naturaleza,'')))) AS naturaleza
+        FROM dbo.Inventario_MovimientosDetalle d
+        INNER JOIN dbo.Inventario_Movimientos m
+            ON m.MovimientoID=d.MovimientoID
+        INNER JOIN dbo.Inventario_TipoMovimiento tm
+            ON tm.TipoMovimientoID=m.TipoMovimientoID
+        LEFT JOIN dbo.Inventario_Almacenes a
+            ON a.AlmacenID=m.AlmacenID
+        WHERE d.ProductoID IN ({prod_ph})
+          AND m.EmpresaID=%s
+          AND m.SucursalID=%s
+          AND m.FechaMovimiento >= %s
+          AND m.FechaMovimiento <= %s
+          AND ISNULL(m.Activo,1)=1
+          {warehouse_filter}
+        ORDER BY m.FechaMovimiento DESC
+        """,
+        tuple(params),
+    )
+
+    rows: List[Dict[str, Any]] = []
+    entradas = 0.0
+    salidas = 0.0
+    for row in cursor.fetchall() or []:
+        qty = abs(_float(row.get("cantidad")))
+        naturaleza = _text(row.get("naturaleza")).upper()
+        es_entrada = naturaleza in ("E", "EN", "ENTRADA")
+        signed = qty if es_entrada else -qty
+        if es_entrada:
+            entradas += qty
+        else:
+            salidas += qty
+        rows.append({
+            "fecha": row.get("fecha"),
+            "concepto": _text(row.get("concepto")),
+            "descripcion": _text(row.get("descripcion")),
+            "cantidad": signed,
+            "almacen": _text(row.get("almacen")),
+            "referencia": _text(row.get("referencia")),
+            "tipo": "E" if es_entrada else "S",
+        })
+
+    return {
+        "rows": rows,
+        "totales": {
+            "entradas": entradas,
+            "salidas": salidas,
+            "neto": entradas - salidas,
+        },
+    }
+
+
+def get_soft_sales_consumption_detail(
+    cursor,
+    *,
+    unidad_codigo: str,
+    server_id: str,
+    componente_codigo: str,
+    fecha_ini,
+    fecha_fin,
+) -> Dict[str, Any]:
+    """Detalle NO-LIVE que reconcilia exactamente con _explode_sales_to_consumption()."""
+    componente_codigo = _text(componente_codigo)
+    if not componente_codigo:
+        return {"rows": [], "total": 0.0}
+
+    columns = _fetch_table_columns(cursor, "Comercial_Inteligencia_VentasDetalleProducto")
+    required = {"unidad_negocio_id", "fecha_operacion", "producto_codigo_fuente", "cantidad"}
+    if not required.issubset(columns):
+        return {"rows": [], "total": 0.0}
+
+    extra = []
+    params: List[Any] = [unidad_codigo, fecha_ini, fecha_fin]
+    if "activo" in columns:
+        extra.append("ISNULL(activo,1)=1")
+    if "cancelado_origen" in columns:
+        extra.append("ISNULL(cancelado_origen,0)=0")
+    if "es_kpi_valido" in columns:
+        extra.append("ISNULL(es_kpi_valido,1)=1")
+    if "server_id" in columns:
+        extra.append("LOWER(ISNULL(server_id,''))=LOWER(%s)")
+        params.append(server_id)
+
+    cursor.execute(
+        f"""
+        SELECT CAST(fecha_operacion AS date) AS fecha_operacion,
+               producto_codigo_fuente,
+               SUM(ISNULL(cantidad,0)) AS cantidad
+        FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
+        WHERE unidad_negocio_id=%s
+          AND fecha_operacion >= CAST(%s AS date)
+          AND fecha_operacion <= CAST(%s AS date)
+          AND NULLIF(LTRIM(RTRIM(producto_codigo_fuente)),'') IS NOT NULL
+          {" AND " + " AND ".join(extra) if extra else ""}
+        GROUP BY CAST(fecha_operacion AS date), producto_codigo_fuente
+        """,
+        tuple(params),
+    )
+    sales_rows = list(cursor.fetchall() or [])
+    if not sales_rows:
+        return {"rows": [], "total": 0.0}
+
+    product_codes = _unique(row.get("producto_codigo_fuente") for row in sales_rows)
+    components = RecetasService.get_componentes_bulk(server_id, product_codes)
+
+    factor_by_product: Dict[str, float] = defaultdict(float)
+    for row in components or []:
+        if _text(row.get("componente_codigo_fuente")) != componente_codigo:
+            continue
+        product_code = _text(row.get("producto_codigo_fuente"))
+        if product_code:
+            factor_by_product[product_code] += _float(row.get("cantidad"))
+
+    detail_rows: List[Dict[str, Any]] = []
+    total = 0.0
+    for row in sales_rows:
+        product_code = _text(row.get("producto_codigo_fuente"))
+        factor = factor_by_product.get(product_code, 0.0)
+        if not factor:
+            continue
+        consumo = _float(row.get("cantidad")) * factor
+        if not consumo:
+            continue
+        total += consumo
+        detail_rows.append({
+            "fecha": row.get("fecha_operacion"),
+            "producto_venta": product_code,
+            "cantidad_venta": _float(row.get("cantidad")),
+            "factor_consumo": factor,
+            "cantidad_consumo": consumo,
+        })
+
+    return {"rows": detail_rows, "total": total}
+
+
 def fetch_soft_activity_canonical(
     cursor,
     *,

@@ -785,7 +785,13 @@ const Reportes = () => {
       rows.forEach(item => {
         const almacenId = String(item.id ?? item.almacen_id ?? item.idalmacen ?? '').trim();
         const almacenNombre = String(item.nombre ?? item.almacen ?? '').trim();
-        const almacenTipo = Number(item.tipo ?? item.tipo_almacen ?? item.almacen_tipo ?? 1);
+        const rawTipo = item.tipo ?? item.tipo_almacen ?? item.almacen_tipo ?? '';
+        const tipoTexto = String(rawTipo ?? '').trim().toUpperCase();
+        const tipoNumero = Number(rawTipo);
+        const rawPermiteVentas = item.permite_ventas ?? item.PermiteVentas;
+        const permiteVentas = rawPermiteVentas === undefined || rawPermiteVentas === null
+          ? (tipoNumero === 1 || tipoTexto === 'CONSUMO')
+          : [true, 1, '1'].includes(rawPermiteVentas);
 
         if (!almacenId && !almacenNombre) return;
 
@@ -801,9 +807,10 @@ const Reportes = () => {
             label: nombreFinal,
             value: nombreFinal,
             source: 'EDARSAHUB_SQL',
-            tipo: almacenTipo,
-            tipo_almacen: almacenTipo,
-            unidad_natural: almacenTipo === 2 ? 'presentaciones' : 'insumos'
+            tipo: rawTipo,
+            tipo_almacen: rawTipo,
+            permite_ventas: permiteVentas,
+            unidad_natural: permiteVentas ? 'insumos' : 'presentaciones'
           });
         }
       });
@@ -1802,15 +1809,21 @@ const Reportes = () => {
         .map((a) => {
           const almacenId = String(a.almacen_id ?? a.id ?? '').trim();
           const almacenNombre = String(a.nombre ?? a.almacen ?? a.Al_Descripcion ?? a.label ?? '').trim();
-          const almacenTipo = Number(a.tipo ?? a.tipo_almacen ?? a.almacen_tipo ?? 1);
+          const rawTipo = a.tipo ?? a.tipo_almacen ?? a.almacen_tipo ?? '';
+          const tipoTexto = String(rawTipo ?? '').trim().toUpperCase();
+          const tipoNumero = Number(rawTipo);
+          const permiteVentas = a.permite_ventas === undefined || a.permite_ventas === null
+            ? (tipoNumero === 1 || tipoTexto === 'CONSUMO')
+            : [true, 1, '1'].includes(a.permite_ventas);
           return {
             id: almacenId,
             almacen_id: almacenId,
             nombre: almacenNombre,
             almacen: almacenNombre,
-            tipo: almacenTipo,
-            tipo_almacen: almacenTipo,
-            unidad_natural: a.unidad_natural || (almacenTipo === 2 ? 'presentaciones' : 'insumos')
+            tipo: rawTipo,
+            tipo_almacen: rawTipo,
+            permite_ventas: permiteVentas,
+            unidad_natural: a.unidad_natural || (permiteVentas ? 'insumos' : 'presentaciones')
           };
         })
         .filter((a) => a.almacen_id || a.nombre);
