@@ -134,3 +134,23 @@ def test_inventory_movement_authorization_does_not_touch_commercial_syncs():
         assert protected_name not in movement_source
         assert protected_name not in job_source
 
+def test_soft_sync_compras_runs_almacenes_before_movimientos():
+    job_source = (
+        ROOT / "core" / "scheduler" / "jobs" / "sync_compras_job.py"
+    ).read_text(encoding="utf-8")
+
+    assert '("almacenes", sync_almacenes_from_server, "ALMACENES")' in job_source
+    assert 'sync_steps.extend(_core_inventory_sync_steps())' in job_source
+    assert "_execute_inventory_sql_with_timeout" in job_source
+
+
+def test_soft_movements_keep_resolvable_rows_when_some_are_pending():
+    movement_source = (
+        ROOT / "core" / "inventarios" / "sync_movimientos_canonico.py"
+    ).read_text(encoding="utf-8")
+
+    assert "PARTIAL_WITH_PENDING" in movement_source
+    assert "No hay movimientos SoftRestaurant resolubles en la ventana" in movement_source
+    assert "DELETE FROM Inventario_Movimientos" not in movement_source
+    assert "DELETE d" not in movement_source
+
