@@ -58,14 +58,11 @@ def _query_origen(system_type: str, dias_atras: int, sucursal_origen: str = None
             WHERE Mv_Fecha >= DATEADD(DAY, -{int(dias_atras)}, GETDATE())
               {filtro_suc}
         """
-    # SoftRestaurant usa DOS fuentes complementarias verificadas:
-    # - movsinv: movimientos de INSUMOS (almacenes operativos/consumo).
-    # - movtosalmacen: movimientos de PRESENTACIONES.
-    #
-    # El modelo canónico trabaja a nivel de insumo (Producto_MapeoOrigen.CodigoFuente
-    # = idinsumo). Por eso movtosalmacen resuelve la presentación -> idinsumo.
-    # Si el mismo movimiento existe en ambas tablas, movsinv tiene precedencia para
-    # evitar doble conteo al consolidar a nivel de insumo.
+    return _query_origen_soft_movsinv(dias_atras)
+
+
+def _query_origen_soft_movsinv(dias_atras: int) -> str:
+    """Lectura simple de movimientos directos por insumo."""
     return f"""
         SELECT
             i.fecha AS fecha,
@@ -74,6 +71,7 @@ def _query_origen(system_type: str, dias_atras: int, sucursal_origen: str = None
             RTRIM(LTRIM(i.idinsumo)) AS producto_cod,
             ISNULL(i.cantidad, 0) AS cantidad,
             ISNULL(i.costo, 0) AS costo,
+            CAST(i.movto AS VARCHAR(30)) AS source_movto,
             CAST(
                 CASE
                     WHEN i.movto IS NOT NULL
@@ -96,9 +94,16 @@ def _query_origen(system_type: str, dias_atras: int, sucursal_origen: str = None
         FROM movsinv i
         WHERE i.fecha >= DATEADD(DAY, -{int(dias_atras)}, GETDATE())
           AND NULLIF(RTRIM(LTRIM(i.idinsumo)), '') IS NOT NULL
+    """
 
-        UNION ALL
 
+def _query_origen_soft_presentaciones(dias_atras: int) -> str:
+    """Lectura simple de movimientos por presentación -> insumo.
+
+    La deduplicación contra movsinv ocurre en Python para evitar un NOT EXISTS
+    correlacionado costoso sobre el POS.
+    """
+    return f"""
         SELECT
             m.fecha AS fecha,
             CAST(m.idalmacen AS VARCHAR(50)) AS almacen_cod,
@@ -106,25 +111,44 @@ def _query_origen(system_type: str, dias_atras: int, sucursal_origen: str = None
             RTRIM(LTRIM(ip.idinsumo)) AS producto_cod,
             ISNULL(m.cantidad, 0) AS cantidad,
             ISNULL(m.costo, 0) AS costo,
+            CAST(m.movto AS VARCHAR(30)) AS source_movto,
             CAST(m.movto AS VARCHAR(30)) AS folio
         FROM movtosalmacen m
         JOIN insumospresentaciones ip
           ON ip.idinsumospresentaciones = m.idinsumospresentaciones
         WHERE m.fecha >= DATEADD(DAY, -{int(dias_atras)}, GETDATE())
           AND NULLIF(RTRIM(LTRIM(ip.idinsumo)), '') IS NOT NULL
-          AND NOT EXISTS (
-              SELECT 1
-              FROM movsinv i
-              WHERE i.fecha = m.fecha
-                AND RTRIM(LTRIM(i.idalmacen)) = RTRIM(LTRIM(m.idalmacen))
-                AND RTRIM(LTRIM(i.idconcepto)) = RTRIM(LTRIM(m.idconcepto))
-                AND RTRIM(LTRIM(i.idinsumo)) = RTRIM(LTRIM(ip.idinsumo))
-                AND (
-                    (i.movto = m.movto)
-                    OR (i.movto IS NULL AND m.movto IS NULL)
-                )
-          )
     """
+
+
+def _soft_dedupe_key(row: Dict[str, Any]) -> tuple:
+    return (
+        str(row.get("fecha") or ""),
+        str(row.get("almacen_cod") or "").strip(),
+        str(row.get("concepto") or "").strip().upper(),
+        str(row.get("producto_cod") or "").strip(),
+        str(row.get("source_movto") or "").strip(),
+    )
+
+
+def _merge_soft_movement_sources(
+    movsinv_rows: list,
+    presentation_rows: list,
+) -> tuple[list, int]:
+    """movsinv tiene precedencia sobre movtosalmacen para la misma llave."""
+    merged = list(movsinv_rows or [])
+    seen = {_soft_dedupe_key(row) for row in merged}
+    duplicates = 0
+
+    for row in presentation_rows or []:
+        key = _soft_dedupe_key(row)
+        if key in seen:
+            duplicates += 1
+            continue
+        seen.add(key)
+        merged.append(row)
+
+    return merged, duplicates
 
 
 def sync_movimientos_canonico(
@@ -170,21 +194,81 @@ def sync_movimientos_canonico(
     conn = get_edarsahub_writer_connection()
     cur = conn.cursor(as_dict=True)
 
-    # 3) Leer ORIGEN
-    rows = execute_sql_fn(
-        server_info["host"], server_info["port"], server_info["database"],
-        server_info["username"], server_info["password"], _query_origen(system_type, dias_atras, sucursal_origen),
-    )
-    if rows is None:
-        conn.close()
-        return {
-            "status": "ERROR",
-            "encabezados_synced": 0,
-            "detalles_synced": 0,
-            "descartados": 0,
-            "pendientes": pend,
-            "message": "No fue posible leer movimientos del origen; ledger conservado sin cambios",
-        }
+    # 3) Leer ORIGEN.
+    # SoftRestaurant se lee en dos consultas simples; evita el NOT EXISTS
+    # correlacionado que degradaba fuertemente ventanas de 30 días.
+    source_duplicates = 0
+    if is_softrestaurant:
+        movsinv_rows = execute_sql_fn(
+            server_info["host"],
+            server_info["port"],
+            server_info["database"],
+            server_info["username"],
+            server_info["password"],
+            _query_origen_soft_movsinv(dias_atras),
+        )
+        if movsinv_rows is None:
+            conn.close()
+            return {
+                "status": "ERROR",
+                "encabezados_synced": 0,
+                "detalles_synced": 0,
+                "descartados": 0,
+                "pendientes": pend,
+                "message": "No fue posible leer movsinv; ledger conservado sin cambios",
+            }
+
+        presentation_rows = execute_sql_fn(
+            server_info["host"],
+            server_info["port"],
+            server_info["database"],
+            server_info["username"],
+            server_info["password"],
+            _query_origen_soft_presentaciones(dias_atras),
+        )
+        if presentation_rows is None:
+            conn.close()
+            return {
+                "status": "ERROR",
+                "encabezados_synced": 0,
+                "detalles_synced": 0,
+                "descartados": 0,
+                "pendientes": pend,
+                "message": "No fue posible leer movtosalmacen; ledger conservado sin cambios",
+            }
+
+        rows, source_duplicates = _merge_soft_movement_sources(
+            movsinv_rows,
+            presentation_rows,
+        )
+        logger.info(
+            "[SYNC-MOV-CANONICO] %s fuentes Soft movsinv=%s "
+            "movtosalmacen=%s duplicados=%s total=%s",
+            unidad_codigo,
+            len(movsinv_rows),
+            len(presentation_rows),
+            source_duplicates,
+            len(rows),
+        )
+    else:
+        rows = execute_sql_fn(
+            server_info["host"],
+            server_info["port"],
+            server_info["database"],
+            server_info["username"],
+            server_info["password"],
+            _query_origen(system_type, dias_atras, sucursal_origen),
+        )
+        if rows is None:
+            conn.close()
+            return {
+                "status": "ERROR",
+                "encabezados_synced": 0,
+                "detalles_synced": 0,
+                "descartados": 0,
+                "pendientes": pend,
+                "message": "No fue posible leer movimientos del origen; ledger conservado sin cambios",
+            }
 
     # Una lista vacía es una lectura válida: no hay movimientos en la ventana.
     # SoftRestaurant puede reconciliar el ledger a cero; MPRO conserva el
@@ -388,6 +472,7 @@ def sync_movimientos_canonico(
         "descartados": 0,
         "pendientes": pend,
         "filtrados_no_autorizados": filtrados_no_autorizados,
+        "duplicados_fuente_omitidos": source_duplicates,
         "movimientos_reconciliados_eliminados": movimientos_reconciliados_eliminados,
         "pendientes_criticos": pendientes_criticos,
         "status_detail": (
