@@ -775,9 +775,9 @@ TIPO_MOVIMIENTO_SR_TO_EDARSAHUB = {
     "SPM": 4,
     "SPD": 4,
 
-    # SPV/SCP/SCS se excluyen deliberadamente de este mapa:
-    # en Análisis se reconstruyen como Ventas/consumo desde la fuente
-    # comercial canónica + recetas para evitar doble conteo.
+    # Los conceptos Soft no listados explícitamente aquí se resuelven
+    # por naturaleza E*/S* en map_tipo_movimiento_softrestaurant().
+    # La autoridad de inclusión es Servidores_Conexiones.tipos_movimiento.
 }
 
 
