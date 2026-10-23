@@ -1,0 +1,111 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-INVENTORY-DRILLDOWN-SOFT-RBAC-TOTAL-R1-20261023",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir el falso 403 del drilldown de Movimientos/Ventas exclusivamente para SoftRestaurant usando Unidad de Negocio y RBAC SQL canónico, mostrar TOTAL VENTAS / CONSUMO desde totales.total, conservar MPRO y los sincronizadores comerciales sin cambios, y certificar build/tests en Desarrollo.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB",
+    "chat": "Soporte Worker - drilldown inventarios"
+  },
+  "scheduling": {
+    "bounded_context": "INVENTARIOS_COMPRAS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "actions": [
+    {
+      "type": "insert_before",
+      "path": "backend/server.py",
+      "anchor": "@api_router.post(\"/compras/detalle-movimientos\")\n",
+      "replacement": "async def _resolve_detalle_producto_scope(request, current_user):\n    \"\"\"Autoriza detalle por unidad canónica para SoftRestaurant sin ampliar scope MPRO.\"\"\"\n    from core.corporate_filters.request_resolver import (\n        canonical_server_id,\n        resolve_authorized_unidad_scope,\n        resolve_unidad_simple,\n    )\n    from core.user_access_context import resolve_user_access_context, has_server_access\n    from modules.compras.access import require_compras_permission, COMPRAS_VER\n\n    token = str(request.server_id or \"\").strip()\n    unidad, matched_by = resolve_unidad_simple(token)\n    es_soft_unidad = (\n        matched_by == \"unidad\"\n        and unidad\n        and is_softrestaurant_system(unidad.get(\"system_type\"))\n    )\n\n    if es_soft_unidad:\n        scope = await resolve_authorized_unidad_scope(\n            current_user,\n            COMPRAS_VER,\n            token,\n        )\n        if scope.access_denied or not scope.server_id:\n            raise HTTPException(\n                status_code=403,\n                detail=\"No tiene acceso a esta unidad de negocio.\",\n            )\n        request.server_id = str(scope.server_id).strip()\n        if scope.sucursal_origen_id:\n            request.sucursal = str(scope.sucursal_origen_id).strip()\n        return scope\n\n    # Compatibilidad legacy y MPRO: conservar validación estricta por servidor.\n    request.server_id = canonical_server_id(token)\n    require_compras_permission(current_user, COMPRAS_VER)\n    access_context = await resolve_user_access_context(current_user)\n    if not has_server_access(access_context, request.server_id):\n        raise HTTPException(\n            status_code=403,\n            detail=\"No tiene acceso a esta unidad de negocio.\",\n        )\n    return None\n\n\n",
+      "expected_occurrences": 1,
+      "source_sha256": "05856f5107140ff58cd23df178c358db1a7e46def6084d679e47eedeb262303f"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/server.py",
+      "old_text": "    # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy (detalle-movimientos).\n    from core.corporate_filters.request_resolver import canonical_server_id\n    request.server_id = canonical_server_id(request.server_id)\n\n    # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)\n    from core.server_registry import get_server_connection_info\n    server = await get_server_connection_info(request.server_id, db=db)\n    if not server:\n        raise HTTPException(status_code=404, detail=\"Servidor no encontrado\")\n\n    # RBAC: alcance por servidor/unidad y permiso funcional de Compras.\n    from core.user_access_context import resolve_user_access_context, has_server_access\n    from modules.compras.access import require_compras_permission, COMPRAS_VER\n    require_compras_permission(current_user, COMPRAS_VER)\n    access_context = await resolve_user_access_context(current_user)\n    if not has_server_access(access_context, request.server_id):\n        raise HTTPException(status_code=403, detail=\"No tiene acceso a esta unidad de negocio.\")\n",
+      "replacement": "    # SoftRestaurant usa unidad canónica + RBAC SQL; MPRO/legacy conserva servidor estricto.\n    await _resolve_detalle_producto_scope(request, current_user)\n\n    # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)\n    from core.server_registry import get_server_connection_info\n    server = await get_server_connection_info(request.server_id, db=db)\n    if not server:\n        raise HTTPException(status_code=404, detail=\"Servidor no encontrado\")\n",
+      "expected_occurrences": 1,
+      "source_sha256": "e37065919baac9a1f8730eab72cefcc1041e2be989d9354f9e844e257213f3fb"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/server.py",
+      "old_text": "    # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy.\n    from core.corporate_filters.request_resolver import canonical_server_id\n    request.server_id = canonical_server_id(request.server_id)\n\n    from core.server_registry import get_server_connection_info\n    server = await get_server_connection_info(request.server_id, db=db)\n    if not server:\n        raise HTTPException(status_code=404, detail=\"Servidor no encontrado\")\n\n    # RBAC: alcance por servidor/unidad y permiso funcional de Compras.\n    from core.user_access_context import resolve_user_access_context, has_server_access\n    from modules.compras.access import require_compras_permission, COMPRAS_VER\n    require_compras_permission(current_user, COMPRAS_VER)\n    access_context = await resolve_user_access_context(current_user)\n    if not has_server_access(access_context, request.server_id):\n        raise HTTPException(status_code=403, detail=\"No tiene acceso a esta unidad de negocio.\")\n",
+      "replacement": "    # SoftRestaurant usa unidad canónica + RBAC SQL; MPRO/legacy conserva servidor estricto.\n    await _resolve_detalle_producto_scope(request, current_user)\n\n    from core.server_registry import get_server_connection_info\n    server = await get_server_connection_info(request.server_id, db=db)\n    if not server:\n        raise HTTPException(status_code=404, detail=\"Servidor no encontrado\")\n",
+      "expected_occurrences": 1,
+      "source_sha256": "c870f996db967bafd7c95577837ce07a3affb009972c7652d3d9b56897bdf8f9"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "old_text": "      serverId: filters.server_id,\n      sucursal: filters.sucursal,\n",
+      "replacement": "      serverId: selectedServer?.system_type === 'SoftRestaurant' ? selectedUnidad : filters.server_id,\n      systemType: selectedServer?.system_type || '',\n      sucursal: filters.sucursal,\n",
+      "expected_occurrences": 2,
+      "source_sha256": "6d985c8571765fa4bd049c1f779a6a0828d86f830604115cfae41dc6fcd32dbf"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Compras.js",
+      "old_text": "      serverId: selectedServer,\n      sucursal: parentSucursal,\n",
+      "replacement": "      serverId: (unidadesNegocio.find(u => u.id === selectedUnidad)?.system_type === 'SoftRestaurant') ? selectedUnidad : selectedServer,\n      systemType: unidadesNegocio.find(u => u.id === selectedUnidad)?.system_type || '',\n      sucursal: parentSucursal,\n",
+      "expected_occurrences": 2,
+      "source_sha256": "88227215c62c891ef177fde537962874c9ee6245fdc4d98f2cf385a1ae836486"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/hooks/useDetalleProducto.js",
+      "old_text": "    const {\n      serverId,\n      sucursal,\n      codigo,\n      producto,\n      fechaInicio,\n      fechaFin,\n      almacenes,\n    } = params || {};\n\n    setDetalle({\n      ...ESTADO_INICIAL,\n      open: true,\n      loading: true,\n      tipo,\n      codigo: codigo || '',\n      producto: producto || '',\n    });\n",
+      "replacement": "    const {\n      serverId,\n      systemType,\n      sucursal,\n      codigo,\n      producto,\n      fechaInicio,\n      fechaFin,\n      almacenes,\n    } = params || {};\n\n    setDetalle({\n      ...ESTADO_INICIAL,\n      open: true,\n      loading: true,\n      tipo,\n      codigo: codigo || '',\n      producto: producto || '',\n      systemType: systemType || '',\n    });\n",
+      "expected_occurrences": 1,
+      "source_sha256": "51b02f3ce706a5b21cfed6585ff9ada124172dc2f9f2a2e2a64aeda028ee90e0"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/compras/DetalleProductoModal.jsx",
+      "old_text": "              {totales && (\n                <div className=\"mt-4 p-3 bg-zinc-100 rounded flex gap-6\">\n                  <div>\n                    <span className=\"text-xs text-zinc-500\">Total Entradas:</span>\n                    <span className=\"ml-2 font-bold text-green-600\">+{fmt(totales.entradas || 0)}</span>\n                  </div>\n                  <div>\n                    <span className=\"text-xs text-zinc-500\">Total Salidas:</span>\n                    <span className=\"ml-2 font-bold text-red-600\">-{fmt(totales.salidas || 0)}</span>\n                  </div>\n                  <div>\n                    <span className=\"text-xs text-zinc-500\">Neto:</span>\n                    <span className={`ml-2 font-bold ${totales.neto >= 0 ? 'text-green-600' : 'text-red-600'}`}>\n                      {fmt(totales.neto || 0)}\n                    </span>\n                  </div>\n                </div>\n              )}\n",
+      "replacement": "              {totales && (\n                esConsumos && String(detalle?.systemType || '').toUpperCase().includes('SOFTRESTAURANT') ? (\n                  <div className=\"mt-4 p-3 bg-zinc-100 rounded flex gap-6\" data-testid=\"detalle-producto-total-consumo\">\n                    <div>\n                      <span className=\"text-xs text-zinc-500\">TOTAL VENTAS / CONSUMO:</span>\n                      <span className=\"ml-2 font-bold\">{fmt(totales.total || 0)}</span>\n                    </div>\n                  </div>\n                ) : (\n                  <div className=\"mt-4 p-3 bg-zinc-100 rounded flex gap-6\">\n                    <div>\n                      <span className=\"text-xs text-zinc-500\">Total Entradas:</span>\n                      <span className=\"ml-2 font-bold text-green-600\">+{fmt(totales.entradas || 0)}</span>\n                    </div>\n                    <div>\n                      <span className=\"text-xs text-zinc-500\">Total Salidas:</span>\n                      <span className=\"ml-2 font-bold text-red-600\">-{fmt(totales.salidas || 0)}</span>\n                    </div>\n                    <div>\n                      <span className=\"text-xs text-zinc-500\">Neto:</span>\n                      <span className={`ml-2 font-bold ${totales.neto >= 0 ? 'text-green-600' : 'text-red-600'}`}>\n                        {fmt(totales.neto || 0)}\n                      </span>\n                    </div>\n                  </div>\n                )\n              )}\n",
+      "expected_occurrences": 1,
+      "source_sha256": "2eae820d9aec668479874fbddc4a584182620304774c87d48a6d5b39391ade75"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_inventory_drilldown_soft_rbac_contract.py",
+      "content": "\"\"\"Regression contract for SoftRestaurant inventory drilldown RBAC/totals.\"\"\"\nfrom pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\n\n\ndef _read(relative):\n    return (ROOT / relative).read_text(encoding=\"utf-8\")\n\n\ndef test_backend_softrestaurant_drilldown_uses_canonical_unit_scope():\n    source = _read(\"backend/server.py\")\n    assert \"async def _resolve_detalle_producto_scope\" in source\n    assert 'matched_by == \"unidad\"' in source\n    assert \"resolve_authorized_unidad_scope(\" in source\n    assert \"COMPRAS_VER\" in source\n    assert \"request.server_id = canonical_server_id(token)\" in source\n    assert source.count(\"await _resolve_detalle_producto_scope(request, current_user)\") == 2\n\n\ndef test_frontends_only_switch_softrestaurant_to_canonical_unit_token():\n    reportes = _read(\"frontend/src/pages/Reportes.js\")\n    compras = _read(\"frontend/src/pages/Compras.js\")\n    assert reportes.count(\"selectedServer?.system_type === 'SoftRestaurant' ? selectedUnidad : filters.server_id\") == 2\n    assert compras.count(\"?.system_type === 'SoftRestaurant') ? selectedUnidad : selectedServer\") == 2\n\n\ndef test_softrestaurant_consumption_modal_exposes_canonical_total():\n    hook = _read(\"frontend/src/hooks/useDetalleProducto.js\")\n    modal = _read(\"frontend/src/components/compras/DetalleProductoModal.jsx\")\n    assert \"systemType: systemType || ''\" in hook\n    assert \"TOTAL VENTAS / CONSUMO:\" in modal\n    assert \"fmt(totales.total || 0)\" in modal\n    assert \"SOFTRESTAURANT\" in modal\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/server.py",
+        "backend/tests/test_inventory_drilldown_soft_rbac_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_inventory_drilldown_soft_rbac_contract.py"
+      ]
+    },
+    {
+      "type": "frontend_build"
+    }
+  ]
+}
