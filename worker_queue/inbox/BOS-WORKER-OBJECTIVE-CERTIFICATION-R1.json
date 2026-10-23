@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 500,
+        "paths": [
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/worker_job_factory.py",
+          "tools/mirror_sync/worker_auditor.py"
+        ],
+        "search_terms": [
+          "CERTIFIED_READ_ONLY",
+          "certification_basis",
+          "quality_gate",
+          "work_completion",
+          "required_deliverables",
+          "objective"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-WORKER-OBJECTIVE-CERTIFICATION-R1",
+  "mode": "READ_ONLY",
+  "objective": "Auditar el contrato actual de certificacion funcional del Universal Worker y determinar los cambios exactos para separar ejecucion tecnica PASS de objetivo funcional certificado. Identificar puntos de cambio, pruebas necesarias y compatibilidad retroactiva. No modificar codigo ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Universal Worker Objective Certification R1",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
