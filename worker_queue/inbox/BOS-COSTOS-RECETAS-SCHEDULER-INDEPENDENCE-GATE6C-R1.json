@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 500,
+        "paths": [
+          "backend/scheduler_service.py",
+          "backend/modules/scheduler_runtime/policy.py",
+          "backend/core/scheduler/scheduler_manager.py",
+          "backend/core/scheduler/config.py",
+          "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+          "backend/core/scheduler/jobs/sync_nightly_comercial_job.py",
+          "backend/modules/sync_recetas/sync_recetas.py"
+        ],
+        "search_terms": [
+          "PRODUCTION_SCHEDULER",
+          "EDARSA_RUNTIME_ROLE",
+          "sync_comercial_v2",
+          "sync_nightly_comercial",
+          "register_jobs",
+          "get_lock_manager",
+          "misfire_grace_time",
+          "coalesce",
+          "Comercial_RecetasSnapshot"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-RECETAS-SCHEDULER-INDEPENDENCE-GATE6C-R1",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente en modo READ_ONLY la independencia operativa del Scheduler Comercial respecto de Emergent. Identificar los contratos de scheduler_service.py, runtime roles, sync_comercial_v2, sync_nightly_comercial, locks, bitacoras y mecanismos de recuperacion. Examinar la configuracion de despliegue disponible. Determinar el punto minimo de integracion para snapshots mensuales historicos de recetas. Separar evidencia del codigo de evidencia de infraestructura efectivamente desplegada. No modificar archivos, procesos, variables, credenciales ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Costos y Margenes - Gate R6C",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
