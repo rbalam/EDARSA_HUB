@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "feb75a738512c3747ea56132707391d2afcb07cb",
-  "generated_at_utc": "2026-10-23T02:16:39Z",
+  "generated_at_utc": "2026-10-23T02:18:30Z",
   "history": {
     "done_total_local": 1558,
     "pending_total_local": 0,
@@ -16,58 +16,58 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2657,
+      "age_seconds": 224,
+      "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-ERROR-SEMANTICS-CANONICAL-CONFIG-R2-20261022",
+      "reason": "El worker no termino esta orden dentro del tiempo esperado.",
+      "state": "BLOCKED"
+    },
+    {
+      "age_seconds": 2768,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8A-SQL-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1602,
+      "age_seconds": 1714,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8B1-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 487,
+      "age_seconds": 598,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8B2-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1997,
+      "age_seconds": 2109,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-ERROR-SEMANTICS-CANONICAL-CONFIG-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 919,
+      "age_seconds": 1031,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-LONG-RUN-HEARTBEAT-KNOWLEDGE-ROUTING-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 112,
-      "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-ERROR-SEMANTICS-CANONICAL-CONFIG-R2-20261022",
-      "reason": null,
-      "state": "RUNNING"
     }
   ],
   "local_development_sha": "feb75a738512c3747ea56132707391d2afcb07cb",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
-  "queue_blocked": 0,
+  "queue_blocked": 1,
   "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 5,
-  "queue_running": 1,
+  "queue_running": 0,
   "remote_development_sha": "feb75a738512c3747ea56132707391d2afcb07cb",
   "runtime": {
     "current_job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-ERROR-SEMANTICS-CANONICAL-CONFIG-R2-20261022",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-23T02:16:28Z",
-    "last_receive_utc": "2026-10-23T02:16:23Z",
+    "last_cycle_utc": "2026-10-23T02:18:09Z",
+    "last_receive_utc": "2026-10-23T02:18:04Z",
     "last_terminal_utc": "2026-10-23T02:08:31Z",
     "pid": "92778",
     "runtime_fingerprint": {
