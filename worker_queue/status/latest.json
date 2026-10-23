@@ -1,10 +1,10 @@
 {
   "ahead_count": 0,
-  "behind_count": 0,
+  "behind_count": 2,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "SYNC",
-  "development_sha": "48039d376176aa27063df148dbc89c9954bb5bfb",
-  "generated_at_utc": "2026-10-23T01:14:31Z",
+  "convergence_status": "REMOTE_AHEAD_ONLY",
+  "development_sha": "2b8b3d610c28a2204a319accaf0708e26a4e721f",
+  "generated_at_utc": "2026-10-23T01:15:56Z",
   "history": {
     "done_total_local": 1554,
     "pending_total_local": 0,
@@ -16,55 +16,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 478,
+      "age_seconds": 563,
       "job_id": "BOS-COSTOS-RECETAS-SCHEDULER-INDEPENDENCE-GATE6C-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2360,
+      "age_seconds": 2446,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE4-SQL-AUDIT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2157,
+      "age_seconds": 2243,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE5-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 206,
+      "age_seconds": 292,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE7-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 49,
+      "age_seconds": 135,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8A-CONTRACTS-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 209,
+      "age_seconds": 295,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-CANONICAL-INVENTORY-UI-FIX-R4-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3500,
+      "age_seconds": 3585,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-AUTOMATIC-EXECUTION-LOOP-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2086,
+      "age_seconds": 2171,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-AUTOMATIC-EXECUTION-LOOP-R2-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1004,
+      "age_seconds": 1089,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-AUTOMATIC-EXECUTION-LOOP-R3-20261022",
       "reason": null,
       "state": "RESULT_READY"
@@ -80,12 +80,12 @@
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 9,
   "queue_running": 0,
-  "remote_development_sha": "48039d376176aa27063df148dbc89c9954bb5bfb",
+  "remote_development_sha": "2b8b3d610c28a2204a319accaf0708e26a4e721f",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-23T01:14:22Z",
-    "last_receive_utc": "2026-10-23T01:14:30Z",
+    "last_cycle_utc": "2026-10-23T01:15:47Z",
+    "last_receive_utc": "2026-10-23T01:15:42Z",
     "last_terminal_utc": "2026-10-23T01:13:41Z",
     "pid": "328810",
     "runtime_fingerprint": {
