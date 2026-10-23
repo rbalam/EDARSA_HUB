@@ -1,0 +1,44 @@
+{
+  "actions": [
+    {
+      "content": "# EDARSAHUB BOS — R8B-2\n## Diseño técnico de snapshots mensuales de costos de recetas\n\nEstado: PROPUESTA PENDIENTE DE CERTIFICACIÓN.\n\n### Principios\nSQL Server EDARSAHUB es la fuente canónica.\nNo duplicar catálogos, Scheduler, Workers ni servicios.\nNo modificar Producción sin autorización.\n\n### Identidad\nDefinir la clave mensual mediante unidad de negocio,\nproducto canónico y período YYYYMM.\n\nValidar previamente si ServerID debe formar parte\nde la identidad para evitar colisiones entre orígenes.\n\n### Persistencia\nReutilizar Comercial_RecetasSnapshot y\nComercial_RecetasSnapshotDetalle.\n\nRequerimientos:\n- Cabecera y detalles en una transacción.\n- Unicidad mensual por identidad certificada.\n- Integridad referencial entre ambas tablas.\n- Inmutabilidad de cierres históricos.\n- Correcciones versionadas y auditadas.\n- Reintentos idempotentes.\n\n### Cálculos\nVariación mensual:\n(CostoActual / CostoMesAnterior - 1) * 100.\n\nVariación acumulada:\n(CostoActual / CostoBaseFija - 1) * 100.\n\nEjemplo:\n100 -> 110 -> 121 = 21% acumulado.\n\nDenominador cero o desconocido:\nresultado NO_DEFINIDO.\n\n### Datos históricos\nNo reconstruir períodos con precios actuales.\nLos períodos sin evidencia histórica se clasifican\nNO_RECONSTRUIBLE.\n\n### Operación\nReutilizar Scheduler, locks SQL y bitácoras existentes.\nVerificar independencia del despliegue respecto\na la aplicación web.\n\n### Alertas\nUmbrales configurables.\nDeduplicación por unidad, producto, período,\nregla y versión de regla.\n\n### Seguridad\nRBAC corporativo y mínimo privilegio.\nHRLectura permanece exclusivamente de lectura.\n\n### Condiciones previas a implementación\nCertificar identidad, datos históricos, restricciones,\nmigraciones reversibles, concurrencia, permisos,\nScheduler y pruebas de aceptación.\n\nEste documento no autoriza implementar cambios.\n",
+      "path": "docs/architecture/costos_recetas_snapshot_mensual_r8b2.md",
+      "type": "write_file"
+    },
+    {
+      "content": "# EDARSAHUB BOS — R8B-2\n## Matriz de riesgos y aceptación\n\nEstado: PROPUESTA PENDIENTE DE CERTIFICACIÓN.\n\n| Riesgo | Prioridad | Aceptación |\n|---|---|---|\n| Colisiones de identidad | Alta | Identidad canónica sin duplicados |\n| Doble cierre mensual | Alta | Una ejecución efectiva por clave |\n| Detalles huérfanos | Alta | Integridad y rollback |\n| Alteración histórica | Alta | Mutación no autorizada rechazada |\n| Costos históricos ausentes | Alta | NO_RECONSTRUIBLE |\n| Cálculo acumulado incorrecto | Alta | 100,110,121 = 21% |\n| División entre cero | Alta | NO_DEFINIDO |\n| Fallo de Scheduler | Alta | Recuperación comprobada |\n| Concurrencia | Alta | Locks SQL efectivos |\n| Fuga entre empresas | Alta | RBAC y aislamiento certificados |\n| Alertas repetidas | Media | Deduplicación demostrada |\n| Migración irreversible | Alta | Rollback validado en Desarrollo |\n\n### Pendientes\n1. Certificar identidad y fuente histórica.\n2. Validar restricciones SQL.\n3. Certificar Scheduler y concurrencia.\n4. Ejecutar pruebas de aceptación.\n5. Obtener revisión del Worker Auditor.\n\nNinguna prueba se declara aprobada por este documento.\n",
+      "path": "docs/architecture/costos_recetas_snapshot_mensual_r8b2_riesgos.md",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8B2-DESIGN-R1",
+  "mode": "MUTATION",
+  "objective": "Publicar exclusivamente dos documentos de diseño R8B2 para revisión. No modificar código, SQL, Scheduler ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "costos-recetas-snapshot-r8b2",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
