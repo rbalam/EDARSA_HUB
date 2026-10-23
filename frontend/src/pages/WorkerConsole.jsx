@@ -361,7 +361,7 @@ function PublishTab() {
         <button disabled={busy} onClick={validate} data-testid="wc-publish-validate" className="px-4 py-2 rounded-lg bg-zinc-700 disabled:opacity-50">Validar</button>
         <button disabled={!verified || busy} onClick={publish} data-testid="wc-publish-submit" className="px-4 py-2 rounded-lg bg-emerald-700 disabled:opacity-50">Confirmar y publicar</button>
       </div>
-      {verified && <p className="text-emerald-400 text-sm mt-2">Contrato preliminar validado. El servidor volverá a validar permisos, concurrencia y publicación.</p>}
+      {verified && <p className="text-emerald-400 text-sm mt-2">Contrato canónico validado por el servidor. La publicación volverá a verificar permisos, concurrencia y disponibilidad.</p>}
       {error && <p role="alert" className="text-red-400 text-sm mt-3">{error}</p>}
     </Panel>
     {result && <Panel testid="wc-publish-result">
