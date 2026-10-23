@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "e9902bbb529f75af0eef8ef216d55b968ce27a9e",
-  "generated_at_utc": "2026-10-23T03:35:26Z",
+  "generated_at_utc": "2026-10-23T03:36:48Z",
   "history": {
     "done_total_local": 1563,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1031,
+      "age_seconds": 1112,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8C-ENV-CERT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1325,
+      "age_seconds": 1406,
       "job_id": "BOS-TOAST-GATE6-ADAPTER-ONBOARDING-DISCOVERY-READONLY-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3490,
+      "age_seconds": 3571,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-RUNTIME-INVENTORY-AUDIT-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-23T03:35:23Z",
-    "last_receive_utc": "2026-10-23T03:35:18Z",
+    "last_cycle_utc": "2026-10-23T03:36:44Z",
+    "last_receive_utc": "2026-10-23T03:36:39Z",
     "last_terminal_utc": "2026-10-23T03:18:15Z",
     "pid": "442",
     "runtime_fingerprint": {
