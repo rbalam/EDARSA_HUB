@@ -178,6 +178,7 @@ const Servidores = () => {
   // Estado para Conexiones API
   const [apiConnections, setApiConnections] = useState([]);
   const [loadingApis, setLoadingApis] = useState(false);
+  const [apiLoadError, setApiLoadError] = useState(null);
   const [apiDialogOpen, setApiDialogOpen] = useState(false);
   const [editingApi, setEditingApi] = useState(null);
   const [apiFormData, setApiFormData] = useState({
@@ -379,15 +380,32 @@ const Servidores = () => {
   // Cargar conexiones API desde backend
   const loadApiConnections = async () => {
     setLoadingApis(true);
+    setApiLoadError(null);
+
     try {
       const response = await api.get('/api-connections');
-      if (response.data.success) {
-        setApiConnections(response.data.data || []);
+
+      if (!response.data?.success || !Array.isArray(response.data?.data)) {
+        throw new Error('Respuesta inválida del endpoint de conexiones API');
       }
+
+      setApiConnections(response.data.data);
     } catch (error) {
       console.error('Error cargando conexiones API:', error);
-      // SECURITY P0: sin fallback hardcodeado. No inventar conexiones ni exponer IPs reales.
-      setApiConnections([]);
+
+      const detail =
+        error.response?.data?.detail ||
+        error.message ||
+        'Error al cargar conexiones API';
+
+      // Un error no equivale a cero conexiones.
+      // Conservar los últimos datos válidos.
+      setApiLoadError(
+        typeof detail === 'string'
+          ? detail
+          : 'Error al cargar conexiones API'
+      );
+
       toast.error('No se pudieron cargar las conexiones API locales.');
     } finally {
       setLoadingApis(false);

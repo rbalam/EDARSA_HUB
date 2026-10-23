@@ -23,14 +23,16 @@ import uuid
 from typing import List, Dict, Optional, Any
 from datetime import datetime, timezone
 from core.db import execute_sql_query
+from core.config.edarsahub_config import get_edarsahub_sql_config
 
-# Configuración de EDARSAHUB SQL - FUENTE PRIMARIA
+# Configuración SQL EDARSAHUB canónica.
+_cfg = get_edarsahub_sql_config()
 EDARSAHUB_CONFIG = {
-    'host': os.getenv('EDARSAHUB_SQL_HOST'),
-    'port': 1433,
-    'database': 'EDARSAHUB',
-    'username': os.getenv('EDARSAHUB_SQL_USER'),
-    'password': os.getenv('EDARSAHUB_SQL_PASSWORD')
+    'host': _cfg.host,
+    'port': _cfg.port,
+    'database': _cfg.database,
+    'username': _cfg.user,
+    'password': _cfg.password,
 }
 
 # Referencia a MongoDB (solo para caché, NO autoritativo)
