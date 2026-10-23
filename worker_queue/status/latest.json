@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "e9902bbb529f75af0eef8ef216d55b968ce27a9e",
-  "generated_at_utc": "2026-10-23T02:35:37Z",
+  "generated_at_utc": "2026-10-23T02:36:54Z",
   "history": {
     "done_total_local": 1560,
     "pending_total_local": 0,
@@ -16,37 +16,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2741,
+      "age_seconds": 2818,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8B1-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1625,
+      "age_seconds": 1702,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8B2-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 548,
+      "age_seconds": 625,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8C-SQL-DIAGNOSTIC-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3136,
+      "age_seconds": 3212,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-ERROR-SEMANTICS-CANONICAL-CONFIG-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 664,
+      "age_seconds": 741,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-ERROR-SEMANTICS-CANONICAL-CONFIG-R2-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2058,
+      "age_seconds": 2134,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-LONG-RUN-HEARTBEAT-KNOWLEDGE-ROUTING-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,8 +66,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-23T02:35:35Z",
-    "last_receive_utc": "2026-10-23T02:35:30Z",
+    "last_cycle_utc": "2026-10-23T02:36:46Z",
+    "last_receive_utc": "2026-10-23T02:36:41Z",
     "last_terminal_utc": "2026-10-23T02:26:28Z",
     "pid": "18871",
     "runtime_fingerprint": {
