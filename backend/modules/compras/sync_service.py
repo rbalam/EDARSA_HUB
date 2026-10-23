@@ -853,13 +853,22 @@ def resolver_proveedor_edarsahub(cursor, empresa_id, proveedor_origen_id=None, p
 
 def map_tipo_movimiento_softrestaurant(idconcepto, cantidad=None):
     """
-    Mapea idconcepto de SoftRestaurant a Inventario_TipoMovimiento.TipoMovimientoID.
+    Mapea conceptos SoftRestaurant respetando primero los mapeos específicos.
 
-    Si no hay mapeo, devuelve None para evitar insertar movimientos ambiguos.
+    La inclusión del concepto se controla por
+    Servidores_Conexiones.tipos_movimiento. Para conceptos seleccionados que
+    no tienen un subtipo específico, la naturaleza SoftRestaurant es canónica:
+    E* -> AJUSTE_ENTRADA (3), S* -> AJUSTE_SALIDA (4).
     """
     concepto = str(idconcepto or "").strip().upper()
     if concepto in TIPO_MOVIMIENTO_SR_TO_EDARSAHUB:
         return TIPO_MOVIMIENTO_SR_TO_EDARSAHUB[concepto]
+
+    if concepto.startswith("E"):
+        return 3
+
+    if concepto.startswith("S"):
+        return 4
 
     return None
 
