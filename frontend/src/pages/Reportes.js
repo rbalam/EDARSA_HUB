@@ -1802,11 +1802,15 @@ const Reportes = () => {
         .map((a) => {
           const almacenId = String(a.almacen_id ?? a.id ?? '').trim();
           const almacenNombre = String(a.nombre ?? a.almacen ?? a.Al_Descripcion ?? a.label ?? '').trim();
+          const almacenTipo = Number(a.tipo ?? a.tipo_almacen ?? a.almacen_tipo ?? 1);
           return {
             id: almacenId,
             almacen_id: almacenId,
             nombre: almacenNombre,
-            almacen: almacenNombre
+            almacen: almacenNombre,
+            tipo: almacenTipo,
+            tipo_almacen: almacenTipo,
+            unidad_natural: a.unidad_natural || (almacenTipo === 2 ? 'presentaciones' : 'insumos')
           };
         })
         .filter((a) => a.almacen_id || a.nombre);
@@ -2497,7 +2501,7 @@ const Reportes = () => {
     const nombre = producto.Producto ?? producto.nombre_producto ?? producto.nombre ?? producto.Nombre ?? codigo;
 
     abrirMovimientos({
-      serverId: selectedServer?.system_type === 'SoftRestaurant' ? selectedUnidad : filters.server_id,
+      serverId: selectedUnidad || filters.server_id,
       systemType: selectedServer?.system_type || '',
       sucursal: filters.sucursal,
       codigo,
@@ -2529,7 +2533,7 @@ const Reportes = () => {
     }
 
     abrirConsumos({
-      serverId: selectedServer?.system_type === 'SoftRestaurant' ? selectedUnidad : filters.server_id,
+      serverId: selectedUnidad || filters.server_id,
       systemType: selectedServer?.system_type || '',
       sucursal: filters.sucursal,
       codigo,
