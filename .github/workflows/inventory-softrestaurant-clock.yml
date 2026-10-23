@@ -59,10 +59,17 @@ jobs:
       - name: Validate inventory owner secrets
         run: |
           set -euo pipefail
-          test -n "$EDARSAHUB_SQL_PASSWORD"
-          test -n "$EDARSAHUB_SQL_WRITER_USER"
-          test -n "$EDARSAHUB_SQL_WRITER_PASSWORD"
-          test -n "$SERVER_SECRET_KEY"
+          missing=0
+          for name in             EDARSAHUB_SQL_PASSWORD             EDARSAHUB_SQL_WRITER_USER             EDARSAHUB_SQL_WRITER_PASSWORD             SERVER_SECRET_KEY
+          do
+            if [ -z "${!name:-}" ]; then
+              echo "MISSING_SECRET_NAME=$name"
+              missing=1
+            else
+              echo "SECRET_PRESENT=$name"
+            fi
+          done
+          test "$missing" -eq 0
 
       - name: Run canonical SoftRestaurant inventory sync
         working-directory: backend
