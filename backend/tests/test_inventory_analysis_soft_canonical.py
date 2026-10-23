@@ -178,8 +178,11 @@ def test_soft_movements_keep_resolvable_rows_when_some_are_pending():
 
     assert "PARTIAL_WITH_PENDING" in movement_source
     assert "No hay movimientos SoftRestaurant resolubles en la ventana" in movement_source
-    assert "DELETE FROM Inventario_Movimientos" not in movement_source
-    assert "DELETE d" not in movement_source
+    # La reconciliación destructiva existe exclusivamente para MPRO y sólo
+    # cuando no hay pendientes críticos; SoftRestaurant conserva upsert.
+    assert "if not is_softrestaurant and pendientes_criticos == 0:" in movement_source
+    assert "DELETE d" in movement_source
+    assert "LIKE 'MOVIMIENTO_POS%%'" in movement_source
 
 def test_inventory_owner_can_scope_softrestaurant_without_mpro():
     job_source = (
