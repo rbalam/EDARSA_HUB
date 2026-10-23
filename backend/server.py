@@ -345,6 +345,16 @@ async def validate_server_access_unified(current_user: Dict, server_id: str) -> 
     if has_server_access(context, server_id):
         return context
 
+    # Scope BRANCH canónico: un usuario puede tener acceso efectivo a una
+    # sucursal de este servidor sin una fila explícita en
+    # Usuario_ServidoresAsignacion. Para endpoints administrativos que ya
+    # exigen SERVIDORES_VER/EDITAR, reconocer ese mismo ServidorID evita el
+    # falso 403 unidad/sucursal -> servidor sin ampliar a otros servidores.
+    server_key = str(server_id or "").strip().lower()
+    branch_scope = context.sucursales_por_server.get(server_key, [])
+    if branch_scope:
+        return context
+
     logging.warning(
         f"[RBAC-DENEGADO] Usuario {current_user.get('email')} "
         f"sin acceso a servidor {server_id}. "
