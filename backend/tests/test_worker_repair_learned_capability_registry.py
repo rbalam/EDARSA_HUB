@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import json
 import pytest
 
 from tools.mirror_sync import worker_repair_capability_registry as registry
@@ -83,7 +84,11 @@ def payload():
 
 
 def test_register_and_reuse_by_signature(tmp_path, monkeypatch):
-    monkeypatch.setattr(registry, "REGISTRY_DIR", tmp_path)
+    registry_dir = tmp_path / "registry"
+    seed_dir = tmp_path / "seed"
+
+    monkeypatch.setattr(registry, "REGISTRY_DIR", registry_dir)
+    monkeypatch.setattr(registry, "SEED_DIR", seed_dir)
 
     result = registry.register_learned_capability(
         payload(),
@@ -102,6 +107,61 @@ def test_register_and_reuse_by_signature(tmp_path, monkeypatch):
 
     assert learned is not None
     assert learned.code == "MUTATION_LIFECYCLE_STALE_OWNERSHIP"
+
+
+def test_seed_registry_payload_conflict_fails_closed(
+    tmp_path,
+    monkeypatch,
+):
+    registry_dir = tmp_path / "registry"
+    seed_dir = tmp_path / "seed"
+
+    monkeypatch.setattr(
+        registry,
+        "REGISTRY_DIR",
+        registry_dir,
+    )
+    monkeypatch.setattr(
+        registry,
+        "SEED_DIR",
+        seed_dir,
+    )
+
+    result = registry.register_learned_capability(
+        payload(),
+        incident=incident(),
+    )
+
+    assert result["status"] == "REGISTERED"
+
+    seed_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    conflicting = payload()
+    conflicting["objective"] = (
+        "Conflicting seed payload must fail closed."
+    )
+
+    (
+        seed_dir
+        / "MUTATION_LIFECYCLE_STALE_OWNERSHIP.json"
+    ).write_text(
+        json.dumps(
+            conflicting,
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="LEARNED_CAPABILITY_REGISTRY_CONFLICT",
+    ):
+        registry.iter_learned_capabilities()
 
 
 def test_scope_escape_fails_closed(tmp_path, monkeypatch):

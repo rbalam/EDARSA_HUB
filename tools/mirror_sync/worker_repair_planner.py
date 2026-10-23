@@ -29,6 +29,7 @@ from typing import Any, Callable
 
 from tools.mirror_sync import worker_maintenance_runtime as maintenance
 from tools.mirror_sync import worker_repair_capability_registry as learned_registry
+from tools.mirror_sync.git_divergence_guard import ensure_submit_convergence
 from tools.mirror_sync.universal_job_bridge import validate as validate_worker_job
 from tools.mirror_sync.worker_job_factory import canonicalize_job
 from tools.mirror_sync.worker_repair_execution import (
@@ -166,7 +167,31 @@ def convergence_state(
 
 
 def _canonical_requester(
+    requester: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    if isinstance(requester, dict):
+        email = str(
+            requester.get("email") or ""
+        ).strip().lower()
+
+        if not email:
+            raise ValueError(
+                "REPAIR_PLANNER_REQUESTER_REQUIRED"
+            )
+
+        return {
+            "email": email,
+            "source": str(
+                requester.get("source") or "worker_repair"
+            ).strip(),
+            "project": str(
+                requester.get("project") or "EDARSAHUB-BOS"
+            ).strip(),
+            "chat": str(
+                requester.get("chat") or "Worker Repair Planner"
+            ).strip(),
+        }
+
     email = str(
         os.environ.get(
             "EDARSAHUB_WORKER_REPAIR_REQUESTER_EMAIL",
@@ -387,6 +412,7 @@ def build_deterministic_repair_job(
     *,
     capability_code: str | None = None,
     problem_signature: str | None = None,
+    requester: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     incident = (
         maintenance.read_runtime_incident(
@@ -427,8 +453,19 @@ def build_deterministic_repair_job(
     ):
         raise ValueError(reason)
 
-    convergence = (
-        convergence_state()
+    provisional_job_id = (
+        incident.repair_job_id
+        or deterministic_repair_job_id(
+            incident.incident_id,
+            incident.attempts + 1,
+        )
+    )
+
+    convergence = ensure_submit_convergence(
+        ROOT,
+        job_id=provisional_job_id,
+        owner="worker-repair-planner",
+        owner_pid=os.getpid(),
     )
 
     if (
@@ -436,7 +473,8 @@ def build_deterministic_repair_job(
         is not True
     ):
         raise ValueError(
-            "DEV_MIRROR_NOT_CONVERGED"
+            "DEV_MIRROR_NOT_CONVERGED:"
+            + str(convergence.get("status"))
         )
 
     context = {
@@ -444,7 +482,7 @@ def build_deterministic_repair_job(
             "development"
         ],
         "requester": (
-            _canonical_requester()
+            _canonical_requester(requester)
         ),
     }
 
@@ -560,6 +598,7 @@ def publish_planned_repair(
     *,
     capability_code: str | None = None,
     problem_signature: str | None = None,
+    requester: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     planned = (
         build_deterministic_repair_job(
@@ -570,6 +609,7 @@ def publish_planned_repair(
             problem_signature=(
                 problem_signature
             ),
+            requester=requester,
         )
     )
 

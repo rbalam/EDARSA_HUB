@@ -41,6 +41,9 @@ from tools.mirror_sync.worker_maintenance_runtime import (
     repair_attempt_allowed,
     supersede_runtime_incident,
 )
+from tools.mirror_sync.worker_repair_auto_loop import (
+    advance_repair_automation,
+)
 
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 GIT = ROOT / ".git"
@@ -1379,6 +1382,9 @@ def cycle() -> dict[str, Any]:
     claims = reconcile_agent_guard_orphans()
     requeued = requeue_stale_processing()
     automatic_repair = automatic_repair_orchestration()
+    automatic_repair_execution = advance_repair_automation(
+        automatic_repair
+    )
     payload = {
         "schema": "edarsahub.worker-control-plane.v1",
         "at_utc": utc_now(),
@@ -1388,6 +1394,7 @@ def cycle() -> dict[str, Any]:
         "stale_processing_requeued": requeued,
         "maintenance": maintenance_runtime_summary(),
         "automatic_repair": automatic_repair,
+        "automatic_repair_execution": automatic_repair_execution,
         "production_touched": False,
     }
     atomic_json(STATUS, payload)
