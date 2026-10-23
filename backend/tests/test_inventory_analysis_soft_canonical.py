@@ -76,18 +76,47 @@ def test_soft_sync_reads_both_inventory_movement_sources_without_sales_sync():
         ROOT / "core" / "inventarios" / "sync_movimientos_canonico.py"
     ).read_text(encoding="utf-8")
 
-    soft_block = movement_source[
-        movement_source.index("# SoftRestaurant usa DOS fuentes complementarias verificadas:"):
-        movement_source.index("def sync_movimientos_canonico")
-    ]
+    assert "def _query_origen_soft_movsinv" in movement_source
+    assert "def _query_origen_soft_presentaciones" in movement_source
+    assert "FROM movsinv i" in movement_source
+    assert "FROM movtosalmacen m" in movement_source
+    assert "source_movto" in movement_source
+    assert "def _merge_soft_movement_sources" in movement_source
+    assert "duplicados_fuente_omitidos" in movement_source
+    assert "RTRIM(LTRIM(i.idinsumo)) AS producto_cod" in movement_source
+    assert "RTRIM(LTRIM(ip.idinsumo)) AS producto_cod" in movement_source
+    assert "Comercial_Inteligencia_VentasDetalleProducto" not in movement_source
 
-    assert "FROM movsinv i" in soft_block
-    assert "FROM movtosalmacen m" in soft_block
-    assert "NOT EXISTS" in soft_block
-    assert "RTRIM(LTRIM(i.idinsumo)) AS producto_cod" in soft_block
-    assert "RTRIM(LTRIM(ip.idinsumo)) AS producto_cod" in soft_block
-    assert "SPV" not in soft_block
-    assert "Comercial_Inteligencia_VentasDetalleProducto" not in soft_block
+
+def test_soft_source_merge_prefers_movsinv_for_same_natural_key():
+    from core.inventarios.sync_movimientos_canonico import (
+        _merge_soft_movement_sources,
+    )
+
+    direct = [{
+        "fecha": "2026-10-10 12:00:00",
+        "almacen_cod": "200",
+        "concepto": "SDE",
+        "producto_cod": "A100",
+        "source_movto": "123",
+        "folio": "I:M:123",
+    }]
+    presentation = [{
+        "fecha": "2026-10-10 12:00:00",
+        "almacen_cod": "200",
+        "concepto": "SDE",
+        "producto_cod": "A100",
+        "source_movto": "123",
+        "folio": "123",
+    }]
+
+    merged, duplicates = _merge_soft_movement_sources(
+        direct,
+        presentation,
+    )
+
+    assert duplicates == 1
+    assert merged == direct
 
 
 def test_soft_sync_prefixes_movsinv_natural_references():
