@@ -15,10 +15,10 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     env:
-      EDARSAHUB_SQL_HOST: ${{ secrets.EDARSAHUB_SQL_HOST }}
-      EDARSAHUB_SQL_PORT: ${{ secrets.EDARSAHUB_SQL_PORT }}
-      EDARSAHUB_SQL_DATABASE: ${{ secrets.EDARSAHUB_SQL_DATABASE }}
-      EDARSAHUB_SQL_USER: ${{ secrets.EDARSAHUB_SQL_USER }}
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "HRLectura"
       EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
     steps:
       - uses: actions/setup-python@v5
