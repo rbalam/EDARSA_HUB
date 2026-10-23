@@ -324,15 +324,8 @@ function PublishTab() {
     }
     setBusy(true);
     try {
-      const token = getToken();
-      const response = await fetch(`${API}/api/worker/console/validate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        credentials: "include",
-        body: JSON.stringify({ ...payload, schema: "edarsahub.worker-job.v2" }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.valid) throw new Error(JSON.stringify(data.errors || data.detail || data));
+      const data = await request("/jobs/preview", { method: "POST", body: JSON.stringify(payload) });
+      if (!data.valid) throw new Error("El ingreso canónico rechazó el contrato.");
       setVerified(true);
     } catch (e) { setError(e.message); } finally { setBusy(false); }
   };
