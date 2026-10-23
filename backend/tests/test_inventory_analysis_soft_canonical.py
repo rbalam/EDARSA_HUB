@@ -141,12 +141,11 @@ def test_soft_movement_sync_uses_server_authorized_origin_concepts():
     assert "s.tipos_movimiento" in job_source
     assert "'tipos_movimiento': server.get('tipos_movimiento', [])" in job_source
 
-    # SoftRestaurant filtra antes de homologar ConceptoOrigen -> TipoMovimientoID.
+    # Ambos motores filtran antes de homologar ConceptoOrigen -> TipoMovimientoID.
     assert "tipos_movimiento_autorizados" in movement_source
-    assert "if is_softrestaurant:" in movement_source
     assert "concepto_origen in tipos_movimiento_autorizados" in movement_source
     assert "filtrados_no_autorizados" in movement_source
-    assert "No hay movimientos SoftRestaurant resolubles en la ventana" in movement_source
+    assert "MPRO sin tipos_movimiento configurados; fail-closed" in movement_source
 
 
 def test_inventory_movement_authorization_does_not_touch_commercial_syncs():
@@ -211,3 +210,22 @@ def test_soft_movements_prefer_visible_inventory_code_for_same_canonical_product
     assert "CASE WHEN pmo.CodigoFuente IN" in source
     assert "visible_product_codes=sorted(productos.keys())" in server_source
 
+
+
+def test_soft_presentation_warehouses_do_not_apply_sales():
+    source = SOFT.read_text(encoding="utf-8")
+    server_source = SERVER.read_text(encoding="utf-8")
+
+    assert "include_sales: bool = True" in source
+    assert "if not include_sales:" in source
+    assert "soft_sales_enabled" in server_source
+    assert "unidad_natural == 'presentaciones'" in server_source
+    assert "include_sales=soft_sales_enabled" in server_source
+
+
+def test_report_payload_preserves_warehouse_type_for_backend_rule():
+    frontend = (ROOT.parent / "frontend" / "src" / "pages" / "Reportes.js").read_text(
+        encoding="utf-8"
+    )
+    assert "tipo_almacen: almacenTipo" in frontend
+    assert "unidad_natural: a.unidad_natural" in frontend
