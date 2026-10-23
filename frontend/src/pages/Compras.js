@@ -2072,7 +2072,8 @@ const [inventariosFisicos, setInventariosFisicos] = useState([]);
   // Doble clic: detalle CANÓNICO de movimientos (hook + componente compartido con Análisis)
   const fetchDetalleMovimientos = (codigo, producto) => {
     abrirMovimientos({
-      serverId: selectedServer,
+      serverId: (unidadesNegocio.find(u => u.id === selectedUnidad)?.system_type === 'SoftRestaurant') ? selectedUnidad : selectedServer,
+      systemType: unidadesNegocio.find(u => u.id === selectedUnidad)?.system_type || '',
       sucursal: parentSucursal,
       codigo,
       producto,
@@ -2085,7 +2086,8 @@ const [inventariosFisicos, setInventariosFisicos] = useState([]);
   // Doble clic: detalle CANÓNICO de consumos (hook + componente compartido con Análisis)
   const fetchDetalleConsumos = (codigo, producto) => {
     abrirConsumos({
-      serverId: selectedServer,
+      serverId: (unidadesNegocio.find(u => u.id === selectedUnidad)?.system_type === 'SoftRestaurant') ? selectedUnidad : selectedServer,
+      systemType: unidadesNegocio.find(u => u.id === selectedUnidad)?.system_type || '',
       sucursal: parentSucursal,
       codigo,
       producto,

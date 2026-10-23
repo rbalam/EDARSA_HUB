@@ -2497,7 +2497,8 @@ const Reportes = () => {
     const nombre = producto.Producto ?? producto.nombre_producto ?? producto.nombre ?? producto.Nombre ?? codigo;
 
     abrirMovimientos({
-      serverId: filters.server_id,
+      serverId: selectedServer?.system_type === 'SoftRestaurant' ? selectedUnidad : filters.server_id,
+      systemType: selectedServer?.system_type || '',
       sucursal: filters.sucursal,
       codigo,
       producto: nombre,
@@ -2528,7 +2529,8 @@ const Reportes = () => {
     }
 
     abrirConsumos({
-      serverId: filters.server_id,
+      serverId: selectedServer?.system_type === 'SoftRestaurant' ? selectedUnidad : filters.server_id,
+      systemType: selectedServer?.system_type || '',
       sucursal: filters.sucursal,
       codigo,
       producto: nombre,

@@ -98,22 +98,31 @@ export const DetalleProductoModal = ({ detalle, onClose, formatNumber }) => {
                 </tbody>
               </table>
               {totales && (
-                <div className="mt-4 p-3 bg-zinc-100 rounded flex gap-6">
-                  <div>
-                    <span className="text-xs text-zinc-500">Total Entradas:</span>
-                    <span className="ml-2 font-bold text-green-600">+{fmt(totales.entradas || 0)}</span>
+                esConsumos && String(detalle?.systemType || '').toUpperCase().includes('SOFTRESTAURANT') ? (
+                  <div className="mt-4 p-3 bg-zinc-100 rounded flex gap-6" data-testid="detalle-producto-total-consumo">
+                    <div>
+                      <span className="text-xs text-zinc-500">TOTAL VENTAS / CONSUMO:</span>
+                      <span className="ml-2 font-bold">{fmt(totales.total || 0)}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-xs text-zinc-500">Total Salidas:</span>
-                    <span className="ml-2 font-bold text-red-600">-{fmt(totales.salidas || 0)}</span>
+                ) : (
+                  <div className="mt-4 p-3 bg-zinc-100 rounded flex gap-6">
+                    <div>
+                      <span className="text-xs text-zinc-500">Total Entradas:</span>
+                      <span className="ml-2 font-bold text-green-600">+{fmt(totales.entradas || 0)}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-zinc-500">Total Salidas:</span>
+                      <span className="ml-2 font-bold text-red-600">-{fmt(totales.salidas || 0)}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-zinc-500">Neto:</span>
+                      <span className={`ml-2 font-bold ${totales.neto >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {fmt(totales.neto || 0)}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-xs text-zinc-500">Neto:</span>
-                    <span className={`ml-2 font-bold ${totales.neto >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {fmt(totales.neto || 0)}
-                    </span>
-                  </div>
-                </div>
+                )
               )}
             </>
           ) : (

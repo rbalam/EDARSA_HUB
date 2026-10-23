@@ -43,6 +43,7 @@ export function useDetalleProducto() {
   const _cargar = useCallback(async (endpoint, tipo, params) => {
     const {
       serverId,
+      systemType,
       sucursal,
       codigo,
       producto,
@@ -58,6 +59,7 @@ export function useDetalleProducto() {
       tipo,
       codigo: codigo || '',
       producto: producto || '',
+      systemType: systemType || '',
     });
 
     try {

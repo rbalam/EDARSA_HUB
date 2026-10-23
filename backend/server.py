@@ -10283,6 +10283,52 @@ async def limpiar_inventarios_provisionales(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+async def _resolve_detalle_producto_scope(request, current_user):
+    """Autoriza detalle por unidad canónica para SoftRestaurant sin ampliar scope MPRO."""
+    from core.corporate_filters.request_resolver import (
+        canonical_server_id,
+        resolve_authorized_unidad_scope,
+        resolve_unidad_simple,
+    )
+    from core.user_access_context import resolve_user_access_context, has_server_access
+    from modules.compras.access import require_compras_permission, COMPRAS_VER
+
+    token = str(request.server_id or "").strip()
+    unidad, matched_by = resolve_unidad_simple(token)
+    es_soft_unidad = (
+        matched_by == "unidad"
+        and unidad
+        and is_softrestaurant_system(unidad.get("system_type"))
+    )
+
+    if es_soft_unidad:
+        scope = await resolve_authorized_unidad_scope(
+            current_user,
+            COMPRAS_VER,
+            token,
+        )
+        if scope.access_denied or not scope.server_id:
+            raise HTTPException(
+                status_code=403,
+                detail="No tiene acceso a esta unidad de negocio.",
+            )
+        request.server_id = str(scope.server_id).strip()
+        if scope.sucursal_origen_id:
+            request.sucursal = str(scope.sucursal_origen_id).strip()
+        return scope
+
+    # Compatibilidad legacy y MPRO: conservar validación estricta por servidor.
+    request.server_id = canonical_server_id(token)
+    require_compras_permission(current_user, COMPRAS_VER)
+    access_context = await resolve_user_access_context(current_user)
+    if not has_server_access(access_context, request.server_id):
+        raise HTTPException(
+            status_code=403,
+            detail="No tiene acceso a esta unidad de negocio.",
+        )
+    return None
+
+
 @api_router.post("/compras/detalle-movimientos")
 async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, current_user: Dict = Depends(get_current_user)):
     """
@@ -10297,23 +10343,14 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
     print("Fecha final:", request.fecha_fin)
     print("Server ID:", request.server_id)
 
-    # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy (detalle-movimientos).
-    from core.corporate_filters.request_resolver import canonical_server_id
-    request.server_id = canonical_server_id(request.server_id)
+    # SoftRestaurant usa unidad canónica + RBAC SQL; MPRO/legacy conserva servidor estricto.
+    await _resolve_detalle_producto_scope(request, current_user)
 
     # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
     from core.server_registry import get_server_connection_info
     server = await get_server_connection_info(request.server_id, db=db)
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-
-    # RBAC: alcance por servidor/unidad y permiso funcional de Compras.
-    from core.user_access_context import resolve_user_access_context, has_server_access
-    from modules.compras.access import require_compras_permission, COMPRAS_VER
-    require_compras_permission(current_user, COMPRAS_VER)
-    access_context = await resolve_user_access_context(current_user)
-    if not has_server_access(access_context, request.server_id):
-        raise HTTPException(status_code=403, detail="No tiene acceso a esta unidad de negocio.")
 
     # =====================================================================
     # NO-LIVE: el detalle de movimientos se lee EXCLUSIVAMENTE de las tablas
@@ -10549,22 +10586,13 @@ async def obtener_detalle_consumos_post(request: DetalleConsumosRequest, current
     UNIFICACIÓN CANÓNICA (Fase B): utiliza fuentes sincronizadas en EDARSAHUB.
     La fecha inicial proviene del inventario inicial (la envía el frontend en fecha_inicio).
     """
-    # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy.
-    from core.corporate_filters.request_resolver import canonical_server_id
-    request.server_id = canonical_server_id(request.server_id)
+    # SoftRestaurant usa unidad canónica + RBAC SQL; MPRO/legacy conserva servidor estricto.
+    await _resolve_detalle_producto_scope(request, current_user)
 
     from core.server_registry import get_server_connection_info
     server = await get_server_connection_info(request.server_id, db=db)
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-
-    # RBAC: alcance por servidor/unidad y permiso funcional de Compras.
-    from core.user_access_context import resolve_user_access_context, has_server_access
-    from modules.compras.access import require_compras_permission, COMPRAS_VER
-    require_compras_permission(current_user, COMPRAS_VER)
-    access_context = await resolve_user_access_context(current_user)
-    if not has_server_access(access_context, request.server_id):
-        raise HTTPException(status_code=403, detail="No tiene acceso a esta unidad de negocio.")
 
     if is_softrestaurant_system(server.get('system_type')):
         try:
