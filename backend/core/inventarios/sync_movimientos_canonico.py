@@ -390,27 +390,10 @@ def sync_movimientos_canonico(
     for i in range(0, len(resueltos), BATCH):
         cur_w.executemany(ins, resueltos[i:i + BATCH])
 
-    # Reconciliación transversal: reconstruye la ventana canónica completa con
-    # ConceptoOrigen persistido. Nunca depende de tipos_movimiento seleccionados.
-    if pendientes_criticos == 0:
-        cur_w.execute("""
-            DELETE d
-            FROM Inventario_MovimientosDetalle d
-            INNER JOIN Inventario_Movimientos m ON m.MovimientoID=d.MovimientoID
-            WHERE m.EmpresaID=%s
-              AND m.SucursalID=%s
-              AND m.FechaMovimiento >= DATEADD(DAY, -%s, GETDATE())
-              AND ISNULL(m.ReferenciaTipo,'') LIKE 'MOVIMIENTO_POS%%'
-        """, (empresa_id, sucursal_id, int(dias_atras)))
-        cur_w.execute("""
-            DELETE m
-            FROM Inventario_Movimientos m
-            WHERE m.EmpresaID=%s
-              AND m.SucursalID=%s
-              AND m.FechaMovimiento >= DATEADD(DAY, -%s, GETDATE())
-              AND ISNULL(m.ReferenciaTipo,'') LIKE 'MOVIMIENTO_POS%%'
-        """, (empresa_id, sucursal_id, int(dias_atras)))
-        movimientos_reconciliados_eliminados = max(cur_w.rowcount or 0, 0)
+    # Nunca eliminar históricos por un cambio de selección. La migración de
+    # referencias legacy requiere una reconciliación dedicada, certificada y
+    # transaccional; este sincronizador conserva el upsert no destructivo.
+    movimientos_reconciliados_eliminados = 0
 
     # 4a) Insertar encabezados nuevos (uno por llave natural empresa+sucursal+almacen+tipo+fecha(día)+folio)
     cur_w.execute("""
