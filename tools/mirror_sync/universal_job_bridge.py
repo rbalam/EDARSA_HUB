@@ -336,6 +336,76 @@ def validate(job: Any) -> list[str]:
             )
         except ValueError as exc:
             errors.append(str(exc))
+    # OBJECTIVE_CERTIFICATION_R2
+    criteria = job.get("acceptance_criteria")
+    if criteria is not None:
+        if (
+            not isinstance(criteria, list)
+            or not criteria
+            or len(criteria) > 32
+        ):
+            errors.append("ACCEPTANCE_CRITERIA_INVALID")
+        else:
+            seen_ids = set()
+            available_checks = job.get("checks") or []
+
+            for index, criterion in enumerate(criteria, 1):
+                if not isinstance(criterion, dict):
+                    errors.append(f"ACCEPTANCE_{index}_NOT_OBJECT")
+                    continue
+
+                if set(criterion) != {
+                    "id", "check_index", "evidence_key", "expected_value"
+                }:
+                    errors.append(f"ACCEPTANCE_{index}_FIELDS_INVALID")
+                    continue
+
+                identifier = criterion["id"]
+                position = criterion["check_index"]
+                key = criterion["evidence_key"]
+                expected = criterion["expected_value"]
+
+                if (
+                    not isinstance(identifier, str)
+                    or not re.fullmatch(
+                        r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}",
+                        identifier
+                    )
+                    or identifier in seen_ids
+                ):
+                    errors.append(f"ACCEPTANCE_{index}_ID_INVALID")
+                else:
+                    seen_ids.add(identifier)
+
+                if (
+                    type(position) is not int
+                    or position < 0
+                    or position >= len(available_checks)
+                ):
+                    errors.append(
+                        f"ACCEPTANCE_{index}_CHECK_INDEX_INVALID"
+                    )
+
+                if (
+                    not isinstance(key, str)
+                    or not re.fullmatch(
+                        r"[A-Za-z_][A-Za-z0-9_]{0,63}",
+                        key
+                    )
+                    or key in {"status", "summary", "mode"}
+                ):
+                    errors.append(
+                        f"ACCEPTANCE_{index}_EVIDENCE_KEY_INVALID"
+                    )
+
+                if (
+                    expected is None
+                    or isinstance(expected, (dict, list))
+                ):
+                    errors.append(
+                        f"ACCEPTANCE_{index}_EXPECTED_VALUE_INVALID"
+                    )
+
     requester = job.get("requester")
     if requester is None:
         if REQUIRE_REQUESTER:

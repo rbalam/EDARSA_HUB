@@ -1230,6 +1230,62 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
             result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
             result["work_completion"] = "COMPLETE" if not result["blockers"] else "INCOMPLETE"
+            def evaluate_objective_criteria(criteria, check_results, blockers):
+                """Fail-closed evaluation of explicit check evidence."""
+                evidence = []
+
+                for criterion in criteria:
+                    index = criterion["check_index"]
+                    key = criterion["evidence_key"]
+                    expected = criterion["expected_value"]
+
+                    check = (
+                        check_results[index]
+                        if index < len(check_results)
+                        else {}
+                    )
+
+                    actual = check.get(key)
+
+                    satisfied = (
+                        check.get("status") == "PASS"
+                        and key in check
+                        and type(actual) is type(expected)
+                        and actual == expected
+                    )
+
+                    evidence.append({
+                        "id": criterion["id"],
+                        "check_index": index,
+                        "evidence_key": key,
+                        "satisfied": satisfied,
+                    })
+
+                certified = (
+                    bool(evidence)
+                    and all(item["satisfied"] for item in evidence)
+                    and not blockers
+                )
+
+                return (
+                    "OBJECTIVE_CERTIFIED"
+                    if certified
+                    else "OBJECTIVE_PENDING",
+                    evidence,
+                )
+
+            criteria = job.get("acceptance_criteria")
+            if criteria is not None:
+                objective_status, objective_evidence = (
+                    evaluate_objective_criteria(
+                        criteria,
+                        check_results,
+                        result["blockers"],
+                    )
+                )
+                result["objective_status"] = objective_status
+                result["objective_evidence"] = objective_evidence
+
             if result.get("required_deliverables"):
                 deliverable_evaluation = evaluate_deliverables(
                     result.get("required_deliverables"),
@@ -1244,7 +1300,11 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                 not result.get("required_deliverables")
                 or not result.get("missing_deliverables")
             )
-            if not result["blockers"] and deliverables_complete:
+            if (
+                not result["blockers"]
+                and deliverables_complete
+                and result.get("objective_status") != "OBJECTIVE_PENDING"
+            ):
                 result["status"] = "READ_ONLY_COMPLETE"
                 result["percent_complete"] = 100
                 result["certification"] = "CERTIFIED_READ_ONLY"
@@ -1253,8 +1313,17 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
             elif not result["blockers"]:
                 result["status"] = "READ_ONLY_COMPLETE"
                 result["percent_complete"] = 95
-                result["certification"] = "PENDING_DELIVERABLES"
-                result["work_completion"] = "PENDING_DELIVERABLES"
+                objective_pending = (
+                    result.get("objective_status") == "OBJECTIVE_PENDING"
+                )
+                result["certification"] = (
+                    "OBJECTIVE_PENDING"
+                    if objective_pending else "PENDING_DELIVERABLES"
+                )
+                result["work_completion"] = (
+                    "OBJECTIVE_PENDING"
+                    if objective_pending else "PENDING_DELIVERABLES"
+                )
                 result["summary_es"] = "Los checks de solo lectura terminaron, pero faltan entregables requeridos; el resultado no se certifica."
             else:
                 result["percent_complete"] = 0
