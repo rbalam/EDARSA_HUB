@@ -1,3 +1,4 @@
+# retrigger 2026-10-23T04:41Z tablero-visible movement join
 # retrigger 2026-10-23T04:40Z optimized inventory sync progress
 name: Inventory Sync Progress Probe
 
@@ -136,6 +137,68 @@ jobs:
               count=cur.fetchone() or {}
               print("CIENFUEGOS_BARRA_CURRENT=" + json.dumps(
                   {**scope, **count},
+                  ensure_ascii=False,
+                  default=str,
+              ))
+
+              cur.execute("""
+                  SELECT TOP 25
+                      pmo.CodigoFuente AS codigo_fuente,
+                      SUM(
+                          CASE
+                              WHEN UPPER(LTRIM(RTRIM(ISNULL(tm.Naturaleza,''))))
+                                   IN ('E','EN','ENTRADA')
+                              THEN ISNULL(d.Cantidad,0)
+                              ELSE -ISNULL(d.Cantidad,0)
+                          END
+                      ) AS movimiento_neto,
+                      COUNT(*) AS detalles
+                  FROM dbo.Inventario_Movimientos m
+                  INNER JOIN dbo.Inventario_MovimientosDetalle d
+                      ON d.MovimientoID=m.MovimientoID
+                  INNER JOIN dbo.Inventario_TipoMovimiento tm
+                      ON tm.TipoMovimientoID=m.TipoMovimientoID
+                  INNER JOIN dbo.Producto_MapeoOrigen pmo
+                      ON pmo.ProductoID=d.ProductoID
+                     AND LOWER(pmo.ServerID)=LOWER(
+                         '6d053c22-523e-48c0-b72b-96081e2d781b'
+                     )
+                     AND UPPER(pmo.SystemType) IN (
+                         'SOFTRESTAURANT',
+                         'SOFTRESTAURANT_PRO'
+                     )
+                     AND pmo.Activo=1
+                  WHERE m.EmpresaID=%s
+                    AND m.SucursalID=%s
+                    AND m.AlmacenID=%s
+                    AND m.FechaMovimiento >= '2026-10-01'
+                    AND m.FechaMovimiento < '2026-10-20'
+                    AND ISNULL(m.Activo,1)=1
+                  GROUP BY pmo.CodigoFuente
+                  HAVING ABS(SUM(
+                      CASE
+                          WHEN UPPER(LTRIM(RTRIM(ISNULL(tm.Naturaleza,''))))
+                               IN ('E','EN','ENTRADA')
+                          THEN ISNULL(d.Cantidad,0)
+                          ELSE -ISNULL(d.Cantidad,0)
+                      END
+                  )) > 0.000001
+                  ORDER BY ABS(SUM(
+                      CASE
+                          WHEN UPPER(LTRIM(RTRIM(ISNULL(tm.Naturaleza,''))))
+                               IN ('E','EN','ENTRADA')
+                          THEN ISNULL(d.Cantidad,0)
+                          ELSE -ISNULL(d.Cantidad,0)
+                      END
+                  )) DESC
+              """, (
+                  scope["EmpresaID"],
+                  scope["SucursalID"],
+                  scope["AlmacenID"],
+              ))
+              visible=cur.fetchall() or []
+              print("CIENFUEGOS_BARRA_TABLERO_VISIBLE=" + json.dumps(
+                  visible,
                   ensure_ascii=False,
                   default=str,
               ))
