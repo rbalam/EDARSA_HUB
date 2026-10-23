@@ -33,10 +33,7 @@ from core.inventarios.resolver_canonico import (
 
 logger = logging.getLogger(__name__)
 
-from core.inventarios.mpro_movement_policy import (
-    effective_mpro_inventory_codes,
-    normalize_movement_codes,
-)
+from core.inventarios.movement_filter_config import normalize_movement_codes
 
 
 def _query_origen(system_type: str, dias_atras: int, sucursal_origen: str = None) -> str:
@@ -174,18 +171,12 @@ def sync_movimientos_canonico(
     sucursal_origen = (unidad_info or {}).get("sucursal_origen_id")
     system_type_upper = str(system_type or "").upper()
     is_softrestaurant = "SOFT" in system_type_upper
+    # La selección del usuario NO filtra la sincronización. El ledger canónico
+    # conserva todos los movimientos resolubles y su ConceptoOrigen; la
+    # autorización se aplica en tiempo de lectura (reporte + drilldown).
     configured_codes = set(
         normalize_movement_codes(server_info.get("tipos_movimiento") or [])
     )
-    if is_softrestaurant:
-        tipos_movimiento_autorizados = configured_codes
-    else:
-        # MPRO: política validada por usuario. La configuración del servidor
-        # puede reducir el conjunto, nunca ampliarlo con AJUSTES u otros códigos.
-        tipos_movimiento_autorizados = effective_mpro_inventory_codes(
-            configured_codes,
-            default_when_empty=True,
-        )
 
     pend = {"sucursal": 0, "tipo": 0, "almacen": 0, "producto": 0}
 
@@ -282,31 +273,10 @@ def sync_movimientos_canonico(
                 "message": "No fue posible leer movimientos del origen; ledger conservado sin cambios",
             }
 
-    # Una lista vacía es una lectura válida: no hay movimientos en la ventana.
-    # SoftRestaurant puede reconciliar el ledger a cero; MPRO conserva el
-    # comportamiento existente y simplemente termina sin cambios.
-    if not rows and not is_softrestaurant:
-        conn.close()
-        return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0,
-                "descartados": 0, "pendientes": pend, "message": "Sin movimientos en origen"}
-
-    # La selección configurada en Servidores -> Filtros -> Tipos de Movimiento
-    # es autoridad para AMBOS motores. El filtro se aplica sobre el concepto
-    # de origen ANTES de homologarlo al TipoMovimientoID canónico, evitando que
-    # varios conceptos que convergen al mismo tipo se vuelvan indistinguibles.
+    # Una lista vacía es una lectura válida. Se conserva como tal para que,
+    # si no existen pendientes críticos, la reconciliación deje la ventana
+    # canónica en cero. No se filtra por configuración durante la sincronización.
     filtrados_no_autorizados = 0
-    if not tipos_movimiento_autorizados:
-        filtrados_no_autorizados = len(rows)
-        rows = []
-    else:
-        rows_autorizados = []
-        for row in rows:
-            concepto_origen = str(row.get("concepto") or "").strip().upper()
-            if concepto_origen in tipos_movimiento_autorizados:
-                rows_autorizados.append(row)
-            else:
-                filtrados_no_autorizados += 1
-        rows = rows_autorizados
 
     # 3) Leer y RESOLVER todo en memoria (resolvers cacheados -> rápido).
     # Precarga masiva del mapeo de productos (1 query) para evitar round-trips por producto.
@@ -367,11 +337,10 @@ def sync_movimientos_canonico(
             pend["producto"] += 1
             continue
         concepto_origen = str(concepto or "").strip().upper()
-        referencia_tipo = (
-            "MOVIMIENTO_POS"
-            if is_softrestaurant
-            else f"MOVIMIENTO_POS|{concepto_origen}"
-        )
+        # Persistir ConceptoOrigen de forma transversal para ambos motores.
+        # Esto permite filtrar reporte y drilldown por la selección del usuario
+        # sin confundir conceptos que convergen al mismo TipoMovimientoID.
+        referencia_tipo = f"MOVIMIENTO_POS|{concepto_origen}"
         resueltos.append((
             empresa_id, sucursal_id, alm.canonical_id, tip.canonical_id,
             concepto_origen, referencia_tipo, fecha, folio,
@@ -384,11 +353,9 @@ def sync_movimientos_canonico(
         + int(pend.get("producto", 0))
     )
 
-    # SoftRestaurant no debe perder TODA la ventana por unas pocas filas
-    # pendientes. Las filas resolubles se sincronizan; las no resolubles se
-    # reportan explícitamente para corrección de catálogo/mapeo. Esto mantiene
-    # el ledger operativo sin inventar IDs ni ocultar pendientes.
-    if not resueltos and is_softrestaurant:
+    # Fail-closed sólo ante pendientes críticos. Una ventana válida sin filas
+    # debe poder reconciliarse a cero de forma transversal.
+    if not resueltos and pendientes_criticos > 0:
         conn.close()
         return {
             "status": "PENDIENTE",
@@ -396,22 +363,17 @@ def sync_movimientos_canonico(
             "detalles_synced": 0,
             "descartados": 0,
             "pendientes": pend,
-            "filtrados_no_autorizados": filtrados_no_autorizados,
-            "message": "No hay movimientos SoftRestaurant resolubles en la ventana",
+            "filtrados_no_autorizados": 0,
+            "message": "No hay movimientos resolubles en la ventana; ledger conservado por pendientes críticos",
         }
-
-    if not resueltos and not is_softrestaurant:
-        conn.close()
-        return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0,
-                "descartados": 0, "pendientes": pend, "message": "Sin movimientos resolubles"}
 
     # 4) Escritura SET-BASED (staging temporal + INSERT..SELECT). Reduce miles de
     #    round-trips a unas pocas sentencias. Idempotente por llave natural.
     cur_w = conn.cursor()
 
-    # SoftRestaurant conserva siempre el upsert no destructivo.
-    # MPRO puede reconstruir su ventana únicamente cuando la lectura fue válida
-    # y no existen pendientes críticos de catálogo/mapeo.
+    # Ambos motores reconstruyen la ventana sólo cuando la lectura del origen
+    # fue válida y no existen pendientes críticos. La reconstrucción no depende
+    # de la selección del usuario: preserva TODOS los movimientos resolubles.
     movimientos_reconciliados_eliminados = 0
 
     cur_w.execute("""
@@ -428,11 +390,9 @@ def sync_movimientos_canonico(
     for i in range(0, len(resueltos), BATCH):
         cur_w.executemany(ins, resueltos[i:i + BATCH])
 
-    # MPRO: reconciliación controlada de la ventana. Sólo se ejecuta cuando
-    # la lectura del origen fue válida y no existen pendientes críticos.
-    # Retira AJUSTES u otros conceptos previamente sincronizados que ya no
-    # están autorizados y reconstruye la ventana con los códigos permitidos.
-    if not is_softrestaurant and pendientes_criticos == 0:
+    # Reconciliación transversal: reconstruye la ventana canónica completa con
+    # ConceptoOrigen persistido. Nunca depende de tipos_movimiento seleccionados.
+    if pendientes_criticos == 0:
         cur_w.execute("""
             DELETE d
             FROM Inventario_MovimientosDetalle d
@@ -510,7 +470,7 @@ def sync_movimientos_canonico(
         "detalles_synced": detalles,
         "descartados": 0,
         "pendientes": pend,
-        "filtrados_no_autorizados": filtrados_no_autorizados,
+        "filtrados_no_autorizados": 0,
         "duplicados_fuente_omitidos": source_duplicates,
         "movimientos_reconciliados_eliminados": movimientos_reconciliados_eliminados,
         "pendientes_criticos": pendientes_criticos,
