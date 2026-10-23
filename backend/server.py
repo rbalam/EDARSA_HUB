@@ -5144,6 +5144,7 @@ WHERE t._rn = 1
                 sales_start=sales_start,
                 sales_end=sales_end,
                 warehouses=activity_warehouses,
+                visible_product_codes=sorted(productos.keys()),
             )
             logging.info(
                 "[SOFT-CANONICAL-NOLIVE] actividad canonica movimientos=%s ventas=%s unidad=%s",
