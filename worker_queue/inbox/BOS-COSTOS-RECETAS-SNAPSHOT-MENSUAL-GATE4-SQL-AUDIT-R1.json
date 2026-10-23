@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "queries": [
+        {
+          "name": "snapshot_tablas",
+          "sql": "SELECT OBJECT_ID('dbo.Comercial_RecetasSnapshot','U') AS snapshot_id, OBJECT_ID('dbo.Comercial_RecetasSnapshotDetalle','U') AS detalle_id"
+        },
+        {
+          "name": "snapshot_conteos",
+          "sql": "SELECT t.name AS tabla, SUM(p.rows) AS filas FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.partitions p ON p.object_id=t.object_id WHERE s.name='dbo' AND t.name IN ('Comercial_RecetasSnapshot','Comercial_RecetasSnapshotDetalle') AND p.index_id IN (0,1) GROUP BY t.name"
+        },
+        {
+          "name": "snapshot_columnas",
+          "sql": "SELECT t.name AS tabla, c.name AS columna, ty.name AS tipo FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND t.name IN ('Comercial_RecetasSnapshot','Comercial_RecetasSnapshotDetalle') ORDER BY t.name,c.column_id"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE4-SQL-AUDIT-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate R4: comprobar en SQL Server EDARSAHUB la existencia, estructura y conteos de las tablas historicas de recetas. Determinar si hay datos reales para fotografias mensuales. No modificar datos, codigo, Scheduler ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "costos-margenes-recetas-snapshot-mensual",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
