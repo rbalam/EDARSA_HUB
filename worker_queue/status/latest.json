@@ -1,10 +1,10 @@
 {
   "ahead_count": 0,
-  "behind_count": 0,
+  "behind_count": 1,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "SYNC",
-  "development_sha": "c56d7a5fb9f6947994eb73c81b3b8fa95b690ab1",
-  "generated_at_utc": "2026-10-23T05:05:34Z",
+  "convergence_status": "REMOTE_AHEAD_ONLY",
+  "development_sha": "159128901d35d173e333275b7dbf1358ed66bb23",
+  "generated_at_utc": "2026-10-23T05:07:03Z",
   "history": {
     "done_total_local": 1564,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 303,
+      "age_seconds": 391,
       "job_id": "BOS-WORKER-OBJECTIVE-CERTIFICATION-R1",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "c56d7a5fb9f6947994eb73c81b3b8fa95b690ab1",
+  "local_development_sha": "2ed730fe87240dcc3ccdb2a8e8ae9d0974fa8c3d",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -32,19 +32,19 @@
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 1,
   "queue_running": 0,
-  "remote_development_sha": "c56d7a5fb9f6947994eb73c81b3b8fa95b690ab1",
+  "remote_development_sha": "159128901d35d173e333275b7dbf1358ed66bb23",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-23T05:05:23Z",
-    "last_receive_utc": "2026-10-23T05:05:18Z",
+    "last_cycle_utc": "2026-10-23T05:06:49Z",
+    "last_receive_utc": "2026-10-23T05:07:02Z",
     "last_terminal_utc": "2026-10-23T05:00:31Z",
-    "pid": "288837",
+    "pid": "298550",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "2372a314dd0dd79781014d70d4c71e8a2e1f3f60",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "c56d7a5fb9f6947994eb73c81b3b8fa95b690ab1",
+      "development_sha": "2ed730fe87240dcc3ccdb2a8e8ae9d0974fa8c3d",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
