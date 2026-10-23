@@ -1,0 +1,142 @@
+{
+  "actions": [
+    {
+      "expected_count": 4,
+      "expected_sha256": "cdef55b0fdfbfab1fa57d2f10edf4cbbfca95dda4931c57cad6ff30dc3234984",
+      "new": "current_user: Dict = Depends(require_permission(\"SERVIDORES_VER\"))",
+      "old": "current_user: Dict = Depends(get_current_user)",
+      "path": "backend/modules/integrations_center/routes.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "",
+      "old": "from core.security import get_current_user\n",
+      "path": "backend/modules/integrations_center/routes.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "expected_sha256": "d80b374787bc3011d878ceddc309a230b1c3d7fa39498feffa1b18682573924b",
+      "new": "  // Estado para el tab activo\n  const [activeMainTab, setActiveMainTab] = useState('sql');\n\n  const [communicationsSummary, setCommunicationsSummary] = useState(null);\n  const [loadingCommunications, setLoadingCommunications] = useState(false);\n\n  const loadCommunications = useCallback(async () => {\n    setLoadingCommunications(true);\n    try {\n      const response = await api.get('/integrations-center/communications');\n      setCommunicationsSummary(response.data?.data || null);\n    } catch (error) {\n      console.error('Error cargando Comunicaciones:', error);\n      toast.error('No se pudo cargar Comunicaciones');\n    } finally {\n      setLoadingCommunications(false);\n    }\n  }, []);\n",
+      "old": "  // Estado para el tab activo\n  const [activeMainTab, setActiveMainTab] = useState('sql');\n",
+      "path": "frontend/src/pages/Servidores.js",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "    if (activeMainTab === 'api-factory') {\n      loadApiFactory();\n    }\n    if (activeMainTab === 'communications') {\n      loadCommunications();\n    }\n  }, [activeMainTab, loadCoreAuditLog, loadApiFactory, loadCommunications]);\n",
+      "old": "    if (activeMainTab === 'api-factory') {\n      loadApiFactory();\n    }\n  }, [activeMainTab, loadCoreAuditLog, loadApiFactory]);\n",
+      "path": "frontend/src/pages/Servidores.js",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "<TabsList className=\"grid w-full max-w-5xl grid-cols-6 mb-6\">",
+      "old": "<TabsList className=\"grid w-full max-w-4xl grid-cols-5 mb-6\">",
+      "path": "frontend/src/pages/Servidores.js",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "          <TabsTrigger value=\"communications\" className=\"flex items-center gap-2\" data-testid=\"tab-communications\">\n            <Mail className=\"h-4 w-4\" />\n            Comunicaciones\n          </TabsTrigger>\n          <TabsTrigger value=\"bitacora\" className=\"flex items-center gap-2\" data-testid=\"tab-bitacora-core\">\n",
+      "old": "          <TabsTrigger value=\"bitacora\" className=\"flex items-center gap-2\" data-testid=\"tab-bitacora-core\">\n",
+      "path": "frontend/src/pages/Servidores.js",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "        <TabsContent value=\"communications\">\n          <div className=\"space-y-4\" data-testid=\"communications-panel\">\n            <div className=\"flex items-center justify-between\">\n              <div>\n                <h3 className=\"text-lg font-semibold\">Comunicaciones</h3>\n                <p className=\"text-sm text-zinc-500\">Resumen provider-neutral de Communications</p>\n              </div>\n              <Button variant=\"outline\" size=\"sm\" onClick={loadCommunications}>\n                <RefreshCw className={`h-4 w-4 mr-2 ${loadingCommunications ? 'animate-spin' : ''}`} />\n                Actualizar\n              </Button>\n            </div>\n            <div className=\"grid grid-cols-1 md:grid-cols-3 gap-3\">\n              <Card><CardContent className=\"pt-5\"><p className=\"text-xs text-zinc-500\">Configuraciones</p><p className=\"text-2xl font-semibold\">{communicationsSummary?.config_rows ?? 'N/D'}</p></CardContent></Card>\n              <Card><CardContent className=\"pt-5\"><p className=\"text-xs text-zinc-500\">Logs</p><p className=\"text-2xl font-semibold\">{communicationsSummary?.log_rows ?? 'N/D'}</p></CardContent></Card>\n              <Card><CardContent className=\"pt-5\"><p className=\"text-xs text-zinc-500\">Runtime</p><p className=\"text-sm font-medium\">{communicationsSummary?.provider_runtime || 'N/D'}</p></CardContent></Card>\n            </div>\n          </div>\n        </TabsContent>\n\n        {/* Tab: Bitácora Admin CORE */}\n",
+      "old": "        {/* Tab: Bitácora Admin CORE */}\n",
+      "path": "frontend/src/pages/Servidores.js",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "expected_sha256": "e5a9ba390848e315a52580278b9acc2d01c8ca92aaadcaac0ea27e2fcddb9477",
+      "new": "Para WhatsApp Sandbox: El destinatario debe enviar primero \"join &lt;keyword&gt;\" al {notificacionesConfig?.servicios?.whatsapp?.config?.from_number || \"número configurado\"}",
+      "old": "Para WhatsApp Sandbox: El destinatario debe enviar primero \"join &lt;keyword&gt;\" al +1 (415) 523-8886",
+      "path": "frontend/src/pages/CentroControl.jsx",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "expected_sha256": "fb34180cfb9b89cefa5d2f31bb0dea8f72478099a749074d2f16fe9a89eda03e",
+      "new": "def test_gate5b_base_routes_require_servidores_ver():\n    from pathlib import Path\n    source=(Path(__file__).parents[1]/'modules/integrations_center/routes.py').read_text()\n    assert source.count('Depends(require_permission(\"SERVIDORES_VER\"))') >= 9\n    assert 'Depends(get_current_user)' not in source\n    assert 'Depends(require_permission(\"NOTIFICACIONES_VER\"))' in source\n\n\ndef test_gate5b_never_projects_secret_values():\n",
+      "old": "def test_gate5b_never_projects_secret_values():\n",
+      "path": "backend/tests/test_integrations_center_gate5b.py",
+      "type": "replace_text"
+    }
+  ],
+  "base_sha": "7bbefcfea76d524750cf28e761b6020148a31818",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/integrations_center/routes.py",
+        "backend/tests/test_integrations_center_gate5b.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "request": {
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx"
+        ],
+        "max_results": 200,
+        "paths": [
+          "backend/modules/integrations_center/routes.py",
+          "frontend/src/pages/Servidores.js",
+          "frontend/src/pages/CentroControl.jsx",
+          "backend/tests/test_integrations_center_gate5b.py"
+        ],
+        "search_terms": [
+          "SERVIDORES_VER",
+          "Depends(get_current_user)",
+          "value=\"communications\"",
+          "communications-panel",
+          "from_number",
+          "+1 (415) 523-8886"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-CENTRO-RBAC-UI-CLOSURE-R1-20261022",
+  "mode": "MUTATION",
+  "objective": "Cerrar RBAC y UI del Centro de Integraciones: SERVIDORES_VER en las cuatro rutas base, tab provider-neutral Comunicaciones reutilizando /integrations-center/communications, retirar hardcode Twilio usando from_number y agregar regresion RBAC. Sin SQL ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Conexiones y Comunicaciones",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "Conexiones y Comunicaciones",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": [
+      "backend/modules/integrations_center/routes.py",
+      "frontend/src/pages/Servidores.js",
+      "frontend/src/pages/CentroControl.jsx",
+      "backend/tests/test_integrations_center_gate5b.py"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
