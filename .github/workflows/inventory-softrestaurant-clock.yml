@@ -133,3 +133,110 @@ jobs:
         run: |
           set -euo pipefail
           python tools/run_inventory_github_owner.py
+
+      - name: Verify CIENFUEGOS BARRA movements October 1-19
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import pymssql
+
+          conn = pymssql.connect(
+              server=os.environ["EDARSAHUB_SQL_HOST"],
+              port=int(os.environ["EDARSAHUB_SQL_PORT"]),
+              database=os.environ["EDARSAHUB_SQL_DATABASE"],
+              user=os.environ["EDARSAHUB_SQL_USER"],
+              password=os.environ["EDARSAHUB_SQL_PASSWORD"],
+              login_timeout=15,
+              timeout=60,
+              as_dict=True,
+          )
+          cur = conn.cursor(as_dict=True)
+
+          # Resolver CIENFUEGOS y BARRA desde catálogos canónicos, sin IDs hardcodeados.
+          cur.execute("""
+              SELECT TOP 1
+                  e.EmpresaID,
+                  s.SucursalID,
+                  a.AlmacenID,
+                  a.CodigoAlmacen,
+                  a.NombreAlmacen
+              FROM dbo.Sistema_Empresas e
+              INNER JOIN dbo.Sistema_Sucursales s
+                  ON s.EmpresaID = e.EmpresaID
+                 AND ISNULL(s.Activo,1)=1
+              INNER JOIN dbo.Inventario_Almacenes a
+                  ON a.EmpresaID = e.EmpresaID
+                 AND a.SucursalID = s.SucursalID
+                 AND ISNULL(a.Activo,1)=1
+              WHERE UPPER(e.CodigoEmpresa) = 'CIENFUEGOS'
+                AND (
+                    UPPER(LTRIM(RTRIM(a.CodigoAlmacen))) IN ('200','200-BARRA')
+                    OR UPPER(LTRIM(RTRIM(a.NombreAlmacen))) IN ('BARRA','200-BARRA')
+                    OR UPPER(LTRIM(RTRIM(a.NombreAlmacen))) LIKE '%BARRA%'
+                )
+              ORDER BY
+                  CASE
+                      WHEN UPPER(LTRIM(RTRIM(a.CodigoAlmacen)))='200' THEN 0
+                      WHEN UPPER(LTRIM(RTRIM(a.CodigoAlmacen)))='200-BARRA' THEN 1
+                      ELSE 2
+                  END,
+                  a.AlmacenID
+          """)
+          scope = cur.fetchone()
+          if not scope:
+              raise SystemExit("CIENFUEGOS_BARRA_SCOPE_NOT_RESOLVED")
+
+          cur.execute("""
+              SELECT
+                  COUNT(DISTINCT m.MovimientoID) AS movimientos,
+                  COUNT(*) AS detalles,
+                  MIN(m.FechaMovimiento) AS fecha_min,
+                  MAX(m.FechaMovimiento) AS fecha_max,
+                  SUM(
+                      CASE
+                          WHEN UPPER(LTRIM(RTRIM(ISNULL(tm.Naturaleza,''))))
+                               IN ('E','EN','ENTRADA')
+                          THEN ISNULL(d.Cantidad,0)
+                          ELSE -ISNULL(d.Cantidad,0)
+                      END
+                  ) AS cantidad_neta
+              FROM dbo.Inventario_Movimientos m
+              INNER JOIN dbo.Inventario_MovimientosDetalle d
+                  ON d.MovimientoID = m.MovimientoID
+              INNER JOIN dbo.Inventario_TipoMovimiento tm
+                  ON tm.TipoMovimientoID = m.TipoMovimientoID
+              WHERE m.EmpresaID = %s
+                AND m.SucursalID = %s
+                AND m.AlmacenID = %s
+                AND m.FechaMovimiento >= '2026-10-01'
+                AND m.FechaMovimiento < '2026-10-20'
+                AND ISNULL(m.Activo,1)=1
+          """, (
+              scope["EmpresaID"],
+              scope["SucursalID"],
+              scope["AlmacenID"],
+          ))
+          result = cur.fetchone() or {}
+
+          payload = {
+              "unidad": "CIENFUEGOS",
+              "almacen_id": scope["AlmacenID"],
+              "codigo_almacen": scope["CodigoAlmacen"],
+              "nombre_almacen": scope["NombreAlmacen"],
+              "periodo": "2026-10-01..2026-10-19",
+              "movimientos": int(result.get("movimientos") or 0),
+              "detalles": int(result.get("detalles") or 0),
+              "fecha_min": str(result.get("fecha_min") or ""),
+              "fecha_max": str(result.get("fecha_max") or ""),
+              "cantidad_neta": float(result.get("cantidad_neta") or 0),
+          }
+          print("CIENFUEGOS_BARRA_MOVEMENTS=" + json.dumps(payload, ensure_ascii=False))
+
+          cur.close()
+          conn.close()
+
+          if payload["movimientos"] <= 0 or payload["detalles"] <= 0:
+              raise SystemExit("CIENFUEGOS_BARRA_MOVEMENTS_MISSING")
+          PY
