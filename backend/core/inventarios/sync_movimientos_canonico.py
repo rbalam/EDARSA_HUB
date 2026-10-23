@@ -58,20 +58,50 @@ def _query_origen(system_type: str, dias_atras: int, sucursal_origen: str = None
             WHERE Mv_Fecha >= DATEADD(DAY, -{int(dias_atras)}, GETDATE())
               {filtro_suc}
         """
-    # SoftRestaurant Pro (esquema real verificado): movtosalmacen no tiene 'cancelado'
-    # ni 'idinsumo'; el código de producto se obtiene vía insumospresentaciones.idinsumo.
+    # SoftRestaurant usa DOS fuentes complementarias:
+    # - movsinv: movimientos directos por insumo.
+    # - movtosalmacen: movimientos por presentación -> insumo.
+    # NOT EXISTS evita duplicar movimientos ya presentes en movsinv.
     return f"""
         SELECT
-            m.fecha             AS fecha,
+            i.fecha AS fecha,
+            CAST(i.idalmacen AS VARCHAR(50)) AS almacen_cod,
+            RTRIM(LTRIM(i.idconcepto)) AS concepto,
+            RTRIM(LTRIM(i.idinsumo)) AS producto_cod,
+            ISNULL(i.cantidad, 0) AS cantidad,
+            ISNULL(i.costo, 0) AS costo,
+            CASE
+                WHEN i.movto IS NOT NULL THEN 'I:M:' + CAST(i.movto AS VARCHAR(24))
+                WHEN i.traspaso IS NOT NULL THEN 'I:T:' + CAST(i.traspaso AS VARCHAR(24))
+                WHEN i.idcompra IS NOT NULL THEN 'I:C:' + CAST(i.idcompra AS VARCHAR(24))
+                WHEN i.invfisico IS NOT NULL THEN 'I:F:' + CAST(i.invfisico AS VARCHAR(24))
+                ELSE 'I:X:' + CONVERT(VARCHAR(36), NEWID())
+            END AS folio
+        FROM movsinv i
+        WHERE i.fecha >= DATEADD(DAY, -{int(dias_atras)}, GETDATE())
+
+        UNION ALL
+
+        SELECT
+            m.fecha AS fecha,
             CAST(m.idalmacen AS VARCHAR(50)) AS almacen_cod,
             RTRIM(LTRIM(m.idconcepto)) AS concepto,
-            CAST(ip.idinsumo AS VARCHAR(50)) AS producto_cod,
+            RTRIM(LTRIM(ip.idinsumo)) AS producto_cod,
             ISNULL(m.cantidad, 0) AS cantidad,
-            ISNULL(m.costo, 0)    AS costo,
-            CAST(m.movto AS VARCHAR(50)) AS folio
+            ISNULL(m.costo, 0) AS costo,
+            'M:' + CAST(m.movto AS VARCHAR(24)) AS folio
         FROM movtosalmacen m
-        JOIN insumospresentaciones ip ON ip.idinsumospresentaciones = m.idinsumospresentaciones
+        INNER JOIN insumospresentaciones ip
+            ON ip.idinsumospresentaciones = m.idinsumospresentaciones
         WHERE m.fecha >= DATEADD(DAY, -{int(dias_atras)}, GETDATE())
+          AND NOT EXISTS (
+              SELECT 1
+              FROM movsinv i
+              WHERE i.movto = m.movto
+                AND RTRIM(LTRIM(i.idconcepto)) = RTRIM(LTRIM(m.idconcepto))
+                AND RTRIM(LTRIM(i.idinsumo)) = RTRIM(LTRIM(ip.idinsumo))
+                AND i.idalmacen = m.idalmacen
+          )
     """
 
 
@@ -91,6 +121,13 @@ def sync_movimientos_canonico(
     server_id = server_info.get("id") or server_info.get("server_id")
     unidad_codigo = (unidad_info or {}).get("codigo", "")
     sucursal_origen = (unidad_info or {}).get("sucursal_origen_id")
+    system_type_upper = str(system_type or "").upper()
+    is_softrestaurant = "SOFT" in system_type_upper or system_type_upper == "SR"
+    tipos_movimiento_autorizados = {
+        str(value).strip().upper()
+        for value in (server_info.get("tipos_movimiento") or [])
+        if str(value).strip()
+    }
 
     pend = {"sucursal": 0, "tipo": 0, "almacen": 0, "producto": 0}
 
@@ -116,10 +153,51 @@ def sync_movimientos_canonico(
         server_info["host"], server_info["port"], server_info["database"],
         server_info["username"], server_info["password"], _query_origen(system_type, dias_atras, sucursal_origen),
     )
+    if rows is None:
+        conn.close()
+        return {
+            "status": "ERROR",
+            "encabezados_synced": 0,
+            "detalles_synced": 0,
+            "descartados": 0,
+            "pendientes": pend,
+            "message": "No fue posible leer movimientos del origen",
+        }
+
+    filtrados_no_autorizados = 0
+    if is_softrestaurant:
+        if not tipos_movimiento_autorizados:
+            conn.close()
+            return {
+                "status": "PENDIENTE",
+                "encabezados_synced": 0,
+                "detalles_synced": 0,
+                "descartados": 0,
+                "pendientes": pend,
+                "filtrados_no_autorizados": len(rows),
+                "message": "Sin tipos de movimiento autorizados para este servidor",
+            }
+
+        rows_autorizados = []
+        for row in rows:
+            concepto_origen = str(row.get("concepto") or "").strip().upper()
+            if concepto_origen in tipos_movimiento_autorizados:
+                rows_autorizados.append(row)
+            else:
+                filtrados_no_autorizados += 1
+        rows = rows_autorizados
+
     if not rows:
         conn.close()
-        return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0,
-                "descartados": 0, "pendientes": pend, "message": "Sin datos o sin conexión en origen"}
+        return {
+            "status": "OK",
+            "encabezados_synced": 0,
+            "detalles_synced": 0,
+            "descartados": 0,
+            "pendientes": pend,
+            "filtrados_no_autorizados": filtrados_no_autorizados,
+            "message": "Sin movimientos autorizados/resolubles en la ventana",
+        }
 
     # 3) Leer y RESOLVER todo en memoria (resolvers cacheados -> rápido).
     # Precarga masiva del mapeo de productos (1 query) para evitar round-trips por producto.
@@ -146,6 +224,14 @@ def sync_movimientos_canonico(
             pend["cantidad_cero"] = pend.get("cantidad_cero", 0) + 1
             continue
         tip = resolver_tipo_movimiento_desde_concepto(system_type, concepto)
+        if not tip.resuelto and is_softrestaurant:
+            from modules.compras.sync_service import map_tipo_movimiento_softrestaurant
+            tipo_fallback = map_tipo_movimiento_softrestaurant(concepto, cantidad)
+            if tipo_fallback is not None:
+                class _TipoFallback:
+                    resuelto = True
+                    canonical_id = tipo_fallback
+                tip = _TipoFallback()
         if not tip.resuelto:
             pend["tipo"] += 1
             continue
@@ -160,10 +246,23 @@ def sync_movimientos_canonico(
         resueltos.append((empresa_id, sucursal_id, alm.canonical_id, tip.canonical_id,
                           fecha, folio, prod.canonical_id, cantidad, costo))
 
+    pendientes_criticos = (
+        int(pend.get("tipo", 0))
+        + int(pend.get("almacen", 0))
+        + int(pend.get("producto", 0))
+    )
     if not resueltos:
         conn.close()
-        return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0,
-                "descartados": 0, "pendientes": pend, "message": "Sin movimientos resolubles"}
+        return {
+            "status": "PENDIENTE" if is_softrestaurant else "OK",
+            "encabezados_synced": 0,
+            "detalles_synced": 0,
+            "descartados": 0,
+            "pendientes": pend,
+            "filtrados_no_autorizados": filtrados_no_autorizados,
+            "pendientes_criticos": pendientes_criticos,
+            "message": "Sin movimientos resolubles",
+        }
 
     # 4) Escritura SET-BASED (staging temporal + INSERT..SELECT). Reduce miles de
     #    round-trips a unas pocas sentencias. Idempotente por llave natural.
@@ -236,6 +335,13 @@ def sync_movimientos_canonico(
         "detalles_synced": detalles,
         "descartados": 0,
         "pendientes": pend,
+        "filtrados_no_autorizados": filtrados_no_autorizados,
+        "pendientes_criticos": pendientes_criticos,
+        "status_detail": (
+            "PARTIAL_WITH_PENDING"
+            if pendientes_criticos > 0
+            else "COMPLETE"
+        ),
     }
 
 
