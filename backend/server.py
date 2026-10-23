@@ -16764,6 +16764,22 @@ except Exception as e:
 
 
 # =============================================================================
+# PRODUCCION - TRIGGER HTTP EXTERNO PARA INVENTARIOS/COMPRAS
+# =============================================================================
+try:
+    from modules.scheduler_trigger_inventarios.routes import (
+        router as inventory_scheduler_trigger_router,
+    )
+    app.include_router(inventory_scheduler_trigger_router)
+    logger.info("Inventory scheduler HTTP trigger router registrado")
+except Exception as e:
+    logger.warning(
+        "Error registrando Inventory scheduler HTTP trigger router: %s",
+        e,
+    )
+
+
+# =============================================================================
 # P0 - TRIGGER HTTP PRODUCTIVO PARA VENTAS DEL DIA
 # =============================================================================
 try:
