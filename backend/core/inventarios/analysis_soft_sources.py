@@ -56,7 +56,7 @@ def _fetch_soft_ledger_net(
         return {}
 
     visible_product_codes = _unique(visible_product_codes)
-    preferred_order = "0,"
+    preferred_order = ""
     preferred_params: List[Any] = []
     if visible_product_codes:
         preferred_ph = ",".join(["%s"] * len(visible_product_codes))
