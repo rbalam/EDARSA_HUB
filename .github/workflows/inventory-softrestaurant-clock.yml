@@ -1,0 +1,73 @@
+name: Inventory SoftRestaurant Clock
+
+on:
+  schedule:
+    - cron: "11,41 * * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - ".github/workflows/inventory-softrestaurant-clock.yml"
+      - "backend/tools/run_inventory_github_owner.py"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inventory-softrestaurant-clock
+  cancel-in-progress: false
+
+env:
+  EDARSA_ENV: DEVELOPMENT
+  SCHEDULER_SYNC_COMPRAS_ENABLED: "true"
+  SCHEDULER_SYNC_COMPRAS_EXECUTION_ENABLED: "true"
+  SCHEDULER_SYNC_COMPRAS_EXTENDED_ENABLED: "false"
+  SYNC_COMPRAS_SYSTEM_FILTER: "SOFT"
+  SYNC_COMPRAS_MOV_DIAS_ATRAS: "30"
+  SYNC_INVENTARIOS_FISICOS_QUERY_TIMEOUT_SECONDS: "180"
+  EDARSAHUB_SQL_HOST: "54.39.104.176"
+  EDARSAHUB_SQL_PORT: "1433"
+  EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+  EDARSAHUB_SQL_USER: "HRLectura"
+  EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+  EDARSAHUB_SQL_WRITER_USER: ${{ secrets.EDARSAHUB_SQL_WRITER_USER }}
+  EDARSAHUB_SQL_WRITER_PASSWORD: ${{ secrets.EDARSAHUB_SQL_WRITER_PASSWORD }}
+  SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+
+jobs:
+  inventory-softrestaurant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend runtime dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-inventory-owner.txt
+          python -m pip install -r /tmp/requirements-inventory-owner.txt
+
+      - name: Validate inventory owner secrets
+        run: |
+          set -euo pipefail
+          test -n "$EDARSAHUB_SQL_PASSWORD"
+          test -n "$EDARSAHUB_SQL_WRITER_USER"
+          test -n "$EDARSAHUB_SQL_WRITER_PASSWORD"
+          test -n "$SERVER_SECRET_KEY"
+
+      - name: Run canonical SoftRestaurant inventory sync
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          set -euo pipefail
+          python tools/run_inventory_github_owner.py
