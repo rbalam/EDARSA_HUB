@@ -28,7 +28,12 @@ def test_dispatcher_tracks_runtime_and_only_releases_created_claims():
 
 def test_dispatcher_uses_serial_slot_runtime_without_parallel_execution():
     text = DISPATCHER.read_text(encoding='utf-8')
-    assert 'from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state' in text
+    assert "heartbeat_slot" in text
+    assert "load_slot" in text
+    assert "create_slot" in text
+    assert "reclaim_stale_slot" in text
+    assert "release_slot" in text
+    assert "update_slot_state" in text
     assert 'slot_id = "readonly-1" if slot_class == "READ_ONLY" else "mutation-1"' in text
     assert 'result["slot_recovery"] = reclaim_stale_slot(' in text
     assert 'heartbeat_stale_seconds=90' in text
@@ -66,6 +71,15 @@ def test_stale_processing_is_requeued_once_then_terminal():
     assert 'processing_stale_after_single_requeue' in text
 
 
+def test_long_checks_refresh_existing_slot_ownership():
+    text = DISPATCHER.read_text(encoding='utf-8')
+    assert 'heartbeat_active_slot' in text
+    assert 'run_check_process' in text
+    assert 'heartbeat_slot(' in text
+    assert 'time.monotonic()' in text
+    assert 'subprocess.Popen(' in text
+
+
 def test_health_exposes_sla_metrics():
     text = HEALTH.read_text(encoding='utf-8')
     for token in ('queue_depth','oldest_pending_age_seconds','intake_sla_seconds','intake_sla_breached','current_job_id','last_terminal_utc'):
@@ -74,7 +88,12 @@ def test_health_exposes_sla_metrics():
 
 def test_dispatcher_treats_missing_slot_as_already_released_only_during_cleanup():
     text = DISPATCHER.read_text(encoding='utf-8')
-    assert 'from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state' in text
+    assert "heartbeat_slot" in text
+    assert "load_slot" in text
+    assert "create_slot" in text
+    assert "reclaim_stale_slot" in text
+    assert "release_slot" in text
+    assert "update_slot_state" in text
     assert 'from worker_slot_runtime import SlotRuntimeError' in text
     assert 'except SlotRuntimeError as exc:' in text
     assert 'if str(exc) == "SLOT_NOT_FOUND":' in text

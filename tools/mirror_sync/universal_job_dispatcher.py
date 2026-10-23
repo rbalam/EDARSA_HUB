@@ -29,6 +29,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -40,7 +41,14 @@ except ModuleNotFoundError:
 
 from worker_concurrency import evaluate_scope_advance
 from worker_scheduling import normalize_metadata
-from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state
+from worker_slot_runtime import (
+    create_slot,
+    heartbeat_slot,
+    load_slot,
+    reclaim_stale_slot,
+    release_slot,
+    update_slot_state,
+)
 from worker_slot_runtime import SlotRuntimeError
 from git_divergence_guard import (GitGuardError, acquire_writer_lock, compare_and_swap, inspect_repository, mutation_policy, post_push_verify, recover_authorized_local_ahead, release_writer_lock, requires_writer_lock, scoped_push_env, validate_commit_scope)
 
@@ -562,6 +570,114 @@ def apply_action(worktree: Path, action: dict[str, Any]) -> str:
     raise ValueError(f"UNSUPPORTED_ACTION:{kind}")
 
 
+def heartbeat_active_slot() -> bool:
+    """Refresh canonical ownership while a long validation is running."""
+    current_job_path = RUNTIME / "current_job_id"
+
+    try:
+        current_job_id = current_job_path.read_text(
+            encoding="utf-8"
+        ).strip()
+    except OSError:
+        return False
+
+    if not current_job_id:
+        return False
+
+    for slot_id in ("readonly-1", "mutation-1"):
+        try:
+            slot = load_slot(slot_id)
+        except SlotRuntimeError:
+            continue
+
+        if not isinstance(slot, dict):
+            continue
+
+        if str(slot.get("job_id") or "").strip() != current_job_id:
+            continue
+
+        if str(slot.get("state") or "").strip() not in {
+            "CLAIMED",
+            "RUNNING",
+            "TERMINALIZING",
+        }:
+            continue
+
+        heartbeat_slot(
+            slot_id,
+            execution_pid=os.getpid(),
+        )
+        return True
+
+    return False
+
+
+def run_check_process(
+    args: list[str],
+    *,
+    cwd: Path,
+    timeout: int,
+    env_extra: dict[str, str] | None = None,
+):
+    """Run one validation while keeping slot ownership fresh."""
+    env = {
+        **os.environ,
+        "GIT_TERMINAL_PROMPT": "0",
+    }
+
+    if env_extra:
+        env.update(env_extra)
+
+    effective_timeout = max(1, int(timeout))
+    deadline = time.monotonic() + effective_timeout
+
+    with tempfile.TemporaryFile(
+        mode="w+",
+        encoding="utf-8",
+    ) as output:
+        proc = subprocess.Popen(
+            args,
+            cwd=str(cwd),
+            text=True,
+            stdout=output,
+            stderr=subprocess.STDOUT,
+            env=env,
+        )
+
+        while True:
+            heartbeat_active_slot()
+
+            remaining = deadline - time.monotonic()
+
+            if remaining <= 0:
+                proc.kill()
+                proc.wait()
+                output.seek(0)
+                captured = output.read()
+                raise subprocess.TimeoutExpired(
+                    args,
+                    effective_timeout,
+                    output=captured,
+                )
+
+            try:
+                returncode = proc.wait(
+                    timeout=min(20.0, remaining)
+                )
+                break
+            except subprocess.TimeoutExpired:
+                continue
+
+        heartbeat_active_slot()
+        output.seek(0)
+
+        return subprocess.CompletedProcess(
+            args=args,
+            returncode=returncode,
+            stdout=output.read(),
+        )
+
+
 def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False, base_sha: str | None = None) -> dict[str, Any]:
     kind = str(check.get("type"))
     started = now()
@@ -657,7 +773,12 @@ def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False, bas
     else:
         raise ValueError(f"UNSUPPORTED_CHECK:{kind}")
     try:
-        result = run(cmd, cwd=cwd, timeout=MAX_SECONDS, env_extra=env_extra or None)
+        result = run_check_process(
+            cmd,
+            cwd=cwd,
+            timeout=MAX_SECONDS,
+            env_extra=env_extra or None,
+        )
         full_output = result.stdout or ""
         response = {"type": kind, "status": "PASS" if result.returncode == 0 else "FAIL", "returncode": result.returncode, "started_at_utc": started, "completed_at_utc": now(), "output": full_output[-12000:]}
         if kind in {"sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract"}:

@@ -44,6 +44,9 @@ from tools.mirror_sync.worker_maintenance_runtime import (
 from tools.mirror_sync.worker_repair_auto_loop import (
     advance_repair_automation,
 )
+from tools.mirror_sync import (
+    worker_repair_capability_registry as learned_registry,
+)
 
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 GIT = ROOT / ".git"
@@ -313,6 +316,28 @@ def heal_runtime_generation_and_heartbeat() -> dict[str, Any]:
     heartbeat_stale = receive_age is None or receive_age > HEARTBEAT_STALE
     pid_dead = not pid_alive(pid)
 
+    current_job_id = read_text(
+        RUNTIME / "current_job_id"
+    ).strip()
+
+    active_job_ownership: dict[str, Any] = {}
+    heartbeat_deferred_for_active_job = False
+
+    if heartbeat_stale and current_job_id and not pid_dead:
+        active_job_ownership = active_execution_ownership(
+            current_job_id,
+            heartbeat_stale_seconds=PROCESSING_GRACE,
+        )
+
+        if active_job_ownership.get("active") is True:
+            heartbeat_stale = False
+            heartbeat_deferred_for_active_job = True
+            audit(
+                "WORKER_HEARTBEAT_STALE_DEFERRED_ACTIVE_JOB",
+                job_id=current_job_id,
+                ownership=active_job_ownership,
+            )
+
     if generation_stale or heartbeat_stale or pid_dead:
         reason = ",".join(
             name
@@ -332,7 +357,16 @@ def heal_runtime_generation_and_heartbeat() -> dict[str, Any]:
         "pid_alive": not pid_dead,
         "last_receive_utc": receive or None,
         "last_receive_age_seconds": receive_age,
-        "runtime_repair_needed": generation_stale or heartbeat_stale or pid_dead,
+        "current_job_id": current_job_id or None,
+        "active_job_ownership": active_job_ownership,
+        "heartbeat_deferred_for_active_job": (
+            heartbeat_deferred_for_active_job
+        ),
+        "runtime_repair_needed": (
+            generation_stale
+            or heartbeat_stale
+            or pid_dead
+        ),
     }
 
 
@@ -1164,14 +1198,74 @@ def automatic_repair_orchestration() -> dict[str, Any]:
             )
         )
 
-        raw_paths = (
-            result.get("files_changed")
-            or result.get("expected_scope")
-            or []
+        source_job_id = str(
+            result.get("job_id") or result_path.stem
+        ).strip()
+
+        blockers = {
+            str(value or "").strip().upper()
+            for value in result.get("blockers") or []
+            if str(value or "").strip()
+        }
+
+        learned_matches = []
+
+        if blockers:
+            for capability in (
+                learned_registry.iter_learned_capabilities()
+            ):
+                blocker_signature = str(
+                    (capability.evidence or {}).get(
+                        "blocker_signature"
+                    )
+                    or ""
+                ).strip().upper()
+
+                if (
+                    blocker_signature
+                    and blocker_signature in blockers
+                ):
+                    learned_matches.append(capability)
+
+        if len(learned_matches) > 1:
+            blocked += 1
+            incidents.append(
+                {
+                    "incident_id": None,
+                    "source_job_id": source_job_id,
+                    "source_status": status,
+                    "state": "BLOCKED",
+                    "target_paths": [],
+                    "repair_allowed": False,
+                    "repair_reason": (
+                        "KNOWN_BLOCKER_CAPABILITY_AMBIGUOUS"
+                    ),
+                    "publication_required": False,
+                }
+            )
+            continue
+
+        learned_capability = (
+            learned_matches[0]
+            if len(learned_matches) == 1
+            else None
         )
 
+        if learned_capability is not None:
+            raw_paths = list(
+                learned_capability.required_paths
+            )
+        else:
+            raw_paths = (
+                result.get("files_changed")
+                or result.get("expected_scope")
+                or []
+            )
+
         if status == "GIT_LOCK_BUSY" and not raw_paths:
-            raw_paths = list(GIT_LOCK_BUSY_REPAIR_PATHS)
+            raw_paths = list(
+                GIT_LOCK_BUSY_REPAIR_PATHS
+            )
 
         if not isinstance(raw_paths, list):
             continue
@@ -1179,7 +1273,8 @@ def automatic_repair_orchestration() -> dict[str, Any]:
         normalized = {
             str(path).strip()
             for path in raw_paths
-            if isinstance(path, str) and str(path).strip()
+            if isinstance(path, str)
+            and str(path).strip()
         }
 
         target_paths = tuple(
@@ -1196,13 +1291,10 @@ def automatic_repair_orchestration() -> dict[str, Any]:
         if not target_paths:
             continue
 
-        # Mixed Worker/application scope fails closed.
+        # Scope derivado de capability conocida debe ser
+        # exclusivamente infraestructura Worker.
         if len(target_paths) != len(normalized):
             continue
-
-        source_job_id = str(
-            result.get("job_id") or result_path.stem
-        ).strip()
 
         if not boundary_allowed:
             incidents.append(

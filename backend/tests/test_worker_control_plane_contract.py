@@ -34,6 +34,10 @@ def test_runtime_self_heal_detects_generation_heartbeat_and_pid():
     assert "PID_DEAD" in text
     assert "request_universal_restart" in text
     assert "last_receive_utc" in text
+    assert "current_job_id" in text
+    assert "active_execution_ownership" in text
+    assert "heartbeat_deferred_for_active_job" in text
+    assert "WORKER_HEARTBEAT_STALE_DEFERRED_ACTIVE_JOB" in text
 
 
 def test_worktree_recovery_is_preserving_and_fast_forward_only():
@@ -71,6 +75,14 @@ def test_stale_processing_defers_only_for_live_canonical_ownership():
     assert "slot_is_live" in text
     assert "reconciler_fresh" in text
     assert "owner_pid_alive" in text
+
+
+def test_known_worker_blocker_routes_through_learned_capability():
+    text = CONTROL.read_text(encoding="utf-8")
+    assert "learned_registry.iter_learned_capabilities()" in text
+    assert "blocker_signature" in text
+    assert "learned_capability.required_paths" in text
+    assert "KNOWN_BLOCKER_CAPABILITY_AMBIGUOUS" in text
 
 
 def test_production_is_explicitly_out_of_scope():
