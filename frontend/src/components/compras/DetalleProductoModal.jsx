@@ -98,7 +98,7 @@ export const DetalleProductoModal = ({ detalle, onClose, formatNumber }) => {
                 </tbody>
               </table>
               {totales && (
-                esConsumos && String(detalle?.systemType || '').toUpperCase().includes('SOFTRESTAURANT') ? (
+                esConsumos ? (
                   <div className="mt-4 p-3 bg-zinc-100 rounded flex gap-6" data-testid="detalle-producto-total-consumo">
                     <div>
                       <span className="text-xs text-zinc-500">TOTAL VENTAS / CONSUMO:</span>
