@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "feb75a738512c3747ea56132707391d2afcb07cb",
-  "generated_at_utc": "2026-10-23T02:08:33Z",
+  "generated_at_utc": "2026-10-23T02:10:14Z",
   "history": {
     "done_total_local": 1558,
     "pending_total_local": 0,
@@ -16,49 +16,49 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3449,
+      "age_seconds": 3549,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE7-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3292,
+      "age_seconds": 3392,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8A-CONTRACTS-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2171,
+      "age_seconds": 2272,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8A-SQL-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1117,
+      "age_seconds": 1217,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8B1-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2,
+      "age_seconds": 102,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8B2-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3452,
+      "age_seconds": 3552,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-CANONICAL-INVENTORY-UI-FIX-R4-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1512,
+      "age_seconds": 1612,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-ERROR-SEMANTICS-CANONICAL-CONFIG-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 434,
+      "age_seconds": 534,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-LONG-RUN-HEARTBEAT-KNOWLEDGE-ROUTING-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
@@ -78,10 +78,10 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-23T02:08:16Z",
-    "last_receive_utc": "2026-10-23T02:08:32Z",
+    "last_cycle_utc": "2026-10-23T02:09:58Z",
+    "last_receive_utc": "2026-10-23T02:09:53Z",
     "last_terminal_utc": "2026-10-23T02:08:31Z",
-    "pid": "68277",
+    "pid": "92778",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "2372a314dd0dd79781014d70d4c71e8a2e1f3f60",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
