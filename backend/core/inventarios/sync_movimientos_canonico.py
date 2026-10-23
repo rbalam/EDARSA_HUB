@@ -287,7 +287,12 @@ def sync_movimientos_canonico(
         + int(pend.get("almacen", 0))
         + int(pend.get("producto", 0))
     )
-    if is_softrestaurant and pendientes_criticos > 0:
+
+    # SoftRestaurant no debe perder TODA la ventana por unas pocas filas
+    # pendientes. Las filas resolubles se sincronizan; las no resolubles se
+    # reportan explícitamente para corrección de catálogo/mapeo. Esto mantiene
+    # el ledger operativo sin inventar IDs ni ocultar pendientes.
+    if not resueltos and is_softrestaurant:
         conn.close()
         return {
             "status": "PENDIENTE",
@@ -296,7 +301,7 @@ def sync_movimientos_canonico(
             "descartados": 0,
             "pendientes": pend,
             "filtrados_no_autorizados": filtrados_no_autorizados,
-            "message": "Reconciliación SoftRestaurant cancelada: existen movimientos autorizados sin resolución canónica",
+            "message": "No hay movimientos SoftRestaurant resolubles en la ventana",
         }
 
     if not resueltos and not is_softrestaurant:
@@ -308,35 +313,11 @@ def sync_movimientos_canonico(
     #    round-trips a unas pocas sentencias. Idempotente por llave natural.
     cur_w = conn.cursor()
 
-    # SoftRestaurant se reconcilia por ventana en una sola transacción. Esto
-    # permite que una modificación en Servidores.tipos_movimiento también
-    # retire del cálculo movimientos históricos que dejaron de estar
-    # autorizados, sin tocar MPRO ni otras fuentes.
+    # No borrar la ventana completa antes de reinsertar. Si existen filas
+    # pendientes de catálogo/mapeo, una reconciliación destructiva podría
+    # eliminar movimientos históricos válidos. El upsert idempotente conserva
+    # datos existentes y agrega sólo las filas resolubles/autorizadas.
     movimientos_reconciliados_eliminados = 0
-    if is_softrestaurant:
-        cur_w.execute(
-            """
-            DELETE d
-            FROM Inventario_MovimientosDetalle d
-            INNER JOIN Inventario_Movimientos m ON m.MovimientoID = d.MovimientoID
-            WHERE m.EmpresaID = %s
-              AND m.SucursalID = %s
-              AND m.ReferenciaTipo = 'MOVIMIENTO_POS'
-              AND m.FechaMovimiento >= DATEADD(DAY, -%s, GETDATE())
-            """,
-            (empresa_id, sucursal_id, int(dias_atras)),
-        )
-        cur_w.execute(
-            """
-            DELETE FROM Inventario_Movimientos
-            WHERE EmpresaID = %s
-              AND SucursalID = %s
-              AND ReferenciaTipo = 'MOVIMIENTO_POS'
-              AND FechaMovimiento >= DATEADD(DAY, -%s, GETDATE())
-            """,
-            (empresa_id, sucursal_id, int(dias_atras)),
-        )
-        movimientos_reconciliados_eliminados = cur_w.rowcount or 0
 
     cur_w.execute("""
         CREATE TABLE #stg_mov (
@@ -408,6 +389,12 @@ def sync_movimientos_canonico(
         "pendientes": pend,
         "filtrados_no_autorizados": filtrados_no_autorizados,
         "movimientos_reconciliados_eliminados": movimientos_reconciliados_eliminados,
+        "pendientes_criticos": pendientes_criticos,
+        "status_detail": (
+            "PARTIAL_WITH_PENDING"
+            if pendientes_criticos > 0
+            else "COMPLETE"
+        ),
     }
 
 
