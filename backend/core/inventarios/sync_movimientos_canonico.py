@@ -367,8 +367,16 @@ def sync_movimientos_canonico(
             pend["producto"] += 1
             continue
         concepto_origen = str(concepto or "").strip().upper()
-        resueltos.append((empresa_id, sucursal_id, alm.canonical_id, tip.canonical_id,
-                          concepto_origen, fecha, folio, prod.canonical_id, cantidad, costo))
+        referencia_tipo = (
+            "MOVIMIENTO_POS"
+            if is_softrestaurant
+            else f"MOVIMIENTO_POS|{concepto_origen}"
+        )
+        resueltos.append((
+            empresa_id, sucursal_id, alm.canonical_id, tip.canonical_id,
+            concepto_origen, referencia_tipo, fecha, folio,
+            prod.canonical_id, cantidad, costo
+        ))
 
     pendientes_criticos = (
         int(pend.get("tipo", 0))
@@ -401,21 +409,21 @@ def sync_movimientos_canonico(
     #    round-trips a unas pocas sentencias. Idempotente por llave natural.
     cur_w = conn.cursor()
 
-    # No borrar la ventana completa antes de reinsertar. Si existen filas
-    # pendientes de catálogo/mapeo, una reconciliación destructiva podría
-    # eliminar movimientos históricos válidos. El upsert idempotente conserva
-    # datos existentes y agrega sólo las filas resolubles/autorizadas.
+    # SoftRestaurant conserva siempre el upsert no destructivo.
+    # MPRO puede reconstruir su ventana únicamente cuando la lectura fue válida
+    # y no existen pendientes críticos de catálogo/mapeo.
     movimientos_reconciliados_eliminados = 0
 
     cur_w.execute("""
         CREATE TABLE #stg_mov (
             EmpresaID int, SucursalID int, AlmacenID int, TipoMovimientoID tinyint,
-            ConceptoOrigen varchar(50), FechaMovimiento datetime2, Folio varchar(30),
+            ConceptoOrigen varchar(50), ReferenciaTipo varchar(80),
+            FechaMovimiento datetime2, Folio varchar(30),
             ProductoID int, Cantidad decimal(18,6), CostoUnitario decimal(18,6)
         )
     """)
-    ins = """INSERT INTO #stg_mov (EmpresaID,SucursalID,AlmacenID,TipoMovimientoID,ConceptoOrigen,FechaMovimiento,Folio,ProductoID,Cantidad,CostoUnitario)
-             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+    ins = """INSERT INTO #stg_mov (EmpresaID,SucursalID,AlmacenID,TipoMovimientoID,ConceptoOrigen,ReferenciaTipo,FechaMovimiento,Folio,ProductoID,Cantidad,CostoUnitario)
+             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
     BATCH = 1000
     for i in range(0, len(resueltos), BATCH):
         cur_w.executemany(ins, resueltos[i:i + BATCH])
@@ -450,11 +458,7 @@ def sync_movimientos_canonico(
             (TipoMovimientoID, EmpresaID, SucursalID, AlmacenID, FechaMovimiento,
              ReferenciaTipo, FolioReferencia, Activo, CreatedAt)
         SELECT s.TipoMovimientoID, s.EmpresaID, s.SucursalID, s.AlmacenID,
-               MIN(s.FechaMovimiento),
-               CASE
-                   WHEN %s = 1 THEN 'MOVIMIENTO_POS'
-                   ELSE 'MOVIMIENTO_POS|' + MAX(s.ConceptoOrigen)
-               END,
+               MIN(s.FechaMovimiento), s.ReferenciaTipo,
                s.Folio, 1, GETDATE()
         FROM #stg_mov s
         WHERE NOT EXISTS (
@@ -463,10 +467,11 @@ def sync_movimientos_canonico(
               AND m.TipoMovimientoID=s.TipoMovimientoID
               AND CAST(m.FechaMovimiento AS DATE)=CAST(s.FechaMovimiento AS DATE)
               AND ISNULL(m.FolioReferencia,'')=ISNULL(s.Folio,'')
+              AND ISNULL(m.ReferenciaTipo,'')=ISNULL(s.ReferenciaTipo,'')
         )
         GROUP BY s.EmpresaID, s.SucursalID, s.AlmacenID, s.TipoMovimientoID,
-                 CAST(s.FechaMovimiento AS DATE), s.Folio
-    """, (1 if is_softrestaurant else 0,))
+                 s.ReferenciaTipo, CAST(s.FechaMovimiento AS DATE), s.Folio
+    """)
     encabezados = cur_w.rowcount or 0
 
     # 4b) Insertar detalles nuevos (uno por movimiento+producto; agrega cantidades duplicadas del día)
@@ -483,6 +488,7 @@ def sync_movimientos_canonico(
          AND m.TipoMovimientoID=s.TipoMovimientoID
          AND CAST(m.FechaMovimiento AS DATE)=CAST(s.FechaMovimiento AS DATE)
          AND ISNULL(m.FolioReferencia,'')=ISNULL(s.Folio,'')
+         AND ISNULL(m.ReferenciaTipo,'')=ISNULL(s.ReferenciaTipo,'')
         WHERE NOT EXISTS (
             SELECT 1 FROM Inventario_MovimientosDetalle d
             WHERE d.MovimientoID=m.MovimientoID AND d.ProductoID=s.ProductoID
