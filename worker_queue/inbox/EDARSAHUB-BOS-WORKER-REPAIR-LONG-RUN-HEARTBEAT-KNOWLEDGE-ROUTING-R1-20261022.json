@@ -1,0 +1,178 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "expected_sha256": "c5a22ed523d78217d0b4e337acdcf11c165fbb1a4fb431ccbd7f232a1866ba1c",
+      "new": "import tempfile\nimport time\nfrom datetime import datetime, timezone",
+      "old": "import tempfile\nfrom datetime import datetime, timezone",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "from worker_slot_runtime import (\n    create_slot,\n    heartbeat_slot,\n    load_slot,\n    reclaim_stale_slot,\n    release_slot,\n    update_slot_state,\n)",
+      "old": "from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "def heartbeat_active_slot() -> bool:\n    \"\"\"Refresh canonical ownership while a long validation is running.\"\"\"\n    current_job_path = RUNTIME / \"current_job_id\"\n\n    try:\n        current_job_id = current_job_path.read_text(\n            encoding=\"utf-8\"\n        ).strip()\n    except OSError:\n        return False\n\n    if not current_job_id:\n        return False\n\n    for slot_id in (\"readonly-1\", \"mutation-1\"):\n        try:\n            slot = load_slot(slot_id)\n        except SlotRuntimeError:\n            continue\n\n        if not isinstance(slot, dict):\n            continue\n\n        if str(slot.get(\"job_id\") or \"\").strip() != current_job_id:\n            continue\n\n        if str(slot.get(\"state\") or \"\").strip() not in {\n            \"CLAIMED\",\n            \"RUNNING\",\n            \"TERMINALIZING\",\n        }:\n            continue\n\n        heartbeat_slot(\n            slot_id,\n            execution_pid=os.getpid(),\n        )\n        return True\n\n    return False\n\n\ndef run_check_process(\n    args: list[str],\n    *,\n    cwd: Path,\n    timeout: int,\n    env_extra: dict[str, str] | None = None,\n):\n    \"\"\"Run one validation while keeping slot ownership fresh.\"\"\"\n    env = {\n        **os.environ,\n        \"GIT_TERMINAL_PROMPT\": \"0\",\n    }\n\n    if env_extra:\n        env.update(env_extra)\n\n    effective_timeout = max(1, int(timeout))\n    deadline = time.monotonic() + effective_timeout\n\n    with tempfile.TemporaryFile(\n        mode=\"w+\",\n        encoding=\"utf-8\",\n    ) as output:\n        proc = subprocess.Popen(\n            args,\n            cwd=str(cwd),\n            text=True,\n            stdout=output,\n            stderr=subprocess.STDOUT,\n            env=env,\n        )\n\n        while True:\n            heartbeat_active_slot()\n\n            remaining = deadline - time.monotonic()\n\n            if remaining <= 0:\n                proc.kill()\n                proc.wait()\n                output.seek(0)\n                captured = output.read()\n                raise subprocess.TimeoutExpired(\n                    args,\n                    effective_timeout,\n                    output=captured,\n                )\n\n            try:\n                returncode = proc.wait(\n                    timeout=min(20.0, remaining)\n                )\n                break\n            except subprocess.TimeoutExpired:\n                continue\n\n        heartbeat_active_slot()\n        output.seek(0)\n\n        return subprocess.CompletedProcess(\n            args=args,\n            returncode=returncode,\n            stdout=output.read(),\n        )\n\n\ndef run_check(worktree: Path, check: dict[str, Any], readonly: bool = False, base_sha: str | None = None) -> dict[str, Any]:\n",
+      "old": "def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False, base_sha: str | None = None) -> dict[str, Any]:\n",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "        result = run_check_process(\n            cmd,\n            cwd=cwd,\n            timeout=MAX_SECONDS,\n            env_extra=env_extra or None,\n        )\n",
+      "old": "        result = run(cmd, cwd=cwd, timeout=MAX_SECONDS, env_extra=env_extra or None)\n",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "expected_sha256": "41dbc430545a99631b9a1a094e77047813651c933e92e3ce4484ad3458f8536e",
+      "new": "from tools.mirror_sync.worker_repair_auto_loop import (\n    advance_repair_automation,\n)\nfrom tools.mirror_sync import (\n    worker_repair_capability_registry as learned_registry,\n)\n",
+      "old": "from tools.mirror_sync.worker_repair_auto_loop import (\n    advance_repair_automation,\n)\n",
+      "path": "tools/mirror_sync/worker_control_plane.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "    generation_stale = bool(expected and actual != expected)\n    heartbeat_stale = receive_age is None or receive_age > HEARTBEAT_STALE\n    pid_dead = not pid_alive(pid)\n\n    current_job_id = read_text(\n        RUNTIME / \"current_job_id\"\n    ).strip()\n\n    active_job_ownership: dict[str, Any] = {}\n    heartbeat_deferred_for_active_job = False\n\n    if heartbeat_stale and current_job_id and not pid_dead:\n        active_job_ownership = active_execution_ownership(\n            current_job_id,\n            heartbeat_stale_seconds=PROCESSING_GRACE,\n        )\n\n        if active_job_ownership.get(\"active\") is True:\n            heartbeat_stale = False\n            heartbeat_deferred_for_active_job = True\n            audit(\n                \"WORKER_HEARTBEAT_STALE_DEFERRED_ACTIVE_JOB\",\n                job_id=current_job_id,\n                ownership=active_job_ownership,\n            )\n\n    if generation_stale or heartbeat_stale or pid_dead:\n",
+      "old": "    generation_stale = bool(expected and actual != expected)\n    heartbeat_stale = receive_age is None or receive_age > HEARTBEAT_STALE\n    pid_dead = not pid_alive(pid)\n\n    if generation_stale or heartbeat_stale or pid_dead:\n",
+      "path": "tools/mirror_sync/worker_control_plane.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "        \"last_receive_utc\": receive or None,\n        \"last_receive_age_seconds\": receive_age,\n        \"current_job_id\": current_job_id or None,\n        \"active_job_ownership\": active_job_ownership,\n        \"heartbeat_deferred_for_active_job\": (\n            heartbeat_deferred_for_active_job\n        ),\n        \"runtime_repair_needed\": (\n            generation_stale\n            or heartbeat_stale\n            or pid_dead\n        ),\n",
+      "old": "        \"last_receive_utc\": receive or None,\n        \"last_receive_age_seconds\": receive_age,\n        \"runtime_repair_needed\": generation_stale or heartbeat_stale or pid_dead,\n",
+      "path": "tools/mirror_sync/worker_control_plane.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "        source_job_id = str(\n            result.get(\"job_id\") or result_path.stem\n        ).strip()\n\n        blockers = {\n            str(value or \"\").strip().upper()\n            for value in result.get(\"blockers\") or []\n            if str(value or \"\").strip()\n        }\n\n        learned_matches = []\n\n        if blockers:\n            for capability in (\n                learned_registry.iter_learned_capabilities()\n            ):\n                blocker_signature = str(\n                    (capability.evidence or {}).get(\n                        \"blocker_signature\"\n                    )\n                    or \"\"\n                ).strip().upper()\n\n                if (\n                    blocker_signature\n                    and blocker_signature in blockers\n                ):\n                    learned_matches.append(capability)\n\n        if len(learned_matches) > 1:\n            blocked += 1\n            incidents.append(\n                {\n                    \"incident_id\": None,\n                    \"source_job_id\": source_job_id,\n                    \"source_status\": status,\n                    \"state\": \"BLOCKED\",\n                    \"target_paths\": [],\n                    \"repair_allowed\": False,\n                    \"repair_reason\": (\n                        \"KNOWN_BLOCKER_CAPABILITY_AMBIGUOUS\"\n                    ),\n                    \"publication_required\": False,\n                }\n            )\n            continue\n\n        learned_capability = (\n            learned_matches[0]\n            if len(learned_matches) == 1\n            else None\n        )\n\n        if learned_capability is not None:\n            raw_paths = list(\n                learned_capability.required_paths\n            )\n        else:\n            raw_paths = (\n                result.get(\"files_changed\")\n                or result.get(\"expected_scope\")\n                or []\n            )\n\n        if status == \"GIT_LOCK_BUSY\" and not raw_paths:\n            raw_paths = list(\n                GIT_LOCK_BUSY_REPAIR_PATHS\n            )\n\n        if not isinstance(raw_paths, list):\n            continue\n\n        normalized = {\n            str(path).strip()\n            for path in raw_paths\n            if isinstance(path, str)\n            and str(path).strip()\n        }\n\n        target_paths = tuple(\n            sorted(\n                path\n                for path in normalized\n                if any(\n                    path.startswith(root)\n                    for root in worker_roots\n                )\n            )\n        )\n\n        if not target_paths:\n            continue\n\n        # Scope derivado de capability conocida debe ser\n        # exclusivamente infraestructura Worker.\n        if len(target_paths) != len(normalized):\n            continue\n",
+      "old": "        raw_paths = (\n            result.get(\"files_changed\")\n            or result.get(\"expected_scope\")\n            or []\n        )\n\n        if status == \"GIT_LOCK_BUSY\" and not raw_paths:\n            raw_paths = list(GIT_LOCK_BUSY_REPAIR_PATHS)\n\n        if not isinstance(raw_paths, list):\n            continue\n\n        normalized = {\n            str(path).strip()\n            for path in raw_paths\n            if isinstance(path, str) and str(path).strip()\n        }\n\n        target_paths = tuple(\n            sorted(\n                path\n                for path in normalized\n                if any(\n                    path.startswith(root)\n                    for root in worker_roots\n                )\n            )\n        )\n\n        if not target_paths:\n            continue\n\n        # Mixed Worker/application scope fails closed.\n        if len(target_paths) != len(normalized):\n            continue\n\n        source_job_id = str(\n            result.get(\"job_id\") or result_path.stem\n        ).strip()\n",
+      "path": "tools/mirror_sync/worker_control_plane.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 2,
+      "expected_sha256": "6d1d3a6fa54c7cde199cf5835171e9c652a478e447360dd8216244862a58b881",
+      "new": "    assert \"heartbeat_slot\" in text\n    assert \"load_slot\" in text\n    assert \"create_slot\" in text\n    assert \"reclaim_stale_slot\" in text\n    assert \"release_slot\" in text\n    assert \"update_slot_state\" in text\n",
+      "old": "    assert 'from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state' in text\n",
+      "path": "backend/tests/test_worker_universal_queue_sla_contract.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "def test_stale_processing_is_requeued_once_then_terminal():\n    text = CONTROL.read_text(encoding='utf-8')\n    assert '_worker_stale_requeue_count' in text\n    assert 'retry_count >= 1' in text\n    assert 'processing_stale_after_single_requeue' in text\n\n\ndef test_long_checks_refresh_existing_slot_ownership():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'heartbeat_active_slot' in text\n    assert 'run_check_process' in text\n    assert 'heartbeat_slot(' in text\n    assert 'time.monotonic()' in text\n    assert 'subprocess.Popen(' in text\n",
+      "old": "def test_stale_processing_is_requeued_once_then_terminal():\n    text = CONTROL.read_text(encoding='utf-8')\n    assert '_worker_stale_requeue_count' in text\n    assert 'retry_count >= 1' in text\n    assert 'processing_stale_after_single_requeue' in text\n",
+      "path": "backend/tests/test_worker_universal_queue_sla_contract.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "expected_sha256": "ea7d41b2d2380059651aa219fec78395b548e9bca3fdedf073a4f44de1f0d5ef",
+      "new": "def test_runtime_self_heal_detects_generation_heartbeat_and_pid():\n    text = CONTROL.read_text(encoding=\"utf-8\")\n    assert \"GENERATION_STALE\" in text\n    assert \"HEARTBEAT_STALE\" in text\n    assert \"PID_DEAD\" in text\n    assert \"request_universal_restart\" in text\n    assert \"last_receive_utc\" in text\n    assert \"current_job_id\" in text\n    assert \"active_execution_ownership\" in text\n    assert \"heartbeat_deferred_for_active_job\" in text\n    assert \"WORKER_HEARTBEAT_STALE_DEFERRED_ACTIVE_JOB\" in text\n",
+      "old": "def test_runtime_self_heal_detects_generation_heartbeat_and_pid():\n    text = CONTROL.read_text(encoding=\"utf-8\")\n    assert \"GENERATION_STALE\" in text\n    assert \"HEARTBEAT_STALE\" in text\n    assert \"PID_DEAD\" in text\n    assert \"request_universal_restart\" in text\n    assert \"last_receive_utc\" in text\n",
+      "path": "backend/tests/test_worker_control_plane_contract.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "def test_known_worker_blocker_routes_through_learned_capability():\n    text = CONTROL.read_text(encoding=\"utf-8\")\n    assert \"learned_registry.iter_learned_capabilities()\" in text\n    assert \"blocker_signature\" in text\n    assert \"learned_capability.required_paths\" in text\n    assert \"KNOWN_BLOCKER_CAPABILITY_AMBIGUOUS\" in text\n\n\ndef test_production_is_explicitly_out_of_scope():\n",
+      "old": "def test_production_is_explicitly_out_of_scope():\n",
+      "path": "backend/tests/test_worker_control_plane_contract.py",
+      "type": "replace_text"
+    }
+  ],
+  "base_sha": "2b8b3d610c28a2204a319accaf0708e26a4e721f",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/worker_control_plane.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_repair_auto_loop_contract.py",
+        "backend/tests/test_worker_repair_learned_capability_registry.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          ".git/**",
+          "__pycache__/**"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "max_results": 300,
+        "paths": [
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/worker_repair_auto_loop.py",
+          "tools/mirror_sync/worker_repair_planner.py",
+          "tools/mirror_sync/worker_repair_execution.py",
+          "tools/mirror_sync/worker_repair_capability_registry.py"
+        ],
+        "search_terms": [
+          "heartbeat_active_slot",
+          "heartbeat_slot",
+          "WORKER_HEARTBEAT_STALE_DEFERRED_ACTIVE_JOB",
+          "active_execution_ownership",
+          "processing_stale_after_single_requeue",
+          "learned_registry.iter_learned_capabilities",
+          "blocker_signature",
+          "required_paths",
+          "publish_planned_repair",
+          "reconcile_repair_result"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-LONG-RUN-HEARTBEAT-KNOWLEDGE-ROUTING-R1-20261022",
+  "mode": "MUTATION",
+  "objective": "Cerrar la regresion processing_stale durante checks largos reutilizando exclusivamente Universal Worker, Worker Control Plane, Repair Planner, Execution Bridge y Capability Registry. Renovar ownership del slot durante validaciones largas; impedir que last_receive_utc stale reinicie un Worker que conserva ownership canonico vivo; y enrutar blockers Worker conocidos mediante required_paths de una unica learned capability aunque el job victima tenga scope de aplicacion. Mantener fail-closed, un solo requeue y Produccion prohibida.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Conexiones y Comunicaciones",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "Worker Repair",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "UNIVERSAL_WORKER_RUNTIME"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "HIGH",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": [
+      "tools/mirror_sync/universal_job_dispatcher.py",
+      "tools/mirror_sync/worker_control_plane.py",
+      "backend/tests/test_worker_universal_queue_sla_contract.py",
+      "backend/tests/test_worker_control_plane_contract.py"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
