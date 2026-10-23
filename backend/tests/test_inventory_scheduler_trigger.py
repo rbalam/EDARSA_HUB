@@ -158,3 +158,14 @@ def test_trigger_rejects_false_success(monkeypatch):
     assert exc.value.status_code == 503
     assert exc.value.detail["code"] == "SYNC_COMPRAS_NOT_HEALTHY"
     assert exc.value.detail["result"]["status"] == "DISABLED"
+
+def test_inventory_scheduler_trigger_is_registered_in_server():
+    from pathlib import Path
+
+    server_source = (
+        Path(__file__).resolve().parents[1] / "server.py"
+    ).read_text(encoding="utf-8")
+
+    assert "modules.scheduler_trigger_inventarios.routes" in server_source
+    assert "app.include_router(inventory_scheduler_trigger_router)" in server_source
+
