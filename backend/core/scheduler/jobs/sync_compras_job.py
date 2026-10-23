@@ -714,14 +714,32 @@ def execute_sync_compras(dry_run: bool = False) -> Dict[str, Any]:
             # Movimientos son dependencia canónica del Análisis de Inventarios
             # y forman parte del núcleo seguro. No deben apagarse junto con
             # Existencias/Pedidos/Ordenes/Recepciones.
-            sync_steps = [
-                *_core_inventory_sync_steps(),
-                *_extended_sync_steps(),
-            ]
+            # SoftRestaurant: Inventario_Movimientos depende de Inventario_Almacenes.
+            # La configuración Preview deshabilita por default los pasos extendidos,
+            # por lo que ALMACENES debe ejecutarse explícitamente ANTES de MOVIMIENTOS
+            # para SoftRestaurant. MPRO conserva exactamente su secuencia histórica.
+            system_type_upper = str(server_info.get("system_type") or "").upper()
+            is_softrestaurant = "SOFT" in system_type_upper or system_type_upper == "SR"
+
+            sync_steps = []
+            if is_softrestaurant:
+                sync_steps.append(
+                    ("almacenes", sync_almacenes_from_server, "ALMACENES")
+                )
+
+            sync_steps.extend(_core_inventory_sync_steps())
+
+            for extended_step in _extended_sync_steps():
+                # Evitar duplicar ALMACENES en Soft cuando los extendidos estén activos.
+                if is_softrestaurant and extended_step[0] == "almacenes":
+                    continue
+                sync_steps.append(extended_step)
+
             if not _sync_compras_extended_enabled():
                 logger.warning(
                     "[SYNC-COMPRAS] Pasos extendidos omitidos; "
-                    "MOVIMIENTOS permanece activo como núcleo de Inventarios"
+                    "SoftRestaurant conserva ALMACENES -> MOVIMIENTOS como núcleo "
+                    "de Inventarios; MPRO conserva su flujo existente"
                 )
 
             for step_name, step_func, sync_type_label in sync_steps:
@@ -730,8 +748,16 @@ def execute_sync_compras(dry_run: bool = False) -> Dict[str, Any]:
                     logger.info(f"[SYNC-COMPRAS] Ejecutando {step_name} para {server_name}")
                     
                     if not dry_run:
+                        step_executor = _execute_sql_with_timeout
+                        if is_softrestaurant and step_name == "movimientos":
+                            # Movimientos Soft puede recorrer decenas de días y dos
+                            # fuentes (movsinv + movtosalmacen); usar el timeout
+                            # dedicado de inventarios evita falsos "0 filas" por
+                            # timeout del ejecutor genérico.
+                            step_executor = _execute_inventory_sql_with_timeout
+
                         step_result = step_func(
-                            server_info, unidad_info, _execute_sql_with_timeout
+                            server_info, unidad_info, step_executor
                         )
                     else:
                         step_result = {"status": "DRY_RUN", "records_synced": 0, "error": None}
