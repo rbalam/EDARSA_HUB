@@ -24,6 +24,7 @@ env:
   SCHEDULER_SYNC_COMPRAS_EXECUTION_ENABLED: "true"
   SCHEDULER_SYNC_COMPRAS_EXTENDED_ENABLED: "false"
   SYNC_COMPRAS_SYSTEM_FILTER: "SOFT"
+  SYNC_COMPRAS_SCOPE: "INVENTORY_MOVEMENTS"
   SYNC_COMPRAS_MOV_DIAS_ATRAS: "30"
   SYNC_INVENTARIOS_FISICOS_QUERY_TIMEOUT_SECONDS: "180"
   EDARSAHUB_SQL_HOST: "54.39.104.176"
@@ -31,8 +32,6 @@ env:
   EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
   EDARSAHUB_SQL_USER: "HRLectura"
   EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
-  EDARSAHUB_SQL_WRITER_USER: ${{ secrets.EDARSAHUB_SQL_WRITER_USER }}
-  EDARSAHUB_SQL_WRITER_PASSWORD: ${{ secrets.EDARSAHUB_SQL_WRITER_PASSWORD }}
   SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
 
 jobs:
@@ -43,26 +42,82 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate inventory owner secrets
+      - name: Validate base inventory owner secrets
         run: |
           set -euo pipefail
-          missing=0
-          for name in             EDARSAHUB_SQL_PASSWORD             EDARSAHUB_SQL_WRITER_USER             EDARSAHUB_SQL_WRITER_PASSWORD             SERVER_SECRET_KEY
-          do
-            if [ -z "${!name:-}" ]; then
-              echo "MISSING_SECRET_NAME=$name"
-              missing=1
-            else
-              echo "SECRET_PRESENT=$name"
-            fi
-          done
-          test "$missing" -eq 0
+          test -n "$EDARSAHUB_SQL_PASSWORD"
+          test -n "$SERVER_SECRET_KEY"
+          echo "BASE_OWNER_SECRETS=PASS"
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/requirements.txt
+
+      - name: Install SQL preflight runtime
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet pymssql
+
+      - name: Verify effective DML permissions for atomic inventory scope
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          import pymssql
+
+          required = {
+              "dbo.Sync_Control_Ejecuciones": ("SELECT", "INSERT", "UPDATE"),
+              "dbo.Inventario_Almacenes": ("SELECT", "INSERT", "UPDATE"),
+              "dbo.Inventario_Movimientos": ("SELECT", "INSERT"),
+              "dbo.Inventario_MovimientosDetalle": ("SELECT", "INSERT"),
+              "dbo.Compras_Sync_Log": ("SELECT", "INSERT"),
+          }
+
+          conn = pymssql.connect(
+              server=os.environ["EDARSAHUB_SQL_HOST"],
+              port=int(os.environ["EDARSAHUB_SQL_PORT"]),
+              database=os.environ["EDARSAHUB_SQL_DATABASE"],
+              user=os.environ["EDARSAHUB_SQL_USER"],
+              password=os.environ["EDARSAHUB_SQL_PASSWORD"],
+              login_timeout=15,
+              timeout=30,
+              as_dict=True,
+          )
+          cur = conn.cursor(as_dict=True)
+          cur.execute("SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name")
+          identity = cur.fetchone()
+          print({
+              "database_name": identity.get("database_name"),
+              "login_name": identity.get("login_name"),
+          })
+
+          failures = []
+          for obj, permissions in required.items():
+              for permission in permissions:
+                  cur.execute(
+                      "SELECT COALESCE(HAS_PERMS_BY_NAME(%s,'OBJECT',%s),0) AS allowed",
+                      (obj, permission),
+                  )
+                  allowed = int(cur.fetchone()["allowed"] or 0)
+                  print(f"PERMISSION {obj} {permission}={allowed}")
+                  if allowed != 1:
+                      failures.append(f"{obj}:{permission}")
+
+          cur.close()
+          conn.close()
+
+          if failures:
+              raise SystemExit(
+                  "INVENTORY_OWNER_DML_PERMISSION_MISSING=" + ",".join(failures)
+              )
+
+          print("INVENTORY_OWNER_DML_PREFLIGHT=PASS")
+          PY
+
+          echo "EDARSAHUB_SQL_WRITER_USER=$EDARSAHUB_SQL_USER" >> "$GITHUB_ENV"
+          echo "EDARSAHUB_SQL_WRITER_PASSWORD=$EDARSAHUB_SQL_PASSWORD" >> "$GITHUB_ENV"
 
       - name: Install backend runtime dependencies
         run: |
