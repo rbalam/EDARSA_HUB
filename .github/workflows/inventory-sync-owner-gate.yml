@@ -19,6 +19,8 @@ on:
       - "backend/tests/test_resolver_product_system_alias_unit.py"
       - "backend/tests/test_inventory_scheduler_trigger.py"
       - "backend/tests/test_sync_compras_run_job_now_status.py"
+      - "backend/tools/run_inventory_github_owner.py"
+      - ".github/workflows/inventory-softrestaurant-clock.yml"
       - ".github/workflows/prod-sync-inventarios-trigger.yml"
       - ".github/workflows/inventory-sync-owner-gate.yml"
   workflow_dispatch:
@@ -64,7 +66,8 @@ jobs:
             backend/tests/test_inventory_analysis_soft_canonical.py \
             backend/tests/test_resolver_product_system_alias_unit.py \
             backend/tests/test_inventory_scheduler_trigger.py \
-            backend/tests/test_sync_compras_run_job_now_status.py
+            backend/tests/test_sync_compras_run_job_now_status.py \
+            backend/tools/run_inventory_github_owner.py
 
       - name: Run inventory owner tests
         working-directory: backend
