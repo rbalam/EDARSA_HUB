@@ -871,11 +871,26 @@ def map_tipo_movimiento_softrestaurant(idconcepto, cantidad=None):
     """
     Mapea idconcepto de SoftRestaurant a Inventario_TipoMovimiento.TipoMovimientoID.
 
-    Si no hay mapeo, devuelve None para evitar insertar movimientos ambiguos.
+    Prioridad:
+    1) Mapeo verificado específico (compra, traspaso, ajustes, etc.).
+    2) Convención canónica SoftRestaurant por prefijo:
+       - E* => AJUSTE_ENTRADA (3)
+       - S* => AJUSTE_SALIDA  (4)
+
+    La selección efectiva de qué conceptos participan NO se decide aquí:
+    la autoridad es Servidores_Conexiones.tipos_movimiento y se aplica antes
+    de llamar a este resolver. Así, un concepto seleccionado siempre puede
+    conservar su naturaleza entrada/salida sin hardcodear sucursales.
     """
     concepto = str(idconcepto or "").strip().upper()
     if concepto in TIPO_MOVIMIENTO_SR_TO_EDARSAHUB:
         return TIPO_MOVIMIENTO_SR_TO_EDARSAHUB[concepto]
+
+    if concepto.startswith("E"):
+        return 3
+
+    if concepto.startswith("S"):
+        return 4
 
     return None
 
