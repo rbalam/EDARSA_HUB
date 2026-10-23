@@ -33,6 +33,11 @@ from core.inventarios.resolver_canonico import (
 
 logger = logging.getLogger(__name__)
 
+from core.inventarios.mpro_movement_policy import (
+    effective_mpro_inventory_codes,
+    normalize_movement_codes,
+)
+
 
 def _query_origen(system_type: str, dias_atras: int, sucursal_origen: str = None) -> str:
     st = (system_type or "").upper()
@@ -169,11 +174,18 @@ def sync_movimientos_canonico(
     sucursal_origen = (unidad_info or {}).get("sucursal_origen_id")
     system_type_upper = str(system_type or "").upper()
     is_softrestaurant = "SOFT" in system_type_upper
-    tipos_movimiento_autorizados = {
-        str(value).strip().upper()
-        for value in (server_info.get("tipos_movimiento") or [])
-        if str(value).strip()
-    }
+    configured_codes = set(
+        normalize_movement_codes(server_info.get("tipos_movimiento") or [])
+    )
+    if is_softrestaurant:
+        tipos_movimiento_autorizados = configured_codes
+    else:
+        # MPRO: política validada por usuario. La configuración del servidor
+        # puede reducir el conjunto, nunca ampliarlo con AJUSTES u otros códigos.
+        tipos_movimiento_autorizados = effective_mpro_inventory_codes(
+            configured_codes,
+            default_when_empty=True,
+        )
 
     pend = {"sucursal": 0, "tipo": 0, "almacen": 0, "producto": 0}
 
@@ -285,19 +297,7 @@ def sync_movimientos_canonico(
     filtrados_no_autorizados = 0
     if not tipos_movimiento_autorizados:
         filtrados_no_autorizados = len(rows)
-        if is_softrestaurant:
-            rows = []
-        else:
-            conn.close()
-            return {
-                "status": "PENDIENTE",
-                "encabezados_synced": 0,
-                "detalles_synced": 0,
-                "descartados": 0,
-                "pendientes": {**pend, "tipos_movimiento": "SIN_CONFIGURACION"},
-                "filtrados_no_autorizados": filtrados_no_autorizados,
-                "message": "MPRO sin tipos_movimiento configurados; fail-closed, ledger conservado",
-            }
+        rows = []
     else:
         rows_autorizados = []
         for row in rows:
@@ -366,8 +366,17 @@ def sync_movimientos_canonico(
         if not prod.resuelto:
             pend["producto"] += 1
             continue
-        resueltos.append((empresa_id, sucursal_id, alm.canonical_id, tip.canonical_id,
-                          fecha, folio, prod.canonical_id, cantidad, costo))
+        concepto_origen = str(concepto or "").strip().upper()
+        referencia_tipo = (
+            "MOVIMIENTO_POS"
+            if is_softrestaurant
+            else f"MOVIMIENTO_POS|{concepto_origen}"
+        )
+        resueltos.append((
+            empresa_id, sucursal_id, alm.canonical_id, tip.canonical_id,
+            concepto_origen, referencia_tipo, fecha, folio,
+            prod.canonical_id, cantidad, costo
+        ))
 
     pendientes_criticos = (
         int(pend.get("tipo", 0))
@@ -400,24 +409,48 @@ def sync_movimientos_canonico(
     #    round-trips a unas pocas sentencias. Idempotente por llave natural.
     cur_w = conn.cursor()
 
-    # No borrar la ventana completa antes de reinsertar. Si existen filas
-    # pendientes de catálogo/mapeo, una reconciliación destructiva podría
-    # eliminar movimientos históricos válidos. El upsert idempotente conserva
-    # datos existentes y agrega sólo las filas resolubles/autorizadas.
+    # SoftRestaurant conserva siempre el upsert no destructivo.
+    # MPRO puede reconstruir su ventana únicamente cuando la lectura fue válida
+    # y no existen pendientes críticos de catálogo/mapeo.
     movimientos_reconciliados_eliminados = 0
 
     cur_w.execute("""
         CREATE TABLE #stg_mov (
             EmpresaID int, SucursalID int, AlmacenID int, TipoMovimientoID tinyint,
+            ConceptoOrigen varchar(50), ReferenciaTipo varchar(80),
             FechaMovimiento datetime2, Folio varchar(30),
             ProductoID int, Cantidad decimal(18,6), CostoUnitario decimal(18,6)
         )
     """)
-    ins = """INSERT INTO #stg_mov (EmpresaID,SucursalID,AlmacenID,TipoMovimientoID,FechaMovimiento,Folio,ProductoID,Cantidad,CostoUnitario)
-             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+    ins = """INSERT INTO #stg_mov (EmpresaID,SucursalID,AlmacenID,TipoMovimientoID,ConceptoOrigen,ReferenciaTipo,FechaMovimiento,Folio,ProductoID,Cantidad,CostoUnitario)
+             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
     BATCH = 1000
     for i in range(0, len(resueltos), BATCH):
         cur_w.executemany(ins, resueltos[i:i + BATCH])
+
+    # MPRO: reconciliación controlada de la ventana. Sólo se ejecuta cuando
+    # la lectura del origen fue válida y no existen pendientes críticos.
+    # Retira AJUSTES u otros conceptos previamente sincronizados que ya no
+    # están autorizados y reconstruye la ventana con los códigos permitidos.
+    if not is_softrestaurant and pendientes_criticos == 0:
+        cur_w.execute("""
+            DELETE d
+            FROM Inventario_MovimientosDetalle d
+            INNER JOIN Inventario_Movimientos m ON m.MovimientoID=d.MovimientoID
+            WHERE m.EmpresaID=%s
+              AND m.SucursalID=%s
+              AND m.FechaMovimiento >= DATEADD(DAY, -%s, GETDATE())
+              AND ISNULL(m.ReferenciaTipo,'') LIKE 'MOVIMIENTO_POS%%'
+        """, (empresa_id, sucursal_id, int(dias_atras)))
+        cur_w.execute("""
+            DELETE m
+            FROM Inventario_Movimientos m
+            WHERE m.EmpresaID=%s
+              AND m.SucursalID=%s
+              AND m.FechaMovimiento >= DATEADD(DAY, -%s, GETDATE())
+              AND ISNULL(m.ReferenciaTipo,'') LIKE 'MOVIMIENTO_POS%%'
+        """, (empresa_id, sucursal_id, int(dias_atras)))
+        movimientos_reconciliados_eliminados = max(cur_w.rowcount or 0, 0)
 
     # 4a) Insertar encabezados nuevos (uno por llave natural empresa+sucursal+almacen+tipo+fecha(día)+folio)
     cur_w.execute("""
@@ -425,7 +458,8 @@ def sync_movimientos_canonico(
             (TipoMovimientoID, EmpresaID, SucursalID, AlmacenID, FechaMovimiento,
              ReferenciaTipo, FolioReferencia, Activo, CreatedAt)
         SELECT s.TipoMovimientoID, s.EmpresaID, s.SucursalID, s.AlmacenID,
-               MIN(s.FechaMovimiento), 'MOVIMIENTO_POS', s.Folio, 1, GETDATE()
+               MIN(s.FechaMovimiento), s.ReferenciaTipo,
+               s.Folio, 1, GETDATE()
         FROM #stg_mov s
         WHERE NOT EXISTS (
             SELECT 1 FROM Inventario_Movimientos m
@@ -433,9 +467,10 @@ def sync_movimientos_canonico(
               AND m.TipoMovimientoID=s.TipoMovimientoID
               AND CAST(m.FechaMovimiento AS DATE)=CAST(s.FechaMovimiento AS DATE)
               AND ISNULL(m.FolioReferencia,'')=ISNULL(s.Folio,'')
+              AND ISNULL(m.ReferenciaTipo,'')=ISNULL(s.ReferenciaTipo,'')
         )
         GROUP BY s.EmpresaID, s.SucursalID, s.AlmacenID, s.TipoMovimientoID,
-                 CAST(s.FechaMovimiento AS DATE), s.Folio
+                 s.ReferenciaTipo, CAST(s.FechaMovimiento AS DATE), s.Folio
     """)
     encabezados = cur_w.rowcount or 0
 
@@ -453,6 +488,7 @@ def sync_movimientos_canonico(
          AND m.TipoMovimientoID=s.TipoMovimientoID
          AND CAST(m.FechaMovimiento AS DATE)=CAST(s.FechaMovimiento AS DATE)
          AND ISNULL(m.FolioReferencia,'')=ISNULL(s.Folio,'')
+         AND ISNULL(m.ReferenciaTipo,'')=ISNULL(s.ReferenciaTipo,'')
         WHERE NOT EXISTS (
             SELECT 1 FROM Inventario_MovimientosDetalle d
             WHERE d.MovimientoID=m.MovimientoID AND d.ProductoID=s.ProductoID

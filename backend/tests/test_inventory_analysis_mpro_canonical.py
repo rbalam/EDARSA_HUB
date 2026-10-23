@@ -84,9 +84,42 @@ def test_mpro_drilldown_is_canonical_and_reconciles_totals():
     assert '"total": total' in server_source
 
 
-def test_mpro_movement_filter_uses_server_configuration():
+def test_mpro_movement_filter_uses_canonical_policy_and_safe_reconciliation():
     movement_source = (
         ROOT / "core" / "inventarios" / "sync_movimientos_canonico.py"
     ).read_text(encoding="utf-8")
+    policy_source = (
+        ROOT / "core" / "inventarios" / "mpro_movement_policy.py"
+    ).read_text(encoding="utf-8")
+
     assert "concepto_origen in tipos_movimiento_autorizados" in movement_source
-    assert "MPRO sin tipos_movimiento configurados; fail-closed" in movement_source
+    assert "effective_mpro_inventory_codes" in movement_source
+    assert "pendientes_criticos == 0" in movement_source
+    assert "LIKE 'MOVIMIENTO_POS%%'" in movement_source
+    assert "MOVIMIENTO_POS|" in movement_source
+
+    for code in ("050","106","108","109","112","506","508","509","510","512"):
+        assert f'"{code}"' in policy_source
+
+
+def test_mpro_server_filters_show_full_catalog_but_only_policy_is_authorized():
+    server_source = SERVER.read_text(encoding="utf-8")
+    frontend = (ROOT.parent / "frontend" / "src" / "pages" / "Servidores.js").read_text(
+        encoding="utf-8"
+    )
+
+    assert "Inventario_ConceptoMapeoOrigen" in server_source
+    assert "autorizado_analisis" in server_source
+    assert "effective_mpro_inventory_codes" in server_source
+
+    assert "normalizeFilterCodes" in frontend
+    assert "autorizado_analisis === true" in frontend
+    assert "autorizado_analisis === false" in frontend
+    assert "No participa en análisis" in frontend
+
+
+def test_mpro_drilldown_preserves_origin_concept_labels():
+    server_source = SERVER.read_text(encoding="utf-8")
+    assert "referencia_tipo" in server_source
+    assert "MOVIMIENTO_POS|" in server_source
+    assert "MPRO_INVENTORY_MOVEMENT_POLICY" in server_source
