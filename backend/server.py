@@ -4720,6 +4720,29 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
 
         selected_almacenes = []
 
+        # Regla canónica SoftRestaurant:
+        # almacenes tipo Presentaciones (tipo=2 / unidad_natural=presentaciones)
+        # NO descargan ventas. Si hay mezcla con al menos un almacén de consumo,
+        # las ventas se aplican una sola vez al conjunto.
+        selected_warehouse_items = list(almacenes or [])
+        soft_sales_enabled = True
+        if selected_warehouse_items:
+            def _is_presentation_warehouse(item):
+                if not isinstance(item, dict):
+                    return False
+                unidad_natural = _as_text(item.get('unidad_natural')).lower()
+                tipo_value = item.get('tipo', item.get('tipo_almacen', item.get('almacen_tipo')))
+                try:
+                    tipo_num = int(tipo_value)
+                except (TypeError, ValueError):
+                    tipo_num = None
+                return unidad_natural == 'presentaciones' or tipo_num == 2
+
+            soft_sales_enabled = any(
+                not _is_presentation_warehouse(item)
+                for item in selected_warehouse_items
+            )
+
         def _append_almacen_candidate(value):
             value_text = _as_text(value)
             if value_text and value_text not in selected_almacenes:
@@ -5145,12 +5168,14 @@ WHERE t._rn = 1
                 sales_end=sales_end,
                 warehouses=activity_warehouses,
                 visible_product_codes=sorted(productos.keys()),
+                include_sales=soft_sales_enabled,
             )
             logging.info(
-                "[SOFT-CANONICAL-NOLIVE] actividad canonica movimientos=%s ventas=%s unidad=%s",
+                "[SOFT-CANONICAL-NOLIVE] actividad canonica movimientos=%s ventas=%s unidad=%s sales_enabled=%s",
                 len(movimientos),
                 len(ventas),
                 scope_unidad_codigo,
+                soft_sales_enabled,
             )
 
             all_codes = sorted(set(productos.keys()) | set(inv_inicial.keys()) | set(inv_final.keys()) | set(movimientos.keys()) | set(ventas.keys()))
@@ -5725,7 +5750,7 @@ GROUP BY Codigo
                     'Producto': prod.get('Producto') or f'Producto {codigo}',
                     'Unidad': prod.get('Unidad') or 'PZA',
                     'Rendimiento': _as_float(prod.get('Rendimiento')) or 1,
-                    'tipo_almacen': 1,
+                    'tipo_almacen': 1 if soft_sales_enabled else 2,
                     'Costo_Unitario': round(costo, 4),
                     'Inv_Inicial_Cantidad': round(inv_ini_qty, 4),
                     'Inv_Inicial_Costo': round(inv_ini_qty * costo, 2),
