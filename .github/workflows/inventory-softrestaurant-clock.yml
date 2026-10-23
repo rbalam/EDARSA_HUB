@@ -43,19 +43,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: backend/requirements.txt
-
-      - name: Install backend runtime dependencies
-        run: |
-          set -euo pipefail
-          python -m pip install --upgrade pip
-          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-inventory-owner.txt
-          python -m pip install -r /tmp/requirements-inventory-owner.txt
-
       - name: Validate inventory owner secrets
         run: |
           set -euo pipefail
@@ -70,6 +57,19 @@ jobs:
             fi
           done
           test "$missing" -eq 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend runtime dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-inventory-owner.txt
+          python -m pip install -r /tmp/requirements-inventory-owner.txt
 
       - name: Run canonical SoftRestaurant inventory sync
         working-directory: backend
