@@ -1,0 +1,33 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-TOAST-GATE6-ADAPTER-ONBOARDING-DISCOVERY-READONLY-R1-20261022",
+  "created_at_utc": "2026-10-23T03:04:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "e9902bbb529f75af0eef8ef216d55b968ce27a9e",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "objective": "Gate6 Toast: preflight canónico de onboarding y adaptador. Verificar metadatos SQL de restricciones/defaults de Sistema_Tipos, Sistema_VersionesSistemas, Sistema_Capacidades, Servidores_Conexiones, Sistema_IdentificadoresExternos y Sistema_Sync_Catalogo; confirmar ausencia Toast y enumerar dependencias de alta, sin DML/DDL. No crear nuevos Workers, tablas Toast ni ejecutores paralelos; no credenciales ni Production. Reportar que esta auditoría SQL NO certifica código adaptador, API ni funcionalidad.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "TOAST_G6_REQUIRED_COLUMNS",
+          "sql": "SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE,IS_NULLABLE,COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME IN ('Sistema_Tipos','Sistema_VersionesSistemas','Sistema_Capacidades','Servidores_Conexiones','Sistema_IdentificadoresExternos','Sistema_Sync_Catalogo') ORDER BY TABLE_NAME,ORDINAL_POSITION;"
+        },
+        {
+          "name": "TOAST_G6_TOAST_SYSTEM",
+          "sql": "SELECT SistemaTipoID,CodigoSistema,NombreSistema,Activo FROM dbo.Sistema_Tipos WHERE UPPER(CodigoSistema) LIKE '%TOAST%' OR UPPER(NombreSistema) LIKE '%TOAST%';"
+        },
+        {
+          "name": "TOAST_G6_TOAST_CONNECTION",
+          "sql": "SELECT id,nombre,system_type,tipo_conexion,activo,sistema_version_id FROM dbo.Servidores_Conexiones WHERE UPPER(system_type) LIKE '%TOAST%' OR UPPER(nombre) LIKE '%TOAST%';"
+        }
+      ]
+    }
+  ]
+}
