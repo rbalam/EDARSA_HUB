@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 300,
+        "paths": [
+          "backend/core/config",
+          "backend/core/connections",
+          "backend/core/sql_first",
+          "tools/mirror_sync",
+          "docs/architecture"
+        ],
+        "search_terms": [
+          "EDARSAHUB_SQL_HOST",
+          "EDARSAHUB_SQL_DATABASE",
+          "HRLectura",
+          "readonly_sql_connection",
+          "validate_readonly_identity",
+          "load_backend_runtime_env",
+          "SQL_MIGRATION_DEVELOPMENT",
+          "production_allowed"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8C-ENV-CERT-R1",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY el contrato de aislamiento SQL de Desarrollo, la configuracion canonica y los controles de seguridad del Universal Worker. No abrir conexiones SQL ni mostrar secretos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Costos y Margenes R8C",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
