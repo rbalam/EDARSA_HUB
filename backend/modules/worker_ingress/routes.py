@@ -8,11 +8,13 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 from core.rbac.middleware import require_explicit_permission
 
 from .schemas import WorkerObjectiveRequest, WorkerSubmitRequest
+from backend.modules.worker_console.contract import validate_job as validate_worker_job
 from .service import (
     WorkerIngressError,
     get_job_status,
     submit_job,
     submit_objective,
+    build_canonical_job,
 )
 from .service_credential import (
     WorkerServiceCredentialError,
@@ -93,6 +95,37 @@ def exchange_worker_service_credential(
             status_code=code,
             detail=exc.code,
         ) from exc
+
+
+
+@router.post("/jobs/preview")
+def preview_worker_job(
+    request: WorkerSubmitRequest,
+    current_user: dict = Depends(WORKER_ADMIN_DEPENDENCY),
+):
+    """Validate the exact canonical envelope without publishing it."""
+    if request.mode != "READ_ONLY" or request.actions:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="CONSOLE_PREVIEW_READ_ONLY_REQUIRED",
+        )
+    try:
+        job = build_canonical_job(
+            request.model_dump(exclude_none=True),
+            current_user=current_user,
+        )
+    except (WorkerIngressError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+    validation = validate_worker_job(job)
+    if not validation["valid"]:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=validation["errors"],
+        )
+    return {"valid": True, "job_id": job["job_id"], "mode": job["mode"], "schema": job["schema"]}
 
 
 @router.post("/jobs", status_code=status.HTTP_202_ACCEPTED)
