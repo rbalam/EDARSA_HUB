@@ -427,6 +427,22 @@ def _extended_sync_steps():
     ]
 
 
+def _sync_compras_scope() -> str:
+    """Scope opcional para owners especializados.
+
+    FULL conserva el comportamiento histórico.
+    INVENTORY_MOVEMENTS ejecuta únicamente la cadena canónica
+    ALMACENES -> MOVIMIENTOS, sin Inventarios Físicos, Requisiciones
+    ni pasos extendidos.
+    """
+    value = str(os.environ.get("SYNC_COMPRAS_SCOPE") or "FULL").strip().upper()
+    return value or "FULL"
+
+
+def _inventory_movements_only_scope() -> bool:
+    return _sync_compras_scope() == "INVENTORY_MOVEMENTS"
+
+
 def _sync_compras_system_filter() -> tuple[str, ...]:
     """Filtro opcional de motores para owners especializados.
 
@@ -640,111 +656,113 @@ def execute_sync_compras(dry_run: bool = False) -> Dict[str, Any]:
             }
             
             # Sincronizar Inventarios Físicos
-            try:
-                sync_start = datetime.now(ZoneInfo("America/Mexico_City"))
+            if not _inventory_movements_only_scope():
+                try:
+                        sync_start = datetime.now(ZoneInfo("America/Mexico_City"))
+                        
+                        if not dry_run:
+                            inv_result = sync_inventarios_fisicos_from_server(
+                                server_info,
+                                unidad_info,
+                                _execute_inventory_sql_with_timeout,
+                            )
+                        else:
+                            inv_result = {"status": "DRY_RUN", "records_synced": 0, "error": None}
+                        
+                        sync_end = datetime.now(ZoneInfo("America/Mexico_City"))
+                        
+                        results["inventarios"].append({
+                            "server": server_name,
+                            "unidad": unidad_codigo,
+                            "status": inv_result.get("status"),
+                            "records": inv_result.get("records_synced", 0),
+                            "details_synced": inv_result.get("details_synced", 0),
+                            "details_updated": inv_result.get("details_updated", 0),
+                            "detail_errors": inv_result.get("detail_errors", 0),
+                            "error": inv_result.get("error")
+                        })
+                        
+                        if inv_result.get("status") == "OK" or inv_result.get("status") == "DRY_RUN":
+                            total_processed += inv_result.get("records_synced", 0)
+                            total_processed += inv_result.get("details_synced", 0)
+                            total_processed += inv_result.get("details_updated", 0)
+                            logger.warning(
+                                "[SYNC-COMPRAS] ✅ Inventarios %s: headers=%s detalles_insertados=%s detalles_actualizados=%s",
+                                server_name,
+                                inv_result.get("records_synced", 0),
+                                inv_result.get("details_synced", 0),
+                                inv_result.get("details_updated", 0),
+                            )
+                        else:
+                            total_errors += 1
+                            error_messages.append(f"{server_name} INV: {inv_result.get('error', 'Error desconocido')}")
+                            logger.warning(f"[SYNC-COMPRAS] ❌ Inventarios {server_name}: {inv_result.get('error')}")
+                        
+                        # Log en tabla de sync
+                        if not dry_run:
+                            log_sync_operation(
+                                unidad_negocio_id=unidad_info['id'],
+                                server_id=server_info['id'],
+                                sync_type="INVENTARIOS",
+                                sync_start=sync_start,
+                                sync_end=sync_end,
+                                records_synced=inv_result.get("records_synced", 0),
+                                status=inv_result.get("status", "ERROR"),
+                                error_message=inv_result.get("error")
+                            )
+                            
+                    except Exception as e:
+                        logger.error(f"[SYNC-COMPRAS] Error sincronizando inventarios {server_name}: {e}")
+                        total_errors += 1
+                        error_messages.append(f"{server_name} INV: {str(e)[:100]}")
                 
-                if not dry_run:
-                    inv_result = sync_inventarios_fisicos_from_server(
-                        server_info,
-                        unidad_info,
-                        _execute_inventory_sql_with_timeout,
-                    )
-                else:
-                    inv_result = {"status": "DRY_RUN", "records_synced": 0, "error": None}
-                
-                sync_end = datetime.now(ZoneInfo("America/Mexico_City"))
-                
-                results["inventarios"].append({
-                    "server": server_name,
-                    "unidad": unidad_codigo,
-                    "status": inv_result.get("status"),
-                    "records": inv_result.get("records_synced", 0),
-                    "details_synced": inv_result.get("details_synced", 0),
-                    "details_updated": inv_result.get("details_updated", 0),
-                    "detail_errors": inv_result.get("detail_errors", 0),
-                    "error": inv_result.get("error")
-                })
-                
-                if inv_result.get("status") == "OK" or inv_result.get("status") == "DRY_RUN":
-                    total_processed += inv_result.get("records_synced", 0)
-                    total_processed += inv_result.get("details_synced", 0)
-                    total_processed += inv_result.get("details_updated", 0)
-                    logger.warning(
-                        "[SYNC-COMPRAS] ✅ Inventarios %s: headers=%s detalles_insertados=%s detalles_actualizados=%s",
-                        server_name,
-                        inv_result.get("records_synced", 0),
-                        inv_result.get("details_synced", 0),
-                        inv_result.get("details_updated", 0),
-                    )
-                else:
-                    total_errors += 1
-                    error_messages.append(f"{server_name} INV: {inv_result.get('error', 'Error desconocido')}")
-                    logger.warning(f"[SYNC-COMPRAS] ❌ Inventarios {server_name}: {inv_result.get('error')}")
-                
-                # Log en tabla de sync
-                if not dry_run:
-                    log_sync_operation(
-                        unidad_negocio_id=unidad_info['id'],
-                        server_id=server_info['id'],
-                        sync_type="INVENTARIOS",
-                        sync_start=sync_start,
-                        sync_end=sync_end,
-                        records_synced=inv_result.get("records_synced", 0),
-                        status=inv_result.get("status", "ERROR"),
-                        error_message=inv_result.get("error")
-                    )
+                # Sincronizar Requisiciones
+                if not _inventory_movements_only_scope():
+                    try:
+                    sync_start = datetime.now(ZoneInfo("America/Mexico_City"))
                     
-            except Exception as e:
-                logger.error(f"[SYNC-COMPRAS] Error sincronizando inventarios {server_name}: {e}")
-                total_errors += 1
-                error_messages.append(f"{server_name} INV: {str(e)[:100]}")
-            
-            # Sincronizar Requisiciones
-            try:
-                sync_start = datetime.now(ZoneInfo("America/Mexico_City"))
-                
-                if not dry_run:
-                    req_result = sync_requisiciones_from_server(
-                        server_info, unidad_info, _execute_sql_with_timeout
-                    )
-                else:
-                    req_result = {"status": "DRY_RUN", "records_synced": 0, "error": None}
-                
-                sync_end = datetime.now(ZoneInfo("America/Mexico_City"))
-                
-                results["requisiciones"].append({
-                    "server": server_name,
-                    "unidad": unidad_codigo,
-                    "status": req_result.get("status"),
-                    "records": req_result.get("records_synced", 0),
-                    "error": req_result.get("error")
-                })
-                
-                if req_result.get("status") == "OK" or req_result.get("status") == "DRY_RUN":
-                    total_processed += req_result.get("records_synced", 0)
-                    logger.info(f"[SYNC-COMPRAS] ✅ Requisiciones {server_name}: {req_result.get('records_synced', 0)} registros")
-                else:
-                    total_errors += 1
-                    error_messages.append(f"{server_name} REQ: {req_result.get('error', 'Error desconocido')}")
-                    logger.warning(f"[SYNC-COMPRAS] ❌ Requisiciones {server_name}: {req_result.get('error')}")
-                
-                # Log en tabla de sync
-                if not dry_run:
-                    log_sync_operation(
-                        unidad_negocio_id=unidad_info['id'],
-                        server_id=server_info['id'],
-                        sync_type="REQUISICIONES",
-                        sync_start=sync_start,
-                        sync_end=sync_end,
-                        records_synced=req_result.get("records_synced", 0),
-                        status=req_result.get("status", "ERROR"),
-                        error_message=req_result.get("error")
-                    )
+                    if not dry_run:
+                        req_result = sync_requisiciones_from_server(
+                            server_info, unidad_info, _execute_sql_with_timeout
+                        )
+                    else:
+                        req_result = {"status": "DRY_RUN", "records_synced": 0, "error": None}
                     
-            except Exception as e:
-                logger.error(f"[SYNC-COMPRAS] Error sincronizando requisiciones {server_name}: {e}")
-                total_errors += 1
-                error_messages.append(f"{server_name} REQ: {str(e)[:100]}")
+                    sync_end = datetime.now(ZoneInfo("America/Mexico_City"))
+                    
+                    results["requisiciones"].append({
+                        "server": server_name,
+                        "unidad": unidad_codigo,
+                        "status": req_result.get("status"),
+                        "records": req_result.get("records_synced", 0),
+                        "error": req_result.get("error")
+                    })
+                    
+                    if req_result.get("status") == "OK" or req_result.get("status") == "DRY_RUN":
+                        total_processed += req_result.get("records_synced", 0)
+                        logger.info(f"[SYNC-COMPRAS] ✅ Requisiciones {server_name}: {req_result.get('records_synced', 0)} registros")
+                    else:
+                        total_errors += 1
+                        error_messages.append(f"{server_name} REQ: {req_result.get('error', 'Error desconocido')}")
+                        logger.warning(f"[SYNC-COMPRAS] ❌ Requisiciones {server_name}: {req_result.get('error')}")
+                    
+                    # Log en tabla de sync
+                    if not dry_run:
+                        log_sync_operation(
+                            unidad_negocio_id=unidad_info['id'],
+                            server_id=server_info['id'],
+                            sync_type="REQUISICIONES",
+                            sync_start=sync_start,
+                            sync_end=sync_end,
+                            records_synced=req_result.get("records_synced", 0),
+                            status=req_result.get("status", "ERROR"),
+                            error_message=req_result.get("error")
+                        )
+                        
+                except Exception as e:
+                    logger.error(f"[SYNC-COMPRAS] Error sincronizando requisiciones {server_name}: {e}")
+                    total_errors += 1
+                    error_messages.append(f"{server_name} REQ: {str(e)[:100]}")
             
             # =================================================================
             # SQL-FIRST FASE 2: Sincronizaciones adicionales Compras/Inventarios
@@ -767,11 +785,12 @@ def execute_sync_compras(dry_run: bool = False) -> Dict[str, Any]:
 
             sync_steps.extend(_core_inventory_sync_steps())
 
-            for extended_step in _extended_sync_steps():
-                # Evitar duplicar ALMACENES en Soft cuando los extendidos estén activos.
-                if is_softrestaurant and extended_step[0] == "almacenes":
-                    continue
-                sync_steps.append(extended_step)
+            if not _inventory_movements_only_scope():
+                for extended_step in _extended_sync_steps():
+                    # Evitar duplicar ALMACENES en Soft cuando los extendidos estén activos.
+                    if is_softrestaurant and extended_step[0] == "almacenes":
+                        continue
+                    sync_steps.append(extended_step)
 
             if not _sync_compras_extended_enabled():
                 logger.warning(
