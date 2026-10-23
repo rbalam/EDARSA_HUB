@@ -1,0 +1,146 @@
+name: Inventory Sync Progress Probe
+
+on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - ".github/workflows/inventory-sync-progress-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "HRLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: python -m pip install --quiet pymssql
+
+      - name: Read canonical inventory sync progress
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import pymssql
+
+          conn = pymssql.connect(
+              server=os.environ["EDARSAHUB_SQL_HOST"],
+              port=int(os.environ["EDARSAHUB_SQL_PORT"]),
+              database=os.environ["EDARSAHUB_SQL_DATABASE"],
+              user=os.environ["EDARSAHUB_SQL_USER"],
+              password=os.environ["EDARSAHUB_SQL_PASSWORD"],
+              login_timeout=15,
+              timeout=30,
+              as_dict=True,
+          )
+          cur = conn.cursor(as_dict=True)
+
+          cur.execute("""
+              SELECT TOP 3
+                  SyncRunID,
+                  Status,
+                  StartedAtMexico,
+                  FinishedAtMexico,
+                  RegistrosProcesados,
+                  RegistrosError,
+                  ErrorMessage
+              FROM dbo.Sync_Control_Ejecuciones
+              WHERE SyncType='COMPRAS_SYNC'
+              ORDER BY StartedAtMexico DESC
+          """)
+          print("COMPRAS_SYNC_RUNS=" + json.dumps(
+              cur.fetchall() or [],
+              ensure_ascii=False,
+              default=str,
+          ))
+
+          cur.execute("""
+              SELECT TOP 20
+                  UnidadNegocioID,
+                  ServerID,
+                  SyncType,
+                  Status,
+                  RecordsSynced,
+                  ErrorMessage,
+                  SyncStart,
+                  SyncEnd
+              FROM dbo.Compras_Sync_Log
+              WHERE SyncType IN ('ALMACENES','MOVIMIENTOS')
+              ORDER BY SyncEnd DESC
+          """)
+          print("INVENTORY_SYNC_LOGS=" + json.dumps(
+              cur.fetchall() or [],
+              ensure_ascii=False,
+              default=str,
+          ))
+
+          cur.execute("""
+              SELECT TOP 1
+                  e.EmpresaID,
+                  s.SucursalID,
+                  a.AlmacenID,
+                  a.CodigoAlmacen,
+                  a.NombreAlmacen
+              FROM dbo.Sistema_Empresas e
+              INNER JOIN dbo.Sistema_Sucursales s
+                  ON s.EmpresaID=e.EmpresaID
+                 AND ISNULL(s.Activo,1)=1
+              INNER JOIN dbo.Inventario_Almacenes a
+                  ON a.EmpresaID=e.EmpresaID
+                 AND a.SucursalID=s.SucursalID
+                 AND ISNULL(a.Activo,1)=1
+              WHERE UPPER(e.CodigoEmpresa)='CIENFUEGOS'
+                AND (
+                    UPPER(LTRIM(RTRIM(a.CodigoAlmacen))) IN ('200','200-BARRA')
+                    OR UPPER(LTRIM(RTRIM(a.NombreAlmacen))) LIKE '%BARRA%'
+                )
+              ORDER BY a.AlmacenID
+          """)
+          scope=cur.fetchone()
+          if scope:
+              cur.execute("""
+                  SELECT
+                      COUNT(DISTINCT m.MovimientoID) movimientos,
+                      COUNT(*) detalles,
+                      MIN(m.FechaMovimiento) fecha_min,
+                      MAX(m.FechaMovimiento) fecha_max
+                  FROM dbo.Inventario_Movimientos m
+                  INNER JOIN dbo.Inventario_MovimientosDetalle d
+                      ON d.MovimientoID=m.MovimientoID
+                  WHERE m.EmpresaID=%s
+                    AND m.SucursalID=%s
+                    AND m.AlmacenID=%s
+                    AND m.FechaMovimiento >= '2026-10-01'
+                    AND m.FechaMovimiento < '2026-10-20'
+                    AND ISNULL(m.Activo,1)=1
+              """, (
+                  scope["EmpresaID"],
+                  scope["SucursalID"],
+                  scope["AlmacenID"],
+              ))
+              count=cur.fetchone() or {}
+              print("CIENFUEGOS_BARRA_CURRENT=" + json.dumps(
+                  {**scope, **count},
+                  ensure_ascii=False,
+                  default=str,
+              ))
+          else:
+              print("CIENFUEGOS_BARRA_CURRENT=NO_SCOPE")
+
+          cur.close()
+          conn.close()
+          PY
