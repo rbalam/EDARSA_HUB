@@ -1,0 +1,66 @@
+{
+  "actions": [],
+  "base_sha": "e9902bbb529f75af0eef8ef216d55b968ce27a9e",
+  "checks": [
+    {
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "servidores_inventory_non_secret",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), sc.id) AS connection_id,\n    sc.nombre,\n    sc.tipo_conexion,\n    sc.system_type,\n    sc.activo,\n    sc.visible_en_operaciones,\n    sc.visible_en_listado,\n    sc.es_editable_ui,\n    sc.es_eliminable_ui,\n    sc.database_name,\n    sc.EmpresaID,\n    sc.empresa_id,\n    CASE\n      WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.host,''))), '') IS NULL THEN 0\n      ELSE 1\n    END AS host_configured,\n    CASE\n      WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.api_url,''))), '') IS NULL THEN 0\n      ELSE 1\n    END AS api_url_configured,\n    CASE\n      WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.username,''))), '') IS NULL THEN 0\n      ELSE 1\n    END AS username_configured,\n    CASE\n      WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.password_encrypted,''))), '') IS NULL THEN 0\n      ELSE 1\n    END AS password_configured,\n    CASE\n      WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.api_key_encrypted,''))), '') IS NULL THEN 0\n      ELSE 1\n    END AS api_key_configured,\n    CASE\n      WHEN ISNULL(sc.tipo_conexion,'DATA_SOURCE')='API_LOCAL'\n        THEN 'API_CONNECTIONS'\n      WHEN ISNULL(sc.tipo_conexion,'DATA_SOURCE')='CORE'\n        THEN 'CORE_SUPERADMIN_ONLY'\n      ELSE 'SERVERS'\n    END AS expected_source_contract,\n    CASE\n      WHEN sc.activo=1\n       AND ISNULL(sc.visible_en_listado,1)=1\n       AND ISNULL(sc.tipo_conexion,'DATA_SOURCE') NOT IN ('API_LOCAL','CORE')\n      THEN 1 ELSE 0\n    END AS expected_in_servers_endpoint,\n    CASE\n      WHEN ISNULL(sc.tipo_conexion,'DATA_SOURCE')<>'CORE'\n      THEN 1 ELSE 0\n    END AS expected_in_integrations_center_pre_rbac,\n    sc.updated_at\nFROM dbo.Servidores_Conexiones sc\nORDER BY sc.tipo_conexion, sc.nombre\n"
+        },
+        {
+          "name": "cavas_cienfuegos_focus",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), sc.id) AS connection_id,\n    sc.nombre,\n    sc.tipo_conexion,\n    sc.system_type,\n    sc.activo,\n    sc.visible_en_operaciones,\n    sc.visible_en_listado,\n    sc.database_name,\n    sc.EmpresaID,\n    sc.empresa_id,\n    CASE\n      WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.host,''))), '') IS NULL THEN 0\n      ELSE 1\n    END AS host_configured,\n    CASE\n      WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.api_url,''))), '') IS NULL THEN 0\n      ELSE 1\n    END AS api_url_configured,\n    CASE\n      WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.password_encrypted,''))), '') IS NULL THEN 0\n      ELSE 1\n    END AS password_configured,\n    CASE\n      WHEN NULLIF(LTRIM(RTRIM(ISNULL(sc.api_key_encrypted,''))), '') IS NULL THEN 0\n      ELSE 1\n    END AS api_key_configured\nFROM dbo.Servidores_Conexiones sc\nWHERE\n    UPPER(ISNULL(sc.nombre,'')) LIKE '%CAVA%'\n OR UPPER(ISNULL(sc.nombre,'')) LIKE '%CIENFUEGOS%'\n OR UPPER(ISNULL(sc.database_name,'')) LIKE '%CAVA%'\n OR UPPER(ISNULL(sc.database_name,'')) LIKE '%CIENFUEGOS%'\nORDER BY sc.nombre\n"
+        },
+        {
+          "name": "servidores_health_sanitized",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), e.ServidorID) AS connection_id,\n    sc.nombre,\n    e.EstadoConexion,\n    e.UltimoCheck,\n    e.UltimaPruebaUTC,\n    e.UltimoExitoUTC,\n    e.UltimoErrorUTC,\n    e.UltimoErrorCodigo,\n    e.LatenciaMs,\n    e.UltimoSyncUTC,\n    e.UltimoSyncExitosoUTC,\n    e.FechaActualizacionUTC,\n    CASE\n      WHEN NULLIF(LTRIM(RTRIM(ISNULL(e.UltimoErrorMensaje,''))), '') IS NULL\n        THEN NULL\n      WHEN LOWER(e.UltimoErrorMensaje) LIKE '%401%'\n        OR LOWER(e.UltimoErrorMensaje) LIKE '%403%'\n        OR LOWER(e.UltimoErrorMensaje) LIKE '%login%'\n        OR LOWER(e.UltimoErrorMensaje) LIKE '%auth%'\n        OR LOWER(e.UltimoErrorMensaje) LIKE '%password%'\n        THEN 'AUTH'\n      WHEN LOWER(e.UltimoErrorMensaje) LIKE '%timeout%'\n        OR LOWER(e.UltimoErrorMensaje) LIKE '%timed out%'\n        THEN 'TIMEOUT'\n      WHEN LOWER(e.UltimoErrorMensaje) LIKE '%network%'\n        OR LOWER(e.UltimoErrorMensaje) LIKE '%connect%'\n        OR LOWER(e.UltimoErrorMensaje) LIKE '%host%'\n        THEN 'CONNECTIVITY'\n      WHEN LOWER(e.UltimoErrorMensaje) LIKE '%certificate%'\n        OR LOWER(e.UltimoErrorMensaje) LIKE '%ssl%'\n        OR LOWER(e.UltimoErrorMensaje) LIKE '%tls%'\n        THEN 'TLS'\n      ELSE 'OTHER'\n    END AS sanitized_error_class\nFROM dbo.Servidores_ConexionEstado e\nLEFT JOIN dbo.Servidores_Conexiones sc\n  ON sc.id=e.ServidorID\nORDER BY sc.nombre\n"
+        },
+        {
+          "name": "servidores_unit_scope",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), sc.id) AS connection_id,\n    sc.nombre,\n    COUNT(u.id) AS unit_count,\n    SUM(CASE WHEN ISNULL(u.activo,0)=1 THEN 1 ELSE 0 END) AS active_unit_count\nFROM dbo.Servidores_Conexiones sc\nLEFT JOIN dbo.Unidades_Negocio u\n  ON u.server_id=sc.id\nGROUP BY sc.id, sc.nombre\nORDER BY sc.nombre\n"
+        },
+        {
+          "name": "servidores_company_role_scope",
+          "sql": "\nSELECT\n    CONVERT(varchar(36), sc.id) AS connection_id,\n    sc.nombre,\n    COUNT(ses.ServidorID) AS company_role_rows,\n    SUM(CASE WHEN ISNULL(ses.Activo,0)=1 THEN 1 ELSE 0 END) AS active_company_role_rows\nFROM dbo.Servidores_Conexiones sc\nLEFT JOIN dbo.Sistema_EmpresasServidores ses\n  ON ses.ServidorID=sc.id\nGROUP BY sc.id, sc.nombre\nORDER BY sc.nombre\n"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY",
+    "No actions",
+    "No writes",
+    "No LIVE connection tests",
+    "No secrets in output",
+    "No hosts or URLs in output",
+    "No Mongo",
+    "No Production"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-RUNTIME-INVENTORY-AUDIT-R1-20261022",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar READ_ONLY el inventario canonico de conexiones del menu Servidores desde EDARSAHUB. Determinar visibilidad esperada en /servers, /api-connections e integrations-center; identificar Cavas y Cienfuegos; revisar activo, visible, tipo, scopes y health sin mostrar hosts, URLs, usuarios, passwords, API keys ni secretos. No probar conexiones LIVE y no modificar SQL, codigo ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Conexiones y Comunicaciones",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "Conexiones y Comunicaciones",
+    "conflict_domains": [],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
