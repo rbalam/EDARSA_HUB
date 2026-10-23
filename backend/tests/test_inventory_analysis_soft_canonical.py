@@ -35,7 +35,7 @@ def test_soft_report_recovers_missing_final_detail_by_folio():
     assert "detalle recuperado por folio para completar cobertura" in fragment
 
 
-def test_soft_verified_non_sales_concepts_are_covered_without_sales_double_count():
+def test_soft_selected_concepts_are_resolvable_by_nature():
     sync_source = (ROOT / "modules" / "compras" / "sync_service.py").read_text(
         encoding="utf-8"
     )
@@ -49,13 +49,12 @@ def test_soft_verified_non_sales_concepts_are_covered_without_sales_double_count
     ):
         assert f'"{code}"' in sync_source
 
-    mapping_block = sync_source[
-        sync_source.index("TIPO_MOVIMIENTO_SR_TO_EDARSAHUB = {"):
-        sync_source.index("def registrar_concepto_movimiento_no_mapeado")
-    ]
-    for sales_code in ("SPV", "SCP", "SCS"):
-        assert f'"{sales_code}":' not in mapping_block
-
+    # Los mapeos específicos conservan prioridad, pero cualquier concepto
+    # SoftRestaurant seleccionado debe poder resolver su naturaleza E/S.
+    assert 'if concepto.startswith("E"):' in sync_source
+    assert 'if concepto.startswith("S"):' in sync_source
+    assert "return 3" in sync_source
+    assert "return 4" in sync_source
     assert "map_tipo_movimiento_softrestaurant" in movement_source
 
 def test_soft_ledger_accepts_canonical_warehouse_id_scope():
@@ -118,7 +117,7 @@ def test_soft_movement_sync_uses_server_authorized_origin_concepts():
     assert "if is_softrestaurant:" in movement_source
     assert "concepto_origen in tipos_movimiento_autorizados" in movement_source
     assert "filtrados_no_autorizados" in movement_source
-    assert "Sin tipos de movimiento autorizados para este servidor" in movement_source
+    assert "No hay movimientos SoftRestaurant resolubles en la ventana" in movement_source
 
 
 def test_inventory_movement_authorization_does_not_touch_commercial_syncs():
