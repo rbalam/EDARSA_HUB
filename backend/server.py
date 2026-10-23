@@ -2921,7 +2921,13 @@ async def get_tipos_movimiento(server_id: str, current_user: Dict = Depends(get_
                     else str(row.get("descripcion_mapeo") or "").strip()
                 )
                 # El seed histórico guarda "MPRO <codigo> <desc> -> CANON".
-                # Para opciones no policy conservarlo como evidencia canónica.
+                # Mostrar en UI sólo la descripción fuente, conservando el catálogo DB.
+                if not policy and descripcion:
+                    prefix = f"MPRO {codigo} "
+                    if descripcion.upper().startswith(prefix.upper()):
+                        descripcion = descripcion[len(prefix):]
+                    if " -> " in descripcion:
+                        descripcion = descripcion.rsplit(" -> ", 1)[0].strip()
                 naturaleza = str(row.get("naturaleza") or "").strip().upper()
                 result.append({
                     "codigo": codigo,
@@ -10531,6 +10537,7 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
             d.Cantidad AS cantidad,
             al.NombreAlmacen AS almacen,
             ISNULL(m.FolioReferencia, '') AS referencia,
+            ISNULL(m.ReferenciaTipo, '') AS referencia_tipo,
             tm.Naturaleza AS tipo
         FROM dbo.Inventario_MovimientosDetalle d
         INNER JOIN dbo.Inventario_Movimientos m ON m.MovimientoID = d.MovimientoID
@@ -10547,10 +10554,26 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
         for r in cursor.fetchall():
             cantidad = float(r['cantidad'] or 0)
             tipo = (r['tipo'] or 'S').upper()
+            concepto_visible = r['concepto'] or ''
+            descripcion_visible = r['descripcion_concepto'] or ''
+
+            if is_mpro_system(server.get('system_type')):
+                referencia_tipo = str(r.get('referencia_tipo') or '')
+                if referencia_tipo.startswith('MOVIMIENTO_POS|'):
+                    from core.inventarios.mpro_movement_policy import (
+                        MPRO_INVENTORY_MOVEMENT_POLICY,
+                    )
+                    codigo_origen = referencia_tipo.split('|', 1)[1].strip()
+                    if codigo_origen:
+                        concepto_visible = codigo_origen
+                        policy_item = MPRO_INVENTORY_MOVEMENT_POLICY.get(codigo_origen)
+                        if policy_item:
+                            descripcion_visible = policy_item.get('descripcion') or descripcion_visible
+
             movimientos.append({
                 "fecha": r['fecha'].isoformat() if hasattr(r['fecha'], 'isoformat') else str(r['fecha']),
-                "concepto": r['concepto'] or '',
-                "descripcion": r['descripcion_concepto'] or '',
+                "concepto": concepto_visible,
+                "descripcion": descripcion_visible,
                 "cantidad": cantidad if tipo == 'E' else -cantidad,
                 "almacen": r['almacen'] or '',
                 "referencia": str(r['referencia'] or ''),
