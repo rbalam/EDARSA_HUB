@@ -63,7 +63,7 @@ jobs:
                   ON UPPER(e.CodigoEmpresa)=UPPER(u.codigo)
               INNER JOIN dbo.Sistema_Sucursales ss
                   ON ss.EmpresaID=e.EmpresaID
-                 AND LOWER(CONVERT(varchar(36),ss.ServidorID))=LOWER(CONVERT(varchar(36),s.id))
+                 AND ISNULL(ss.Activo,1)=1
               INNER JOIN dbo.Inventario_Almacenes a
                   ON a.EmpresaID=e.EmpresaID
                  AND a.SucursalID=ss.SucursalID
