@@ -1,0 +1,59 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 1000,
+        "paths": [
+          "backend/modules/sync_recetas",
+          "backend/modules/comercial",
+          "backend/modules/comercial_v2",
+          "backend/core/scheduler",
+          "backend/modules/scheduler_runtime",
+          "backend/scheduler_service.py"
+        ],
+        "search_terms": [
+          "Comercial_RecetasSnapshot",
+          "Comercial_RecetasSnapshotDetalle",
+          "Sync_Productos_Recetas",
+          "snapshot",
+          "recetas",
+          "costo",
+          "umbral",
+          "alerta",
+          "incremento",
+          "scheduler",
+          "get_lock_manager",
+          "persistent_state_repository",
+          "require_explicit_permission"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE7-DESIGN-R1",
+  "mode": "READ_ONLY",
+  "objective": "Realizar auditoria tecnica READ_ONLY para preparar la implementacion canonica de snapshots mensuales inmutables de recetas y alertas de incrementos acumulativos. Identificar los modelos, tablas, servicios, rutas, permisos, jobs y pruebas existentes. Determinar el minimo cambio necesario sin duplicar catalogos, tablas, schedulers ni workers. Evaluar atomicidad, idempotencia, concurrencia, catch-up, integridad historica, deduplicacion de alertas y RBAC. Separar evidencia comprobada de recomendaciones. Identificar las pruebas y condiciones necesarias para demostrar independencia del Scheduler respecto de Emergent. No modificar codigo, SQL, servicios ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Costos y Margenes - Gate R7",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
