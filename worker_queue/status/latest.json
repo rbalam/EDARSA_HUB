@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "70b5a4fdc392dcc31d01de26b95e903b19e51fdf",
-  "generated_at_utc": "2026-10-23T05:38:56Z",
+  "generated_at_utc": "2026-10-23T05:40:22Z",
   "history": {
     "done_total_local": 1565,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 603,
+      "age_seconds": 690,
       "job_id": "BOS-WORKER-OBJECTIVE-CERTIFICATION-IMPLEMENTATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 182,
+      "age_seconds": 269,
       "job_id": "BOS-WORKER-OBJECTIVE-CERTIFICATION-IMPLEMENTATION-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2304,
+      "age_seconds": 2391,
       "job_id": "BOS-WORKER-OBJECTIVE-CERTIFICATION-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 264,
+      "age_seconds": 351,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-CENTRO-RBAC-UI-CLOSURE-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,8 +54,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-23T05:38:43Z",
-    "last_receive_utc": "2026-10-23T05:38:54Z",
+    "last_cycle_utc": "2026-10-23T05:40:21Z",
+    "last_receive_utc": "2026-10-23T05:40:16Z",
     "last_terminal_utc": "2026-10-23T05:35:53Z",
     "pid": "92527",
     "runtime_fingerprint": {
