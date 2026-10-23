@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "feb75a738512c3747ea56132707391d2afcb07cb",
-  "generated_at_utc": "2026-10-23T02:10:14Z",
+  "generated_at_utc": "2026-10-23T02:11:44Z",
   "history": {
     "done_total_local": 1558,
     "pending_total_local": 0,
@@ -16,49 +16,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3549,
-      "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE7-DESIGN-R1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3392,
+      "age_seconds": 3483,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8A-CONTRACTS-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2272,
+      "age_seconds": 2362,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8A-SQL-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1217,
+      "age_seconds": 1308,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8B1-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 102,
+      "age_seconds": 193,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8B2-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3552,
-      "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-CANONICAL-INVENTORY-UI-FIX-R4-20261022",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1612,
+      "age_seconds": 1703,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-ERROR-SEMANTICS-CANONICAL-CONFIG-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 534,
+      "age_seconds": 625,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-LONG-RUN-HEARTBEAT-KNOWLEDGE-ROUTING-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,14 +60,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 8,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
   "remote_development_sha": "feb75a738512c3747ea56132707391d2afcb07cb",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-23T02:09:58Z",
-    "last_receive_utc": "2026-10-23T02:09:53Z",
+    "last_cycle_utc": "2026-10-23T02:11:41Z",
+    "last_receive_utc": "2026-10-23T02:11:36Z",
     "last_terminal_utc": "2026-10-23T02:08:31Z",
     "pid": "92778",
     "runtime_fingerprint": {
