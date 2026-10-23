@@ -4,11 +4,11 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "52395394458b38d64d20301b9d2a71e7f7bd5532",
-  "generated_at_utc": "2026-10-23T01:07:26Z",
+  "generated_at_utc": "2026-10-23T01:08:56Z",
   "history": {
     "done_total_local": 1551,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 1296,
     "results_total_local": 2616
   },
@@ -16,62 +16,68 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 52,
+      "age_seconds": 143,
       "job_id": "BOS-COSTOS-RECETAS-SCHEDULER-INDEPENDENCE-GATE6C-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1935,
+      "age_seconds": 2026,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE4-SQL-AUDIT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1732,
+      "age_seconds": 1823,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE5-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3075,
+      "age_seconds": 3166,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-AUTOMATIC-EXECUTION-LOOP-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1661,
+      "age_seconds": 1751,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-AUTOMATIC-EXECUTION-LOOP-R2-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 578,
+      "age_seconds": 669,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-AUTOMATIC-EXECUTION-LOOP-R3-20261022",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 39,
+      "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-CANONICAL-INVENTORY-UI-FIX-R4-20261022",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "local_development_sha": "52395394458b38d64d20301b9d2a71e7f7bd5532",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 6,
-  "queue_running": 0,
+  "queue_running": 1,
   "remote_development_sha": "52395394458b38d64d20301b9d2a71e7f7bd5532",
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-CANONICAL-INVENTORY-UI-FIX-R4-20261022",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-23T01:07:13Z",
-    "last_receive_utc": "2026-10-23T01:07:23Z",
+    "last_cycle_utc": "2026-10-23T01:08:46Z",
+    "last_receive_utc": "2026-10-23T01:08:41Z",
     "last_terminal_utc": "2026-10-23T01:06:33Z",
-    "pid": "1252",
+    "pid": "328810",
     "runtime_fingerprint": {
-      "active_worker_code_tree_sha": "2829d2801e7a30fa8cef29adb938c3991fd5f121",
+      "active_worker_code_tree_sha": "30867ad260774d431deab474ef5a073b93d3fc12",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
       "development_sha": "52395394458b38d64d20301b9d2a71e7f7bd5532",
@@ -88,7 +94,7 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": false,
+      "worker_code_tree_aligned": true,
       "worker_code_tree_sha": "30867ad260774d431deab474ef5a073b93d3fc12"
     }
   },
