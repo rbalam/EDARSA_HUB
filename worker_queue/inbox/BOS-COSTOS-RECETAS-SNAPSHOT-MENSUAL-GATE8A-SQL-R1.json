@@ -1,0 +1,60 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "queries": [
+        {
+          "name": "snapshot_tables",
+          "sql": "\nSELECT\n    s.name AS schema_name,\n    t.name AS table_name,\n    t.object_id\nFROM sys.tables AS t\nJOIN sys.schemas AS s\n    ON s.schema_id = t.schema_id\nWHERE \ns.name = 'dbo'\nAND t.name IN (\n    'Comercial_RecetasSnapshot',\n    'Comercial_RecetasSnapshotDetalle'\n)\n\nORDER BY t.name\n"
+        },
+        {
+          "name": "snapshot_columns",
+          "sql": "\nSELECT\n    t.name AS table_name,\n    c.column_id,\n    c.name AS column_name,\n    ty.name AS data_type,\n    c.max_length,\n    c.precision,\n    c.scale,\n    c.is_nullable,\n    c.is_identity,\n    c.is_computed\nFROM sys.tables AS t\nJOIN sys.schemas AS s\n    ON s.schema_id = t.schema_id\nJOIN sys.columns AS c\n    ON c.object_id = t.object_id\nJOIN sys.types AS ty\n    ON ty.user_type_id = c.user_type_id\nWHERE \ns.name = 'dbo'\nAND t.name IN (\n    'Comercial_RecetasSnapshot',\n    'Comercial_RecetasSnapshotDetalle'\n)\n\nORDER BY t.name, c.column_id\n"
+        },
+        {
+          "name": "snapshot_indexes",
+          "sql": "\nSELECT\n    t.name AS table_name,\n    i.name AS index_name,\n    i.type_desc,\n    i.is_unique,\n    i.is_primary_key,\n    i.is_unique_constraint,\n    i.has_filter,\n    i.filter_definition,\n    ic.key_ordinal,\n    ic.is_included_column,\n    c.name AS column_name\nFROM sys.tables AS t\nJOIN sys.schemas AS s\n    ON s.schema_id = t.schema_id\nJOIN sys.indexes AS i\n    ON i.object_id = t.object_id\nLEFT JOIN sys.index_columns AS ic\n    ON ic.object_id = i.object_id\n    AND ic.index_id = i.index_id\nLEFT JOIN sys.columns AS c\n    ON c.object_id = ic.object_id\n    AND c.column_id = ic.column_id\nWHERE \ns.name = 'dbo'\nAND t.name IN (\n    'Comercial_RecetasSnapshot',\n    'Comercial_RecetasSnapshotDetalle'\n)\n\nORDER BY t.name, i.index_id, ic.key_ordinal, ic.index_column_id\n"
+        },
+        {
+          "name": "snapshot_constraints",
+          "sql": "\nSELECT\n    t.name AS table_name,\n    kc.name AS constraint_name,\n    kc.type_desc,\n    kc.unique_index_id\nFROM sys.tables AS t\nJOIN sys.schemas AS s\n    ON s.schema_id = t.schema_id\nJOIN sys.key_constraints AS kc\n    ON kc.parent_object_id = t.object_id\nWHERE \ns.name = 'dbo'\nAND t.name IN (\n    'Comercial_RecetasSnapshot',\n    'Comercial_RecetasSnapshotDetalle'\n)\n\nORDER BY t.name, kc.name\n"
+        },
+        {
+          "name": "snapshot_foreign_keys",
+          "sql": "\nSELECT\n    OBJECT_NAME(fk.parent_object_id) AS source_table,\n    fk.name AS foreign_key_name,\n    pc.name AS source_column,\n    OBJECT_NAME(fk.referenced_object_id) AS referenced_table,\n    rc.name AS referenced_column,\n    fk.is_disabled,\n    fk.is_not_trusted\nFROM sys.foreign_keys AS fk\nJOIN sys.foreign_key_columns AS fkc\n    ON fkc.constraint_object_id = fk.object_id\nJOIN sys.columns AS pc\n    ON pc.object_id = fkc.parent_object_id\n    AND pc.column_id = fkc.parent_column_id\nJOIN sys.columns AS rc\n    ON rc.object_id = fkc.referenced_object_id\n    AND rc.column_id = fkc.referenced_column_id\nWHERE\n    fk.parent_object_id IN (\n        OBJECT_ID('dbo.Comercial_RecetasSnapshot'),\n        OBJECT_ID('dbo.Comercial_RecetasSnapshotDetalle')\n    )\n    OR fk.referenced_object_id IN (\n        OBJECT_ID('dbo.Comercial_RecetasSnapshot'),\n        OBJECT_ID('dbo.Comercial_RecetasSnapshotDetalle')\n    )\nORDER BY source_table, foreign_key_name, fkc.constraint_column_id\n"
+        },
+        {
+          "name": "snapshot_check_constraints",
+          "sql": "\nSELECT\n    t.name AS table_name,\n    cc.name AS constraint_name,\n    cc.definition,\n    cc.is_disabled,\n    cc.is_not_trusted\nFROM sys.tables AS t\nJOIN sys.schemas AS s\n    ON s.schema_id = t.schema_id\nJOIN sys.check_constraints AS cc\n    ON cc.parent_object_id = t.object_id\nWHERE \ns.name = 'dbo'\nAND t.name IN (\n    'Comercial_RecetasSnapshot',\n    'Comercial_RecetasSnapshotDetalle'\n)\n\nORDER BY t.name, cc.name\n"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8A-SQL-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Certificar exclusivamente mediante metadatos SQL Server las estructuras físicas existentes de dbo.Comercial_RecetasSnapshot y dbo.Comercial_RecetasSnapshotDetalle. Identificar columnas, tipos, claves, índices, restricciones y relaciones para evaluar idempotencia, concurrencia, inmutabilidad y viabilidad de snapshots mensuales. No modificar datos, código, Scheduler ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Costos Recetas Snapshot Mensual R8A-SQL",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
