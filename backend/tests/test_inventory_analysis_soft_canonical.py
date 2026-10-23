@@ -201,3 +201,13 @@ def test_inventory_github_owner_is_non_production_and_canonical():
     assert "run_sync_compras_job" in owner_source
     assert '"production_touched"] = False' in owner_source
 
+def test_soft_movements_prefer_visible_inventory_code_for_same_canonical_product():
+    source = SOFT.read_text(encoding="utf-8")
+    server_source = SERVER.read_text(encoding="utf-8")
+
+    assert "visible_product_codes" in source
+    assert "OUTER APPLY" in source
+    assert "pmo.ProductoID=d.ProductoID" in source
+    assert "CASE WHEN pmo.CodigoFuente IN" in source
+    assert "visible_product_codes=sorted(productos.keys())" in server_source
+
