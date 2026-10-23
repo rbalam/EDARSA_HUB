@@ -16899,22 +16899,6 @@ except Exception as e:
 
 
 # =============================================================================
-# PREVIEW - TRIGGER OIDC EXTERNO PARA INVENTARIOS/COMPRAS
-# =============================================================================
-try:
-    from modules.scheduler_trigger_inventarios_preview.routes import (
-        router as preview_inventory_scheduler_trigger_router,
-    )
-    app.include_router(preview_inventory_scheduler_trigger_router)
-    logger.info("Preview inventory scheduler HTTP trigger router registrado")
-except Exception as e:
-    logger.warning(
-        "Error registrando Preview inventory scheduler HTTP trigger router: %s",
-        e,
-    )
-
-
-# =============================================================================
 # PREVIEW - TRIGGER HTTP EXTERNO PARA SINCRONIZADORES COMERCIALES
 # =============================================================================
 try:
