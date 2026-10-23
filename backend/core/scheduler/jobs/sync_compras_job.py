@@ -768,20 +768,50 @@ def execute_sync_compras(dry_run: bool = False) -> Dict[str, Any]:
                         "server": server_name,
                         "unidad": unidad_codigo,
                         "status": step_result.get("status"),
+                        "status_detail": step_result.get("status_detail"),
                         "records": step_result.get("records_synced", 0),
                         "encabezados": step_result.get("encabezados_synced", 0),
                         "detalles": step_result.get("detalles_synced", 0),
-                        "error": step_result.get("error")
+                        "pendientes": step_result.get("pendientes"),
+                        "pendientes_criticos": step_result.get("pendientes_criticos", 0),
+                        "filtrados_no_autorizados": step_result.get("filtrados_no_autorizados", 0),
+                        "error": step_result.get("error"),
+                        "message": step_result.get("message"),
                     })
                     
                     if step_result.get("status") in ("OK", "DRY_RUN"):
-                        synced = step_result.get("records_synced", 0) + step_result.get("encabezados_synced", 0)
+                        synced = (
+                            step_result.get("records_synced", 0)
+                            + step_result.get("encabezados_synced", 0)
+                        )
                         total_processed += synced
-                        logger.info(f"[SYNC-COMPRAS] ✅ {step_name} {server_name}: {synced} registros")
+                        logger.info(
+                            "[SYNC-COMPRAS] ✅ %s %s: %s registros "
+                            "detalle=%s pendientes_criticos=%s status_detail=%s",
+                            step_name,
+                            server_name,
+                            synced,
+                            step_result.get("detalles_synced", 0),
+                            step_result.get("pendientes_criticos", 0),
+                            step_result.get("status_detail"),
+                        )
                     else:
                         total_errors += 1
-                        error_messages.append(f"{server_name} {step_name.upper()}: {step_result.get('error', 'Error desconocido')}")
-                        logger.warning(f"[SYNC-COMPRAS] ❌ {step_name} {server_name}: {step_result.get('error')}")
+                        detail = (
+                            step_result.get("error")
+                            or step_result.get("message")
+                            or "Error desconocido"
+                        )
+                        error_messages.append(
+                            f"{server_name} {step_name.upper()}: {detail}"
+                        )
+                        logger.warning(
+                            "[SYNC-COMPRAS] ❌ %s %s: %s pendientes=%s",
+                            step_name,
+                            server_name,
+                            detail,
+                            step_result.get("pendientes"),
+                        )
                     
                     if not dry_run:
                         log_sync_operation(
