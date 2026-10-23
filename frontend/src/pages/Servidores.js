@@ -1125,6 +1125,23 @@ const Servidores = () => {
     }
   };
 
+  const normalizeFilterCodes = (values) => (
+    Array.isArray(values)
+      ? [...new Set(
+          values
+            .map(value => {
+              if (value && typeof value === 'object') {
+                return String(
+                  value.codigo ?? value.code ?? value.id ?? value.value ?? ''
+                ).trim();
+              }
+              return String(value ?? '').trim();
+            })
+            .filter(Boolean)
+        )].sort()
+      : []
+  );
+
   const loadFilterOptions = async (serverId) => {
     setLoadingOptions(true);
     try {
@@ -1134,17 +1151,31 @@ const Servidores = () => {
         api.get(`/servers/${serverId}/departamentos`)
       ]);
       
-      setTiposMovimiento(tiposRes.data);
-      setCategorias(categoriasRes.data);
-      setDepartamentos(departamentosRes.data);
+      const tiposCatalogo = Array.isArray(tiposRes.data) ? tiposRes.data : [];
+      setTiposMovimiento(tiposCatalogo);
+      setCategorias(Array.isArray(categoriasRes.data) ? categoriasRes.data : []);
+      setDepartamentos(Array.isArray(departamentosRes.data) ? departamentosRes.data : []);
       
-      // Si el servidor ya tiene filtros configurados, cargarlos
+      // MPRO: el catálogo completo se muestra, pero la selección efectiva del
+      // análisis son únicamente los movimientos autorizados por política.
       const server = servers.find(s => s.id === serverId) || selectedServer;
       if (server) {
+        const isMpro = String(server.system_type || '').toUpperCase().includes('MPRO')
+          || String(server.system_type || '').toUpperCase().includes('MANAGEMENT')
+          || String(server.system_type || '').toUpperCase().includes('MANAGMENT');
+
+        const mproAllowed = tiposCatalogo
+          .filter(item => item?.autorizado_analisis === true)
+          .map(item => String(item.codigo || '').trim())
+          .filter(Boolean)
+          .sort();
+
         setSelectedFilters({
-          tipos_movimiento: server.tipos_movimiento || [],
-          categorias: server.categorias || [],
-          departamentos: server.departamentos || []
+          tipos_movimiento: isMpro
+            ? mproAllowed
+            : normalizeFilterCodes(server.tipos_movimiento || []),
+          categorias: normalizeFilterCodes(server.categorias || []),
+          departamentos: normalizeFilterCodes(server.departamentos || [])
         });
       }
       
@@ -1241,9 +1272,9 @@ const Servidores = () => {
   const openConfigDialog = async (server) => {
     setSelectedServer(server);
     setSelectedFilters({
-      tipos_movimiento: server.tipos_movimiento || [],
-      categorias: server.categorias || [],
-      departamentos: server.departamentos || []
+      tipos_movimiento: normalizeFilterCodes(server.tipos_movimiento || []),
+      categorias: normalizeFilterCodes(server.categorias || []),
+      departamentos: normalizeFilterCodes(server.departamentos || [])
     });
     setConfigDialogOpen(true);
     await loadFilterOptions(server.id);
@@ -1252,16 +1283,10 @@ const Servidores = () => {
   const saveFilters = async () => {
     if (!selectedServer) return;
 
-    const normalizeFilterValues = (values) => (
-      Array.isArray(values)
-        ? [...new Set(values.map(value => String(value).trim()).filter(Boolean))].sort()
-        : []
-    );
-
     const expectedFilters = {
-      tipos_movimiento: normalizeFilterValues(selectedFilters.tipos_movimiento),
-      categorias: normalizeFilterValues(selectedFilters.categorias),
-      departamentos: normalizeFilterValues(selectedFilters.departamentos)
+      tipos_movimiento: normalizeFilterCodes(selectedFilters.tipos_movimiento),
+      categorias: normalizeFilterCodes(selectedFilters.categorias),
+      departamentos: normalizeFilterCodes(selectedFilters.departamentos)
     };
     
     try {
@@ -1277,9 +1302,9 @@ const Servidores = () => {
       const verifyResponse = await api.get(`/servers/${selectedServer.id}`);
       const persistedServer = verifyResponse.data || {};
       const persistedFilters = {
-        tipos_movimiento: normalizeFilterValues(persistedServer.tipos_movimiento),
-        categorias: normalizeFilterValues(persistedServer.categorias),
-        departamentos: normalizeFilterValues(persistedServer.departamentos)
+        tipos_movimiento: normalizeFilterCodes(persistedServer.tipos_movimiento),
+        categorias: normalizeFilterCodes(persistedServer.categorias),
+        departamentos: normalizeFilterCodes(persistedServer.departamentos)
       };
 
       const persistedCorrectly = Object.keys(expectedFilters).every(
@@ -1316,9 +1341,13 @@ const Servidores = () => {
   };
 
   const selectAll = (type, items) => {
+    const selectableItems = type === 'tipos_movimiento'
+      ? items.filter(item => item?.autorizado_analisis !== false)
+      : items;
+
     setSelectedFilters(prev => ({
       ...prev,
-      [type]: items.map(item => item.codigo)
+      [type]: selectableItems.map(item => String(item.codigo || '').trim()).filter(Boolean)
     }));
   };
 
@@ -3835,12 +3864,21 @@ const Servidores = () => {
                           ? 'bg-blue-50 border-blue-300'
                           : 'bg-white border-zinc-200 hover:border-zinc-300'
                       }`}
-                      onClick={() => toggleFilter('tipos_movimiento', tipo.codigo)}
+                      onClick={() => {
+                        if (tipo?.autorizado_analisis !== false) {
+                          toggleFilter('tipos_movimiento', tipo.codigo);
+                        }
+                      }}
                     >
                       <Checkbox
                         checked={selectedFilters.tipos_movimiento.includes(tipo.codigo)}
+                        disabled={tipo?.autorizado_analisis === false}
                         onClick={(event) => event.stopPropagation()}
-                        onCheckedChange={() => toggleFilter('tipos_movimiento', tipo.codigo)}
+                        onCheckedChange={() => {
+                          if (tipo?.autorizado_analisis !== false) {
+                            toggleFilter('tipos_movimiento', tipo.codigo);
+                          }
+                        }}
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
@@ -3852,6 +3890,11 @@ const Servidores = () => {
                           }`}>
                             {(tipo.tipo === '+' || tipo.tipo === 'EN') ? 'Entrada' : 'Salida'}
                           </span>
+                          {tipo?.autorizado_analisis === false && (
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500">
+                              No participa en análisis
+                            </span>
+                          )}
                         </div>
                         <p className="text-sm text-zinc-700 mt-1">{tipo.descripcion}</p>
                       </div>
