@@ -66,3 +66,27 @@ def test_mpro_components_prefers_product_kit_contract():
     assert "FuenteDetalle" in source
     assert "NOT EXISTS" in source
     assert "MPRO_COMPONENTS_SOURCE_INCOMPLETE" in source
+
+
+def test_mpro_sales_only_apply_to_warehouse_0001():
+    source = MPRO.read_text(encoding="utf-8")
+    assert '"0001" in selected_header_warehouse_ids' in source
+    assert '"ventas_aplicadas": sales_enabled' in source
+    assert 'sales_consumption = {}' in source
+
+
+def test_mpro_drilldown_is_canonical_and_reconciles_totals():
+    server_source = SERVER.read_text(encoding="utf-8")
+    assert 'Autoriza drilldown por unidad canónica para SoftRestaurant y MPRO' in server_source
+    assert 'm.EmpresaID = %s AND m.SucursalID = %s' in server_source
+    assert 'RECLASIFICACION_VENTAS' in server_source
+    assert 'get_mpro_sales_consumption_detail' in server_source
+    assert '"total": total' in server_source
+
+
+def test_mpro_movement_filter_uses_server_configuration():
+    movement_source = (
+        ROOT / "core" / "inventarios" / "sync_movimientos_canonico.py"
+    ).read_text(encoding="utf-8")
+    assert "concepto_origen in tipos_movimiento_autorizados" in movement_source
+    assert "MPRO sin tipos_movimiento configurados; fail-closed" in movement_source
