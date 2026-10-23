@@ -1,0 +1,271 @@
+{
+  "base_sha": "255c1b60bbfb45369999fe30a2e00ad494c39c77",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-23T00:35:10Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE4-SQL-AUDIT-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-23T00:35:37Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "snapshot_id",
+              "detalle_id"
+            ],
+            "name": "snapshot_tablas",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                877298235,
+                1037298805
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "tabla",
+              "filas"
+            ],
+            "name": "snapshot_conteos",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "Comercial_RecetasSnapshot",
+                "0"
+              ],
+              [
+                "Comercial_RecetasSnapshotDetalle",
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "tabla",
+              "columna",
+              "tipo"
+            ],
+            "name": "snapshot_columnas",
+            "row_count_returned": 38,
+            "rows": [
+              [
+                "Comercial_RecetasSnapshot",
+                "RecetaSnapshotID",
+                "uniqueidentifier"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "FechaSnapshot",
+                "datetime"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "ServerID",
+                "uniqueidentifier"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "EmpresaID",
+                "int"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "SucursalID",
+                "int"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "UnidadNegocioID",
+                "int"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "ProductoClave",
+                "varchar"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "ProductoNombre",
+                "nvarchar"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "PrecioVenta",
+                "decimal"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "CostoRecetaTotal",
+                "decimal"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "MargenPorcentaje",
+                "decimal"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "MargenMonto",
+                "decimal"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "NumeroInsumos",
+                "int"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "HashReceta",
+                "varchar"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "FuenteCalculo",
+                "varchar"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "SnapshotAnteriorID",
+                "uniqueidentifier"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "VariacionCosto",
+                "decimal"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "VariacionCostoPorcentaje",
+                "decimal"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "VariacionMargen",
+                "decimal"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "EsActual",
+                "bit"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "FechaCreacion",
+                "datetime"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "CreadoPor",
+                "varchar"
+              ],
+              [
+                "Comercial_RecetasSnapshot",
+                "SyncRunID",
+                "varchar"
+              ],
+              [
+                "Comercial_RecetasSnapshotDetalle",
+                "RecetaSnapshotDetalleID",
+                "uniqueidentifier"
+              ],
+              [
+                "Comercial_RecetasSnapshotDetalle",
+                "RecetaSnapshotID",
+                "uniqueidentifier"
+              ],
+              [
+                "Comercial_RecetasSnapshotDetalle",
+                "InsumoClave",
+                "varchar"
+              ],
+              [
+                "Comercial_RecetasSnapshotDetalle",
+                "InsumoNombre",
+                "nvarchar"
+              ],
+              [
+                "Comercial_RecetasSnapshotDetalle",
+                "Cantidad",
+                "decimal"
+              ],
+              [
+                "Comercial_RecetasSnapshotDetalle",
+                "UnidadMedida",
+                "varchar"
+              ],
+              [
+                "Comercial_RecetasSnapshotDetalle",
+                "CostoUnitario",
+                "decimal"
+              ],
+              [
+                "Comercial_RecetasSnapshotDetalle",
+                "CostoTotal",
+                "decimal"
+              ],
+              [
+                "Comercial_RecetasSnapshotDetalle",
+                "PorcentajeDelCosto",
+                "decimal"
+              ],
+              [
+                "Comercial_RecetasSnapshotDetalle",
+                "EsElaborado",
+                "bit"
+              ],
+              [
+                "Comercial_RecetasSnapshotDetalle",
+                "CostoAnterior",
+                "decimal"
+              ],
+              [
+                "Comercial_RecetasSnapshotDetalle",
+                "VariacionCosto",
+                "decimal"
+              ],
+              [
+                "Comercial_RecetasSnapshotDetalle",
+                "VariacionCostoPorcentaje",
+                "decimal"
+              ],
+              [
+                "Comercial_RecetasSnapshotDetalle",
+                "FechaCreacion",
+                "datetime"
+              ],
+              [
+                "Comercial_RecetasSnapshotDetalle",
+                "Orden",
+                "int"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-23T00:35:09Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
