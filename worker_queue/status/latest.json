@@ -3,90 +3,90 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "2b8b3d610c28a2204a319accaf0708e26a4e721f",
-  "generated_at_utc": "2026-10-23T02:01:11Z",
+  "development_sha": "60c4bef9804c726e560b22db0383911a955778b9",
+  "generated_at_utc": "2026-10-23T02:02:39Z",
   "history": {
-    "done_total_local": 1556,
+    "done_total_local": 1557,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 1297,
-    "results_total_local": 2622
+    "results_total_local": 2623
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3277,
+      "age_seconds": 3365,
       "job_id": "BOS-COSTOS-RECETAS-SCHEDULER-INDEPENDENCE-GATE6C-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3006,
+      "age_seconds": 3094,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE7-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2849,
+      "age_seconds": 2937,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8A-CONTRACTS-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1729,
+      "age_seconds": 1817,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8A-SQL-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 674,
+      "age_seconds": 762,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8B1-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3009,
+      "age_seconds": 3097,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-CANONICAL-INVENTORY-UI-FIX-R4-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1069,
+      "age_seconds": 1157,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-ERROR-SEMANTICS-CANONICAL-CONFIG-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1,
+      "age_seconds": 79,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-LONG-RUN-HEARTBEAT-KNOWLEDGE-ROUTING-R1-20261022",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "2b8b3d610c28a2204a319accaf0708e26a4e721f",
+  "local_development_sha": "60c4bef9804c726e560b22db0383911a955778b9",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 7,
-  "queue_running": 1,
-  "remote_development_sha": "2b8b3d610c28a2204a319accaf0708e26a4e721f",
+  "queue_result_ready_recent": 8,
+  "queue_running": 0,
+  "remote_development_sha": "60c4bef9804c726e560b22db0383911a955778b9",
   "runtime": {
-    "current_job_id": "EDARSAHUB-BOS-WORKER-REPAIR-LONG-RUN-HEARTBEAT-KNOWLEDGE-ROUTING-R1-20261022",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-23T02:01:06Z",
-    "last_receive_utc": "2026-10-23T02:01:01Z",
-    "last_terminal_utc": "2026-10-23T01:49:56Z",
-    "pid": "449",
+    "last_cycle_utc": "2026-10-23T02:02:28Z",
+    "last_receive_utc": "2026-10-23T02:02:25Z",
+    "last_terminal_utc": "2026-10-23T02:01:19Z",
+    "pid": "68277",
     "runtime_fingerprint": {
-      "active_worker_code_tree_sha": "30867ad260774d431deab474ef5a073b93d3fc12",
+      "active_worker_code_tree_sha": "2372a314dd0dd79781014d70d4c71e8a2e1f3f60",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "2b8b3d610c28a2204a319accaf0708e26a4e721f",
+      "development_sha": "60c4bef9804c726e560b22db0383911a955778b9",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
@@ -101,7 +101,7 @@
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
       "worker_code_tree_aligned": true,
-      "worker_code_tree_sha": "30867ad260774d431deab474ef5a073b93d3fc12"
+      "worker_code_tree_sha": "2372a314dd0dd79781014d70d4c71e8a2e1f3f60"
     }
   },
   "schema": "edarsahub.worker-health.v3",
