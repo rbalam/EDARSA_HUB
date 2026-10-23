@@ -933,9 +933,25 @@ const Servidores = () => {
       setApiConnections(localApis);
     } catch (error) {
       console.error('Error cargando inventario canonico de conexiones:', error);
-      setServers([]);
-      setApiConnections([]);
-      toast.error('Error al cargar conexiones');
+
+      // Failover operativo: mantener la fachada unificada como ruta primaria.
+      // Si falla su composicion, reutilizar contratos canonicos existentes.
+      try {
+        const sqlResponse = await api.get('/servers');
+        setServers(Array.isArray(sqlResponse.data) ? sqlResponse.data : []);
+      } catch (sqlError) {
+        console.error(
+          'Error cargando servidores SQL por fallback canonico:',
+          sqlError
+        );
+        setServers([]);
+      }
+
+      await loadApiConnections();
+
+      toast.warning(
+        'Inventario unificado no disponible; se usaron contratos canonicos de compatibilidad.'
+      );
     } finally {
       setLoading(false);
       setLoadingApis(false);
