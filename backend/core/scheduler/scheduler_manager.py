@@ -1875,8 +1875,14 @@ class SchedulerManager:
             await self._run_sync_propinas_tpv_incremental_job()
             return {"status": "executed", "job_id": job_id}
         elif job_id == "sync_compras":
-            await self._run_sync_compras_job()
-            return {"status": "executed", "job_id": job_id}
+            result = await self._run_sync_compras_job()
+            if isinstance(result, dict):
+                return {**result, "job_id": job_id}
+            return {
+                "status": "ERROR",
+                "job_id": job_id,
+                "error": "SYNC_COMPRAS_INVALID_RESULT",
+            }
         elif job_id == "sync_cxp_facturas":
             await self._run_sync_cxp_facturas_job()
             return {"status": "executed", "job_id": job_id}
