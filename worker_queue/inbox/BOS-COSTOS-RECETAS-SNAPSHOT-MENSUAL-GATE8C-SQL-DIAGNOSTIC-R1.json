@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 500,
+        "paths": [
+          "backend/scripts",
+          "backend/modules",
+          "backend/database",
+          "backend/core/scheduler",
+          "docs/architecture"
+        ],
+        "search_terms": [
+          "Comercial_RecetasSnapshot",
+          "Comercial_RecetasSnapshotDetalle",
+          "RecetaSnapshotID",
+          "SnapshotAnteriorID",
+          "ServerID",
+          "UnidadNegocioID"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8C-SQL-DIAGNOSTIC-R1",
+  "mode": "READ_ONLY",
+  "objective": "Gate R8C: auditar en modo READ_ONLY el contrato del repositorio para dbo.Comercial_RecetasSnapshot y dbo.Comercial_RecetasSnapshotDetalle. Comparar DDL historico, consumidores, identidad canonica, restricciones, indices, relaciones, concurrencia, idempotencia y dependencias Scheduler. Proponer migraciones reversibles sin ejecutarlas. NO afirmar que el esquema SQL real fue verificado. Marcar evidencia SQL como PENDIENTE hasta confirmar acceso exclusivo de lectura a Desarrollo. Prohibido DDL, DML, cambios Scheduler y Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "costos-recetas-snapshot-r8c",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
