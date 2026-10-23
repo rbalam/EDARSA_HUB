@@ -118,3 +118,14 @@ def test_bypass_test_local_no_se_modifica_en_este_parche():
     assert "'localhost'" in source
     assert "'0.0.0.0'" in source
     assert "startswith('TEST_')" in source
+
+def test_server_access_accepts_exact_branch_scope_without_global_bypass():
+    source = _source()
+    marker = "async def validate_server_access_unified"
+    start = source.index(marker)
+    fragment = source[start:start + 5000]
+
+    assert "context.sucursales_por_server.get(server_key, [])" in fragment
+    assert "if branch_scope:" in fragment
+    assert "context.tiene_acceso_global = True" not in fragment
+
