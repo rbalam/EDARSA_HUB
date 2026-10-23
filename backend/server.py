@@ -2097,6 +2097,20 @@ async def update_server(server_id: str, server_data: Dict, current_user: Dict = 
     if server_data.get("tipo_conexion") == "CORE":
         raise HTTPException(status_code=403, detail="No se puede cambiar el tipo de conexión a CORE desde UI")
 
+    # MPRO: tipos_movimiento está gobernado por la política canónica del
+    # Tablero Operativo de Inventarios. La UI puede seleccionar sólo esos
+    # códigos; el backend vuelve a intersectar para impedir AJUSTES u otros.
+    if is_mpro_system(existing.get("system_type")) and "tipos_movimiento" in server_data:
+        from core.inventarios.mpro_movement_policy import effective_mpro_inventory_codes
+
+        server_data = dict(server_data)
+        server_data["tipos_movimiento"] = sorted(
+            effective_mpro_inventory_codes(
+                server_data.get("tipos_movimiento") or [],
+                default_when_empty=True,
+            )
+        )
+
     # Actualizar usando registry (SQL-first)
     result = await registry_update_server(
         server_id=server_id,
@@ -2871,7 +2885,70 @@ async def get_tipos_movimiento(server_id: str, current_user: Dict = Depends(get_
 
     logging.info(f"[GET_TIPOS_MOVIMIENTO] Servidor obtenido. Origin={server.get('config_origin', 'UNKNOWN')}, Name={server.get('name', 'N/A')}")
 
-    # EDARSAHUB-FIRST: Leer tipos_movimiento desde EDARSAHUB
+    # MPRO: mostrar catálogo completo desde el catálogo canónico DB-driven
+    # Inventario_ConceptoMapeoOrigen. La configuración guardada es selección,
+    # NO debe limitar las opciones visibles del modal.
+    if is_mpro_system(server.get('system_type')):
+        from core.inventarios.mpro_movement_policy import (
+            MPRO_INVENTORY_MOVEMENT_CODE_SET,
+            MPRO_INVENTORY_MOVEMENT_POLICY,
+        )
+        conn = None
+        try:
+            conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=10)
+            cursor = conn.cursor(as_dict=True)
+            cursor.execute("""
+                SELECT
+                    m.ConceptoOrigen AS codigo,
+                    m.Descripcion AS descripcion_mapeo,
+                    tm.Naturaleza AS naturaleza
+                FROM dbo.Inventario_ConceptoMapeoOrigen m
+                LEFT JOIN dbo.Inventario_TipoMovimiento tm
+                    ON tm.TipoMovimientoID=m.TipoMovimientoID
+                WHERE UPPER(m.SystemType)='MPRO'
+                  AND ISNULL(m.Activo,1)=1
+                ORDER BY m.ConceptoOrigen
+            """)
+            result = []
+            for row in cursor.fetchall() or []:
+                codigo = str(row.get("codigo") or "").strip()
+                if not codigo:
+                    continue
+                policy = MPRO_INVENTORY_MOVEMENT_POLICY.get(codigo)
+                descripcion = (
+                    policy.get("descripcion")
+                    if policy
+                    else str(row.get("descripcion_mapeo") or "").strip()
+                )
+                # El seed histórico guarda "MPRO <codigo> <desc> -> CANON".
+                # Para opciones no policy conservarlo como evidencia canónica.
+                naturaleza = str(row.get("naturaleza") or "").strip().upper()
+                result.append({
+                    "codigo": codigo,
+                    "descripcion": descripcion or codigo,
+                    "tipo": "EN" if naturaleza in ("E","EN","ENTRADA") else "SA",
+                    "autorizado_analisis": codigo in MPRO_INVENTORY_MOVEMENT_CODE_SET,
+                })
+            if result:
+                logging.info(
+                    "[GET_TIPOS_MOVIMIENTO][MPRO] catalogo=%s autorizados=%s",
+                    len(result),
+                    sum(1 for item in result if item.get("autorizado_analisis")),
+                )
+                return result
+        except Exception as exc:
+            logging.warning(
+                "[GET_TIPOS_MOVIMIENTO][MPRO] catálogo canónico no disponible: %s",
+                str(exc)[:180],
+            )
+        finally:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+
+    # EDARSAHUB-FIRST: selección configurada (SoftRestaurant / fallback MPRO)
     tipos_edarsahub = server.get('tipos_movimiento', [])
 
     if tipos_edarsahub:
