@@ -48,14 +48,26 @@ def _fetch_soft_ledger_net(
     fecha_ini,
     fecha_fin,
     warehouses: Sequence[str],
+    visible_product_codes: Sequence[str] = (),
 ) -> Dict[str, float]:
     empresa = resolver_empresa_id(unidad_codigo)
     sucursal = resolver_sucursal_id(server_id, sucursal_origen_id or None)
     if not empresa.resuelto or not sucursal.resuelto:
         return {}
 
+    visible_product_codes = _unique(visible_product_codes)
+    preferred_order = "0,"
+    preferred_params: List[Any] = []
+    if visible_product_codes:
+        preferred_ph = ",".join(["%s"] * len(visible_product_codes))
+        preferred_order = (
+            f"CASE WHEN pmo.CodigoFuente IN ({preferred_ph}) THEN 0 ELSE 1 END,"
+        )
+        preferred_params.extend(visible_product_codes)
+
     params: List[Any] = [
         server_id,
+        *preferred_params,
         int(empresa.canonical_id),
         int(sucursal.canonical_id),
         fecha_ini,
@@ -80,7 +92,7 @@ def _fetch_soft_ledger_net(
     cursor.execute(
         f"""
         SELECT
-            pmo.CodigoFuente AS codigo_producto,
+            alias.codigo_producto,
             SUM(
                 CASE
                     WHEN UPPER(LTRIM(RTRIM(ISNULL(tm.Naturaleza,''))))
@@ -96,18 +108,26 @@ def _fetch_soft_ledger_net(
             ON tm.TipoMovimientoID=m.TipoMovimientoID
         LEFT JOIN dbo.Inventario_Almacenes a
             ON a.AlmacenID=m.AlmacenID
-        INNER JOIN dbo.Producto_MapeoOrigen pmo
-            ON pmo.ProductoID=d.ProductoID
-           AND LOWER(CONVERT(varchar(36),pmo.ServerID))=LOWER(%s)
-           AND UPPER(pmo.SystemType) IN ('SOFTRESTAURANT','SOFTRESTAURANT_PRO')
-           AND pmo.Activo=1
+        OUTER APPLY (
+            SELECT TOP 1
+                pmo.CodigoFuente AS codigo_producto
+            FROM dbo.Producto_MapeoOrigen pmo
+            WHERE pmo.ProductoID=d.ProductoID
+              AND LOWER(CONVERT(varchar(36),pmo.ServerID))=LOWER(%s)
+              AND UPPER(pmo.SystemType) IN ('SOFTRESTAURANT','SOFTRESTAURANT_PRO')
+              AND pmo.Activo=1
+            ORDER BY
+                {preferred_order}
+                pmo.CodigoFuente
+        ) alias
         WHERE m.EmpresaID=%s
           AND m.SucursalID=%s
           AND m.FechaMovimiento >= %s
           AND m.FechaMovimiento <= %s
           AND ISNULL(m.Activo,1)=1
+          AND alias.codigo_producto IS NOT NULL
           {warehouse_filter}
-        GROUP BY pmo.CodigoFuente
+        GROUP BY alias.codigo_producto
         """,
         tuple(params),
     )
@@ -194,6 +214,7 @@ def fetch_soft_activity_canonical(
     sales_start,
     sales_end,
     warehouses: Sequence[str],
+    visible_product_codes: Sequence[str] = (),
 ) -> Tuple[Dict[str, float], Dict[str, float]]:
     movimientos = _fetch_soft_ledger_net(
         cursor,
@@ -203,6 +224,7 @@ def fetch_soft_activity_canonical(
         fecha_ini=movement_start,
         fecha_fin=movement_end,
         warehouses=warehouses,
+        visible_product_codes=visible_product_codes,
     )
     sales_rows = _fetch_soft_sales_rows(
         cursor,
