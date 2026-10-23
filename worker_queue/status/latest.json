@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "2b769ffea4c072e745cee5246aa6860b7fca237b",
-  "generated_at_utc": "2026-10-23T00:05:43Z",
+  "generated_at_utc": "2026-10-23T00:07:05Z",
   "history": {
     "done_total_local": 1547,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1700,
+      "age_seconds": 1783,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-GATE4-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2714,
+      "age_seconds": 2797,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-CANONICAL-INVENTORY-UI-FIX-R2-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1545,
+      "age_seconds": 1628,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-CANONICAL-INVENTORY-UI-FIX-R3-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2335,
+      "age_seconds": 2417,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-KNOWLEDGE-GATE3-READONLY-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,8 +54,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-23T00:05:37Z",
-    "last_receive_utc": "2026-10-23T00:05:32Z",
+    "last_cycle_utc": "2026-10-23T00:06:59Z",
+    "last_receive_utc": "2026-10-23T00:06:54Z",
     "last_terminal_utc": "2026-10-22T23:39:57Z",
     "pid": "1252",
     "runtime_fingerprint": {
