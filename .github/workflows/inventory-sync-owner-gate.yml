@@ -1,6 +1,25 @@
 name: Inventory Sync External Owner Gate
 
 on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - "backend/core/scheduler/jobs/sync_compras_job.py"
+      - "backend/core/scheduler/scheduler_manager.py"
+      - "backend/modules/scheduler_trigger_inventarios/**"
+      - "backend/server.py"
+      - "backend/core/inventarios/**"
+      - "backend/modules/compras/sync_service.py"
+      - "backend/core/recetas_service.py"
+      - "backend/tests/test_inventory_analysis_mpro_canonical.py"
+      - "backend/tests/test_inventory_analysis_soft_canonical.py"
+      - "backend/tests/test_resolver_product_system_alias_unit.py"
+      - "backend/tests/test_inventory_scheduler_trigger.py"
+      - "backend/tests/test_sync_compras_run_job_now_status.py"
+      - "backend/tools/run_inventory_github_owner.py"
+      - ".github/workflows/inventory-softrestaurant-clock.yml"
+      - ".github/workflows/inventory-sync-owner-gate.yml"
   pull_request:
     branches:
       - Edarsahub_Desarrollo
