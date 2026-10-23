@@ -153,3 +153,22 @@ def test_soft_movements_keep_resolvable_rows_when_some_are_pending():
     assert "DELETE FROM Inventario_Movimientos" not in movement_source
     assert "DELETE d" not in movement_source
 
+def test_inventory_owner_can_scope_softrestaurant_without_mpro():
+    job_source = (
+        ROOT / "core" / "scheduler" / "jobs" / "sync_compras_job.py"
+    ).read_text(encoding="utf-8")
+
+    assert "SYNC_COMPRAS_SYSTEM_FILTER" in job_source
+    assert "def _system_allowed_by_sync_filter" in job_source
+    assert "_system_allowed_by_sync_filter(row.get('system_type'))" in job_source
+
+
+def test_inventory_github_owner_is_non_production_and_canonical():
+    owner_source = (
+        ROOT / "tools" / "run_inventory_github_owner.py"
+    ).read_text(encoding="utf-8")
+
+    assert "GITHUB_INVENTORY_OWNER_PRODUCTION_FORBIDDEN" in owner_source
+    assert "run_sync_compras_job" in owner_source
+    assert '"production_touched"] = False' in owner_source
+
