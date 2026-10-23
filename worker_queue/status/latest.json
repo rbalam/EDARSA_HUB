@@ -3,62 +3,68 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "60c4bef9804c726e560b22db0383911a955778b9",
-  "generated_at_utc": "2026-10-23T02:07:03Z",
+  "development_sha": "feb75a738512c3747ea56132707391d2afcb07cb",
+  "generated_at_utc": "2026-10-23T02:08:33Z",
   "history": {
-    "done_total_local": 1557,
+    "done_total_local": 1558,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1297,
-    "results_total_local": 2623
+    "results_total_local": 2624
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3358,
+      "age_seconds": 3449,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE7-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3202,
+      "age_seconds": 3292,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8A-CONTRACTS-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2081,
+      "age_seconds": 2171,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8A-SQL-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1027,
+      "age_seconds": 1117,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8B1-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3361,
+      "age_seconds": 2,
+      "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8B2-DESIGN-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3452,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-CANONICAL-INVENTORY-UI-FIX-R4-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1422,
+      "age_seconds": 1512,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-ERROR-SEMANTICS-CANONICAL-CONFIG-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 344,
+      "age_seconds": 434,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-LONG-RUN-HEARTBEAT-KNOWLEDGE-ROUTING-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "60c4bef9804c726e560b22db0383911a955778b9",
+  "local_development_sha": "feb75a738512c3747ea56132707391d2afcb07cb",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -66,21 +72,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 7,
+  "queue_result_ready_recent": 8,
   "queue_running": 0,
-  "remote_development_sha": "60c4bef9804c726e560b22db0383911a955778b9",
+  "remote_development_sha": "feb75a738512c3747ea56132707391d2afcb07cb",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-23T02:06:52Z",
-    "last_receive_utc": "2026-10-23T02:07:03Z",
-    "last_terminal_utc": "2026-10-23T02:01:19Z",
+    "last_cycle_utc": "2026-10-23T02:08:16Z",
+    "last_receive_utc": "2026-10-23T02:08:32Z",
+    "last_terminal_utc": "2026-10-23T02:08:31Z",
     "pid": "68277",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "2372a314dd0dd79781014d70d4c71e8a2e1f3f60",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "60c4bef9804c726e560b22db0383911a955778b9",
+      "development_sha": "feb75a738512c3747ea56132707391d2afcb07cb",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
