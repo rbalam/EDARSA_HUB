@@ -1,0 +1,117 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "expected_sha256": "22dfb47cf0aea7dadcfc556dccaccc0721e860ffd139b51ff92acaa74de3c0f7",
+      "new": "    // Mantener la sesión ante 500/502, pero propagar el error real.\n    // Nunca fabricar una respuesta vacía: eso convierte fallas de backend\n    // en falsos \"0 registros\" y evita que los consumidores activen fallback.\n    if (status === 500 || status === 502) {\n      console.warn(\n        \"[API] Fallo de backend/red (500/502), manteniendo sesión y propagando error...\"\n      );\n      return Promise.reject(error);\n    }",
+      "old": "    // Parche de estabilidad: Evitar cierre de sesión por errores 500/502.\n    // No debe convertir reportes en arreglos vacíos: eso oculta fallas reales\n    // como \"Reporte generado: 0 registros\" cuando el backend devolvió error.\n    if (status === 500 || status === 502) {\n      console.warn(\"[API] Fallo de red detectado (500/502), manteniendo sesión...\");\n      if (url.includes('/reports/')) {\n        return Promise.reject(error);\n      }\n      return Promise.resolve({ data: [] });\n    }",
+      "path": "frontend/src/lib/api.js",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "expected_sha256": "5b7fa489c641f4a9584a69d08fde5c4874c6dba74e5afff9f778ba88ada416f9",
+      "new": "from core.db import execute_sql_query\nfrom core.config.edarsahub_config import get_edarsahub_sql_config\n\n# Configuración SQL EDARSAHUB canónica.\n_cfg = get_edarsahub_sql_config()\nEDARSAHUB_CONFIG = {\n    'host': _cfg.host,\n    'port': _cfg.port,\n    'database': _cfg.database,\n    'username': _cfg.user,\n    'password': _cfg.password,\n}",
+      "old": "from core.db import execute_sql_query\n\n# Configuración de EDARSAHUB SQL - FUENTE PRIMARIA\nEDARSAHUB_CONFIG = {\n    'host': os.getenv('EDARSAHUB_SQL_HOST'),\n    'port': 1433,\n    'database': 'EDARSAHUB',\n    'username': os.getenv('EDARSAHUB_SQL_USER'),\n    'password': os.getenv('EDARSAHUB_SQL_PASSWORD')\n}",
+      "path": "backend/modules/api_connections/repository.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "expected_sha256": "82a1fe50f47a80ea3b0c22a420b8f8d79a2de721766e128109ce8cb40c5f53df",
+      "new": "  const [apiConnections, setApiConnections] = useState([]);\n  const [loadingApis, setLoadingApis] = useState(false);\n  const [apiLoadError, setApiLoadError] = useState(null);",
+      "old": "  const [apiConnections, setApiConnections] = useState([]);\n  const [loadingApis, setLoadingApis] = useState(false);",
+      "path": "frontend/src/pages/Servidores.js",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "  const loadApiConnections = async () => {\n    setLoadingApis(true);\n    setApiLoadError(null);\n\n    try {\n      const response = await api.get('/api-connections');\n\n      if (!response.data?.success || !Array.isArray(response.data?.data)) {\n        throw new Error('Respuesta inválida del endpoint de conexiones API');\n      }\n\n      setApiConnections(response.data.data);\n    } catch (error) {\n      console.error('Error cargando conexiones API:', error);\n\n      const detail =\n        error.response?.data?.detail ||\n        error.message ||\n        'Error al cargar conexiones API';\n\n      // Un error no equivale a cero conexiones.\n      // Conservar los últimos datos válidos.\n      setApiLoadError(\n        typeof detail === 'string'\n          ? detail\n          : 'Error al cargar conexiones API'\n      );\n\n      toast.error('No se pudieron cargar las conexiones API locales.');\n    } finally {\n      setLoadingApis(false);\n    }\n  };",
+      "old": "  const loadApiConnections = async () => {\n    setLoadingApis(true);\n    try {\n      const response = await api.get('/api-connections');\n      if (response.data.success) {\n        setApiConnections(response.data.data || []);\n      }\n    } catch (error) {\n      console.error('Error cargando conexiones API:', error);\n      // SECURITY P0: sin fallback hardcodeado. No inventar conexiones ni exponer IPs reales.\n      setApiConnections([]);\n      toast.error('No se pudieron cargar las conexiones API locales.');\n    } finally {\n      setLoadingApis(false);\n    }\n  };",
+      "path": "frontend/src/pages/Servidores.js",
+      "type": "replace_text"
+    }
+  ],
+  "base_sha": "feb75a738512c3747ea56132707391d2afcb07cb",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/api_connections/repository.py",
+        "backend/modules/api_connections/routes.py",
+        "backend/core/server_registry.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          ".git/**",
+          "node_modules/**",
+          "__pycache__/**",
+          "dist/**",
+          "build/**"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx"
+        ],
+        "max_results": 300,
+        "paths": [
+          "frontend/src/lib/api.js",
+          "frontend/src/pages/Servidores.js",
+          "backend/modules/api_connections/repository.py",
+          "backend/core/config/edarsahub_config.py",
+          "backend/modules/integrations_center/service.py"
+        ],
+        "search_terms": [
+          "Promise.resolve({ data: [] })",
+          "Promise.reject(error)",
+          "get_edarsahub_sql_config",
+          "os.getenv('EDARSAHUB_SQL_HOST')",
+          "apiLoadError",
+          "setApiConnections([])",
+          "/integrations-center/connections",
+          "await loadApiConnections()"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "directory": "frontend",
+      "type": "frontend_build"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-ERROR-SEMANTICS-CANONICAL-CONFIG-R2-20261022",
+  "mode": "MUTATION",
+  "objective": "Completar la correccion funcional del menu Servidores despues de certificar el Worker Repair de long-running checks. Propagar errores HTTP 500/502 en vez de convertirlos en data vacia; reutilizar la configuracion SQL EDARSAHUB canonica en API Connections; y conservar los datos API previos ante errores para distinguir ERROR de una lista realmente vacia. Mantener intacto el fallback R4, sin Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Conexiones y Comunicaciones",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "Conexiones y Comunicaciones",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": [
+      "frontend/src/lib/api.js",
+      "backend/modules/api_connections/repository.py",
+      "frontend/src/pages/Servidores.js"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
