@@ -427,6 +427,36 @@ def _extended_sync_steps():
     ]
 
 
+def _sync_compras_system_filter() -> tuple[str, ...]:
+    """Filtro opcional de motores para owners especializados.
+
+    Vacío = comportamiento histórico (todos los motores soportados).
+    Ejemplo: SYNC_COMPRAS_SYSTEM_FILTER=SOFT limita la corrida a
+    SoftRestaurant sin hardcodear servidores o sucursales.
+    """
+    raw = str(os.environ.get("SYNC_COMPRAS_SYSTEM_FILTER") or "").strip()
+    if not raw:
+        return ()
+
+    values = []
+    seen = set()
+    for item in raw.split(","):
+        normalized = str(item or "").strip().upper()
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            values.append(normalized)
+    return tuple(values)
+
+
+def _system_allowed_by_sync_filter(system_type: str) -> bool:
+    filters = _sync_compras_system_filter()
+    if not filters:
+        return True
+
+    normalized = str(system_type or "").strip().upper()
+    return any(value in normalized for value in filters)
+
+
 def _get_servers_to_sync() -> List[Dict]:
     """
     Obtiene la lista de servidores activos configurados para sincronización.
@@ -463,6 +493,14 @@ def _get_servers_to_sync() -> List[Dict]:
         
         servers = []
         for row in rows:
+            if not _system_allowed_by_sync_filter(row.get('system_type')):
+                logger.info(
+                    "[SYNC-COMPRAS] Motor omitido por SYNC_COMPRAS_SYSTEM_FILTER: %s (%s)",
+                    row.get('server_name', ''),
+                    row.get('system_type', ''),
+                )
+                continue
+
             # Desencriptar contraseña si está encriptada
             password = ''
             if row.get('password_encrypted'):
