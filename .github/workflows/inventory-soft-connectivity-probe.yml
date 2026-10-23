@@ -79,8 +79,18 @@ jobs:
           failed = []
           for row in rows:
               unit = str(row.get("unidad_codigo") or "")
-              host = str(row.get("host") or "")
+              raw_host = str(row.get("host") or "").strip()
               port = int(row.get("port") or 1433)
+              host = raw_host
+              if "\\" in host:
+                  host = host.split("\\", 1)[0].strip()
+              if "," in host:
+                  host_part, port_part = host.rsplit(",", 1)
+                  host = host_part.strip()
+                  try:
+                      port = int(port_part.strip())
+                  except ValueError:
+                      pass
               try:
                   with socket.create_connection((host, port), timeout=7):
                       print(f"SOFT_TCP unit={unit} host={host} port={port} status=REACHABLE")
