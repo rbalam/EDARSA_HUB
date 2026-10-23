@@ -477,6 +477,89 @@ def _sales_consumption(
     return dict(consumption)
 
 
+def get_mpro_sales_consumption_detail(
+    cursor,
+    *,
+    unidad_codigo: str,
+    server_id: str,
+    componente_codigo: str,
+    fecha_ini: str,
+    fecha_fin: str,
+) -> Dict[str, Any]:
+    """Detalle NO-LIVE que reconcilia exactamente con _sales_consumption()."""
+    componente_codigo = _text(componente_codigo)
+    if not componente_codigo:
+        return {"rows": [], "total": 0.0}
+
+    columns = _fetch_table_columns(cursor, "Comercial_Inteligencia_VentasDetalleProducto")
+    required = {"unidad_negocio_id", "fecha_operacion", "producto_codigo_fuente", "cantidad"}
+    if not required.issubset(columns):
+        return {"rows": [], "total": 0.0}
+
+    extra = []
+    params: List[Any] = [unidad_codigo, fecha_ini, fecha_fin]
+    if "activo" in columns:
+        extra.append("ISNULL(activo,1)=1")
+    if "cancelado_origen" in columns:
+        extra.append("ISNULL(cancelado_origen,0)=0")
+    if "es_kpi_valido" in columns:
+        extra.append("ISNULL(es_kpi_valido,1)=1")
+    if "server_id" in columns:
+        extra.append("LOWER(ISNULL(server_id,''))=LOWER(%s)")
+        params.append(server_id)
+
+    cursor.execute(
+        f"""
+        SELECT CAST(fecha_operacion AS date) AS fecha_operacion,
+               producto_codigo_fuente,
+               SUM(ISNULL(cantidad,0)) AS cantidad
+        FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
+        WHERE unidad_negocio_id=%s
+          AND fecha_operacion >= CAST(%s AS date)
+          AND fecha_operacion <= CAST(%s AS date)
+          AND NULLIF(LTRIM(RTRIM(producto_codigo_fuente)),'') IS NOT NULL
+          {" AND " + " AND ".join(extra) if extra else ""}
+        GROUP BY CAST(fecha_operacion AS date), producto_codigo_fuente
+        """,
+        tuple(params),
+    )
+    sales_rows = list(cursor.fetchall() or [])
+    if not sales_rows:
+        return {"rows": [], "total": 0.0}
+
+    product_codes = _unique(row.get("producto_codigo_fuente") for row in sales_rows)
+    components = _fetch_mpro_sales_components(cursor, server_id, product_codes)
+
+    factor_by_product: Dict[str, float] = defaultdict(float)
+    for row in components or []:
+        if _text(row.get("componente_codigo_fuente")) != componente_codigo:
+            continue
+        product_code = _text(row.get("producto_codigo_fuente"))
+        if product_code:
+            factor_by_product[product_code] += _float(row.get("cantidad"))
+
+    detail_rows: List[Dict[str, Any]] = []
+    total = 0.0
+    for row in sales_rows:
+        product_code = _text(row.get("producto_codigo_fuente"))
+        factor = factor_by_product.get(product_code, 0.0)
+        if not factor:
+            continue
+        consumo = _float(row.get("cantidad")) * factor
+        if not consumo:
+            continue
+        total += consumo
+        detail_rows.append({
+            "fecha": row.get("fecha_operacion"),
+            "producto_venta": product_code,
+            "cantidad_venta": _float(row.get("cantidad")),
+            "factor_consumo": factor,
+            "cantidad_consumo": consumo,
+        })
+
+    return {"rows": detail_rows, "total": total}
+
+
 def _fetch_product_metadata(
     cursor,
     server_id: str,
