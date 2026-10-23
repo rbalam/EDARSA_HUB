@@ -4,37 +4,43 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "e9902bbb529f75af0eef8ef216d55b968ce27a9e",
-  "generated_at_utc": "2026-10-23T03:17:54Z",
+  "generated_at_utc": "2026-10-23T03:19:14Z",
   "history": {
-    "done_total_local": 1562,
+    "done_total_local": 1563,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1297,
-    "results_total_local": 2628
+    "results_total_local": 2629
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3085,
+      "age_seconds": 58,
+      "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8C-ENV-CERT-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3165,
       "job_id": "BOS-COSTOS-RECETAS-SNAPSHOT-MENSUAL-GATE8C-SQL-DIAGNOSTIC-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 273,
+      "age_seconds": 352,
       "job_id": "BOS-TOAST-GATE6-ADAPTER-ONBOARDING-DISCOVERY-READONLY-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3202,
+      "age_seconds": 3281,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-ERROR-SEMANTICS-CANONICAL-CONFIG-R2-20261022",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2438,
+      "age_seconds": 2517,
       "job_id": "EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-SERVIDORES-RUNTIME-INVENTORY-AUDIT-R1-20261022",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,15 +54,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "remote_development_sha": "e9902bbb529f75af0eef8ef216d55b968ce27a9e",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-23T03:17:47Z",
-    "last_receive_utc": "2026-10-23T03:17:42Z",
-    "last_terminal_utc": "2026-10-23T03:13:21Z",
+    "last_cycle_utc": "2026-10-23T03:19:07Z",
+    "last_receive_utc": "2026-10-23T03:19:02Z",
+    "last_terminal_utc": "2026-10-23T03:18:15Z",
     "pid": "442",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "2372a314dd0dd79781014d70d4c71e8a2e1f3f60",
