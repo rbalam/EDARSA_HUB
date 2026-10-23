@@ -580,6 +580,19 @@ def generate_mpro_inventory_analysis_canonical(
                 "Faltan inventarios físicos canónicos: " + ", ".join(missing),
             )
 
+        # Regla contractual ManagementPro:
+        # solamente el almacén fuente 0001 (Almacén general) descarga ventas.
+        # Los demás almacenes muestran únicamente entradas/salidas.
+        selected_header_warehouse_ids = {
+            _text(row.get("almacen_id")).zfill(4)
+            for row in headers
+            if _text(row.get("almacen_id"))
+        }
+        sales_enabled = (
+            not warehouses
+            or "0001" in selected_header_warehouse_ids
+        )
+
         details = _fetch_inventory_details(
             cursor,
             server_id=server_id,
@@ -607,19 +620,24 @@ def generate_mpro_inventory_analysis_canonical(
             warehouses=warehouses,
         )
 
-        sales_rows = _fetch_sales_rows(
-            cursor,
-            unidad_codigo=unidad_codigo,
-            server_id=server_id,
-            fecha_ini=fecha_ini,
-            fecha_fin=fecha_fin,
-        )
-        if not sales_rows:
-            raise MproInventoryAnalysisSourceError(
-                "MPRO_SALES_DETAIL_INCOMPLETE",
-                "No hay detalle canónico de ventas para el periodo seleccionado.",
+        if sales_enabled:
+            sales_rows = _fetch_sales_rows(
+                cursor,
+                unidad_codigo=unidad_codigo,
+                server_id=server_id,
+                fecha_ini=fecha_ini,
+                fecha_fin=fecha_fin,
             )
-        sales_consumption = _sales_consumption(cursor, server_id, sales_rows)
+            if not sales_rows:
+                raise MproInventoryAnalysisSourceError(
+                    "MPRO_SALES_DETAIL_INCOMPLETE",
+                    "No hay detalle canónico de ventas para el periodo seleccionado.",
+                )
+            sales_consumption = _sales_consumption(cursor, server_id, sales_rows)
+        else:
+            sales_rows = []
+            sales_consumption = {}
+
         metadata = _fetch_product_metadata(cursor, server_id, all_codes)
 
         selected_categories = set(_unique(
@@ -712,6 +730,8 @@ def generate_mpro_inventory_analysis_canonical(
                 "sucursal_origen_id": sucursal_origen_id,
                 "ventas_productos": len(sales_rows),
                 "movimientos_productos": len(ledger_net),
+                "ventas_aplicadas": sales_enabled,
+                "almacenes_seleccionados": sorted(selected_header_warehouse_ids),
             },
         }
     finally:
