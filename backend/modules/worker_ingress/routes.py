@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 from core.rbac.middleware import require_explicit_permission
 
 from .schemas import WorkerObjectiveRequest, WorkerSubmitRequest
-from backend.modules.worker_console.contract import validate_job as validate_worker_job
+from modules.worker_console.contract import validate_job as validate_worker_job
 from .service import (
     WorkerIngressError,
     get_job_status,
