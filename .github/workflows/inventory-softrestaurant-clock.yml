@@ -10,13 +10,16 @@ on:
     paths:
       - ".github/workflows/inventory-softrestaurant-clock.yml"
       - "backend/tools/run_inventory_github_owner.py"
+      - "backend/core/inventarios/sync_movimientos_canonico.py"
+      - "backend/core/scheduler/jobs/sync_compras_job.py"
+      - "backend/modules/compras/sync_service.py"
 
 permissions:
   contents: read
 
 concurrency:
   group: inventory-softrestaurant-clock
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   EDARSA_ENV: DEVELOPMENT
