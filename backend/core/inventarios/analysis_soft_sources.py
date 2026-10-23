@@ -215,6 +215,7 @@ def fetch_soft_activity_canonical(
     sales_end,
     warehouses: Sequence[str],
     visible_product_codes: Sequence[str] = (),
+    include_sales: bool = True,
 ) -> Tuple[Dict[str, float], Dict[str, float]]:
     movimientos = _fetch_soft_ledger_net(
         cursor,
@@ -226,6 +227,9 @@ def fetch_soft_activity_canonical(
         warehouses=warehouses,
         visible_product_codes=visible_product_codes,
     )
+    if not include_sales:
+        return movimientos, {}
+
     sales_rows = _fetch_soft_sales_rows(
         cursor,
         unidad_codigo=unidad_codigo,

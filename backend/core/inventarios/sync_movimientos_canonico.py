@@ -278,32 +278,35 @@ def sync_movimientos_canonico(
         return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0,
                 "descartados": 0, "pendientes": pend, "message": "Sin movimientos en origen"}
 
-    # SoftRestaurant: la selección configurada en Servidores -> Filtros ->
-    # Tipos de Movimiento es la autoridad que decide qué conceptos origen
-    # participan en el ledger de análisis. Se filtra ANTES de homologar porque
-    # varios conceptos origen pueden mapear al mismo TipoMovimientoID canónico.
-    # Sin selección válida se aplica fail-closed: ningún movimiento participa.
+    # La selección configurada en Servidores -> Filtros -> Tipos de Movimiento
+    # es autoridad para AMBOS motores. El filtro se aplica sobre el concepto
+    # de origen ANTES de homologarlo al TipoMovimientoID canónico, evitando que
+    # varios conceptos que convergen al mismo tipo se vuelvan indistinguibles.
     filtrados_no_autorizados = 0
-    if is_softrestaurant:
-        if not tipos_movimiento_autorizados:
-            # La ausencia de selección significa que ningún concepto participa.
-            # La reconciliación a cero se ejecuta más abajo sobre la misma
-            # transacción y sólo para esta Empresa/Sucursal/ventana.
-            filtrados_no_autorizados = len(rows)
+    if not tipos_movimiento_autorizados:
+        filtrados_no_autorizados = len(rows)
+        if is_softrestaurant:
             rows = []
         else:
-            rows_autorizados = []
-            for row in rows:
-                concepto_origen = str(row.get("concepto") or "").strip().upper()
-                if concepto_origen in tipos_movimiento_autorizados:
-                    rows_autorizados.append(row)
-                else:
-                    filtrados_no_autorizados += 1
-            rows = rows_autorizados
-
-        # Con selección vacía o sin coincidencias, la reconciliación eliminará
-        # únicamente los MOVIMIENTO_POS SoftRestaurant de esta ventana.
-        # No se retorna todavía para poder limpiar el histórico canónico.
+            conn.close()
+            return {
+                "status": "PENDIENTE",
+                "encabezados_synced": 0,
+                "detalles_synced": 0,
+                "descartados": 0,
+                "pendientes": {**pend, "tipos_movimiento": "SIN_CONFIGURACION"},
+                "filtrados_no_autorizados": filtrados_no_autorizados,
+                "message": "MPRO sin tipos_movimiento configurados; fail-closed, ledger conservado",
+            }
+    else:
+        rows_autorizados = []
+        for row in rows:
+            concepto_origen = str(row.get("concepto") or "").strip().upper()
+            if concepto_origen in tipos_movimiento_autorizados:
+                rows_autorizados.append(row)
+            else:
+                filtrados_no_autorizados += 1
+        rows = rows_autorizados
 
     # 3) Leer y RESOLVER todo en memoria (resolvers cacheados -> rápido).
     # Precarga masiva del mapeo de productos (1 query) para evitar round-trips por producto.

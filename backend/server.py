@@ -4720,6 +4720,29 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
 
         selected_almacenes = []
 
+        # Regla canónica SoftRestaurant:
+        # almacenes tipo Presentaciones (tipo=2 / unidad_natural=presentaciones)
+        # NO descargan ventas. Si hay mezcla con al menos un almacén de consumo,
+        # las ventas se aplican una sola vez al conjunto.
+        selected_warehouse_items = list(almacenes or [])
+        soft_sales_enabled = True
+        if selected_warehouse_items:
+            def _is_presentation_warehouse(item):
+                if not isinstance(item, dict):
+                    return False
+                unidad_natural = _as_text(item.get('unidad_natural')).lower()
+                tipo_value = item.get('tipo', item.get('tipo_almacen', item.get('almacen_tipo')))
+                try:
+                    tipo_num = int(tipo_value)
+                except (TypeError, ValueError):
+                    tipo_num = None
+                return unidad_natural == 'presentaciones' or tipo_num == 2
+
+            soft_sales_enabled = any(
+                not _is_presentation_warehouse(item)
+                for item in selected_warehouse_items
+            )
+
         def _append_almacen_candidate(value):
             value_text = _as_text(value)
             if value_text and value_text not in selected_almacenes:
@@ -5145,12 +5168,14 @@ WHERE t._rn = 1
                 sales_end=sales_end,
                 warehouses=activity_warehouses,
                 visible_product_codes=sorted(productos.keys()),
+                include_sales=soft_sales_enabled,
             )
             logging.info(
-                "[SOFT-CANONICAL-NOLIVE] actividad canonica movimientos=%s ventas=%s unidad=%s",
+                "[SOFT-CANONICAL-NOLIVE] actividad canonica movimientos=%s ventas=%s unidad=%s sales_enabled=%s",
                 len(movimientos),
                 len(ventas),
                 scope_unidad_codigo,
+                soft_sales_enabled,
             )
 
             all_codes = sorted(set(productos.keys()) | set(inv_inicial.keys()) | set(inv_final.keys()) | set(movimientos.keys()) | set(ventas.keys()))
@@ -5725,7 +5750,7 @@ GROUP BY Codigo
                     'Producto': prod.get('Producto') or f'Producto {codigo}',
                     'Unidad': prod.get('Unidad') or 'PZA',
                     'Rendimiento': _as_float(prod.get('Rendimiento')) or 1,
-                    'tipo_almacen': 1,
+                    'tipo_almacen': 1 if soft_sales_enabled else 2,
                     'Costo_Unitario': round(costo, 4),
                     'Inv_Inicial_Cantidad': round(inv_ini_qty, 4),
                     'Inv_Inicial_Costo': round(inv_ini_qty * costo, 2),
@@ -10284,7 +10309,7 @@ async def limpiar_inventarios_provisionales(
 
 
 async def _resolve_detalle_producto_scope(request, current_user):
-    """Autoriza detalle por unidad canónica para SoftRestaurant sin ampliar scope MPRO."""
+    """Autoriza drilldown por unidad canónica para SoftRestaurant y MPRO."""
     from core.corporate_filters.request_resolver import (
         canonical_server_id,
         resolve_authorized_unidad_scope,
@@ -10295,13 +10320,8 @@ async def _resolve_detalle_producto_scope(request, current_user):
 
     token = str(request.server_id or "").strip()
     unidad, matched_by = resolve_unidad_simple(token)
-    es_soft_unidad = (
-        matched_by == "unidad"
-        and unidad
-        and is_softrestaurant_system(unidad.get("system_type"))
-    )
 
-    if es_soft_unidad:
+    if matched_by == "unidad" and unidad:
         scope = await resolve_authorized_unidad_scope(
             current_user,
             COMPRAS_VER,
@@ -10317,7 +10337,7 @@ async def _resolve_detalle_producto_scope(request, current_user):
             request.sucursal = str(scope.sucursal_origen_id).strip()
         return scope
 
-    # Compatibilidad legacy y MPRO: conservar validación estricta por servidor.
+    # Compatibilidad legacy: server_id directo mantiene validación estricta.
     request.server_id = canonical_server_id(token)
     require_compras_permission(current_user, COMPRAS_VER)
     access_context = await resolve_user_access_context(current_user)
@@ -10343,8 +10363,8 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
     print("Fecha final:", request.fecha_fin)
     print("Server ID:", request.server_id)
 
-    # SoftRestaurant usa unidad canónica + RBAC SQL; MPRO/legacy conserva servidor estricto.
-    await _resolve_detalle_producto_scope(request, current_user)
+    # Unidad canónica + RBAC SQL para ambos motores; legacy conserva server_id estricto.
+    detalle_scope = await _resolve_detalle_producto_scope(request, current_user)
 
     # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
     from core.server_registry import get_server_connection_info
@@ -10402,6 +10422,24 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
         # 2) Detalle de movimientos canónico (NO-LIVE).
         prod_ph = ", ".join(["%s"] * len(producto_ids))
         params = list(producto_ids) + [request.fecha_inicio, request.fecha_fin]
+        filtro_scope = ""
+        if detalle_scope is not None:
+            from core.inventarios.resolver_canonico import resolver_empresa_id, resolver_sucursal_id
+
+            empresa_scope = resolver_empresa_id(detalle_scope.unidad_codigo)
+            sucursal_scope = resolver_sucursal_id(
+                request.server_id,
+                detalle_scope.sucursal_origen_id,
+            )
+            if not empresa_scope.resuelto or not sucursal_scope.resuelto:
+                conn.close()
+                raise HTTPException(
+                    status_code=400,
+                    detail="No se pudo resolver Empresa/Sucursal canónica para el drilldown.",
+                )
+            filtro_scope = " AND m.EmpresaID = %s AND m.SucursalID = %s "
+            params += [int(empresa_scope.canonical_id), int(sucursal_scope.canonical_id)]
+
         filtro_almacen = ""
         if almacenes_limpios:
             alm_ph = ", ".join(["%s"] * len(almacenes_limpios))
@@ -10424,6 +10462,7 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
         WHERE d.ProductoID IN ({prod_ph})
           AND m.FechaMovimiento >= CAST(%s AS DATE)
           AND m.FechaMovimiento < DATEADD(DAY, 1, CAST(%s AS DATE))
+          {filtro_scope}
           {filtro_almacen}
         ORDER BY m.FechaMovimiento DESC
         """
@@ -10444,6 +10483,42 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
                 totales["entradas"] += cantidad
             else:
                 totales["salidas"] += cantidad
+
+        # MPRO: el padre muestra Movimientos = ledger neto + Ventas para
+        # separar la salida por venta. Reproducir exactamente esa misma
+        # reclasificación en el detalle para que el neto cuadre con la celda.
+        if is_mpro_system(server.get('system_type')) and detalle_scope is not None:
+            warehouse_ids = {
+                str(value or "").strip().zfill(4)
+                for value in almacenes_limpios
+                if str(value or "").strip()
+            }
+            sales_enabled = (not warehouse_ids) or ("0001" in warehouse_ids)
+            if sales_enabled:
+                from core.inventarios.analysis_mpro_canonical import (
+                    get_mpro_sales_consumption_detail,
+                )
+                sales_detail = get_mpro_sales_consumption_detail(
+                    cursor,
+                    unidad_codigo=detalle_scope.unidad_codigo,
+                    server_id=request.server_id,
+                    componente_codigo=codigo_limpio,
+                    fecha_ini=request.fecha_inicio,
+                    fecha_fin=request.fecha_fin,
+                )
+                ventas_total = float(sales_detail.get("total") or 0)
+                if ventas_total:
+                    movimientos.append({
+                        "fecha": request.fecha_fin,
+                        "concepto": "RECLASIFICACION_VENTAS",
+                        "descripcion": "Separación canónica: consumo por ventas mostrado en columna VENTAS",
+                        "cantidad": ventas_total,
+                        "almacen": "0001",
+                        "referencia": "VENTAS",
+                        "tipo": "E",
+                    })
+                    totales["entradas"] += ventas_total
+
         conn.close()
 
         totales["neto"] = totales["entradas"] - totales["salidas"]
@@ -10586,8 +10661,8 @@ async def obtener_detalle_consumos_post(request: DetalleConsumosRequest, current
     UNIFICACIÓN CANÓNICA (Fase B): utiliza fuentes sincronizadas en EDARSAHUB.
     La fecha inicial proviene del inventario inicial (la envía el frontend en fecha_inicio).
     """
-    # SoftRestaurant usa unidad canónica + RBAC SQL; MPRO/legacy conserva servidor estricto.
-    await _resolve_detalle_producto_scope(request, current_user)
+    # Unidad canónica + RBAC SQL para ambos motores.
+    detalle_scope = await _resolve_detalle_producto_scope(request, current_user)
 
     from core.server_registry import get_server_connection_info
     server = await get_server_connection_info(request.server_id, db=db)
@@ -10602,15 +10677,97 @@ async def obtener_detalle_consumos_post(request: DetalleConsumosRequest, current
             return {"consumos": [], "movimientos": [], "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
                     "error": f"Error al obtener consumos: {str(e)[:100]}"}
 
+    if is_mpro_system(server.get('system_type')):
+        if detalle_scope is None:
+            return {
+                "consumos": [],
+                "movimientos": [],
+                "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
+                "source": "EDARSAHUB_SQL_CANONICAL",
+                "error": "MPRO requiere unidad canónica para el detalle de ventas.",
+            }
+
+        warehouse_ids = {
+            str(value or "").strip().zfill(4)
+            for value in (request.almacenes or [])
+            if str(value or "").strip()
+        }
+        sales_enabled = (not warehouse_ids) or ("0001" in warehouse_ids)
+        if not sales_enabled:
+            return {
+                "consumos": [],
+                "movimientos": [],
+                "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
+                "source": "EDARSAHUB_SQL_CANONICAL",
+            }
+
+        conn = None
+        try:
+            from core.inventarios.analysis_mpro_canonical import (
+                get_mpro_sales_consumption_detail,
+            )
+
+            conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=15)
+            cursor = conn.cursor(as_dict=True)
+            detail = get_mpro_sales_consumption_detail(
+                cursor,
+                unidad_codigo=detalle_scope.unidad_codigo,
+                server_id=request.server_id,
+                componente_codigo=request.codigo,
+                fecha_ini=request.fecha_inicio,
+                fecha_fin=request.fecha_fin,
+            )
+            rows = []
+            for item in detail.get("rows") or []:
+                consumo = abs(float(item.get("cantidad_consumo") or 0))
+                rows.append({
+                    "fecha": (
+                        item.get("fecha").isoformat()
+                        if hasattr(item.get("fecha"), "isoformat")
+                        else str(item.get("fecha") or "")
+                    ),
+                    "concepto": "VENTA",
+                    "descripcion": f"Consumo por venta {item.get('producto_venta') or ''}".strip(),
+                    "cantidad": -consumo,
+                    "almacen": "0001",
+                    "referencia": str(item.get("producto_venta") or ""),
+                    "tipo": "S",
+                })
+
+            total = abs(float(detail.get("total") or 0))
+            return {
+                "consumos": rows,
+                "movimientos": rows,
+                "totales": {
+                    "total": total,
+                    "entradas": 0,
+                    "salidas": total,
+                    "neto": -total,
+                },
+                "source": "EDARSAHUB_SQL_CANONICAL",
+            }
+        except Exception as e:
+            logging.error(f"[DETALLE_CONSUMOS][MPRO-CANONICAL] Error: {e}")
+            return {
+                "consumos": [],
+                "movimientos": [],
+                "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
+                "source": "EDARSAHUB_SQL_CANONICAL",
+                "error": f"Error al obtener ventas MPRO: {str(e)[:120]}",
+            }
+        finally:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+
     return {
         "consumos": [],
         "movimientos": [],
         "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
-        "source": "EDARSAHUB_SQL_CANONICAL_PENDING",
-        "error": (
-            "Detalle canónico de consumos para este sistema pendiente de sincronización. "
-            "Por regla NO-LIVE no se consulta POS en vivo."
-        ),
+        "source": "EDARSAHUB_SQL_CANONICAL",
+        "error": "Sistema no soportado para detalle de ventas.",
     }
 
 
