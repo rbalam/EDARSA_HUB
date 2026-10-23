@@ -1,0 +1,171 @@
+name: CIENFUEGOS Visible Movement Audit
+
+on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - ".github/workflows/cienfuegos-visible-movement-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    env:
+      EDARSAHUB_SQL_HOST: ${{ secrets.EDARSAHUB_SQL_HOST }}
+      EDARSAHUB_SQL_PORT: ${{ secrets.EDARSAHUB_SQL_PORT }}
+      EDARSAHUB_SQL_DATABASE: ${{ secrets.EDARSAHUB_SQL_DATABASE }}
+      EDARSAHUB_SQL_USER: ${{ secrets.EDARSAHUB_SQL_USER }}
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --quiet pymssql
+      - name: Audit visible codes against canonical movement ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, pymssql
+
+          codes = [
+              "A100067","A100202","A100235","A100306","A100410",
+              "A200180","A400081","A400092","A400104","A400107",
+              "A400109","A400111","A400151","A400152","A900005",
+          ]
+
+          conn = pymssql.connect(
+              server=os.environ["EDARSAHUB_SQL_HOST"],
+              port=int(os.environ.get("EDARSAHUB_SQL_PORT") or 1433),
+              database=os.environ["EDARSAHUB_SQL_DATABASE"],
+              user=os.environ["EDARSAHUB_SQL_USER"],
+              password=os.environ["EDARSAHUB_SQL_PASSWORD"],
+              login_timeout=15,
+              timeout=60,
+              as_dict=True,
+          )
+          cur = conn.cursor(as_dict=True)
+
+          cur.execute("""
+              SELECT TOP 1
+                  s.id AS server_id,
+                  e.EmpresaID,
+                  ss.SucursalID,
+                  a.AlmacenID
+              FROM dbo.Unidades_Negocio u
+              INNER JOIN dbo.Servidores_Conexiones s
+                  ON u.server_id=CAST(s.id AS nvarchar(36))
+              INNER JOIN dbo.Sistema_Empresas e
+                  ON UPPER(e.CodigoEmpresa)=UPPER(u.codigo)
+              INNER JOIN dbo.Sistema_Sucursales ss
+                  ON ss.EmpresaID=e.EmpresaID
+                 AND LOWER(CONVERT(varchar(36),ss.ServidorID))=LOWER(CONVERT(varchar(36),s.id))
+              INNER JOIN dbo.Inventario_Almacenes a
+                  ON a.EmpresaID=e.EmpresaID
+                 AND a.SucursalID=ss.SucursalID
+              WHERE UPPER(u.codigo)='CIENFUEGOS'
+                AND ISNULL(u.activo,1)=1
+                AND ISNULL(s.activo,1)=1
+                AND ISNULL(ss.Activo,1)=1
+                AND ISNULL(a.Activo,1)=1
+                AND (
+                    UPPER(LTRIM(RTRIM(a.CodigoAlmacen))) IN ('200','200-BARRA')
+                    OR UPPER(LTRIM(RTRIM(a.NombreAlmacen))) LIKE '%BARRA%'
+                )
+              ORDER BY CASE WHEN LTRIM(RTRIM(a.CodigoAlmacen))='200' THEN 0 ELSE 1 END,
+                       a.AlmacenID
+          """)
+          scope = cur.fetchone()
+          if not scope:
+              raise SystemExit("CIENFUEGOS_BARRA_SCOPE_NOT_FOUND")
+
+          ph=",".join(["%s"]*len(codes))
+
+          # Resolver identidad canónica por cualquier alias/mapeo conocido.
+          cur.execute(f"""
+              SELECT
+                  UPPER(LTRIM(RTRIM(m.CodigoFuente))) AS codigo,
+                  m.ProductoID
+              FROM dbo.Producto_MapeoOrigen m
+              WHERE LOWER(CONVERT(varchar(36),m.ServerID))=LOWER(%s)
+                AND m.Activo=1
+                AND UPPER(LTRIM(RTRIM(m.CodigoFuente))) IN ({ph})
+          """, tuple([scope["server_id"], *codes]))
+          direct = {r["codigo"]: r["ProductoID"] for r in (cur.fetchall() or [])}
+
+          cur.execute(f"""
+              SELECT
+                  UPPER(LTRIM(RTRIM(i.CodigoFuente))) AS codigo,
+                  pc.ProductoID
+              FROM dbo.Sync_Productos_Insumos i
+              LEFT JOIN dbo.Producto_Catalogo pc
+                ON pc.SKU=CONVERT(varchar(36),i.InsumoID)
+               AND pc.Activo=1
+              WHERE LOWER(CONVERT(varchar(36),i.ServerID))=LOWER(%s)
+                AND i.Activo=1
+                AND UPPER(LTRIM(RTRIM(i.CodigoFuente))) IN ({ph})
+          """, tuple([scope["server_id"], *codes]))
+          via_insumo = {r["codigo"]: r["ProductoID"] for r in (cur.fetchall() or []) if r.get("ProductoID")}
+
+          resolved = {}
+          for code in codes:
+              pid = direct.get(code) or via_insumo.get(code)
+              resolved[code] = pid
+
+          payload=[]
+          for code,pid in resolved.items():
+              if not pid:
+                  payload.append({"codigo":code,"producto_id":None,"movimientos":0,"detalles":0,"cantidad_neta":0,"aliases":[]})
+                  continue
+
+              cur.execute("""
+                  SELECT
+                      COUNT(DISTINCT m.MovimientoID) AS movimientos,
+                      COUNT(*) AS detalles,
+                      SUM(CASE
+                          WHEN UPPER(LTRIM(RTRIM(ISNULL(tm.Naturaleza,'')))) IN ('E','EN','ENTRADA')
+                          THEN ISNULL(d.Cantidad,0)
+                          ELSE -ISNULL(d.Cantidad,0)
+                      END) AS cantidad_neta
+                  FROM dbo.Inventario_Movimientos m
+                  INNER JOIN dbo.Inventario_MovimientosDetalle d
+                      ON d.MovimientoID=m.MovimientoID
+                  INNER JOIN dbo.Inventario_TipoMovimiento tm
+                      ON tm.TipoMovimientoID=m.TipoMovimientoID
+                  WHERE m.EmpresaID=%s
+                    AND m.SucursalID=%s
+                    AND m.AlmacenID=%s
+                    AND d.ProductoID=%s
+                    AND m.FechaMovimiento >= '2026-10-01'
+                    AND m.FechaMovimiento < '2026-10-20'
+                    AND ISNULL(m.Activo,1)=1
+              """, (scope["EmpresaID"],scope["SucursalID"],scope["AlmacenID"],pid))
+              agg=cur.fetchone() or {}
+
+              cur.execute("""
+                  SELECT DISTINCT UPPER(LTRIM(RTRIM(CodigoFuente))) AS CodigoFuente
+                  FROM dbo.Producto_MapeoOrigen
+                  WHERE ProductoID=%s
+                    AND LOWER(CONVERT(varchar(36),ServerID))=LOWER(%s)
+                    AND Activo=1
+                  ORDER BY CodigoFuente
+              """,(pid,scope["server_id"]))
+              aliases=[r["CodigoFuente"] for r in (cur.fetchall() or [])]
+
+              payload.append({
+                  "codigo":code,
+                  "producto_id":pid,
+                  "movimientos":int(agg.get("movimientos") or 0),
+                  "detalles":int(agg.get("detalles") or 0),
+                  "cantidad_neta":float(agg.get("cantidad_neta") or 0),
+                  "aliases":aliases,
+              })
+
+          print("CIENFUEGOS_VISIBLE_MOVEMENT_AUDIT="+json.dumps(payload,ensure_ascii=False,default=str))
+          print("CIENFUEGOS_VISIBLE_MOVEMENT_NONZERO="+str(sum(1 for x in payload if abs(x["cantidad_neta"])>0)))
+          cur.close(); conn.close()
+          PY
