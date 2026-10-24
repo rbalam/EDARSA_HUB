@@ -1,0 +1,68 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PROD-DEV-DIVERGENCE-SEMANTIC-CLASSIFICATION-R2-20261024",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "base_sha": "2a0f2690ab5813dc91b060fbbb1874870b66a54e",
+  "mode": "READ_ONLY",
+  "objective": "Clasificacion semantica READ_ONLY de la divergencia Produccion/Desarrollo. Evidencia actual: Produccion=e1daa7fdc075b6404c071d9ec160da477cc85c02, Desarrollo=2a0f2690ab5813dc91b060fbbb1874870b66a54e, merge-base=935ea169613aa9f010e0ae92eedfd2870c18a2a7, Production-only=38 commits. Auditar por capacidad, no por SHA, si los hotfixes productivos de Scheduler, wake loop, health probe y build ya tienen equivalente funcional en Desarrollo, deben reimplementarse, mantenerse solo en Produccion o entran en conflicto con arquitectura posterior. No modificar archivos, no tocar Produccion, no merge/rebase/cherry-pick y no promover P4. Entregar estrategia de reconciliacion segura y declarar explicitamente P4_BLOCKED=YES|NO.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          ".github/workflows/commercial-open-sales-clock.yml",
+          ".github/workflows/preview-commercial-external-owner.yml",
+          ".github/workflows/preview-commercial-external-trigger-gate.yml",
+          ".github/workflows/prod-sync-comercial-abiertas-trigger.yml",
+          "backend/modules/scheduler_runtime",
+          "backend/modules/scheduler_trigger_preview",
+          "backend/core/scheduler",
+          "backend/scheduler_service.py",
+          "backend/server.py",
+          "backend/tests/test_scheduler_runtime_policy.py",
+          "backend/tests/test_sync_comercial_abiertas_v2_immutable.py",
+          "frontend/package.json",
+          "frontend/yarn.lock",
+          "frontend/scripts/validate_enterprise_navigation.js",
+          "docs/SCHEDULER"
+        ],
+        "search_terms": [
+          "PRODUCTION_SCHEDULER",
+          "PREVIEW_WEB",
+          "scheduler_trigger_preview",
+          "preview_sales_wake",
+          "preview_closed_sales_wake",
+          "preview_scoped_scheduler",
+          "sync-comercial-abiertas-v2",
+          "/health",
+          "@eslint/js",
+          "EDARSA_RUNTIME_ROLE",
+          "production scheduler"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.yml",
+          "*.yaml",
+          "*.md",
+          "*.js",
+          "*.json",
+          "*.lock"
+        ],
+        "exclude_patterns": [
+          "node_modules/**",
+          "build/**",
+          "dist/**",
+          ".git/**"
+        ],
+        "max_results": 300
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
