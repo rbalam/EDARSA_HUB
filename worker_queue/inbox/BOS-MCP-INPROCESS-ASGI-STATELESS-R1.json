@@ -1,0 +1,73 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"In-process MCP transport for the FastAPI backend (stateless; safe across replicas).\"\"\"\nfrom __future__ import annotations\n\nimport logging\nimport os\nfrom contextlib import AsyncExitStack\n\nlogger = logging.getLogger(__name__)\n\n_app = None\n_stack: AsyncExitStack | None = None\n\n\ndef enabled() -> bool:\n    return os.getenv(\"EDARSAHUB_MCP_INPROCESS\", \"\").strip() == \"1\"\n\n\nasync def start() -> None:\n    global _app, _stack\n    if not enabled() or _app is not None:\n        return\n    try:\n        from .config import WorkerMcpConfig\n        from .server import build_mcp_server, build_transport_security\n\n        config = WorkerMcpConfig.from_env()\n        mcp = build_mcp_server(\n            config,\n            stateless_http=True,\n            json_response=True,\n            streamable_http_path=\"/mcp\",\n            transport_security=build_transport_security(config),\n        )\n        app = mcp.streamable_http_app()\n        stack = AsyncExitStack()\n        await stack.enter_async_context(mcp.session_manager.run())\n        _app, _stack = app, stack\n        logger.info(\"MCP_INPROCESS_READY\")\n    except Exception as exc:  # noqa: BLE001 - MCP must never block ERP startup\n        logger.error(\"MCP_INPROCESS_START_FAILED type=%s code=%s\", type(exc).__name__, str(exc)[:80])\n\n\nasync def stop() -> None:\n    global _app, _stack\n    if _stack is not None:\n        await _stack.aclose()\n    _app, _stack = None, None\n\n\nasync def dispatch(scope, receive, send, inner_path: str) -> None:\n    if _app is None:\n        await send({\"type\": \"http.response.start\", \"status\": 503,\n                    \"headers\": [(b\"content-type\", b\"text/plain\")]})\n        await send({\"type\": \"http.response.body\", \"body\": b\"MCP in-process unavailable\"})\n        return\n    inner = dict(scope, path=inner_path, raw_path=inner_path.encode(), root_path=\"\")\n    await _app(inner, receive, send)\n",
+      "path": "backend/modules/worker_mcp/inprocess.py",
+      "type": "write_file"
+    },
+    {
+      "content": "\"\"\"Minimal MCP transport for the certified EDARSAHUB semantic ingress.\"\"\"\n\nfrom typing import Any\n\ntry:\n    from mcp.server import MCPServer\nexcept ImportError:  # mcp 1.x (backend-compatible: starlette 0.37)\n    from mcp.server.fastmcp import FastMCP as MCPServer\nfrom mcp.server.auth.middleware.auth_context import get_access_token\nfrom mcp.server.auth.provider import TokenVerifier\nfrom mcp.server.auth.settings import AuthSettings\nfrom mcp.server.transport_security import TransportSecuritySettings\nfrom mcp.types import ToolAnnotations\nfrom pydantic import AnyHttpUrl\n\nfrom .auth import EdarsahubTokenVerifier\nfrom .client import (\n    get_job_status as backend_get_job_status,\n    submit_objective as backend_submit_objective,\n)\nfrom .config import WorkerMcpConfig\n\n\n_BACKEND_URL: str | None = None\n\n\ndef _bearer_token() -> str:\n    access_token = get_access_token()\n    if access_token is None or not access_token.token:\n        raise PermissionError(\"MCP_AUTH_REQUIRED\")\n    return str(access_token.token)\n\n\ndef _backend_url() -> str:\n    if not _BACKEND_URL:\n        raise RuntimeError(\"MCP_BACKEND_NOT_CONFIGURED\")\n    return _BACKEND_URL\n\n\ndef submit_objective_tool(\n    objective: str,\n    bounded_context: str,\n    mode: str,\n    capability: str,\n    request_key: str | None = None,\n    constraints: dict[str, Any] | None = None,\n) -> dict[str, Any]:\n    \"\"\"Submit one approved semantic objective to the EDARSAHUB Universal Worker.\"\"\"\n    payload: dict[str, Any] = {\n        \"objective\": objective,\n        \"bounded_context\": bounded_context,\n        \"mode\": mode,\n        \"capability\": capability,\n        \"constraints\": constraints or {},\n    }\n    if request_key:\n        payload[\"request_key\"] = request_key\n\n    result = backend_submit_objective(\n        backend_url=_backend_url(),\n        token=_bearer_token(),\n        payload=payload,\n    )\n\n    return {\n        \"status\": result.get(\"status\"),\n        \"job_id\": result.get(\"job_id\"),\n        \"capability\": result.get(\"capability\"),\n        \"bounded_context\": result.get(\"bounded_context\"),\n        \"production_touched\": bool(\n            result.get(\"production_touched\", False)\n        ),\n    }\n\n\ndef get_job_status_tool(\n    job_id: str,\n) -> dict[str, Any]:\n    \"\"\"Read the canonical status of one Universal Worker job.\"\"\"\n    result = backend_get_job_status(\n        backend_url=_backend_url(),\n        token=_bearer_token(),\n        job_id=job_id,\n    )\n    return {\n        \"job_id\": result.get(\"job_id\"),\n        \"lifecycle\": result.get(\"lifecycle\"),\n        \"status\": result.get(\"status\"),\n        \"certification\": result.get(\"certification\"),\n        \"quality_gate\": result.get(\"quality_gate\"),\n        \"tests\": result.get(\"tests\"),\n        \"percent_complete\": result.get(\"percent_complete\"),\n        \"blockers\": result.get(\"blockers\"),\n        \"files_changed\": result.get(\"files_changed\"),\n        \"commit_sha\": result.get(\"commit_sha\"),\n        \"git_sync_status\": result.get(\"git_sync_status\"),\n        \"production_touched\": result.get(\n            \"production_touched\",\n            False,\n        ),\n        \"summary_es\": result.get(\"summary_es\"),\n    }\n\n\ndef build_mcp_server(\n    config: WorkerMcpConfig,\n    *,\n    token_verifier: TokenVerifier | None = None,\n    **settings: Any,\n) -> MCPServer:\n    global _BACKEND_URL\n    _BACKEND_URL = config.backend_url.rstrip(\"/\")\n\n    verifier = token_verifier or EdarsahubTokenVerifier(\n        backend_url=config.backend_url,\n        resource_url=config.resource_url,\n    )\n\n    mcp = MCPServer(\n        \"EDARSAHUB Universal Worker\",\n        instructions=(\n            \"Use submit_objective to send approved semantic objectives to \"\n            \"EDARSAHUB. Use get_job_status to read their canonical status. \"\n            \"No low-level worker actions are exposed.\"\n        ),\n        token_verifier=verifier,\n        auth=AuthSettings(\n            issuer_url=AnyHttpUrl(config.issuer_url),\n            resource_server_url=AnyHttpUrl(\n                config.resource_url\n            ),\n            required_scopes=[],\n            validate_token_resource=False,\n        ),\n        **settings,\n    )\n\n    mcp.tool(\n        name=\"submit_objective\",\n        title=\"Submit EDARSAHUB objective\",\n        annotations=ToolAnnotations(\n            readOnlyHint=False,\n            destructiveHint=False,\n            idempotentHint=True,\n            openWorldHint=False,\n        ),\n    )(submit_objective_tool)\n\n    mcp.tool(\n        name=\"get_job_status\",\n        title=\"Get EDARSAHUB Worker job status\",\n        annotations=ToolAnnotations(\n            readOnlyHint=True,\n            destructiveHint=False,\n            idempotentHint=True,\n            openWorldHint=False,\n        ),\n    )(get_job_status_tool)\n\n    return mcp\n\n\ndef build_transport_security(\n    config: WorkerMcpConfig,\n) -> TransportSecuritySettings:\n    return TransportSecuritySettings(\n        allowed_hosts=list(config.allowed_hosts),\n        allowed_origins=list(config.allowed_origins),\n    )\n",
+      "expected_sha256": "40e7cf1a41345877a42f50ce3d4a5dab7318a7533d957e76481d2a46724d0291",
+      "path": "backend/modules/worker_mcp/server.py",
+      "type": "write_file"
+    },
+    {
+      "content": "\"\"\"HTTP-only reverse proxy for the existing EDARSAHUB MCP service.\n\nKeep the Universal Worker and its authentication on their existing processes.\nConfiguration: EDARSAHUB_MCP_UPSTREAM_URL (default local supervisor port).\n\"\"\"\nfrom __future__ import annotations\n\nimport os\nfrom urllib.parse import urlparse\n\nimport httpx\nfrom fastapi import APIRouter, Request\nfrom fastapi.responses import Response, StreamingResponse\nfrom starlette.background import BackgroundTask\n\nfrom . import inprocess\n\nrouter = APIRouter(on_startup=[inprocess.start], on_shutdown=[inprocess.stop])\n\n\nclass _InProcessResponse(Response):\n    def __init__(self, inner_path: str):\n        super().__init__()\n        self._inner_path = inner_path\n\n    async def __call__(self, scope, receive, send):\n        await inprocess.dispatch(scope, receive, send, self._inner_path)\n\n\n@router.api_route(\"/api/mcp/.well-known/oauth-protected-resource\", methods=[\"GET\", \"OPTIONS\"])\nasync def mcp_protected_resource_metadata():\n    if not inprocess.enabled():\n        return Response(status_code=404)\n    return _InProcessResponse(\"/.well-known/oauth-protected-resource\")\n\n_ALLOWED_RESPONSE_HEADERS = {\n    \"content-type\", \"cache-control\", \"www-authenticate\", \"mcp-session-id\",\n    \"mcp-protocol-version\", \"retry-after\",\n}\n\n\ndef _upstream() -> str:\n    target = os.getenv(\"EDARSAHUB_MCP_UPSTREAM_URL\", \"\").rstrip(\"/\")\n    parsed = urlparse(target)\n    if (\n        parsed.scheme != \"http\"\n        or parsed.hostname not in (\"127.0.0.1\", \"localhost\")\n        or not parsed.port\n        or parsed.username\n        or parsed.password\n        or parsed.path not in (\"\", \"/\")\n        or parsed.query\n        or parsed.fragment\n    ):\n        raise ValueError(\"MCP_UPSTREAM_LOCAL_ONLY\")\n    return target\n\n\n@router.api_route(\"/api/mcp\", methods=[\"GET\", \"POST\", \"DELETE\", \"OPTIONS\", \"HEAD\"])\n@router.api_route(\"/api/mcp/\", methods=[\"GET\", \"POST\", \"DELETE\", \"OPTIONS\", \"HEAD\"])\nasync def mcp_gateway(request: Request):\n    \"\"\"Preserve streaming and MCP protocol headers; never log bearer tokens.\"\"\"\n    if inprocess.enabled():\n        return _InProcessResponse(\"/mcp\")\n    try:\n        upstream = _upstream()\n    except ValueError:\n        return Response(status_code=503, content=\"MCP upstream not configured\")\n\n    headers = {\n        name: value for name, value in request.headers.items()\n        if name.lower() in {\n            \"authorization\", \"accept\", \"content-type\", \"mcp-session-id\",\n            \"mcp-protocol-version\", \"last-event-id\", \"origin\",\n        }\n    }\n    client = httpx.AsyncClient(timeout=httpx.Timeout(connect=5, read=None, write=30, pool=5))\n    try:\n        outgoing = client.build_request(\n            request.method,\n            upstream + \"/mcp\",\n            headers=headers,\n            content=await request.body(),\n        )\n        reply = await client.send(outgoing, stream=True)\n    except httpx.RequestError:\n        await client.aclose()\n        return Response(status_code=502, content=\"MCP upstream unavailable\")\n\n    response_headers = {\n        name: value for name, value in reply.headers.items()\n        if name.lower() in _ALLOWED_RESPONSE_HEADERS\n    }\n    # The upstream advertises loopback resource metadata. Never expose it to clients.\n    challenge = response_headers.get(\"www-authenticate\")\n    if challenge and \"resource_metadata=\" in challenge:\n        public_resource = str(request.base_url).rstrip(\"/\") + \"/.well-known/oauth-protected-resource/api/mcp\"\n        import re\n        response_headers[\"www-authenticate\"] = re.sub(\n            r'resource_metadata=\"[^\"]+\"',\n            'resource_metadata=\"' + public_resource + '\"',\n            challenge,\n        )\n\n    async def close_connections():\n        await reply.aclose()\n        await client.aclose()\n\n    return StreamingResponse(\n        reply.aiter_raw(),\n        status_code=reply.status_code,\n        headers=response_headers,\n        background=BackgroundTask(close_connections),\n    )\n",
+      "expected_sha256": "8ea77c904789c307426db727f3d0047274263389f2a62b0acd0fc542be239ea7",
+      "path": "backend/modules/worker_mcp/gateway_router.py",
+      "type": "write_file"
+    },
+    {
+      "path": "backend/requirements.txt",
+      "replacement": "mcp==1.12.4\nhttpx-sse==0.4.3\npydantic-settings==2.15.0\nsse-starlette==3.0.3\n",
+      "source_sha256": "300703ebe5b3ff26980214e7ed1e8dae41dda684a0c542bc4f349c464f8f92e9",
+      "type": "append_once"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_mcp/inprocess.py",
+        "backend/modules/worker_mcp/server.py",
+        "backend/modules/worker_mcp/gateway_router.py",
+        "backend/server.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_mcp_oauth_discovery.py",
+        "backend/tests/test_worker_mcp_oauth_pkce.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-MCP-INPROCESS-ASGI-STATELESS-R1",
+  "mode": "DEVELOPMENT_REPO_CHANGE",
+  "objective": "Servir el MCP existente dentro del backend FastAPI (ASGI in-process, stateless, json_response) detras de /api/mcp, activado solo con EDARSAHUB_MCP_INPROCESS=1, para eliminar el 502 de Produccion causado por depender de .runtime/worker_mcp (gitignoreado). Usa mcp==1.12.4, la version maxima compatible con FastAPI 0.110.1/Starlette 0.37.2/uvicorn 0.25.0. Sin tocar RBAC, credenciales, SQL ni produccion. Proxy al upstream local intacto cuando el flag no esta activo.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "MCP PRODUCTION FIX R2",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "EMERGENT"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
