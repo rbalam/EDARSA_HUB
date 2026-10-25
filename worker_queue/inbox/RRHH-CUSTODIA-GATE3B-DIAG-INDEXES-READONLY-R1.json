@@ -1,0 +1,24 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "RRHH-CUSTODIA-GATE3B-DIAG-INDEXES-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2a0f2690ab5813dc91b060fbbb1874870b66a54e",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Diagnostico aislado READ_ONLY de la consulta INDEXES del Gate3B Custodia. No DDL/DML, no cambios de repositorio, no Produccion.",
+  "human_summary_language": "es",
+  "allowed_paths": [],
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "indexes",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(i.object_id) AS schema_name, OBJECT_NAME(i.object_id) AS table_name, i.name AS index_name FROM sys.indexes i WHERE i.name IN ('UX_Custodia_Recurso_ActivoID','IX_Custodia_Recurso_ProductoID','IX_Custodia_Recurso_Contexto','UX_Custodia_Resguardo_RecursoVigente','IX_Custodia_Resguardo_ColaboradorEstado','IX_Custodia_Resguardo_Contexto','IX_Custodia_Resguardo_FechaOperacion','IX_Custodia_Movimiento_ResguardoFecha','IX_Custodia_Devolucion_ResguardoFecha','IX_Custodia_Incidencia_ResguardoEstado','IX_Custodia_Cargo_IncidenciaEstado') ORDER BY i.name;"
+        }
+      ]
+    }
+  ]
+}
