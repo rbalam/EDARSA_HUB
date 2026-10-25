@@ -1,0 +1,152 @@
+{
+  "base_sha": "f915cdd27b8133add1fba14ab385551b78bd39b0",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-25T17:18:30Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-INVENTARIOS-SCHEDULER-PRINCIPAL-SQL-AUDIT-R5R4-20261024",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-25T17:25:45Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "UsuarioID",
+              "CodigoUsuario",
+              "Username",
+              "Email",
+              "Nombre",
+              "Activo",
+              "Bloqueado",
+              "EsUsuarioPortal"
+            ],
+            "name": "principal_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                27,
+                "SYS-SCHED-ALERTAS",
+                "SYS-SCHED-ALERTAS",
+                "sys-sched-alertas@edarsahub.internal",
+                "Scheduler Alertas",
+                true,
+                true,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "RolID",
+              "CodigoRol",
+              "NombreRol",
+              "EsPrincipal",
+              "Activo"
+            ],
+            "name": "principal_roles",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                27,
+                41,
+                "SCHEDULER_ALERTAS",
+                "Scheduler Alertas",
+                true,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "CodigoRol",
+              "CodigoModulo",
+              "CodigoAccion",
+              "Permitido",
+              "RestriccionSucursal",
+              "Activo"
+            ],
+            "name": "principal_permissions",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                27,
+                "SCHEDULER_ALERTAS",
+                "alertas",
+                "VER",
+                true,
+                true,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "ServidorID",
+              "Activo"
+            ],
+            "name": "principal_server_scope",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                27,
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                true
+              ],
+              [
+                27,
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                true
+              ],
+              [
+                27,
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "Matches"
+            ],
+            "name": "target_server_in_scope",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                27,
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-25T17:18:27Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
