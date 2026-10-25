@@ -1,0 +1,24 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "RRHH-CUSTODIA-GATE3B-DIAG-CONSTRAINTS-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2a0f2690ab5813dc91b060fbbb1874870b66a54e",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Diagnostico aislado READ_ONLY de la consulta CONSTRAINTS del Gate3B Custodia. No DDL/DML, no cambios de repositorio, no Produccion.",
+  "human_summary_language": "es",
+  "allowed_paths": [],
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "constraints",
+          "sql": "SELECT o.type_desc, o.name, OBJECT_SCHEMA_NAME(o.parent_object_id) AS parent_schema, OBJECT_NAME(o.parent_object_id) AS parent_object FROM sys.objects o WHERE o.name IN ('PK_Custodia_Recurso','FK_Custodia_Recurso_Empresa','FK_Custodia_Recurso_Unidad','FK_Custodia_Recurso_Sucursal','FK_Custodia_Recurso_Producto','FK_Custodia_Recurso_ActivoFijo','FK_Custodia_Recurso_Usuario','CK_Custodia_Recurso_Origen','CK_Custodia_Recurso_Cantidad','PK_Custodia_Resguardo','FK_Custodia_Resguardo_Recurso','FK_Custodia_Resguardo_Colaborador','FK_Custodia_Resguardo_Empresa','FK_Custodia_Resguardo_Unidad','FK_Custodia_Resguardo_Sucursal','FK_Custodia_Resguardo_Entrega','FK_Custodia_Resguardo_Recepcion','FK_Custodia_Resguardo_Responsiva','UQ_Custodia_Resguardo_Idempotency','CK_Custodia_Resguardo_Cantidad','CK_Custodia_Resguardo_Fechas','PK_Custodia_Movimiento','FK_Custodia_Movimiento_Resguardo','FK_Custodia_Movimiento_Usuario','FK_Custodia_Movimiento_Documento','UQ_Custodia_Movimiento_Idempotency','PK_Custodia_Devolucion','FK_Custodia_Devolucion_Resguardo','FK_Custodia_Devolucion_Usuario','FK_Custodia_Devolucion_Documento','UQ_Custodia_Devolucion_Idempotency','CK_Custodia_Devolucion_Cantidad','PK_Custodia_Incidencia','FK_Custodia_Incidencia_Resguardo','FK_Custodia_Incidencia_Usuario','FK_Custodia_Incidencia_Documento','UQ_Custodia_Incidencia_Idempotency','CK_Custodia_Incidencia_Monto','PK_Custodia_CargoPropuesto','FK_Custodia_Cargo_Incidencia','FK_Custodia_Cargo_Propone','FK_Custodia_Cargo_Autoriza','FK_Custodia_Cargo_NominaDetalle','UQ_Custodia_Cargo_Idempotency','CK_Custodia_Cargo_Monto','PK_RH_UniformePolitica','FK_RH_UniformePolitica_Empresa','FK_RH_UniformePolitica_Unidad','FK_RH_UniformePolitica_Puesto','FK_RH_UniformePolitica_Usuario','UQ_RH_UniformePolitica_ContextoVersion','CK_RH_UniformePolitica_Version','CK_RH_UniformePolitica_Vigencia','PK_RH_UniformePoliticaDetalle','FK_RH_UniformeDetalle_Politica','FK_RH_UniformeDetalle_Producto','UQ_RH_UniformeDetalle_PoliticaProducto','CK_RH_UniformeDetalle_Cantidad','CK_RH_UniformeDetalle_Periodicidad','CK_RH_UniformeDetalle_VidaUtil') ORDER BY o.name;"
+        }
+      ]
+    }
+  ]
+}
