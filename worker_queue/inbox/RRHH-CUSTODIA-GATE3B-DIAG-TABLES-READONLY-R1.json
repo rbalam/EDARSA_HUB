@@ -1,0 +1,24 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "RRHH-CUSTODIA-GATE3B-DIAG-TABLES-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2a0f2690ab5813dc91b060fbbb1874870b66a54e",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Diagnostico aislado READ_ONLY de la consulta TABLES del Gate3B Custodia. No DDL/DML, no cambios de repositorio, no Produccion.",
+  "human_summary_language": "es",
+  "allowed_paths": [],
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "tables",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, t.object_id FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name='dbo' AND t.name IN ('Custodia_Recurso','Custodia_Resguardo','Custodia_Movimiento','Custodia_Devolucion','Custodia_Incidencia','Custodia_CargoPropuesto','RH_UniformePolitica','RH_UniformePoliticaDetalle') ORDER BY t.name;"
+        }
+      ]
+    }
+  ]
+}
