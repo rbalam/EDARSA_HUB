@@ -13,7 +13,25 @@ from fastapi import APIRouter, Request
 from fastapi.responses import Response, StreamingResponse
 from starlette.background import BackgroundTask
 
-router = APIRouter()
+from . import inprocess
+
+router = APIRouter(on_startup=[inprocess.start], on_shutdown=[inprocess.stop])
+
+
+class _InProcessResponse(Response):
+    def __init__(self, inner_path: str):
+        super().__init__()
+        self._inner_path = inner_path
+
+    async def __call__(self, scope, receive, send):
+        await inprocess.dispatch(scope, receive, send, self._inner_path)
+
+
+@router.api_route("/api/mcp/.well-known/oauth-protected-resource", methods=["GET", "OPTIONS"])
+async def mcp_protected_resource_metadata():
+    if not inprocess.enabled():
+        return Response(status_code=404)
+    return _InProcessResponse("/.well-known/oauth-protected-resource")
 
 _ALLOWED_RESPONSE_HEADERS = {
     "content-type", "cache-control", "www-authenticate", "mcp-session-id",
@@ -42,6 +60,8 @@ def _upstream() -> str:
 @router.api_route("/api/mcp/", methods=["GET", "POST", "DELETE", "OPTIONS", "HEAD"])
 async def mcp_gateway(request: Request):
     """Preserve streaming and MCP protocol headers; never log bearer tokens."""
+    if inprocess.enabled():
+        return _InProcessResponse("/mcp")
     try:
         upstream = _upstream()
     except ValueError:

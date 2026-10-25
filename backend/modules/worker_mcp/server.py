@@ -1,9 +1,11 @@
 """Minimal MCP transport for the certified EDARSAHUB semantic ingress."""
-from __future__ import annotations
 
 from typing import Any
 
-from mcp.server import MCPServer
+try:
+    from mcp.server import MCPServer
+except ImportError:  # mcp 1.x (backend-compatible: starlette 0.37)
+    from mcp.server.fastmcp import FastMCP as MCPServer
 from mcp.server.auth.middleware.auth_context import get_access_token
 from mcp.server.auth.provider import TokenVerifier
 from mcp.server.auth.settings import AuthSettings
@@ -104,6 +106,7 @@ def build_mcp_server(
     config: WorkerMcpConfig,
     *,
     token_verifier: TokenVerifier | None = None,
+    **settings: Any,
 ) -> MCPServer:
     global _BACKEND_URL
     _BACKEND_URL = config.backend_url.rstrip("/")
@@ -129,16 +132,17 @@ def build_mcp_server(
             required_scopes=[],
             validate_token_resource=False,
         ),
+        **settings,
     )
 
     mcp.tool(
         name="submit_objective",
         title="Submit EDARSAHUB objective",
         annotations=ToolAnnotations(
-            read_only_hint=False,
-            destructive_hint=False,
-            idempotent_hint=True,
-            open_world_hint=False,
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
         ),
     )(submit_objective_tool)
 
@@ -146,10 +150,10 @@ def build_mcp_server(
         name="get_job_status",
         title="Get EDARSAHUB Worker job status",
         annotations=ToolAnnotations(
-            read_only_hint=True,
-            destructive_hint=False,
-            idempotent_hint=True,
-            open_world_hint=False,
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
         ),
     )(get_job_status_tool)
 
