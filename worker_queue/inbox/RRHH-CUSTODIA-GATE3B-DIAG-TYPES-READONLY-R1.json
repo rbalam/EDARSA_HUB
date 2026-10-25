@@ -1,0 +1,24 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "RRHH-CUSTODIA-GATE3B-DIAG-TYPES-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2a0f2690ab5813dc91b060fbbb1874870b66a54e",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Diagnostico aislado READ_ONLY de la consulta TYPES del Gate3B Custodia. No DDL/DML, no cambios de repositorio, no Produccion.",
+  "human_summary_language": "es",
+  "allowed_paths": [],
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "types",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND ((t.name='RH_Colaboradores_Expediente' AND c.name='ColaboradorID') OR (t.name='RH_Cat_Puestos' AND c.name='PuestoID') OR (t.name='Producto_Catalogo' AND c.name='ProductoID') OR (t.name='ActivoFijo_Activos' AND c.name='ActivoID') OR (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Sistema_Sucursales' AND c.name='SucursalID') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') OR (t.name='Gobierno_Documento' AND c.name='DocumentoID') OR (t.name='RH_Nomina_Detalle' AND c.name='NominaDetalleID')) ORDER BY t.name,c.name;"
+        }
+      ]
+    }
+  ]
+}
