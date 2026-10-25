@@ -3,41 +3,102 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "2a0f2690ab5813dc91b060fbbb1874870b66a54e",
-  "generated_at_utc": "2026-10-23T18:53:39Z",
+  "development_sha": "f915cdd27b8133add1fba14ab385551b78bd39b0",
+  "generated_at_utc": "2026-10-25T17:18:52Z",
   "history": {
-    "done_total_local": 1566,
-    "pending_total_local": 0,
+    "done_total_local": 1571,
+    "pending_total_local": 5,
     "processing_total_local": 0,
     "rejected_total_local": 1299,
-    "results_total_local": 2634
+    "results_total_local": 2639
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [],
-  "local_development_sha": "2a0f2690ab5813dc91b060fbbb1874870b66a54e",
-  "oldest_pending_age_seconds": 0,
+  "jobs": [
+    {
+      "age_seconds": 11,
+      "job_id": "RRHH-CUSTODIA-GATE3B-DIAG-KEYS-READONLY-R1",
+      "reason": null,
+      "state": "PENDING"
+    },
+    {
+      "age_seconds": 11,
+      "job_id": "RRHH-CUSTODIA-GATE3B-DIAG-PERMS-READONLY-R1",
+      "reason": null,
+      "state": "PENDING"
+    },
+    {
+      "age_seconds": 11,
+      "job_id": "RRHH-CUSTODIA-GATE3B-DIAG-SCOPE-READONLY-R1",
+      "reason": null,
+      "state": "PENDING"
+    },
+    {
+      "age_seconds": 11,
+      "job_id": "RRHH-CUSTODIA-GATE3B-DIAG-TABLES-READONLY-R1",
+      "reason": null,
+      "state": "PENDING"
+    },
+    {
+      "age_seconds": 11,
+      "job_id": "RRHH-CUSTODIA-GATE3B-DIAG-TYPES-READONLY-R1",
+      "reason": null,
+      "state": "PENDING"
+    },
+    {
+      "age_seconds": 32,
+      "job_id": "BOS-TOAST-GATE7-API-ADAPTER-IMPLEMENTATION-DESIGN-R1-20261024",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 22,
+      "job_id": "EDARSAHUB-INVENTARIOS-SCHEDULER-PRINCIPAL-SQL-AUDIT-R5R4-20261024",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 17,
+      "job_id": "EDARSAHUB-PROD-DEV-DIVERGENCE-SEMANTIC-CLASSIFICATION-R2-20261024",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 6,
+      "job_id": "RRHH-CUSTODIA-GATE3B-DIAG-CONSTRAINTS-READONLY-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1,
+      "job_id": "RRHH-CUSTODIA-GATE3B-DIAG-INDEXES-READONLY-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    }
+  ],
+  "local_development_sha": "f915cdd27b8133add1fba14ab385551b78bd39b0",
+  "oldest_pending_age_seconds": 11,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 5,
   "queue_done_local_recent": 0,
-  "queue_pending": 0,
+  "queue_pending": 5,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 0,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
-  "remote_development_sha": "2a0f2690ab5813dc91b060fbbb1874870b66a54e",
+  "remote_development_sha": "f915cdd27b8133add1fba14ab385551b78bd39b0",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-23T18:53:29Z",
-    "last_receive_utc": "2026-10-23T18:53:38Z",
-    "last_terminal_utc": "2026-10-23T17:12:18Z",
-    "pid": "564462",
+    "last_cycle_utc": "2026-10-25T17:18:50Z",
+    "last_receive_utc": "2026-10-25T17:18:45Z",
+    "last_terminal_utc": "2026-10-25T17:18:50Z",
+    "pid": "642",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "2291728e92975d6ffd1381af8ce13f6f4109e60c",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "2a0f2690ab5813dc91b060fbbb1874870b66a54e",
+      "development_sha": "f915cdd27b8133add1fba14ab385551b78bd39b0",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
