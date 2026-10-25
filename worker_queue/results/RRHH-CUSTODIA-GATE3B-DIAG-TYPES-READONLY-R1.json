@@ -1,0 +1,163 @@
+{
+  "base_sha": "f915cdd27b8133add1fba14ab385551b78bd39b0",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-25T17:19:11Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "RRHH-CUSTODIA-GATE3B-DIAG-TYPES-READONLY-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-25T17:20:02Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "schema_name",
+              "table_name",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable",
+              "is_identity"
+            ],
+            "name": "types",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                "dbo",
+                "ActivoFijo_Activos",
+                "ActivoID",
+                "bigint",
+                8,
+                19,
+                0,
+                false,
+                true
+              ],
+              [
+                "dbo",
+                "Gobierno_Documento",
+                "DocumentoID",
+                "bigint",
+                8,
+                19,
+                0,
+                false,
+                true
+              ],
+              [
+                "dbo",
+                "Producto_Catalogo",
+                "ProductoID",
+                "int",
+                4,
+                10,
+                0,
+                false,
+                true
+              ],
+              [
+                "dbo",
+                "RH_Cat_Puestos",
+                "PuestoID",
+                "int",
+                4,
+                10,
+                0,
+                false,
+                true
+              ],
+              [
+                "dbo",
+                "RH_Colaboradores_Expediente",
+                "ColaboradorID",
+                "int",
+                4,
+                10,
+                0,
+                false,
+                true
+              ],
+              [
+                "dbo",
+                "RH_Nomina_Detalle",
+                "NominaDetalleID",
+                "int",
+                4,
+                10,
+                0,
+                false,
+                true
+              ],
+              [
+                "dbo",
+                "Sistema_Empresas",
+                "EmpresaID",
+                "int",
+                4,
+                10,
+                0,
+                false,
+                true
+              ],
+              [
+                "dbo",
+                "Sistema_Sucursales",
+                "SucursalID",
+                "int",
+                4,
+                10,
+                0,
+                false,
+                true
+              ],
+              [
+                "dbo",
+                "Unidades_Negocio",
+                "id",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                false,
+                false
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                "UsuarioID",
+                "int",
+                4,
+                10,
+                0,
+                false,
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-25T17:19:10Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
