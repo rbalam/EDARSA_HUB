@@ -4813,13 +4813,23 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             def _is_presentation_warehouse(item):
                 if not isinstance(item, dict):
                     return False
+                # Autoridad canónica: PermiteVentas sincronizado desde el tipo
+                # origen SoftRestaurant (1=Consumo, 2=Presentaciones).
+                if 'permite_ventas' in item and item.get('permite_ventas') is not None:
+                    permite = item.get('permite_ventas')
+                    return permite not in (True, 1, '1')
                 unidad_natural = _as_text(item.get('unidad_natural')).lower()
                 tipo_value = item.get('tipo', item.get('tipo_almacen', item.get('almacen_tipo')))
+                tipo_text = _as_text(tipo_value).upper()
                 try:
                     tipo_num = int(tipo_value)
                 except (TypeError, ValueError):
                     tipo_num = None
-                return unidad_natural == 'presentaciones' or tipo_num == 2
+                return (
+                    unidad_natural == 'presentaciones'
+                    or tipo_num == 2
+                    or tipo_text in ('BODEGA', 'PRESENTACIONES')
+                )
 
             soft_sales_enabled = any(
                 not _is_presentation_warehouse(item)
@@ -10482,7 +10492,43 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
 
     try:
         if is_softrestaurant_system(server.get('system_type')):
-            return _obtener_detalle_softrestaurant_canonico(request, solo_ventas=False)
+            # SoftRestaurant debe leer EXACTAMENTE el mismo ledger canónico
+            # que alimenta la columna MOVIMIENTOS del reporte padre.
+            if detalle_scope is None:
+                return _obtener_detalle_softrestaurant_canonico(request, solo_ventas=False)
+
+            from core.inventarios.analysis_soft_sources import get_soft_movement_detail
+
+            conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=15)
+            try:
+                cursor = conn.cursor(as_dict=True)
+                detail = get_soft_movement_detail(
+                    cursor,
+                    server_id=request.server_id,
+                    unidad_codigo=detalle_scope.unidad_codigo,
+                    sucursal_origen_id=detalle_scope.sucursal_origen_id,
+                    componente_codigo=codigo_limpio,
+                    fecha_ini=request.fecha_inicio,
+                    fecha_fin=request.fecha_fin,
+                    warehouses=almacenes_limpios,
+                )
+                rows = []
+                for item in detail.get("rows") or []:
+                    rows.append({
+                        **item,
+                        "fecha": (
+                            item.get("fecha").isoformat()
+                            if hasattr(item.get("fecha"), "isoformat")
+                            else str(item.get("fecha") or "")
+                        ),
+                    })
+                return {
+                    "movimientos": rows,
+                    "totales": detail.get("totales") or {"entradas": 0, "salidas": 0, "neto": 0},
+                    "source": "EDARSAHUB_SQL_CANONICAL",
+                }
+            finally:
+                conn.close()
 
         conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
@@ -10770,12 +10816,124 @@ async def obtener_detalle_consumos_post(request: DetalleConsumosRequest, current
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
 
     if is_softrestaurant_system(server.get('system_type')):
+        if detalle_scope is None:
+            try:
+                return _obtener_detalle_softrestaurant_canonico(request, solo_ventas=True)
+            except Exception as e:
+                logging.error(f"[DETALLE_CONSUMOS][SOFT-LEGACY] Error: {e}")
+                return {"consumos": [], "movimientos": [], "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
+                        "error": f"Error al obtener consumos: {str(e)[:100]}"}
+
+        conn = None
         try:
-            return _obtener_detalle_softrestaurant_canonico(request, solo_ventas=True)
+            from core.inventarios.analysis_soft_sources import get_soft_sales_consumption_detail
+            from core.inventarios.resolver_canonico import resolver_empresa_id, resolver_sucursal_id
+
+            conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=15)
+            cursor = conn.cursor(as_dict=True)
+
+            # Misma regla del padre: almacenes de presentación NO descargan ventas.
+            warehouse_ids = [
+                str(value or "").strip()
+                for value in (request.almacenes or [])
+                if str(value or "").strip()
+            ]
+            if warehouse_ids:
+                empresa_scope = resolver_empresa_id(detalle_scope.unidad_codigo)
+                sucursal_scope = resolver_sucursal_id(
+                    request.server_id,
+                    detalle_scope.sucursal_origen_id,
+                )
+                if not empresa_scope.resuelto or not sucursal_scope.resuelto:
+                    return {
+                        "consumos": [],
+                        "movimientos": [],
+                        "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
+                        "source": "EDARSAHUB_SQL_CANONICAL",
+                        "error": "No se pudo resolver Empresa/Sucursal canónica.",
+                    }
+                wh_ph = ",".join(["%s"] * len(warehouse_ids))
+                cursor.execute(
+                    f"""
+                    SELECT MAX(CASE WHEN ISNULL(PermiteVentas,0)=1 THEN 1 ELSE 0 END) AS permite
+                    FROM dbo.Inventario_Almacenes
+                    WHERE EmpresaID=%s
+                      AND SucursalID=%s
+                      AND (
+                        CONVERT(varchar(50),AlmacenID) IN ({wh_ph})
+                        OR CodigoAlmacen IN ({wh_ph})
+                        OR NombreAlmacen IN ({wh_ph})
+                      )
+                    """,
+                    tuple([
+                        int(empresa_scope.canonical_id),
+                        int(sucursal_scope.canonical_id),
+                        *warehouse_ids,
+                        *warehouse_ids,
+                        *warehouse_ids,
+                    ]),
+                )
+                permit_row = cursor.fetchone() or {}
+                if int(permit_row.get("permite") or 0) != 1:
+                    return {
+                        "consumos": [],
+                        "movimientos": [],
+                        "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
+                        "source": "EDARSAHUB_SQL_CANONICAL",
+                    }
+
+            detail = get_soft_sales_consumption_detail(
+                cursor,
+                unidad_codigo=detalle_scope.unidad_codigo,
+                server_id=request.server_id,
+                componente_codigo=request.codigo,
+                fecha_ini=request.fecha_inicio,
+                fecha_fin=request.fecha_fin,
+            )
+            rows = []
+            for item in detail.get("rows") or []:
+                consumo = abs(float(item.get("cantidad_consumo") or 0))
+                rows.append({
+                    "fecha": (
+                        item.get("fecha").isoformat()
+                        if hasattr(item.get("fecha"), "isoformat")
+                        else str(item.get("fecha") or "")
+                    ),
+                    "concepto": "VENTA",
+                    "descripcion": f"Consumo por venta {item.get('producto_venta') or ''}".strip(),
+                    "cantidad": -consumo,
+                    "almacen": "",
+                    "referencia": str(item.get("producto_venta") or ""),
+                    "tipo": "S",
+                })
+
+            total = abs(float(detail.get("total") or 0))
+            return {
+                "consumos": rows,
+                "movimientos": rows,
+                "totales": {
+                    "total": total,
+                    "entradas": 0,
+                    "salidas": total,
+                    "neto": -total,
+                },
+                "source": "EDARSAHUB_SQL_CANONICAL",
+            }
         except Exception as e:
             logging.error(f"[DETALLE_CONSUMOS][SOFT-CANONICAL] Error: {e}")
-            return {"consumos": [], "movimientos": [], "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
-                    "error": f"Error al obtener consumos: {str(e)[:100]}"}
+            return {
+                "consumos": [],
+                "movimientos": [],
+                "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
+                "source": "EDARSAHUB_SQL_CANONICAL",
+                "error": f"Error al obtener consumos SoftRestaurant: {str(e)[:120]}",
+            }
+        finally:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     if is_mpro_system(server.get('system_type')):
         if detalle_scope is None:

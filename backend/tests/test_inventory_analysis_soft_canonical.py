@@ -226,9 +226,39 @@ def test_soft_presentation_warehouses_do_not_apply_sales():
     assert "include_sales=soft_sales_enabled" in server_source
 
 
-def test_report_payload_preserves_warehouse_type_for_backend_rule():
+def test_report_payload_preserves_warehouse_sales_authority_for_backend_rule():
     frontend = (ROOT.parent / "frontend" / "src" / "pages" / "Reportes.js").read_text(
         encoding="utf-8"
     )
-    assert "tipo_almacen: almacenTipo" in frontend
+    assert "permite_ventas: permiteVentas" in frontend
     assert "unidad_natural: a.unidad_natural" in frontend
+    assert "tipoTexto === 'CONSUMO'" in frontend
+
+
+def test_soft_warehouse_sync_persists_sales_semantics_without_touching_mpro_rule():
+    sync_source = (ROOT / "modules" / "compras" / "sync_service.py").read_text(
+        encoding="utf-8"
+    )
+    assert "TRY_CONVERT(INT, tipo) = 1 THEN 'CONSUMO'" in sync_source
+    assert "TRY_CONVERT(INT, tipo) = 2 THEN 'BODEGA'" in sync_source
+    assert "AS permite_ventas" in sync_source
+    assert "PermiteVentas = %s" in sync_source
+    assert "permite_ventas = 1" in sync_source
+    assert "if 'MPRO' in system_type.upper() or 'MANAGEMENT' in system_type.upper()" in sync_source
+
+
+def test_soft_drilldown_uses_same_canonical_sources_as_parent():
+    source = SOFT.read_text(encoding="utf-8")
+    server_source = SERVER.read_text(encoding="utf-8")
+
+    assert "def get_soft_movement_detail" in source
+    assert "Inventario_MovimientosDetalle" in source
+    assert "Inventario_Movimientos" in source
+    assert "Inventario_TipoMovimiento" in source
+    assert "def get_soft_sales_consumption_detail" in source
+    assert "Comercial_Inteligencia_VentasDetalleProducto" in source
+    assert "RecetasService.get_componentes_bulk" in source
+
+    assert "get_soft_movement_detail" in server_source
+    assert "get_soft_sales_consumption_detail" in server_source
+    assert '"source": "EDARSAHUB_SQL_CANONICAL"' in server_source

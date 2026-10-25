@@ -1916,16 +1916,25 @@ def sync_almacenes_from_server(
                 WHERE 1=1 {filtro_suc_alm}
             """
         else:
-            # SoftRestaurant Pro - usar nombres de tabla correctos.
-            # NOTA: el campo 'tipo' en SoftRestaurant es un código numérico interno, NO un
-            # tipo de almacén canónico. El destino Inventario_Almacenes tiene CHECK constraint
-            # (GENERAL/BODEGA/CONSUMO/TRANSITO/DEVOLUCIONES/DAÑADOS). Se mapea a 'GENERAL'
-            # (default canónico) ya que el origen no expone esa clasificación canónica.
+            # SoftRestaurant: el campo origen almacen.tipo SI define la semántica
+            # operativa del almacén para inventarios:
+            #   1 = Consumo       -> descarga ventas
+            #   2 = Presentaciones -> NO descarga ventas
+            # El destino conserva un TipoAlmacen textual compatible con su CHECK y
+            # Persiste PermiteVentas como autoridad canónica para el reporte.
             query_origen = """
-                SELECT 
+                SELECT
                     CAST(idalmacen AS VARCHAR(50)) AS codigo_almacen,
                     nombre AS nombre_almacen,
-                    'GENERAL' AS tipo_almacen,
+                    CASE
+                        WHEN TRY_CONVERT(INT, tipo) = 1 THEN 'CONSUMO'
+                        WHEN TRY_CONVERT(INT, tipo) = 2 THEN 'BODEGA'
+                        ELSE 'GENERAL'
+                    END AS tipo_almacen,
+                    CASE
+                        WHEN TRY_CONVERT(INT, tipo) = 1 THEN 1
+                        ELSE 0
+                    END AS permite_ventas,
                     1 AS activo
                 FROM almacen
             """
@@ -1951,6 +1960,13 @@ def sync_almacenes_from_server(
                 nombre = str(row.get('nombre_almacen', ''))[:100]
                 tipo = str(row.get('tipo_almacen', 'GENERAL'))[:50]
                 activo = 1 if row.get('activo') in (1, '1', 'A', True) else 0
+                # MPRO conserva exactamente su comportamiento previo (PermiteVentas=1
+                # en catálogo; la regla 0001 vive en analysis_mpro_canonical).
+                # SoftRestaurant toma la autoridad del tipo origen sincronizado.
+                if 'MPRO' in system_type.upper() or 'MANAGEMENT' in system_type.upper():
+                    permite_ventas = 1
+                else:
+                    permite_ventas = 1 if row.get('permite_ventas') in (1, '1', True) else 0
                 
                 cursor.execute("""
                     MERGE INTO Inventario_Almacenes AS target
@@ -1959,14 +1975,14 @@ def sync_almacenes_from_server(
                        AND target.SucursalID = source.SucursalID 
                        AND target.CodigoAlmacen = source.CodigoAlmacen
                     WHEN MATCHED THEN 
-                        UPDATE SET NombreAlmacen = %s, TipoAlmacen = %s, Activo = %s, FechaModificacion = GETDATE()
+                        UPDATE SET NombreAlmacen = %s, TipoAlmacen = %s, PermiteVentas = %s, Activo = %s, FechaModificacion = GETDATE()
                     WHEN NOT MATCHED THEN 
                         INSERT (EmpresaID, SucursalID, CodigoAlmacen, NombreAlmacen, TipoAlmacen, PermiteCompras, PermiteVentas, Activo, FechaAlta)
-                        VALUES (%s, %s, %s, %s, %s, 1, 1, %s, GETDATE());
+                        VALUES (%s, %s, %s, %s, %s, 1, %s, %s, GETDATE());
                 """, (
                     empresa_id, sucursal_id, codigo,
-                    nombre, tipo, activo,
-                    empresa_id, sucursal_id, codigo, nombre, tipo, activo
+                    nombre, tipo, permite_ventas, activo,
+                    empresa_id, sucursal_id, codigo, nombre, tipo, permite_ventas, activo
                 ))
                 records_synced += 1
             except Exception as e:
