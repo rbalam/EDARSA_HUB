@@ -1,0 +1,5 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake the canonical Universal Worker and consume the already-published RRHH Custodia Gate3B diagnostic READ_ONLY_SQL jobs in worker_queue/inbox. Do not clone, rename, modify, or re-emit them. Preserve original job_ids and requests. Require safe runtime convergence, fail closed on unsafe git state, and do not touch Production.",
+  "production_touched": false
+}
