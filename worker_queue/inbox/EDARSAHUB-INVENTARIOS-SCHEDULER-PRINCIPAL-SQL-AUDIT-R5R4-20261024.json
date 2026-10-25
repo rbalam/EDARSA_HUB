@@ -1,0 +1,39 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-SCHEDULER-PRINCIPAL-SQL-AUDIT-R5R4-20261024",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Auditar en READ_ONLY si el principal técnico SYS-SCHED-ALERTAS existe físicamente en SQL y qué rol, permisos y scopes tiene. Determinar si su contrato está acotado a Alertas y por tanto no debe reutilizarse para Inventarios. Validar específicamente si el servidor A5547321-1139-4D2B-9D53-182CA737B6B6 está dentro de su scope. No modificar SQL, permisos, código, email ni Producción.",
+  "mode":"READ_ONLY",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {
+          "name":"principal_identity",
+          "sql":"SELECT UsuarioID, CodigoUsuario, Username, Email, Nombre, Activo, Bloqueado, EsUsuarioPortal FROM dbo.Usuario_Catalogo WHERE CodigoUsuario = 'SYS-SCHED-ALERTAS' OR Username = 'SYS-SCHED-ALERTAS'"
+        },
+        {
+          "name":"principal_roles",
+          "sql":"SELECT ura.UsuarioID, r.RolID, r.CodigoRol, r.NombreRol, ura.EsPrincipal, ura.Activo FROM dbo.Usuario_RolesAsignacion ura JOIN dbo.Usuario_Roles r ON r.RolID = ura.RolID JOIN dbo.Usuario_Catalogo u ON u.UsuarioID = ura.UsuarioID WHERE u.CodigoUsuario = 'SYS-SCHED-ALERTAS' AND ISNULL(ura.Activo,1)=1"
+        },
+        {
+          "name":"principal_permissions",
+          "sql":"SELECT u.UsuarioID, r.CodigoRol, m.CodigoModulo, a.CodigoAccion, prm.Permitido, prm.RestriccionSucursal, prm.Activo FROM dbo.Usuario_Catalogo u JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID=u.UsuarioID AND ISNULL(ura.Activo,1)=1 JOIN dbo.Usuario_Roles r ON r.RolID=ura.RolID JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID=r.RolID AND ISNULL(prm.Activo,1)=1 JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID WHERE u.CodigoUsuario='SYS-SCHED-ALERTAS' AND ISNULL(prm.Permitido,0)=1"
+        },
+        {
+          "name":"principal_server_scope",
+          "sql":"SELECT u.UsuarioID, LOWER(CONVERT(varchar(36), usa.ServidorID)) AS ServidorID, usa.Activo FROM dbo.Usuario_Catalogo u JOIN dbo.Usuario_ServidoresAsignacion usa ON usa.UsuarioID=u.UsuarioID WHERE u.CodigoUsuario='SYS-SCHED-ALERTAS' AND ISNULL(usa.Activo,1)=1 ORDER BY ServidorID"
+        },
+        {
+          "name":"target_server_in_scope",
+          "sql":"SELECT u.UsuarioID, COUNT(usa.ServidorID) AS Matches FROM dbo.Usuario_Catalogo u LEFT JOIN dbo.Usuario_ServidoresAsignacion usa ON usa.UsuarioID=u.UsuarioID AND ISNULL(usa.Activo,1)=1 AND LOWER(CONVERT(varchar(36), usa.ServidorID))='a5547321-1139-4d2b-9d53-182ca737b6b6' WHERE u.CodigoUsuario='SYS-SCHED-ALERTAS' GROUP BY u.UsuarioID"
+        }
+      ]
+    }
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
