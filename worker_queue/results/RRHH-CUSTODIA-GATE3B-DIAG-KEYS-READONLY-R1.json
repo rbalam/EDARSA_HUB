@@ -1,0 +1,119 @@
+{
+  "base_sha": "f915cdd27b8133add1fba14ab385551b78bd39b0",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-25T17:18:56Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "RRHH-CUSTODIA-GATE3B-DIAG-KEYS-READONLY-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-25T17:22:57Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "schema_name",
+              "table_name",
+              "column_name",
+              "key_constraint",
+              "type_desc"
+            ],
+            "name": "keys",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                "dbo",
+                "ActivoFijo_Activos",
+                "ActivoID",
+                "PK_AF_Activos",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "Gobierno_Documento",
+                "DocumentoID",
+                "PK_Gobierno_Documento",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "Producto_Catalogo",
+                "ProductoID",
+                "PK_Producto_Catalogo",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "RH_Cat_Puestos",
+                "PuestoID",
+                "PK__Cat_Pues__F7F6C62469D9723E",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "RH_Colaboradores_Expediente",
+                "ColaboradorID",
+                "PK__RH_Colab__28AA72C1EFB9BD64",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "RH_Nomina_Detalle",
+                "NominaDetalleID",
+                "PK__RH_Nomin__5CD6A45A5DC028C8",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "Sistema_Empresas",
+                "EmpresaID",
+                "PK_Sistema_Empresas",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "Sistema_Sucursales",
+                "SucursalID",
+                "PK__Sistema___6CB482819D69E291",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "Unidades_Negocio",
+                "id",
+                "PK__Unidades__3213E83FD5638C07",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                "UsuarioID",
+                "PK_Usuario_Catalogo",
+                "PRIMARY_KEY_CONSTRAINT"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-25T17:18:53Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
