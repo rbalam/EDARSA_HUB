@@ -636,3 +636,11 @@ docs/reports/
 *.old
 auditorias_p*/
 auditorias_canonicas/
+
+# EDARSAHUB Preview local runtime artifacts (never version)
+# Manual gate launchers are preserved locally but must not dirty /app.
+/EJECUTAR_GATE_WORKER_UNICO*.sh
+# Emergent testing runtime is platform-generated.
+/.emergent/testing/.runtime/
+/.emergent/testing/browser_runs/**
+
