@@ -1,0 +1,33 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-WORKER-INGRESS-DEV-BOOTSTRAP-CANARY-R1",
+  "mode": "READ_ONLY",
+  "objective": "Verificar mediante un canario de solo lectura la ejecucion canonica del Universal Worker en Desarrollo. No modificar codigo, configuracion ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "WORKER-INGRESS-BOOTSTRAP",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-bootstrap"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS",
+    "conflict_domains": [
+      "WORKER_INGRESS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
