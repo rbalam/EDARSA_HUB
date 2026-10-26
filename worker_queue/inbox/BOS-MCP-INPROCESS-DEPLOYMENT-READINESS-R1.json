@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 500,
+        "paths": [
+          "backend/modules/worker_mcp",
+          "backend/server.py",
+          "backend/requirements.txt"
+        ],
+        "search_terms": [
+          "EDARSAHUB_MCP_INPROCESS",
+          "gateway_router",
+          "include_router",
+          "mcp==1.12.4",
+          "session_manager",
+          "32913"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-MCP-INPROCESS-DEPLOYMENT-READINESS-R1",
+  "mode": "READ_ONLY",
+  "objective": "Auditar la preparacion del despliegue MCP integrado en FastAPI. Verificar registro del router, ciclo de arranque, dependencias, configuracion y autenticacion. Identificar bloqueos y emitir recomendaciones sin modificar archivos ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
