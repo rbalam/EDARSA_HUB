@@ -2,6 +2,7 @@
 set -euo pipefail
 
 MIRROR_SYNC_GUARD="/app/tools/mirror_sync/mirror_sync_guard.sh"
+SHARED_APP_SAFETY_GUARD="/app/tools/mirror_sync/shared_app_safety_guard.sh"
 
 test -r "$MIRROR_SYNC_GUARD" || {
     echo "ABORT=MIRROR_SYNC_GUARD_MISSING"
@@ -10,6 +11,14 @@ test -r "$MIRROR_SYNC_GUARD" || {
 }
 
 . "$MIRROR_SYNC_GUARD"
+
+test -r "$SHARED_APP_SAFETY_GUARD" || {
+    echo "ABORT=SHARED_APP_SAFETY_GUARD_MISSING"
+    echo "WRITE_OPERATION_EXECUTED=NO"
+    exit 93
+}
+
+. "$SHARED_APP_SAFETY_GUARD"
 
 mirror_sync_require_enabled || exit $?
 mirror_sync_acquire_global_lock || exit $?
@@ -85,6 +94,18 @@ test "$STAGED_COUNT" -eq 0 || {
 echo
 echo "===== 3. BUILD ISOLATED SNAPSHOT ====="
 
+SYSTEM_DEPS_PATH=".emergent/system_deps.txt"
+if ! git diff --quiet -- "$SYSTEM_DEPS_PATH"; then
+    if edarsahub_expected_platform_system_deps_drift; then
+        echo "PLATFORM_MANAGED_SYSTEM_DEPS_DRIFT=EXCLUDED_FROM_SNAPSHOT"
+    else
+        echo "ABORT=UNEXPECTED_PLATFORM_MANAGED_SYSTEM_DEPS_DRIFT"
+        echo "WRITE_OPERATION_EXECUTED=NO"
+        echo "PRODUCTION_TOUCHED=NO"
+        exit 21
+    fi
+fi
+
 TMP_INDEX="$(mktemp)"
 
 cleanup() {
@@ -97,8 +118,9 @@ export GIT_INDEX_FILE="$TMP_INDEX"
 
 git read-tree "$LOCAL_HEAD"
 
-# Cambios de archivos ya versionados.
-git add -u
+# Cambios de archivos ya versionados. El archivo administrado por Emergent
+# se excluye solo del indice temporal; cualquier drift inesperado fue bloqueado antes.
+git add -u -- . ':(exclude).emergent/system_deps.txt'
 
 # Nuevos archivos permitidos dentro de áreas reales del proyecto.
 for PATHNAME in \
