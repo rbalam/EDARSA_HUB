@@ -147,6 +147,9 @@ def test_preview_entrypoints_use_managed_drift_contract():
     control = (
         ROOT / "tools" / "mirror_sync" / "worker_control_plane.py"
     ).read_text(encoding="utf-8")
+    publisher = (
+        ROOT / "tools" / "mirror_sync" / "publish_local_snapshot.sh"
+    ).read_text(encoding="utf-8")
 
     assert "edarsahub_expected_platform_system_deps_drift" in shared
     assert "edarsahub_effective_status" in mirror_start
@@ -154,3 +157,6 @@ def test_preview_entrypoints_use_managed_drift_contract():
     assert "_expected_platform_system_deps_drift" in wake
     assert "expected_platform_system_deps_drift" in watchdog
     assert "expected_platform_system_deps_drift" in control
+    assert "edarsahub_expected_platform_system_deps_drift" in publisher
+    assert "ABORT=UNEXPECTED_PLATFORM_MANAGED_SYSTEM_DEPS_DRIFT" in publisher
+    assert "':(exclude).emergent/system_deps.txt'" in publisher
