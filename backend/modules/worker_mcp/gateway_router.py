@@ -32,7 +32,15 @@ class _InProcessResponse(Response):
 @router.api_route("/.well-known/oauth-protected-resource/api/mcp", methods=["GET", "OPTIONS"])
 @router.api_route("/api/mcp/.well-known/oauth-protected-resource", methods=["GET", "OPTIONS"])
 async def mcp_protected_resource_metadata(request: Request):
-    """Publish the public MCP resource and canonical EDARSAHUB OAuth issuer."""
+    """Publish the public MCP resource and canonical EDARSAHUB OAuth issuer.
+
+    The gateway owns this public metadata because it knows the externally
+    reachable origin. The isolated MCP process remains responsible only for
+    MCP transport/tool execution; it must never advertise loopback URLs or
+    become a second OAuth authority. This keeps discovery canonical across
+    in-process and supervisor modes while preserving the same /api/mcp
+    resource boundary exposed to ChatGPT and other remote MCP clients.
+    """
     if request.method == "OPTIONS":
         return Response(status_code=204)
     origin = str(request.base_url).rstrip("/")
