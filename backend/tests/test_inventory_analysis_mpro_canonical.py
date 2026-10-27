@@ -106,9 +106,12 @@ def test_mpro_server_filters_show_complete_selectable_catalog():
     assert '"autorizado_analisis": True' in server_source
     assert "effective_mpro_inventory_codes" not in server_source
     assert "normalize_movement_codes" in server_source
-    assert "await api.get(`/servers/${serverId}`)" in frontend
+    assert "const response = await api.get('/servers')" in frontend
+    assert "const persistedServer = await readServerFiltersFromSql(serverId)" in frontend
+    assert "setFilterLoadError(" in frontend
+    assert "filterLoadError ? (" in frontend
     assert "setPersistedFiltersSnapshot(persistedFilters)" in frontend
-    assert "disabled={!persistedFiltersSnapshot || loadingOptions || savingFilters}" in frontend
+    assert "disabled={!persistedFiltersSnapshot || Boolean(filterLoadError) || loadingOptions || savingFilters}" in frontend
     assert "const changedKeys = filterKeys.filter(" in frontend
     assert "await api.put(`/servers/${selectedServer.id}`, payload)" in frontend
     assert "setPersistedFiltersSnapshot(null);" in frontend

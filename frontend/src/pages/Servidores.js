@@ -745,6 +745,7 @@ const Servidores = () => {
   const [departamentos, setDepartamentos] = useState([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
   const [savingFilters, setSavingFilters] = useState(false);
+  const [filterLoadError, setFilterLoadError] = useState(null);
   const [persistedFiltersSnapshot, setPersistedFiltersSnapshot] = useState(null);
   const configRequestTokenRef = useRef(0);
   
@@ -1145,6 +1146,23 @@ const Servidores = () => {
       : []
   );
 
+  // Lectura de la fuente SQL canonica bajo SERVIDORES_VER.
+  // El endpoint de lista usa el mismo registry SQL que administra Servidores;
+  // evita condicionar el modal al RBAC adicional de /servers/{id}.
+  const readServerFiltersFromSql = async (serverId) => {
+    const response = await api.get('/servers');
+    if (!Array.isArray(response.data)) {
+      throw new Error('El Server Registry SQL no devolvió una lista verificable');
+    }
+    const currentServer = response.data.find(
+      item => String(item.id || '').toLowerCase() === String(serverId).toLowerCase()
+    );
+    if (!currentServer || !Array.isArray(currentServer.tipos_movimiento)) {
+      throw new Error('El servidor o sus filtros no están disponibles en el registro SQL');
+    }
+    return currentServer;
+  };
+
   // La selección visible y la línea base para guardar provienen exclusivamente
   // del Server Registry SQL. No utilizar la fachada/lista de conexiones en caché.
   const normalizeServerFilters = (server) => ({
@@ -1156,11 +1174,11 @@ const Servidores = () => {
   const loadFilterOptions = async (serverId) => {
     const token = ++configRequestTokenRef.current;
     setLoadingOptions(true);
+    setFilterLoadError(null);
     setPersistedFiltersSnapshot(null);
     try {
-      const serverRes = await api.get(`/servers/${serverId}`);
+      const persistedServer = await readServerFiltersFromSql(serverId);
       if (token !== configRequestTokenRef.current) return;
-      const persistedServer = serverRes.data;
       if (!persistedServer || String(persistedServer.id).toLowerCase() !== String(serverId).toLowerCase()
         || !Array.isArray(persistedServer.tipos_movimiento)) {
         throw new Error('El servidor no devolvió una configuración SQL verificable');
@@ -1187,7 +1205,13 @@ const Servidores = () => {
       setCategorias([]);
       setDepartamentos([]);
       setPersistedFiltersSnapshot(null);
-      toast.error('No se pudo leer la selección guardada en SQL. Guardar está bloqueado para evitar pérdida de datos.');
+      const status = error.response?.status;
+      setFilterLoadError(
+        status
+          ? `No se pudo cargar la configuración SQL (HTTP ${status}). No se modificaron los filtros guardados.`
+          : 'No se pudo cargar la configuración SQL o sus catálogos. No se modificaron los filtros guardados.'
+      );
+      toast.error('Error leyendo Filtros desde SQL. No se borró la configuración guardada.');
     } finally {
       if (token === configRequestTokenRef.current) {
         setLoadingOptions(false);
@@ -1282,6 +1306,7 @@ const Servidores = () => {
     // Nunca mostrar ni guardar filtros procedentes de un registro en caché.
     setSelectedFilters({ tipos_movimiento: [], categorias: [], departamentos: [] });
     setPersistedFiltersSnapshot(null);
+    setFilterLoadError(null);
     setConfigDialogOpen(true);
     await loadFilterOptions(server.id);
   };
@@ -1304,8 +1329,7 @@ const Servidores = () => {
     setSavingFilters(true);
     try {
       // Evitar sobrescribir silenciosamente la selección de otra sesión.
-      const beforeResponse = await api.get(`/servers/${selectedServer.id}`);
-      const latestServer = beforeResponse.data || {};
+      const latestServer = await readServerFiltersFromSql(selectedServer.id);
       if (String(latestServer.id).toLowerCase() !== String(selectedServer.id).toLowerCase()) {
         throw new Error('No se pudo verificar el servidor antes de guardar');
       }
@@ -1334,7 +1358,7 @@ const Servidores = () => {
 
       let verifyResponse;
       try {
-        verifyResponse = await api.get(`/servers/${selectedServer.id}`);
+        verifyResponse = { data: await readServerFiltersFromSql(selectedServer.id) };
       } catch (error) {
         logger.error('No fue posible verificar la escritura del servidor:', error);
         // La escritura pudo completarse: bloquear cualquier reintento hasta
@@ -3870,6 +3894,23 @@ const Servidores = () => {
               <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
               <span className="ml-2 text-zinc-600">Cargando opciones...</span>
             </div>
+          ) : filterLoadError ? (
+            <div role="alert" className="flex flex-col gap-3 rounded-md border border-red-200 bg-red-50 p-4 text-red-900">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 shrink-0" />
+                <span>{filterLoadError}</span>
+              </div>
+              <p className="text-sm">No se reemplazaron ni eliminaron movimientos. La configuración sigue protegida.</p>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-fit"
+                onClick={() => selectedServer && loadFilterOptions(selectedServer.id)}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Reintentar carga
+              </Button>
+            </div>
           ) : (
             <Tabs defaultValue="tipos" className="flex-1 overflow-hidden flex flex-col">
               <TabsList className="grid w-full grid-cols-3">
@@ -4028,7 +4069,7 @@ const Servidores = () => {
                 </Button>
                 <Button 
                   onClick={saveFilters}
-                  disabled={!persistedFiltersSnapshot || loadingOptions || savingFilters}
+                  disabled={!persistedFiltersSnapshot || Boolean(filterLoadError) || loadingOptions || savingFilters}
                   className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800"
                   data-testid="save-filters-button"
                 >

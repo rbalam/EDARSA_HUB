@@ -81,6 +81,12 @@ def _normalize_connection(raw: Dict, source_contract: str) -> Dict:
         "port": raw.get("port"),
         "database_name": raw.get("database_name") or raw.get("database") or raw.get("sucursal_destino"),
         "username": raw.get("username"),
+        # La fachada administrativa debe conservar la configuracion de
+        # filtros SQL vigente. Son metadatos no secretos del Server Registry,
+        # no una politica de negocio ni una lista inferida en el frontend.
+        "tipos_movimiento": raw.get("tipos_movimiento") if isinstance(raw.get("tipos_movimiento"), list) else [],
+        "categorias": raw.get("categorias") if isinstance(raw.get("categorias"), list) else [],
+        "departamentos": raw.get("departamentos") if isinstance(raw.get("departamentos"), list) else [],
         "api_url": raw.get("api_url") or raw.get("url"),
         "sistema_version_id": raw.get("sistema_version_id"),
         "scope": {
