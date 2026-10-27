@@ -22,6 +22,7 @@ from core.sql_first.db import get_sql_connection
 from modules.auth.repository import AuthRepository
 
 from .oauth_discovery import MCP_SCOPES, authorization_metadata
+from .public_origin import PublicOriginError, public_https_origin
 from .oauth_pkce import (
     OAuthValidationError,
     validate_pkce_challenge,
@@ -57,7 +58,13 @@ def _now() -> datetime:
 
 
 def _public_origin(request: Request) -> str:
-    return str(request.base_url).rstrip("/")
+    try:
+        return public_https_origin(request)
+    except PublicOriginError as exc:
+        raise OAuthServerError(
+            "temporarily_unavailable",
+            status_code=503,
+        ) from exc
 
 
 def _issuer(request: Request) -> str:
