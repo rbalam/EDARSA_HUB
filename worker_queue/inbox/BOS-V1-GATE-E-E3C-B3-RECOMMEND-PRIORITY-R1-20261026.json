@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3C-B3-RECOMMEND-PRIORITY-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "05fed23d7feece65c2ab011eae36c7a2f46d7e19",
+  "production_allowed": false,
+  "objective": "E3C-B3: agregar recomendacion determinista desde ExecutivePriorityItem.",
+  "acceptance": [
+    "Sin evidencia retorna None.",
+    "Propaga risk, permissions y stale.",
+    "eligible_actions declarativas.",
+    "No Produccion."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No endpoints.",
+    "No E3D."
+  ],
+  "actions": [
+    {
+      "type": "append_once",
+      "path": "backend/modules/bos_executive/recommendation_service.py",
+      "source_sha256": "fff80445f1051da35bd164c6f421a303fa1f6a4f43ee588563204b932ce17cb8",
+      "replacement": "\n\ndef recommend_from_priority(\n    item: ExecutivePriorityItem,\n    *,\n    evidence_refs,\n    generated_at: str,\n    valid_until: str,\n    eligible_actions=(),\n) -> ExecutiveRecommendation | None:\n    evidence = _unique(evidence_refs)\n    if not item.source_object_ref or not evidence:\n        return None\n    rationale = \"; \".join(item.priority_score_explanation or (\"NO_PRIORITY_SIGNAL\",))\n    return ExecutiveRecommendation(\n        recommendation_id=_stable_id(\"PRIORITY\", item.source_domain, item.source_object_ref, item.priority_band.value, rationale, generated_at, valid_until),\n        recommendation_type=\"ADDRESS_PRIORITY\",\n        source_ref=item.source_object_ref,\n        title=f\"Atender prioridad {item.source_object_ref}\",\n        rationale=rationale,\n        evidence_refs=evidence,\n        expected_impact=item.impact or f\"Reducir exposicion asociada a {item.source_object_ref}\",\n        risk_level=_priority_risk(item.priority_band),\n        confidence_class=_priority_confidence(item),\n        generated_at=generated_at,\n        valid_until=valid_until,\n        required_permissions=_unique(item.permission_refs),\n        eligible_actions=_unique(eligible_actions),\n        human_confirmation_required=True,\n        stale=item.stale,\n        provenance_refs=evidence,\n    )\n",
+      "expected_occurrences": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/recommendation_service.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
