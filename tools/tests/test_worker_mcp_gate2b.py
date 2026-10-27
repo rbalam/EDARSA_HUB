@@ -13,6 +13,9 @@ from worker_mcp.config import (
     WorkerMcpConfigError,
 )
 
+ROOT = Path(__file__).resolve().parents[2]
+GATEWAY = ROOT / "backend/modules/worker_mcp/gateway_router.py"
+
 
 def _config() -> WorkerMcpConfig:
     return WorkerMcpConfig(
@@ -317,6 +320,15 @@ def test_status_exchanges_service_credential_before_canonical_read(
     assert result["lifecycle"] == "RESULT"
     assert len(calls) == 2
 
+
+
+def test_gateway_publishes_standard_and_legacy_protected_resource_metadata_routes():
+    text = GATEWAY.read_text(encoding="utf-8")
+    assert '"/.well-known/oauth-protected-resource/api/mcp"' in text
+    assert '"/api/mcp/.well-known/oauth-protected-resource"' in text
+    assert "protected_resource_metadata(" in text
+    assert "WorkerMcpConfig.from_env()" in text
+    assert 'MCP_METADATA_CONFIGURATION_UNAVAILABLE' in text
 
 def test_refresh_token_session_types_are_isolated_from_mcp_service():
     root = Path(__file__).resolve().parents[2]
