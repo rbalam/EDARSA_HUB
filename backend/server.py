@@ -10481,9 +10481,9 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
                  f"fechas={request.fecha_inicio}..{request.fecha_fin} almacenes={almacenes_limpios}")
 
     try:
-        if is_softrestaurant_system(server.get('system_type')):
-            return _obtener_detalle_softrestaurant_canonico(request, solo_ventas=False)
-
+        # SR y MPRO leen el mismo ledger canónico que alimenta MOVIMIENTOS.
+        # La ruta legacy Compras_Inventarios_Movimientos_Sync no garantiza
+        # correspondencia con el agregado de Inventario_MovimientosDetalle.
         conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
 
