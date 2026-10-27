@@ -34,7 +34,7 @@ jobs:
         run: python -m py_compile backend/core/inventarios/reconcile_mpro_ctrl1.py backend/tests/test_reconcile_mpro_ctrl1.py
       - name: Run deterministic no-SQL regression tests
         run: |
-          python -m pip install --quiet pytest
+          python -m pip install --quiet pytest python-dotenv
           cd backend
           PYTHONPATH=. python -m pytest -q tests/test_reconcile_mpro_ctrl1.py
       - name: Verify no forbidden synchronizers in patch
