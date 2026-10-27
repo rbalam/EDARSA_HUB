@@ -78,6 +78,42 @@ _CAPABILITIES: Mapping[str, DomainCapabilitySpec] = {
         data_classification=DataClassification.CONFIDENTIAL,
         tool_codes=('communications_read', 'ai_inference'),
     ),
+    'PURCHASE_ANALYZE': DomainCapabilitySpec(
+        code='PURCHASE_ANALYZE',
+        domain='COMPRAS',
+        procedure='purchase-analyze',
+        required_permission='COMPRAS_FACT_VER',
+        risk=RiskLevel.R1,
+        data_classification=DataClassification.CONFIDENTIAL,
+        tool_codes=('edarsahub_sql_read', 'compras_read'),
+    ),
+    'PURCHASE_PROPOSE': DomainCapabilitySpec(
+        code='PURCHASE_PROPOSE',
+        domain='COMPRAS',
+        procedure='purchase-propose',
+        required_permission='COMPRAS_FACT_VER',
+        risk=RiskLevel.R2,
+        data_classification=DataClassification.CONFIDENTIAL,
+        tool_codes=('edarsahub_sql_read', 'compras_read', 'ai_inference'),
+    ),
+    'INVENTORY_ANALYZE': DomainCapabilitySpec(
+        code='INVENTORY_ANALYZE',
+        domain='INVENTARIOS',
+        procedure='inventory-analyze',
+        required_permission='COMPRAS_INVENTARIOS_VER',
+        risk=RiskLevel.R1,
+        data_classification=DataClassification.CONFIDENTIAL,
+        tool_codes=('edarsahub_sql_read', 'inventory_read'),
+    ),
+    'INVENTORY_REPLENISHMENT_PROPOSE': DomainCapabilitySpec(
+        code='INVENTORY_REPLENISHMENT_PROPOSE',
+        domain='INVENTARIOS',
+        procedure='inventory-replenishment-propose',
+        required_permission='COMPRAS_INVENTARIOS_VER',
+        risk=RiskLevel.R2,
+        data_classification=DataClassification.CONFIDENTIAL,
+        tool_codes=('edarsahub_sql_read', 'inventory_read', 'compras_read', 'ai_inference'),
+    ),
 }
 
 
