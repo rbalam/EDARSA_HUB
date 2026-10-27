@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate6d-fiscal-status-seed-design-v1-20261026",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "fd718125a9a76680e693ac06096221cd44c9372c",
+  "objective": "COA Gate 6D. Diseñar exclusivamente el seed idempotente y reversible del catalogo dbo.Fiscal_DocumentosEmitidosEstatus para Development, basado en Gate 6C: BORRADOR, PENDIENTE_TIMBRADO, TIMBRADO, ERROR_TIMBRADO, CANCELACION_SOLICITADA, CANCELADO. No ejecutar SQL. No tocar Produccion. El seed debe fallar de forma segura ante colisiones semanticas por ID o Codigo, no sobrescribir filas existentes, insertar solo valores faltantes si no existe conflicto, y disponer de rollback conservador que solo elimine las filas canonicas si no estan referenciadas por dbo.Fiscal_DocumentosEmitidos. Generar scripts de migracion/rollback y dossier de auditoria. No modificar workflow.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/database/migrations/20261026_coa_fiscal_documentos_emitidos_estatus_seed.sql",
+      "content": "/*\nCOA Gate 6D - DESIGN ONLY\nSeed canonico de estados de CFDI emitidos.\nNO ejecutar fuera del canal controlado.\n*/\nSET NOCOUNT ON;\nSET XACT_ABORT ON;\n\nIF OBJECT_ID('dbo.Fiscal_DocumentosEmitidosEstatus','U') IS NULL\n    THROW 51000, 'COA_GATE6D_TARGET_TABLE_MISSING', 1;\n\nDECLARE @Seed TABLE (\n    EstatusDocumentoFiscalEmitidoID tinyint NOT NULL PRIMARY KEY,\n    Codigo varchar(30) NOT NULL UNIQUE,\n    Nombre nvarchar(200) NOT NULL,\n    Descripcion nvarchar(1000) NULL,\n    EsFinal bit NOT NULL,\n    Activo bit NOT NULL\n);\n\nINSERT INTO @Seed\n(EstatusDocumentoFiscalEmitidoID,Codigo,Nombre,Descripcion,EsFinal,Activo)\nVALUES\n(1,'BORRADOR',N'Borrador',N'Documento capturado o preparado, aun no enviado a timbrar.',0,1),\n(2,'PENDIENTE_TIMBRADO',N'Pendiente de timbrado',N'Listo para enviarse al proveedor de timbrado o esperando respuesta.',0,1),\n(3,'TIMBRADO',N'Timbrado',N'CFDI timbrado exitosamente; conserva su UUID y evidencia fiscal.',0,1),\n(4,'ERROR_TIMBRADO',N'Error de timbrado',N'Intento de timbrado rechazado o fallido; permite correccion y reintento.',0,1),\n(5,'CANCELACION_SOLICITADA',N'Cancelacion solicitada',N'Proceso de cancelacion iniciado y aun no confirmado como final.',0,1),\n(6,'CANCELADO',N'Cancelado',N'CFDI con cancelacion confirmada.',1,1);\n\nIF EXISTS (\n    SELECT 1\n    FROM @Seed s\n    JOIN dbo.Fiscal_DocumentosEmitidosEstatus t\n      ON t.EstatusDocumentoFiscalEmitidoID=s.EstatusDocumentoFiscalEmitidoID\n    WHERE t.Codigo<>s.Codigo\n       OR t.Nombre<>s.Nombre\n       OR ISNULL(t.Descripcion,N'')<>ISNULL(s.Descripcion,N'')\n       OR t.EsFinal<>s.EsFinal\n       OR t.Activo<>s.Activo\n)\n    THROW 51001, 'COA_GATE6D_ID_COLLISION', 1;\n\nIF EXISTS (\n    SELECT 1\n    FROM @Seed s\n    JOIN dbo.Fiscal_DocumentosEmitidosEstatus t\n      ON t.Codigo=s.Codigo\n    WHERE t.EstatusDocumentoFiscalEmitidoID<>s.EstatusDocumentoFiscalEmitidoID\n)\n    THROW 51002, 'COA_GATE6D_CODE_COLLISION', 1;\n\nINSERT INTO dbo.Fiscal_DocumentosEmitidosEstatus\n(EstatusDocumentoFiscalEmitidoID,Codigo,Nombre,Descripcion,EsFinal,Activo)\nSELECT s.EstatusDocumentoFiscalEmitidoID,s.Codigo,s.Nombre,s.Descripcion,s.EsFinal,s.Activo\nFROM @Seed s\nWHERE NOT EXISTS (\n    SELECT 1\n    FROM dbo.Fiscal_DocumentosEmitidosEstatus t\n    WHERE t.EstatusDocumentoFiscalEmitidoID=s.EstatusDocumentoFiscalEmitidoID\n);\n\nIF (SELECT COUNT(*) FROM dbo.Fiscal_DocumentosEmitidosEstatus WHERE EstatusDocumentoFiscalEmitidoID BETWEEN 1 AND 6) < 6\n    THROW 51003, 'COA_GATE6D_POSTCONDITION_FAILED', 1;\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/database/migrations/20261026_coa_fiscal_documentos_emitidos_estatus_seed_rollback.sql",
+      "content": "/*\nCOA Gate 6D - DESIGN ONLY\nRollback conservador del seed canonico.\n*/\nSET NOCOUNT ON;\nSET XACT_ABORT ON;\n\nIF OBJECT_ID('dbo.Fiscal_DocumentosEmitidosEstatus','U') IS NULL\n    THROW 51010, 'COA_GATE6D_TARGET_TABLE_MISSING', 1;\n\nIF EXISTS (\n    SELECT 1\n    FROM dbo.Fiscal_DocumentosEmitidos d\n    WHERE d.EstatusDocumentoFiscalEmitidoID IN (1,2,3,4,5,6)\n)\n    THROW 51011, 'COA_GATE6D_ROLLBACK_REFERENCED_ROWS', 1;\n\nDELETE FROM dbo.Fiscal_DocumentosEmitidosEstatus\nWHERE\n    (EstatusDocumentoFiscalEmitidoID=1 AND Codigo='BORRADOR') OR\n    (EstatusDocumentoFiscalEmitidoID=2 AND Codigo='PENDIENTE_TIMBRADO') OR\n    (EstatusDocumentoFiscalEmitidoID=3 AND Codigo='TIMBRADO') OR\n    (EstatusDocumentoFiscalEmitidoID=4 AND Codigo='ERROR_TIMBRADO') OR\n    (EstatusDocumentoFiscalEmitidoID=5 AND Codigo='CANCELACION_SOLICITADA') OR\n    (EstatusDocumentoFiscalEmitidoID=6 AND Codigo='CANCELADO');\n"
+    },
+    {
+      "type": "write_file",
+      "path": "docs/COA/COA_GATE6D_FISCAL_STATUS_SEED_DESIGN.md",
+      "content": "# COA Gate 6D - Seed design de estados de CFDI emitidos\n\n## Modo\nDESIGN ONLY. No ejecuta SQL.\n\n## Objetivo\nDefinir un seed idempotente, reversible y fail-safe para `dbo.Fiscal_DocumentosEmitidosEstatus`.\n\n## Estados\n1. BORRADOR\n2. PENDIENTE_TIMBRADO\n3. TIMBRADO\n4. ERROR_TIMBRADO\n5. CANCELACION_SOLICITADA\n6. CANCELADO\n\n## Reglas\n- No sobrescribir filas existentes.\n- Fallar ante colision por ID con semantica distinta.\n- Fallar ante colision por Codigo con ID distinto.\n- Insertar unicamente filas faltantes sin conflicto.\n- Mantener `Activo=1`.\n- Solo `CANCELADO` tiene `EsFinal=1`.\n- Rollback prohibido si existen documentos que referencien cualquiera de los seis IDs.\n- Rollback elimina solo pares ID/Codigo canonicos.\n- No modificar `EstatusSAT`.\n- No reutilizar catalogos de Compras/Proveedor.\n- Produccion fuera de alcance.\n\n## Siguiente gate\nGate 6E debe ser READ_ONLY_SQL y validar colisiones, filas existentes, referencias y estructura exacta antes de cualquier ejecucion fisica en Development.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
