@@ -1,0 +1,21 @@
+{
+  "certification": "NOT_CERTIFIED",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-CATALOGOS-MAESTROS-GATE-M1-SECURITY-DISCOVERY-R1",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-27T03:15:06Z",
+  "reasons": [
+    "INVALID_SCHEMA",
+    "ACTIONS_REQUIRED"
+  ],
+  "received_at_utc": "2026-10-27T03:13:31.059313+00:00",
+  "schema": "edarsahub.worker-rejection.v2",
+  "source": "worker_queue/inbox/BOS-CATALOGOS-MAESTROS-GATE-M1-SECURITY-DISCOVERY-R1.json",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "status": "REJECTED",
+  "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto.",
+  "work_completion": "NOT_CERTIFIED"
+}
