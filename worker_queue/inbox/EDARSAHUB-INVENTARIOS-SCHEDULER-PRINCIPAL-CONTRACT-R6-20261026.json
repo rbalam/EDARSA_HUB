@@ -1,0 +1,59 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-SCHEDULER-PRINCIPAL-CONTRACT-R6-20261026",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Definir en READ_ONLY el contrato mínimo canónico para un principal técnico dedicado al Scheduler de Inventarios. Verificar módulos/acciones RBAC existentes relacionados con INVENTARIOS, detectar cualquier principal técnico existente reutilizable específicamente para Inventarios, y auditar el scope necesario para los servidores/unidades que procesa el detector. No crear usuarios, roles, permisos, migraciones ni tocar Producción.",
+  "mode":"READ_ONLY",
+  "actions":[],
+  "checks":[
+    {
+      "type":"repository_contract_audit",
+      "request":{
+        "paths":[
+          "backend/core/auth/sql_user_identity.py",
+          "backend/core/scheduler/jobs/inventarios_detector_job.py",
+          "backend/core/inventory_analysis_core.py",
+          "backend/database/migrations",
+          "backend/tests"
+        ],
+        "search_terms":[
+          "INVENTARIOS",
+          "SCHEDULER_INVENTARIOS",
+          "SYS-SCHED",
+          "resolve_system_principal_current_user",
+          "Usuario_Modulos",
+          "Usuario_Acciones",
+          "Usuario_PermisosRolModulo",
+          "Usuario_ServidoresAsignacion",
+          "Usuario_SucursalesAsignacion"
+        ],
+        "max_results":150
+      }
+    },
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {
+          "name":"inventarios_modules",
+          "sql":"SELECT ModuloID, CodigoModulo, NombreModulo, Activo FROM dbo.Usuario_Modulos WHERE UPPER(CodigoModulo) LIKE '%INVENT%' OR UPPER(NombreModulo) LIKE '%INVENT%' ORDER BY ModuloID"
+        },
+        {
+          "name":"actions_catalog",
+          "sql":"SELECT AccionID, CodigoAccion, NombreAccion, Activo FROM dbo.Usuario_Acciones WHERE ISNULL(Activo,1)=1 ORDER BY AccionID"
+        },
+        {
+          "name":"existing_inventory_system_principals",
+          "sql":"SELECT UsuarioID, CodigoUsuario, Username, Nombre, Activo, Bloqueado, EsUsuarioPortal FROM dbo.Usuario_Catalogo WHERE UPPER(ISNULL(CodigoUsuario,'')) LIKE 'SYS-SCHED-%INVENT%' OR UPPER(ISNULL(Username,'')) LIKE 'SYS-SCHED-%INVENT%' ORDER BY UsuarioID"
+        },
+        {
+          "name":"inventory_roles",
+          "sql":"SELECT RolID, CodigoRol, NombreRol, Activo, NivelJerarquia FROM dbo.Usuario_Roles WHERE UPPER(CodigoRol) LIKE '%INVENT%' OR UPPER(NombreRol) LIKE '%INVENT%' ORDER BY RolID"
+        }
+      ]
+    }
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
