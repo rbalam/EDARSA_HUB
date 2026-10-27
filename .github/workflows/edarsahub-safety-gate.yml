@@ -75,6 +75,16 @@ jobs:
       - name: Safety regression tests
         shell: bash
         working-directory: backend
+        env:
+          # Exclusivamente placeholders CI; las pruebas no abren conexiones.
+          EDARSAHUB_SQL_HOST: ci.invalid
+          EDARSAHUB_SQL_PORT: "1433"
+          EDARSAHUB_SQL_DATABASE: EDARSAHUB_CI
+          EDARSAHUB_SQL_USER: ci_readonly
+          EDARSAHUB_SQL_PASSWORD: ci-not-a-real-secret
+          SERVER_SECRET_KEY: ci-openapi-smoke-only
+          JWT_SECRET: ci-jwt-smoke-only
+          ENV: development
         run: |
           set -euo pipefail
           python -m pytest -q \
