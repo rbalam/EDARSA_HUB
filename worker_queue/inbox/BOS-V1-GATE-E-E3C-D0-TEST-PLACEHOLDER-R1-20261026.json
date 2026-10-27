@@ -1,0 +1,40 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3C-D0-TEST-PLACEHOLDER-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "21374fed155f4a3d9076d05f866ff3e70fe570d3",
+  "production_allowed": false,
+  "objective": "E3C-D0: crear archivo minimo de pruebas E3C para completarlo en fragmentos atomicos.",
+  "acceptance": [
+    "Crear test_bos_executive_e3c.py.",
+    "No Produccion.",
+    "py_compile PASS."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No E3D."
+  ],
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_bos_executive_e3c.py",
+      "content": "# E3C_TESTS_V1\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_bos_executive_e3c.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
