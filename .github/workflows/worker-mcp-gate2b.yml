@@ -40,4 +40,4 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}/backend/modules
         run: |
-          python -m pytest             tools/tests/test_worker_mcp_gate2b.py             -q --tb=short
+          python -m pytest             tools/tests/test_worker_mcp_gate2b.py             backend/tests/test_worker_mcp_oauth_discovery.py             backend/tests/test_worker_mcp_oauth_pkce.py             backend/tests/test_worker_mcp_oauth_server_r1.py             -q --tb=short
