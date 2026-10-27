@@ -5238,6 +5238,7 @@ WHERE t._rn = 1
                 warehouses=activity_warehouses,
                 visible_product_codes=sorted(productos.keys()),
                 include_sales=soft_sales_enabled,
+                selected_movement_codes=server.get("tipos_movimiento") or [],
             )
             logging.info(
                 "[SOFT-CANONICAL-NOLIVE] actividad canonica movimientos=%s ventas=%s unidad=%s sales_enabled=%s",
@@ -5925,6 +5926,7 @@ GROUP BY Codigo
                     fecha_ini=fecha_ini,
                     fecha_fin=fecha_fin,
                     almacenes=almacenes or ([almacen] if almacen else []),
+                    selected_movement_codes=server.get("tipos_movimiento") or [],
                     categorias=filtro_categorias_frontend,
                     familias=filtro_familias_frontend,
                     subfamilias=filtro_subfamilias_frontend,
@@ -10499,6 +10501,7 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
                 fecha_ini=request.fecha_inicio,
                 fecha_fin=request.fecha_fin,
                 warehouses=almacenes_limpios,
+                selected_movement_codes=server.get("tipos_movimiento") or [],
             )
             return {
                 "movimientos": result["rows"],
@@ -10565,8 +10568,14 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
             filtro_almacen = f" AND al.CodigoAlmacen IN ({alm_ph}) "
             params += almacenes_limpios
 
+        from core.inventarios.movement_filter_config import movement_origin_sql_filter
+        origin_filter, origin_params = movement_origin_sql_filter(
+            server.get("tipos_movimiento") or []
+        )
+        params.extend(origin_params)
+
         query = f"""
-        SELECT TOP 1000
+        SELECT
             m.FechaMovimiento AS fecha,
             tm.Codigo AS concepto,
             tm.Descripcion AS descripcion_concepto,
@@ -10584,6 +10593,8 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
           AND m.FechaMovimiento < DATEADD(DAY, 1, CAST(%s AS DATE))
           {filtro_scope}
           {filtro_almacen}
+          AND ({origin_filter})
+          AND ISNULL(m.Activo,1)=1
         ORDER BY m.FechaMovimiento DESC
         """
         cursor.execute(query, tuple(params))
@@ -10620,40 +10631,8 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
             else:
                 totales["salidas"] += cantidad
 
-        # MPRO: el padre muestra Movimientos = ledger neto + Ventas para
-        # separar la salida por venta. Reproducir exactamente esa misma
-        # reclasificación en el detalle para que el neto cuadre con la celda.
-        if is_mpro_system(server.get('system_type')) and detalle_scope is not None:
-            warehouse_ids = {
-                str(value or "").strip().zfill(4)
-                for value in almacenes_limpios
-                if str(value or "").strip()
-            }
-            sales_enabled = (not warehouse_ids) or ("0001" in warehouse_ids)
-            if sales_enabled:
-                from core.inventarios.analysis_mpro_canonical import (
-                    get_mpro_sales_consumption_detail,
-                )
-                sales_detail = get_mpro_sales_consumption_detail(
-                    cursor,
-                    unidad_codigo=detalle_scope.unidad_codigo,
-                    server_id=request.server_id,
-                    componente_codigo=codigo_limpio,
-                    fecha_ini=request.fecha_inicio,
-                    fecha_fin=request.fecha_fin,
-                )
-                ventas_total = float(sales_detail.get("total") or 0)
-                if ventas_total:
-                    movimientos.append({
-                        "fecha": request.fecha_fin,
-                        "concepto": "RECLASIFICACION_VENTAS",
-                        "descripcion": "Separación canónica: consumo por ventas mostrado en columna VENTAS",
-                        "cantidad": ventas_total,
-                        "almacen": "0001",
-                        "referencia": "VENTAS",
-                        "tipo": "E",
-                    })
-                    totales["entradas"] += ventas_total
+        # VENTAS es una columna separada. No añadir reclasificaciones sintéticas
+        # al detalle de MOVIMIENTOS: su suma debe coincidir con el ledger filtrado.
 
         conn.close()
 
