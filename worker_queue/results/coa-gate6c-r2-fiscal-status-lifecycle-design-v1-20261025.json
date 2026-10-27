@@ -1,0 +1,27 @@
+{
+  "base_sha": "47d96ab2f53dabc9fb89c1740602e76c80871b88",
+  "blockers": [],
+  "candidate_sha": "fd718125a9a76680e693ac06096221cd44c9372c",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-10-27T03:34:33Z",
+  "development_sha": "fd718125a9a76680e693ac06096221cd44c9372c",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/COA/COA_GATE6C_FISCAL_STATUS_LIFECYCLE.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "coa-gate6c-r2-fiscal-status-lifecycle-design-v1-20261025",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-10-27T03:36:51Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-27T03:34:20Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
