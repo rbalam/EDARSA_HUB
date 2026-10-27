@@ -129,23 +129,16 @@ def test_soft_sync_prefixes_movsinv_natural_references():
     assert "'I:C:' + CAST(i.idcompra AS VARCHAR(24))" in movement_source
     assert "'I:F:' + CAST(i.invfisico AS VARCHAR(24))" in movement_source
 
-def test_soft_movement_sync_uses_server_authorized_origin_concepts():
+def test_soft_sync_retains_all_concepts_and_read_filter_controls_report():
     movement_source = (
         ROOT / "core" / "inventarios" / "sync_movimientos_canonico.py"
     ).read_text(encoding="utf-8")
-    job_source = (
-        ROOT / "core" / "scheduler" / "jobs" / "sync_compras_job.py"
-    ).read_text(encoding="utf-8")
-
-    # La configuración viene de la autoridad canónica por servidor.
-    assert "s.tipos_movimiento" in job_source
-    assert "'tipos_movimiento': server.get('tipos_movimiento', [])" in job_source
-
-    # Ambos motores filtran antes de homologar ConceptoOrigen -> TipoMovimientoID.
-    assert "tipos_movimiento_autorizados" in movement_source
-    assert "concepto_origen in tipos_movimiento_autorizados" in movement_source
-    assert "filtrados_no_autorizados" in movement_source
-    assert "effective_mpro_inventory_codes" in movement_source
+    source = SOFT.read_text(encoding="utf-8")
+    assert 'referencia_tipo = f"MOVIMIENTO_POS|{concepto_origen}"' in movement_source
+    assert "tipos_movimiento_autorizados" not in movement_source
+    assert "DELETE d" not in movement_source
+    assert "movement_origin_sql_filter(selected_movement_codes)" in source
+    assert "AND ({selected_filter})" in source
 
 
 def test_inventory_movement_authorization_does_not_touch_commercial_syncs():
@@ -175,14 +168,11 @@ def test_soft_movements_keep_resolvable_rows_when_some_are_pending():
     movement_source = (
         ROOT / "core" / "inventarios" / "sync_movimientos_canonico.py"
     ).read_text(encoding="utf-8")
-
     assert "PARTIAL_WITH_PENDING" in movement_source
     assert "No hay movimientos SoftRestaurant resolubles en la ventana" in movement_source
-    # La reconciliación destructiva existe exclusivamente para MPRO y sólo
-    # cuando no hay pendientes críticos; SoftRestaurant conserva upsert.
-    assert "if not is_softrestaurant and pendientes_criticos == 0:" in movement_source
-    assert "DELETE d" in movement_source
-    assert "LIKE 'MOVIMIENTO_POS%%'" in movement_source
+    assert "DELETE d" not in movement_source
+    assert "DELETE m" not in movement_source
+
 
 def test_inventory_owner_can_scope_softrestaurant_without_mpro():
     job_source = (
