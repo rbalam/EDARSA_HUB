@@ -4,7 +4,10 @@ from modules.bos_executive import (
     ConfidenceClass,
     ExecutiveFindingOutput,
     FindingStatus,
+    RecommendationRisk,
+    adapt_operational_task,
     recommend_from_finding,
+    recommend_from_priority,
 )
 
 
@@ -51,3 +54,34 @@ def test_e3c_finding_recommendation_is_deterministic():
     assert first.recommendation_id == second.recommendation_id
     assert first.eligible_actions == ("REQUEST_EXISTING_WORKFLOW",)
     assert first.human_confirmation_required is True
+
+
+def test_e3c_priority_requires_evidence_and_propagates_controls():
+    item = adapt_operational_task({
+        "id": "T-88",
+        "estado_sla": "VENCIDA",
+        "impacto": "riesgo_operativo_alto",
+        "permission_refs": ["OPERATIVO_VER", "OPERATIVO_ATENDER"],
+        "stale": True,
+    })
+    assert item is not None
+    missing = recommend_from_priority(
+        item,
+        evidence_refs=(),
+        generated_at="2026-10-27T00:00:00Z",
+        valid_until="2026-10-28T00:00:00Z",
+    )
+    assert missing is None
+    result = recommend_from_priority(
+        item,
+        evidence_refs=("workflow:tarea:T-88",),
+        generated_at="2026-10-27T00:00:00Z",
+        valid_until="2026-10-28T00:00:00Z",
+        eligible_actions=("REQUEST_EXISTING_WORKFLOW",),
+    )
+    assert result is not None
+    assert result.risk_level is RecommendationRisk.HIGH
+    assert result.required_permissions == ("OPERATIVO_VER", "OPERATIVO_ATENDER")
+    assert result.eligible_actions == ("REQUEST_EXISTING_WORKFLOW",)
+    assert result.human_confirmation_required is True
+    assert result.stale is True
