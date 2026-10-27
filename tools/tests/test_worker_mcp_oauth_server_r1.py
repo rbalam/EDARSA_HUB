@@ -55,6 +55,8 @@ def test_oauth_server_has_consent_dcr_token_and_rotation():
     assert 'grant_type == "refresh_token"' in text
     assert "validate_redirect_uri" in text
     assert "verify_pkce" in text
+    assert "_redirect_with_params" in text
+    assert "parse_qsl" in text
     assert "_consume_session_token(refresh_token, REFRESH_SESSION_TYPE)" in text
 
 
