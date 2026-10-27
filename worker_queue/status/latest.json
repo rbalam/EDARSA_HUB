@@ -1,10 +1,10 @@
 {
-  "ahead_count": 1,
-  "behind_count": 2,
+  "ahead_count": 0,
+  "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "DIVERGED",
+  "convergence_status": "SYNC",
   "development_sha": "61964ebff5be702cf62683ae38f09e8d99dfe85b",
-  "generated_at_utc": "2026-10-27T00:03:15Z",
+  "generated_at_utc": "2026-10-27T00:04:41Z",
   "history": {
     "done_total_local": 1581,
     "pending_total_local": 0,
@@ -15,7 +15,7 @@
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [],
-  "local_development_sha": "4586a7b4feae7a049808d5495592e1437bbf00f8",
+  "local_development_sha": "61964ebff5be702cf62683ae38f09e8d99dfe85b",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -29,15 +29,15 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-27T00:03:12Z",
-    "last_receive_utc": "2026-10-27T00:03:07Z",
+    "last_cycle_utc": "2026-10-27T00:04:35Z",
+    "last_receive_utc": "2026-10-27T00:04:30Z",
     "last_terminal_utc": "2026-10-26T03:42:12Z",
     "pid": "434",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "2291728e92975d6ffd1381af8ce13f6f4109e60c",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "4586a7b4feae7a049808d5495592e1437bbf00f8",
+      "development_sha": "61964ebff5be702cf62683ae38f09e8d99dfe85b",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
@@ -51,8 +51,8 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": true,
-      "worker_code_tree_sha": "2291728e92975d6ffd1381af8ce13f6f4109e60c"
+      "worker_code_tree_aligned": false,
+      "worker_code_tree_sha": "b299e6bfc6edff1125de5762c056e8280d421ae4"
     }
   },
   "schema": "edarsahub.worker-health.v3",
