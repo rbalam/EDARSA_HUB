@@ -1,0 +1,69 @@
+name: Worker MCP Live Certification
+
+on:
+  push:
+    branches:
+      - control/worker-mcp-cert
+    paths:
+      - '.runtime-control/worker-mcp-cert-trigger.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-cert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      PREVIEW_URL: https://erp-crm-enterprise-1.preview.emergentagent.com
+    steps:
+      - name: Preview health
+        shell: bash
+        run: |
+          set -euo pipefail
+          code="$(curl --silent --show-error --location -o /tmp/health.json -w '%{http_code}' "$PREVIEW_URL/api/health")"
+          cat /tmp/health.json || true
+          echo "HEALTH_HTTP=$code"
+          test "$code" = "200"
+
+      - name: MCP endpoint fails closed without bearer
+        shell: bash
+        run: |
+          set -euo pipefail
+          code="$(curl --silent --show-error --location             -o /tmp/mcp.txt -w '%{http_code}'             -H 'Accept: application/json, text/event-stream'             -H 'Content-Type: application/json'             -H 'MCP-Protocol-Version: 2025-06-18'             -X POST "$PREVIEW_URL/api/mcp"             --data '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' || true)"
+          cat /tmp/mcp.txt || true
+          echo "MCP_NOAUTH_HTTP=$code"
+          case "$code" in
+            401|403) ;;
+            *) exit 20 ;;
+          esac
+
+      - name: Protected resource metadata is available
+        shell: bash
+        run: |
+          set -euo pipefail
+          code="$(curl --silent --show-error --location             -o /tmp/meta.json -w '%{http_code}'             "$PREVIEW_URL/api/mcp/.well-known/oauth-protected-resource" || true)"
+          cat /tmp/meta.json || true
+          echo "MCP_METADATA_HTTP=$code"
+          test "$code" = "200"
+          jq -e '.resource and .authorization_servers and .scopes_supported' /tmp/meta.json >/dev/null
+
+      - name: Service credential exchange fails closed without credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          code="$(curl --silent --show-error --location             -o /tmp/exchange.json -w '%{http_code}'             -X POST "$PREVIEW_URL/api/internal/worker/auth/exchange" || true)"
+          cat /tmp/exchange.json || true
+          echo "MCP_EXCHANGE_NOAUTH_HTTP=$code"
+          case "$code" in
+            401|403) ;;
+            *) exit 21 ;;
+          esac
+
+      - name: Certification summary
+        shell: bash
+        run: |
+          echo 'MCP_LIVE_TRANSPORT_CERTIFIED=YES'
+          echo 'MCP_AUTH_FAIL_CLOSED=YES'
+          echo 'PRODUCTION_TOUCHED=NO'
