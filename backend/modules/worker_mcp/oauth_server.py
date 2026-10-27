@@ -10,7 +10,7 @@ import html
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import jwt
 from fastapi import APIRouter, HTTPException, Request, status
@@ -420,6 +420,19 @@ def _validated_authorization_request(
     }
 
 
+def _redirect_with_params(uri: str, params: dict[str, str]) -> str:
+    parts = urlsplit(uri)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    query.update({key: value for key, value in params.items() if value is not None})
+    return urlunsplit((
+        parts.scheme,
+        parts.netloc,
+        parts.path,
+        urlencode(query),
+        parts.fragment,
+    ))
+
+
 def _hidden(name: str, value: str) -> str:
     return (
         '<input type="hidden" name="'
@@ -510,7 +523,7 @@ async def oauth_authorize_submit(request: Request):
         query = {"error": "access_denied"}
         if state_value:
             query["state"] = state_value
-        return RedirectResponse(redirect_uri + "?" + urlencode(query), status_code=302)
+        return RedirectResponse(_redirect_with_params(redirect_uri, query), status_code=302)
 
     code = _sign(
         CODE_SESSION_TYPE,
