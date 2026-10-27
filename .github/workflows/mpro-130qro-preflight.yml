@@ -1,0 +1,44 @@
+name: MPRO 130QRO Reconciler Preflight Read Only
+on:
+  push:
+    branches:
+      - audit/mpro-130qro-source-probe-20261027
+    paths:
+      - ".github/workflows/mpro-130qro-preflight.yml"
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "HRLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q pymssql
+      - name: Audit ledger folio and reconciler required schema
+        run: |
+          python - <<'PY'
+          import os,json,pymssql
+          c=pymssql.connect(server=os.environ["EDARSAHUB_SQL_HOST"],port=1433,database="EDARSAHUB",user="HRLectura",password=os.environ["EDARSAHUB_SQL_PASSWORD"],as_dict=True)
+          try:
+            x=c.cursor(as_dict=True)
+            for label,query in [
+              ("HUB_FOLIOS", """SELECT m.MovimientoID, m.FolioReferencia, m.Activo, m.FechaMovimiento,d.Cantidad FROM dbo.Inventario_Movimientos m JOIN dbo.Inventario_MovimientosDetalle d ON d.MovimientoID=m.MovimientoID AND d.ProductoID=2014 WHERE m.MovimientoID IN (53898,53899,53903) ORDER BY m.MovimientoID"""),
+              ("TABLE_COLUMNS", """SELECT TABLE_NAME,COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Unidades_Negocio','Sistema_Empresas','Sistema_Sucursales','Producto_MapeoOrigen','Servidores_Conexiones') AND COLUMN_NAME IN ('codigo','activo','sucursal_origen_id','EmpresaID','SucursalID','Activo','ServerID','CodigoFuente','system_type','SystemType','password_encrypted','Pr_Unidad_Control_1','CodigoEmpresa') ORDER BY TABLE_NAME,COLUMN_NAME"""),
+              ("MAPPING", """SELECT TOP 10 CodigoFuente,ProductoID,ServerID,SystemType,Activo FROM dbo.Producto_MapeoOrigen WHERE ProductoID=2014""")
+            ]:
+              try:
+                x.execute(query)
+                print(label+"="+json.dumps(x.fetchall() or [],ensure_ascii=False,default=str))
+              except Exception as e:
+                print(label+"_ERROR="+str(e)[:250])
+          finally:
+            c.close()
+          PY
