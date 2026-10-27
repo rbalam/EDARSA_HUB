@@ -2,8 +2,11 @@
   "base_sha": "d392cc176a079d516b21b3f97c036f6ca64bb9b7",
   "blockers": [],
   "candidate_sha": "98557b1f6aea3c20ee7cca6c2b50680e75f77cb8",
-  "certification": "PENDING_AUDIT_EVIDENCE",
+  "certification": "CERTIFIED",
+  "certification_basis": "SHA_BOUND_ATTESTATION_PLUS_ARTIFACT_CONVERGENCE",
+  "certified_source_sha": "98557b1f6aea3c20ee7cca6c2b50680e75f77cb8",
   "completed_at_utc": "2026-10-27T01:15:53Z",
+  "converged_head": "98557b1f6aea3c20ee7cca6c2b50680e75f77cb8",
   "development_sha": "98557b1f6aea3c20ee7cca6c2b50680e75f77cb8",
   "executor": "chatgpt-deterministic",
   "files_changed": [
@@ -16,9 +19,9 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "BOS-V1-GATE-E-E3B-CROSS-DOMAIN-PRIORITY-AGGREGATOR-R2-20261026",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-10-27T01:16:51Z",
+  "published_at_utc": "2026-10-27T01:18:48Z",
   "quality_gate": "PASS",
   "repository_contract_evidence": {
     "checks": [
@@ -182,5 +185,5 @@
   "status": "INTEGRATED",
   "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
   "tests": "PASS",
-  "work_completion": "PENDING_CERTIFICATION"
+  "work_completion": "COMPLETE"
 }
