@@ -3,7 +3,14 @@ from decimal import Decimal
 
 import pytest
 
-from core.inventarios.reconcile_mpro_ctrl1 import build_reconciliation_plan
+import importlib.util
+from pathlib import Path
+
+MODULE_PATH = Path(__file__).resolve().parents[1] / "core/inventarios/reconcile_mpro_ctrl1.py"
+_spec = importlib.util.spec_from_file_location("reconcile_mpro_ctrl1_testable", MODULE_PATH)
+_module = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_module)
+build_reconciliation_plan = _module.build_reconciliation_plan
 
 
 def fixture_rows():
@@ -85,7 +92,7 @@ def test_fails_closed_on_noncertified_hub_value():
 def test_commercial_and_soft_sync_files_not_modified_by_this_feature():
     from pathlib import Path
 
-    root = Path(__file__).resolve().parents[2]
+    root = Path(__file__).resolve().parents[1]
     script = (root / "core/inventarios/reconcile_mpro_ctrl1.py").read_text()
     assert "sync_comercial_v2" not in script
     assert "sync_comercial_abiertas_v2" not in script
