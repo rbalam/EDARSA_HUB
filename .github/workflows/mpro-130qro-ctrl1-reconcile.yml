@@ -1,0 +1,93 @@
+name: MPRO 130QRO CTRL1 Reconciliation
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "audit (read-only) or apply (shared SQL write)"
+        required: true
+        default: audit
+        type: choice
+        options:
+          - audit
+          - apply
+      backup_verified:
+        description: "Type VERIFIED after validating a recoverable EDARSAHUB SQL backup (apply only)"
+        required: true
+        default: "NO"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inventory-mpro-130qro-ctrl1-reconciliation
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: DEVELOPMENT
+    env:
+      EDARSA_ENV: DEVELOPMENT
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: EDARSAHUB
+      EDARSAHUB_SQL_USER: HRLectura
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+      EDARSAHUB_SQL_WRITER_USER: ${{ secrets.EDARSAHUB_SQL_WRITER_USER }}
+      EDARSAHUB_SQL_WRITER_PASSWORD: ${{ secrets.EDARSAHUB_SQL_WRITER_PASSWORD }}
+      SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+      BACKUP_VERIFIED: ${{ inputs.backup_verified == 'VERIFIED' && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Fail closed on wrong branch or missing safeguards
+        shell: bash
+        env:
+          RUN_MODE: ${{ inputs.mode }}
+          BACKUP_INPUT: ${{ inputs.backup_verified }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/Edarsahub_Desarrollo"
+          test "$EDARSAHUB_SQL_DATABASE" = "EDARSAHUB"
+          test -n "$EDARSAHUB_SQL_PASSWORD"
+          test -n "$SERVER_SECRET_KEY"
+          if [[ "$RUN_MODE" == "apply" ]]; then
+            test "$BACKUP_INPUT" = "VERIFIED"
+            test -n "$EDARSAHUB_SQL_WRITER_USER"
+            test -n "$EDARSAHUB_SQL_WRITER_PASSWORD"
+            test "$EDARSAHUB_SQL_WRITER_USER" != "HRLectura"
+          else
+            test "$RUN_MODE" = "audit"
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install read and source connection dependencies
+        run: python -m pip install --quiet pymssql cryptography
+
+      - name: Audit source and canonical destination before any write
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: python -m core.inventarios.reconcile_mpro_ctrl1 audit
+
+      - name: Apply guarded reconciliation to shared SQL
+        if: ${{ inputs.mode == 'apply' && inputs.backup_verified == 'VERIFIED' }}
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: python -m core.inventarios.reconcile_mpro_ctrl1 apply
+
+      - name: Independently verify final state via read-only source
+        if: ${{ inputs.mode == 'apply' && inputs.backup_verified == 'VERIFIED' }}
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: python -m core.inventarios.reconcile_mpro_ctrl1 audit
