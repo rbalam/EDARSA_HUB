@@ -153,3 +153,27 @@ def test_mpro_report_and_drilldown_accept_same_warehouse_identifiers():
     assert "params.extend(almacenes_limpios)" in detail
     assert "if tipo in ('E', 'EN', 'ENTRADA')" in detail
     assert "cantidad if tipo in ('E', 'EN', 'ENTRADA') else -cantidad" in detail
+
+
+
+def test_mpro_movement_sync_uses_control_1_not_transaction_quantity():
+    """CTRL_1 must match Fisico.Fi_Cantidad_Control_1, including GR products."""
+    sync = (ROOT / "core" / "inventarios" / "sync_movimientos_canonico.py").read_text(
+        encoding="utf-8"
+    )
+    from core.inventarios.sync_movimientos_canonico import _query_origen
+
+    query = _query_origen("MPRO", 30, "0021")
+    assert "Mv_Cantidad_Control_1, 0) AS cantidad" in query
+    assert "Mv_Cantidad_1, 0) AS cantidad" not in query
+    assert "Sc_Cve_Sucursal = '0021'" in query
+    assert "Mv_Cantidad_Control_1" in sync
+    # No fixed factor of 1000: quantities are already in CTRL_1 from source.
+
+
+def test_soft_movement_sql_source_remains_independent_from_mpro_ctrl1():
+    from core.inventarios.sync_movimientos_canonico import _query_origen
+
+    soft_query = _query_origen("SOFTRESTAURANT", 30)
+    assert "FROM movsinv i" in soft_query
+    assert "Mv_Cantidad_Control_1" not in soft_query

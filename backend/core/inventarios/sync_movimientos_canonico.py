@@ -53,7 +53,7 @@ def _query_origen(system_type: str, dias_atras: int, sucursal_origen: str = None
                 CAST(Al_Cve_Almacen AS VARCHAR(50)) AS almacen_cod,
                 CAST(Tm_Cve_Tipo_Movimiento AS VARCHAR(50)) AS concepto,
                 CAST(Pr_Cve_Producto AS VARCHAR(50)) AS producto_cod,
-                ISNULL(Mv_Cantidad_1, 0) AS cantidad,
+                ISNULL(Mv_Cantidad_Control_1, 0) AS cantidad,
                 ISNULL(Mv_Costo, 0)      AS costo,
                 CAST(Mv_Documento AS VARCHAR(50)) AS folio
             FROM Movimiento
