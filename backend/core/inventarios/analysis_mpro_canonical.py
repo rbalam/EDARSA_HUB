@@ -16,6 +16,7 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 from core.inventarios.resolver_canonico import resolver_empresa_id, resolver_sucursal_id
 from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
+from core.inventarios.movement_filter_config import movement_origin_sql_filter
 
 
 @dataclass
@@ -260,6 +261,7 @@ def _fetch_ledger_net(
     fecha_ini: str,
     fecha_fin: str,
     warehouses: Sequence[str],
+    selected_movement_codes: Sequence[str] = (),
 ) -> Dict[str, float]:
     if not product_ids_by_code:
         return {}
@@ -274,6 +276,7 @@ def _fetch_ledger_net(
             )
         reverse[key] = code
 
+    selected_filter, selected_params = movement_origin_sql_filter(selected_movement_codes)
     pids = list(product_ids_by_code.values())
     totals: Dict[str, float] = defaultdict(float)
     for offset in range(0, len(pids), 400):
@@ -289,6 +292,7 @@ def _fetch_ledger_net(
             params.extend(warehouses)
             params.extend(warehouses)
 
+        params.extend(selected_params)
         cursor.execute(
             f"""
             SELECT d.ProductoID,
@@ -312,6 +316,7 @@ def _fetch_ledger_net(
               AND m.FechaMovimiento < DATEADD(day,1,CAST(%s AS date))
               AND ISNULL(m.Activo,1)=1
               AND d.ProductoID IN ({ph})
+              AND ({selected_filter})
               {warehouse_filter}
             GROUP BY d.ProductoID
             """,
@@ -600,6 +605,7 @@ def generate_mpro_inventory_analysis_canonical(
     fecha_ini: str,
     fecha_fin: str,
     almacenes: Sequence[Any],
+    selected_movement_codes: Sequence[str] = (),
     categorias: Sequence[Any] = (),
     familias: Sequence[Any] = (),
     subfamilias: Sequence[Any] = (),
@@ -701,6 +707,7 @@ def generate_mpro_inventory_analysis_canonical(
             fecha_ini=fecha_ini,
             fecha_fin=fecha_fin,
             warehouses=warehouses,
+            selected_movement_codes=selected_movement_codes,
         )
 
         if sales_enabled:
@@ -747,9 +754,10 @@ def generate_mpro_inventory_analysis_canonical(
             final = _float(fin.get(code, {}).get("cantidad"))
             sales = _float(sales_consumption.get(code))
             ledger = _float(ledger_net.get(code))
-            calc = _movement_display_and_theoretical(initial, ledger, sales)
-            movements = calc["movimientos"]
-            theoretical = calc["teorico"]
+            # MOVIMIENTOS responde exclusivamente a los conceptos origen elegidos.
+            # VENTAS se calcula de forma independiente, sin sumarse a MOVIMIENTOS.
+            movements = ledger
+            theoretical = initial + movements - sales
             difference = final - theoretical
 
             initial_cost = _float(ini.get(code, {}).get("costo"))

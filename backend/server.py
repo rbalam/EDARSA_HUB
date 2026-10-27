@@ -2097,18 +2097,13 @@ async def update_server(server_id: str, server_data: Dict, current_user: Dict = 
     if server_data.get("tipo_conexion") == "CORE":
         raise HTTPException(status_code=403, detail="No se puede cambiar el tipo de conexión a CORE desde UI")
 
-    # MPRO: tipos_movimiento está gobernado por la política canónica del
-    # Tablero Operativo de Inventarios. La UI puede seleccionar sólo esos
-    # códigos; el backend vuelve a intersectar para impedir AJUSTES u otros.
-    if is_mpro_system(existing.get("system_type")) and "tipos_movimiento" in server_data:
-        from core.inventarios.mpro_movement_policy import effective_mpro_inventory_codes
-
+    # La selección configurada por el usuario es autoridad para MPRO y SR.
+    # Guardar exactamente los códigos seleccionados (incluidos AJUSTES).
+    if "tipos_movimiento" in server_data:
+        from core.inventarios.movement_filter_config import normalize_movement_codes
         server_data = dict(server_data)
-        server_data["tipos_movimiento"] = sorted(
-            effective_mpro_inventory_codes(
-                server_data.get("tipos_movimiento") or [],
-                default_when_empty=True,
-            )
+        server_data["tipos_movimiento"] = normalize_movement_codes(
+            server_data.get("tipos_movimiento") or []
         )
 
     # Actualizar usando registry (SQL-first)
@@ -2889,10 +2884,6 @@ async def get_tipos_movimiento(server_id: str, current_user: Dict = Depends(get_
     # Inventario_ConceptoMapeoOrigen. La configuración guardada es selección,
     # NO debe limitar las opciones visibles del modal.
     if is_mpro_system(server.get('system_type')):
-        from core.inventarios.mpro_movement_policy import (
-            MPRO_INVENTORY_MOVEMENT_CODE_SET,
-            MPRO_INVENTORY_MOVEMENT_POLICY,
-        )
         conn = None
         try:
             conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=10)
@@ -2914,15 +2905,10 @@ async def get_tipos_movimiento(server_id: str, current_user: Dict = Depends(get_
                 codigo = str(row.get("codigo") or "").strip()
                 if not codigo:
                     continue
-                policy = MPRO_INVENTORY_MOVEMENT_POLICY.get(codigo)
-                descripcion = (
-                    policy.get("descripcion")
-                    if policy
-                    else str(row.get("descripcion_mapeo") or "").strip()
-                )
+                descripcion = str(row.get("descripcion_mapeo") or "").strip()
                 # El seed histórico guarda "MPRO <codigo> <desc> -> CANON".
                 # Mostrar en UI sólo la descripción fuente, conservando el catálogo DB.
-                if not policy and descripcion:
+                if descripcion:
                     prefix = f"MPRO {codigo} "
                     if descripcion.upper().startswith(prefix.upper()):
                         descripcion = descripcion[len(prefix):]
@@ -2933,13 +2919,13 @@ async def get_tipos_movimiento(server_id: str, current_user: Dict = Depends(get_
                     "codigo": codigo,
                     "descripcion": descripcion or codigo,
                     "tipo": "EN" if naturaleza in ("E","EN","ENTRADA") else "SA",
-                    "autorizado_analisis": codigo in MPRO_INVENTORY_MOVEMENT_CODE_SET,
+                    "autorizado_analisis": True,
                 })
             if result:
                 logging.info(
-                    "[GET_TIPOS_MOVIMIENTO][MPRO] catalogo=%s autorizados=%s",
+                    "[GET_TIPOS_MOVIMIENTO][MPRO] catalogo=%s seleccionados=%s",
                     len(result),
-                    sum(1 for item in result if item.get("autorizado_analisis")),
+                    len(server.get("tipos_movimiento") or []),
                 )
                 return result
         except Exception as exc:
@@ -5252,6 +5238,7 @@ WHERE t._rn = 1
                 warehouses=activity_warehouses,
                 visible_product_codes=sorted(productos.keys()),
                 include_sales=soft_sales_enabled,
+                selected_movement_codes=server.get("tipos_movimiento") or [],
             )
             logging.info(
                 "[SOFT-CANONICAL-NOLIVE] actividad canonica movimientos=%s ventas=%s unidad=%s sales_enabled=%s",
@@ -5939,6 +5926,7 @@ GROUP BY Codigo
                     fecha_ini=fecha_ini,
                     fecha_fin=fecha_fin,
                     almacenes=almacenes or ([almacen] if almacen else []),
+                    selected_movement_codes=server.get("tipos_movimiento") or [],
                     categorias=filtro_categorias_frontend,
                     familias=filtro_familias_frontend,
                     subfamilias=filtro_subfamilias_frontend,
@@ -10513,6 +10501,7 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
                 fecha_ini=request.fecha_inicio,
                 fecha_fin=request.fecha_fin,
                 warehouses=almacenes_limpios,
+                selected_movement_codes=server.get("tipos_movimiento") or [],
             )
             return {
                 "movimientos": result["rows"],
@@ -10579,8 +10568,14 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
             filtro_almacen = f" AND al.CodigoAlmacen IN ({alm_ph}) "
             params += almacenes_limpios
 
+        from core.inventarios.movement_filter_config import movement_origin_sql_filter
+        origin_filter, origin_params = movement_origin_sql_filter(
+            server.get("tipos_movimiento") or []
+        )
+        params.extend(origin_params)
+
         query = f"""
-        SELECT TOP 1000
+        SELECT
             m.FechaMovimiento AS fecha,
             tm.Codigo AS concepto,
             tm.Descripcion AS descripcion_concepto,
@@ -10598,6 +10593,8 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
           AND m.FechaMovimiento < DATEADD(DAY, 1, CAST(%s AS DATE))
           {filtro_scope}
           {filtro_almacen}
+          AND ({origin_filter})
+          AND ISNULL(m.Activo,1)=1
         ORDER BY m.FechaMovimiento DESC
         """
         cursor.execute(query, tuple(params))
@@ -10634,40 +10631,8 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
             else:
                 totales["salidas"] += cantidad
 
-        # MPRO: el padre muestra Movimientos = ledger neto + Ventas para
-        # separar la salida por venta. Reproducir exactamente esa misma
-        # reclasificación en el detalle para que el neto cuadre con la celda.
-        if is_mpro_system(server.get('system_type')) and detalle_scope is not None:
-            warehouse_ids = {
-                str(value or "").strip().zfill(4)
-                for value in almacenes_limpios
-                if str(value or "").strip()
-            }
-            sales_enabled = (not warehouse_ids) or ("0001" in warehouse_ids)
-            if sales_enabled:
-                from core.inventarios.analysis_mpro_canonical import (
-                    get_mpro_sales_consumption_detail,
-                )
-                sales_detail = get_mpro_sales_consumption_detail(
-                    cursor,
-                    unidad_codigo=detalle_scope.unidad_codigo,
-                    server_id=request.server_id,
-                    componente_codigo=codigo_limpio,
-                    fecha_ini=request.fecha_inicio,
-                    fecha_fin=request.fecha_fin,
-                )
-                ventas_total = float(sales_detail.get("total") or 0)
-                if ventas_total:
-                    movimientos.append({
-                        "fecha": request.fecha_fin,
-                        "concepto": "RECLASIFICACION_VENTAS",
-                        "descripcion": "Separación canónica: consumo por ventas mostrado en columna VENTAS",
-                        "cantidad": ventas_total,
-                        "almacen": "0001",
-                        "referencia": "VENTAS",
-                        "tipo": "E",
-                    })
-                    totales["entradas"] += ventas_total
+        # VENTAS es una columna separada. No añadir reclasificaciones sintéticas
+        # al detalle de MOVIMIENTOS: su suma debe coincidir con el ledger filtrado.
 
         conn.close()
 

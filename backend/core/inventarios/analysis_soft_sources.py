@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Sequence, Tuple
 
 from core.inventarios.resolver_canonico import resolver_empresa_id, resolver_sucursal_id
 from core.recetas_service import RecetasService
+from core.inventarios.movement_filter_config import movement_origin_sql_filter
 
 
 def _text(v: Any) -> str:
@@ -49,12 +50,14 @@ def _fetch_soft_ledger_net(
     fecha_fin,
     warehouses: Sequence[str],
     visible_product_codes: Sequence[str] = (),
+    selected_movement_codes: Sequence[str] = (),
 ) -> Dict[str, float]:
     empresa = resolver_empresa_id(unidad_codigo)
     sucursal = resolver_sucursal_id(server_id, sucursal_origen_id or None)
     if not empresa.resuelto or not sucursal.resuelto:
         return {}
 
+    selected_filter, selected_params = movement_origin_sql_filter(selected_movement_codes)
     visible_product_codes = _unique(visible_product_codes)
     preferred_order = ""
     preferred_params: List[Any] = []
@@ -89,6 +92,7 @@ def _fetch_soft_ledger_net(
         params.extend(warehouses)
         params.extend(warehouses)
 
+    params.extend(selected_params)
     cursor.execute(
         f"""
         SELECT
@@ -127,6 +131,7 @@ def _fetch_soft_ledger_net(
           AND ISNULL(m.Activo,1)=1
           AND alias.codigo_producto IS NOT NULL
           {warehouse_filter}
+          AND ({selected_filter})
         GROUP BY alias.codigo_producto
         """,
         tuple(params),
@@ -219,6 +224,7 @@ def fetch_soft_activity_canonical(
     warehouses: Sequence[str],
     visible_product_codes: Sequence[str] = (),
     include_sales: bool = True,
+    selected_movement_codes: Sequence[str] = (),
 ) -> Tuple[Dict[str, float], Dict[str, float]]:
     movimientos = _fetch_soft_ledger_net(
         cursor,
@@ -229,6 +235,7 @@ def fetch_soft_activity_canonical(
         fecha_fin=movement_end,
         warehouses=warehouses,
         visible_product_codes=visible_product_codes,
+        selected_movement_codes=selected_movement_codes,
     )
     if not include_sales:
         return movimientos, {}
@@ -316,6 +323,7 @@ def get_soft_movement_detail(
     fecha_ini,
     fecha_fin,
     warehouses: Sequence[str] = (),
+    selected_movement_codes: Sequence[str] = (),
 ) -> Dict[str, Any]:
     """Desglosa MOVIMIENTOS del mismo ledger y ventana exacta del reporte SR.
 
@@ -339,6 +347,7 @@ def get_soft_movement_detail(
         server_id,
         *codigos,
     ]
+    selected_filter, selected_params = movement_origin_sql_filter(selected_movement_codes)
     warehouses = _unique(warehouses)
     warehouse_filter = ""
     if warehouses:
@@ -351,6 +360,7 @@ def get_soft_movement_detail(
         params.extend(warehouses)
         params.extend(warehouses)
 
+    params.extend(selected_params)
     cursor.execute(
         f"""
         SELECT m.FechaMovimiento AS fecha,
@@ -382,6 +392,7 @@ def get_soft_movement_detail(
                 AND pmo.CodigoFuente IN ({",".join(["%s"] * len(codigos))})
           )
           {warehouse_filter}
+          AND ({selected_filter})
         ORDER BY m.FechaMovimiento DESC, m.MovimientoID DESC
         """,
         tuple(params),
