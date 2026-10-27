@@ -16720,10 +16720,6 @@ app.include_router(worker_ingress_router, prefix="/api")
 from modules.worker_mcp.gateway_router import router as worker_mcp_gateway_router
 app.include_router(worker_mcp_gateway_router)
 
-# Worker MCP OAuth Authorization Server: reuses EDARSAHUB auth/RBAC and dbo.Sesiones.
-from modules.worker_mcp.oauth_server import router as worker_mcp_oauth_router
-app.include_router(worker_mcp_oauth_router)
-
 # EDARSAHUB Universal Worker Console (Fase 1, solo lectura)
 from modules.worker_console.routes import router as worker_console_router
 app.include_router(worker_console_router, prefix="/api")
