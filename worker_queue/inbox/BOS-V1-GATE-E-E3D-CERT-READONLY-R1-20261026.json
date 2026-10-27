@@ -1,0 +1,78 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3D-CERT-READONLY-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "47d96ab2f53dabc9fb89c1740602e76c80871b88",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Certificar E3D Gate E: Authorized Action Bridge default-deny que reutiliza registry, RBAC/policy/procedure/execution gate y nunca ejecuta por si mismo.",
+  "acceptance": [
+    "E3A, E3B, E3C y E3D tests PASS.",
+    "Unknown capability y accion no elegible quedan DENIED.",
+    "Recomendacion expirada y RBAC deny quedan DENIED.",
+    "Capability allowlisted autorizada devuelve AUTHORIZED_NOT_EXECUTED y AGENT_HARNESS.",
+    "human confirmation y policy approval permanecen controles separados.",
+    "production_allowed permanece false y no existe ejecucion de domain tool en el bridge.",
+    "No archivos modificados; production_touched=false."
+  ],
+  "constraints": [
+    "READ_ONLY estricto.",
+    "actions vacio.",
+    "No Produccion.",
+    "No SQL.",
+    "No E3E/E3F."
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/__init__.py",
+        "backend/modules/bos_executive/action_bridge.py",
+        "backend/modules/bos_executive/action_bridge_contracts.py",
+        "backend/tests/test_bos_executive_e3d.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_bos_executive_e3a.py",
+        "backend/tests/test_bos_executive_e3b.py",
+        "backend/tests/test_bos_executive_e3c.py",
+        "backend/tests/test_bos_executive_e3d.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/bos_executive",
+          "backend/tests/test_bos_executive_e3d.py",
+          "backend/core/agent_capability_policy.py",
+          "backend/core/agent_procedure_policy.py",
+          "backend/core/agent_execution_gate.py",
+          "backend/modules/agent_harness/transversal_capability_registry.py"
+        ],
+        "search_terms": [
+          "authorize_recommended_action",
+          "CAPABILITY_NOT_REGISTERED",
+          "ACTION_NOT_ELIGIBLE",
+          "RECOMMENDATION_EXPIRED",
+          "REQUESTER_RBAC_DENIED",
+          "policy_approval_granted",
+          "authorize_internal_capability_execution",
+          "evaluate_procedure",
+          "AUTHORIZED_NOT_EXECUTED",
+          "AGENT_HARNESS"
+        ]
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
