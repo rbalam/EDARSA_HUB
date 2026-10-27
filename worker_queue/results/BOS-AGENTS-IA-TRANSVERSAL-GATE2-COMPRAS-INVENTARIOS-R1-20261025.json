@@ -1,0 +1,30 @@
+{
+  "base_sha": "b80c2150dfea2122f89e4d807cba1e05386cb3eb",
+  "blockers": [],
+  "candidate_sha": "8d7135bd4fbb4e616eefc03515b50214f983a35c",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-10-27T01:40:35Z",
+  "development_sha": "8d7135bd4fbb4e616eefc03515b50214f983a35c",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/agent_harness/inventory_adapter.py",
+    "backend/modules/agent_harness/purchases_adapter.py",
+    "backend/modules/agent_harness/transversal_capability_registry.py",
+    "backend/tests/test_bos_transversal_agent_compras_inventarios.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-AGENTS-IA-TRANSVERSAL-GATE2-COMPRAS-INVENTARIOS-R1-20261025",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-10-27T01:41:39Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-27T01:40:29Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
