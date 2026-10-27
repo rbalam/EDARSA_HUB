@@ -1,0 +1,83 @@
+{
+  "base_sha": "4b172ed137c067527ed4f05c9ca9341cc5f39ef4",
+  "blockers": [],
+  "candidate_sha": "3a5ee5ece6d7a8a0349ce24ca72a93f93805974d",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-10-27T03:28:29Z",
+  "development_sha": "3a5ee5ece6d7a8a0349ce24ca72a93f93805974d",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/bos_executive/action_bridge.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-V1-GATE-E-E3D-B3-AUTHORIZATION-BRIDGE-R1-20261026",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-10-27T03:58:53Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.bos_executive",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "action_bridge_contracts",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "core.agent_procedure_policy",
+              "datetime",
+              "hashlib",
+              "modules.agent_harness.transversal_capability_registry",
+              "recommendation_contracts",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "authorize_internal_capability_execution",
+              "authorize_recommended_action",
+              "authorized_not_executed",
+              "capability_not_registered",
+              "evaluate_procedure",
+              "get_domain_capability"
+            ],
+            "path": "backend/modules/bos_executive/action_bridge.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_audit_ref",
+              "_deny",
+              "_parse_time",
+              "_precondition_reasons",
+              "_requester_reasons",
+              "_unique",
+              "authorize_recommended_action"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 1,
+          "scanned_files": 1,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-27T03:28:14Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
