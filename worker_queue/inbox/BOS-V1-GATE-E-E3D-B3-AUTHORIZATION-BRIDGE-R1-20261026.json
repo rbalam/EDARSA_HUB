@@ -1,0 +1,66 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3D-B3-AUTHORIZATION-BRIDGE-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4b172ed137c067527ed4f05c9ca9341cc5f39ef4",
+  "production_allowed": false,
+  "objective": "E3D-B3: implementar autorizacion final recommendation -> eligible action -> capability/procedure policy -> execution gate, sin ejecutar.",
+  "acceptance": [
+    "Resolver exclusivamente capabilities allowlisted del transversal_capability_registry.",
+    "Reusar evaluate_procedure y authorize_internal_capability_execution.",
+    "PolicyRequest usa scopes solicitados, risk/data classification del registry y production_allowed=false.",
+    "policy_approval_granted separado de human confirmation.",
+    "Allowed devuelve AGENT_HARNESS + AUTHORIZED_NOT_EXECUTED; nunca ejecuta tools/domain services.",
+    "Unknown capability o policy deny termina DENIED.",
+    "py_compile PASS y production_touched=false."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No endpoints.",
+    "No executor.",
+    "No backend/core mutation.",
+    "No E3E/E3F."
+  ],
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/bos_executive/action_bridge.py",
+      "old": "    if spec.side_effect and spec.domain == \"FINANZAS\" and not request.financial_gate_approved:\n        reasons.append(\"FINANCIAL_GATE_REQUIRED\")\n    return _unique(tuple(reasons))\n",
+      "new": "    if spec.side_effect and spec.domain == \"FINANZAS\" and not request.financial_gate_approved:\n        reasons.append(\"FINANCIAL_GATE_REQUIRED\")\n    return _unique(tuple(reasons))\n\n\ndef authorize_recommended_action(\n    recommendation: ExecutiveRecommendation,\n    request: AuthorizedActionRequest,\n    requester_authorization: Mapping[str, object],\n    context: PolicyContext,\n) -> AuthorizedActionDecision:\n    try:\n        spec = get_domain_capability(request.action_type)\n    except CapabilityRegistryError:\n        return _deny(request, (\"CAPABILITY_NOT_REGISTERED\",))\n\n    reasons = list(_precondition_reasons(recommendation, request, spec))\n    reasons.extend(_requester_reasons(spec.required_permission, requester_authorization))\n    if reasons:\n        return _deny(\n            request,\n            reasons,\n            capability=spec.code,\n            procedure=spec.procedure,\n            required_permission=spec.required_permission,\n        )\n\n    policy_request = PolicyRequest(\n        capabilities=frozenset({spec.code}),\n        scopes=frozenset(request.acting_scopes),\n        risk=spec.risk,\n        data_classification=spec.data_classification,\n        budgets=BudgetRequest(),\n        external_egress=False,\n        production_allowed=False,\n        privilege_expansion=False,\n        approval_granted=request.policy_approval_granted,\n        procedure=spec.procedure,\n    )\n    procedure_spec = ProcedureSpec(\n        name=spec.procedure,\n        required_capabilities=frozenset({spec.code}),\n        max_risk=spec.risk,\n        external_egress_allowed=False,\n    )\n    procedure_decision = evaluate_procedure(procedure_spec, policy_request, context)\n    execution_gate = authorize_internal_capability_execution(\n        requester_authorization,\n        policy_request,\n        context,\n    )\n    reasons = _unique(procedure_decision.reasons + execution_gate.reasons)\n    if not procedure_decision.allowed or not execution_gate.allowed or reasons:\n        return _deny(\n            request,\n            reasons or (\"POLICY_DENIED\",),\n            capability=spec.code,\n            procedure=spec.procedure,\n            required_permission=spec.required_permission,\n        )\n\n    return AuthorizedActionDecision(\n        allowed=True,\n        reasons=(),\n        recommendation_id=request.recommendation_id,\n        action_type=request.action_type,\n        target_ref=request.target_ref,\n        capability=spec.code,\n        procedure=spec.procedure,\n        required_permission=spec.required_permission,\n        execution_channel=\"AGENT_HARNESS\",\n        idempotency_key=request.idempotency_key,\n        audit_ref=_audit_ref(request),\n        outcome_status=\"AUTHORIZED_NOT_EXECUTED\",\n    )\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/action_bridge.py",
+        "backend/modules/bos_executive/action_bridge_contracts.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/bos_executive/action_bridge.py"
+        ],
+        "search_terms": [
+          "authorize_recommended_action",
+          "get_domain_capability",
+          "evaluate_procedure",
+          "authorize_internal_capability_execution",
+          "AUTHORIZED_NOT_EXECUTED",
+          "CAPABILITY_NOT_REGISTERED"
+        ]
+      }
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
