@@ -1,0 +1,52 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3C-C1-EXPORTS-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4fef20c5894ecd32de6236412a1063f4ec48eb4e",
+  "production_allowed": false,
+  "objective": "E3C-C1: exponer contrato y servicios E3C desde backend.modules.bos_executive.",
+  "acceptance": [
+    "Exports E3C presentes sin alterar E3A/E3B.",
+    "py_compile PASS.",
+    "No Produccion."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No endpoints.",
+    "No E3D."
+  ],
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/bos_executive/__init__.py",
+      "old": "from .priority_service import aggregate_priorities\n",
+      "new": "from .priority_service import aggregate_priorities\nfrom .recommendation_contracts import ExecutiveRecommendation, RecommendationRisk\nfrom .recommendation_service import recommend_from_finding, recommend_from_priority\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/bos_executive/__init__.py",
+      "old": "    \"aggregate_priorities\",\n    \"explain_causal_finding\",\n",
+      "new": "    \"aggregate_priorities\",\n    \"ExecutiveRecommendation\",\n    \"RecommendationRisk\",\n    \"recommend_from_finding\",\n    \"recommend_from_priority\",\n    \"explain_causal_finding\",\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/__init__.py",
+        "backend/modules/bos_executive/recommendation_contracts.py",
+        "backend/modules/bos_executive/recommendation_service.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
