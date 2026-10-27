@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3C-D1-TESTS-FINDING-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "09cfbe03f51758802756fb481794b5f213814eff",
+  "production_allowed": false,
+  "objective": "E3C-D1: agregar pruebas de fail-closed y determinismo para recomendaciones desde findings.",
+  "acceptance": [
+    "Sin evidencia retorna None.",
+    "Mismos inputs producen misma recomendacion e ID.",
+    "Confirmacion humana y eligible_actions declarativas.",
+    "pytest PASS."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No E3D."
+  ],
+  "actions": [
+    {
+      "type": "append_once",
+      "path": "backend/tests/test_bos_executive_e3c.py",
+      "source_sha256": "940e432ac0298f2dd070d2e0fbf91762399348e0f524308463b5e195dff0451f",
+      "replacement": "\nfrom modules.bos_executive import (\n    ConfidenceClass,\n    ExecutiveFindingOutput,\n    FindingStatus,\n    recommend_from_finding,\n)\n\n\ndef _finding(**overrides):\n    values = {\n        \"finding_id\": \"finding-1\",\n        \"status\": FindingStatus.EXPLAINED,\n        \"claim\": \"Hecho observado\",\n        \"evidence_refs\": (\"sql:kpi:ventas\",),\n        \"contributing_factors\": (),\n        \"classification\": None,\n        \"confidence_class\": ConfidenceClass.DETERMINISTA,\n        \"as_of\": \"2026-10-26T23:59:59Z\",\n        \"stale\": False,\n        \"limitations\": (),\n        \"suggested_next_checks\": (),\n    }\n    values.update(overrides)\n    return ExecutiveFindingOutput(**values)\n\n\ndef test_e3c_finding_without_evidence_fails_closed():\n    finding = _finding(status=FindingStatus.NOT_ENOUGH_EVIDENCE, evidence_refs=(), confidence_class=None)\n    result = recommend_from_finding(\n        finding,\n        generated_at=\"2026-10-27T00:00:00Z\",\n        valid_until=\"2026-10-28T00:00:00Z\",\n        expected_impact=\"N/A\",\n    )\n    assert result is None\n\n\ndef test_e3c_finding_recommendation_is_deterministic():\n    kwargs = {\n        \"generated_at\": \"2026-10-27T00:00:00Z\",\n        \"valid_until\": \"2026-10-28T00:00:00Z\",\n        \"expected_impact\": \"Reducir desviacion\",\n        \"eligible_actions\": (\"REQUEST_EXISTING_WORKFLOW\", \"REQUEST_EXISTING_WORKFLOW\"),\n    }\n    first = recommend_from_finding(_finding(), **kwargs)\n    second = recommend_from_finding(_finding(), **kwargs)\n    assert first is not None and second is not None\n    assert first == second\n    assert first.recommendation_id == second.recommendation_id\n    assert first.eligible_actions == (\"REQUEST_EXISTING_WORKFLOW\",)\n    assert first.human_confirmation_required is True\n",
+      "expected_occurrences": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_bos_executive_e3c.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_bos_executive_e3c.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
