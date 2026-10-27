@@ -10565,8 +10565,15 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
         filtro_almacen = ""
         if almacenes_limpios:
             alm_ph = ", ".join(["%s"] * len(almacenes_limpios))
-            filtro_almacen = f" AND al.CodigoAlmacen IN ({alm_ph}) "
-            params += almacenes_limpios
+            # Paridad con el reporte MPRO: aceptar id canónico, código
+            # o nombre visible, sin mezclar otras unidades/sucursales.
+            filtro_almacen = (
+                f" AND (CONVERT(varchar(50), al.AlmacenID) IN ({alm_ph}) "
+                f"OR al.CodigoAlmacen IN ({alm_ph}) OR al.NombreAlmacen IN ({alm_ph})) "
+            )
+            params.extend(almacenes_limpios)
+            params.extend(almacenes_limpios)
+            params.extend(almacenes_limpios)
 
         from core.inventarios.movement_filter_config import movement_origin_sql_filter
         origin_filter, origin_params = movement_origin_sql_filter(
@@ -10621,12 +10628,12 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
                 "fecha": r['fecha'].isoformat() if hasattr(r['fecha'], 'isoformat') else str(r['fecha']),
                 "concepto": concepto_visible,
                 "descripcion": descripcion_visible,
-                "cantidad": cantidad if tipo == 'E' else -cantidad,
+                "cantidad": cantidad if tipo in ('E', 'EN', 'ENTRADA') else -cantidad,
                 "almacen": r['almacen'] or '',
                 "referencia": str(r['referencia'] or ''),
                 "tipo": tipo
             })
-            if tipo == 'E':
+            if tipo in ('E', 'EN', 'ENTRADA'):
                 totales["entradas"] += cantidad
             else:
                 totales["salidas"] += cantidad
