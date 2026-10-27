@@ -1,0 +1,74 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-CONTROL-PLANE-HARDENING-R3-CERT-READONLY-R1-20261025",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "f915cdd27b8133add1fba14ab385551b78bd39b0",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Certificar en solo lectura el hardening ya integrado del Universal Worker: control-plane wake sin commits en Development, preferred job preservation, SAFE_REPLAY fail-closed ante remote movement y publicacion de rechazos de intake.",
+  "acceptance": [
+    "El hardening R3 sigue presente en el HEAD actual.",
+    "Los contratos de control plane, concurrencia y result publisher pasan.",
+    "No se modifica ningun archivo.",
+    "No se toca Produccion.",
+    "Resultado terminal READ_ONLY_COMPLETE con CERTIFIED_READ_ONLY, quality_gate PASS y tests PASS."
+  ],
+  "constraints": [
+    "READ_ONLY estricto.",
+    "actions vacio.",
+    "No SQL.",
+    "No Produccion.",
+    "No commits, pushes ni cambios de archivos."
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "backend/tests/test_universal_worker_control_plane_hardening_r1.py",
+        "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_universal_worker_control_plane_hardening_r1.py",
+        "backend/tests/test_universal_worker_deterministic_replay_concurrency.py",
+        "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py",
+        "backend/tests/test_universal_job_result_publisher_queue_retry.py",
+        "backend/tests/test_git_divergence_guard_r1.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          ".github/workflows/worker-runtime-recovery-probe.yml",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "docs/operacion/WORKER_JOB_EXECUTION_PROTOCOL.md",
+          "backend/tests/test_universal_worker_control_plane_hardening_r1.py",
+          "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py"
+        ],
+        "search_terms": [
+          "SAFE_REPLAY",
+          "CONCURRENT_SCOPE_CONFLICT",
+          "publishable_paths",
+          "workflow_dispatch",
+          "schedule",
+          "Worker Requests Wake",
+          "No crear commits de wake en `Edarsahub_Desarrollo`"
+        ]
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
