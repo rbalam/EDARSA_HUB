@@ -111,6 +111,8 @@ def test_mpro_server_filters_show_complete_selectable_catalog():
     assert "disabled={!persistedFiltersSnapshot || loadingOptions || savingFilters}" in frontend
     assert "const changedKeys = filterKeys.filter(" in frontend
     assert "await api.put(`/servers/${selectedServer.id}`, payload)" in frontend
+    assert "setPersistedFiltersSnapshot(null);" in frontend
+    assert "La lectura posterior no permitió verificar el servidor y sus movimientos" in frontend
     assert "autorizado_analisis === false" not in frontend
     assert "No participa en análisis" not in frontend
 
