@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3C-B2-RECOMMEND-FINDING-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "cf7b555dd9f9afd60e7a2f708a5379827ba09484",
+  "production_allowed": false,
+  "objective": "E3C-B2: agregar recomendacion determinista desde ExecutiveFindingOutput.",
+  "acceptance": [
+    "Sin evidencia o finding no explicado retorna None.",
+    "ID estable y explicable.",
+    "eligible_actions declarativas.",
+    "No Produccion."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No endpoints.",
+    "No E3D."
+  ],
+  "actions": [
+    {
+      "type": "append_once",
+      "path": "backend/modules/bos_executive/recommendation_service.py",
+      "source_sha256": "c7c9b0c73a618ee3233105a0be9a1d59a1f218548919e295fe80ac724c68ba23",
+      "replacement": "\n\ndef recommend_from_finding(\n    finding: ExecutiveFindingOutput,\n    *,\n    generated_at: str,\n    valid_until: str,\n    expected_impact: str,\n    required_permissions=(),\n    eligible_actions=(),\n) -> ExecutiveRecommendation | None:\n    if finding.status is not FindingStatus.EXPLAINED or not finding.evidence_refs or finding.confidence_class is None:\n        return None\n    evidence = _unique(finding.evidence_refs)\n    return ExecutiveRecommendation(\n        recommendation_id=_stable_id(\"FINDING\", finding.finding_id, finding.claim, generated_at, valid_until),\n        recommendation_type=\"ADDRESS_FINDING\",\n        source_ref=f\"finding:{finding.finding_id}\",\n        title=f\"Atender hallazgo {finding.finding_id}\",\n        rationale=finding.claim,\n        evidence_refs=evidence,\n        expected_impact=expected_impact,\n        risk_level=RecommendationRisk.MEDIUM,\n        confidence_class=finding.confidence_class,\n        generated_at=generated_at,\n        valid_until=valid_until,\n        required_permissions=_unique(required_permissions),\n        eligible_actions=_unique(eligible_actions),\n        human_confirmation_required=True,\n        stale=finding.stale,\n        provenance_refs=evidence,\n    )\n",
+      "expected_occurrences": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/recommendation_service.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
