@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3C-B0-SERVICE-PLACEHOLDER-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "f66659ef419848debdba69b6c9c347ff67248f54",
+  "production_allowed": false,
+  "objective": "E3C-B0: crear placeholder minimo del servicio determinista de recomendaciones BOS.",
+  "acceptance": [
+    "Crear recommendation_service.py con marcador E3C.",
+    "No Produccion.",
+    "Checks PASS."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No endpoints.",
+    "No E3D."
+  ],
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/bos_executive/recommendation_service.py",
+      "content": "# E3C_RECOMMENDATION_SERVICE_V1\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/recommendation_service.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
