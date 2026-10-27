@@ -1,0 +1,29 @@
+{
+  "base_sha": "a7e5a564e5cba21e4aa22c4d7564bfffb4d09a69",
+  "blockers": [],
+  "candidate_sha": "823b425cff31f283b053854eb0db4b2b11b68ac2",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-10-27T15:52:14Z",
+  "development_sha": "823b425cff31f283b053854eb0db4b2b11b68ac2",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/database/migrations/20261026_coa_fiscal_documentos_emitidos_estatus_seed.sql",
+    "backend/database/migrations/20261026_coa_fiscal_documentos_emitidos_estatus_seed_rollback.sql",
+    "docs/COA/COA_GATE6D_FISCAL_STATUS_SEED_DESIGN.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "coa-gate6d-fiscal-status-seed-design-v1-20261026",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-10-27T15:53:29Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-27T15:52:07Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
