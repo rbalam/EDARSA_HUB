@@ -1,0 +1,56 @@
+name: Audit 130QRO MPRO Ledger Readonly 20261027
+on:
+  push:
+    branches:
+      - audit/mpro-130qro-ledger-20261027
+    paths:
+      - .github/workflows/audit-130qro-mpro-ledger-readonly.yml
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    env:
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "HRLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --quiet pymssql
+      - name: SELECT-only actual SQL values
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os, json, pymssql
+          c = pymssql.connect(server=os.environ["EDARSAHUB_SQL_HOST"], port=int(os.environ["EDARSAHUB_SQL_PORT"]), database=os.environ["EDARSAHUB_SQL_DATABASE"], user=os.environ["EDARSAHUB_SQL_USER"], password=os.environ["EDARSAHUB_SQL_PASSWORD"], as_dict=True, login_timeout=15, timeout=30)
+          try:
+              cur=c.cursor(as_dict=True)
+              cur.execute("SELECT DB_NAME() AS base, SUSER_SNAME() AS login, USER_NAME() AS usuario")
+              identity=cur.fetchone()
+              if identity["base"] != "EDARSAHUB" or identity["login"] != "HRLectura":
+                  raise RuntimeError("IDENTIDAD_LECTORA_INVALIDA")
+              cur.execute("""
+              SELECT m.MovimientoID, CONVERT(VARCHAR(10),m.FechaMovimiento,120) fecha,
+                     m.EmpresaID, m.SucursalID, d.ProductoID,
+                     a.CodigoAlmacen, m.ReferenciaTipo, t.Naturaleza,
+                     d.Cantidad
+              FROM dbo.Inventario_Movimientos m
+              JOIN dbo.Inventario_MovimientosDetalle d ON d.MovimientoID=m.MovimientoID
+              JOIN dbo.Inventario_Almacenes a ON a.AlmacenID=m.AlmacenID
+              JOIN dbo.Inventario_TipoMovimiento t ON t.TipoMovimientoID=m.TipoMovimientoID
+              WHERE m.MovimientoID IN (53898,53899,53903) AND d.ProductoID=2014
+              ORDER BY m.MovimientoID
+              """)
+              rows=cur.fetchall()
+              print("IDENTIDAD_SQL="+json.dumps(identity))
+              print("MOVIMIENTOS_SQL="+json.dumps(rows,default=str))
+              print("TOTAL_SQL="+str(sum(float(r["Cantidad"]) for r in rows)))
+              print("NUMERO_FILAS="+str(len(rows)))
+          finally:
+              c.close()
+          PY
