@@ -1,0 +1,57 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3E-A1-BOS-EXECUTIVE-PANEL-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "fd718125a9a76680e693ac06096221cd44c9372c",
+  "production_allowed": false,
+  "objective": "E3E-A1: crear componente presentacional BOS reusable para Tablero Ejecutivo, sin fetch propio ni ejecución de acciones.",
+  "acceptance": [
+    "BosExecutivePanel renderiza why/priorities/recommendation/eligible_actions solo si recibe contrato BOS.",
+    "No contiene fetch, api calls, botones de ejecución ni handlers de acciones.",
+    "Muestra stale cuando corresponda y declara que acciones requieren autorización.",
+    "frontend_build PASS y production_touched=false."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No endpoint nuevo.",
+    "No fuente de verdad nueva.",
+    "No autoejecucion.",
+    "No E3F."
+  ],
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "frontend/src/components/bos/BosExecutivePanel.jsx",
+      "content": "import React from 'react';\n\nconst valueOrDash = (value) => (\n  value === null || value === undefined || value === '' ? '—' : String(value)\n);\n\nconst BosExecutivePanel = ({ bos }) => {\n  if (!bos || typeof bos !== 'object') return null;\n\n  const finding = bos.finding || null;\n  const priorities = Array.isArray(bos.priorities)\n    ? bos.priorities\n    : Array.isArray(bos.priority_items)\n      ? bos.priority_items\n      : [];\n  const recommendation = bos.recommendation || null;\n  const actionDecisions = Array.isArray(bos.action_decisions)\n    ? bos.action_decisions\n    : [];\n  const eligibleActions = Array.isArray(recommendation?.eligible_actions)\n    ? recommendation.eligible_actions\n    : [];\n\n  if (!finding && priorities.length === 0 && !recommendation && actionDecisions.length === 0) {\n    return null;\n  }\n\n  return (\n    <section\n      className=\"rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-4\"\n      data-testid=\"bos-executive-panel\"\n      aria-label=\"Inteligencia ejecutiva BOS\"\n    >\n      <div>\n        <h2 className=\"text-base font-semibold text-slate-900\">Inteligencia BOS</h2>\n        <p className=\"text-xs text-slate-500\">\n          Evidencia, prioridades y recomendaciones. Las acciones mostradas no se ejecutan automáticamente.\n        </p>\n      </div>\n\n      {finding && (\n        <div data-testid=\"bos-why\">\n          <p className=\"text-xs font-semibold uppercase tracking-wide text-slate-500\">Por qué ocurre</p>\n          <p className=\"text-sm text-slate-800 mt-1\">{valueOrDash(finding.claim)}</p>\n          {(finding.stale || bos.stale) && (\n            <p className=\"text-xs text-amber-700 mt-1\">Evidencia marcada como desactualizada.</p>\n          )}\n        </div>\n      )}\n\n      {priorities.length > 0 && (\n        <div data-testid=\"bos-priorities\">\n          <p className=\"text-xs font-semibold uppercase tracking-wide text-slate-500\">Qué debe atenderse</p>\n          <div className=\"mt-2 space-y-2\">\n            {priorities.map((item, index) => (\n              <div key={item.source_object_ref || item.priority_item_id || index} className=\"rounded border bg-white p-2\">\n                <div className=\"flex flex-wrap items-center justify-between gap-2\">\n                  <span className=\"text-sm font-medium text-slate-800\">\n                    {valueOrDash(item.title || item.source_object_ref)}\n                  </span>\n                  <span className=\"text-xs font-semibold text-slate-600\">\n                    {valueOrDash(item.priority_band)}\n                  </span>\n                </div>\n                {(item.sla_state || item.due_at || item.impact) && (\n                  <p className=\"text-xs text-slate-500 mt-1\">\n                    {[item.sla_state, item.due_at, item.impact].filter(Boolean).join(' • ')}\n                  </p>\n                )}\n              </div>\n            ))}\n          </div>\n        </div>\n      )}\n\n      {recommendation && (\n        <div data-testid=\"bos-recommendation\">\n          <p className=\"text-xs font-semibold uppercase tracking-wide text-slate-500\">Qué recomienda BOS</p>\n          <p className=\"text-sm font-medium text-slate-900 mt-1\">{valueOrDash(recommendation.title)}</p>\n          <p className=\"text-sm text-slate-700 mt-1\">{valueOrDash(recommendation.rationale)}</p>\n          {recommendation.expected_impact && (\n            <p className=\"text-xs text-slate-500 mt-1\">\n              Impacto esperado: {recommendation.expected_impact}\n            </p>\n          )}\n        </div>\n      )}\n\n      {eligibleActions.length > 0 && (\n        <div data-testid=\"bos-eligible-actions\">\n          <p className=\"text-xs font-semibold uppercase tracking-wide text-slate-500\">Acciones elegibles</p>\n          <div className=\"mt-2 flex flex-wrap gap-2\">\n            {eligibleActions.map((action) => (\n              <span key={action} className=\"rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700\">\n                {action}\n              </span>\n            ))}\n          </div>\n          <p className=\"text-xs text-slate-500 mt-2\">\n            Requieren autorización y confirmación según policy; este panel no ejecuta acciones.\n          </p>\n        </div>\n      )}\n    </section>\n  );\n};\n\nexport default BosExecutivePanel;\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/components/bos/BosExecutivePanel.jsx"
+        ],
+        "search_terms": [
+          "bos-executive-panel",
+          "Por qué ocurre",
+          "Qué debe atenderse",
+          "Qué recomienda BOS",
+          "Acciones elegibles",
+          "no ejecuta acciones"
+        ]
+      }
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
