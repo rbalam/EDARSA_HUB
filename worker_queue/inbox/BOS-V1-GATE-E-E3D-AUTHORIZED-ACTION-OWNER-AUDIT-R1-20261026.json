@@ -1,0 +1,59 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3D-AUTHORIZED-ACTION-OWNER-AUDIT-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e09306d5e3952750eef18469ec71cf678cf2fc2d",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Auditar owners y capacidades existentes para E3D Authorized Action Bridge, confirmando reutilizacion de RBAC, capability/procedure policy, execution gate, capability registry y adapters de dominio sin crear executor nuevo.",
+  "acceptance": [
+    "Confirmar owner del bridge BOS en backend/modules/bos_executive.",
+    "Confirmar catalogo allowlisted existente en transversal_capability_registry.",
+    "Confirmar reutilizacion de agent_capability_policy, agent_procedure_policy y agent_execution_gate.",
+    "Confirmar que adapters de dominio ya validan permiso y scope y construyen PolicyRequest.",
+    "Confirmar ausencia de bridge general recommendation_id -> eligible_action -> capability/procedure.",
+    "Clasificar E3D como EXTEND_EXISTING y no CREATE_EXECUTOR.",
+    "production_touched=false."
+  ],
+  "constraints": [
+    "READ_ONLY estricto.",
+    "actions vacio.",
+    "No Produccion.",
+    "No SQL.",
+    "No modificaciones en backend/core.",
+    "No iniciar E3E/E3F."
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/bos_executive",
+          "backend/modules/agent_harness",
+          "backend/core/agent_capability_policy.py",
+          "backend/core/agent_procedure_policy.py",
+          "backend/core/agent_execution_gate.py",
+          "docs/BOS/certifications/BOS_V1_GATE_E_EXECUTIVE_BOS_DESIGN_CONTRACT_V1.md"
+        ],
+        "search_terms": [
+          "recommendation_id",
+          "eligible_actions",
+          "authorize_internal_capability_execution",
+          "PolicyRequest",
+          "required_permission",
+          "procedure",
+          "get_domain_capability",
+          "REQUESTER_RBAC_DENIED"
+        ]
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
