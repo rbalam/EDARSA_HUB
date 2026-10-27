@@ -282,17 +282,23 @@ def _fetch_ledger_net(
     for offset in range(0, len(pids), 400):
         chunk = pids[offset:offset + 400]
         ph = ",".join(["%s"] * len(chunk))
-        params: List[Any] = [empresa_id, sucursal_id, fecha_ini, fecha_fin, *chunk]
+        # El SQL pone primero los filtros de concepto y DESPUES el almacen.
+        # Deben agregarse los parametros en ese mismo orden: el orden anterior
+        # enviaba almacenes como codigos de movimiento y devolvia cero filas.
+        params: List[Any] = [
+            empresa_id, sucursal_id, fecha_ini, fecha_fin, *chunk, *selected_params
+        ]
         warehouse_filter = ""
         if warehouses:
             wh_ph = ",".join(["%s"] * len(warehouses))
             warehouse_filter = (
-                f" AND (a.CodigoAlmacen IN ({wh_ph}) OR a.NombreAlmacen IN ({wh_ph}))"
+                f" AND (CONVERT(varchar(50), a.AlmacenID) IN ({wh_ph}) "
+                f"OR a.CodigoAlmacen IN ({wh_ph}) OR a.NombreAlmacen IN ({wh_ph}))"
             )
             params.extend(warehouses)
             params.extend(warehouses)
+            params.extend(warehouses)
 
-        params.extend(selected_params)
         cursor.execute(
             f"""
             SELECT d.ProductoID,
