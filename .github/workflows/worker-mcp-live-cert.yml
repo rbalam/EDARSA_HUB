@@ -43,11 +43,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          code="$(curl --silent --show-error --location             -o /tmp/meta.json -w '%{http_code}'             "$PREVIEW_URL/api/mcp/.well-known/oauth-protected-resource" || true)"
-          cat /tmp/meta.json || true
-          echo "MCP_METADATA_HTTP=$code"
-          test "$code" = "200"
-          jq -e '.resource and .authorization_servers and .scopes_supported' /tmp/meta.json >/dev/null
+          standard_code="$(curl --silent --show-error --location             -o /tmp/meta-standard.json -w '%{http_code}'             "$PREVIEW_URL/.well-known/oauth-protected-resource/api/mcp" || true)"
+          cat /tmp/meta-standard.json || true
+          echo "MCP_METADATA_STANDARD_HTTP=$standard_code"
+          test "$standard_code" = "200"
+          jq -e '.resource and .authorization_servers and .scopes_supported' /tmp/meta-standard.json >/dev/null
+
+          legacy_code="$(curl --silent --show-error --location             -o /tmp/meta-legacy.json -w '%{http_code}'             "$PREVIEW_URL/api/mcp/.well-known/oauth-protected-resource" || true)"
+          cat /tmp/meta-legacy.json || true
+          echo "MCP_METADATA_LEGACY_HTTP=$legacy_code"
+          test "$legacy_code" = "200"
+          jq -e '.resource and .authorization_servers and .scopes_supported' /tmp/meta-legacy.json >/dev/null
 
       - name: Service credential exchange fails closed without credential
         shell: bash
