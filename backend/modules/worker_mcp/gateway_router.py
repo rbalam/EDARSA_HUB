@@ -16,8 +16,10 @@ from starlette.background import BackgroundTask
 from . import inprocess
 from .config import WorkerMcpConfig, WorkerMcpConfigError
 from .oauth_discovery import protected_resource_metadata
+from .oauth_server import router as oauth_router
 
 router = APIRouter(on_startup=[inprocess.start], on_shutdown=[inprocess.stop])
+router.include_router(oauth_router)
 
 
 class _InProcessResponse(Response):
