@@ -557,7 +557,7 @@ async def oauth_authorize_submit(request: Request):
     query = {"code": code}
     if state_value:
         query["state"] = state_value
-    return RedirectResponse(redirect_uri + "?" + urlencode(query), status_code=302)
+    return RedirectResponse(_redirect_with_params(redirect_uri, query), status_code=302)
 
 
 def _token_response(
