@@ -15,7 +15,7 @@ def test_authorization_discovery_advertises_code_and_s256_only():
     assert result["authorization_endpoint"] == "https://auth.example.test/authorize"
     assert result["token_endpoint"] == "https://auth.example.test/token"
     assert result["code_challenge_methods_supported"] == ["S256"]
-    assert result["grant_types_supported"] == ["authorization_code"]
+    assert result["grant_types_supported"] == ["authorization_code", "refresh_token"]
     assert result["token_endpoint_auth_methods_supported"] == ["none"]
 
 

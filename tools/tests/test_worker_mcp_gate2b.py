@@ -327,22 +327,24 @@ def test_gateway_publishes_standard_and_legacy_protected_resource_metadata_route
     assert '"/.well-known/oauth-protected-resource/api/mcp"' in text
     assert '"/api/mcp/.well-known/oauth-protected-resource"' in text
     assert "protected_resource_metadata(" in text
-    assert "WorkerMcpConfig.from_env()" in text
-    assert 'MCP_METADATA_CONFIGURATION_UNAVAILABLE' in text
+    assert 'origin + "/api/mcp"' in text
+    assert 'origin + "/api/mcp/oauth"' in text
 
 
 def test_gateway_advertises_reachable_public_metadata_uri():
     text = GATEWAY.read_text(encoding="utf-8")
     assert '"/api/mcp/.well-known/oauth-protected-resource"' in text
     assert 'public_resource = str(request.base_url).rstrip("/") + "/api/mcp/.well-known/oauth-protected-resource"' in text
+    assert 'origin + "/api/mcp/oauth"' in text
 
 
-def test_gateway_metadata_proxies_isolated_mcp_without_secret_duplication():
+def test_gateway_metadata_is_owned_by_public_gateway_not_loopback_upstream():
     text = GATEWAY.read_text(encoding="utf-8")
-    assert 'upstream + "/.well-known/oauth-protected-resource"' in text
-    assert 'payload["resource"] = str(request.base_url).rstrip("/") + "/api/mcp"' in text
-    assert "MCP_METADATA_UPSTREAM_UNAVAILABLE" in text
-    assert "MCP_METADATA_UPSTREAM_INVALID_JSON" in text
+    metadata_block = text.split("_ALLOWED_RESPONSE_HEADERS", 1)[0]
+    assert 'origin = str(request.base_url).rstrip("/")' in metadata_block
+    assert 'origin + "/api/mcp"' in metadata_block
+    assert 'origin + "/api/mcp/oauth"' in metadata_block
+    assert 'upstream + "/.well-known/oauth-protected-resource"' not in metadata_block
 
 def test_refresh_token_session_types_are_isolated_from_mcp_service():
     root = Path(__file__).resolve().parents[2]
