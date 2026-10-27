@@ -99,7 +99,8 @@ jobs:
           echo "CHANGE_SURFACE_BASE_SHA=$BASE_SHA"
           git diff --name-only "$BASE_SHA"...HEAD > /tmp/preview-trigger-files.txt
           cat /tmp/preview-trigger-files.txt
-          python - <<'PY'
+          BASE_SHA="$BASE_SHA" python - <<'PY'
+          import os
           from pathlib import Path
 
           commercial_exact = {
@@ -137,7 +138,7 @@ jobs:
                   import subprocess
 
                   diff = subprocess.run(
-                      ["git", "diff", "--unified=0", "$BASE_SHA...HEAD", "--", "backend/server.py"],
+                      ["git", "diff", "--unified=0", os.environ["BASE_SHA"] + "...HEAD", "--", "backend/server.py"],
                       check=True,
                       stdout=subprocess.PIPE,
                       text=True,
