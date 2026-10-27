@@ -1,3 +1,5 @@
+from .action_bridge import authorize_recommended_action
+from .action_bridge_contracts import AuthorizedActionDecision, AuthorizedActionRequest
 from .causal_service import explain_causal_finding
 from .contracts import (
     ConfidenceClass,
@@ -18,6 +20,9 @@ from .recommendation_contracts import ExecutiveRecommendation, RecommendationRis
 from .recommendation_service import recommend_from_finding, recommend_from_priority
 
 __all__ = [
+    "AuthorizedActionDecision",
+    "AuthorizedActionRequest",
+    "authorize_recommended_action",
     "ConfidenceClass",
     "EvidenceKind",
     "EvidenceRef",
