@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3D-D2-TESTS-AUTHORIZATION-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "5d1c1380980c895d4ddf33e7d830ed16ecc92e37",
+  "production_allowed": false,
+  "objective": "E3D-D2: validar expiracion, RBAC deny y autorizacion allowlisted sin ejecucion.",
+  "acceptance": [
+    "Recomendacion expirada retorna DENIED/RECOMMENDATION_EXPIRED.",
+    "Requester RBAC deny retorna DENIED/REQUESTER_RBAC_DENIED.",
+    "INVENTORY_ANALYZE autorizado retorna AGENT_HARNESS + AUTHORIZED_NOT_EXECUTED.",
+    "No domain tool es ejecutado.",
+    "pytest E3D PASS."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No executor.",
+    "No E3E/E3F."
+  ],
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_bos_executive_e3d.py",
+      "old": "    assert decision.allowed is False\n    assert \"ACTION_NOT_ELIGIBLE\" in decision.reasons\n",
+      "new": "    assert decision.allowed is False\n    assert \"ACTION_NOT_ELIGIBLE\" in decision.reasons\n\n\ndef test_e3d_expired_recommendation_is_denied():\n    decision = authorize_recommended_action(\n        _recommendation(valid_until=\"2026-10-27T10:00:00+00:00\"),\n        _request(evaluated_at=\"2026-10-27T12:00:00+00:00\"),\n        {\"allowed\": True, \"permission\": \"COMPRAS_INVENTARIOS_VER\"},\n        _context(),\n    )\n    assert decision.allowed is False\n    assert \"RECOMMENDATION_EXPIRED\" in decision.reasons\n\n\ndef test_e3d_requester_rbac_denied_is_fail_closed():\n    decision = authorize_recommended_action(\n        _recommendation(),\n        _request(),\n        {\"allowed\": False, \"reason\": \"REQUESTER_RBAC_DENIED\"},\n        _context(),\n    )\n    assert decision.allowed is False\n    assert \"REQUESTER_RBAC_DENIED\" in decision.reasons\n\n\ndef test_e3d_allowlisted_action_is_authorized_but_not_executed():\n    decision = authorize_recommended_action(\n        _recommendation(),\n        _request(),\n        {\"allowed\": True, \"permission\": \"COMPRAS_INVENTARIOS_VER\"},\n        _context(),\n    )\n    assert decision.allowed is True\n    assert decision.reasons == ()\n    assert decision.capability == \"INVENTORY_ANALYZE\"\n    assert decision.procedure == \"inventory-analyze\"\n    assert decision.required_permission == \"COMPRAS_INVENTARIOS_VER\"\n    assert decision.execution_channel == \"AGENT_HARNESS\"\n    assert decision.outcome_status == \"AUTHORIZED_NOT_EXECUTED\"\n    assert decision.audit_ref.startswith(\"bos-action:\")\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_bos_executive_e3d.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_bos_executive_e3d.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
