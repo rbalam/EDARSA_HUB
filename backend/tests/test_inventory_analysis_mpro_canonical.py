@@ -75,47 +75,48 @@ def test_mpro_sales_only_apply_to_warehouse_0001():
     assert 'sales_consumption = {}' in source
 
 
-def test_mpro_drilldown_is_canonical_and_reconciles_totals():
+def test_mpro_drilldown_reconciles_to_user_selected_movements():
     server_source = SERVER.read_text(encoding="utf-8")
     assert 'Autoriza drilldown por unidad canónica para SoftRestaurant y MPRO' in server_source
     assert 'm.EmpresaID = %s AND m.SucursalID = %s' in server_source
-    assert 'RECLASIFICACION_VENTAS' in server_source
+    assert 'AND ({origin_filter})' in server_source
+    assert 'movement_origin_sql_filter' in server_source
+    assert 'RECLASIFICACION_VENTAS' not in server_source
     assert 'get_mpro_sales_consumption_detail' in server_source
     assert '"total": total' in server_source
 
 
-def test_mpro_movement_filter_uses_canonical_policy_and_safe_reconciliation():
+def test_mpro_sync_keeps_all_concepts_without_deleting_historical_records():
     movement_source = (
         ROOT / "core" / "inventarios" / "sync_movimientos_canonico.py"
     ).read_text(encoding="utf-8")
-    policy_source = (
-        ROOT / "core" / "inventarios" / "mpro_movement_policy.py"
-    ).read_text(encoding="utf-8")
-
-    assert "concepto_origen in tipos_movimiento_autorizados" in movement_source
-    assert "effective_mpro_inventory_codes" in movement_source
-    assert "pendientes_criticos == 0" in movement_source
-    assert "LIKE 'MOVIMIENTO_POS%%'" in movement_source
-    assert "MOVIMIENTO_POS|" in movement_source
-
-    for code in ("050","106","108","109","112","506","508","509","510","512"):
-        assert f'"{code}"' in policy_source
+    assert 'referencia_tipo = f"MOVIMIENTO_POS|{concepto_origen}"' in movement_source
+    assert "effective_mpro_inventory_codes" not in movement_source
+    assert "tipos_movimiento_autorizados" not in movement_source
+    assert "DELETE d" not in movement_source
+    assert "DELETE m" not in movement_source
 
 
-def test_mpro_server_filters_show_full_catalog_but_only_policy_is_authorized():
+def test_mpro_server_filters_show_complete_selectable_catalog():
     server_source = SERVER.read_text(encoding="utf-8")
     frontend = (ROOT.parent / "frontend" / "src" / "pages" / "Servidores.js").read_text(
         encoding="utf-8"
     )
-
     assert "Inventario_ConceptoMapeoOrigen" in server_source
-    assert "autorizado_analisis" in server_source
-    assert "effective_mpro_inventory_codes" in server_source
+    assert '"autorizado_analisis": True' in server_source
+    assert "effective_mpro_inventory_codes" not in server_source
+    assert "normalize_movement_codes" in server_source
+    assert "normalizeFilterCodes(server.tipos_movimiento || [])" in frontend
+    assert "autorizado_analisis === false" not in frontend
+    assert "No participa en análisis" not in frontend
 
-    assert "normalizeFilterCodes" in frontend
-    assert "autorizado_analisis === true" in frontend
-    assert "autorizado_analisis === false" in frontend
-    assert "No participa en análisis" in frontend
+
+def test_mpro_report_filters_ledger_at_read_time_and_keeps_sales_separate():
+    source = MPRO.read_text(encoding="utf-8")
+    assert "movement_origin_sql_filter(selected_movement_codes)" in source
+    assert "AND ({selected_filter})" in source
+    assert "movements = ledger" in source
+    assert "theoretical = initial + movements - sales" in source
 
 
 def test_mpro_drilldown_preserves_origin_concept_labels():
