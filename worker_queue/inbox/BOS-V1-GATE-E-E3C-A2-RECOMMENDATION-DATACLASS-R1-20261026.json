@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3C-A2-RECOMMENDATION-DATACLASS-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ce3d16f305c25ba7460641a4b79257ab242ee1ee",
+  "production_allowed": false,
+  "objective": "E3C-A2: agregar ExecutiveRecommendation al contrato BOS.",
+  "acceptance": [
+    "ExecutiveRecommendation contiene campos minimos del Design Contract.",
+    "py_compile PASS.",
+    "No Produccion."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No endpoints.",
+    "No E3D."
+  ],
+  "actions": [
+    {
+      "type": "append_once",
+      "path": "backend/modules/bos_executive/recommendation_contracts.py",
+      "source_sha256": "41588150ed43dc2d41212a1546a8c53b9feb021418260865a302e8188a78b1a2",
+      "replacement": "\n\n@dataclass(frozen=True)\nclass ExecutiveRecommendation:\n    recommendation_id: str\n    recommendation_type: str\n    source_ref: str\n    title: str\n    rationale: str\n    evidence_refs: tuple[str, ...]\n    expected_impact: str\n    risk_level: RecommendationRisk\n    confidence_class: ConfidenceClass\n    generated_at: str\n    valid_until: str\n    required_permissions: tuple[str, ...] = ()\n    eligible_actions: tuple[str, ...] = ()\n    human_confirmation_required: bool = True\n    stale: bool = False\n    provenance_refs: tuple[str, ...] = ()\n",
+      "expected_occurrences": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/recommendation_contracts.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
