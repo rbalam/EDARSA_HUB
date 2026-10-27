@@ -8,7 +8,6 @@ from worker_mcp.oauth_pkce import validate_pkce_challenge, verify_pkce
 ROOT = Path(__file__).resolve().parents[2]
 OAUTH = ROOT / "backend/modules/worker_mcp/oauth_server.py"
 GATEWAY = ROOT / "backend/modules/worker_mcp/gateway_router.py"
-SERVER = ROOT / "backend/server.py"
 
 
 def test_oauth_discovery_supports_code_refresh_and_pkce():
@@ -62,10 +61,10 @@ def test_oauth_server_has_consent_dcr_token_and_rotation():
 
 def test_public_metadata_and_router_mount_are_canonical():
     gateway = GATEWAY.read_text(encoding="utf-8")
-    server = SERVER.read_text(encoding="utf-8")
     assert 'origin + "/api/mcp"' in gateway
     assert 'origin + "/api/mcp/oauth"' in gateway
-    assert server.count("worker_mcp_oauth_router") == 2
+    assert "from .oauth_server import router as oauth_router" in gateway
+    assert "router.include_router(oauth_router)" in gateway
 
 
 def test_oauth_change_does_not_reference_production_or_sales_sync():
