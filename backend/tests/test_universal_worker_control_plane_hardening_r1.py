@@ -16,6 +16,13 @@ def test_recovery_probe_no_longer_uses_development_push_trigger():
     assert "worker_queue/triggers/runtime-recovery/**" not in text
 
 
+def test_recovery_probe_has_dedicated_control_branch_trigger():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert "control/worker-runtime-recovery" in text
+    assert ".runtime-control/worker-recovery-trigger.json" in text
+    assert "branches:\n      - Edarsahub_Desarrollo" not in text
+
+
 def test_dispatcher_safe_replays_remote_move_after_cas():
     text = DISPATCHER.read_text(encoding="utf-8")
     process = text.split("def process_one(", 1)[1].split("def dispatch(", 1)[0]
