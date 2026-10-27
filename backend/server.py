@@ -5862,7 +5862,23 @@ GROUP BY Codigo
                 len(movimientos),
                 len(ventas),
             )
-            return {"data": results, "count": len(results), "source": "EDARSAHUB_SQL_CANONICAL"}
+            return {
+                "data": results,
+                "count": len(results),
+                "source": "EDARSAHUB_SQL_CANONICAL",
+                "detalle_ventanas": {
+                    "movimientos": {
+                        "fecha_inicio": period_start.isoformat(sep=" "),
+                        "fecha_fin": period_end.isoformat(sep=" "),
+                    },
+                    "ventas": {
+                        "fecha_inicio": sales_start.isoformat(sep=" "),
+                        "fecha_fin": sales_end.isoformat(sep=" "),
+                        "habilitado": soft_sales_enabled,
+                    },
+                    "almacenes": activity_warehouses,
+                },
+            }
         except HTTPException:
             raise
         except Exception as error:
@@ -10480,10 +10496,44 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
     logging.info(f"[DETALLE_MOV][NO-LIVE] server={request.server_id} sys={system_type} codigo='{codigo_limpio}' "
                  f"fechas={request.fecha_inicio}..{request.fecha_fin} almacenes={almacenes_limpios}")
 
+    if is_softrestaurant_system(server.get('system_type')):
+        if detalle_scope is None:
+            raise HTTPException(status_code=400, detail="SoftRestaurant requiere unidad canónica para el desglose.")
+        conn = None
+        try:
+            from core.inventarios.analysis_soft_sources import get_soft_movement_detail
+            conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=15)
+            cursor = conn.cursor(as_dict=True)
+            result = get_soft_movement_detail(
+                cursor,
+                server_id=request.server_id,
+                unidad_codigo=detalle_scope.unidad_codigo,
+                sucursal_origen_id=detalle_scope.sucursal_origen_id,
+                componente_codigo=codigo_limpio,
+                fecha_ini=request.fecha_inicio,
+                fecha_fin=request.fecha_fin,
+                warehouses=almacenes_limpios,
+            )
+            return {
+                "movimientos": result["rows"],
+                "totales": result["totales"],
+                "source": "EDARSAHUB_SQL_CANONICAL",
+            }
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logging.exception("[DETALLE_MOV][SOFT-CANONICAL] Error")
+            return {
+                "movimientos": [],
+                "totales": {"entradas": 0, "salidas": 0, "neto": 0},
+                "error": f"Error al obtener movimientos SoftRestaurant: {str(exc)[:120]}",
+            }
+        finally:
+            if conn is not None:
+                conn.close()
+
     try:
-        # SR y MPRO leen el mismo ledger canónico que alimenta MOVIMIENTOS.
-        # La ruta legacy Compras_Inventarios_Movimientos_Sync no garantiza
-        # correspondencia con el agregado de Inventario_MovimientosDetalle.
+        # MPRO conserva la ruta de movimientos existente, sin alterar sus reglas.
         conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
 
@@ -10770,12 +10820,51 @@ async def obtener_detalle_consumos_post(request: DetalleConsumosRequest, current
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
 
     if is_softrestaurant_system(server.get('system_type')):
+        if detalle_scope is None:
+            raise HTTPException(status_code=400, detail="SoftRestaurant requiere unidad canónica para el desglose.")
+        conn = None
         try:
-            return _obtener_detalle_softrestaurant_canonico(request, solo_ventas=True)
-        except Exception as e:
-            logging.error(f"[DETALLE_CONSUMOS][SOFT-CANONICAL] Error: {e}")
-            return {"consumos": [], "movimientos": [], "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
-                    "error": f"Error al obtener consumos: {str(e)[:100]}"}
+            from core.inventarios.analysis_soft_sources import get_soft_sales_consumption_detail
+            conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=15)
+            cursor = conn.cursor(as_dict=True)
+            detail = get_soft_sales_consumption_detail(
+                cursor,
+                unidad_codigo=detalle_scope.unidad_codigo,
+                server_id=request.server_id,
+                componente_codigo=request.codigo,
+                fecha_ini=request.fecha_inicio,
+                fecha_fin=request.fecha_fin,
+            )
+            rows = []
+            for item in detail.get("rows") or []:
+                consumo = float(item.get("cantidad_consumo") or 0)
+                fecha = item.get("fecha")
+                rows.append({
+                    "fecha": fecha.isoformat() if hasattr(fecha, "isoformat") else str(fecha or ""),
+                    "concepto": "VENTA",
+                    "descripcion": f"Consumo por venta {item.get('producto_venta') or ''}".strip(),
+                    "cantidad": -consumo,
+                    "almacen": "",
+                    "referencia": str(item.get("producto_venta") or ""),
+                    "tipo": "S",
+                })
+            total = float(detail.get("total") or 0)
+            return {
+                "consumos": rows,
+                "movimientos": rows,
+                "totales": {"total": total, "entradas": 0, "salidas": total, "neto": -total},
+                "source": "EDARSAHUB_SQL_CANONICAL",
+            }
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logging.exception("[DETALLE_CONSUMOS][SOFT-CANONICAL] Error")
+            return {"consumos": [], "movimientos": [],
+                    "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
+                    "error": f"Error al obtener ventas SoftRestaurant: {str(exc)[:120]}"}
+        finally:
+            if conn is not None:
+                conn.close()
 
     if is_mpro_system(server.get('system_type')):
         if detalle_scope is None:
