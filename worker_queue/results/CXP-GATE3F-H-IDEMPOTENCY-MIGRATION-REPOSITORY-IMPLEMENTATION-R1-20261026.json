@@ -1,0 +1,20 @@
+{
+  "certification": "NOT_CERTIFIED",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CXP-GATE3F-H-IDEMPOTENCY-MIGRATION-REPOSITORY-IMPLEMENTATION-R1-20261026",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-10-27T15:42:14Z",
+  "reasons": [
+    "ACTIONS_REQUIRED"
+  ],
+  "received_at_utc": "2026-10-27T15:40:31.061631+00:00",
+  "schema": "edarsahub.worker-rejection.v2",
+  "source": "worker_queue/inbox/CXP-GATE3F-H-IDEMPOTENCY-MIGRATION-REPOSITORY-IMPLEMENTATION-R1-20261026.json",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "status": "REJECTED",
+  "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto.",
+  "work_completion": "NOT_CERTIFIED"
+}
