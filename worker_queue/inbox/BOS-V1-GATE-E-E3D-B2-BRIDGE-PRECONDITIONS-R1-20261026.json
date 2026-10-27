@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3D-B2-BRIDGE-PRECONDITIONS-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "f08d7ab3fd3b79d89cabfe6b6d6bbf36c4ccdaaf",
+  "production_allowed": false,
+  "objective": "E3D-B2: agregar precondiciones fail-closed del Authorized Action Bridge BOS.",
+  "acceptance": [
+    "Accion debe estar en recommendation.eligible_actions.",
+    "Recomendacion debe estar vigente.",
+    "Confirmacion humana requerida cuando el contrato lo indique.",
+    "Permiso requerido debe estar declarado en la recomendacion.",
+    "Side-effects requieren idempotency y approvals; finanzas side-effect requiere gate financiero.",
+    "No ejecutar acciones."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No endpoints.",
+    "No executor.",
+    "No backend/core mutation.",
+    "No E3E/E3F."
+  ],
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/bos_executive/action_bridge.py",
+      "old": "        audit_ref=_audit_ref(request),\n        outcome_status=\"DENIED\",\n    )\n",
+      "new": "        audit_ref=_audit_ref(request),\n        outcome_status=\"DENIED\",\n    )\n\n\ndef _precondition_reasons(\n    recommendation: ExecutiveRecommendation,\n    request: AuthorizedActionRequest,\n    spec,\n) -> tuple[str, ...]:\n    reasons = []\n    if request.recommendation_id != recommendation.recommendation_id:\n        reasons.append(\"RECOMMENDATION_ID_MISMATCH\")\n    if request.action_type not in recommendation.eligible_actions:\n        reasons.append(\"ACTION_NOT_ELIGIBLE\")\n    if not str(request.target_ref or \"\").strip():\n        reasons.append(\"TARGET_REF_REQUIRED\")\n    if not str(request.requested_by or \"\").strip():\n        reasons.append(\"REQUESTED_BY_REQUIRED\")\n    if not request.acting_scopes:\n        reasons.append(\"ACTING_SCOPE_REQUIRED\")\n\n    generated_at = _parse_time(recommendation.generated_at)\n    valid_until = _parse_time(recommendation.valid_until)\n    evaluated_at = _parse_time(request.evaluated_at)\n    if generated_at is None or valid_until is None or evaluated_at is None:\n        reasons.append(\"RECOMMENDATION_TIME_INVALID\")\n    else:\n        if evaluated_at < generated_at:\n            reasons.append(\"RECOMMENDATION_NOT_YET_VALID\")\n        if evaluated_at >= valid_until:\n            reasons.append(\"RECOMMENDATION_EXPIRED\")\n\n    if recommendation.human_confirmation_required and not request.confirmation_granted:\n        reasons.append(\"HUMAN_CONFIRMATION_REQUIRED\")\n    if spec.required_permission not in recommendation.required_permissions:\n        reasons.append(\"RECOMMENDATION_PERMISSION_CONTRACT_MISSING\")\n    if spec.side_effect and not str(request.idempotency_key or \"\").strip():\n        reasons.append(\"IDEMPOTENCY_KEY_REQUIRED\")\n    if spec.side_effect and spec.approval_required and not request.confirmation_granted:\n        reasons.append(\"CAPABILITY_APPROVAL_REQUIRED\")\n    if spec.side_effect and spec.domain == \"FINANZAS\" and not request.financial_gate_approved:\n        reasons.append(\"FINANCIAL_GATE_REQUIRED\")\n    return _unique(tuple(reasons))\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/action_bridge.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
