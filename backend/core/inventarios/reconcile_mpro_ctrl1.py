@@ -241,13 +241,13 @@ def _read_source(server, pymssql):
             INNER JOIN dbo.Producto p
                 ON p.Pr_Cve_Producto=m.Pr_Cve_Producto
             WHERE m.Sc_Cve_Sucursal=%s
-              AND CONVERT(VARCHAR(50),m.Pr_Cve_Producto)=%s
+              AND LTRIM(RTRIM(CONVERT(VARCHAR(50),m.Pr_Cve_Producto))) IN ('0000000061','000000061','61')
               AND CONVERT(VARCHAR(50),m.Al_Cve_Almacen)=%s
               AND CONVERT(VARCHAR(50),m.Tm_Cve_Tipo_Movimiento)=%s
               AND m.Mv_Fecha >= '20261001'
               AND m.Mv_Fecha < '20261026'
               AND ISNULL(m.Es_Cve_Estado,'') <> 'CA'
-        """, (ORIGIN_BRANCH, ORIGIN_PRODUCT, WAREHOUSE, CONCEPT))
+        """, (ORIGIN_BRANCH, WAREHOUSE, CONCEPT))
         return cur.fetchall() or []
     finally:
         pos.close()
