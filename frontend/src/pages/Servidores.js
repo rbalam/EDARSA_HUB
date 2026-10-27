@@ -1337,14 +1337,23 @@ const Servidores = () => {
         verifyResponse = await api.get(`/servers/${selectedServer.id}`);
       } catch (error) {
         logger.error('No fue posible verificar la escritura del servidor:', error);
-        toast.error('Guardado sin confirmar por error de conexión. No repitas el guardado sin recargar.');
+        // La escritura pudo completarse: bloquear cualquier reintento hasta
+        // recuperar una nueva línea base directamente desde SQL.
+        setPersistedFiltersSnapshot(null);
+        toast.error('Guardado sin confirmar por error de conexión. Cierra y vuelve a abrir la configuración antes de intentarlo.');
         return;
       }
 
       const persistedServer = verifyResponse.data || {};
+      if (String(persistedServer.id || '').toLowerCase() !== String(selectedServer.id).toLowerCase()
+        || !Array.isArray(persistedServer.tipos_movimiento)) {
+        setPersistedFiltersSnapshot(null);
+        throw new Error('La lectura posterior no permitió verificar el servidor y sus movimientos.');
+      }
       const persistedFilters = normalizeServerFilters(persistedServer);
       if (changedKeys.some(key => !sameCodes(persistedFilters[key], expectedFilters[key]))) {
-        toast.error('Los filtros no coinciden con lo solicitado. No se modificó la selección visible.');
+        setPersistedFiltersSnapshot(null);
+        toast.error('Los filtros no coinciden con lo solicitado. Cierra y vuelve a abrir la configuración.');
         return;
       }
 
