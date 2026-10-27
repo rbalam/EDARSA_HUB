@@ -80,7 +80,8 @@ jobs:
           python -m pytest -q \
             tests/test_destructive_diff_guard_contract.py \
             tests/test_backend_route_smoke_contract.py \
-            tests/test_shared_app_sync_safety_contract.py
+            tests/test_shared_app_sync_safety_contract.py \
+            tests/test_soft_inventory_drilldown_canonical.py
 
       - name: Backend OpenAPI smoke
         shell: bash
