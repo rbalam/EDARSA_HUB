@@ -1156,28 +1156,16 @@ const Servidores = () => {
       setCategorias(Array.isArray(categoriasRes.data) ? categoriasRes.data : []);
       setDepartamentos(Array.isArray(departamentosRes.data) ? departamentosRes.data : []);
       
-      // MPRO: el catálogo completo se muestra, pero la selección efectiva del
-      // análisis son únicamente los movimientos autorizados por política.
+      // El modal refleja la selección realmente persistida para ambos motores.
       const server = servers.find(s => s.id === serverId) || selectedServer;
       if (server) {
-        const isMpro = String(server.system_type || '').toUpperCase().includes('MPRO')
-          || String(server.system_type || '').toUpperCase().includes('MANAGEMENT')
-          || String(server.system_type || '').toUpperCase().includes('MANAGMENT');
-
-        const mproAllowed = tiposCatalogo
-          .filter(item => item?.autorizado_analisis === true)
-          .map(item => String(item.codigo || '').trim())
-          .filter(Boolean)
-          .sort();
-
         setSelectedFilters({
-          tipos_movimiento: isMpro
-            ? mproAllowed
-            : normalizeFilterCodes(server.tipos_movimiento || []),
+          tipos_movimiento: normalizeFilterCodes(server.tipos_movimiento || []),
           categorias: normalizeFilterCodes(server.categorias || []),
           departamentos: normalizeFilterCodes(server.departamentos || [])
         });
       }
+
       
     } catch (error) {
       logger.error('Error cargando opciones de filtros:', error);
@@ -1341,9 +1329,7 @@ const Servidores = () => {
   };
 
   const selectAll = (type, items) => {
-    const selectableItems = type === 'tipos_movimiento'
-      ? items.filter(item => item?.autorizado_analisis !== false)
-      : items;
+    const selectableItems = items;
 
     setSelectedFilters(prev => ({
       ...prev,
@@ -3865,19 +3851,14 @@ const Servidores = () => {
                           : 'bg-white border-zinc-200 hover:border-zinc-300'
                       }`}
                       onClick={() => {
-                        if (tipo?.autorizado_analisis !== false) {
-                          toggleFilter('tipos_movimiento', tipo.codigo);
-                        }
+                        toggleFilter('tipos_movimiento', tipo.codigo);
                       }}
                     >
                       <Checkbox
                         checked={selectedFilters.tipos_movimiento.includes(tipo.codigo)}
-                        disabled={tipo?.autorizado_analisis === false}
                         onClick={(event) => event.stopPropagation()}
                         onCheckedChange={() => {
-                          if (tipo?.autorizado_analisis !== false) {
-                            toggleFilter('tipos_movimiento', tipo.codigo);
-                          }
+                          toggleFilter('tipos_movimiento', tipo.codigo);
                         }}
                       />
                       <div className="flex-1">
@@ -3890,11 +3871,6 @@ const Servidores = () => {
                           }`}>
                             {(tipo.tipo === '+' || tipo.tipo === 'EN') ? 'Entrada' : 'Salida'}
                           </span>
-                          {tipo?.autorizado_analisis === false && (
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500">
-                              No participa en análisis
-                            </span>
-                          )}
                         </div>
                         <p className="text-sm text-zinc-700 mt-1">{tipo.descripcion}</p>
                       </div>
