@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate6e-fiscal-status-seed-preflight-readonly-v1-20261027",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "be308f77125b55bc94754ffb58f570af3708a4cd",
+  "mode": "READ_ONLY_SQL",
+  "objective": "COA Gate 6E. Ejecutar preflight READ_ONLY_SQL previo a cualquier seed fisico de dbo.Fiscal_DocumentosEmitidosEstatus. Validar estructura exacta de la tabla y su PK/unicidad, filas existentes, colisiones por IDs 1..6, colisiones por codigos BORRADOR/PENDIENTE_TIMBRADO/TIMBRADO/ERROR_TIMBRADO/CANCELACION_SOLICITADA/CANCELADO, referencias existentes desde dbo.Fiscal_DocumentosEmitidos, y que no exista evidencia de uso productivo de esos IDs/codigos. No DDL, no DML, no EXEC, no seeds, no workflow, no Produccion. El resultado debe permitir decidir si Gate 6D es seguro para ejecucion controlada en Development.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate6e_database_identity",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user"
+        },
+        {
+          "name": "gate6e_target_table_structure",
+          "sql": "SELECT c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.columns c JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Fiscal_DocumentosEmitidosEstatus') ORDER BY c.column_id"
+        },
+        {
+          "name": "gate6e_target_keys_indexes",
+          "sql": "SELECT i.name AS index_name,i.is_unique,i.is_primary_key,i.has_filter,STRING_AGG(c.name,',') WITHIN GROUP (ORDER BY ic.key_ordinal) AS key_columns FROM sys.indexes i JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id AND ic.is_included_column=0 JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID('dbo.Fiscal_DocumentosEmitidosEstatus') AND i.index_id>0 GROUP BY i.name,i.is_unique,i.is_primary_key,i.has_filter ORDER BY i.is_primary_key DESC,i.name"
+        },
+        {
+          "name": "gate6e_existing_rows",
+          "sql": "SELECT EstatusDocumentoFiscalEmitidoID,Codigo,Nombre,Descripcion,EsFinal,Activo FROM dbo.Fiscal_DocumentosEmitidosEstatus ORDER BY EstatusDocumentoFiscalEmitidoID"
+        },
+        {
+          "name": "gate6e_id_collisions",
+          "sql": "SELECT EstatusDocumentoFiscalEmitidoID,Codigo,Nombre,Descripcion,EsFinal,Activo FROM dbo.Fiscal_DocumentosEmitidosEstatus WHERE EstatusDocumentoFiscalEmitidoID IN (1,2,3,4,5,6) ORDER BY EstatusDocumentoFiscalEmitidoID"
+        },
+        {
+          "name": "gate6e_code_collisions",
+          "sql": "SELECT EstatusDocumentoFiscalEmitidoID,Codigo,Nombre,Descripcion,EsFinal,Activo FROM dbo.Fiscal_DocumentosEmitidosEstatus WHERE Codigo IN ('BORRADOR','PENDIENTE_TIMBRADO','TIMBRADO','ERROR_TIMBRADO','CANCELACION_SOLICITADA','CANCELADO') ORDER BY Codigo"
+        },
+        {
+          "name": "gate6e_references_to_seed_ids",
+          "sql": "SELECT EstatusDocumentoFiscalEmitidoID,COUNT_BIG(*) AS referenced_rows FROM dbo.Fiscal_DocumentosEmitidos WHERE EstatusDocumentoFiscalEmitidoID IN (1,2,3,4,5,6) GROUP BY EstatusDocumentoFiscalEmitidoID ORDER BY EstatusDocumentoFiscalEmitidoID"
+        },
+        {
+          "name": "gate6e_total_emitted_documents",
+          "sql": "SELECT COUNT_BIG(*) AS total_rows FROM dbo.Fiscal_DocumentosEmitidos"
+        },
+        {
+          "name": "gate6e_fk_integrity",
+          "sql": "SELECT fk.name AS fk_name,OBJECT_NAME(fk.parent_object_id) AS parent_table,pc.name AS parent_column,OBJECT_NAME(fk.referenced_object_id) AS referenced_table,rc.name AS referenced_column,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.parent_object_id=OBJECT_ID('dbo.Fiscal_DocumentosEmitidos') AND fk.referenced_object_id=OBJECT_ID('dbo.Fiscal_DocumentosEmitidosEstatus')"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
