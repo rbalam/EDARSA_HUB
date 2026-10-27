@@ -2,7 +2,9 @@ name: Worker MCP Gate2B
 
 on:
   push:
-    branches: [Edarsahub_Desarrollo]
+    branches:
+      - Edarsahub_Desarrollo
+      - control/worker-mcp-cert
     paths:
       - "backend/modules/worker_mcp/**"
       - "backend/core/refresh_tokens.py"
@@ -11,6 +13,7 @@ on:
       - "backend/tests/test_worker_service_credential_exchange_gate2e.py"
       - "tools/tests/test_worker_mcp_gate2b.py"
       - ".github/workflows/worker-mcp-gate2b.yml"
+      - ".runtime-control/worker-mcp-cert-trigger.json"
   workflow_dispatch:
 
 permissions:
