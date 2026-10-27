@@ -250,6 +250,9 @@ const Reportes = () => {
     return inventorySortConfig.direction === 'asc' ? ' ↑' : ' ↓';
   };
 
+  // La ventana del drilldown debe proceder del mismo reporte generado, no de
+  // fechas editables que pueden diferir de los folios físicos seleccionados.
+  const [detalleVentanas, setDetalleVentanas] = useState(null);
   const [erroresCaptura, setErroresCaptura] = useState([]); // Errores de captura de inventario (MPRO)
   const [loading, setLoading] = useState(false);
   
@@ -2026,6 +2029,7 @@ const Reportes = () => {
         roundedRows.length;
 
       logger.log('Primer producto normalizado:', roundedRows[0] || null);
+      setDetalleVentanas(response.data?.detalle_ventanas || null);
       setReportData(roundedRows);
       
       // Manejar errores de captura de inventario (MPRO)
@@ -2499,6 +2503,8 @@ const Reportes = () => {
   const loadMovementDetails = (producto) => {
     const codigo = producto.Codigo ?? producto.codigo_producto ?? producto.codigo ?? producto.CODIGO;
     const nombre = producto.Producto ?? producto.nombre_producto ?? producto.nombre ?? producto.Nombre ?? codigo;
+    const isSoft = /^SOFT/i.test(selectedServer?.system_type || '');
+    const window = isSoft ? detalleVentanas?.movimientos : null;
 
     abrirMovimientos({
       serverId: selectedUnidad || filters.server_id,
@@ -2506,23 +2512,29 @@ const Reportes = () => {
       sucursal: filters.sucursal,
       codigo,
       producto: nombre,
-      fechaInicio: filters.fecha_ini,
-      fechaFin: filters.fecha_fin,
-      almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes.map(a => a.id || a.almacen_id || a.nombre) : filters.almacen,
+      fechaInicio: window?.fecha_inicio || filters.fecha_ini,
+      fechaFin: window?.fecha_fin || filters.fecha_fin,
+      almacenes: isSoft && detalleVentanas?.almacenes
+        ? detalleVentanas.almacenes
+        : selectedAlmacenes.length > 0
+          ? selectedAlmacenes.map(a => a.id || a.almacen_id || a.nombre)
+          : filters.almacen,
     });
   };
 
-  // Doble clic: detalle CANÓNICO de ventas/consumos (hook + componente compartido con Auditoría).
   const loadSalesDetails = (producto) => {
     const codigo = producto.Codigo ?? producto.codigo_producto ?? producto.codigo ?? producto.CODIGO;
     const nombre = producto.Producto ?? producto.nombre_producto ?? producto.nombre ?? producto.Nombre ?? codigo;
+    const isSoft = /^SOFT/i.test(selectedServer?.system_type || '');
     let fechaInicioDetalle = filters.fecha_ini;
     let fechaFinDetalle = filters.fecha_fin;
-
-    if (selectedServer?.system_type === 'SoftRestaurant') {
+    if (isSoft && detalleVentanas?.ventas) {
+      fechaInicioDetalle = detalleVentanas.ventas.fecha_inicio;
+      fechaFinDetalle = detalleVentanas.ventas.fecha_fin;
+    } else if (isSoft) {
+      // Compatibilidad cuando se restaura un reporte anterior sin metadata.
       const fechaInicialVentas = parseDateString(selectedInventariosIni[0]?.fecha || filters.inventario_inicial_fecha);
       const fechaFinalVentas = parseDateString(selectedInventariosFin[0]?.fecha || filters.inventario_final_fecha);
-
       if (fechaInicialVentas && fechaFinalVentas) {
         fechaInicialVentas.setHours(0, 0, 0, 0);
         fechaFinalVentas.setHours(0, 0, 0, 0);
@@ -2540,7 +2552,9 @@ const Reportes = () => {
       producto: nombre,
       fechaInicio: fechaInicioDetalle,
       fechaFin: fechaFinDetalle,
-      almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes.map(a => a.id || a.almacen_id || a.nombre) : filters.almacen,
+      almacenes: selectedAlmacenes.length > 0
+        ? selectedAlmacenes.map(a => a.id || a.almacen_id || a.nombre)
+        : filters.almacen,
     });
   };
 
