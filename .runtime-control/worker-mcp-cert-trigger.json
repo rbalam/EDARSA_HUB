@@ -1,0 +1,8 @@
+{
+  "requested_by": "ChatGPT",
+  "reason": "pre-merge Gate2B for OAuth approval redirect hardening",
+  "target_branch": "fix/worker-mcp-oauth-redirect-query-20261027",
+  "target_sha": "1dfd30d2dff94e77967590b8287bf1b34cdc428e",
+  "mode": "READ_ONLY_CERTIFICATION",
+  "production_allowed": false
+}
