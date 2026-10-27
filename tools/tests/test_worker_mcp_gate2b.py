@@ -330,6 +330,12 @@ def test_gateway_publishes_standard_and_legacy_protected_resource_metadata_route
     assert "WorkerMcpConfig.from_env()" in text
     assert 'MCP_METADATA_CONFIGURATION_UNAVAILABLE' in text
 
+
+def test_gateway_advertises_reachable_public_metadata_uri():
+    text = GATEWAY.read_text(encoding="utf-8")
+    assert '"/api/mcp/.well-known/oauth-protected-resource"' in text
+    assert 'public_resource = str(request.base_url).rstrip("/") + "/api/mcp/.well-known/oauth-protected-resource"' in text
+
 def test_refresh_token_session_types_are_isolated_from_mcp_service():
     root = Path(__file__).resolve().parents[2]
     refresh_text = (root / "backend/core/refresh_tokens.py").read_text(encoding="utf-8")
