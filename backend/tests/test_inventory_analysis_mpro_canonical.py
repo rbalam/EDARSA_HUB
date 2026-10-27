@@ -133,3 +133,23 @@ def test_mpro_drilldown_preserves_origin_concept_labels():
     assert "referencia_tipo" in server_source
     assert "MOVIMIENTO_POS|" in server_source
     assert "MPRO_INVENTORY_MOVEMENT_POLICY" in server_source
+
+
+def test_mpro_report_and_drilldown_accept_same_warehouse_identifiers():
+    report = MPRO.read_text(encoding="utf-8")
+    detail = SERVER.read_text(encoding="utf-8")
+    for fragment in (
+        "CONVERT(varchar(50), a.AlmacenID)",
+        "a.CodigoAlmacen IN",
+        "a.NombreAlmacen IN",
+    ):
+        assert fragment in report
+    for fragment in (
+        "CONVERT(varchar(50), al.AlmacenID)",
+        "al.CodigoAlmacen IN",
+        "al.NombreAlmacen IN",
+    ):
+        assert fragment in detail
+    assert "params.extend(almacenes_limpios)" in detail
+    assert "if tipo in ('E', 'EN', 'ENTRADA')" in detail
+    assert "cantidad if tipo in ('E', 'EN', 'ENTRADA') else -cantidad" in detail
