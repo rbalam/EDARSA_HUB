@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
 
 from worker_mcp.oauth_discovery import authorization_metadata, protected_resource_metadata
 from worker_mcp.oauth_pkce import validate_pkce_challenge, verify_pkce
+from worker_mcp.public_origin import PublicOriginError, public_https_origin
 
 ROOT = Path(__file__).resolve().parents[2]
 OAUTH = ROOT / "backend/modules/worker_mcp/oauth_server.py"
@@ -65,7 +69,41 @@ def test_public_metadata_and_router_mount_are_canonical():
     assert 'origin + "/api/mcp/oauth"' in gateway
     assert "from .oauth_server import router as oauth_router" in gateway
     assert "router.include_router(oauth_router)" in gateway
+    assert "public_https_origin(request)" in gateway
 
+
+
+def test_proxy_forwarded_origin_resolves_external_https_url():
+    request = SimpleNamespace(
+        headers={
+            "x-forwarded-proto": "https",
+            "x-forwarded-host": "erp.example.test",
+            "host": "internal:8001",
+        },
+        url=SimpleNamespace(scheme="http"),
+    )
+    assert public_https_origin(request) == "https://erp.example.test"
+
+
+def test_public_origin_fails_closed_without_external_https_proof():
+    request = SimpleNamespace(
+        headers={"host": "127.0.0.1:8001"},
+        url=SimpleNamespace(scheme="http"),
+    )
+    with pytest.raises(PublicOriginError):
+        public_https_origin(request)
+
+
+def test_public_origin_rejects_header_injection():
+    request = SimpleNamespace(
+        headers={
+            "x-forwarded-proto": "https",
+            "x-forwarded-host": "good.example.test/evil",
+        },
+        url=SimpleNamespace(scheme="http"),
+    )
+    with pytest.raises(PublicOriginError):
+        public_https_origin(request)
 
 def test_oauth_change_does_not_reference_production_or_sales_sync():
     text = OAUTH.read_text(encoding="utf-8").lower()
