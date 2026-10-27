@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3C-B1-SERVICE-HELPERS-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a7c52ae1ab11cd06354a6659b64fe47581c63671",
+  "production_allowed": false,
+  "objective": "E3C-B1: agregar imports y helpers deterministas del servicio de recomendaciones BOS.",
+  "acceptance": [
+    "Helpers de deduplicacion, id estable, riesgo y confianza presentes.",
+    "py_compile PASS.",
+    "No Produccion."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No endpoints.",
+    "No E3D."
+  ],
+  "actions": [
+    {
+      "type": "append_once",
+      "path": "backend/modules/bos_executive/recommendation_service.py",
+      "source_sha256": "56e0ea52375b3d8b456c588e18abc3e310fd2b4cda806e547edb67eead4c3df3",
+      "replacement": "\nfrom __future__ import annotations\n\nimport hashlib\n\nfrom .contracts import ConfidenceClass, ExecutiveFindingOutput, FindingStatus\nfrom .priority_contracts import ExecutivePriorityItem, PriorityBand\nfrom .recommendation_contracts import ExecutiveRecommendation, RecommendationRisk\n\n\ndef _unique(values):\n    return tuple(dict.fromkeys(value for value in values if value))\n\n\ndef _stable_id(*parts: str) -> str:\n    payload = \"|\".join(parts).encode(\"utf-8\")\n    return \"rec:\" + hashlib.sha256(payload).hexdigest()[:20]\n\n\ndef _priority_risk(band: PriorityBand) -> RecommendationRisk:\n    if band is PriorityBand.CRITICA:\n        return RecommendationRisk.HIGH\n    if band is PriorityBand.ALTA:\n        return RecommendationRisk.MEDIUM\n    return RecommendationRisk.LOW\n\n\ndef _priority_confidence(item: ExecutivePriorityItem) -> ConfidenceClass:\n    if item.priority_score_explanation and \"NO_PRIORITY_SIGNAL\" not in item.priority_score_explanation:\n        return ConfidenceClass.DETERMINISTA\n    return ConfidenceClass.INFERIDO\n",
+      "expected_occurrences": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/recommendation_service.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
