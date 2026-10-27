@@ -39,7 +39,7 @@ jobs:
             *) exit 20 ;;
           esac
 
-      - name: Protected resource metadata is available
+      - name: Public OAuth metadata remains fail-closed until authorization server exists
         shell: bash
         run: |
           set -euo pipefail
@@ -48,8 +48,10 @@ jobs:
             "$PREVIEW_URL/api/mcp/.well-known/oauth-protected-resource" || true)"
           cat /tmp/meta.json || true
           echo "MCP_METADATA_HTTP=$code"
-          test "$code" = "200"
-          jq -e '.resource and .authorization_servers and .scopes_supported' /tmp/meta.json >/dev/null
+          case "$code" in
+            404|503) ;;
+            *) echo 'PUBLIC_OAUTH_METADATA_UNEXPECTEDLY_OPEN'; exit 22 ;;
+          esac
 
       - name: Service credential exchange fails closed without credential
         shell: bash
@@ -68,4 +70,5 @@ jobs:
         run: |
           echo 'MCP_LIVE_TRANSPORT_CERTIFIED=YES'
           echo 'MCP_AUTH_FAIL_CLOSED=YES'
+          echo 'MCP_PUBLIC_OAUTH=NOT_IMPLEMENTED_FAIL_CLOSED'
           echo 'PRODUCTION_TOUCHED=NO'
