@@ -91,7 +91,10 @@ jobs:
             tests/test_destructive_diff_guard_contract.py \
             tests/test_backend_route_smoke_contract.py \
             tests/test_shared_app_sync_safety_contract.py \
-            tests/test_soft_inventory_drilldown_canonical.py
+            tests/test_soft_inventory_drilldown_canonical.py \
+            tests/test_inventory_analysis_mpro_canonical.py \
+            tests/test_inventory_analysis_soft_canonical.py \
+            tests/test_inventory_origin_selection_transversal.py
 
       - name: Backend OpenAPI smoke
         shell: bash
