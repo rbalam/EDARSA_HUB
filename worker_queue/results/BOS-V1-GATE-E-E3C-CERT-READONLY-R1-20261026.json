@@ -1,0 +1,158 @@
+{
+  "base_sha": "e09306d5e3952750eef18469ec71cf678cf2fc2d",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-27T03:18:46Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-V1-GATE-E-E3C-CERT-READONLY-R1-20261026",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-27T03:20:36Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.bos_executive",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "causal_service",
+              "contracts",
+              "priority_adapters",
+              "priority_contracts",
+              "priority_service",
+              "recommendation_contracts",
+              "recommendation_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "executiverecommendation",
+              "recommend_from_finding",
+              "recommend_from_priority",
+              "recommendationrisk"
+            ],
+            "path": "backend/modules/bos_executive/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.bos_executive",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "contracts",
+              "dataclasses",
+              "enum"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "eligible_actions",
+              "executiverecommendation",
+              "human_confirmation_required",
+              "recommendation_id",
+              "recommendationrisk"
+            ],
+            "path": "backend/modules/bos_executive/recommendation_contracts.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ExecutiveRecommendation",
+              "RecommendationRisk"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.bos_executive",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "contracts",
+              "hashlib",
+              "priority_contracts",
+              "recommendation_contracts"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "eligible_actions",
+              "executiverecommendation",
+              "human_confirmation_required",
+              "recommend_from_finding",
+              "recommend_from_priority",
+              "recommendation_id",
+              "recommendationrisk"
+            ],
+            "path": "backend/modules/bos_executive/recommendation_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_priority_confidence",
+              "_priority_risk",
+              "_stable_id",
+              "_unique",
+              "recommend_from_finding",
+              "recommend_from_priority"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.bos_executive"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "eligible_actions",
+              "human_confirmation_required",
+              "recommend_from_finding",
+              "recommend_from_priority",
+              "recommendation_id",
+              "recommendationrisk"
+            ],
+            "path": "backend/tests/test_bos_executive_e3c.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_finding",
+              "test_e3c_finding_recommendation_is_deterministic",
+              "test_e3c_finding_without_evidence_fails_closed",
+              "test_e3c_priority_requires_evidence_and_propagates_controls"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 4,
+          "scanned_files": 9,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-27T03:18:43Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
