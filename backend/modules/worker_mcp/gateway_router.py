@@ -32,68 +32,18 @@ class _InProcessResponse(Response):
 @router.api_route("/.well-known/oauth-protected-resource/api/mcp", methods=["GET", "OPTIONS"])
 @router.api_route("/api/mcp/.well-known/oauth-protected-resource", methods=["GET", "OPTIONS"])
 async def mcp_protected_resource_metadata(request: Request):
-    """Publish RFC 9728 metadata without duplicating isolated MCP configuration."""
+    """Publish the public MCP resource and canonical EDARSAHUB OAuth issuer."""
     if request.method == "OPTIONS":
         return Response(status_code=204)
-
-    if inprocess.enabled():
-        try:
-            config = WorkerMcpConfig.from_env()
-            payload = protected_resource_metadata(
-                config.resource_url,
-                config.issuer_url,
-            )
-        except (WorkerMcpConfigError, ValueError):
-            return JSONResponse(
-                status_code=503,
-                content={"detail": "MCP_METADATA_CONFIGURATION_UNAVAILABLE"},
-            )
-        payload["resource"] = str(request.base_url).rstrip("/") + "/api/mcp"
-        return JSONResponse(content=payload)
-
-    try:
-        upstream = _upstream()
-    except ValueError:
-        return JSONResponse(
-            status_code=503,
-            content={"detail": "MCP_UPSTREAM_NOT_CONFIGURED"},
-        )
-
-    client = httpx.AsyncClient(timeout=httpx.Timeout(connect=5, read=10, write=10, pool=5))
-    try:
-        reply = await client.get(
-            upstream + "/.well-known/oauth-protected-resource",
-            headers={"Accept": "application/json"},
-        )
-    except httpx.RequestError:
-        return JSONResponse(
-            status_code=502,
-            content={"detail": "MCP_METADATA_UPSTREAM_UNAVAILABLE"},
-        )
-    finally:
-        await client.aclose()
-
-    if reply.status_code != 200:
-        return JSONResponse(
-            status_code=502,
-            content={"detail": "MCP_METADATA_UPSTREAM_INVALID_STATUS"},
-        )
-
-    try:
-        payload = reply.json()
-    except ValueError:
-        return JSONResponse(
-            status_code=502,
-            content={"detail": "MCP_METADATA_UPSTREAM_INVALID_JSON"},
-        )
-    if not isinstance(payload, dict):
-        return JSONResponse(
-            status_code=502,
-            content={"detail": "MCP_METADATA_UPSTREAM_INVALID_PAYLOAD"},
-        )
-
-    payload["resource"] = str(request.base_url).rstrip("/") + "/api/mcp"
-    return JSONResponse(content=payload)
+    origin = str(request.base_url).rstrip("/")
+    payload = protected_resource_metadata(
+        origin + "/api/mcp",
+        origin + "/api/mcp/oauth",
+    )
+    return JSONResponse(
+        content=payload,
+        headers={"Cache-Control": "no-store"},
+    )
 
 _ALLOWED_RESPONSE_HEADERS = {
     "content-type", "cache-control", "www-authenticate", "mcp-session-id",
