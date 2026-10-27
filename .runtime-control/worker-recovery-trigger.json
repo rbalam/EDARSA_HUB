@@ -1,7 +1,8 @@
 {
   "requested_by": "ChatGPT",
-  "reason": "align Preview to final OAuth redirect-safe Development SHA",
+  "reason": "align Preview to final OAuth redirect-safe Development SHA retry-2",
   "target_branch": "Edarsahub_Desarrollo",
   "target_sha": "a7e5a564e5cba21e4aa22c4d7564bfffb4d09a69",
-  "production_allowed": false
+  "production_allowed": false,
+  "attempt": 2
 }
