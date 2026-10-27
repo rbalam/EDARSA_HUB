@@ -102,3 +102,75 @@ def _precondition_reasons(
     if spec.side_effect and spec.domain == "FINANZAS" and not request.financial_gate_approved:
         reasons.append("FINANCIAL_GATE_REQUIRED")
     return _unique(tuple(reasons))
+
+
+def authorize_recommended_action(
+    recommendation: ExecutiveRecommendation,
+    request: AuthorizedActionRequest,
+    requester_authorization: Mapping[str, object],
+    context: PolicyContext,
+) -> AuthorizedActionDecision:
+    try:
+        spec = get_domain_capability(request.action_type)
+    except CapabilityRegistryError:
+        return _deny(request, ("CAPABILITY_NOT_REGISTERED",))
+
+    reasons = list(_precondition_reasons(recommendation, request, spec))
+    reasons.extend(_requester_reasons(spec.required_permission, requester_authorization))
+    if reasons:
+        return _deny(
+            request,
+            reasons,
+            capability=spec.code,
+            procedure=spec.procedure,
+            required_permission=spec.required_permission,
+        )
+
+    policy_request = PolicyRequest(
+        capabilities=frozenset({spec.code}),
+        scopes=frozenset(request.acting_scopes),
+        risk=spec.risk,
+        data_classification=spec.data_classification,
+        budgets=BudgetRequest(),
+        external_egress=False,
+        production_allowed=False,
+        privilege_expansion=False,
+        approval_granted=request.policy_approval_granted,
+        procedure=spec.procedure,
+    )
+    procedure_spec = ProcedureSpec(
+        name=spec.procedure,
+        required_capabilities=frozenset({spec.code}),
+        max_risk=spec.risk,
+        external_egress_allowed=False,
+    )
+    procedure_decision = evaluate_procedure(procedure_spec, policy_request, context)
+    execution_gate = authorize_internal_capability_execution(
+        requester_authorization,
+        policy_request,
+        context,
+    )
+    reasons = _unique(procedure_decision.reasons + execution_gate.reasons)
+    if not procedure_decision.allowed or not execution_gate.allowed or reasons:
+        return _deny(
+            request,
+            reasons or ("POLICY_DENIED",),
+            capability=spec.code,
+            procedure=spec.procedure,
+            required_permission=spec.required_permission,
+        )
+
+    return AuthorizedActionDecision(
+        allowed=True,
+        reasons=(),
+        recommendation_id=request.recommendation_id,
+        action_type=request.action_type,
+        target_ref=request.target_ref,
+        capability=spec.code,
+        procedure=spec.procedure,
+        required_permission=spec.required_permission,
+        execution_channel="AGENT_HARNESS",
+        idempotency_key=request.idempotency_key,
+        audit_ref=_audit_ref(request),
+        outcome_status="AUTHORIZED_NOT_EXECUTED",
+    )
