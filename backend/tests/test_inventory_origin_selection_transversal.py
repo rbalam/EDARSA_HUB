@@ -55,7 +55,14 @@ def test_130qro_coca_cola_mpro_selected_transfer_106_yields_24_not_31():
     sql, params = cursor.statements[0]
     assert "Inventario_MovimientosDetalle" in sql
     assert "AND (" in sql and "MOVIMIENTO_POS|%" in sql
-    assert params[-1] == "106"
+    # En el SQL el concepto se filtra antes que el almacen. Verificar
+    # la secuencia completa, no el ultimo parametro (que es un almacen).
+    assert params == (
+        9, 130, "2026-10-16", "2026-10-23", 7,
+        "106", "0021", "0021", "0021",
+    )
+    assert sql.count("%s") == len(params)
+    assert sql.index("AND (m.ReferenciaTipo") < sql.index("AND (CONVERT(varchar(50), a.AlmacenID)")
     assert "m.EmpresaID=%s" in sql and "m.SucursalID=%s" in sql
     source = (ROOT / "core/inventarios/analysis_mpro_canonical.py").read_text(encoding="utf-8")
     assert "movements = ledger" in source
