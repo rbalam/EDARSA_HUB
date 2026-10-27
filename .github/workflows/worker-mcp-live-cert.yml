@@ -132,6 +132,10 @@ jobs:
           redirect_uri="$(cat /tmp/redirect-uri.txt)"
           verifier='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
           challenge="$(printf '%s' "$verifier" | openssl dgst -sha256 -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=')"
+          export CLIENT_ID="$client_id"
+          export REDIRECT_URI="$redirect_uri"
+          export CHALLENGE="$challenge"
+          export RESOURCE="$PREVIEW_URL/api/mcp"
           query="$(python - <<'PY'
           import os, urllib.parse
           params = {
@@ -157,12 +161,6 @@ jobs:
           echo "OAUTH_AUTHORIZE_NOSESSION_HTTP=$code"
           test "$code" = "200"
           grep -q 'Inicia sesion en EDARSAHUB' /tmp/authorize.html
-        env:
-          CLIENT_ID: ${{ steps.nonexistent.outputs.client_id }}
-          REDIRECT_URI: https://chatgpt.com/edarsahub-mcp-cert-callback
-          CHALLENGE: unused
-          RESOURCE: https://erp-crm-enterprise-1.preview.emergentagent.com/api/mcp
-
       - name: OAuth token endpoint fails closed for invalid grant
         shell: bash
         run: |
