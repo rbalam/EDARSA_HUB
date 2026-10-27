@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3D-D1-TESTS-DENY-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d3c540d3039428d4345a36e3f51f23a47da540a1",
+  "production_allowed": false,
+  "objective": "E3D-D1: agregar fixtures canonicos y pruebas fail-closed del Authorized Action Bridge.",
+  "acceptance": [
+    "Capability desconocida retorna DENIED/CAPABILITY_NOT_REGISTERED.",
+    "Accion no elegible retorna DENIED/ACTION_NOT_ELIGIBLE.",
+    "pytest E3D PASS.",
+    "No Produccion."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No executor.",
+    "No E3E/E3F."
+  ],
+  "actions": [
+    {
+      "type": "append_once",
+      "path": "backend/tests/test_bos_executive_e3d.py",
+      "source_sha256": "24bb71d385bb6f8daa1657491a723a4e8ad92d38cb0c1d48b9d736de55fd0854",
+      "replacement": "\nfrom core.agent_capability_policy import PolicyContext\nfrom modules.bos_executive import (\n    AuthorizedActionRequest,\n    ConfidenceClass,\n    ExecutiveRecommendation,\n    RecommendationRisk,\n    authorize_recommended_action,\n)\n\n\ndef _context(capability=\"INVENTORY_ANALYZE\", scope=\"empresa:1\"):\n    capabilities = frozenset({capability})\n    scopes = frozenset({scope})\n    return PolicyContext(\n        user_allowed_capabilities=capabilities,\n        agent_allowed_capabilities=capabilities,\n        environment_allowed_capabilities=capabilities,\n        policy_allowed_capabilities=capabilities,\n        user_allowed_scopes=scopes,\n        agent_allowed_scopes=scopes,\n        environment_allowed_scopes=scopes,\n        policy_allowed_scopes=scopes,\n        budget_limits={\n            \"runtime_seconds\": 1000,\n            \"files_changed\": 1000,\n            \"lines_changed\": 100000,\n            \"external_calls\": 1000,\n            \"sql_rows\": 100000,\n            \"inference_cost_usd\": 100.0,\n        },\n    )\n\n\ndef _recommendation(**overrides):\n    values = {\n        \"recommendation_id\": \"rec:test\",\n        \"recommendation_type\": \"ADDRESS_PRIORITY\",\n        \"source_ref\": \"tarea:T-1\",\n        \"title\": \"Atender prioridad\",\n        \"rationale\": \"SLA_VENCIDA\",\n        \"evidence_refs\": (\"workflow:T-1\",),\n        \"expected_impact\": \"Reducir riesgo operativo\",\n        \"risk_level\": RecommendationRisk.MEDIUM,\n        \"confidence_class\": ConfidenceClass.DETERMINISTA,\n        \"generated_at\": \"2026-10-27T00:00:00+00:00\",\n        \"valid_until\": \"2026-10-28T00:00:00+00:00\",\n        \"required_permissions\": (\"COMPRAS_INVENTARIOS_VER\",),\n        \"eligible_actions\": (\"INVENTORY_ANALYZE\",),\n        \"human_confirmation_required\": True,\n        \"stale\": False,\n        \"provenance_refs\": (\"workflow:T-1\",),\n    }\n    values.update(overrides)\n    return ExecutiveRecommendation(**values)\n\n\ndef _request(**overrides):\n    values = {\n        \"recommendation_id\": \"rec:test\",\n        \"action_type\": \"INVENTORY_ANALYZE\",\n        \"target_ref\": \"inventory:1\",\n        \"requested_by\": \"user:1\",\n        \"acting_scopes\": (\"empresa:1\",),\n        \"evaluated_at\": \"2026-10-27T12:00:00+00:00\",\n        \"confirmation_granted\": True,\n        \"policy_approval_granted\": False,\n        \"financial_gate_approved\": False,\n        \"idempotency_key\": None,\n        \"dry_run\": True,\n    }\n    values.update(overrides)\n    return AuthorizedActionRequest(**values)\n\n\ndef test_e3d_unknown_capability_is_denied():\n    decision = authorize_recommended_action(\n        _recommendation(eligible_actions=(\"UNKNOWN_CAPABILITY\",)),\n        _request(action_type=\"UNKNOWN_CAPABILITY\"),\n        {\"allowed\": True, \"permission\": \"COMPRAS_INVENTARIOS_VER\"},\n        _context(),\n    )\n    assert decision.allowed is False\n    assert \"CAPABILITY_NOT_REGISTERED\" in decision.reasons\n    assert decision.outcome_status == \"DENIED\"\n\n\ndef test_e3d_action_must_be_declared_eligible():\n    decision = authorize_recommended_action(\n        _recommendation(eligible_actions=()),\n        _request(),\n        {\"allowed\": True, \"permission\": \"COMPRAS_INVENTARIOS_VER\"},\n        _context(),\n    )\n    assert decision.allowed is False\n    assert \"ACTION_NOT_ELIGIBLE\" in decision.reasons\n",
+      "expected_occurrences": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_bos_executive_e3d.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_bos_executive_e3d.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
