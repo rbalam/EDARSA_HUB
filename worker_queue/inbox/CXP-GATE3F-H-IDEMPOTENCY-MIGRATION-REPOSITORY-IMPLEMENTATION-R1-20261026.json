@@ -1,0 +1,34 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CXP-GATE3F-H-IDEMPOTENCY-MIGRATION-REPOSITORY-IMPLEMENTATION-R1-20261026",
+  "created_at_utc": "2026-10-27T03:22:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e09306d5e3952750eef18469ec71cf678cf2fc2d",
+  "production_allowed": false,
+  "objective": "Implementar exclusivamente en el repositorio de Desarrollo los dos archivos de migracion CxP de idempotencia ya certificados en Gates 3F-A a 3F-G: forward y rollback. Reutilizar la convencion existente backend/database/migrations. No ejecutar ningun SQL ni abrir conexion de escritura. El forward debe: impedir mas de una queue activa por DecisionPagoID; agregar Finanzas_Pagos.PagoOrigenQueueID BIGINT NULL; agregar FK a Finanzas_CxP_PagosOrigenQueue(PagoOrigenQueueID); agregar unique filtered index para PagoOrigenQueueID no nulo; preservar Finanzas_Pagos.PagoID y COA_ExpedienteReferencias. El rollback debe fallar cerrado si ya existen correlaciones PagoOrigenQueueID no nulas. No agregar DecisionPagoID, HashOrigen ni identificadores ERP especificos a Finanzas_Pagos.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Repository-only implementation",
+    "Create exactly two new migration files: forward and rollback",
+    "No SQL execution",
+    "No write database connection",
+    "No Production",
+    "No Payment Executor implementation",
+    "No canary execution",
+    "No environment or credential changes",
+    "No application code changes",
+    "No edits to existing migrations",
+    "Forward must be transactional, rerun-safe and fail-closed on incompatible existing state",
+    "Rollback must refuse destructive removal when PagoOrigenQueueID has persisted non-null values",
+    "Use only canonical EDARSAHUB tables and generic financial identifiers"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
