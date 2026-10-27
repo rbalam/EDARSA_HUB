@@ -1,0 +1,14 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-TOAST-GATE8-ADAPTER-IMPLEMENTATION-READINESS-R1-20261026",
+  "created_at_utc": "2026-10-27T01:42:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "8d7135bd4fbb4e616eefc03515b50214f983a35c",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "objective": "Auditar de forma no destructiva el código real del motor universal de integraciones y preparar implementación de adaptador Toast POS. Identificar rutas existentes para proveedor API, cliente HTTP, cifrado secretos, RBAC, sync handlers, mapeo ubicaciones y tests; producir plan de archivos mínimos y pruebas. NO usar SQL READ_ONLY como sustituto de auditoría de código. No modificar archivos ni Producción, no crear otro Worker ni tablas Toast_*. Reportar blockers concretos y contrato OAuth/API Toast pendiente de validar."
+}
