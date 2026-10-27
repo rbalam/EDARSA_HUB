@@ -1,0 +1,42 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3C-A1-RISK-CONTRACT-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "fa68ee51f4722763e3fd76e7c5ce9da36455d98e",
+  "production_allowed": false,
+  "objective": "E3C-A1: completar imports y enum RecommendationRisk del contrato BOS.",
+  "acceptance": [
+    "RecommendationRisk LOW/MEDIUM/HIGH presente.",
+    "py_compile PASS.",
+    "No Produccion."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No E3D."
+  ],
+  "actions": [
+    {
+      "type": "append_once",
+      "path": "backend/modules/bos_executive/recommendation_contracts.py",
+      "source_sha256": "a4c455cc53facb68d1af909f8415c6acf3a8a514e316c384cc7bbf1667f2ac6e",
+      "replacement": "\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom enum import Enum\n\nfrom .contracts import ConfidenceClass\n\n\nclass RecommendationRisk(str, Enum):\n    LOW = \"LOW\"\n    MEDIUM = \"MEDIUM\"\n    HIGH = \"HIGH\"\n",
+      "expected_occurrences": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/recommendation_contracts.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
