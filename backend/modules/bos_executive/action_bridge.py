@@ -61,3 +61,44 @@ def _deny(request: AuthorizedActionRequest, reasons, *, capability=None, procedu
         audit_ref=_audit_ref(request),
         outcome_status="DENIED",
     )
+
+
+def _precondition_reasons(
+    recommendation: ExecutiveRecommendation,
+    request: AuthorizedActionRequest,
+    spec,
+) -> tuple[str, ...]:
+    reasons = []
+    if request.recommendation_id != recommendation.recommendation_id:
+        reasons.append("RECOMMENDATION_ID_MISMATCH")
+    if request.action_type not in recommendation.eligible_actions:
+        reasons.append("ACTION_NOT_ELIGIBLE")
+    if not str(request.target_ref or "").strip():
+        reasons.append("TARGET_REF_REQUIRED")
+    if not str(request.requested_by or "").strip():
+        reasons.append("REQUESTED_BY_REQUIRED")
+    if not request.acting_scopes:
+        reasons.append("ACTING_SCOPE_REQUIRED")
+
+    generated_at = _parse_time(recommendation.generated_at)
+    valid_until = _parse_time(recommendation.valid_until)
+    evaluated_at = _parse_time(request.evaluated_at)
+    if generated_at is None or valid_until is None or evaluated_at is None:
+        reasons.append("RECOMMENDATION_TIME_INVALID")
+    else:
+        if evaluated_at < generated_at:
+            reasons.append("RECOMMENDATION_NOT_YET_VALID")
+        if evaluated_at >= valid_until:
+            reasons.append("RECOMMENDATION_EXPIRED")
+
+    if recommendation.human_confirmation_required and not request.confirmation_granted:
+        reasons.append("HUMAN_CONFIRMATION_REQUIRED")
+    if spec.required_permission not in recommendation.required_permissions:
+        reasons.append("RECOMMENDATION_PERMISSION_CONTRACT_MISSING")
+    if spec.side_effect and not str(request.idempotency_key or "").strip():
+        reasons.append("IDEMPOTENCY_KEY_REQUIRED")
+    if spec.side_effect and spec.approval_required and not request.confirmation_granted:
+        reasons.append("CAPABILITY_APPROVAL_REQUIRED")
+    if spec.side_effect and spec.domain == "FINANZAS" and not request.financial_gate_approved:
+        reasons.append("FINANCIAL_GATE_REQUIRED")
+    return _unique(tuple(reasons))
