@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "7eeed0dca8ebd10358bb38e22fd5c2ccf00b5284",
-  "generated_at_utc": "2026-10-27T04:31:03Z",
+  "generated_at_utc": "2026-10-27T04:32:19Z",
   "history": {
     "done_total_local": 1613,
     "pending_total_local": 0,
@@ -16,37 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3522,
+      "age_seconds": 3599,
       "job_id": "BOS-V1-GATE-E-E3D-CERT-READONLY-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3594,
-      "job_id": "BOS-V1-GATE-E-E3D-D1-TESTS-DENY-R1-20261026",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3545,
-      "job_id": "BOS-V1-GATE-E-E3D-D2-TESTS-AUTHORIZATION-R1-20261026",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1907,
+      "age_seconds": 1984,
       "job_id": "BOS-V1-GATE-E-E3E-A1-BOS-EXECUTIVE-PANEL-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3333,
+      "age_seconds": 3409,
       "job_id": "BOS-V1-GATE-E-E3E-FRONTEND-OWNER-AUDIT-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3389,
+      "age_seconds": 3466,
       "job_id": "coa-gate6c-r2-fiscal-status-lifecycle-design-v1-20261025",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,14 +48,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "remote_development_sha": "7eeed0dca8ebd10358bb38e22fd5c2ccf00b5284",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-27T04:30:55Z",
-    "last_receive_utc": "2026-10-27T04:31:03Z",
+    "last_cycle_utc": "2026-10-27T04:32:11Z",
+    "last_receive_utc": "2026-10-27T04:32:19Z",
     "last_terminal_utc": "2026-10-27T03:59:15Z",
     "pid": "12163",
     "runtime_fingerprint": {
