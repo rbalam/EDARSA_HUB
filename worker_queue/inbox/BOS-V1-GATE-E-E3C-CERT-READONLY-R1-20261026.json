@@ -1,0 +1,67 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3C-CERT-READONLY-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e09306d5e3952750eef18469ec71cf678cf2fc2d",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Certificar E3C Gate E: contrato y servicio determinista de recomendaciones sobre E3A/E3B, sin ejecucion ni persistencia.",
+  "acceptance": [
+    "E3A, E3B y E3C tests PASS.",
+    "Contrato ExecutiveRecommendation completo y visible.",
+    "recommend_from_finding y recommend_from_priority presentes.",
+    "Fail-closed sin evidencia, eligible_actions declarativas, confirmacion humana, stale y permisos verificados.",
+    "No archivos modificados y production_touched=false."
+  ],
+  "constraints": [
+    "READ_ONLY estricto.",
+    "actions vacio.",
+    "No Produccion.",
+    "No E3D."
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/__init__.py",
+        "backend/modules/bos_executive/recommendation_contracts.py",
+        "backend/modules/bos_executive/recommendation_service.py",
+        "backend/tests/test_bos_executive_e3c.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_bos_executive_e3a.py",
+        "backend/tests/test_bos_executive_e3b.py",
+        "backend/tests/test_bos_executive_e3c.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/bos_executive",
+          "backend/tests/test_bos_executive_e3c.py"
+        ],
+        "search_terms": [
+          "ExecutiveRecommendation",
+          "RecommendationRisk",
+          "recommend_from_finding",
+          "recommend_from_priority",
+          "eligible_actions",
+          "human_confirmation_required",
+          "recommendation_id"
+        ]
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
