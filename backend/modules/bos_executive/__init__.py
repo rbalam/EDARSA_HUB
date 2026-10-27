@@ -14,6 +14,8 @@ from .priority_contracts import (
     PriorityBand,
 )
 from .priority_service import aggregate_priorities
+from .recommendation_contracts import ExecutiveRecommendation, RecommendationRisk
+from .recommendation_service import recommend_from_finding, recommend_from_priority
 
 __all__ = [
     "ConfidenceClass",
@@ -28,5 +30,9 @@ __all__ = [
     "adapt_operational_task",
     "adapt_crm_opportunity",
     "aggregate_priorities",
+    "ExecutiveRecommendation",
+    "RecommendationRisk",
+    "recommend_from_finding",
+    "recommend_from_priority",
     "explain_causal_finding",
 ]
