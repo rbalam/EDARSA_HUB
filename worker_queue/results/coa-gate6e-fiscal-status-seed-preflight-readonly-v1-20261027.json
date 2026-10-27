@@ -1,0 +1,247 @@
+{
+  "base_sha": "be308f77125b55bc94754ffb58f570af3708a4cd",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-27T21:02:03Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "coa-gate6e-fiscal-status-seed-preflight-readonly-v1-20261027",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-27T21:04:10Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "database_user"
+            ],
+            "name": "gate6e_database_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable",
+              "is_identity"
+            ],
+            "name": "gate6e_target_table_structure",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                1,
+                "EstatusDocumentoFiscalEmitidoID",
+                "tinyint",
+                1,
+                3,
+                0,
+                false,
+                false
+              ],
+              [
+                2,
+                "Codigo",
+                "varchar",
+                30,
+                0,
+                0,
+                false,
+                false
+              ],
+              [
+                3,
+                "Nombre",
+                "nvarchar",
+                200,
+                0,
+                0,
+                false,
+                false
+              ],
+              [
+                4,
+                "Descripcion",
+                "nvarchar",
+                1000,
+                0,
+                0,
+                true,
+                false
+              ],
+              [
+                5,
+                "EsFinal",
+                "bit",
+                1,
+                1,
+                0,
+                false,
+                false
+              ],
+              [
+                6,
+                "Activo",
+                "bit",
+                1,
+                1,
+                0,
+                false,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_name",
+              "is_unique",
+              "is_primary_key",
+              "has_filter",
+              "key_columns"
+            ],
+            "name": "gate6e_target_keys_indexes",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "PK_Fiscal_DocumentosEmitidosEstatus",
+                true,
+                true,
+                false,
+                "EstatusDocumentoFiscalEmitidoID"
+              ],
+              [
+                "UQ_Fiscal_DocumentosEmitidosEstatus_Codigo",
+                true,
+                false,
+                false,
+                "Codigo"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EstatusDocumentoFiscalEmitidoID",
+              "Codigo",
+              "Nombre",
+              "Descripcion",
+              "EsFinal",
+              "Activo"
+            ],
+            "name": "gate6e_existing_rows",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EstatusDocumentoFiscalEmitidoID",
+              "Codigo",
+              "Nombre",
+              "Descripcion",
+              "EsFinal",
+              "Activo"
+            ],
+            "name": "gate6e_id_collisions",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EstatusDocumentoFiscalEmitidoID",
+              "Codigo",
+              "Nombre",
+              "Descripcion",
+              "EsFinal",
+              "Activo"
+            ],
+            "name": "gate6e_code_collisions",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EstatusDocumentoFiscalEmitidoID",
+              "referenced_rows"
+            ],
+            "name": "gate6e_references_to_seed_ids",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_rows"
+            ],
+            "name": "gate6e_total_emitted_documents",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "parent_table",
+              "parent_column",
+              "referenced_table",
+              "referenced_column",
+              "is_disabled",
+              "is_not_trusted"
+            ],
+            "name": "gate6e_fk_integrity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "FK_Fiscal_DocumentosEmitidos_Estatus",
+                "Fiscal_DocumentosEmitidos",
+                "EstatusDocumentoFiscalEmitidoID",
+                "Fiscal_DocumentosEmitidosEstatus",
+                "EstatusDocumentoFiscalEmitidoID",
+                false,
+                false
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-27T21:02:02Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
