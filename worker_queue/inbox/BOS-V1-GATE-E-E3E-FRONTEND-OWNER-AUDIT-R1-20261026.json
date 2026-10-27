@@ -1,0 +1,64 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3E-FRONTEND-OWNER-AUDIT-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "fd718125a9a76680e693ac06096221cd44c9372c",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Auditar owner y contrato de integración frontend para E3E Gate E. Confirmar TableroEjecutivo como consumidor canónico, identificar el endpoint backend existente que debe enriquecerse y evitar dashboard/endpoint/fuente de verdad paralelos.",
+  "acceptance": [
+    "Confirmar frontend/src/pages/TableroEjecutivo.js como consumidor canónico.",
+    "Confirmar backend/modules/comercial/routes.py /api/comercial/tablero-ejecutivo como owner de respuesta ejecutiva existente o identificar owner canónico equivalente.",
+    "Mapear cómo exponer why/priority/recommendation/eligible actions desde backend/modules/bos_executive sin persistencia ni fuente paralela.",
+    "Confirmar que acciones elegibles solo se muestran; no autoejecutar.",
+    "Respetar blindaje de Tablero Ejecutivo y auth via api centralizado/cookie.",
+    "Clasificar cambios mínimos frontend/backend y pruebas necesarias.",
+    "production_touched=false."
+  ],
+  "constraints": [
+    "READ_ONLY estricto.",
+    "actions vacio.",
+    "No Produccion.",
+    "No SQL.",
+    "No nuevos dashboards.",
+    "No nuevo endpoint salvo evidencia de imposibilidad de extender el existente.",
+    "No E3F."
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/TableroEjecutivo.js",
+          "frontend/src/services/comercialApi.js",
+          "frontend/src/lib/api.js",
+          "backend/modules/comercial/routes.py",
+          "backend/modules/comercial/service.py",
+          "backend/modules/bos_executive",
+          "docs/CIERRE_Y_BLINDAJE_TABLERO_EJECUTIVO.md",
+          "docs/BOS/certifications/BOS_V1_GATE_E_EXECUTIVE_BOS_DESIGN_CONTRACT_V1.md"
+        ],
+        "search_terms": [
+          "tablero-ejecutivo",
+          "Tablero Ejecutivo",
+          "api.get",
+          "bos_executive",
+          "ExecutiveRecommendation",
+          "authorize_recommended_action",
+          "eligible_actions",
+          "human_confirmation_required",
+          "why",
+          "recommend"
+        ]
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
