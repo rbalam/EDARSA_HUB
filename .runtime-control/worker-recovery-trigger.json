@@ -1,8 +1,9 @@
 {
   "requested_by": "ChatGPT",
-  "reason": "align Preview to final OAuth redirect-safe Development SHA retry-2",
+  "reason": "wake canonical Universal Worker to consume existing EDARSAHUB-PROD-DEV-DIVERGENCE-SEMANTIC-CLASSIFICATION-R2-20261024 request; do not duplicate",
   "target_branch": "Edarsahub_Desarrollo",
-  "target_sha": "a7e5a564e5cba21e4aa22c4d7564bfffb4d09a69",
+  "target_sha": "ebd8d93a23ace70541da33a2f3cc6b61353a8e37",
   "production_allowed": false,
-  "attempt": 2
+  "preferred_job_id": "EDARSAHUB-PROD-DEV-DIVERGENCE-SEMANTIC-CLASSIFICATION-R2-20261024",
+  "attempt": 1
 }
