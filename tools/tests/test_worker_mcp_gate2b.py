@@ -334,14 +334,17 @@ def test_gateway_publishes_standard_and_legacy_protected_resource_metadata_route
 def test_gateway_advertises_reachable_public_metadata_uri():
     text = GATEWAY.read_text(encoding="utf-8")
     assert '"/api/mcp/.well-known/oauth-protected-resource"' in text
-    assert 'public_resource = str(request.base_url).rstrip("/") + "/api/mcp/.well-known/oauth-protected-resource"' in text
+    assert "public_https_origin(request)" in text
+    assert "except PublicOriginError" in text
+    assert '"/api/mcp/.well-known/oauth-protected-resource"' in text
     assert 'origin + "/api/mcp/oauth"' in text
 
 
 def test_gateway_metadata_is_owned_by_public_gateway_not_loopback_upstream():
     text = GATEWAY.read_text(encoding="utf-8")
     metadata_block = text.split("_ALLOWED_RESPONSE_HEADERS", 1)[0]
-    assert 'origin = str(request.base_url).rstrip("/")' in metadata_block
+    assert "origin = public_https_origin(request)" in metadata_block
+    assert "MCP_PUBLIC_ORIGIN_UNAVAILABLE" in metadata_block
     assert 'origin + "/api/mcp"' in metadata_block
     assert 'origin + "/api/mcp/oauth"' in metadata_block
     assert 'upstream + "/.well-known/oauth-protected-resource"' not in metadata_block

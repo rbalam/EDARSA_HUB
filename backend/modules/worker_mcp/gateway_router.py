@@ -17,6 +17,7 @@ from . import inprocess
 from .config import WorkerMcpConfig, WorkerMcpConfigError
 from .oauth_discovery import protected_resource_metadata
 from .oauth_server import router as oauth_router
+from .public_origin import PublicOriginError, public_https_origin
 
 router = APIRouter(on_startup=[inprocess.start], on_shutdown=[inprocess.stop])
 router.include_router(oauth_router)
@@ -45,7 +46,13 @@ async def mcp_protected_resource_metadata(request: Request):
     """
     if request.method == "OPTIONS":
         return Response(status_code=204)
-    origin = str(request.base_url).rstrip("/")
+    try:
+        origin = public_https_origin(request)
+    except PublicOriginError:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "MCP_PUBLIC_ORIGIN_UNAVAILABLE"},
+        )
     payload = protected_resource_metadata(
         origin + "/api/mcp",
         origin + "/api/mcp/oauth",
@@ -116,13 +123,21 @@ async def mcp_gateway(request: Request):
     # The upstream advertises loopback resource metadata. Never expose it to clients.
     challenge = response_headers.get("www-authenticate")
     if challenge and "resource_metadata=" in challenge:
-        public_resource = str(request.base_url).rstrip("/") + "/api/mcp/.well-known/oauth-protected-resource"
-        import re
-        response_headers["www-authenticate"] = re.sub(
-            r'resource_metadata="[^"]+"',
-            'resource_metadata="' + public_resource + '"',
-            challenge,
-        )
+        try:
+            public_origin = public_https_origin(request)
+        except PublicOriginError:
+            response_headers["www-authenticate"] = "Bearer"
+        else:
+            public_resource = (
+                public_origin
+                + "/api/mcp/.well-known/oauth-protected-resource"
+            )
+            import re
+            response_headers["www-authenticate"] = re.sub(
+                r'resource_metadata="[^"]+"',
+                'resource_metadata="' + public_resource + '"',
+                challenge,
+            )
 
     async def close_connections():
         await reply.aclose()
