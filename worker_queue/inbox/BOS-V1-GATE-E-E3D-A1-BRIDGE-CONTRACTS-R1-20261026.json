@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3D-A1-BRIDGE-CONTRACTS-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "908b6dfd34a8f5108abc3cb460a231dbf6589ef5",
+  "production_allowed": false,
+  "objective": "E3D-A1: agregar contratos request/decision del Authorized Action Bridge BOS, sin ejecutar acciones.",
+  "acceptance": [
+    "AuthorizedActionRequest incluye recommendation_id, action_type, target_ref, requested_by, acting_scopes, evaluated_at, confirmation, financial gate, idempotency y dry_run.",
+    "AuthorizedActionDecision incluye allowed, reasons, capability, procedure, permission, execution_channel, audit_ref y outcome_status.",
+    "No Produccion y py_compile PASS."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No endpoints.",
+    "No executor.",
+    "No E3E/E3F."
+  ],
+  "actions": [
+    {
+      "type": "append_once",
+      "path": "backend/modules/bos_executive/action_bridge_contracts.py",
+      "source_sha256": "4b8143d3db823d1f010c9c215dd9aa551a156d9ae3f41de399863700d4898ec1",
+      "replacement": "\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\n\n\n@dataclass(frozen=True)\nclass AuthorizedActionRequest:\n    recommendation_id: str\n    action_type: str\n    target_ref: str\n    requested_by: str\n    acting_scopes: tuple[str, ...]\n    evaluated_at: str\n    confirmation_granted: bool = False\n    financial_gate_approved: bool = False\n    idempotency_key: str | None = None\n    dry_run: bool = True\n\n\n@dataclass(frozen=True)\nclass AuthorizedActionDecision:\n    allowed: bool\n    reasons: tuple[str, ...]\n    recommendation_id: str\n    action_type: str\n    target_ref: str\n    capability: str | None\n    procedure: str | None\n    required_permission: str | None\n    execution_channel: str | None\n    idempotency_key: str | None\n    audit_ref: str\n    outcome_status: str\n",
+      "expected_occurrences": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/action_bridge_contracts.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
