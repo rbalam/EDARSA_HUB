@@ -14,7 +14,7 @@ permissions:
 jobs:
   live-cert:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     env:
       PREVIEW_URL: https://erp-crm-enterprise-1.preview.emergentagent.com
     steps:
@@ -22,7 +22,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          code="$(curl --silent --show-error --location -o /tmp/health.json -w '%{http_code}' "$PREVIEW_URL/api/health")"
+          for attempt in 1 2 3 4 5; do
+            code="$(curl --silent --show-error --location               --connect-timeout 5 --max-time 25               -o /tmp/health.json -w '%{http_code}'               "$PREVIEW_URL/api/health" || true)"
+            echo "HEALTH_ATTEMPT=$attempt HTTP=$code"
+            if [ "$code" = "200" ]; then break; fi
+            sleep 3
+          done
           cat /tmp/health.json || true
           echo "HEALTH_HTTP=$code"
           test "$code" = "200"
@@ -31,7 +36,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          code="$(curl --silent --show-error --location             -o /tmp/mcp.txt -w '%{http_code}'             -H 'Accept: application/json, text/event-stream'             -H 'Content-Type: application/json'             -H 'MCP-Protocol-Version: 2025-06-18'             -X POST "$PREVIEW_URL/api/mcp"             --data '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' || true)"
+          for attempt in 1 2 3 4 5; do
+            code="$(curl --silent --show-error --location               --connect-timeout 5 --max-time 25               -o /tmp/mcp.txt -w '%{http_code}'               -H 'Accept: application/json, text/event-stream'               -H 'Content-Type: application/json'               -H 'MCP-Protocol-Version: 2025-06-18'               -X POST "$PREVIEW_URL/api/mcp"               --data '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' || true)"
+            echo "MCP_NOAUTH_ATTEMPT=$attempt HTTP=$code"
+            case "$code" in
+              401|403) break ;;
+              502|503) sleep 3 ;;
+              *) break ;;
+            esac
+          done
           cat /tmp/mcp.txt || true
           echo "MCP_NOAUTH_HTTP=$code"
           case "$code" in
@@ -39,19 +52,131 @@ jobs:
             *) exit 20 ;;
           esac
 
-      - name: Public OAuth metadata remains fail-closed until authorization server exists
+      - name: Protected resource metadata is live
         shell: bash
         run: |
           set -euo pipefail
-          code="$(curl --silent --show-error --location \
-            -o /tmp/meta.json -w '%{http_code}' \
-            "$PREVIEW_URL/api/mcp/.well-known/oauth-protected-resource" || true)"
+          for attempt in 1 2 3 4 5; do
+            code="$(curl --silent --show-error --location               --connect-timeout 5 --max-time 25               -o /tmp/meta.json -w '%{http_code}'               "$PREVIEW_URL/api/mcp/.well-known/oauth-protected-resource" || true)"
+            echo "MCP_METADATA_ATTEMPT=$attempt HTTP=$code"
+            if [ "$code" = "200" ]; then break; fi
+            case "$code" in 502|503) sleep 3 ;; *) break ;; esac
+          done
           cat /tmp/meta.json || true
           echo "MCP_METADATA_HTTP=$code"
-          case "$code" in
-            404|502|503) ;;
-            *) echo 'PUBLIC_OAUTH_METADATA_UNEXPECTEDLY_OPEN'; exit 22 ;;
-          esac
+          test "$code" = "200"
+          jq -e --arg resource "$PREVIEW_URL/api/mcp"             --arg issuer "$PREVIEW_URL/api/mcp/oauth" '
+              .resource == $resource
+              and (.authorization_servers | index($issuer) != null)
+              and (.scopes_supported | index("worker:submit") != null)
+              and (.scopes_supported | index("worker:status") != null)
+            ' /tmp/meta.json >/dev/null
+
+      - name: OAuth authorization-server metadata is live
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="$PREVIEW_URL/api/mcp/oauth/.well-known/oauth-authorization-server"
+          for attempt in 1 2 3 4 5; do
+            code="$(curl --silent --show-error --location               --connect-timeout 5 --max-time 25               -o /tmp/oauth-meta.json -w '%{http_code}' "$url" || true)"
+            echo "OAUTH_METADATA_ATTEMPT=$attempt HTTP=$code"
+            if [ "$code" = "200" ]; then break; fi
+            case "$code" in 502|503) sleep 3 ;; *) break ;; esac
+          done
+          cat /tmp/oauth-meta.json || true
+          echo "OAUTH_METADATA_HTTP=$code"
+          test "$code" = "200"
+          jq -e --arg issuer "$PREVIEW_URL/api/mcp/oauth" '
+            .issuer == $issuer
+            and .authorization_endpoint == ($issuer + "/authorize")
+            and .token_endpoint == ($issuer + "/token")
+            and .registration_endpoint == ($issuer + "/register")
+            and (.grant_types_supported | index("authorization_code") != null)
+            and (.grant_types_supported | index("refresh_token") != null)
+            and (.code_challenge_methods_supported | index("S256") != null)
+          ' /tmp/oauth-meta.json >/dev/null
+
+      - name: OAuth dynamic client registration
+        shell: bash
+        run: |
+          set -euo pipefail
+          redirect_uri="https://chatgpt.com/edarsahub-mcp-cert-callback"
+          payload="$(jq -nc --arg redirect "$redirect_uri" '{
+            redirect_uris: [$redirect],
+            client_name: "EDARSAHUB MCP Certification",
+            response_types: ["code"],
+            grant_types: ["authorization_code","refresh_token"],
+            token_endpoint_auth_method: "none"
+          }')"
+          for attempt in 1 2 3 4 5; do
+            code="$(curl --silent --show-error --location               --connect-timeout 5 --max-time 25               -o /tmp/register.json -w '%{http_code}'               -H 'Content-Type: application/json'               -X POST "$PREVIEW_URL/api/mcp/oauth/register"               --data "$payload" || true)"
+            echo "OAUTH_REGISTER_ATTEMPT=$attempt HTTP=$code"
+            if [ "$code" = "201" ]; then break; fi
+            case "$code" in 502|503) sleep 3 ;; *) break ;; esac
+          done
+          echo "OAUTH_REGISTER_HTTP=$code"
+          test "$code" = "201"
+          jq -e --arg redirect "$redirect_uri" '
+            (.client_id | type == "string" and length > 20)
+            and (.redirect_uris | index($redirect) != null)
+            and .token_endpoint_auth_method == "none"
+          ' /tmp/register.json >/dev/null
+          jq -r '.client_id' /tmp/register.json > /tmp/client-id.txt
+          printf '%s' "$redirect_uri" > /tmp/redirect-uri.txt
+
+      - name: OAuth authorize requires EDARSAHUB session and consent
+        shell: bash
+        run: |
+          set -euo pipefail
+          client_id="$(cat /tmp/client-id.txt)"
+          redirect_uri="$(cat /tmp/redirect-uri.txt)"
+          verifier='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+          challenge="$(printf '%s' "$verifier" | openssl dgst -sha256 -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=')"
+          export CLIENT_ID="$client_id"
+          export REDIRECT_URI="$redirect_uri"
+          export CHALLENGE="$challenge"
+          export RESOURCE="$PREVIEW_URL/api/mcp"
+          query="$(python - <<'PY'
+          import os, urllib.parse
+          params = {
+              "response_type": "code",
+              "client_id": os.environ["CLIENT_ID"],
+              "redirect_uri": os.environ["REDIRECT_URI"],
+              "scope": "worker:status worker:submit",
+              "state": "cert-state",
+              "code_challenge": os.environ["CHALLENGE"],
+              "code_challenge_method": "S256",
+              "resource": os.environ["RESOURCE"],
+          }
+          print(urllib.parse.urlencode(params))
+          PY
+          )"
+          export query
+          for attempt in 1 2 3 4 5; do
+            code="$(curl --silent --show-error --location               --connect-timeout 5 --max-time 25               -o /tmp/authorize.html -w '%{http_code}'               "$PREVIEW_URL/api/mcp/oauth/authorize?$query" || true)"
+            echo "OAUTH_AUTHORIZE_ATTEMPT=$attempt HTTP=$code"
+            if [ "$code" = "200" ]; then break; fi
+            case "$code" in 502|503) sleep 3 ;; *) break ;; esac
+          done
+          echo "OAUTH_AUTHORIZE_NOSESSION_HTTP=$code"
+          test "$code" = "200"
+          grep -q 'Inicia sesion en EDARSAHUB' /tmp/authorize.html
+      - name: OAuth token endpoint fails closed for invalid grant
+        shell: bash
+        run: |
+          set -euo pipefail
+          client_id="$(cat /tmp/client-id.txt)"
+          redirect_uri="$(cat /tmp/redirect-uri.txt)"
+          for attempt in 1 2 3 4 5; do
+            code="$(curl --silent --show-error --location               --connect-timeout 5 --max-time 25               -o /tmp/token.json -w '%{http_code}'               -H 'Content-Type: application/x-www-form-urlencoded'               -X POST "$PREVIEW_URL/api/mcp/oauth/token"               --data-urlencode 'grant_type=authorization_code'               --data-urlencode "client_id=$client_id"               --data-urlencode 'code=invalid-code'               --data-urlencode "redirect_uri=$redirect_uri"               --data-urlencode 'code_verifier=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' || true)"
+            echo "OAUTH_TOKEN_INVALID_ATTEMPT=$attempt HTTP=$code"
+            if [ "$code" = "400" ]; then break; fi
+            case "$code" in 502|503) sleep 3 ;; *) break ;; esac
+          done
+          cat /tmp/token.json || true
+          echo "OAUTH_TOKEN_INVALID_HTTP=$code"
+          test "$code" = "400"
+          jq -e '.error == "invalid_grant"' /tmp/token.json >/dev/null
 
       - name: Service credential exchange fails closed without credential
         shell: bash
@@ -70,5 +195,8 @@ jobs:
         run: |
           echo 'MCP_LIVE_TRANSPORT_CERTIFIED=YES'
           echo 'MCP_AUTH_FAIL_CLOSED=YES'
-          echo 'MCP_PUBLIC_OAUTH=NOT_IMPLEMENTED_FAIL_CLOSED'
+          echo 'MCP_PUBLIC_OAUTH_METADATA=CERTIFIED'
+          echo 'MCP_PUBLIC_OAUTH_DCR=CERTIFIED'
+          echo 'MCP_PUBLIC_OAUTH_CONSENT_BOUNDARY=CERTIFIED'
+          echo 'MCP_PUBLIC_OAUTH_TOKEN_FAIL_CLOSED=CERTIFIED'
           echo 'PRODUCTION_TOUCHED=NO'
