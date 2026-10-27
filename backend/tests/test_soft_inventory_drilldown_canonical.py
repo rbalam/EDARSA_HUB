@@ -126,3 +126,38 @@ def test_movements_fail_closed_without_canonical_identity():
         else:
             raise AssertionError("Debe rechazar identidad canónica no resuelta")
     assert cursor.executed == []
+
+
+def test_grouped_product_codes_use_parameterized_movement_filter():
+    cursor = FakeCursor([])
+    with patch.object(sources, "resolver_empresa_id", return_value=_id(12)), patch.object(
+        sources, "resolver_sucursal_id", return_value=_id(34)
+    ):
+        sources.get_soft_movement_detail(
+            cursor, server_id="srv", unidad_codigo="CF", sucursal_origen_id="1",
+            componente_codigo="A100235, A100236",
+            fecha_ini="2026-10-19", fecha_fin="2026-10-20",
+        )
+    sql, params = cursor.executed[0]
+    assert "pmo.CodigoFuente IN (%s,%s)" in sql
+    assert params[-3:] == ("srv", "A100235", "A100236")
+
+
+def test_grouped_product_codes_sum_sales_recipe_factors_once():
+    cursor = FakeCursor([
+        {"fecha_operacion": "2026-10-19", "producto_codigo_fuente": "BEBIDA1", "cantidad": 2},
+    ])
+    components = [
+        {"producto_codigo_fuente": "BEBIDA1", "componente_codigo_fuente": "A100235", "cantidad": 0.5},
+        {"producto_codigo_fuente": "BEBIDA1", "componente_codigo_fuente": "A100236", "cantidad": 0.25},
+    ]
+    with patch.object(sources, "_fetch_table_columns", return_value={
+        "unidad_negocio_id", "fecha_operacion", "producto_codigo_fuente", "cantidad",
+    }), patch.object(sources.RecetasService, "get_componentes_bulk", return_value=components):
+        detail = sources.get_soft_sales_consumption_detail(
+            cursor, unidad_codigo="CF", server_id="srv",
+            componente_codigo="A100235,A100236",
+            fecha_ini="2026-10-19", fecha_fin="2026-10-20",
+        )
+    assert detail["total"] == 1.5
+    assert len(detail["rows"]) == 1
