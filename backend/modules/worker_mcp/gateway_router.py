@@ -126,14 +126,18 @@ async def mcp_gateway(request: Request):
         try:
             public_origin = public_https_origin(request)
         except PublicOriginError:
-            public_origin = ""
-        public_resource = public_origin + "/api/mcp/.well-known/oauth-protected-resource"
-        import re
-        response_headers["www-authenticate"] = re.sub(
-            r'resource_metadata="[^"]+"',
-            'resource_metadata="' + public_resource + '"',
-            challenge,
-        )
+            response_headers["www-authenticate"] = "Bearer"
+        else:
+            public_resource = (
+                public_origin
+                + "/api/mcp/.well-known/oauth-protected-resource"
+            )
+            import re
+            response_headers["www-authenticate"] = re.sub(
+                r'resource_metadata="[^"]+"',
+                'resource_metadata="' + public_resource + '"',
+                challenge,
+            )
 
     async def close_connections():
         await reply.aclose()
