@@ -1,0 +1,46 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3D-B1-BRIDGE-HELPERS-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a4714155182f6ba8a86cdbba0235622827fb0f21",
+  "production_allowed": false,
+  "objective": "E3D-B1: agregar imports y helpers fail-closed del Authorized Action Bridge BOS.",
+  "acceptance": [
+    "Reusar capability/procedure policy, execution gate y capability registry existentes.",
+    "Agregar helpers de tiempo, audit_ref estable, permisos requester y decision deny.",
+    "No ejecutar acciones.",
+    "py_compile PASS y production_touched=false."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No endpoints.",
+    "No executor.",
+    "No backend/core mutation.",
+    "No E3E/E3F."
+  ],
+  "actions": [
+    {
+      "type": "append_once",
+      "path": "backend/modules/bos_executive/action_bridge.py",
+      "source_sha256": "a47362c68e169eac281c3ee760a0ed36655beca1524d6fea87f3e9eaa090470e",
+      "replacement": "\nfrom __future__ import annotations\n\nfrom datetime import datetime\nimport hashlib\nfrom typing import Mapping\n\nfrom core.agent_capability_policy import BudgetRequest, PolicyContext, PolicyRequest\nfrom core.agent_execution_gate import authorize_internal_capability_execution\nfrom core.agent_procedure_policy import ProcedureSpec, evaluate_procedure\nfrom modules.agent_harness.transversal_capability_registry import CapabilityRegistryError, get_domain_capability\n\nfrom .action_bridge_contracts import AuthorizedActionDecision, AuthorizedActionRequest\nfrom .recommendation_contracts import ExecutiveRecommendation\n\n\ndef _unique(values):\n    return tuple(dict.fromkeys(value for value in values if value))\n\n\ndef _parse_time(value: str):\n    try:\n        parsed = datetime.fromisoformat(str(value).replace(\"Z\", \"+00:00\"))\n    except (TypeError, ValueError):\n        return None\n    return parsed if parsed.tzinfo is not None else None\n\n\ndef _audit_ref(request: AuthorizedActionRequest) -> str:\n    payload = \"|\".join((request.recommendation_id, request.action_type, request.target_ref, request.requested_by)).encode(\"utf-8\")\n    return \"bos-action:\" + hashlib.sha256(payload).hexdigest()[:20]\n\n\ndef _requester_reasons(required_permission: str, authorization: Mapping[str, object]) -> tuple[str, ...]:\n    if not isinstance(authorization, Mapping) or authorization.get(\"allowed\") is not True:\n        return (\"REQUESTER_RBAC_DENIED\",)\n    raw = authorization.get(\"permissions\")\n    if raw is None:\n        raw = (authorization.get(\"permission\"),)\n    elif isinstance(raw, str):\n        raw = (raw,)\n    permissions = {str(item or \"\").strip().upper() for item in raw}\n    if required_permission.upper() not in permissions:\n        return (\"REQUESTER_PERMISSION_MISMATCH\",)\n    return ()\n\n\ndef _deny(request: AuthorizedActionRequest, reasons, *, capability=None, procedure=None, required_permission=None) -> AuthorizedActionDecision:\n    return AuthorizedActionDecision(\n        allowed=False,\n        reasons=_unique(tuple(reasons)),\n        recommendation_id=request.recommendation_id,\n        action_type=request.action_type,\n        target_ref=request.target_ref,\n        capability=capability,\n        procedure=procedure,\n        required_permission=required_permission,\n        execution_channel=None,\n        idempotency_key=request.idempotency_key,\n        audit_ref=_audit_ref(request),\n        outcome_status=\"DENIED\",\n    )\n",
+      "expected_occurrences": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/action_bridge.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
