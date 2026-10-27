@@ -1,0 +1,65 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "queries": [
+        {
+          "name": "physical_identity_contract",
+          "sql": "\nSELECT TOP (250)\n t.name AS tabla, c.name AS columna,\n ty.name AS tipo, c.max_length,\n c.precision, c.scale, c.is_nullable\nFROM sys.tables t\nJOIN sys.columns c ON c.object_id=t.object_id\nJOIN sys.types ty ON ty.user_type_id=c.user_type_id\nWHERE t.name IN (\n 'Operaciones_Tablaje_Ordenes',\n 'Operaciones_Tablaje_OrdenesDetalle',\n 'Operaciones_Tablaje_EventosContables',\n 'Inventario_Movimientos',\n 'Inventario_MovimientosDetalle',\n 'Inventario_TipoMovimiento',\n 'Tablajeria_MovimientosInventario',\n 'Tablajeria_PolizasContables',\n 'Tablajeria_PolizasDetalle'\n)\nAND (\n c.name LIKE '%ID'\n OR c.name IN (\n 'Codigo','TipoEvento','ReferenciaTipo',\n 'ReferenciaDetalleTipo','ReferenciaID',\n 'FolioReferencia','Cantidad','CostoUnitario',\n 'EstatusContable','FechaOperacionMexico'\n )\n)\nORDER BY t.name,c.column_id;\n"
+        },
+        {
+          "name": "movement_type_catalog",
+          "sql": "\nSELECT TOP (100)\n TipoMovimientoID, Codigo, Descripcion,\n Naturaleza, AfectaCostoPromedio, Activo\nFROM dbo.Inventario_TipoMovimiento\nORDER BY Codigo;\n"
+        },
+        {
+          "name": "identity_mapping_candidates",
+          "sql": "\nSELECT TOP (150)\n t.name AS tabla, c.name AS columna,\n ty.name AS tipo\nFROM sys.tables t\nJOIN sys.columns c ON c.object_id=t.object_id\nJOIN sys.types ty ON ty.user_type_id=c.user_type_id\nWHERE (\n t.name LIKE '%Empresa%'\n OR t.name LIKE '%Sucursal%'\n OR t.name LIKE '%UnidadNegocio%'\n)\nAND (\n c.name LIKE '%ID'\n OR c.name LIKE '%Codigo%'\n OR c.name LIKE '%PK'\n)\nORDER BY t.name,c.column_id;\n"
+        },
+        {
+          "name": "unique_indexes",
+          "sql": "\nSELECT TOP (150)\n t.name AS tabla, i.name AS indice,\n i.is_unique, i.is_primary_key,\n c.name AS columna, ic.key_ordinal\nFROM sys.tables t\nJOIN sys.indexes i ON i.object_id=t.object_id\nJOIN sys.index_columns ic\n ON ic.object_id=i.object_id\n AND ic.index_id=i.index_id\nJOIN sys.columns c\n ON c.object_id=ic.object_id\n AND c.column_id=ic.column_id\nWHERE t.name IN (\n 'Inventario_Movimientos',\n 'Inventario_MovimientosDetalle',\n 'Operaciones_Tablaje_EventosContables',\n 'Tablajeria_MovimientosInventario',\n 'Tablajeria_PolizasContables',\n 'Tablajeria_PolizasDetalle'\n)\nAND i.is_unique=1\nAND ic.key_ordinal>0\nORDER BY t.name,i.name,ic.key_ordinal;\n"
+        },
+        {
+          "name": "parallel_history_counts",
+          "sql": "\nSELECT 'MOVIMIENTOS' AS origen,\n COUNT_BIG(*) AS total\nFROM dbo.Tablajeria_MovimientosInventario\nUNION ALL\nSELECT 'POLIZAS', COUNT_BIG(*)\nFROM dbo.Tablajeria_PolizasContables\nUNION ALL\nSELECT 'ASIENTOS', COUNT_BIG(*)\nFROM dbo.Tablajeria_PolizasDetalle;\n"
+        },
+        {
+          "name": "accounting_event_status",
+          "sql": "\nSELECT TOP (50)\n TipoEvento, EstatusContable,\n COUNT_BIG(*) AS total\nFROM dbo.Operaciones_Tablaje_EventosContables\nGROUP BY TipoEvento,EstatusContable\nORDER BY TipoEvento,EstatusContable;\n"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "expected_result": {
+    "files_changed": [],
+    "production_touched": false,
+    "status": "READ_ONLY_COMPLETE"
+  },
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-F6-CANONICAL-WRITER-MAPPING-READONLY-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditoria fisica READ_ONLY_SQL de Tablajeria Fase 6. Certificar identificadores canonicos, mapeos empresa/unidad/sucursal, catalogo de movimientos, indices de idempotencia, volumen historico de tablas paralelas y eventos contables. Preparar evidencia para patch canonico sin ejecutar ninguna mutacion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Tablajerias 5",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt-classic"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
