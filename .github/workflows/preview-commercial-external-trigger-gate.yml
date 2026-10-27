@@ -99,21 +99,21 @@ jobs:
           echo "CHANGE_SURFACE_BASE_SHA=$BASE_SHA"
           git diff --name-only "$BASE_SHA"...HEAD > /tmp/preview-trigger-files.txt
           cat /tmp/preview-trigger-files.txt
-          python - <<'PY'
+          BASE_SHA="$BASE_SHA" python - <<'PY'
+          import os
           from pathlib import Path
 
-          allowed_exact = {
+          commercial_exact = {
               ".github/workflows/preview-commercial-external-trigger-gate.yml",
               ".github/workflows/preview-commercial-external-owner.yml",
               ".github/workflows/commercial-open-sales-clock.yml",
               ".github/workflows/commercial-closed-sales-clock.yml",
-              "backend/server.py",
               "backend/modules/scheduler_runtime/policy.py",
               "backend/tests/test_scheduler_runtime_policy.py",
               "backend/tests/test_preview_scheduler_http_trigger.py",
               "backend/tools/run_commercial_github_owner.py",
           }
-          allowed_prefixes = (
+          commercial_prefixes = (
               "backend/modules/scheduler_trigger_preview/",
           )
 
@@ -122,11 +122,53 @@ jobs:
               for line in Path("/tmp/preview-trigger-files.txt").read_text().splitlines()
               if line.strip()
           ]
+          commercial_changed = [
+              path
+              for path in changed
+              if path in commercial_exact
+              or path.startswith(commercial_prefixes)
+          ]
+
+          # backend/server.py is shared by many modules. If no Commercial-owned
+          # file changed, allow unrelated router mounts only after proving the
+          # Commercial trigger/owner references in server.py are byte-for-byte
+          # unchanged across the PR range.
+          if not commercial_changed:
+              if "backend/server.py" in changed:
+                  import subprocess
+
+                  diff = subprocess.run(
+                      ["git", "diff", "--unified=0", os.environ["BASE_SHA"] + "...HEAD", "--", "backend/server.py"],
+                      check=True,
+                      stdout=subprocess.PIPE,
+                      text=True,
+                  ).stdout
+                  protected_markers = (
+                      "scheduler_trigger_preview",
+                      "preview_scheduler_trigger_router",
+                      "preview commercial",
+                      "sync_comercial_abiertas_v2",
+                      "sync_comercial_v2",
+                  )
+                  touched = [
+                      line for line in diff.splitlines()
+                      if line.startswith(("+", "-"))
+                      and not line.startswith(("+++", "---"))
+                      and any(marker.lower() in line.lower() for marker in protected_markers)
+                  ]
+                  if touched:
+                      raise SystemExit(
+                          "COMMERCIAL_SERVER_REFERENCES_CHANGED=" + repr(touched)
+                      )
+              print("CANONICAL_ATOMIC_TRANSVERSAL_SURFACE=PASS_UNRELATED")
+              raise SystemExit(0)
+
+          allowed_exact = commercial_exact | {"backend/server.py"}
           unexpected = [
               path
               for path in changed
               if path not in allowed_exact
-              and not path.startswith(allowed_prefixes)
+              and not path.startswith(commercial_prefixes)
           ]
           if unexpected:
               raise SystemExit(f"UNEXPECTED_CHANGE_SURFACE={unexpected}")
