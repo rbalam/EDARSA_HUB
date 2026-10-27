@@ -3,20 +3,20 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "47d96ab2f53dabc9fb89c1740602e76c80871b88",
-  "generated_at_utc": "2026-10-27T03:33:23Z",
+  "development_sha": "fd718125a9a76680e693ac06096221cd44c9372c",
+  "generated_at_utc": "2026-10-27T03:35:05Z",
   "history": {
-    "done_total_local": 1610,
+    "done_total_local": 1611,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1302,
-    "results_total_local": 2680
+    "results_total_local": 2681
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1192,
+      "age_seconds": 1294,
       "job_id": "BOS-CATALOGOS-MAESTROS-GATE-M1-SECURITY-DISCOVERY-R1",
       "reasons": [
         "INVALID_SCHEMA",
@@ -26,169 +26,175 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 714,
+      "age_seconds": 816,
       "job_id": "BOS-TOAST-GATE8-ADAPTER-IMPLEMENTATION-READINESS-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1375,
+      "age_seconds": 1477,
       "job_id": "BOS-V1-GATE-E-E3C-A0-CONTRACT-PLACEHOLDER-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1314,
+      "age_seconds": 1416,
       "job_id": "BOS-V1-GATE-E-E3C-A1-RISK-CONTRACT-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1275,
+      "age_seconds": 1377,
       "job_id": "BOS-V1-GATE-E-E3C-A2-RECOMMENDATION-DATACLASS-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1238,
+      "age_seconds": 1340,
       "job_id": "BOS-V1-GATE-E-E3C-B0-SERVICE-PLACEHOLDER-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1214,
+      "age_seconds": 1316,
       "job_id": "BOS-V1-GATE-E-E3C-B1-SERVICE-HELPERS-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1183,
+      "age_seconds": 1285,
       "job_id": "BOS-V1-GATE-E-E3C-B2-RECOMMEND-FINDING-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1080,
+      "age_seconds": 1182,
       "job_id": "BOS-V1-GATE-E-E3C-B3-RECOMMEND-PRIORITY-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1008,
+      "age_seconds": 1110,
       "job_id": "BOS-V1-GATE-E-E3C-C1-EXPORTS-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 877,
+      "age_seconds": 979,
       "job_id": "BOS-V1-GATE-E-E3C-CERT-READONLY-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 986,
+      "age_seconds": 1088,
       "job_id": "BOS-V1-GATE-E-E3C-D0-TEST-PLACEHOLDER-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 957,
+      "age_seconds": 1059,
       "job_id": "BOS-V1-GATE-E-E3C-D1-TESTS-FINDING-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 899,
+      "age_seconds": 1001,
       "job_id": "BOS-V1-GATE-E-E3C-D2-TESTS-PRIORITY-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 528,
+      "age_seconds": 629,
       "job_id": "BOS-V1-GATE-E-E3D-A0-BRIDGE-CONTRACT-PLACEHOLDER-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 490,
+      "age_seconds": 592,
       "job_id": "BOS-V1-GATE-E-E3D-A1-BRIDGE-CONTRACTS-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 347,
+      "age_seconds": 449,
       "job_id": "BOS-V1-GATE-E-E3D-A2-SEPARATE-POLICY-APPROVAL-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 651,
+      "age_seconds": 753,
       "job_id": "BOS-V1-GATE-E-E3D-AUTHORIZED-ACTION-OWNER-AUDIT-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 462,
+      "age_seconds": 564,
       "job_id": "BOS-V1-GATE-E-E3D-B0-BRIDGE-SERVICE-PLACEHOLDER-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 411,
+      "age_seconds": 513,
       "job_id": "BOS-V1-GATE-E-E3D-B1-BRIDGE-HELPERS-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 371,
+      "age_seconds": 473,
       "job_id": "BOS-V1-GATE-E-E3D-B2-BRIDGE-PRECONDITIONS-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 294,
+      "age_seconds": 396,
       "job_id": "BOS-V1-GATE-E-E3D-B3-AUTHORIZATION-BRIDGE-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 205,
+      "age_seconds": 307,
       "job_id": "BOS-V1-GATE-E-E3D-C1-EXPORTS-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 62,
+      "age_seconds": 164,
       "job_id": "BOS-V1-GATE-E-E3D-CERT-READONLY-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 173,
+      "age_seconds": 275,
       "job_id": "BOS-V1-GATE-E-E3D-D0-TEST-PLACEHOLDER-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 134,
+      "age_seconds": 236,
       "job_id": "BOS-V1-GATE-E-E3D-D1-TESTS-DENY-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 85,
+      "age_seconds": 187,
       "job_id": "BOS-V1-GATE-E-E3D-D2-TESTS-AUTHORIZATION-R1-20261026",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 774,
+      "age_seconds": 876,
       "job_id": "EDARSAHUB-INVENTARIOS-SCHEDULER-PRINCIPAL-CONTRACT-R6-20261026",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 32,
+      "job_id": "coa-gate6c-r2-fiscal-status-lifecycle-design-v1-20261025",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "47d96ab2f53dabc9fb89c1740602e76c80871b88",
+  "local_development_sha": "fd718125a9a76680e693ac06096221cd44c9372c",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -196,21 +202,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 27,
+  "queue_result_ready_recent": 28,
   "queue_running": 0,
-  "remote_development_sha": "47d96ab2f53dabc9fb89c1740602e76c80871b88",
+  "remote_development_sha": "fd718125a9a76680e693ac06096221cd44c9372c",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-27T03:33:13Z",
-    "last_receive_utc": "2026-10-27T03:33:08Z",
-    "last_terminal_utc": "2026-10-27T03:32:20Z",
-    "pid": "1379590",
+    "last_cycle_utc": "2026-10-27T03:34:59Z",
+    "last_receive_utc": "2026-10-27T03:34:57Z",
+    "last_terminal_utc": "2026-10-27T03:34:33Z",
+    "pid": "1401717",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "b299e6bfc6edff1125de5762c056e8280d421ae4",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "47d96ab2f53dabc9fb89c1740602e76c80871b88",
+      "development_sha": "fd718125a9a76680e693ac06096221cd44c9372c",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
