@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3C-A0-CONTRACT-PLACEHOLDER-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "8d7135bd4fbb4e616eefc03515b50214f983a35c",
+  "production_allowed": false,
+  "objective": "E3C-A0: crear placeholder minimo del contrato de recomendaciones BOS para completarlo mediante mutaciones atomicas posteriores.",
+  "acceptance": [
+    "Crear solo recommendation_contracts.py con marcador E3C.",
+    "No tocar Produccion.",
+    "Checks PASS."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No endpoints.",
+    "No E3D."
+  ],
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/bos_executive/recommendation_contracts.py",
+      "content": "# E3C_RECOMMENDATION_CONTRACT_V1\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/recommendation_contracts.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
