@@ -1,0 +1,26 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "BOS-CATALOGOS-MAESTROS-GATE-M1-SECURITY-DISCOVERY-R1",
+  "created_at_utc": "2026-10-27T01:39:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Gate READ_ONLY: auditar contrato resolve_unidad_scope, semantica de allowed_server_ids None vs [], acceso a consultas, filtros, get_by_id, crear, actualizar, activar, desactivar e importar de Comercial_Productos_Enriquecidos; determinar riesgos RBAC con evidencia y pruebas sin escribir SQL. Auditar DOMINIOS_CATALOGOS, frontend Catalogos.js y dependencias para reclasificar Producto_Familias, Producto_SubFamilias, Producto_Lineas y Producto_Marcas al dominio logico Productos sin mover ni duplicar tablas. Inspeccionar SQL metadata solamente si existe canal read-only autorizado; de lo contrario reportar BLOCKED parcial. Producir dossier y propuesta de patch fail-closed y plan M1/M2, sin aplicar cambios.",
+  "acceptance": [
+    "Dossier con archivos, SHA y hallazgos reproducibles",
+    "Matriz RBAC admin global, usuario restringido y sin unidades; evidencia de pruebas ejecutadas o NOT_TESTED",
+    "Plan exacto de reclasificacion logica reversible sin DDL",
+    "Resultado en worker_queue/results/<job_id>.json con PASS/FAIL/BLOCKED y production_touched=false"
+  ],
+  "constraints": [
+    "READ_ONLY: no modificar codigo, SQL, credenciales, RBAC, migraciones ni Produccion",
+    "No crear workers, colas, adaptadores o schedulers alternos",
+    "No ejecutar DDL ni DML ni endpoints de creacion de tablas",
+    "No alterar NetPay, sincronizaciones MPRO/SoftRestaurant o Cavas",
+    "No imprimir secretos; si no existe autorizacion SQL READ_ONLY, omitir SQL y reportar bloqueo",
+    "No afirmar pruebas no ejecutadas ni porcentajes inventados"
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
