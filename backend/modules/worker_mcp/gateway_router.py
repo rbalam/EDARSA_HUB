@@ -107,7 +107,7 @@ async def mcp_gateway(request: Request):
     # The upstream advertises loopback resource metadata. Never expose it to clients.
     challenge = response_headers.get("www-authenticate")
     if challenge and "resource_metadata=" in challenge:
-        public_resource = str(request.base_url).rstrip("/") + "/.well-known/oauth-protected-resource/api/mcp"
+        public_resource = str(request.base_url).rstrip("/") + "/api/mcp/.well-known/oauth-protected-resource"
         import re
         response_headers["www-authenticate"] = re.sub(
             r'resource_metadata="[^"]+"',
