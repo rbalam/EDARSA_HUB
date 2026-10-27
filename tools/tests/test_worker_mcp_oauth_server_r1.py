@@ -59,6 +59,8 @@ def test_oauth_server_has_consent_dcr_token_and_rotation():
     assert "validate_redirect_uri" in text
     assert "verify_pkce" in text
     assert "_redirect_with_params" in text
+    assert 'RedirectResponse(_redirect_with_params(redirect_uri, query), status_code=302)' in text
+    assert 'redirect_uri + "?" + urlencode(query)' not in text
     assert "parse_qsl" in text
     assert "_consume_session_token(refresh_token, REFRESH_SESSION_TYPE)" in text
 
