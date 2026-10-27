@@ -259,8 +259,12 @@ def get_soft_sales_consumption_detail(
     el día de operación; la explosión utiliza RecetasService exactamente como
     _explode_sales_to_consumption, sin consultar al POS en vivo.
     """
-    componente = _text(componente_codigo)
-    if not componente:
+    # Reportes puede agrupar insumos de igual nombre/unidad y remitir varios
+    # códigos de origen separados por coma. Se conserva la misma suma del padre.
+    componentes_seleccionados = {
+        _text(value) for value in _text(componente_codigo).split(",") if _text(value)
+    }
+    if not componentes_seleccionados:
         return {"rows": [], "total": 0.0}
 
     sales_rows = _fetch_soft_sales_rows(
@@ -280,7 +284,7 @@ def get_soft_sales_consumption_detail(
     for row in components or []:
         prod = _text(row.get("producto_codigo_fuente"))
         comp = _text(row.get("componente_codigo_fuente"))
-        if comp == componente and prod:
+        if comp in componentes_seleccionados and prod:
             factor_by_product[prod] += _float(row.get("cantidad"))
 
     rows = []
@@ -318,8 +322,8 @@ def get_soft_movement_detail(
     Los códigos de producto se verifican mediante el puente canónico de
     origen, sin duplicar registros si hay más de un mapeo activo.
     """
-    codigo = _text(componente_codigo)
-    if not codigo:
+    codigos = _unique(_text(componente_codigo).split(","))
+    if not codigos:
         return {"rows": [], "totales": {"entradas": 0.0, "salidas": 0.0, "neto": 0.0}}
 
     empresa = resolver_empresa_id(unidad_codigo)
@@ -333,7 +337,7 @@ def get_soft_movement_detail(
         fecha_ini,
         fecha_fin,
         server_id,
-        codigo,
+        *codigos,
     ]
     warehouses = _unique(warehouses)
     warehouse_filter = ""
@@ -375,7 +379,7 @@ def get_soft_movement_detail(
                 AND LOWER(CONVERT(varchar(36),pmo.ServerID))=LOWER(%s)
                 AND UPPER(pmo.SystemType) IN ('SOFTRESTAURANT','SOFTRESTAURANT_PRO')
                 AND pmo.Activo=1
-                AND pmo.CodigoFuente=%s
+                AND pmo.CodigoFuente IN ({",".join(["%s"] * len(codigos))})
           )
           {warehouse_filter}
         ORDER BY m.FechaMovimiento DESC, m.MovimientoID DESC
