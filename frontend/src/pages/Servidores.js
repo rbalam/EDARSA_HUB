@@ -744,6 +744,9 @@ const Servidores = () => {
   const [categorias, setCategorias] = useState([]);
   const [departamentos, setDepartamentos] = useState([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
+  const [savingFilters, setSavingFilters] = useState(false);
+  const [persistedFiltersSnapshot, setPersistedFiltersSnapshot] = useState(null);
+  const configRequestTokenRef = useRef(0);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -1142,36 +1145,53 @@ const Servidores = () => {
       : []
   );
 
+  // La selección visible y la línea base para guardar provienen exclusivamente
+  // del Server Registry SQL. No utilizar la fachada/lista de conexiones en caché.
+  const normalizeServerFilters = (server) => ({
+    tipos_movimiento: normalizeFilterCodes(server?.tipos_movimiento || []),
+    categorias: normalizeFilterCodes(server?.categorias || []),
+    departamentos: normalizeFilterCodes(server?.departamentos || [])
+  });
+
   const loadFilterOptions = async (serverId) => {
+    const token = ++configRequestTokenRef.current;
     setLoadingOptions(true);
+    setPersistedFiltersSnapshot(null);
     try {
+      const serverRes = await api.get(`/servers/${serverId}`);
+      if (token !== configRequestTokenRef.current) return;
+      const persistedServer = serverRes.data;
+      if (!persistedServer || String(persistedServer.id).toLowerCase() !== String(serverId).toLowerCase()
+        || !Array.isArray(persistedServer.tipos_movimiento)) {
+        throw new Error('El servidor no devolvió una configuración SQL verificable');
+      }
+
       const [tiposRes, categoriasRes, departamentosRes] = await Promise.all([
         api.get(`/servers/${serverId}/tipos-movimiento`),
         api.get(`/servers/${serverId}/categorias`),
         api.get(`/servers/${serverId}/departamentos`)
       ]);
-      
-      const tiposCatalogo = Array.isArray(tiposRes.data) ? tiposRes.data : [];
-      setTiposMovimiento(tiposCatalogo);
+      if (token !== configRequestTokenRef.current) return;
+
+      const persistedFilters = normalizeServerFilters(persistedServer);
+      setTiposMovimiento(Array.isArray(tiposRes.data) ? tiposRes.data : []);
       setCategorias(Array.isArray(categoriasRes.data) ? categoriasRes.data : []);
       setDepartamentos(Array.isArray(departamentosRes.data) ? departamentosRes.data : []);
-      
-      // El modal refleja la selección realmente persistida para ambos motores.
-      const server = servers.find(s => s.id === serverId) || selectedServer;
-      if (server) {
-        setSelectedFilters({
-          tipos_movimiento: normalizeFilterCodes(server.tipos_movimiento || []),
-          categorias: normalizeFilterCodes(server.categorias || []),
-          departamentos: normalizeFilterCodes(server.departamentos || [])
-        });
-      }
-
-      
+      setSelectedServer(persistedServer);
+      setSelectedFilters(persistedFilters);
+      setPersistedFiltersSnapshot(persistedFilters);
     } catch (error) {
-      logger.error('Error cargando opciones de filtros:', error);
-      toast.error('Error al cargar opciones de filtros');
+      if (token !== configRequestTokenRef.current) return;
+      logger.error('Error cargando configuración canónica del servidor:', error);
+      setTiposMovimiento([]);
+      setCategorias([]);
+      setDepartamentos([]);
+      setPersistedFiltersSnapshot(null);
+      toast.error('No se pudo leer la selección guardada en SQL. Guardar está bloqueado para evitar pérdida de datos.');
     } finally {
-      setLoadingOptions(false);
+      if (token === configRequestTokenRef.current) {
+        setLoadingOptions(false);
+      }
     }
   };
 
@@ -1259,58 +1279,99 @@ const Servidores = () => {
 
   const openConfigDialog = async (server) => {
     setSelectedServer(server);
-    setSelectedFilters({
-      tipos_movimiento: normalizeFilterCodes(server.tipos_movimiento || []),
-      categorias: normalizeFilterCodes(server.categorias || []),
-      departamentos: normalizeFilterCodes(server.departamentos || [])
-    });
+    // Nunca mostrar ni guardar filtros procedentes de un registro en caché.
+    setSelectedFilters({ tipos_movimiento: [], categorias: [], departamentos: [] });
+    setPersistedFiltersSnapshot(null);
     setConfigDialogOpen(true);
     await loadFilterOptions(server.id);
   };
 
   const saveFilters = async () => {
-    if (!selectedServer) return;
+    if (!selectedServer || !persistedFiltersSnapshot || loadingOptions || savingFilters) return;
 
-    const expectedFilters = {
-      tipos_movimiento: normalizeFilterCodes(selectedFilters.tipos_movimiento),
-      categorias: normalizeFilterCodes(selectedFilters.categorias),
-      departamentos: normalizeFilterCodes(selectedFilters.departamentos)
-    };
-    
+    const filterKeys = ['tipos_movimiento', 'categorias', 'departamentos'];
+    const expectedFilters = normalizeServerFilters(selectedFilters);
+    const sameCodes = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const changedKeys = filterKeys.filter(
+      key => !sameCodes(expectedFilters[key], persistedFiltersSnapshot[key])
+    );
+
+    if (changedKeys.length === 0) {
+      toast.info('No hay cambios pendientes de guardar');
+      return;
+    }
+
+    setSavingFilters(true);
     try {
-      await api.put(`/servers/${selectedServer.id}`, {
-        tipos_movimiento: expectedFilters.tipos_movimiento,
-        categorias: expectedFilters.categorias,
-        departamentos: expectedFilters.departamentos
-      });
+      // Evitar sobrescribir silenciosamente la selección de otra sesión.
+      const beforeResponse = await api.get(`/servers/${selectedServer.id}`);
+      const latestServer = beforeResponse.data || {};
+      if (String(latestServer.id).toLowerCase() !== String(selectedServer.id).toLowerCase()) {
+        throw new Error('No se pudo verificar el servidor antes de guardar');
+      }
+      const latestFilters = normalizeServerFilters(latestServer);
+      if (changedKeys.some(key => !sameCodes(latestFilters[key], persistedFiltersSnapshot[key]))) {
+        toast.error('La configuración cambió en otra sesión. Se recargará antes de permitir guardar.');
+        await loadFilterOptions(selectedServer.id);
+        return;
+      }
 
-      // Verificación read-after-write contra la fuente canónica EDARSAHUB SQL.
-      // No anunciar éxito si el backend aceptó el PUT pero la configuración
-      // no quedó realmente persistida/recuperable por el Server Registry.
-      const verifyResponse = await api.get(`/servers/${selectedServer.id}`);
-      const persistedServer = verifyResponse.data || {};
-      const persistedFilters = {
-        tipos_movimiento: normalizeFilterCodes(persistedServer.tipos_movimiento),
-        categorias: normalizeFilterCodes(persistedServer.categorias),
-        departamentos: normalizeFilterCodes(persistedServer.departamentos)
-      };
-
-      const persistedCorrectly = Object.keys(expectedFilters).every(
-        key => JSON.stringify(expectedFilters[key]) === JSON.stringify(persistedFilters[key])
+      // Sólo se actualizan los filtros realmente modificados, preservando
+      // categorías, departamentos y demás configuración del servidor.
+      const payload = Object.fromEntries(
+        changedKeys.map(key => [key, expectedFilters[key]])
       );
+      let uncertainWrite = null;
+      try {
+        await api.put(`/servers/${selectedServer.id}`, payload);
+      } catch (error) {
+        const status = error.response?.status;
+        // Ante 502/503/504/red, la escritura pudo haber llegado a SQL.
+        // No reintentar automáticamente; consultar el estado canónico.
+        if (status && ![502, 503, 504].includes(status)) throw error;
+        uncertainWrite = error;
+      }
 
-      if (!persistedCorrectly) {
-        throw new Error('La configuración no quedó persistida en EDARSAHUB. No se cerró el modal.');
+      let verifyResponse;
+      try {
+        verifyResponse = await api.get(`/servers/${selectedServer.id}`);
+      } catch (error) {
+        logger.error('No fue posible verificar la escritura del servidor:', error);
+        // La escritura pudo completarse: bloquear cualquier reintento hasta
+        // recuperar una nueva línea base directamente desde SQL.
+        setPersistedFiltersSnapshot(null);
+        toast.error('Guardado sin confirmar por error de conexión. Cierra y vuelve a abrir la configuración antes de intentarlo.');
+        return;
+      }
+
+      const persistedServer = verifyResponse.data || {};
+      if (String(persistedServer.id || '').toLowerCase() !== String(selectedServer.id).toLowerCase()
+        || !Array.isArray(persistedServer.tipos_movimiento)) {
+        setPersistedFiltersSnapshot(null);
+        throw new Error('La lectura posterior no permitió verificar el servidor y sus movimientos.');
+      }
+      const persistedFilters = normalizeServerFilters(persistedServer);
+      if (changedKeys.some(key => !sameCodes(persistedFilters[key], expectedFilters[key]))) {
+        setPersistedFiltersSnapshot(null);
+        toast.error('Los filtros no coinciden con lo solicitado. Cierra y vuelve a abrir la configuración.');
+        return;
       }
 
       setSelectedServer(persistedServer);
       setSelectedFilters(persistedFilters);
-      toast.success('Filtros guardados y verificados correctamente');
+      setPersistedFiltersSnapshot(persistedFilters);
+      if (uncertainWrite) {
+        toast.warning('La respuesta inicial falló, pero se verificó la configuración guardada en SQL.');
+      } else {
+        toast.success('Filtros guardados y verificados en EDARSAHUB SQL');
+      }
       setConfigDialogOpen(false);
       await loadServers();
     } catch (error) {
-      logger.error('Error guardando/verificando filtros del servidor:', error);
-      toast.error(error.response?.data?.detail || error.message || 'Error al guardar filtros');
+      logger.error('Error guardando filtros del servidor:', error);
+      toast.error(error.response?.data?.detail || error.message || 'No se pudo guardar la configuración');
+    } finally {
+      setSavingFilters(false);
     }
   };
 
@@ -3967,11 +4028,12 @@ const Servidores = () => {
                 </Button>
                 <Button 
                   onClick={saveFilters}
+                  disabled={!persistedFiltersSnapshot || loadingOptions || savingFilters}
                   className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800"
                   data-testid="save-filters-button"
                 >
-                  <Check className="h-4 w-4 mr-2" />
-                  Guardar Configuración
+                  {savingFilters ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+                  {savingFilters ? 'Guardando...' : 'Guardar Configuración'}
                 </Button>
               </div>
             </div>
