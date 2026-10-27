@@ -336,6 +336,14 @@ def test_gateway_advertises_reachable_public_metadata_uri():
     assert '"/api/mcp/.well-known/oauth-protected-resource"' in text
     assert 'public_resource = str(request.base_url).rstrip("/") + "/api/mcp/.well-known/oauth-protected-resource"' in text
 
+
+def test_gateway_metadata_proxies_isolated_mcp_without_secret_duplication():
+    text = GATEWAY.read_text(encoding="utf-8")
+    assert 'upstream + "/.well-known/oauth-protected-resource"' in text
+    assert 'payload["resource"] = str(request.base_url).rstrip("/") + "/api/mcp"' in text
+    assert "MCP_METADATA_UPSTREAM_UNAVAILABLE" in text
+    assert "MCP_METADATA_UPSTREAM_INVALID_JSON" in text
+
 def test_refresh_token_session_types_are_isolated_from_mcp_service():
     root = Path(__file__).resolve().parents[2]
     refresh_text = (root / "backend/core/refresh_tokens.py").read_text(encoding="utf-8")
