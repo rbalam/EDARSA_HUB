@@ -1,0 +1,53 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3D-C1-EXPORTS-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3a5ee5ece6d7a8a0349ce24ca72a93f93805974d",
+  "production_allowed": false,
+  "objective": "E3D-C1: exponer contratos y autorizador E3D desde backend.modules.bos_executive.",
+  "acceptance": [
+    "Exports E3D presentes sin alterar E3A-E3C.",
+    "py_compile PASS.",
+    "No Produccion."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No endpoints.",
+    "No executor.",
+    "No E3E/E3F."
+  ],
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/bos_executive/__init__.py",
+      "old": "from .causal_service import explain_causal_finding\n",
+      "new": "from .action_bridge import authorize_recommended_action\nfrom .action_bridge_contracts import AuthorizedActionDecision, AuthorizedActionRequest\nfrom .causal_service import explain_causal_finding\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/bos_executive/__init__.py",
+      "old": "__all__ = [\n",
+      "new": "__all__ = [\n    \"AuthorizedActionDecision\",\n    \"AuthorizedActionRequest\",\n    \"authorize_recommended_action\",\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/__init__.py",
+        "backend/modules/bos_executive/action_bridge.py",
+        "backend/modules/bos_executive/action_bridge_contracts.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
