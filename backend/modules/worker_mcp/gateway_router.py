@@ -10,10 +10,12 @@ from urllib.parse import urlparse
 
 import httpx
 from fastapi import APIRouter, Request
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from starlette.background import BackgroundTask
 
 from . import inprocess
+from .config import WorkerMcpConfig, WorkerMcpConfigError
+from .oauth_discovery import protected_resource_metadata
 
 router = APIRouter(on_startup=[inprocess.start], on_shutdown=[inprocess.stop])
 
@@ -27,11 +29,22 @@ class _InProcessResponse(Response):
         await inprocess.dispatch(scope, receive, send, self._inner_path)
 
 
+@router.api_route("/.well-known/oauth-protected-resource/api/mcp", methods=["GET", "OPTIONS"])
 @router.api_route("/api/mcp/.well-known/oauth-protected-resource", methods=["GET", "OPTIONS"])
 async def mcp_protected_resource_metadata():
-    if not inprocess.enabled():
-        return Response(status_code=404)
-    return _InProcessResponse("/.well-known/oauth-protected-resource")
+    """Publish RFC 9728 metadata at the standard public path and legacy alias."""
+    try:
+        config = WorkerMcpConfig.from_env()
+        payload = protected_resource_metadata(
+            config.resource_url,
+            config.issuer_url,
+        )
+    except (WorkerMcpConfigError, ValueError):
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "MCP_METADATA_CONFIGURATION_UNAVAILABLE"},
+        )
+    return JSONResponse(content=payload)
 
 _ALLOWED_RESPONSE_HEADERS = {
     "content-type", "cache-control", "www-authenticate", "mcp-session-id",
