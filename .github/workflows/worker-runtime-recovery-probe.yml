@@ -2,6 +2,11 @@ name: Worker Runtime Recovery Probe
 # Manual retrigger 2026-09-17T13:27-06:00. Recupera el Universal Worker usando como prueba autoritativa el endpoint real de wake para Gate22A-R3.
 
 on:
+  push:
+    branches:
+      - control/worker-runtime-recovery
+    paths:
+      - '.runtime-control/worker-recovery-trigger.json'
   schedule:
     - cron: '*/5 * * * *'
   workflow_dispatch:
