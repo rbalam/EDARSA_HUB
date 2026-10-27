@@ -49,7 +49,7 @@ jobs:
           cat /tmp/meta.json || true
           echo "MCP_METADATA_HTTP=$code"
           case "$code" in
-            404|503) ;;
+            404|502|503) ;;
             *) echo 'PUBLIC_OAUTH_METADATA_UNEXPECTEDLY_OPEN'; exit 22 ;;
           esac
 
