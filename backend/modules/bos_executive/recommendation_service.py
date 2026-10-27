@@ -62,3 +62,35 @@ def recommend_from_finding(
         stale=finding.stale,
         provenance_refs=evidence,
     )
+
+
+def recommend_from_priority(
+    item: ExecutivePriorityItem,
+    *,
+    evidence_refs,
+    generated_at: str,
+    valid_until: str,
+    eligible_actions=(),
+) -> ExecutiveRecommendation | None:
+    evidence = _unique(evidence_refs)
+    if not item.source_object_ref or not evidence:
+        return None
+    rationale = "; ".join(item.priority_score_explanation or ("NO_PRIORITY_SIGNAL",))
+    return ExecutiveRecommendation(
+        recommendation_id=_stable_id("PRIORITY", item.source_domain, item.source_object_ref, item.priority_band.value, rationale, generated_at, valid_until),
+        recommendation_type="ADDRESS_PRIORITY",
+        source_ref=item.source_object_ref,
+        title=f"Atender prioridad {item.source_object_ref}",
+        rationale=rationale,
+        evidence_refs=evidence,
+        expected_impact=item.impact or f"Reducir exposicion asociada a {item.source_object_ref}",
+        risk_level=_priority_risk(item.priority_band),
+        confidence_class=_priority_confidence(item),
+        generated_at=generated_at,
+        valid_until=valid_until,
+        required_permissions=_unique(item.permission_refs),
+        eligible_actions=_unique(eligible_actions),
+        human_confirmation_required=True,
+        stale=item.stale,
+        provenance_refs=evidence,
+    )
