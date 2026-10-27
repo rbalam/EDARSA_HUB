@@ -1,0 +1,42 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3D-A0-BRIDGE-CONTRACT-PLACEHOLDER-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e09306d5e3952750eef18469ec71cf678cf2fc2d",
+  "production_allowed": false,
+  "objective": "E3D-A0: crear placeholder minimo del contrato Authorized Action Bridge BOS.",
+  "acceptance": [
+    "Crear action_bridge_contracts.py con marcador E3D.",
+    "No Produccion.",
+    "Checks PASS."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No endpoints.",
+    "No executor.",
+    "No E3E/E3F."
+  ],
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/bos_executive/action_bridge_contracts.py",
+      "content": "# E3D_AUTHORIZED_ACTION_BRIDGE_V1\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/action_bridge_contracts.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
