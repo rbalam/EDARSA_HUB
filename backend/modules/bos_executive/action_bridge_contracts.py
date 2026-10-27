@@ -14,6 +14,7 @@ class AuthorizedActionRequest:
     acting_scopes: tuple[str, ...]
     evaluated_at: str
     confirmation_granted: bool = False
+    policy_approval_granted: bool = False
     financial_gate_approved: bool = False
     idempotency_key: str | None = None
     dry_run: bool = True
