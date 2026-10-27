@@ -95,3 +95,42 @@ def test_e3d_action_must_be_declared_eligible():
     )
     assert decision.allowed is False
     assert "ACTION_NOT_ELIGIBLE" in decision.reasons
+
+
+def test_e3d_expired_recommendation_is_denied():
+    decision = authorize_recommended_action(
+        _recommendation(valid_until="2026-10-27T10:00:00+00:00"),
+        _request(evaluated_at="2026-10-27T12:00:00+00:00"),
+        {"allowed": True, "permission": "COMPRAS_INVENTARIOS_VER"},
+        _context(),
+    )
+    assert decision.allowed is False
+    assert "RECOMMENDATION_EXPIRED" in decision.reasons
+
+
+def test_e3d_requester_rbac_denied_is_fail_closed():
+    decision = authorize_recommended_action(
+        _recommendation(),
+        _request(),
+        {"allowed": False, "reason": "REQUESTER_RBAC_DENIED"},
+        _context(),
+    )
+    assert decision.allowed is False
+    assert "REQUESTER_RBAC_DENIED" in decision.reasons
+
+
+def test_e3d_allowlisted_action_is_authorized_but_not_executed():
+    decision = authorize_recommended_action(
+        _recommendation(),
+        _request(),
+        {"allowed": True, "permission": "COMPRAS_INVENTARIOS_VER"},
+        _context(),
+    )
+    assert decision.allowed is True
+    assert decision.reasons == ()
+    assert decision.capability == "INVENTORY_ANALYZE"
+    assert decision.procedure == "inventory-analyze"
+    assert decision.required_permission == "COMPRAS_INVENTARIOS_VER"
+    assert decision.execution_channel == "AGENT_HARNESS"
+    assert decision.outcome_status == "AUTHORIZED_NOT_EXECUTED"
+    assert decision.audit_ref.startswith("bos-action:")
