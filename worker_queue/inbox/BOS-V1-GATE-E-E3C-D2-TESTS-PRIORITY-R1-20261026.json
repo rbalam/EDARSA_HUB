@@ -1,0 +1,56 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3C-D2-TESTS-PRIORITY-R1-20261026",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "1e6b6d8ea4e7ac91b6b7ce264b894a30bf2b1442",
+  "production_allowed": false,
+  "objective": "E3C-D2: agregar pruebas de evidencia, riesgo, permisos y stale para recomendaciones desde prioridades.",
+  "acceptance": [
+    "Prioridad sin evidencia retorna None.",
+    "CRITICA produce riesgo HIGH.",
+    "Permisos y stale se propagan.",
+    "pytest E3C PASS."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No E3D."
+  ],
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_bos_executive_e3c.py",
+      "old": "    FindingStatus,\n    recommend_from_finding,\n",
+      "new": "    FindingStatus,\n    RecommendationRisk,\n    adapt_operational_task,\n    recommend_from_finding,\n    recommend_from_priority,\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_bos_executive_e3c.py",
+      "old": "    assert first.human_confirmation_required is True\n",
+      "new": "    assert first.human_confirmation_required is True\n\n\ndef test_e3c_priority_requires_evidence_and_propagates_controls():\n    item = adapt_operational_task({\n        \"id\": \"T-88\",\n        \"estado_sla\": \"VENCIDA\",\n        \"impacto\": \"riesgo_operativo_alto\",\n        \"permission_refs\": [\"OPERATIVO_VER\", \"OPERATIVO_ATENDER\"],\n        \"stale\": True,\n    })\n    assert item is not None\n    missing = recommend_from_priority(\n        item,\n        evidence_refs=(),\n        generated_at=\"2026-10-27T00:00:00Z\",\n        valid_until=\"2026-10-28T00:00:00Z\",\n    )\n    assert missing is None\n    result = recommend_from_priority(\n        item,\n        evidence_refs=(\"workflow:tarea:T-88\",),\n        generated_at=\"2026-10-27T00:00:00Z\",\n        valid_until=\"2026-10-28T00:00:00Z\",\n        eligible_actions=(\"REQUEST_EXISTING_WORKFLOW\",),\n    )\n    assert result is not None\n    assert result.risk_level is RecommendationRisk.HIGH\n    assert result.required_permissions == (\"OPERATIVO_VER\", \"OPERATIVO_ATENDER\")\n    assert result.eligible_actions == (\"REQUEST_EXISTING_WORKFLOW\",)\n    assert result.human_confirmation_required is True\n    assert result.stale is True\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_bos_executive_e3c.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_bos_executive_e3c.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
