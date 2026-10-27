@@ -127,3 +127,32 @@ def test_connection_homologation_is_fail_closed_by_default():
     assert result["homologation"]["status"] == "NOT_ASSESSED"
     assert result["homologation"]["profile_id"] is None
     assert result["homologation"]["certification_source"] is None
+
+
+def test_gate5b_projects_persisted_inventory_filters_from_server_registry():
+    # La fachada no debe esconder los conceptos guardados ni inventar vacios
+    # que posteriormente se interpretan como una seleccion del usuario.
+    source = {
+        "id": "66666666-6666-6666-6666-666666666666",
+        "nombre": "ManagementPro",
+        "tipo_conexion": "DATA_SOURCE",
+        "system_type": "MPRO",
+        "tipos_movimiento": ["050", "106", "108", "109", "112", "506", "508", "509", "510", "512"],
+        "categorias": ["C01"],
+        "departamentos": ["D01"],
+        "activo": True,
+        "password": "NO_DEBE_SALIR",
+    }
+    projected = _normalize_connection(source, "server_registry")
+    for key in ("tipos_movimiento", "categorias", "departamentos"):
+        assert projected[key] == source[key]
+    assert projected["tipos_movimiento"][1] == "106"
+    assert "NO_DEBE_SALIR" not in repr(projected)
+
+
+def test_gate5b_unconfigured_api_connection_keeps_empty_catalog_defaults():
+    source = {"id": "77777777-7777-7777-7777-777777777777", "tipo_conexion": "API_LOCAL"}
+    projected = _normalize_connection(source, "api_connections")
+    assert projected["tipos_movimiento"] == []
+    assert projected["categorias"] == []
+    assert projected["departamentos"] == []
