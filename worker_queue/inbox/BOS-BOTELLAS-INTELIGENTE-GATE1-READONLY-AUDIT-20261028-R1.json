@@ -1,0 +1,81 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          ".git/**",
+          "node_modules/**",
+          "dist/**",
+          "build/**",
+          "__pycache__/**",
+          ".venv/**"
+        ],
+        "include_patterns": [],
+        "max_results": 800,
+        "paths": [
+          "backend/core/inventarios",
+          "backend/core/object_storage.py",
+          "backend/modules/cava_socios",
+          "backend/modules/cavas_corporativas",
+          "backend/modules/inventarios",
+          "backend/modules/compras",
+          "backend/modules/catalogo",
+          "backend/modules/catalogos",
+          "backend/modules/catalogo_ampliado",
+          "backend/modules/production_quality",
+          "backend/modules/sync_recetas",
+          "backend/database/migrations",
+          "frontend/src/pages/cava-socios"
+        ],
+        "search_terms": [
+          "botella",
+          "nivel",
+          "capacidad",
+          "rendimiento",
+          "presentacion",
+          "unidad",
+          "evidencia",
+          "calibracion",
+          "ciega",
+          "barra",
+          "sku",
+          "insumo",
+          "imagen",
+          "foto",
+          "object_storage",
+          "reconcile_blind_audit"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-BOTELLAS-INTELIGENTE-GATE1-READONLY-AUDIT-20261028-R1",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 READ_ONLY: Auditar capacidades canonicas reutilizables en EDARSAHUB BOS para el Inventario Inteligente de Botellas (medicion de ml restantes en botellas abiertas mediante fotografia, geometria calibrada, deteccion de nivel y validacion humana) cubriendo inventarios fisicos, catalogos SKU, presentaciones, unidades de medida, imagenes, codigos de barras, RBAC, evidencias y endpoints existentes.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Inventario Inteligente de Botellas - Gate 1",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "antigravity"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
