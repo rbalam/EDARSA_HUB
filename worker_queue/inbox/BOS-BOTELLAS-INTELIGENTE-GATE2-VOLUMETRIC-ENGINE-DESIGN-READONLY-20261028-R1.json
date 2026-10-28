@@ -1,0 +1,90 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "paths": [
+        "backend/core/inventarios/resolver_canonico.py",
+        "backend/core/inventarios/contracts.py",
+        "backend/core/object_storage.py",
+        "backend/modules/cava_socios/blind_audit.py",
+        "backend/modules/cava_socios/evidence_chain.py",
+        "backend/modules/cava_socios/domain.py",
+        "backend/modules/compras/schemas.py",
+        "backend/modules/compras/access.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_cava_socios_blind_audit.py",
+        "backend/tests/test_cava_socios_evidence_chain.py",
+        "backend/tests/test_production_quality_backend_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          ".git/**",
+          "node_modules/**",
+          "dist/**",
+          "build/**",
+          "__pycache__/**",
+          ".venv/**"
+        ],
+        "include_patterns": [],
+        "max_results": 500,
+        "paths": [
+          "backend/core/inventarios",
+          "backend/core/object_storage.py",
+          "backend/modules/cava_socios",
+          "backend/modules/compras",
+          "backend/modules/inventarios",
+          "backend/modules/catalogos",
+          "backend/modules/production_quality"
+        ],
+        "search_terms": [
+          "Producto_Catalogo",
+          "Producto_Presentaciones",
+          "Producto_MapeoOrigen",
+          "Global_Cat_UnidadesMedida",
+          "Auditoria_Inventario_Provisional",
+          "Compras_Inventarios_Fisicos_Sync",
+          "EvidenceReference",
+          "VisionReadinessRequest",
+          "reconcile_blind_audit",
+          "put_object"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-BOTELLAS-INTELIGENTE-GATE2-VOLUMETRIC-ENGINE-DESIGN-READONLY-20261028-R1",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2 READ_ONLY: Certificar el diseno canonico del Motor de Aforo Volumetrico para el Inventario Inteligente de Botellas sobre el Gate 1 certificado (BOS-BOTELLAS-INTELIGENTE-GATE1-READONLY-AUDIT-20261028-R1), validando contratos de Producto_Catalogo, Producto_Presentaciones, Producto_MapeoOrigen, Global_Cat_UnidadesMedida, Auditoria_Inventario_Provisional, cadena de evidencia SHA-256, auditoria ciega y compilacion/pruebas base sin tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Inventario Inteligente de Botellas - Gate 2",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "antigravity"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
