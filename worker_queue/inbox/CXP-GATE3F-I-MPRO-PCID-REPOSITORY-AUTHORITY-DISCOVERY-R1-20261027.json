@@ -1,0 +1,52 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CXP-GATE3F-I-MPRO-PCID-REPOSITORY-AUTHORITY-DISCOVERY-R1-20261027",
+  "created_at_utc": "2026-10-28T05:55:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "da6495339f54925487a929d93d7aed93db4fe624",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "READ_ONLY",
+  "objective": "GATE 3F-I MPRO Pc_ID repository authority discovery. Auditar exclusivamente el repositorio actual para determinar si EDARSAHUB contiene alguna logica reutilizable o autoritativa para generar, reservar, validar o aplicar Pc_ID en dbo.Pago_CXP de MPRO. Buscar writers, adapters, stored-procedure callers, SQL templates, MAX/next-id logic, formatting 0001.., payment-form mappings, cancellation/reversal paths and tests. Si no existe evidencia en repo, certificar REPOSITORY_AUTHORITY_NOT_FOUND sin inferir que el ERP carece de mecanismo externo. No modificar archivos, SQL, credenciales ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "tools",
+          "scripts",
+          "docs"
+        ],
+        "search_terms": [
+          "Pago_CXP",
+          "Pc_ID",
+          "Cxp_Folio",
+          "Fp_Cve_Forma_Pago",
+          "Cuenta_X_Pagar",
+          "MAX(Pc_ID)",
+          "Pago_Cxp_Comprobante",
+          "Pago_CXP_Impuesto"
+        ],
+        "max_results": 100
+      }
+    }
+  ],
+  "constraints": [
+    "READ ONLY repository audit only",
+    "No SQL execution",
+    "No code or file mutation",
+    "No Production",
+    "No canary",
+    "No Payment Executor writer",
+    "Do not infer absence of vendor/external mechanism from repository absence alone",
+    "If no authoritative generator exists in repo, classify repository authority as NOT_FOUND and keep MPRO canary blocked"
+  ]
+}
