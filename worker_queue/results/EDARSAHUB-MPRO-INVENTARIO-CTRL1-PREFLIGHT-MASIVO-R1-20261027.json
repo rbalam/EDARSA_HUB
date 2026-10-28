@@ -1,0 +1,162 @@
+{
+  "base_sha": "f50fbc65763eb8467d0f7f3ec7c286a962d35538",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-28T02:37:44Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-MPRO-INVENTARIO-CTRL1-PREFLIGHT-MASIVO-R1-20261027",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-28T02:38:17Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "Unidad",
+              "Mes",
+              "Encabezados",
+              "Detalles",
+              "DetLegacy",
+              "DetCanonico"
+            ],
+            "name": "matriz_mpro_inventarios",
+            "row_count_returned": 14,
+            "rows": [
+              [
+                "130QRO",
+                "2026-03",
+                1350,
+                13715,
+                13715,
+                0
+              ],
+              [
+                "130QRO",
+                "2026-04",
+                2117,
+                20171,
+                20171,
+                0
+              ],
+              [
+                "130QRO",
+                "2026-05",
+                2120,
+                17653,
+                17653,
+                0
+              ],
+              [
+                "130QRO",
+                "2026-06",
+                2113,
+                21447,
+                21447,
+                0
+              ],
+              [
+                "130QRO",
+                "2026-07",
+                2214,
+                21955,
+                21955,
+                0
+              ],
+              [
+                "130QRO",
+                "2026-08",
+                2084,
+                21203,
+                21203,
+                0
+              ],
+              [
+                "130QRO",
+                "2026-09",
+                1701,
+                11942,
+                10613,
+                1329
+              ],
+              [
+                "130QRO",
+                "2026-10",
+                3034,
+                22828,
+                13386,
+                9442
+              ],
+              [
+                "ORIGEN",
+                "2026-05",
+                247,
+                2041,
+                2041,
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-06",
+                1236,
+                15777,
+                15777,
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-07",
+                1211,
+                15066,
+                15066,
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-08",
+                1392,
+                15641,
+                15641,
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-09",
+                697,
+                6474,
+                6474,
+                0
+              ],
+              [
+                "ORIGEN",
+                "2026-10",
+                655,
+                8281,
+                8281,
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-28T02:37:43Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
