@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "paths": [
+        "backend/modules/costos_margenes/configuracion_repository.py",
+        "backend/modules/costos_margenes/repository.py",
+        "backend/modules/costos_margenes/routes.py",
+        "backend/tests/test_costos_margenes_catalogo_server_scope.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_costos_margenes_catalogo_server_scope.py",
+        "backend/tests/test_costos_margenes_configuracion_repository.py",
+        "backend/tests/test_costos_margenes_resumen_canonico.py",
+        "backend/tests/test_costos_margenes_routes_config_efectiva.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-COSTOS-POS-GATE5-ABC-CANONICAL-CERT-R1",
+  "mode": "READ_ONLY",
+  "objective": "Gate 5 R1: certificar correcciones canonicas de prioridades A (HTTP 409 en Todas las unidades), B (totales corporativos sin duplicacion) y C (familias y subfamilias activas por ServerID) en Edarsahub_Desarrollo (ef40eb8e213879ca511094d9c266dd613455a596).",
+  "production_allowed": false,
+  "requester": {
+    "chat": "bos-costos-pos-reconciliation",
+    "email": "carlosruz@edarsa.com.mx",
+    "project": "EDARSAHUB BOS",
+    "source": "bos-orchestrator"
+  },
+  "scheduling": {
+    "bounded_context": "COSTOS_MARGENES",
+    "conflict_domains": [
+      "COSTOS_MARGENES_READONLY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": [
+      "costos_pos_gate5_abc_cert_r1"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
