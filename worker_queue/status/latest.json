@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "ef40eb8e213879ca511094d9c266dd613455a596",
-  "generated_at_utc": "2026-10-28T05:00:36Z",
+  "generated_at_utc": "2026-10-28T05:02:00Z",
   "history": {
     "done_total_local": 1624,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1929,
+      "age_seconds": 2014,
       "job_id": "BOS-COSTOS-POS-GATE5-ABC-CANONICAL-CERT-R1",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,8 +36,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-28T05:00:23Z",
-    "last_receive_utc": "2026-10-28T05:00:32Z",
+    "last_cycle_utc": "2026-10-28T05:01:53Z",
+    "last_receive_utc": "2026-10-28T05:01:48Z",
     "last_terminal_utc": "2026-10-28T04:28:26Z",
     "pid": "492",
     "runtime_fingerprint": {
