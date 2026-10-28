@@ -1,0 +1,121 @@
+name: MPRO Inventarios Legacy 2026 - respaldo cifrado y lotes
+
+# One-off bounded data correction. The workflow starts once when this workflow
+# is committed to Desarrollo, or by a deliberate manual dispatch.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mpro-inventory-legacy-2026-one-off
+  cancel-in-progress: false
+
+jobs:
+  create-encrypted-recovery-artifact:
+    if: github.ref == 'refs/heads/Edarsahub_Desarrollo'
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    environment: DEVELOPMENT
+    env:
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: HRLectura
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+      SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install fixed dependency set
+        run: python -m pip install --quiet pymssql cryptography python-dotenv pytest
+      - name: Test security and scope contract (no SQL writes)
+        run: python -m pytest -q backend/tests/test_mpro_inventarios_ctrl1_batch_contract.py
+      - name: Deny writer login in backup job
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$EDARSAHUB_SQL_PASSWORD"
+          test -n "$SERVER_SECRET_KEY"
+          test "$EDARSAHUB_SQL_DATABASE" = EDARSAHUB
+          test -z "${EDARSAHUB_SQL_WRITER_PASSWORD:-}"
+      - name: Compare source/HUB and create ENCRYPTED recovery archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/mpro-inventory-recovery"
+          python backend/scripts/mpro_inventarios_ctrl1_batch.py \
+            --phase prepare --directory "$RUNNER_TEMP/mpro-inventory-recovery"
+          test -s "$RUNNER_TEMP/mpro-inventory-recovery/mpro_inventory_ctrl1_2026_beforeimages.fernet"
+      - name: Publish ciphertext OUTSIDE Preview before any write
+        id: escrow
+        uses: actions/upload-artifact@v4
+        with:
+          name: mpro-inventarios-respaldo-cifrado-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/mpro-inventory-recovery/mpro_inventory_ctrl1_2026_beforeimages.fernet
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+      - name: Certify external backup uploaded
+        shell: bash
+        env:
+          ARTIFACT_ID: ${{ steps.escrow.outputs.artifact-id }}
+        run: |
+          set -euo pipefail
+          test -n "$ARTIFACT_ID"
+          echo "RESPALDO_CIFRADO_GITHUB_ARTIFACT_ID=$ARTIFACT_ID"
+          echo 'SQL_NO_MODIFICADO_EN_BACKUP=PASS'
+
+  apply-guarded-existing-quantities:
+    needs: create-encrypted-recovery-artifact
+    if: github.ref == 'refs/heads/Edarsahub_Desarrollo'
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    environment: DEVELOPMENT
+    env:
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: HRLectura
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+      SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install fixed dependency set
+        run: python -m pip install --quiet pymssql cryptography python-dotenv pytest
+      - name: Download separately stored encrypted recovery artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mpro-inventarios-respaldo-cifrado-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/mpro-inventory-recovery
+      - name: Verify artifact integrity BEFORE writer credentials are available
+        shell: bash
+        run: |
+          set -euo pipefail
+          python backend/scripts/mpro_inventarios_ctrl1_batch.py \
+            --phase verify \
+            --encrypted-file "$RUNNER_TEMP/mpro-inventory-recovery/mpro_inventory_ctrl1_2026_beforeimages.fernet"
+      - name: Update only unambiguous Legacy existing quantities and verify via HRLectura
+        shell: bash
+        env:
+          EDARSAHUB_SQL_WRITER_USER: ${{ secrets.EDARSAHUB_SQL_WRITER_USER }}
+          EDARSAHUB_SQL_WRITER_PASSWORD: ${{ secrets.EDARSAHUB_SQL_WRITER_PASSWORD }}
+          MPRO_OFFSITE_ARTIFACT_UPLOADED: 'true'
+        run: |
+          set -euo pipefail
+          test -n "$EDARSAHUB_SQL_WRITER_USER"
+          test -n "$EDARSAHUB_SQL_WRITER_PASSWORD"
+          test "$EDARSAHUB_SQL_WRITER_USER" != "$EDARSAHUB_SQL_USER"
+          python backend/scripts/mpro_inventarios_ctrl1_batch.py \
+            --phase apply \
+            --encrypted-file "$RUNNER_TEMP/mpro-inventory-recovery/mpro_inventory_ctrl1_2026_beforeimages.fernet"
