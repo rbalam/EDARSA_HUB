@@ -1,0 +1,161 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules",
+          "__pycache__",
+          ".git",
+          "build",
+          "dist"
+        ],
+        "include_patterns": [],
+        "max_results": 1500,
+        "paths": [
+          "backend/modules",
+          "frontend/src"
+        ],
+        "search_terms": [
+          "almacen_destino",
+          "almacen_id",
+          "almacen_origen",
+          "catalogo_almacenes",
+          "unidades_negocio"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules",
+          "__pycache__",
+          ".git",
+          "build",
+          "dist"
+        ],
+        "include_patterns": [],
+        "max_results": 1500,
+        "paths": [
+          "backend/modules",
+          "frontend/src"
+        ],
+        "search_terms": [
+          "ajuste_inventario",
+          "auditoria_programada",
+          "conteo_fisico",
+          "inventario_fisico",
+          "inventario_sorpresa",
+          "reconteo"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules",
+          "__pycache__",
+          ".git",
+          "build",
+          "dist"
+        ],
+        "include_patterns": [],
+        "max_results": 1500,
+        "paths": [
+          "backend/modules",
+          "frontend/src",
+          "tools"
+        ],
+        "search_terms": [
+          "botella",
+          "capacidad_ml",
+          "edarsatender",
+          "etiqueta",
+          "nivel_liquido",
+          "volumen_ml"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules",
+          "__pycache__",
+          ".git",
+          "build",
+          "dist"
+        ],
+        "include_patterns": [],
+        "max_results": 1500,
+        "paths": [
+          "backend/modules",
+          "frontend/src"
+        ],
+        "search_terms": [
+          "barcode",
+          "codigo_barras",
+          "folio_consecutivo",
+          "lector_rfid",
+          "qr_code",
+          "rfid"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules",
+          "__pycache__",
+          ".git",
+          "build",
+          "dist"
+        ],
+        "include_patterns": [],
+        "max_results": 1500,
+        "paths": [
+          "backend/modules",
+          "frontend/src",
+          "tools"
+        ],
+        "search_terms": [
+          "almacen_consumo",
+          "costo_promedio",
+          "kardex",
+          "mpro",
+          "softrestaurant",
+          "traspaso"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-INVENTARIOS-ALMACENES-CORPORATIVOS-GATE0-R3",
+  "mode": "READ_ONLY",
+  "objective": "GATE 0 R3 READ_ONLY. Certificar evidencia de contratos existentes para integrar Inventarios Fisicos corporativos, EdarsaTender e Identificacion QR/RFID. Priorizar todas las unidades de negocio y sus almacenes. Examinar conteos programados y sorpresa, existencias, kardex, ajustes, medicion volumetrica de botellas, etiquetas, MPRO, SoftRestaurant y RBAC. No crear sistemas paralelos, no modificar codigo, SQL, datos ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "OPERACIONES-INVENTARIOS-RFID",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "CHATGPT"
+  },
+  "scheduling": {
+    "bounded_context": "INVENTARIOS_FISICOS_CORPORATIVOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
