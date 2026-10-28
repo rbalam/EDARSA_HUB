@@ -1,0 +1,133 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules",
+          "__pycache__",
+          ".git",
+          "build",
+          "dist"
+        ],
+        "include_patterns": [],
+        "max_results": 1500,
+        "paths": [
+          "backend/modules",
+          "frontend/src"
+        ],
+        "search_terms": [
+          "auditoria_inventario",
+          "conteo_fisico",
+          "conteo_sorpresa",
+          "inventario_fisico",
+          "inventarios_fisicos"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules",
+          "__pycache__",
+          ".git",
+          "build",
+          "dist"
+        ],
+        "include_patterns": [],
+        "max_results": 1500,
+        "paths": [
+          "backend/modules",
+          "frontend/src"
+        ],
+        "search_terms": [
+          "barcode",
+          "codigo_barras",
+          "etiqueta",
+          "folio_consecutivo",
+          "numero_serie",
+          "qr_code"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules",
+          "__pycache__",
+          ".git",
+          "build",
+          "dist"
+        ],
+        "include_patterns": [],
+        "max_results": 1500,
+        "paths": [
+          "backend/modules",
+          "frontend/src"
+        ],
+        "search_terms": [
+          "botella",
+          "cava",
+          "consignacion",
+          "traspaso",
+          "trazabilidad"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules",
+          "__pycache__",
+          ".git",
+          "build",
+          "dist"
+        ],
+        "include_patterns": [],
+        "max_results": 1500,
+        "paths": [
+          "backend/modules",
+          "frontend/src",
+          "tools"
+        ],
+        "search_terms": [
+          "epc",
+          "lector_rfid",
+          "nfc",
+          "rfid",
+          "tid",
+          "uhf"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-PHYSICAL-IDENTIFICATION-CAPTURE-GATE0-FOCUSED-R2",
+  "mode": "READ_ONLY",
+  "objective": "GATE 0 R2 READ_ONLY: realizar cuatro auditorias focalizadas sobre inventarios fisicos, conteos sorpresa, etiquetas QR, folios individuales, botellas, cavas, traspasos, consignacion y RFID UHF/EPC/TID. Identificar componentes reutilizables, propietarios, rutas, endpoints, contratos, dependencias y brechas. Distinguir coincidencias incidentales de implementaciones reales. No modificar codigo, SQL, datos ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "OPERACIONES-INVENTARIOS-RFID",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "CHATGPT"
+  },
+  "scheduling": {
+    "bounded_context": "PHYSICAL_IDENTIFICATION_CAPTURE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
