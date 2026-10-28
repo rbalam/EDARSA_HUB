@@ -1,0 +1,66 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules",
+          "__pycache__",
+          ".git",
+          "build",
+          "dist"
+        ],
+        "include_patterns": [],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "tools"
+        ],
+        "search_terms": [
+          "activo_fijo",
+          "barcode",
+          "cava",
+          "codigo_barras",
+          "conteo",
+          "datamatrix",
+          "epc",
+          "etiqueta",
+          "folio",
+          "inventario_fisico",
+          "nfc",
+          "qr",
+          "rfid",
+          "traspaso",
+          "trazabilidad"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-PHYSICAL-IDENTIFICATION-CAPTURE-GATE0-READONLY-R1",
+  "mode": "READ_ONLY",
+  "objective": "GATE 0 READ_ONLY: auditar las capacidades existentes de identificacion fisica y captura en EDARSAHUB. Localizar implementaciones y contratos de RFID, QR, codigos de barras, etiquetas, instancias fisicas, inventarios, conteos sorpresa, cavas, activos y traspasos. Identificar reutilizacion, duplicaciones, dependencias y brechas. Entregar evidencia verificable y recomendaciones de arquitectura. No modificar codigo, SQL, datos ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "OPERACIONES-INVENTARIOS-RFID",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "CHATGPT"
+  },
+  "scheduling": {
+    "bounded_context": "PHYSICAL_IDENTIFICATION_CAPTURE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
