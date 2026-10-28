@@ -50,9 +50,6 @@ def get_resumen_costos_margenes(
     if servidor_id:
         unidad_where = "AND CAST(p.ServerID AS NVARCHAR(36)) = %s"
         params.append(str(servidor_id))
-    elif unidad_negocio_pk:
-        unidad_where = "AND CONVERT(varchar(36), p.UnidadNegocioID) = %s"
-        params.append(str(unidad_negocio_pk))
 
     # Resumen canónico:
     # - mismo universo comercial que el listado
@@ -194,6 +191,7 @@ def get_resumen_costos_margenes(
         SELECT COUNT(DISTINCT i.InsumoID) as total
         FROM Sync_Productos_Insumos i
         WHERE i.ServerID = %s
+          AND ISNULL(i.Activo, 1) = 1
           AND EXISTS (
               SELECT 1
               FROM Sync_Productos p
@@ -201,22 +199,26 @@ def get_resumen_costos_margenes(
                 AND p.Activo = 1
           )
         """
-        recetas_query = """
+        recetas_query = f"""
         SELECT COUNT(DISTINCT r.RecetaDetalleID) as total
         FROM Sync_Productos_Recetas r
         WHERE r.ServerID = %s
+          AND ISNULL(r.Activo, 1) = 1
           AND EXISTS (
               SELECT 1
               FROM Sync_Productos p
               WHERE p.ServerID = r.ServerID
                 AND p.CodigoFuente = r.ProductoCodigoFuente
                 AND p.Activo = 1
+                AND {_mpro_comercial_where('p')}
+                AND {_mpro_menu_pos_where('p')}
           )
         """
         elaborados_query = """
         SELECT COUNT(DISTINCT e.ElaboradoDetalleID) as total
         FROM Sync_Productos_Elaborados e
         WHERE e.ServerID = %s
+          AND ISNULL(e.Activo, 1) = 1
           AND EXISTS (
               SELECT 1
               FROM Sync_Productos p
@@ -228,49 +230,46 @@ def get_resumen_costos_margenes(
         insumos_result = execute_sql_query_params(*conn, insumos_query, (sid,))
         recetas_result = execute_sql_query_params(*conn, recetas_query, (sid,))
         elaborados_result = execute_sql_query_params(*conn, elaborados_query, (sid,))
-    elif unidad_negocio_pk:
+    else:
         insumos_query = """
         SELECT COUNT(DISTINCT i.InsumoID) as total
         FROM Sync_Productos_Insumos i
-        WHERE EXISTS (
-            SELECT 1
-            FROM Sync_Productos p
-            WHERE p.ServerID = i.ServerID
-              AND CONVERT(varchar(36), p.UnidadNegocioID) = %s
-              AND p.Activo = 1
-        )
+        WHERE ISNULL(i.Activo, 1) = 1
+          AND EXISTS (
+              SELECT 1
+              FROM Sync_Productos p
+              WHERE p.ServerID = i.ServerID
+                AND p.Activo = 1
+          )
         """
-        recetas_query = """
+        recetas_query = f"""
         SELECT COUNT(DISTINCT r.RecetaDetalleID) as total
         FROM Sync_Productos_Recetas r
-        WHERE EXISTS (
-            SELECT 1
-            FROM Sync_Productos p
-            WHERE p.ServerID = r.ServerID
-              AND p.CodigoFuente = r.ProductoCodigoFuente
-              AND CONVERT(varchar(36), p.UnidadNegocioID) = %s
-              AND p.Activo = 1
-        )
+        WHERE ISNULL(r.Activo, 1) = 1
+          AND EXISTS (
+              SELECT 1
+              FROM Sync_Productos p
+              WHERE p.ServerID = r.ServerID
+                AND p.CodigoFuente = r.ProductoCodigoFuente
+                AND p.Activo = 1
+                AND {_mpro_comercial_where('p')}
+                AND {_mpro_menu_pos_where('p')}
+          )
         """
         elaborados_query = """
         SELECT COUNT(DISTINCT e.ElaboradoDetalleID) as total
         FROM Sync_Productos_Elaborados e
-        WHERE EXISTS (
-            SELECT 1
-            FROM Sync_Productos p
-            WHERE p.ServerID = e.ServerID
-              AND CONVERT(varchar(36), p.UnidadNegocioID) = %s
-              AND p.Activo = 1
-        )
+        WHERE ISNULL(e.Activo, 1) = 1
+          AND EXISTS (
+              SELECT 1
+              FROM Sync_Productos p
+              WHERE p.ServerID = e.ServerID
+                AND p.Activo = 1
+          )
         """
-        uid = str(unidad_negocio_pk)
-        insumos_result = execute_sql_query_params(*conn, insumos_query, (uid,))
-        recetas_result = execute_sql_query_params(*conn, recetas_query, (uid,))
-        elaborados_result = execute_sql_query_params(*conn, elaborados_query, (uid,))
-    else:
-        insumos_result = execute_sql_query(*conn, "SELECT COUNT(*) as total FROM Sync_Productos_Insumos")
-        recetas_result = execute_sql_query(*conn, "SELECT COUNT(*) as total FROM Sync_Productos_Recetas")
-        elaborados_result = execute_sql_query(*conn, "SELECT COUNT(*) as total FROM Sync_Productos_Elaborados")
+        insumos_result = execute_sql_query(*conn, insumos_query)
+        recetas_result = execute_sql_query(*conn, recetas_query)
+        elaborados_result = execute_sql_query(*conn, elaborados_query)
 
     p = productos_result[0] if productos_result else {}
 
@@ -1081,19 +1080,15 @@ def get_familias_productos(
     where_clause = (
         "WHERE p.FamiliaNombre IS NOT NULL "
         "AND p.FamiliaNombre != '' "
+        "AND p.Activo = 1 "
         f"AND {_mpro_comercial_where('p')} "
         f"AND {_mpro_menu_pos_where('p')}"
     )
     params: List[Any] = []
-    if unidad_negocio_pk:
-        where_clause += " AND CONVERT(varchar(36), p.UnidadNegocioID) = %s"
-        params.append(str(unidad_negocio_pk))
-    elif servidor_id:
+    if servidor_id:
         where_clause += " AND CAST(p.ServerID AS NVARCHAR(36)) = %s"
         params.append(str(servidor_id))
-
-    # FASE P2: RBAC - Filtrar por múltiples servidores permitidos
-    if servidores_ids and len(servidores_ids) > 0 and not servidor_id and not unidad_negocio_pk:
+    elif servidores_ids and len(servidores_ids) > 0:
         servers = [str(s) for s in servidores_ids if str(s).strip()]
         if servers:
             placeholders = ",".join(["%s"] * len(servers))
@@ -1105,6 +1100,7 @@ def get_familias_productos(
     query = f"""
     SELECT
         FamiliaNombre as familia,
+        MAX(ISNULL(FamiliaCodigoFuente, '')) as codigo,
         COUNT(*) as total_productos
     FROM Sync_Productos p
     {where_clause}
@@ -1118,7 +1114,7 @@ def get_familias_productos(
     for row in result or []:
         familias.append({
             'familia': row.get('familia', ''),
-            'codigo': '',
+            'codigo': row.get('codigo', '') or '',
             'total_productos': row.get('total_productos', 0)
         })
 
@@ -1129,6 +1125,7 @@ def get_subfamilias_productos(
     familia: Optional[str] = None,
     servidor_id: Optional[str] = None,
     unidad_negocio_pk: Optional[str] = None,
+    servidores_ids: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
     """
     Obtiene lista de subfamilias de productos desde EDARSAHUB.
@@ -1145,24 +1142,31 @@ def get_subfamilias_productos(
     where_clause = (
         "WHERE p.SubFamiliaNombre IS NOT NULL "
         "AND p.SubFamiliaNombre != '' "
+        "AND p.Activo = 1 "
         f"AND {_mpro_comercial_where('p')} "
         f"AND {_mpro_menu_pos_where('p')}"
     )
     params: List[Any] = []
     if familia:
-        where_clause += " AND p.FamiliaNombre = %s"
-        params.append(str(familia))
-    if unidad_negocio_pk:
-        where_clause += " AND CONVERT(varchar(36), p.UnidadNegocioID) = %s"
-        params.append(str(unidad_negocio_pk))
-    elif servidor_id:
+        where_clause += " AND (p.FamiliaNombre = %s OR p.FamiliaCodigoFuente = %s)"
+        params.extend([str(familia), str(familia)])
+    if servidor_id:
         where_clause += " AND CAST(p.ServerID AS NVARCHAR(36)) = %s"
         params.append(str(servidor_id))
+    elif servidores_ids and len(servidores_ids) > 0:
+        servers = [str(s) for s in servidores_ids if str(s).strip()]
+        if servers:
+            placeholders = ",".join(["%s"] * len(servers))
+            where_clause += f" AND CAST(p.ServerID AS NVARCHAR(36)) IN ({placeholders})"
+            params.extend(servers)
+        else:
+            where_clause += " AND 1=0"
 
     query = f"""
     SELECT
         FamiliaNombre as familia,
         SubFamiliaNombre as subfamilia,
+        MAX(ISNULL(SubFamiliaCodigoFuente, '')) as codigo,
         COUNT(*) as total_productos
     FROM Sync_Productos p
     {where_clause}
@@ -1177,7 +1181,7 @@ def get_subfamilias_productos(
         subfamilias.append({
             'familia': row.get('familia', ''),
             'subfamilia': row.get('subfamilia', ''),
-            'codigo': '',
+            'codigo': row.get('codigo', '') or '',
             'total_productos': row.get('total_productos', 0)
         })
 

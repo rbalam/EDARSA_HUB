@@ -70,11 +70,14 @@ def resolver_empresa_id_desde_unidad(
         INNER JOIN dbo.Sistema_Empresas e
             ON UPPER(LTRIM(RTRIM(e.CodigoEmpresa)))
              = UPPER(LTRIM(RTRIM(u.codigo)))
-        WHERE CONVERT(varchar(36), u.id) = %s
+        WHERE (
+            CONVERT(varchar(36), u.id) = %s
+            OR UPPER(LTRIM(RTRIM(u.codigo))) = UPPER(LTRIM(RTRIM(%s)))
+        )
           AND ISNULL(u.activo, 1) = 1
           AND ISNULL(e.Activo, 1) = 1
         """,
-        (unidad_pk,),
+        (unidad_pk, unidad_pk),
     )
 
     if not row or row.get("EmpresaID") is None:
@@ -119,7 +122,7 @@ def _leer_config_unidad(
             MetodoRedondeo
         FROM dbo.Comercial_CostosMargenesConfiguracion
         WHERE EmpresaID = %s
-          AND UnidadNegocioID = CONVERT(uniqueidentifier, %s)
+          AND UnidadNegocioID = TRY_CONVERT(uniqueidentifier, %s)
           AND Activo = 1
         """,
         (empresa_id, unidad_negocio_pk),
