@@ -1,0 +1,218 @@
+{
+  "base_sha": "da6495339f54925487a929d93d7aed93db4fe624",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-28T05:51:00Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CXP-GATE3F-I-MPRO-PCID-REPOSITORY-AUTHORITY-DISCOVERY-R1-20261027",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-28T05:51:45Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "pyodbc",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.connections.pos_runtime_resolver",
+              "core.scheduler.jobs.inteligencia_comercial_sync_job",
+              "core.sql_first.connection_factory",
+              "core.sql_first.db",
+              "datetime",
+              "hashlib",
+              "json",
+              "logging",
+              "time"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "fp_cve_forma_pago"
+            ],
+            "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_bulk_insert",
+              "_connect_pos",
+              "_cursor_as_dict",
+              "_extract_mpro",
+              "_extract_softrestaurant",
+              "_fetchall_dicts",
+              "_hash_pago",
+              "_write_enrichment",
+              "_write_payments_only",
+              "enrich_unidad",
+              "resync_pagos_unidad"
+            ],
+            "tables_referenced": [
+              "Finanzas_CortesCaja_DetallePagos",
+              "Sync_Sales",
+              "tiposervicio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "pago_cxp"
+            ],
+            "path": "backend/database/migrations/20260722_001_finanzas_cxp_decisiones_pago.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Finanzas_CxP_DecisionesPago",
+              "Finanzas_CxP_PagosOrigenQueue",
+              "Finanzas_CxP_Sync",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "sql_subprocess_helper",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "cuenta_x_pagar",
+              "cxp_folio"
+            ],
+            "path": "backend/modules/finanzas/repository_mpro.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FinanzasRepositoryMPRO",
+              "__init__",
+              "_execute_query",
+              "_get_credentials",
+              "get_cuentas_por_pagar",
+              "get_proveedores",
+              "get_resumen_antiguedad",
+              "get_resumen_por_proveedor",
+              "get_resumen_por_sucursal",
+              "get_sucursales"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "logging",
+              "modules.finanzas.canonical_sync_units",
+              "os",
+              "pathlib",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "fp_cve_forma_pago"
+            ],
+            "path": "backend/modules/finanzas/sync_propinas_mpro.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_load_env",
+              "calcular_hash_propina_mpro",
+              "cargar_propinas_mpro_edarsahub",
+              "extraer_propinas_tpv_mpro",
+              "get_edarsahub_connection",
+              "get_mpro_connection",
+              "get_unidad_mpro_connection_info",
+              "registrar_synclog_propinas_mpro",
+              "sincronizar_propinas_mpro",
+              "sincronizar_todas_unidades_mpro"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "cuenta_x_pagar"
+            ],
+            "path": "docs/DIAGNOSTICO_SUCURSALES_MPRO_FINANZAS.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 5,
+          "scanned_files": 2518,
+          "skipped_sensitive": 1273
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-28T05:50:57Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
