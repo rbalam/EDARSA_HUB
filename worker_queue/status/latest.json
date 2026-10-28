@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "a734c9dd7ac767c5bfc19535b395ccd9c5ac4f28",
-  "generated_at_utc": "2026-10-28T03:36:40Z",
+  "generated_at_utc": "2026-10-28T03:37:57Z",
   "history": {
     "done_total_local": 1622,
     "pending_total_local": 0,
@@ -16,38 +16,32 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2533,
+      "age_seconds": 2610,
       "job_id": "BOS-BOTELLAS-INTELIGENTE-GATE1-READONLY-AUDIT-20261028-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1280,
+      "age_seconds": 1357,
       "job_id": "BOS-BOTELLAS-INTELIGENTE-GATE2-VOLUMETRIC-ENGINE-DESIGN-READONLY-20261028-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3333,
+      "age_seconds": 3410,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-GATE4-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 34,
+      "age_seconds": 111,
       "job_id": "EDARSAHUB-BOS-PHYSICAL-IDENTIFICATION-CAPTURE-GATE0-FOCUSED-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 317,
+      "age_seconds": 394,
       "job_id": "EDARSAHUB-BOS-PHYSICAL-IDENTIFICATION-CAPTURE-GATE0-READONLY-R1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3536,
-      "job_id": "EDARSAHUB-MPRO-INVENTARIO-CTRL1-PREFLIGHT-MASIVO-R1-20261027",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -60,14 +54,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "remote_development_sha": "a734c9dd7ac767c5bfc19535b395ccd9c5ac4f28",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-28T03:36:28Z",
-    "last_receive_utc": "2026-10-28T03:36:23Z",
+    "last_cycle_utc": "2026-10-28T03:37:49Z",
+    "last_receive_utc": "2026-10-28T03:37:44Z",
     "last_terminal_utc": "2026-10-28T03:36:06Z",
     "pid": "473",
     "runtime_fingerprint": {
