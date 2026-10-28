@@ -96,6 +96,13 @@ jobs:
             tests/test_inventory_analysis_soft_canonical.py \
             tests/test_inventory_origin_selection_transversal.py
 
+      - name: BOS workers global watch tests
+        shell: bash
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          python -m pytest -q tests/test_bos_workers_global_watch.py
+
       - name: Backend OpenAPI smoke
         shell: bash
         env:
