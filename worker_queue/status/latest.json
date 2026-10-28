@@ -4,25 +4,31 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "f50fbc65763eb8467d0f7f3ec7c286a962d35538",
-  "generated_at_utc": "2026-10-28T02:54:20Z",
+  "generated_at_utc": "2026-10-28T02:55:38Z",
   "history": {
-    "done_total_local": 1618,
+    "done_total_local": 1619,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1304,
-    "results_total_local": 2689
+    "results_total_local": 2690
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 792,
+      "age_seconds": 71,
+      "job_id": "BOS-BOTELLAS-INTELIGENTE-GATE1-READONLY-AUDIT-20261028-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 871,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-GATE4-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 995,
+      "age_seconds": 1074,
       "job_id": "EDARSAHUB-MPRO-INVENTARIO-CTRL1-PREFLIGHT-MASIVO-R1-20261027",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,15 +42,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "remote_development_sha": "f50fbc65763eb8467d0f7f3ec7c286a962d35538",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-28T02:54:07Z",
-    "last_receive_utc": "2026-10-28T02:54:19Z",
-    "last_terminal_utc": "2026-10-28T02:41:07Z",
+    "last_cycle_utc": "2026-10-28T02:55:31Z",
+    "last_receive_utc": "2026-10-28T02:55:26Z",
+    "last_terminal_utc": "2026-10-28T02:54:27Z",
     "pid": "473",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "b299e6bfc6edff1125de5762c056e8280d421ae4",
