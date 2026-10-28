@@ -1,0 +1,40 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-MPRO-INVENTARIO-CTRL1-PREFLIGHT-MASIVO-R1-20261027",
+  "created_at_utc": "2026-10-28T02:37:35.634Z",
+  "requested_by": "chatgpt",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "actions": [],
+  "objective": "Auditar ambos inventarios MPRO ORIGEN 0023 y 130QRO 0021 enero-octubre 2026. Clasificar MOVIMIENTO_POS Legacy y MOVIMIENTO_POS|concepto canónico y mes mixto antes de preparar resync masiva CTRL1. Exclusivamente SELECT. El modo MPRO_FULL_HISTORY_RESYNC existente solo maneja Finanzas/ISCAM, no inventarios: NO usarlo. No repetir 357 correcciones ORIGEN ni 132 QRO ya aplicadas. Reportar plan de ejecución automatizada por ventanas con snapshots externos y control de duplicados; no aplicar escrituras sin mecanismo comprobado.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 30,
+      "queries": [
+        {
+          "name": "matriz_mpro_inventarios",
+          "sql": "SELECT CASE WHEN m.EmpresaID=2 AND m.SucursalID=2 THEN '130QRO' WHEN m.EmpresaID=1 AND m.SucursalID=1 THEN 'ORIGEN' END AS Unidad,CONVERT(char(7),m.FechaMovimiento,120) AS Mes,COUNT(DISTINCT m.MovimientoID) AS Encabezados,COUNT(d.MovimientoID) AS Detalles,SUM(CASE WHEN m.ReferenciaTipo='MOVIMIENTO_POS' AND d.MovimientoID IS NOT NULL THEN 1 ELSE 0 END) AS DetLegacy,SUM(CASE WHEN m.ReferenciaTipo LIKE 'MOVIMIENTO_POS|%' AND d.MovimientoID IS NOT NULL THEN 1 ELSE 0 END) AS DetCanonico FROM dbo.Inventario_Movimientos m LEFT JOIN dbo.Inventario_MovimientosDetalle d ON d.MovimientoID=m.MovimientoID WHERE ((m.EmpresaID=2 AND m.SucursalID=2) OR (m.EmpresaID=1 AND m.SucursalID=1)) AND m.FechaMovimiento>='20260101' AND m.FechaMovimiento<'20261101' AND ISNULL(m.Activo,1)=1 GROUP BY m.EmpresaID,m.SucursalID,CONVERT(char(7),m.FechaMovimiento,120) ORDER BY Unidad,Mes"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "SOLO LECTURA SQL; no aplicar cambios a EDARSAHUB compartido con Producción",
+    "No modificar ningún sincronizador de ventas abiertas/cerradas ni de inventarios",
+    "No modificar otros sistemas, sucursales ni visualizaciones",
+    "No inventar trabajos ejecutados, respaldos ni resultados",
+    "Conservar criterios canónico, atómico, transversal y evitar duplicados"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "priority": "HIGH"
+}
