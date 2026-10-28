@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "LOCAL_AHEAD_ONLY",
   "development_sha": "f50fbc65763eb8467d0f7f3ec7c286a962d35538",
-  "generated_at_utc": "2026-10-28T03:32:45Z",
+  "generated_at_utc": "2026-10-28T03:34:02Z",
   "history": {
     "done_total_local": 1621,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2297,
+      "age_seconds": 2374,
       "job_id": "BOS-BOTELLAS-INTELIGENTE-GATE1-READONLY-AUDIT-20261028-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1045,
+      "age_seconds": 1122,
       "job_id": "BOS-BOTELLAS-INTELIGENTE-GATE2-VOLUMETRIC-ENGINE-DESIGN-READONLY-20261028-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3098,
+      "age_seconds": 3175,
       "job_id": "BOS-COSTOS-POS-RECONCILIATION-GATE4-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 82,
+      "age_seconds": 159,
       "job_id": "EDARSAHUB-BOS-PHYSICAL-IDENTIFICATION-CAPTURE-GATE0-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3300,
+      "age_seconds": 3377,
       "job_id": "EDARSAHUB-MPRO-INVENTARIO-CTRL1-PREFLIGHT-MASIVO-R1-20261027",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-28T03:32:36Z",
-    "last_receive_utc": "2026-10-28T03:32:31Z",
+    "last_cycle_utc": "2026-10-28T03:33:52Z",
+    "last_receive_utc": "2026-10-28T03:34:02Z",
     "last_terminal_utc": "2026-10-28T03:31:22Z",
     "pid": "473",
     "runtime_fingerprint": {
