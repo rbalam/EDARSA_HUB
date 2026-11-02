@@ -4,17 +4,30 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "da6495339f54925487a929d93d7aed93db4fe624",
-  "generated_at_utc": "2026-10-29T12:21:36Z",
+  "generated_at_utc": "2026-11-02T00:17:00Z",
   "history": {
-    "done_total_local": 1626,
+    "done_total_local": 1627,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1305,
-    "results_total_local": 2698
+    "rejected_total_local": 1306,
+    "results_total_local": 2700
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [],
+  "jobs": [
+    {
+      "age_seconds": 28,
+      "job_id": "BOS-TOAST-GATE8-ADAPTER-CODE-AUDIT-R2-20261029",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 30,
+      "job_id": "EDARSAHUB-INVENTARIOS-SCHEDULER-PRINCIPAL-IMPLEMENTATION-R7-R2-20261029",
+      "reason": null,
+      "state": "RESULT_READY"
+    }
+  ],
   "local_development_sha": "da6495339f54925487a929d93d7aed93db4fe624",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
@@ -23,16 +36,16 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 0,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "remote_development_sha": "da6495339f54925487a929d93d7aed93db4fe624",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-29T12:21:25Z",
-    "last_receive_utc": "2026-10-29T12:21:33Z",
-    "last_terminal_utc": "2026-10-28T05:51:00Z",
-    "pid": "989",
+    "last_cycle_utc": "2026-11-02T00:16:49Z",
+    "last_receive_utc": "2026-11-02T00:16:44Z",
+    "last_terminal_utc": "2026-11-02T00:16:32Z",
+    "pid": "700",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "b299e6bfc6edff1125de5762c056e8280d421ae4",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
