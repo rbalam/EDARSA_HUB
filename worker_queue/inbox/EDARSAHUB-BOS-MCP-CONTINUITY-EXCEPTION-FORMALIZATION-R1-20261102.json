@@ -1,0 +1,86 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "new": "Despues de una desconexion:\nleer CURRENT.md y continuar exclusivamente desde NEXT, salvo la excepcion unica EDARSAHUB_MCP_RECOVERY registrada abajo.\n\nExcepcion EDARSAHUB_MCP_RECOVERY (unica y de alcance limitado):\n- Solo se activa cuando ACTIVE_DECISIONS.md registra la aprobacion humana y existe docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md con WORKSTREAM=EDARSAHUB_MCP_RECOVERY.\n- CURRENT.md y el NEXT de CxP se leen y preservan sin cambios. Para esta excepcion, continuar exclusivamente desde el NEXT del checkpoint MCP.\n- Alcance: auditoria READ_ONLY y preparacion de gobernanza mediante el Universal Worker existente.\n- No autoriza implementacion MCP, publicacion de JOB MCP tecnico, activar EDARSAHUB_MCP_INPROCESS=1 ni cambios en Produccion.\n- CxP permanece pausado durante el trabajo MCP. No hay ejecucion paralela y se permite un solo writer.\n- Si falta aprobacion, existe duplicado/conflicto o el contexto no coincide, detenerse sin modificar archivos.\n\nNo repetir DO_NOT_REPEAT salvo evidencia nueva.",
+      "old": "Despues de una desconexion:\nleer CURRENT.md y continuar exclusivamente desde NEXT.\n\nNo repetir DO_NOT_REPEAT salvo evidencia nueva.",
+      "path": "docs/agent-governance/AGENT_POLICY.md",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "Read docs/agent-governance/checkpoints/CURRENT.md and preserve its CxP NEXT. For EDARSAHUB_MCP_RECOVERY only, when the limited exception is recorded in ACTIVE_DECISIONS.md and its dedicated checkpoint exists, also read docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md and continue only from that checkpoint's NEXT for READ_ONLY audit and governance preparation. Keep CxP paused. Use only the existing Universal Worker for this governance formalization. No MCP implementation or technical JOB, no in-process flag, no Production, no parallel execution, and one writer maximum.",
+      "old": "Read docs/agent-governance/checkpoints/CURRENT.md and continue only from NEXT.",
+      "path": ".github/copilot-instructions.md",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "- EJECUTAR se reutiliza cuando represente ejecucion posterior a autorizacion.\n- Excepcion unica EDARSAHUB_MCP_RECOVERY, aprobada el 2026-11-02 por @rbalam (identidad GitHub verificada; rol repository admin): auditoria READ_ONLY y preparacion de gobernanza por el Universal Worker existente; checkpoint MCP independiente; CURRENT.md y NEXT de CxP intactos; CxP pausado; ejecucion secuencial con un solo writer. No autoriza implementacion MCP, JOB MCP tecnico, EDARSAHUB_MCP_INPROCESS=1 ni Produccion. La autoridad de la excepcion proviene de AGENT_POLICY.md, no de esta entrada por si sola.",
+      "old": "- EJECUTAR se reutiliza cuando represente ejecucion posterior a autorizacion.",
+      "path": "docs/agent-governance/decisions/ACTIVE_DECISIONS.md",
+      "type": "replace_text"
+    },
+    {
+      "content": "# EDARSAHUB - MCP / Universal Worker Recovery\n\nWORKSTREAM=EDARSAHUB_MCP_RECOVERY\nSTATUS=GOVERNANCE_EXCEPTION_FORMALIZED\nAPPROVAL_REF=docs/agent-governance/decisions/ACTIVE_DECISIONS.md\nAUTHORIZED_BY=@rbalam\nAUTHORIZED_AT=2026-11-02\nBRANCH=Edarsahub_Desarrollo\nHEAD_AT_AUTHORIZATION=da6495339f54925487a929d93d7aed93db4fe624\nSCOPE=READ_ONLY_AUDIT_AND_GOVERNANCE_PREPARATION\nEXECUTOR=EXISTING_UNIVERSAL_WORKER_ONLY\nNEXT=READ_ONLY_AUDIT_MCP_INPROCESS_AND_CANONICAL_WORKER_REQUEST_FLOW\nCXP_CURRENT_MD_MODIFIED=NO\nCXP_NEXT_MODIFIED=NO\nPARALLEL_EXECUTION=NO\nMAXIMUM_WRITERS=1\nIMPLEMENTATION_AUTHORIZED=NO\nTECHNICAL_MCP_JOB_AUTHORIZED=NO\nMCP_INPROCESS_ENABLED=NO\nPRODUCTION_TOUCHED=NO\n",
+      "path": "docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md",
+      "type": "write_file"
+    }
+  ],
+  "base_sha": "da6495339f54925487a929d93d7aed93db4fe624",
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "docs/agent-governance/AGENT_POLICY.md",
+          ".github/copilot-instructions.md",
+          "docs/agent-governance/decisions/ACTIVE_DECISIONS.md",
+          "docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md"
+        ],
+        "search_terms": [
+          "EDARSAHUB_MCP_RECOVERY",
+          "CURRENT.md",
+          "NEXT",
+          "EDARSAHUB_MCP_INPROCESS=1",
+          "production_allowed"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-MCP-CONTINUITY-EXCEPTION-FORMALIZATION-R1-20261102",
+  "mode": "MUTATION",
+  "objective": "Formalizar exclusivamente la excepcion limitada de continuidad EDARSAHUB_MCP_RECOVERY aprobada por @rbalam. Modificar solo docs/agent-governance/AGENT_POLICY.md, .github/copilot-instructions.md, docs/agent-governance/decisions/ACTIVE_DECISIONS.md y crear docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md. Preservar sin cambios docs/agent-governance/checkpoints/CURRENT.md y su NEXT de CxP; preservar todo cambio concurrente. Sin codigo MCP, sin JOB MCP tecnico, sin EDARSAHUB_MCP_INPROCESS=1 y sin Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "MCP_CONTINUITY_GOVERNANCE_EXCEPTION",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB_BOS",
+    "source": "github_mcp_authenticated:rbalam"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB_MCP_RECOVERY_GOVERNANCE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB_BOS",
+    "resource_claims": [
+      "docs/agent-governance/AGENT_POLICY.md",
+      ".github/copilot-instructions.md",
+      "docs/agent-governance/decisions/ACTIVE_DECISIONS.md",
+      "docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
