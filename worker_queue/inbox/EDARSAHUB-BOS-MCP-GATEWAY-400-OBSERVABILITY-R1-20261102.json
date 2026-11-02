@@ -1,0 +1,81 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "new": "import json\nimport logging\nimport os\nfrom urllib.parse import urlparse\n",
+      "old": "import os\nfrom urllib.parse import urlparse\n",
+      "path": "backend/modules/worker_mcp/gateway_router.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "_ALLOWED_RESPONSE_HEADERS = {\n    \"content-type\", \"cache-control\", \"www-authenticate\", \"mcp-session-id\",\n    \"mcp-protocol-version\", \"retry-after\",\n}\n\nlogger = logging.getLogger(\"edarsahub.worker_mcp.gateway\")\n\n_MAX_CLASSIFY_BYTES = 65536\n_KNOWN_PROTOCOL_VERSIONS = {\n    \"2024-11-05\", \"2025-03-26\", \"2025-06-18\", \"2025-11-25\", \"2026-07-28\",\n}\n_RPC_METHODS = {\n    \"initialize\", \"notifications/initialized\", \"tools/list\", \"tools/call\", \"ping\",\n}\n_RPC_ERROR_CLASSES = {\n    -32700: \"parse_error\", -32600: \"invalid_request\", -32601: \"method_not_found\",\n    -32602: \"invalid_params\", -32603: \"internal_error\",\n}\n_PLAIN_ERROR_CLASSES = (\n    (\"invalid content-type\", \"content_type_invalid\"),\n    (\"missing session id\", \"session_id_missing\"),\n    (\"invalid host\", \"host_invalid\"),\n    (\"invalid origin\", \"origin_invalid\"),\n)\n\n\ndef _jsonrpc_error_code(body: bytes) -> int | None:\n    try:\n        error = json.loads(body).get(\"error\")\n        code = error.get(\"code\")\n    except (ValueError, AttributeError):\n        return None\n    return code if isinstance(code, int) and not isinstance(code, bool) else None\n\n\ndef _classify_400(body: bytes) -> tuple[str, int | None]:\n    \"\"\"Return a closed-vocabulary error class; never any message text.\"\"\"\n    if len(body) > _MAX_CLASSIFY_BYTES:\n        return \"oversized\", None\n    code = _jsonrpc_error_code(body)\n    if code is not None:\n        return _RPC_ERROR_CLASSES.get(code, \"jsonrpc_other\"), code\n    text = body.decode(\"utf-8\", \"ignore\").lower()\n    for needle, label in _PLAIN_ERROR_CLASSES:\n        if needle in text:\n            return label, None\n    return \"unclassified\", None\n\n\ndef _request_rpc_method(body: bytes) -> str:\n    if not body:\n        return \"absent\"\n    if len(body) > _MAX_CLASSIFY_BYTES:\n        return \"oversized\"\n    try:\n        message = json.loads(body)\n    except ValueError:\n        return \"unparseable\"\n    if isinstance(message, list):\n        return \"batch\"\n    method = message.get(\"method\") if isinstance(message, dict) else None\n    return method if method in _RPC_METHODS else \"other\"\n\n\ndef _header_categories(request: Request) -> dict[str, str]:\n    content_type = request.headers.get(\"content-type\")\n    accept = (request.headers.get(\"accept\") or \"\").lower()\n    version = request.headers.get(\"mcp-protocol-version\")\n    if not content_type:\n        content_type_class = \"absent\"\n    elif content_type.split(\";\")[0].strip().lower() == \"application/json\":\n        content_type_class = \"json\"\n    else:\n        content_type_class = \"other\"\n    accept_class = \"+\".join(\n        label for label, token in ((\"json\", \"application/json\"), (\"sse\", \"text/event-stream\"))\n        if token in accept\n    ) or (\"absent\" if not accept else \"other\")\n    if version is None:\n        version_class = \"absent\"\n    else:\n        version_class = version if version in _KNOWN_PROTOCOL_VERSIONS else \"unknown\"\n    return {\n        \"content_type\": content_type_class,\n        \"accept\": accept_class,\n        \"protocol_version\": version_class,\n        \"has_session\": str(\"mcp-session-id\" in request.headers).lower(),\n        \"has_auth\": str(\"authorization\" in request.headers).lower(),\n    }\n\n\ndef _log_upstream_400(request: Request, request_body: bytes, response_body: bytes) -> None:\n    \"\"\"Observability only: values come from fixed vocabularies, never from payloads.\"\"\"\n    try:\n        error_class, code = _classify_400(response_body)\n        cats = _header_categories(request)\n        logger.warning(\n            \"mcp_upstream_400 method=%s rpc_method=%s content_type=%s accept=%s \"\n            \"protocol_version=%s has_session=%s has_auth=%s request_bytes=%d \"\n            \"error_class=%s jsonrpc_code=%s\",\n            request.method, _request_rpc_method(request_body), cats[\"content_type\"],\n            cats[\"accept\"], cats[\"protocol_version\"], cats[\"has_session\"],\n            cats[\"has_auth\"], len(request_body), error_class, code,\n        )\n    except Exception:  # noqa: BLE001 - logging must never alter the proxied response\n        pass\n",
+      "old": "_ALLOWED_RESPONSE_HEADERS = {\n    \"content-type\", \"cache-control\", \"www-authenticate\", \"mcp-session-id\",\n    \"mcp-protocol-version\", \"retry-after\",\n}\n",
+      "path": "backend/modules/worker_mcp/gateway_router.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "    except httpx.RequestError:\n        await client.aclose()\n        return Response(status_code=502, content=\"MCP upstream unavailable\")\n\n    response_headers = {\n        name: value for name, value in reply.headers.items()\n        if name.lower() in _ALLOWED_RESPONSE_HEADERS\n    }\n    if reply.status_code == 400:\n        try:\n            error_body = await reply.aread()\n        except httpx.HTTPError:\n            return Response(status_code=502, content=\"MCP upstream unavailable\")\n        finally:\n            await reply.aclose()\n            await client.aclose()\n        _log_upstream_400(request, await request.body(), error_body)\n        return Response(content=error_body, status_code=400, headers=response_headers)\n",
+      "old": "    except httpx.RequestError:\n        await client.aclose()\n        return Response(status_code=502, content=\"MCP upstream unavailable\")\n\n    response_headers = {\n        name: value for name, value in reply.headers.items()\n        if name.lower() in _ALLOWED_RESPONSE_HEADERS\n    }\n",
+      "path": "backend/modules/worker_mcp/gateway_router.py",
+      "type": "replace_text"
+    },
+    {
+      "content": "\"\"\"Observabilidad sanitizada del HTTP 400 del upstream MCP (solo logging; sin cambio funcional).\"\"\"\nimport importlib\nimport json\nimport logging\nimport sys\nimport types\n\nimport httpx\nimport pytest\nfrom fastapi import APIRouter, FastAPI\nfrom fastapi.testclient import TestClient\n\n\ndef _load_gateway():\n    \"\"\"Import the gateway with OAuth router stubbed so the test needs no SQL config.\"\"\"\n    oauth_name, gateway_name = \"modules.worker_mcp.oauth_server\", \"modules.worker_mcp.gateway_router\"\n    saved = {name: sys.modules.get(name) for name in (oauth_name, gateway_name)}\n    stub = types.ModuleType(oauth_name)\n    stub.router = APIRouter()\n    sys.modules[oauth_name] = stub\n    sys.modules.pop(gateway_name, None)\n    try:\n        return importlib.import_module(gateway_name)\n    finally:\n        for name, module in saved.items():\n            if module is None:\n                sys.modules.pop(name, None)\n            else:\n                sys.modules[name] = module\n\n\ngateway_router = _load_gateway()\n\nSECRET = \"SECRET-TOKEN-VALUE-123\"\nCOOKIE = \"SESSIONCOOKIE-ABC\"\nBODY_SECRET = \"BODY-SECRET-XYZ\"\nLOGGER = \"edarsahub.worker_mcp.gateway\"\n\n\nclass _FailingStream(httpx.AsyncByteStream):\n    async def __aiter__(self):\n        raise httpx.ReadError(\"boom\")\n        yield b\"\"  # pragma: no cover\n\n\ndef _client(monkeypatch, handler):\n    monkeypatch.setenv(\"EDARSAHUB_MCP_UPSTREAM_URL\", \"http://127.0.0.1:32913\")\n    monkeypatch.delenv(\"EDARSAHUB_MCP_INPROCESS\", raising=False)\n    real = httpx.AsyncClient\n    monkeypatch.setattr(\n        gateway_router.httpx, \"AsyncClient\",\n        lambda **kw: real(transport=httpx.MockTransport(handler), **kw),\n    )\n    app = FastAPI()\n    app.include_router(gateway_router.router)\n    return TestClient(app)\n\n\ndef _post(client, body=None, **headers):\n    base = {\n        \"Authorization\": f\"Bearer {SECRET}\", \"Cookie\": f\"sid={COOKIE}\",\n        \"Content-Type\": \"application/json\", \"Accept\": \"application/json, text/event-stream\",\n    }\n    base.update(headers)\n    payload = body if body is not None else json.dumps(\n        {\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"initialize\", \"params\": {\"note\": BODY_SECRET}}\n    )\n    return client.post(\"/api/mcp\", content=payload, headers=base)\n\n\ndef _rpc_error(code):\n    return httpx.Response(\n        400, json={\"jsonrpc\": \"2.0\", \"id\": None, \"error\": {\"code\": code, \"message\": f\"x {BODY_SECRET}\"}},\n    )\n\n\n@pytest.mark.parametrize(\"body,expected\", [\n    (b'{\"error\":{\"code\":-32700,\"message\":\"m\"}}', (\"parse_error\", -32700)),\n    (b'{\"error\":{\"code\":-32600,\"message\":\"m\"}}', (\"invalid_request\", -32600)),\n    (b'{\"error\":{\"code\":-32602,\"message\":\"m\"}}', (\"invalid_params\", -32602)),\n    (b'{\"error\":{\"code\":-32000,\"message\":\"m\"}}', (\"jsonrpc_other\", -32000)),\n    (b\"Invalid Content-Type header\", (\"content_type_invalid\", None)),\n    (b\"Bad Request: Missing session ID\", (\"session_id_missing\", None)),\n    (b\"not json at all\", (\"unclassified\", None)),\n    (b'{\"error\":\"plain\"}', (\"unclassified\", None)),\n    (b'{\"error\":{\"code\":true}}', (\"unclassified\", None)),\n    (b\"x\" * 70000, (\"oversized\", None)),\n])\ndef test_classification_uses_closed_vocabulary(body, expected):\n    assert gateway_router._classify_400(body) == expected\n\n\ndef test_400_is_passed_through_unchanged_and_logged_sanitized(monkeypatch, caplog):\n    upstream = httpx.Response(\n        400, headers={\"content-type\": \"application/json\", \"x-internal\": \"leak\"},\n        json={\"jsonrpc\": \"2.0\", \"id\": None, \"error\": {\"code\": -32602, \"message\": BODY_SECRET}},\n    )\n    client = _client(monkeypatch, lambda request: upstream)\n    with caplog.at_level(logging.WARNING, logger=LOGGER):\n        reply = _post(client, **{\"MCP-Protocol-Version\": \"2099-01-01\"})\n    assert reply.status_code == 400\n    assert reply.json()[\"error\"][\"code\"] == -32602\n    assert reply.headers[\"content-type\"].startswith(\"application/json\")\n    assert \"x-internal\" not in reply.headers\n    lines = [r.getMessage() for r in caplog.records if r.name == LOGGER]\n    assert len(lines) == 1\n    line = lines[0]\n    assert \"mcp_upstream_400\" in line and \"rpc_method=initialize\" in line\n    assert \"error_class=invalid_params\" in line and \"jsonrpc_code=-32602\" in line\n    assert \"content_type=json\" in line and \"accept=json+sse\" in line\n    assert \"protocol_version=unknown\" in line and \"has_auth=true\" in line\n    for forbidden in (SECRET, COOKIE, BODY_SECRET, \"Bearer\", \"2099-01-01\", \"sid=\"):\n        assert forbidden not in line\n\n\ndef test_unknown_request_method_is_not_echoed(monkeypatch, caplog):\n    client = _client(monkeypatch, lambda request: _rpc_error(-32600))\n    body = json.dumps({\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": f\"custom/{BODY_SECRET}\"})\n    with caplog.at_level(logging.WARNING, logger=LOGGER):\n        _post(client, body=body)\n    line = [r.getMessage() for r in caplog.records if r.name == LOGGER][0]\n    assert \"rpc_method=other\" in line and BODY_SECRET not in line\n\n\ndef test_non_400_responses_are_unchanged_and_not_logged(monkeypatch, caplog):\n    def handler(request):\n        if request.headers.get(\"authorization\"):\n            return httpx.Response(\n                200, headers={\"content-type\": \"application/json\"},\n                stream=httpx.ByteStream(b'{\"ok\": true}'),\n            )\n        return httpx.Response(401, headers={\"www-authenticate\": \"Bearer\"}, stream=httpx.ByteStream(b\"\"))\n\n    client = _client(monkeypatch, handler)\n    with caplog.at_level(logging.WARNING, logger=LOGGER):\n        ok = _post(client)\n        denied = client.post(\"/api/mcp\", content=b\"{}\", headers={\"Content-Type\": \"application/json\"})\n    assert ok.status_code == 200 and ok.json() == {\"ok\": True}\n    assert denied.status_code == 401\n    assert not [r for r in caplog.records if r.name == LOGGER]\n\n\ndef test_400_body_read_failure_fails_closed(monkeypatch, caplog):\n    client = _client(monkeypatch, lambda request: httpx.Response(400, stream=_FailingStream()))\n    with caplog.at_level(logging.WARNING, logger=LOGGER):\n        reply = _post(client)\n    assert reply.status_code == 502\n    assert reply.text == \"MCP upstream unavailable\"\n    assert not [r for r in caplog.records if r.name == LOGGER]\n\n\ndef test_logging_failure_never_changes_the_proxied_response(monkeypatch):\n    def broken(_body):\n        raise RuntimeError(\"classifier failed\")\n\n    monkeypatch.setattr(gateway_router, \"_classify_400\", broken)\n    client = _client(monkeypatch, lambda request: _rpc_error(-32700))\n    reply = _post(client)\n    assert reply.status_code == 400\n    assert reply.json()[\"error\"][\"code\"] == -32700\n\n\ndef test_upstream_allowlist_is_unchanged(monkeypatch):\n    monkeypatch.setenv(\"EDARSAHUB_MCP_UPSTREAM_URL\", \"http://example.test:80\")\n    client = TestClient(_app_only_router())\n    assert _post(client).status_code == 503\n\n\ndef _app_only_router():\n    app = FastAPI()\n    app.include_router(gateway_router.router)\n    return app\n",
+      "path": "backend/tests/test_worker_mcp_gateway_400_observability.py",
+      "type": "write_file"
+    }
+  ],
+  "base_sha": "0221f841fe0bc034580caee326b32e33a9973212",
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "paths": [
+        "backend/modules/worker_mcp/gateway_router.py",
+        "backend/tests/test_worker_mcp_gateway_400_observability.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_mcp_gateway_400_observability.py",
+        "backend/tests/test_worker_mcp_oauth_server_r1.py",
+        "backend/tests/test_worker_mcp_oauth_discovery.py",
+        "backend/tests/test_worker_mcp_oauth_pkce.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-MCP-GATEWAY-400-OBSERVABILITY-R1-20261102",
+  "mode": "MUTATION",
+  "objective": "Parche atomico de observabilidad: cuando el upstream MCP responda HTTP 400, registrar solo codigo HTTP, categorias seguras de cabeceras (content-type, accept, version de protocolo conocida, presencia de sesion/autorizacion) y clasificacion de error JSON-RPC de vocabulario cerrado. Sin tokens, cookies, secretos ni cuerpos. La respuesta al cliente no cambia (fail-closed 502 si el cuerpo no se puede leer). Modifica solo backend/modules/worker_mcp/gateway_router.py y crea backend/tests/test_worker_mcp_gateway_400_observability.py. Sin cambios en OAuth, RBAC, contratos ni validacion MCP; sin EDARSAHUB_MCP_INPROCESS=1; sin Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "MCP_GATEWAY_400_OBSERVABILITY",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB_BOS",
+    "source": "github_mcp_authenticated:rbalam"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB_MCP_GATEWAY_OBSERVABILITY",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB_BOS",
+    "resource_claims": [
+      "backend/modules/worker_mcp/gateway_router.py",
+      "backend/tests/test_worker_mcp_gateway_400_observability.py"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
