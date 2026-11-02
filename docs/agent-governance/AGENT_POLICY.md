@@ -84,7 +84,15 @@ Todo agente debe leer:
 - documentos EKS aplicables
 - memory/PRD.md
 
-Después de una desconexión:
-leer CURRENT.md y continuar exclusivamente desde NEXT.
+Despues de una desconexion:
+leer CURRENT.md y continuar exclusivamente desde NEXT, salvo la excepcion unica EDARSAHUB_MCP_RECOVERY registrada abajo.
+
+Excepcion EDARSAHUB_MCP_RECOVERY (unica y de alcance limitado):
+- Solo se activa cuando ACTIVE_DECISIONS.md registra la aprobacion humana y existe docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md con WORKSTREAM=EDARSAHUB_MCP_RECOVERY.
+- CURRENT.md y el NEXT de CxP se leen y preservan sin cambios. Para esta excepcion, continuar exclusivamente desde el NEXT del checkpoint MCP.
+- Alcance: auditoria READ_ONLY y preparacion de gobernanza mediante el Universal Worker existente.
+- No autoriza implementacion MCP, publicacion de JOB MCP tecnico, activar EDARSAHUB_MCP_INPROCESS=1 ni cambios en Produccion.
+- CxP permanece pausado durante el trabajo MCP. No hay ejecucion paralela y se permite un solo writer.
+- Si falta aprobacion, existe duplicado/conflicto o el contexto no coincide, detenerse sin modificar archivos.
 
 No repetir DO_NOT_REPEAT salvo evidencia nueva.
