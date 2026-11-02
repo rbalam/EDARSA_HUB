@@ -1,0 +1,55 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 500,
+        "paths": [
+          "backend/modules/comercial",
+          "backend/modules/agent_harness",
+          "backend/core/ai_gateway_policy_adapter.py",
+          "docs/ARCHITECTURE"
+        ],
+        "search_terms": [
+          "EmpresaID",
+          "UnidadNegocioID",
+          "Comercial_Ingesta_Competencia",
+          "Comercial_Competidores",
+          "Comercial_CompetidoresMenuItems",
+          "require_permission",
+          "authorize_model_route",
+          "communications_executor_required"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-MARKETING-FUNCTIONAL-READINESS-DISCOVERY-R2",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY la preparación funcional de Marketing Intelligence & Content Factory y Competitor Insights V1. Verificar aislamiento multiempresa, autorización RBAC, mapeo EmpresaID/UnidadNegocioID, ingesta de competidores, confirmación e idempotencia, uso del AI Gateway, Object Storage e integración con Comercial y CRM. Identificar riesgos arquitectónicos, contratos existentes y brechas para una implementación atómica. No modificar archivos, SQL, datos ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "MARKETING_INTELLIGENCE_CONTENT_FACTORY",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB_BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "MARKETING_INTELLIGENCE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB_BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
