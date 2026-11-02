@@ -1,0 +1,123 @@
+{
+  "base_sha": "da6495339f54925487a929d93d7aed93db4fe624",
+  "blockers": [],
+  "candidate_sha": "0221f841fe0bc034580caee326b32e33a9973212",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-11-02T04:46:43Z",
+  "development_sha": "0221f841fe0bc034580caee326b32e33a9973212",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    ".github/copilot-instructions.md",
+    "docs/agent-governance/AGENT_POLICY.md",
+    "docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md",
+    "docs/agent-governance/decisions/ACTIVE_DECISIONS.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-MCP-CONTINUITY-EXCEPTION-FORMALIZATION-R2-20261102",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-11-02T04:47:39Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "current.md",
+              "edarsahub_mcp_inprocess=1",
+              "edarsahub_mcp_recovery",
+              "next"
+            ],
+            "path": "docs/agent-governance/AGENT_POLICY.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "current.md",
+              "edarsahub_mcp_recovery",
+              "next"
+            ],
+            "path": ".github/copilot-instructions.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "current.md",
+              "edarsahub_mcp_inprocess=1",
+              "edarsahub_mcp_recovery",
+              "next"
+            ],
+            "path": "docs/agent-governance/decisions/ACTIVE_DECISIONS.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_mcp_recovery",
+              "next"
+            ],
+            "path": "docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 4,
+          "scanned_files": 4,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-02T04:46:35Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
