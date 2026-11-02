@@ -1,0 +1,23 @@
+{
+  "base_sha": "da6495339f54925487a929d93d7aed93db4fe624",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:REPLACE_COUNT_MISMATCH:docs/agent-governance/AGENT_POLICY.md:expected=1:actual=0"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-11-02T04:28:21Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-MCP-CONTINUITY-EXCEPTION-FORMALIZATION-R1-20261102",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-11-02T04:29:52Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-02T04:28:17Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
