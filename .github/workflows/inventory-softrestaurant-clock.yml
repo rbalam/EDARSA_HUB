@@ -19,7 +19,9 @@ permissions:
 
 concurrency:
   group: inventory-softrestaurant-clock
-  cancel-in-progress: true
+  # Preserve in-flight SQL transactions: queued schedules must not cancel an
+  # ongoing inventory movement sync. GitHub keeps at most one pending run.
+  cancel-in-progress: false
 
 env:
   EDARSA_ENV: DEVELOPMENT
@@ -40,7 +42,7 @@ env:
 jobs:
   inventory-softrestaurant:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 90
 
     steps:
       - uses: actions/checkout@v4
@@ -129,13 +131,14 @@ jobs:
           grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-inventory-owner.txt
           python -m pip install -r /tmp/requirements-inventory-owner.txt
 
-      - name: Run canonical SoftRestaurant inventory sync
+      - name: Run canonical SoftRestaurant MOVEMENTS sync (not physical inventories)
         working-directory: backend
         env:
           PYTHONPATH: ${{ github.workspace }}/backend
         run: |
           set -euo pipefail
           python tools/run_inventory_github_owner.py
+          echo 'PHYSICAL_INVENTORY_SCOPE=NOT_EXECUTED; sync_compras FULL remains the canonical owner'
 
       - name: Verify CIENFUEGOS BARRA movements October 1-19
         run: |
