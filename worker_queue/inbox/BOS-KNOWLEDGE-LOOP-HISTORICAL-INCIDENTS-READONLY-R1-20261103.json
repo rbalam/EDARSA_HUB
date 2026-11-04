@@ -1,0 +1,109 @@
+{
+  "actions": [],
+  "base_sha": "2c49a5c6aae871e0d1a291b9dbefb08974456418",
+  "checks": [
+    {
+      "request": {
+        "max_results": 500,
+        "paths": [
+          "tools/mirror_sync/worker_repair_capabilities/MUTATION_LIFECYCLE_STALE_OWNERSHIP.json",
+          "tools/mirror_sync/worker_repair_capability_registry.py",
+          "tools/mirror_sync/worker_repair_planner.py",
+          "tools/mirror_sync/worker_repair_execution.py",
+          "tools/mirror_sync/worker_repair_auto_loop.py",
+          "tools/mirror_sync/worker_maintenance_runtime.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "backend/tests/test_worker_repair_learned_capability_registry.py",
+          "backend/tests/test_worker_repair_auto_loop_contract.py"
+        ],
+        "search_terms": [
+          "learned_from_incident",
+          "problem_signature",
+          "blocker_signature",
+          "source_job_id",
+          "register_learned_capability",
+          "resolve_learned_capability",
+          "find_certified_successor_result",
+          "repair_incident_is_superseded"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "required_semantic_fields": [
+          "repository_evidence",
+          "certification_basis",
+          "execution_base_sha",
+          "summary_es"
+        ],
+        "source_result": {
+          "branch": "worker/results",
+          "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-KNOWLEDGE-GATE1-READONLY-R1-20261022",
+          "path": "worker_queue/results/EDARSAHUB-BOS-WORKER-REPAIR-KNOWLEDGE-GATE1-READONLY-R1-20261022.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    },
+    {
+      "request": {
+        "required_semantic_fields": [
+          "repository_evidence",
+          "certification_basis",
+          "execution_base_sha",
+          "summary_es"
+        ],
+        "source_result": {
+          "branch": "worker/results",
+          "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-KNOWLEDGE-GATE2-READONLY-R1-20261022",
+          "path": "worker_queue/results/EDARSAHUB-BOS-WORKER-REPAIR-KNOWLEDGE-GATE2-READONLY-R1-20261022.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    },
+    {
+      "request": {
+        "required_semantic_fields": [
+          "repository_evidence",
+          "certification_basis",
+          "execution_base_sha",
+          "summary_es"
+        ],
+        "source_result": {
+          "branch": "worker/results",
+          "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-KNOWLEDGE-GATE3-READONLY-R1-20261022",
+          "path": "worker_queue/results/EDARSAHUB-BOS-WORKER-REPAIR-KNOWLEDGE-GATE3-READONLY-R1-20261022.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-KNOWLEDGE-LOOP-HISTORICAL-INCIDENTS-READONLY-R1-20261103",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en modo READ_ONLY los incidentes historicos de Worker Repair, las capacidades aprendidas registradas (semilla y runtime), la trazabilidad entre source_job_id, blocker_signature, incident_id y repair_job_id, y extraer la evidencia semantica certificada de Knowledge Gate 1, Gate 2 y Gate 3 para alimentar el Knowledge Loop sin modificar archivos, SQL ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "BOS-KNOWLEDGE-LOOP-HISTORICAL-INCIDENTS",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "CHATGPT"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
