@@ -43,6 +43,50 @@ except ModuleNotFoundError:
         validate_terminal_result_payload,
     )
 
+try:
+    from tools.mirror_sync.worker_result_semantic_extract import (
+        ALLOWED_PROVENANCE_DERIVATIONS,
+        ALLOWED_PROVENANCE_STATUSES,
+        CERTIFICATION_BASIS_RE,
+        DECISION_FIELDS,
+        FIELD_NAME_RE,
+        MAX_CONTAINER_ITEMS,
+        MAX_SERIALIZED_BYTES,
+        MAX_SUMMARY_LENGTH,
+        has_sensitive_marker,
+        is_authentic_lineage_commit,
+        is_sensitive_key,
+        redact_sensitive_text,
+        sanitize_dynamic_value,
+        sanitize_provenance_entry,
+        sanitize_repository_contract_payload,
+        validate_decision_field,
+    )
+except ModuleNotFoundError:
+    import sys as _sys
+
+    _mirror_dir = str(Path(__file__).resolve().parent)
+    if _mirror_dir not in _sys.path:
+        _sys.path.insert(0, _mirror_dir)
+    from worker_result_semantic_extract import (
+        ALLOWED_PROVENANCE_DERIVATIONS,
+        ALLOWED_PROVENANCE_STATUSES,
+        CERTIFICATION_BASIS_RE,
+        DECISION_FIELDS,
+        FIELD_NAME_RE,
+        MAX_CONTAINER_ITEMS,
+        MAX_SERIALIZED_BYTES,
+        MAX_SUMMARY_LENGTH,
+        has_sensitive_marker,
+        is_authentic_lineage_commit,
+        is_sensitive_key,
+        redact_sensitive_text,
+        sanitize_dynamic_value,
+        sanitize_provenance_entry,
+        sanitize_repository_contract_payload,
+        validate_decision_field,
+    )
+
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 STATE = ROOT / ".git" / "universal-worker-queue"
 RESULTS = STATE / "results"
@@ -208,6 +252,10 @@ def valid_sha(value: Any) -> bool:
     )
 
 
+def authentic_lineage_sha(value: Any) -> bool:
+    return valid_sha(value) and is_authentic_lineage_commit(value)
+
+
 SENSITIVE_COLUMN_TOKENS = (
     "secret", "password", "passwd", "token", "credential",
     "credencial", "encrypted", "cifrad", "api_key", "apikey",
@@ -269,34 +317,143 @@ def sanitize_readonly_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
 
 def sanitize_repository_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
     sanitized_checks = []
-    allowed_entry_keys = ("path", "matched_terms", "candidate_ownership", "symbols", "imports", "routes", "tables_referenced", "helpers", "connections", "rbac_contracts", "scheduler_contracts", "integrations")
     for check in result.get("checks") or []:
         if not isinstance(check, dict) or check.get("type") != "repository_contract_audit":
             continue
         payload = check.get("repository_evidence")
-        if not isinstance(payload, dict):
+        sanitized = sanitize_repository_contract_payload(payload)
+        if sanitized is None:
             continue
-        if payload.get("status") != "PASS":
-            continue
-        entries = []
-        for entry in payload.get("evidence") or []:
-            if not isinstance(entry, dict):
-                continue
-            entries.append({key: entry.get(key) for key in allowed_entry_keys if key in entry})
-        sanitized_checks.append({
-            "status": "PASS",
-            "mode": "READ_ONLY_REPOSITORY",
-            "summary": payload.get("summary"),
-            "truncated": bool(payload.get("truncated")),
-            "evidence": entries,
-        })
+        sanitized_checks.extend(sanitized.get("checks") or [])
     return {"checks": sanitized_checks} if sanitized_checks else None
 
 
+def _sanitize_semantic_field_map(
+    raw_sem_fields: Any,
+) -> tuple[dict[str, Any], list[str], bool]:
+    if not isinstance(raw_sem_fields, dict) or len(raw_sem_fields) > MAX_CONTAINER_ITEMS:
+        return {}, [], True
+    safe_sem_fields: dict[str, Any] = {}
+    invalidated_keys: list[str] = []
+    had_invalid = False
+    for raw_key, raw_val in raw_sem_fields.items():
+        if not isinstance(raw_key, str) or not FIELD_NAME_RE.fullmatch(raw_key):
+            had_invalid = True
+            continue
+        if is_sensitive_key(raw_key):
+            had_invalid = True
+            invalidated_keys.append(raw_key)
+            continue
+        if raw_val is None:
+            safe_sem_fields[raw_key] = None
+            continue
+        if raw_key == "execution_base_sha":
+            if isinstance(raw_val, str) and authentic_lineage_sha(raw_val.strip()):
+                safe_sem_fields[raw_key] = raw_val.strip()
+            else:
+                safe_sem_fields[raw_key] = None
+                invalidated_keys.append(raw_key)
+                had_invalid = True
+            continue
+        if raw_key == "repository_evidence":
+            clean_repo = sanitize_repository_contract_payload(raw_val)
+            if clean_repo is not None:
+                safe_sem_fields[raw_key] = clean_repo
+            else:
+                safe_sem_fields[raw_key] = None
+                invalidated_keys.append(raw_key)
+                had_invalid = True
+            continue
+        try:
+            if raw_key in DECISION_FIELDS:
+                clean_val = validate_decision_field(raw_key, raw_val)
+            elif raw_key == "certification_basis":
+                if (
+                    not isinstance(raw_val, str)
+                    or not CERTIFICATION_BASIS_RE.fullmatch(raw_val.strip())
+                    or has_sensitive_marker(raw_val)
+                ):
+                    raise ValueError("INVALID_CERTIFICATION_BASIS")
+                clean_val = raw_val.strip()
+            elif raw_key == "summary_es":
+                clean_val = sanitize_dynamic_value(raw_val, max_str_len=MAX_SUMMARY_LENGTH)
+                if not isinstance(clean_val, str):
+                    raise ValueError("INVALID_SUMMARY_ES")
+            else:
+                clean_val = sanitize_dynamic_value(raw_val)
+            encoded = json.dumps(clean_val, ensure_ascii=False, sort_keys=True).encode("utf-8")
+            if len(encoded) > MAX_SERIALIZED_BYTES:
+                raise ValueError("FIELD_TOO_LARGE")
+            safe_sem_fields[raw_key] = clean_val
+        except (ValueError, TypeError):
+            safe_sem_fields[raw_key] = False if raw_key in {"gate3_allowed", "last_gate_certified"} else None
+            invalidated_keys.append(raw_key)
+            had_invalid = True
+
+    total_encoded = json.dumps(safe_sem_fields, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    if len(total_encoded) > MAX_SERIALIZED_BYTES:
+        return {"gate3_allowed": False}, list(safe_sem_fields.keys()), True
+    return safe_sem_fields, invalidated_keys, had_invalid
+
+
+def _sanitize_provenance_map(
+    raw_provenance: Any,
+    invalidated_keys: list[str],
+) -> tuple[dict[str, dict[str, Any]], bool]:
+    if raw_provenance is None:
+        return {}, False
+    if not isinstance(raw_provenance, dict) or len(raw_provenance) > MAX_CONTAINER_ITEMS:
+        return {}, True
+    cleaned: dict[str, dict[str, Any]] = {}
+    had_invalid = False
+    for field, pval in raw_provenance.items():
+        if not isinstance(field, str) or not FIELD_NAME_RE.fullmatch(field) or is_sensitive_key(field):
+            had_invalid = True
+            continue
+        if not isinstance(pval, dict):
+            had_invalid = True
+            cleaned[field] = sanitize_provenance_entry(None)
+            continue
+        raw_status = pval.get("status")
+        raw_derivation = pval.get("derivation")
+        raw_source_key = pval.get("source_key")
+        if (
+            not isinstance(raw_status, str)
+            or raw_status not in ALLOWED_PROVENANCE_STATUSES
+            or not isinstance(raw_derivation, str)
+            or raw_derivation not in ALLOWED_PROVENANCE_DERIVATIONS
+            or (
+                raw_source_key is not None
+                and (
+                    not isinstance(raw_source_key, str)
+                    or not FIELD_NAME_RE.fullmatch(raw_source_key)
+                    or is_sensitive_key(raw_source_key)
+                )
+            )
+        ):
+            had_invalid = True
+        cleaned[field] = sanitize_provenance_entry(pval)
+    for key in invalidated_keys:
+        if FIELD_NAME_RE.fullmatch(key) and not is_sensitive_key(key):
+            cleaned[key] = {
+                "status": "INVALID_OR_UNVERIFIED_EXPLICIT_VALUE",
+                "source_key": key,
+                "derivation": "FAIL_CLOSED_NULL",
+            }
+    return cleaned, had_invalid
+
+
+def _sanitize_string_list(value: Any, *, max_item_len: int = 256) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    result_list: list[str] = []
+    for item in value[:MAX_CONTAINER_ITEMS]:
+        if isinstance(item, str) and item.strip() and "\x00" not in item:
+            result_list.append(redact_sensitive_text(item.strip(), max_length=max_item_len))
+    return result_list
+
 
 def sanitize_semantic_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
-    allowed_entry_keys = ("path", "matched_terms", "candidate_ownership", "symbols", "imports", "routes", "tables_referenced", "helpers", "connections", "rbac_contracts", "scheduler_contracts", "integrations")
-    allowed_provenance_keys = ("status", "source_key", "derivation")
     allowed_payload_keys = (
         "status", "mode", "bridge_verdict", "runtime_gap_confirmed",
         "source_result_reader_capability_current_state",
@@ -319,6 +476,8 @@ def sanitize_semantic_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
     )
     checks = []
     promoted: dict[str, Any] = {}
+    any_check_failed = False
+
     for check in result.get("checks") or []:
         if not isinstance(check, dict) or check.get("type") != "worker_result_semantic_extract":
             continue
@@ -333,47 +492,172 @@ def sanitize_semantic_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
                 if isinstance(candidate, dict):
                     payload = candidate
         if not isinstance(payload, dict):
+            any_check_failed = True
             continue
+
+        check_passed = (
+            str(check.get("status") or "PASS").upper() == "PASS"
+            and check.get("returncode") in (0, None)
+            and str(payload.get("status") or "").upper() == "PASS"
+        )
+        if not check_passed:
+            any_check_failed = True
+
         safe_payload = {key: payload.get(key) for key in allowed_payload_keys if key in payload}
-        raw_provenance = safe_payload.get("semantic_field_provenance")
-        if isinstance(raw_provenance, dict):
-            safe_payload["semantic_field_provenance"] = {
-                str(field): {
-                    pkey: pval.get(pkey)
-                    for pkey in allowed_provenance_keys
-                    if pkey in pval
-                }
-                for field, pval in raw_provenance.items()
-                if isinstance(pval, dict)
-            }
-        raw_sem_fields = safe_payload.get("semantic_fields")
-        if isinstance(raw_sem_fields, dict):
-            safe_sem_fields = dict(raw_sem_fields)
-            repo_ev = safe_sem_fields.get("repository_evidence")
-            if isinstance(repo_ev, dict) and isinstance(repo_ev.get("checks"), list):
-                clean_repo_checks = []
-                for rcheck in repo_ev["checks"]:
-                    if not isinstance(rcheck, dict) or rcheck.get("status") != "PASS":
-                        continue
-                    entries = [
-                        {key: entry.get(key) for key in allowed_entry_keys if key in entry}
-                        for entry in (rcheck.get("evidence") or [])
-                        if isinstance(entry, dict)
-                    ]
-                    clean_repo_checks.append({
-                        "status": "PASS",
-                        "mode": "READ_ONLY_REPOSITORY",
-                        "summary": rcheck.get("summary") if isinstance(rcheck.get("summary"), dict) else None,
-                        "truncated": bool(rcheck.get("truncated")),
-                        "evidence": entries,
-                    })
-                safe_sem_fields["repository_evidence"] = {"checks": clean_repo_checks} if clean_repo_checks else None
-            safe_payload["semantic_fields"] = safe_sem_fields
-        checks.append({"status": check.get("status"), "returncode": check.get("returncode"), "payload": safe_payload})
+        safe_sem_fields, invalidated_keys, sem_fields_invalid = _sanitize_semantic_field_map(
+            safe_payload.get("semantic_fields")
+        )
+        safe_provenance, provenance_invalid = _sanitize_provenance_map(
+            safe_payload.get("semantic_field_provenance"),
+            invalidated_keys,
+        )
+        if "semantic_field_provenance" in safe_payload or safe_provenance:
+            safe_payload["semantic_field_provenance"] = safe_provenance
+        safe_payload["semantic_fields"] = safe_sem_fields
+
+        for list_field in (
+            "source_missing_semantic_fields",
+            "source_explicit_missing_semantic_fields",
+            "missing_semantic_fields",
+            "source_files_changed",
+            "source_blockers",
+        ):
+            if list_field in safe_payload:
+                safe_payload[list_field] = _sanitize_string_list(safe_payload.get(list_field))
+
+        if invalidated_keys:
+            src_missing = set(safe_payload.get("source_missing_semantic_fields") or [])
+            src_explicit_missing = set(safe_payload.get("source_explicit_missing_semantic_fields") or [])
+            for key in invalidated_keys:
+                if FIELD_NAME_RE.fullmatch(key) and not is_sensitive_key(key):
+                    src_missing.add(key)
+                    src_explicit_missing.add(key)
+            safe_payload["source_missing_semantic_fields"] = sorted(src_missing)
+            safe_payload["source_explicit_missing_semantic_fields"] = sorted(src_explicit_missing)
+
+        for str_field in (
+            "source_result_path",
+            "source_result_branch",
+            "source_result_commit",
+            "source_result_blob_sha",
+            "source_result_loader",
+            "source_status",
+            "source_quality_gate",
+            "source_certification",
+            "source_work_completion",
+        ):
+            if str_field in safe_payload and isinstance(safe_payload[str_field], str):
+                safe_payload[str_field] = redact_sensitive_text(safe_payload[str_field], max_length=512)
+
+        decision_provenance_explicit = all(
+            safe_sem_fields.get(key) is not None
+            and safe_provenance.get(key, {}).get("status") == "EXPLICIT_SOURCE_KEY"
+            for key in DECISION_FIELDS
+        )
+        had_invalid = sem_fields_invalid or provenance_invalid or not check_passed
+        source_complete = bool(
+            not had_invalid
+            and safe_payload.get("source_semantic_fields_complete") is True
+            and decision_provenance_explicit
+            and not (safe_payload.get("source_missing_semantic_fields") or [])
+        )
+        sem_complete = bool(
+            not had_invalid
+            and safe_payload.get("semantic_fields_complete") is True
+            and not (safe_payload.get("missing_semantic_fields") or [])
+        )
+        gate3_ok = bool(
+            source_complete
+            and sem_complete
+            and safe_payload.get("gate3_allowed") is True
+            and safe_sem_fields.get("gate3_allowed") is True
+        )
+
+        safe_payload["source_semantic_fields_complete"] = source_complete
+        if had_invalid:
+            safe_payload["semantic_fields_complete"] = False
+        safe_payload["gate3_allowed"] = gate3_ok
+        if isinstance(safe_payload.get("semantic_fields"), dict):
+            safe_payload["semantic_fields"]["gate3_allowed"] = gate3_ok
+            if not source_complete:
+                safe_payload["bridge_verdict"] = "SOURCE_SEMANTIC_FIELDS_DERIVED_FAIL_CLOSED"
+                safe_payload["next_allowed_step"] = "GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS"
+                safe_payload["semantic_fields"].setdefault(
+                    "next_allowed_gate", "GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS"
+                )
+            elif not gate3_ok:
+                safe_payload["bridge_verdict"] = "SOURCE_SEMANTIC_FIELDS_COMPLETE_GATE3_HOLD"
+                safe_payload["next_allowed_step"] = "GATE3_HOLD_SEMANTIC_FIELDS_COMPLETE_NOT_ALLOWED"
+
+        checks.append({
+            "status": check.get("status"),
+            "returncode": check.get("returncode"),
+            "payload": safe_payload,
+        })
         for key, value in safe_payload.items():
             promoted.setdefault(key, value)
+
     if not checks:
         return None
+
+    all_source_complete = (
+        not any_check_failed
+        and all(c["payload"].get("source_semantic_fields_complete") is True for c in checks)
+    )
+    all_semantic_complete = (
+        not any_check_failed
+        and all(c["payload"].get("semantic_fields_complete") is True for c in checks)
+    )
+    all_gate3_allowed = (
+        all_source_complete
+        and all_semantic_complete
+        and all(c["payload"].get("gate3_allowed") is True for c in checks)
+    )
+
+    promoted["source_semantic_fields_complete"] = all_source_complete
+    promoted["semantic_fields_complete"] = all_semantic_complete
+    promoted["gate3_allowed"] = all_gate3_allowed
+
+    for union_field in (
+        "source_missing_semantic_fields",
+        "source_explicit_missing_semantic_fields",
+        "missing_semantic_fields",
+    ):
+        merged: set[str] = set()
+        for c in checks:
+            merged.update(c["payload"].get(union_field) or [])
+        if union_field in promoted or merged:
+            promoted[union_field] = sorted(merged)
+
+    if len(checks) > 1 or any_check_failed or not all_gate3_allowed:
+        merged_sem_fields = dict(promoted.get("semantic_fields") or {})
+        merged_sem_fields["gate3_allowed"] = all_gate3_allowed
+        if any(
+            (c["payload"].get("semantic_fields") or {}).get("last_gate_certified") is False
+            for c in checks
+        ):
+            merged_sem_fields["last_gate_certified"] = False
+        for c in checks:
+            c_sem = c["payload"].get("semantic_fields") or {}
+            if c_sem.get("blocking_reason_if_any"):
+                merged_sem_fields["blocking_reason_if_any"] = c_sem["blocking_reason_if_any"]
+                break
+        if not all_source_complete:
+            promoted["bridge_verdict"] = "SOURCE_SEMANTIC_FIELDS_DERIVED_FAIL_CLOSED"
+            promoted["next_allowed_step"] = "GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS"
+            merged_sem_fields["next_allowed_gate"] = "GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS"
+        elif not all_gate3_allowed:
+            promoted["bridge_verdict"] = "SOURCE_SEMANTIC_FIELDS_COMPLETE_GATE3_HOLD"
+            promoted["next_allowed_step"] = "GATE3_HOLD_SEMANTIC_FIELDS_COMPLETE_NOT_ALLOWED"
+            for c in checks:
+                c_next = (c["payload"].get("semantic_fields") or {}).get("next_allowed_gate")
+                if isinstance(c_next, str) and c_next != "GATE3_PREP_ALLOWED":
+                    merged_sem_fields["next_allowed_gate"] = c_next
+                    break
+            else:
+                merged_sem_fields["next_allowed_gate"] = "GATE3_HOLD_SEMANTIC_FIELDS_COMPLETE_NOT_ALLOWED"
+        promoted["semantic_fields"] = merged_sem_fields
+
     return {"checks": checks, **promoted}
 
 
@@ -725,9 +1009,55 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
         "result_size_bytes", "result_sha256",
     )
     public = {key: result.get(key) for key in allowed if key in result}
-    for sha_key in ("execution_base_sha", "requested_base_sha"):
-        if sha_key in public and public[sha_key] is not None and not valid_sha(public[sha_key]):
-            public.pop(sha_key, None)
+    raw_base = result.get("base_sha")
+    raw_exec = result.get("execution_base_sha")
+    concurrency = result.get("concurrency")
+    concurrency_bad = concurrency is not None and not isinstance(concurrency, dict)
+    pickup = concurrency.get("pickup") if isinstance(concurrency, dict) else None
+    pickup_bad = pickup is not None and not isinstance(pickup, dict)
+    raw_pickup_exec = pickup.get("execution_base_sha") if isinstance(pickup, dict) else None
+
+    sha_triplet = [val for val in (raw_base, raw_exec, raw_pickup_exec) if val is not None]
+    sha_triplet_valid = (
+        not concurrency_bad
+        and not pickup_bad
+        and all(isinstance(val, str) and authentic_lineage_sha(val.strip()) for val in sha_triplet)
+        and len({val.strip() for val in sha_triplet if isinstance(val, str)}) <= 1
+    )
+    if not sha_triplet_valid:
+        public.pop("base_sha", None)
+        public.pop("execution_base_sha", None)
+    else:
+        if "base_sha" in public:
+            if raw_base is None:
+                public.pop("base_sha", None)
+            else:
+                public["base_sha"] = raw_base.strip()
+        if "execution_base_sha" in public:
+            if raw_exec is None:
+                public.pop("execution_base_sha", None)
+            else:
+                public["execution_base_sha"] = raw_exec.strip()
+
+    if "requested_base_sha" in public:
+        req_sha = public.get("requested_base_sha")
+        if not isinstance(req_sha, str) or not authentic_lineage_sha(req_sha.strip()):
+            public.pop("requested_base_sha", None)
+        else:
+            public["requested_base_sha"] = req_sha.strip()
+
+    if "summary_es" in public:
+        raw_summary = public.get("summary_es")
+        if raw_summary is None:
+            public.pop("summary_es", None)
+        else:
+            try:
+                clean_summary = sanitize_dynamic_value(raw_summary, max_str_len=MAX_SUMMARY_LENGTH)
+                if not isinstance(clean_summary, str):
+                    raise ValueError("INVALID_SUMMARY_ES")
+                public["summary_es"] = clean_summary
+            except (ValueError, TypeError):
+                public.pop("summary_es", None)
     public["published_at_utc"] = now()
     public["source_repo"] = "rbalam/EDARSA_HUB"
     public["source_branch"] = "Edarsahub_Desarrollo"

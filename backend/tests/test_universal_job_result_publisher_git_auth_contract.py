@@ -69,7 +69,7 @@ def test_result_publisher_skips_certified_markers_before_sanitize():
 
     assert marker_guard in text
 
-    loop_pos = text.index('for path in sorted(RESULTS.glob("*.json")):')
+    loop_pos = text.index("for path in publishable_paths():")
     certified_pos = text.index(
         'if "certification=CERTIFIED" in marker_text:',
         loop_pos,
