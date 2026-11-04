@@ -1,0 +1,107 @@
+{
+  "actions": [],
+  "base_sha": "ad89e733865b8c9176b6691636768a1d14894a2c",
+  "checks": [
+    {
+      "request": {
+        "max_results": 500,
+        "paths": [
+          "tools/mirror_sync/worker_auditor.py",
+          "tools/mirror_sync/worker_maintenance_contract.py",
+          "tools/mirror_sync/worker_maintenance_controller.py",
+          "tools/mirror_sync/worker_maintenance_runtime.py",
+          "tools/mirror_sync/worker_repair.py",
+          "tools/mirror_sync/worker_repair_execution.py",
+          "tools/mirror_sync/worker_repair_auto_loop.py",
+          "tools/mirror_sync/worker_repair_planner.py",
+          "tools/mirror_sync/worker_repair_capability_registry.py",
+          "tools/mirror_sync/worker_result_integrity.py",
+          "tools/mirror_sync/worker_result_reader.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "backend/tests/test_worker_repair_auditor_foundation_contract.py",
+          "backend/tests/test_worker_repair_auditor_operational_contract.py",
+          "backend/tests/test_worker_maintenance_controller_contract.py",
+          "backend/tests/test_worker_repair_execution_bridge_contract.py",
+          "backend/tests/test_worker_repair_auto_loop_contract.py",
+          "backend/tests/test_worker_repair_retry_binding_contract.py"
+        ],
+        "search_terms": [
+          "audit_repair_result",
+          "audit_incident",
+          "audit_runtime_incident",
+          "repaired_pending_audit",
+          "reconcile_repair_result",
+          "read_repair_terminal_result",
+          "register_published_repair_attempt",
+          "register_repair_result",
+          "deterministic_repair_job_id",
+          "touches_protected_universal_component",
+          "protected_universal_components",
+          "certified_worker_repair",
+          "repaired_pending_audit",
+          "files_changed",
+          "target_paths",
+          "repair_job_id",
+          "repair_publication_commit",
+          "result_sha256"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "tools/mirror_sync/worker_auditor.py",
+        "tools/mirror_sync/worker_maintenance_contract.py",
+        "tools/mirror_sync/worker_maintenance_controller.py",
+        "tools/mirror_sync/worker_maintenance_runtime.py",
+        "tools/mirror_sync/worker_repair.py",
+        "tools/mirror_sync/worker_repair_execution.py",
+        "tools/mirror_sync/worker_repair_auto_loop.py",
+        "tools/mirror_sync/worker_repair_planner.py",
+        "tools/mirror_sync/worker_result_integrity.py",
+        "tools/mirror_sync/worker_result_reader.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_repair_auditor_foundation_contract.py",
+        "backend/tests/test_worker_repair_auditor_operational_contract.py",
+        "backend/tests/test_worker_maintenance_controller_contract.py",
+        "backend/tests/test_worker_repair_execution_bridge_contract.py",
+        "backend/tests/test_worker_repair_auto_loop_contract.py",
+        "backend/tests/test_worker_repair_retry_binding_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-AUDITOR-INDEPENDENCE-GATE-READONLY-R1-20261104",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en modo READ_ONLY AUD-01..AUD-05 del Worker Auditor Independence Gate: independencia de evidencia (AUD-01), transiciones de estado (AUD-02), diff autorizado vs real (AUD-03), autorizacion previa (AUD-04) y vinculacion de Job ID/commit/hash (AUD-05), sin modificar archivos, SQL ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "BOS-WORKER-AUDITOR-INDEPENDENCE-GATE",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "CHATGPT"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
