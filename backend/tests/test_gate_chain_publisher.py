@@ -209,6 +209,57 @@ def test_repository_contract_audit_supported():
     assert isinstance(validated.get("scheduling"), dict)
 
 
+def test_worker_result_semantic_extract_supported():
+    from tools.mirror_sync.gate_chain_publisher import ALLOWED_CHECKS
+    from tools.mirror_sync.universal_job_bridge import (
+        ALLOWED_CHECKS as BRIDGE_ALLOWED_CHECKS,
+        validate as validate_worker_job,
+    )
+
+    assert "worker_result_semantic_extract" in ALLOWED_CHECKS
+    assert ALLOWED_CHECKS == BRIDGE_ALLOWED_CHECKS
+
+    value = template("BOS-KNOWLEDGE-LOOP-HISTORICAL-INCIDENTS-READONLY-R1-20261103")
+    value["checks"] = [
+        {
+            "type": "repository_contract_audit",
+            "request": {
+                "paths": [
+                    "tools/mirror_sync/worker_repair_capability_registry.py",
+                ],
+                "search_terms": ["register_learned_capability"],
+                "max_results": 500,
+            },
+        },
+        {
+            "type": "worker_result_semantic_extract",
+            "request": {
+                "source_result": {
+                    "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-KNOWLEDGE-GATE1-READONLY-R1-20261022",
+                    "path": "worker_queue/results/EDARSAHUB-BOS-WORKER-REPAIR-KNOWLEDGE-GATE1-READONLY-R1-20261022.json",
+                    "branch": "worker/results",
+                },
+                "required_semantic_fields": [
+                    "repository_evidence",
+                    "certification_basis",
+                    "execution_base_sha",
+                    "summary_es",
+                ],
+            },
+        },
+        {
+            "type": "git_diff_check",
+        },
+    ]
+
+    validated = validate_template(value)
+    assert validated["mode"] == "READ_ONLY"
+    assert validated["actions"] == []
+    assert validated["production_allowed"] is False
+    assert validated["checks"][1]["type"] == "worker_result_semantic_extract"
+    assert validate_worker_job(validated) == []
+
+
 def test_unsupported_check_rejected():
     value = template()
     value["checks"] = [

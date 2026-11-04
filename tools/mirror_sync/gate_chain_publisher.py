@@ -53,6 +53,7 @@ ALLOWED_CHECKS = {
     "frontend_build",
     "sql_readonly_audit",
     "repository_contract_audit",
+    "worker_result_semantic_extract",
 }
 
 FORBIDDEN_KEYS = {
