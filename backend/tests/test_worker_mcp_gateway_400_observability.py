@@ -1,4 +1,5 @@
 """Observabilidad sanitizada del HTTP 400 del upstream MCP (solo logging; sin cambio funcional)."""
+import contextlib
 import importlib
 import json
 import logging
@@ -170,3 +171,256 @@ def _app_only_router():
     app = FastAPI()
     app.include_router(gateway_router.router)
     return app
+
+
+from contextlib import asynccontextmanager
+from pathlib import Path
+
+if importlib.util.find_spec("mcp") is None:
+    for _candidate in sorted(Path("/app/.runtime/worker_mcp/venv/lib").glob("python*/site-packages")):
+        sys.path.append(str(_candidate))
+
+from mcp.server.auth.provider import AccessToken
+from modules.worker_mcp.config import WorkerMcpConfig
+from modules.worker_mcp.server import build_mcp_server, build_transport_security
+
+
+class _StubTokenVerifier:
+    async def verify_token(self, token: str) -> AccessToken | None:
+        if token != SECRET:
+            return None
+        return AccessToken(
+            token=token,
+            client_id="user-1",
+            scopes=["mcp:tools"],
+            expires_at=None,
+            resource="https://edarsahub.example.com/api/mcp",
+        )
+
+
+def _build_real_upstream():
+    cfg = WorkerMcpConfig(
+        issuer_url="http://127.0.0.1:32913",
+        resource_url="http://127.0.0.1:32913/mcp",
+        backend_url="http://127.0.0.1:8001",
+        allowed_hosts=("127.0.0.1:*", "localhost:*"),
+        allowed_origins=(),
+    )
+    mcp_server = build_mcp_server(
+        cfg,
+        token_verifier=_StubTokenVerifier(),
+    )
+    upstream_app = mcp_server.streamable_http_app(
+        json_response=True,
+        stateless_http=True,
+        transport_security=build_transport_security(cfg),
+        host=cfg.bind_host,
+    )
+    return mcp_server, upstream_app
+
+
+@contextlib.contextmanager
+def _gateway_with_real_upstream(monkeypatch):
+    monkeypatch.setenv("EDARSAHUB_MCP_UPSTREAM_URL", "http://127.0.0.1:32913")
+    monkeypatch.setenv("EDARSAHUB_MCP_PUBLIC_ORIGIN", "https://edarsahub.example.com")
+    monkeypatch.delenv("EDARSAHUB_MCP_INPROCESS", raising=False)
+    _mcp_server, upstream_app = _build_real_upstream()
+    real_async_client = httpx.AsyncClient
+
+    @asynccontextmanager
+    async def _lifespan(_app: FastAPI):
+        async with upstream_app.router.lifespan_context(upstream_app):
+            yield
+
+    monkeypatch.setattr(
+        gateway_router.httpx,
+        "AsyncClient",
+        lambda **kw: real_async_client(
+            transport=httpx.ASGITransport(app=upstream_app),
+            **kw,
+        ),
+    )
+    app = FastAPI(lifespan=_lifespan)
+    app.include_router(gateway_router.router)
+    with TestClient(app) as client:
+        yield client
+
+
+def _init_payload(protocol_version: str = "2025-06-18") -> str:
+    return json.dumps({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+            "protocolVersion": protocol_version,
+            "capabilities": {},
+            "clientInfo": {"name": "chatgpt-connector", "version": "1.0.0"},
+        },
+    })
+
+
+@pytest.mark.parametrize(
+    "requested_version,header_version,expected_version",
+    [
+        ("2024-11-05", None, "2024-11-05"),
+        ("2025-03-26", None, "2025-03-26"),
+        ("2025-06-18", "2025-06-18", "2025-06-18"),
+        ("2025-11-25", "  2025-11-25  ", "2025-11-25"),
+        ("2099-01-01", None, "2025-11-25"),
+        ("2025-06-18", "2099-01-01", "2025-06-18"),
+        ("2025-06-18", "", "2025-06-18"),
+    ],
+)
+def test_gateway_initialize_protocol_version_negotiation(
+    monkeypatch, requested_version, header_version, expected_version
+):
+    with _gateway_with_real_upstream(monkeypatch) as client:
+        extra = {} if header_version is None else {"MCP-Protocol-Version": header_version}
+        reply = _post(client, body=_init_payload(requested_version), **extra)
+    assert reply.status_code == 200
+    data = reply.json()
+    assert data["result"]["protocolVersion"] == expected_version
+    assert data["result"]["serverInfo"]["name"] == "EDARSAHUB Universal Worker"
+
+
+def test_gateway_handshake_initialized_and_tools_list_discovery(monkeypatch):
+    with _gateway_with_real_upstream(monkeypatch) as client:
+        init_reply = _post(
+            client,
+            body=_init_payload("2025-06-18"),
+            **{"MCP-Protocol-Version": "2025-06-18"},
+        )
+        assert init_reply.status_code == 200
+
+        notif_reply = _post(
+            client,
+            body=json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}),
+            **{"MCP-Protocol-Version": "2025-06-18"},
+        )
+        assert notif_reply.status_code == 202
+
+        tools_reply = _post(
+            client,
+            body=json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}),
+            **{"MCP-Protocol-Version": "2025-06-18"},
+        )
+        assert tools_reply.status_code == 200
+        tools = {tool["name"]: tool for tool in tools_reply.json()["result"]["tools"]}
+        assert set(tools.keys()) == {"submit_objective", "get_job_status"}
+        assert "objective" in tools["submit_objective"]["inputSchema"]["properties"]
+        assert "job_id" in tools["get_job_status"]["inputSchema"]["properties"]
+
+
+@pytest.mark.parametrize("bad_version", ["2099-01-01", ""])
+def test_gateway_does_not_silently_downgrade_incompatible_mcp_versions(monkeypatch, bad_version):
+    with _gateway_with_real_upstream(monkeypatch) as client:
+        notif_reply = _post(
+            client,
+            body=json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}),
+            **{"MCP-Protocol-Version": bad_version},
+        )
+        assert notif_reply.status_code == 400
+
+        tools_reply = _post(
+            client,
+            body=json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}),
+            **{"MCP-Protocol-Version": bad_version},
+        )
+        assert tools_reply.status_code == 400
+
+
+def test_gateway_forwards_modern_mcp_method_header(monkeypatch):
+    from mcp_types import CLIENT_CAPABILITIES_META_KEY, PROTOCOL_VERSION_META_KEY
+
+    with _gateway_with_real_upstream(monkeypatch) as client:
+        reply = _post(
+            client,
+            body=json.dumps({
+                "jsonrpc": "2.0",
+                "id": 3,
+                "method": "tools/list",
+                "params": {
+                    "_meta": {
+                        PROTOCOL_VERSION_META_KEY: "2026-07-28",
+                        CLIENT_CAPABILITIES_META_KEY: {},
+                    },
+                },
+            }),
+            **{"MCP-Protocol-Version": "2026-07-28", "Mcp-Method": "tools/list"},
+        )
+    assert reply.status_code == 200
+    tools = {tool["name"] for tool in reply.json()["result"]["tools"]}
+    assert tools == {"submit_objective", "get_job_status"}
+
+
+def test_gateway_validates_external_origin_and_strips_it_before_loopback(monkeypatch):
+    monkeypatch.setenv(
+        "EDARSAHUB_MCP_ALLOWED_ORIGINS",
+        "https://chatgpt.com,http://localhost:*",
+    )
+    with _gateway_with_real_upstream(monkeypatch) as client:
+        ok_chatgpt = _post(
+            client,
+            body=_init_payload("2025-06-18"),
+            Origin="https://chatgpt.com",
+        )
+        assert ok_chatgpt.status_code == 200
+
+        ok_localhost = _post(
+            client,
+            body=json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}),
+            Origin="http://localhost:5173",
+            **{"MCP-Protocol-Version": "2025-06-18"},
+        )
+        assert ok_localhost.status_code == 200
+
+        ok_same_origin = _post(
+            client,
+            body=_init_payload("2025-06-18"),
+            Origin="https://edarsahub.example.com",
+            **{
+                "X-Forwarded-Proto": "https",
+                "X-Forwarded-Host": "edarsahub.example.com",
+            },
+        )
+        assert ok_same_origin.status_code == 200
+
+        denied_origin = _post(
+            client,
+            body=_init_payload("2025-06-18"),
+            Origin="https://evil.example.test",
+        )
+        assert denied_origin.status_code == 403
+        assert denied_origin.text == "Invalid Origin header"
+
+        empty_origin = _post(
+            client,
+            body=_init_payload("2025-06-18"),
+            Origin="   ",
+        )
+        assert empty_origin.status_code == 403
+
+
+def test_gateway_preserves_oauth_bearer_authentication(monkeypatch):
+    with _gateway_with_real_upstream(monkeypatch) as client:
+        missing_auth = client.post(
+            "/api/mcp",
+            content=_init_payload("2025-06-18"),
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json, text/event-stream",
+                "X-Forwarded-Proto": "https",
+                "X-Forwarded-Host": "edarsahub.example.com",
+            },
+        )
+        assert missing_auth.status_code == 401
+        challenge = missing_auth.headers.get("www-authenticate", "")
+        assert "https://edarsahub.example.com/api/mcp/.well-known/oauth-protected-resource" in challenge
+        assert "127.0.0.1" not in challenge
+
+        bad_token = _post(
+            client,
+            body=_init_payload("2025-06-18"),
+            Authorization="Bearer invalid-token",
+        )
+        assert bad_token.status_code == 401

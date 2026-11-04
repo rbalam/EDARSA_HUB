@@ -75,6 +75,13 @@ _MAX_CLASSIFY_BYTES = 65536
 _KNOWN_PROTOCOL_VERSIONS = {
     "2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25", "2026-07-28",
 }
+_HANDSHAKE_PROTOCOL_VERSIONS = {
+    "2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25",
+}
+_FORWARDED_REQUEST_HEADERS = {
+    "authorization", "accept", "content-type", "mcp-session-id",
+    "last-event-id", "mcp-method", "mcp-name",
+}
 _RPC_METHODS = {
     "initialize", "notifications/initialized", "tools/list", "tools/call", "ping",
 }
@@ -189,10 +196,63 @@ def _upstream() -> str:
     return target
 
 
+def _allowed_origins(request: Request) -> set[str]:
+    allowed: set[str] = set()
+    try:
+        allowed.update(
+            item.rstrip("/") for item in WorkerMcpConfig.from_env().allowed_origins if item
+        )
+    except WorkerMcpConfigError:
+        raw = os.getenv("EDARSAHUB_MCP_ALLOWED_ORIGINS", "")
+        allowed.update(
+            item.strip().rstrip("/") for item in raw.split(",") if item.strip()
+        )
+    try:
+        allowed.add(public_https_origin(request))
+    except PublicOriginError:
+        pass
+    return allowed
+
+
+def _origin_allowed(request: Request) -> bool:
+    if "origin" not in request.headers:
+        return True
+    origin = (request.headers.get("origin") or "").strip().rstrip("/")
+    if not origin:
+        return False
+    for allowed in _allowed_origins(request):
+        if allowed.endswith(":*"):
+            prefix = allowed[:-2]
+            if origin == prefix or origin.startswith(prefix + ":"):
+                return True
+        elif origin == allowed:
+            return True
+    return False
+
+
+def _build_upstream_headers(request: Request, request_body: bytes) -> dict[str, str]:
+    rpc_method = _request_rpc_method(request_body)
+    headers: dict[str, str] = {}
+    for name, value in request.headers.items():
+        lower = name.lower()
+        if lower in _FORWARDED_REQUEST_HEADERS or lower.startswith("mcp-param-"):
+            headers[name] = value
+        elif lower == "mcp-protocol-version":
+            version = value.strip()
+            if rpc_method == "initialize":
+                if version in _HANDSHAKE_PROTOCOL_VERSIONS:
+                    headers[name] = version
+            else:
+                headers[name] = version
+    return headers
+
+
 @router.api_route("/api/mcp", methods=["GET", "POST", "DELETE", "OPTIONS", "HEAD"])
 @router.api_route("/api/mcp/", methods=["GET", "POST", "DELETE", "OPTIONS", "HEAD"])
 async def mcp_gateway(request: Request):
     """Preserve streaming and MCP protocol headers; never log bearer tokens."""
+    if not _origin_allowed(request):
+        return Response(content="Invalid Origin header", status_code=403)
     if inprocess.enabled():
         return _InProcessResponse("/mcp")
     try:
@@ -200,20 +260,15 @@ async def mcp_gateway(request: Request):
     except ValueError:
         return Response(status_code=503, content="MCP upstream not configured")
 
-    headers = {
-        name: value for name, value in request.headers.items()
-        if name.lower() in {
-            "authorization", "accept", "content-type", "mcp-session-id",
-            "mcp-protocol-version", "last-event-id", "origin",
-        }
-    }
+    request_body = await request.body()
+    headers = _build_upstream_headers(request, request_body)
     client = httpx.AsyncClient(timeout=httpx.Timeout(connect=5, read=None, write=30, pool=5))
     try:
         outgoing = client.build_request(
             request.method,
             upstream + "/mcp",
             headers=headers,
-            content=await request.body(),
+            content=request_body,
         )
         reply = await client.send(outgoing, stream=True)
     except httpx.RequestError:
@@ -232,7 +287,7 @@ async def mcp_gateway(request: Request):
         finally:
             await reply.aclose()
             await client.aclose()
-        _log_upstream_400(request, await request.body(), error_body)
+        _log_upstream_400(request, request_body, error_body)
         return Response(content=error_body, status_code=400, headers=response_headers)
     # The upstream advertises loopback resource metadata. Never expose it to clients.
     challenge = response_headers.get("www-authenticate")
