@@ -295,12 +295,16 @@ def sanitize_repository_evidence(result: dict[str, Any]) -> dict[str, Any] | Non
 
 
 def sanitize_semantic_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
+    allowed_entry_keys = ("path", "matched_terms", "candidate_ownership", "symbols", "imports", "routes", "tables_referenced", "helpers", "connections", "rbac_contracts", "scheduler_contracts", "integrations")
+    allowed_provenance_keys = ("status", "source_key", "derivation")
     allowed_payload_keys = (
         "status", "mode", "bridge_verdict", "runtime_gap_confirmed",
         "source_result_reader_capability_current_state",
         "can_read_worker_results_by_branch_path",
         "can_read_worker_results_by_blob_sha",
         "can_emit_semantic_fields_from_source_result",
+        "source_semantic_fields_complete", "source_missing_semantic_fields",
+        "source_explicit_missing_semantic_fields", "semantic_field_provenance",
         "semantic_fields_complete", "missing_semantic_fields",
         "semantic_fields", "gate3_allowed",
         "source_result_read_status", "source_result_path",
@@ -331,6 +335,40 @@ def sanitize_semantic_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
         if not isinstance(payload, dict):
             continue
         safe_payload = {key: payload.get(key) for key in allowed_payload_keys if key in payload}
+        raw_provenance = safe_payload.get("semantic_field_provenance")
+        if isinstance(raw_provenance, dict):
+            safe_payload["semantic_field_provenance"] = {
+                str(field): {
+                    pkey: pval.get(pkey)
+                    for pkey in allowed_provenance_keys
+                    if pkey in pval
+                }
+                for field, pval in raw_provenance.items()
+                if isinstance(pval, dict)
+            }
+        raw_sem_fields = safe_payload.get("semantic_fields")
+        if isinstance(raw_sem_fields, dict):
+            safe_sem_fields = dict(raw_sem_fields)
+            repo_ev = safe_sem_fields.get("repository_evidence")
+            if isinstance(repo_ev, dict) and isinstance(repo_ev.get("checks"), list):
+                clean_repo_checks = []
+                for rcheck in repo_ev["checks"]:
+                    if not isinstance(rcheck, dict) or rcheck.get("status") != "PASS":
+                        continue
+                    entries = [
+                        {key: entry.get(key) for key in allowed_entry_keys if key in entry}
+                        for entry in (rcheck.get("evidence") or [])
+                        if isinstance(entry, dict)
+                    ]
+                    clean_repo_checks.append({
+                        "status": "PASS",
+                        "mode": "READ_ONLY_REPOSITORY",
+                        "summary": rcheck.get("summary") if isinstance(rcheck.get("summary"), dict) else None,
+                        "truncated": bool(rcheck.get("truncated")),
+                        "evidence": entries,
+                    })
+                safe_sem_fields["repository_evidence"] = {"checks": clean_repo_checks} if clean_repo_checks else None
+            safe_payload["semantic_fields"] = safe_sem_fields
         checks.append({"status": check.get("status"), "returncode": check.get("returncode"), "payload": safe_payload})
         for key, value in safe_payload.items():
             promoted.setdefault(key, value)
@@ -675,7 +713,8 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
 def sanitize(result: dict[str, Any]) -> dict[str, Any]:
     allowed = (
         "schema", "job_id", "started_at_utc", "completed_at_utc", "status",
-        "executor", "base_sha", "candidate_sha", "development_sha", "tests",
+        "executor", "base_sha", "execution_base_sha", "requested_base_sha",
+        "candidate_sha", "development_sha", "tests",
         "quality_gate", "files_changed", "summary_es", "blockers",
         "percent_complete", "certification", "production_touched",
         "operation", "dry_run", "units", "canonical_sql_mutation",
@@ -686,6 +725,9 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
         "result_size_bytes", "result_sha256",
     )
     public = {key: result.get(key) for key in allowed if key in result}
+    for sha_key in ("execution_base_sha", "requested_base_sha"):
+        if sha_key in public and public[sha_key] is not None and not valid_sha(public[sha_key]):
+            public.pop(sha_key, None)
     public["published_at_utc"] = now()
     public["source_repo"] = "rbalam/EDARSA_HUB"
     public["source_branch"] = "Edarsahub_Desarrollo"
@@ -707,6 +749,10 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
             "can_read_worker_results_by_branch_path",
             "can_read_worker_results_by_blob_sha",
             "can_emit_semantic_fields_from_source_result",
+            "source_semantic_fields_complete",
+            "source_missing_semantic_fields",
+            "source_explicit_missing_semantic_fields",
+            "semantic_field_provenance",
             "semantic_fields_complete",
             "missing_semantic_fields",
             "semantic_fields",

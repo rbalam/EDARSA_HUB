@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 from collections import deque
 from pathlib import Path
@@ -21,6 +22,28 @@ DEFAULT_FIELDS = [
     "next_allowed_gate",
     "blocking_reason_if_any",
 ]
+DECISION_FIELDS = tuple(DEFAULT_FIELDS)
+SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+VALID_RESULT_STATUSES = frozenset({
+    "READ_ONLY_COMPLETE",
+    "INTEGRATED",
+    "OPERATIONAL_COMPLETE",
+    "FRONTEND_BUILD_CERTIFIED",
+})
+ALLOWED_REPOSITORY_ENTRY_KEYS = (
+    "path",
+    "matched_terms",
+    "candidate_ownership",
+    "symbols",
+    "imports",
+    "routes",
+    "tables_referenced",
+    "helpers",
+    "connections",
+    "rbac_contracts",
+    "scheduler_contracts",
+    "integrations",
+)
 
 
 def git(args: list[str]) -> subprocess.CompletedProcess[str]:
@@ -137,15 +160,214 @@ def truthy(value: Any) -> bool:
     return False
 
 
+def has_verifiable_result_provenance(payload: dict[str, Any]) -> bool:
+    if not isinstance(payload, dict):
+        return False
+    if payload.get("production_touched") is not False:
+        return False
+    return (
+        payload.get("schema") == "edarsahub.worker-result.v2"
+        or str(payload.get("status") or "") in VALID_RESULT_STATUSES
+    )
+
+
+def sanitize_repository_contract_payload(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    raw_checks = value.get("checks")
+    if isinstance(raw_checks, list):
+        if not raw_checks:
+            return None
+        candidates = raw_checks
+    elif (
+        value.get("status") == "PASS"
+        and value.get("mode") == "READ_ONLY_REPOSITORY"
+        and isinstance(value.get("evidence"), list)
+    ):
+        candidates = [value]
+    else:
+        return None
+
+    sanitized_checks = []
+    for check in candidates:
+        if not isinstance(check, dict):
+            return None
+        if check.get("status") != "PASS" or check.get("mode") != "READ_ONLY_REPOSITORY":
+            return None
+        evidence = check.get("evidence")
+        if not isinstance(evidence, list):
+            return None
+        entries = []
+        for entry in evidence:
+            if not isinstance(entry, dict):
+                return None
+            entries.append({key: entry.get(key) for key in ALLOWED_REPOSITORY_ENTRY_KEYS if key in entry})
+        sanitized_checks.append({
+            "status": "PASS",
+            "mode": "READ_ONLY_REPOSITORY",
+            "summary": check.get("summary") if isinstance(check.get("summary"), dict) else None,
+            "truncated": bool(check.get("truncated")),
+            "evidence": entries,
+        })
+    return {"checks": sanitized_checks} if sanitized_checks else None
+
+
+def resolve_semantic_field(payload: dict[str, Any], field: str) -> tuple[Any, dict[str, Any], bool]:
+    raw_val = find_key(payload, field)
+    if field == "execution_base_sha":
+        base_sha = payload.get("base_sha")
+        pickup_exec = (
+            ((payload.get("concurrency") or {}).get("pickup") or {}).get("execution_base_sha")
+            if isinstance(payload.get("concurrency"), dict)
+            else None
+        )
+        if raw_val is not None:
+            if (
+                isinstance(raw_val, str)
+                and SHA_RE.fullmatch(raw_val.strip())
+                and has_verifiable_result_provenance(payload)
+                and (
+                    not isinstance(base_sha, str)
+                    or not base_sha.strip()
+                    or base_sha.strip() == raw_val.strip()
+                )
+            ):
+                return (
+                    raw_val.strip(),
+                    {
+                        "status": "EXPLICIT_SOURCE_KEY",
+                        "source_key": "execution_base_sha",
+                        "derivation": "NONE",
+                    },
+                    True,
+                )
+            return (
+                None,
+                {
+                    "status": "INVALID_OR_UNVERIFIED_EXPLICIT_VALUE",
+                    "source_key": "execution_base_sha",
+                    "derivation": "FAIL_CLOSED_NULL",
+                },
+                False,
+            )
+        if (
+            has_verifiable_result_provenance(payload)
+            and isinstance(base_sha, str)
+            and SHA_RE.fullmatch(base_sha.strip())
+            and (
+                pickup_exec is None
+                or (isinstance(pickup_exec, str) and pickup_exec.strip() == base_sha.strip())
+            )
+        ):
+            return (
+                base_sha.strip(),
+                {
+                    "status": "DERIVED_CANONICAL_COMPATIBILITY",
+                    "source_key": "base_sha",
+                    "derivation": "PUBLISHED_WORKER_RESULT_BASE_SHA_INVARIANT",
+                },
+                False,
+            )
+        return (
+            None,
+            {
+                "status": "MISSING_OR_UNVERIFIED",
+                "source_key": None,
+                "derivation": "FAIL_CLOSED_NULL",
+            },
+            False,
+        )
+
+    if field == "repository_evidence":
+        if raw_val is not None:
+            sanitized = sanitize_repository_contract_payload(raw_val)
+            if sanitized is not None and has_verifiable_result_provenance(payload):
+                return (
+                    sanitized,
+                    {
+                        "status": "EXPLICIT_SOURCE_KEY",
+                        "source_key": "repository_evidence",
+                        "derivation": "NONE",
+                    },
+                    True,
+                )
+            return (
+                None,
+                {
+                    "status": "INVALID_OR_UNVERIFIED_EXPLICIT_VALUE",
+                    "source_key": "repository_evidence",
+                    "derivation": "FAIL_CLOSED_NULL",
+                },
+                False,
+            )
+        sanitized = sanitize_repository_contract_payload(payload.get("repository_contract_evidence"))
+        if sanitized is not None and has_verifiable_result_provenance(payload):
+            return (
+                sanitized,
+                {
+                    "status": "DERIVED_CANONICAL_COMPATIBILITY",
+                    "source_key": "repository_contract_evidence",
+                    "derivation": "PUBLISHED_SANITIZED_REPOSITORY_CONTRACT_EVIDENCE",
+                },
+                False,
+            )
+        return (
+            None,
+            {
+                "status": "MISSING_OR_UNVERIFIED",
+                "source_key": None,
+                "derivation": "FAIL_CLOSED_NULL",
+            },
+            False,
+        )
+
+    if raw_val is not None:
+        return (
+            raw_val,
+            {
+                "status": "EXPLICIT_SOURCE_KEY",
+                "source_key": field,
+                "derivation": "NONE",
+            },
+            True,
+        )
+    return (
+        None,
+        {
+            "status": "MISSING_IN_SOURCE",
+            "source_key": None,
+            "derivation": "FAIL_CLOSED_DEFAULT" if field in DECISION_FIELDS else "FAIL_CLOSED_NULL",
+        },
+        False,
+    )
+
+
 def build_report(payload: dict[str, Any], request: dict[str, Any], meta: dict[str, Any]) -> dict[str, Any]:
     requested = request.get("required_semantic_fields")
     if not isinstance(requested, list) or not requested:
         requested = DEFAULT_FIELDS
 
     fields = list(dict.fromkeys([*DEFAULT_FIELDS, *(str(field) for field in requested)]))
-    raw_semantic_fields = {str(field): find_key(payload, str(field)) for field in fields}
+    raw_semantic_fields: dict[str, Any] = {}
+    semantic_field_provenance: dict[str, dict[str, Any]] = {}
+    source_explicit_missing: list[str] = []
+
+    for field in fields:
+        field_name = str(field)
+        val, prov, is_explicit = resolve_semantic_field(payload, field_name)
+        raw_semantic_fields[field_name] = val
+        semantic_field_provenance[field_name] = prov
+        if not is_explicit:
+            source_explicit_missing.append(field_name)
+
+    source_explicit_missing.sort()
     source_missing = sorted(key for key, value in raw_semantic_fields.items() if value is None)
-    source_semantic_complete = not source_missing
+    decision_explicit_complete = all(
+        raw_semantic_fields.get(key) is not None
+        and semantic_field_provenance.get(key, {}).get("status") == "EXPLICIT_SOURCE_KEY"
+        for key in DECISION_FIELDS
+    )
+    source_semantic_complete = bool(not source_missing and decision_explicit_complete)
 
     semantic_fields = dict(raw_semantic_fields)
     if not source_semantic_complete:
@@ -198,6 +420,8 @@ def build_report(payload: dict[str, Any], request: dict[str, Any], meta: dict[st
         "can_emit_semantic_fields_from_source_result": True,
         "source_semantic_fields_complete": source_semantic_complete,
         "source_missing_semantic_fields": source_missing,
+        "source_explicit_missing_semantic_fields": source_explicit_missing,
+        "semantic_field_provenance": semantic_field_provenance,
         "semantic_fields_complete": semantic_complete,
         "missing_semantic_fields": missing,
         "semantic_fields": semantic_fields,
