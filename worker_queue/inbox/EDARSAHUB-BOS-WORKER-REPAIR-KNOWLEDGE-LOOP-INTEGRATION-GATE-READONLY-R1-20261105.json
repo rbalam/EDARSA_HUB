@@ -1,0 +1,104 @@
+{
+  "actions": [],
+  "base_sha": "1f01acba9de93787b1b1aac2eaa833f3149ac092",
+  "checks": [
+    {
+      "request": {
+        "max_results": 500,
+        "paths": [
+          "tools/mirror_sync/worker_repair.py",
+          "tools/mirror_sync/worker_repair_planner.py",
+          "tools/mirror_sync/worker_repair_execution.py",
+          "tools/mirror_sync/worker_repair_capability_registry.py",
+          "tools/mirror_sync/worker_repair_auto_loop.py",
+          "tools/mirror_sync/worker_maintenance_contract.py",
+          "tools/mirror_sync/worker_maintenance_controller.py",
+          "tools/mirror_sync/worker_maintenance_runtime.py",
+          "tools/mirror_sync/worker_auditor.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/worker_repair_capabilities/MUTATION_LIFECYCLE_STALE_OWNERSHIP.json",
+          "backend/tests/test_worker_repair_learned_capability_registry.py",
+          "backend/tests/test_worker_repair_planner_contract.py",
+          "backend/tests/test_worker_repair_execution_bridge_contract.py",
+          "backend/tests/test_worker_repair_auto_loop_contract.py"
+        ],
+        "search_terms": [
+          "register_learned_capability",
+          "resolve_learned_capability",
+          "LEARNED_CAPABILITY_AMBIGUOUS",
+          "KNOWN_BLOCKER_CAPABILITY_AMBIGUOUS",
+          "build_repair_plan",
+          "reconcile_repair_result",
+          "advance_repair_automation",
+          "audit_runtime_incident",
+          "automatic_repair_orchestration",
+          "automatic_repair_source_anchor",
+          "declare_runtime_incident",
+          "supersede_runtime_incident"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "tools/mirror_sync/worker_repair.py",
+        "tools/mirror_sync/worker_repair_planner.py",
+        "tools/mirror_sync/worker_repair_execution.py",
+        "tools/mirror_sync/worker_repair_capability_registry.py",
+        "tools/mirror_sync/worker_repair_auto_loop.py",
+        "tools/mirror_sync/worker_maintenance_contract.py",
+        "tools/mirror_sync/worker_maintenance_controller.py",
+        "tools/mirror_sync/worker_maintenance_runtime.py",
+        "tools/mirror_sync/worker_auditor.py",
+        "tools/mirror_sync/worker_control_plane.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_repair_learned_capability_registry.py",
+        "backend/tests/test_worker_repair_planner_contract.py",
+        "backend/tests/test_worker_repair_planner_canonical_ingress_capability.py",
+        "backend/tests/test_worker_repair_execution_bridge_contract.py",
+        "backend/tests/test_worker_repair_auto_loop_contract.py",
+        "backend/tests/test_worker_repair_retry_binding_contract.py",
+        "backend/tests/test_worker_repair_auditor_foundation_contract.py",
+        "backend/tests/test_worker_repair_auditor_operational_contract.py",
+        "backend/tests/test_worker_maintenance_controller_contract.py",
+        "backend/tests/test_worker_automatic_repair_orchestration_contract.py",
+        "backend/tests/test_worker_automatic_repair_activation_boundary_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-KNOWLEDGE-LOOP-INTEGRATION-GATE-READONLY-R1-20261105",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en modo READ_ONLY la integracion entre Repair Planner, Execution Bridge, Capability Registry, Auto-Loop y Control Plane del Worker Repair Knowledge Loop sobre Edarsahub_Desarrollo (1f01acba9de93787b1b1aac2eaa833f3149ac092). Verificar incidentes historicos, aprendizaje de reparaciones certificadas (register_learned_capability), precedencia y supersesion de capacidades aprendidas (resolve_learned_capability), persistencia de trazabilidad de incidentes (source_job_id, problem_signature), RBAC, idempotencia, fail-closed y pruebas de contrato sin modificar archivos ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "BOS-WORKER-REPAIR-KNOWLEDGE-LOOP",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "CHATGPT"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
