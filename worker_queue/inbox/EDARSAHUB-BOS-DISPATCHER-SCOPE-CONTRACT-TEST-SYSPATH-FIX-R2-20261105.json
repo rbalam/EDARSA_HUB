@@ -1,0 +1,65 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "import importlib.util\nfrom pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nDISPATCHER = ROOT / \"tools/mirror_sync/universal_job_dispatcher.py\"\n\n\ndef load_dispatcher():\n    spec = importlib.util.spec_from_file_location(\n        \"dispatcher_scope_contract\",\n        DISPATCHER,\n    )\n    module = importlib.util.module_from_spec(spec)\n    assert spec.loader is not None\n    spec.loader.exec_module(module)\n    return module\n",
+      "path": "backend/tests/test_universal_job_dispatcher_scope_contract.py",
+      "replacement": "import importlib.util\nimport sys\nfrom pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nDISPATCHER = ROOT / \"tools/mirror_sync/universal_job_dispatcher.py\"\n\n\ndef load_dispatcher():\n    spec = importlib.util.spec_from_file_location(\n        \"dispatcher_scope_contract\",\n        DISPATCHER,\n    )\n    module = importlib.util.module_from_spec(spec)\n    assert spec.loader is not None\n    mirror_sync_dir = str(DISPATCHER.parent)\n    inserted = mirror_sync_dir not in sys.path\n    if inserted:\n        sys.path.insert(0, mirror_sync_dir)\n    try:\n        spec.loader.exec_module(module)\n    finally:\n        if inserted:\n            sys.path.remove(mirror_sync_dir)\n    return module\n",
+      "source_sha256": "87a174136fb8b44e6a1c15382ce89fad0486d87e7880a3e9785b605e925db580",
+      "type": "replace_text"
+    }
+  ],
+  "base_sha": "77c5ce15276c2d667b948c4364e1e4bec23ff7ce",
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_universal_job_dispatcher_scope_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_universal_job_dispatcher_scope_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "paths": [
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_requester_rbac_contract.py",
+        "backend/tests/test_universal_job_dispatcher_scope_contract.py",
+        "backend/tests/test_universal_job_result_lineage_certification.py",
+        "backend/tests/test_worker_readonly_result_publisher.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-DISPATCHER-SCOPE-CONTRACT-TEST-SYSPATH-FIX-R2-20261105",
+  "mode": "MUTATION",
+  "objective": "Corregir solo backend/tests/test_universal_job_dispatcher_scope_contract.py: load_dispatcher() agrega temporalmente tools/mirror_sync a sys.path antes de exec_module y lo restaura en finally (patron de test_universal_job_dispatcher_python_runtime.py). No modifica el dispatcher productivo. Causa: ModuleNotFoundError worker_scheduling en G0-READONLY-20261104.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "BOS-G0-GLOBAL-WORKER-ALIGNMENT",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "COPILOT"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
