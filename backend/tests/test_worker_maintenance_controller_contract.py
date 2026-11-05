@@ -148,3 +148,45 @@ def test_missing_git_certification_is_rejected():
 
 def test_superseded_is_terminal_noncertified_state():
     assert MaintenanceState.SUPERSEDED.value == "SUPERSEDED"
+
+
+
+def test_pending_audit_rejects_unauthorized_incident_file_scope():
+    incident = declare_incident(
+        "INCIDENT-SCOPE-MISMATCH",
+        ["tools/mirror_sync/gate_chain_publisher.py"],
+    )
+    result = valid_result()
+    result["files_changed"] = [
+        "tools/mirror_sync/worker_control_plane.py",
+    ]
+
+    decision = repaired_pending_audit(
+        incident,
+        result,
+    )
+    assert decision.state is MaintenanceState.REJECTED
+    assert decision.certified is False
+    assert (
+        decision.reason
+        == "REPAIR_SCOPE_OUTSIDE_INCIDENT_AUTHORIZATION"
+    )
+
+
+def test_audit_incident_rejects_non_pending_when_required():
+    incident = declare_incident(
+        "INCIDENT-STATE-GATE",
+        ["tools/mirror_sync/gate_chain_publisher.py"],
+    )
+
+    decision = audit_incident(
+        incident,
+        valid_result(),
+        require_pending_audit_state=True,
+    )
+    assert decision.state is MaintenanceState.REJECTED
+    assert decision.certified is False
+    assert (
+        decision.reason
+        == "INCIDENT_NOT_PENDING_AUDIT"
+    )

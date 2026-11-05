@@ -204,8 +204,20 @@ def test_planner_materializes_a2_after_rejected_a1(
 
     monkeypatch.setattr(
         planner,
+        "ensure_submit_convergence",
+        lambda *_args, **_kwargs: {
+            "local": "c" * 40,
+            "development": "c" * 40,
+            "mirror": "c" * 40,
+            "converged": True,
+            "status": "CONVERGED_PASS",
+        },
+    )
+
+    monkeypatch.setattr(
+        planner,
         "_canonical_requester",
-        lambda: {
+        lambda *_args, **_kwargs: {
             "email": "worker@example.com",
             "source": "worker_repair",
             "project": "EDARSAHUB-BOS",

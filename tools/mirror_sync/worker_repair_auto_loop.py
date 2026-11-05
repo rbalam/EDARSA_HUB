@@ -150,14 +150,35 @@ def _learned_capability(
 
 def _repair_result_payload(
     payload: dict[str, Any],
+    *,
+    result_sha256: str | None = None,
 ) -> dict[str, Any]:
     return {
+        "job_id": payload.get("job_id"),
+        "result_sha256": (
+            result_sha256
+            or payload.get("result_sha256")
+        ),
+        "status": payload.get("status"),
+        "certification": payload.get(
+            "certification"
+        ),
         "files_changed": payload.get("files_changed"),
         "production_touched": payload.get("production_touched"),
         "quality_gate": payload.get("quality_gate"),
         "tests": payload.get("tests"),
         "blockers": payload.get("blockers"),
         "git_sync_status": payload.get("git_sync_status"),
+        "base_sha": payload.get("base_sha"),
+        "execution_base_sha": payload.get(
+            "execution_base_sha"
+        ),
+        "candidate_sha": payload.get(
+            "candidate_sha"
+        ),
+        "development_sha": payload.get(
+            "development_sha"
+        ),
     }
 
 
@@ -229,7 +250,14 @@ def _advance_bound_repair(
 
     decision = maintenance.audit_runtime_incident(
         incident_id,
-        _repair_result_payload(payload),
+        _repair_result_payload(
+            payload,
+            result_sha256=getattr(
+                result_read,
+                "result_sha256",
+                None,
+            ),
+        ),
     )
 
     return {

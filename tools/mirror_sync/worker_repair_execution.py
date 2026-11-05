@@ -285,6 +285,18 @@ def reconcile_repair_result(
     payload = result_read.payload or {}
 
     repair_result = {
+        "job_id": str(
+            payload.get("job_id")
+            or incident.repair_job_id
+            or ""
+        ),
+        "result_sha256": (
+            result_read.result_sha256
+        ),
+        "status": payload.get("status"),
+        "certification": payload.get(
+            "certification"
+        ),
         "files_changed": payload.get(
             "files_changed"
         ),
@@ -298,6 +310,16 @@ def reconcile_repair_result(
         "blockers": payload.get("blockers"),
         "git_sync_status": payload.get(
             "git_sync_status"
+        ),
+        "base_sha": payload.get("base_sha"),
+        "execution_base_sha": payload.get(
+            "execution_base_sha"
+        ),
+        "candidate_sha": payload.get(
+            "candidate_sha"
+        ),
+        "development_sha": payload.get(
+            "development_sha"
         ),
     }
 

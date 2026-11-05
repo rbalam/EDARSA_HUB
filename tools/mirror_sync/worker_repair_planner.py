@@ -477,13 +477,20 @@ def build_deterministic_repair_job(
             + str(convergence.get("status"))
         )
 
+    try:
+        resolved_requester = (
+            _canonical_requester(requester)
+        )
+    except TypeError:
+        resolved_requester = (
+            _canonical_requester()
+        )
+
     context = {
         "base_sha": convergence[
             "development"
         ],
-        "requester": (
-            _canonical_requester(requester)
-        ),
+        "requester": resolved_requester,
     }
 
     recipe = capability.builder(
@@ -680,7 +687,11 @@ import sys
 import tempfile
 """
 
-    if publisher.count(old_imports) != 1:
+    if publisher.count(old_imports) == 1:
+        import_anchor = old_imports
+    elif publisher.count(new_imports) == 1:
+        import_anchor = new_imports
+    else:
         raise ValueError(
             "CANONICAL_INGRESS_IMPORT_ANCHOR_DRIFT"
         )
@@ -736,7 +747,11 @@ import tempfile
             )
 """
 
-    if publisher.count(old_forbidden) != 1:
+    if publisher.count(old_forbidden) == 1:
+        forbidden_anchor = old_forbidden
+    elif publisher.count(new_forbidden) == 1:
+        forbidden_anchor = new_forbidden
+    else:
         raise ValueError(
             "CANONICAL_INGRESS_SQL_ANCHOR_DRIFT"
         )
@@ -1374,7 +1389,7 @@ def test_submit_reuses_canonical_publisher():
             {
                 "type": "replace_text",
                 "path": _CANONICAL_INGRESS_PUBLISHER,
-                "old": old_imports,
+                "old": import_anchor,
                 "new": new_imports,
                 "expected_count": 1,
                 "expected_sha256": publisher_sha,
@@ -1382,7 +1397,7 @@ def test_submit_reuses_canonical_publisher():
             {
                 "type": "replace_text",
                 "path": _CANONICAL_INGRESS_PUBLISHER,
-                "old": old_forbidden,
+                "old": forbidden_anchor,
                 "new": new_forbidden,
                 "expected_count": 1,
             },
@@ -1391,9 +1406,13 @@ def test_submit_reuses_canonical_publisher():
                 "path": _CANONICAL_INGRESS_PUBLISHER,
                 "old": main_anchor,
                 "new": (
-                    submit_block
-                    + "\n\n"
-                    + main_anchor
+                    main_anchor
+                    if "def submit(" in publisher
+                    else (
+                        submit_block
+                        + "\n\n"
+                        + main_anchor
+                    )
                 ),
                 "expected_count": 1,
             },

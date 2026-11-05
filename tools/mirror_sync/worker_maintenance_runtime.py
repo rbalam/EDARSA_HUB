@@ -86,6 +86,8 @@ class RuntimeIncidentState:
     repair_job_id: str | None = None
     repair_publication_state: str | None = None
     repair_publication_commit: str | None = None
+    repair_result_sha256: str | None = None
+    repair_commit_sha: str | None = None
 
 
 def _incident_path(incident_id: str) -> Path:
@@ -121,6 +123,33 @@ def _load_state(incident_id: str) -> dict[str, Any] | None:
     return data
 
 
+def _build_runtime_state(
+    incident_id: str,
+    state: dict[str, Any],
+) -> RuntimeIncidentState:
+    return RuntimeIncidentState(
+        incident_id=incident_id,
+        state=str(state.get("state")),
+        attempts=int(state.get("attempts") or 0),
+        cooldown_until_epoch=state.get("cooldown_until_epoch"),
+        target_paths=tuple(state.get("target_paths") or []),
+        production_touched=bool(state.get("production_touched")),
+        repair_job_id=state.get("repair_job_id"),
+        repair_publication_state=state.get(
+            "repair_publication_state"
+        ),
+        repair_publication_commit=state.get(
+            "repair_publication_commit"
+        ),
+        repair_result_sha256=state.get(
+            "repair_result_sha256"
+        ),
+        repair_commit_sha=state.get(
+            "repair_commit_sha"
+        ),
+    )
+
+
 def declare_runtime_incident(
     incident_id: str,
     target_paths: list[str],
@@ -134,20 +163,9 @@ def declare_runtime_incident(
         if existing_paths != requested_paths:
             raise ValueError("MAINTENANCE_INCIDENT_SCOPE_MISMATCH")
 
-        return RuntimeIncidentState(
-            incident_id=incident_id,
-            state=str(existing.get("state")),
-            attempts=int(existing.get("attempts") or 0),
-            cooldown_until_epoch=existing.get("cooldown_until_epoch"),
-            target_paths=existing_paths,
-            production_touched=bool(existing.get("production_touched")),
-            repair_job_id=existing.get("repair_job_id"),
-            repair_publication_state=existing.get(
-                "repair_publication_state"
-            ),
-            repair_publication_commit=existing.get(
-                "repair_publication_commit"
-            ),
+        return _build_runtime_state(
+            incident_id,
+            existing,
         )
 
     incident = declare_incident(incident_id, target_paths)
@@ -172,6 +190,8 @@ def declare_runtime_incident(
         repair_job_id=None,
         repair_publication_state=None,
         repair_publication_commit=None,
+        repair_result_sha256=None,
+        repair_commit_sha=None,
     )
 
 
@@ -197,22 +217,9 @@ def supersede_runtime_incident(
         state,
     )
 
-    return RuntimeIncidentState(
-        incident_id=incident_id,
-        state=MaintenanceState.SUPERSEDED.value,
-        attempts=int(state.get("attempts") or 0),
-        cooldown_until_epoch=None,
-        target_paths=tuple(state.get("target_paths") or []),
-        production_touched=bool(
-            state.get("production_touched")
-        ),
-        repair_job_id=state.get("repair_job_id"),
-        repair_publication_state=state.get(
-            "repair_publication_state"
-        ),
-        repair_publication_commit=state.get(
-            "repair_publication_commit"
-        ),
+    return _build_runtime_state(
+        incident_id,
+        state,
     )
 
 
@@ -262,23 +269,13 @@ def register_repair_attempt(
     attempts = int(state.get("attempts") or 0) + 1
     state["attempts"] = attempts
     state["state"] = MaintenanceState.REPAIR_REQUIRED.value
+    state["cooldown_until_epoch"] = None
 
     _atomic_json(_incident_path(incident_id), state)
 
-    return RuntimeIncidentState(
-        incident_id=incident_id,
-        state=str(state["state"]),
-        attempts=attempts,
-        cooldown_until_epoch=state.get("cooldown_until_epoch"),
-        target_paths=tuple(state.get("target_paths") or []),
-        production_touched=False,
-        repair_job_id=state.get("repair_job_id"),
-        repair_publication_state=state.get(
-            "repair_publication_state"
-        ),
-        repair_publication_commit=state.get(
-            "repair_publication_commit"
-        ),
+    return _build_runtime_state(
+        incident_id,
+        state,
     )
 
 
@@ -312,26 +309,9 @@ def register_published_repair_attempt(
         if existing_job_id != job_id:
             raise ValueError("REPAIR_JOB_BINDING_MISMATCH")
 
-        return RuntimeIncidentState(
-            incident_id=incident_id,
-            state=str(state.get("state")),
-            attempts=int(state.get("attempts") or 0),
-            cooldown_until_epoch=state.get(
-                "cooldown_until_epoch"
-            ),
-            target_paths=tuple(
-                state.get("target_paths") or []
-            ),
-            production_touched=bool(
-                state.get("production_touched")
-            ),
-            repair_job_id=existing_job_id,
-            repair_publication_state=state.get(
-                "repair_publication_state"
-            ),
-            repair_publication_commit=state.get(
-                "repair_publication_commit"
-            ),
+        return _build_runtime_state(
+            incident_id,
+            state,
         )
 
     allowed, reason = repair_attempt_allowed(
@@ -346,6 +326,7 @@ def register_published_repair_attempt(
 
     state["attempts"] = attempts
     state["state"] = MaintenanceState.REPAIR_REQUIRED.value
+    state["cooldown_until_epoch"] = None
     state["repair_job_id"] = job_id
     state["repair_publication_state"] = publication_status
 
@@ -361,24 +342,91 @@ def register_published_repair_attempt(
         state,
     )
 
-    return RuntimeIncidentState(
-        incident_id=incident_id,
-        state=str(state["state"]),
-        attempts=attempts,
-        cooldown_until_epoch=state.get(
-            "cooldown_until_epoch"
-        ),
-        target_paths=tuple(
-            state.get("target_paths") or []
-        ),
-        production_touched=bool(
-            state.get("production_touched")
-        ),
-        repair_job_id=job_id,
-        repair_publication_state=publication_status,
-        repair_publication_commit=state.get(
-            "repair_publication_commit"
-        ),
+    return _build_runtime_state(
+        incident_id,
+        state,
+    )
+
+
+def _archive_rejected_attempt(
+    state: dict[str, Any],
+    *,
+    now_epoch: float | None = None,
+    reason: str | None = None,
+) -> None:
+    history = state.get(
+        "repair_job_history"
+    )
+
+    if not isinstance(history, list):
+        history = []
+
+    current_job_id = str(
+        state.get("repair_job_id")
+        or ""
+    ).strip()
+
+    if current_job_id:
+        already_archived = any(
+            isinstance(item, dict)
+            and str(
+                item.get("job_id")
+                or ""
+            ).strip()
+            == current_job_id
+            for item in history
+        )
+
+        if not already_archived:
+            entry: dict[str, Any] = {
+                "job_id": current_job_id,
+                "attempt": int(
+                    state.get("attempts")
+                    or 0
+                ),
+                "publication_state": (
+                    state.get(
+                        "repair_publication_state"
+                    )
+                ),
+                "publication_commit": (
+                    state.get(
+                        "repair_publication_commit"
+                    )
+                ),
+                "terminal_state": (
+                    MaintenanceState.REJECTED.value
+                ),
+            }
+            if reason:
+                entry["reason"] = reason
+            history.append(entry)
+
+        state[
+            "repair_job_history"
+        ] = history
+
+    state["repair_job_id"] = None
+    state[
+        "repair_publication_state"
+    ] = None
+    state[
+        "repair_publication_commit"
+    ] = None
+    state[
+        "repair_result_sha256"
+    ] = None
+    state["repair_commit_sha"] = None
+
+    now_value = (
+        time.time()
+        if now_epoch is None
+        else float(now_epoch)
+    )
+
+    state["cooldown_until_epoch"] = (
+        now_value
+        + REPAIR_COOLDOWN_SECONDS
     )
 
 
@@ -392,10 +440,111 @@ def register_repair_result(
     if state is None:
         raise ValueError("INCIDENT_NOT_DECLARED")
 
+    current_state_value = str(
+        state.get("state") or ""
+    )
+    if (
+        current_state_value
+        == MaintenanceState.SUPERSEDED.value
+    ):
+        raise ValueError(
+            "MAINTENANCE_INCIDENT_SUPERSEDED"
+        )
+
+    if (
+        current_state_value
+        != MaintenanceState.REPAIR_REQUIRED.value
+    ):
+        raise ValueError(
+            "MAINTENANCE_INCIDENT_INVALID_STATE"
+        )
+
+    if (
+        isinstance(repair_result, dict)
+        and repair_result.get(
+            "production_touched"
+        )
+        is not False
+    ):
+        state["state"] = (
+            MaintenanceState.REJECTED.value
+        )
+        state["production_touched"] = True
+        _archive_rejected_attempt(
+            state,
+            now_epoch=now_epoch,
+            reason="PRODUCTION_TOUCHED",
+        )
+        _atomic_json(
+            _incident_path(incident_id),
+            state,
+        )
+        return MaintenanceDecision(
+            incident_id=incident_id,
+            state=MaintenanceState.REJECTED,
+            reason="PRODUCTION_TOUCHED",
+            certified=False,
+            production_touched=True,
+        )
+
+    if int(state.get("attempts") or 0) < 1:
+        state["state"] = (
+            MaintenanceState.REJECTED.value
+        )
+        state["production_touched"] = False
+        _archive_rejected_attempt(
+            state,
+            now_epoch=now_epoch,
+            reason="NO_REPAIR_ATTEMPT_REGISTERED",
+        )
+        _atomic_json(
+            _incident_path(incident_id),
+            state,
+        )
+        return MaintenanceDecision(
+            incident_id=incident_id,
+            state=MaintenanceState.REJECTED,
+            reason="NO_REPAIR_ATTEMPT_REGISTERED",
+            certified=False,
+        )
+
+    bound_job_id = str(
+        state.get("repair_job_id") or ""
+    ).strip()
+    result_job_id = str(
+        repair_result.get("job_id") or ""
+    ).strip()
+    if (
+        bound_job_id
+        and result_job_id
+        and result_job_id != bound_job_id
+    ):
+        state["state"] = (
+            MaintenanceState.REJECTED.value
+        )
+        state["production_touched"] = False
+        _archive_rejected_attempt(
+            state,
+            now_epoch=now_epoch,
+            reason="REPAIR_JOB_ID_MISMATCH",
+        )
+        _atomic_json(
+            _incident_path(incident_id),
+            state,
+        )
+        return MaintenanceDecision(
+            incident_id=incident_id,
+            state=MaintenanceState.REJECTED,
+            reason="REPAIR_JOB_ID_MISMATCH",
+            certified=False,
+        )
+
     incident = MaintenanceIncident(
         incident_id=incident_id,
         paths=tuple(state.get("target_paths") or []),
-        state=MaintenanceState.REPAIR_REQUIRED,
+        state=MaintenanceState(
+            current_state_value
+        ),
         production_allowed=False,
     )
 
@@ -410,78 +559,51 @@ def register_repair_result(
     )
 
     if decision.state is MaintenanceState.REJECTED:
-        history = state.get(
-            "repair_job_history"
+        _archive_rejected_attempt(
+            state,
+            now_epoch=now_epoch,
+            reason=decision.reason,
         )
-
-        if not isinstance(history, list):
-            history = []
-
-        current_job_id = str(
-            state.get("repair_job_id")
-            or ""
-        ).strip()
-
-        if current_job_id:
-            already_archived = any(
-                isinstance(item, dict)
-                and str(
-                    item.get("job_id")
-                    or ""
-                ).strip()
-                == current_job_id
-                for item in history
-            )
-
-            if not already_archived:
-                history.append(
-                    {
-                        "job_id": current_job_id,
-                        "attempt": int(
-                            state.get("attempts")
-                            or 0
-                        ),
-                        "publication_state": (
-                            state.get(
-                                "repair_publication_state"
-                            )
-                        ),
-                        "publication_commit": (
-                            state.get(
-                                "repair_publication_commit"
-                            )
-                        ),
-                        "terminal_state": (
-                            MaintenanceState.REJECTED.value
-                        ),
-                    }
-                )
-
-            state[
-                "repair_job_history"
-            ] = history
-
-        state["repair_job_id"] = None
-        state[
-            "repair_publication_state"
-        ] = None
-        state[
-            "repair_publication_commit"
-        ] = None
-
-        now_value = (
-            time.time()
-            if now_epoch is None
-            else float(now_epoch)
-        )
-
-        state["cooldown_until_epoch"] = (
-            now_value
-            + REPAIR_COOLDOWN_SECONDS
-        )
-
     else:
         state["cooldown_until_epoch"] = None
+        if result_job_id and not bound_job_id:
+            state["repair_job_id"] = (
+                result_job_id
+            )
+        result_sha = (
+            str(
+                repair_result.get(
+                    "result_sha256"
+                )
+                or ""
+            )
+            .strip()
+            .lower()
+            or None
+        )
+        commit_sha = (
+            str(
+                repair_result.get(
+                    "development_sha"
+                )
+                or repair_result.get(
+                    "candidate_sha"
+                )
+                or repair_result.get(
+                    "commit_created"
+                )
+                or ""
+            )
+            .strip()
+            .lower()
+            or None
+        )
+        state["repair_result_sha256"] = (
+            result_sha
+        )
+        state["repair_commit_sha"] = (
+            commit_sha
+        )
 
     _atomic_json(_incident_path(incident_id), state)
     return decision
@@ -490,27 +612,158 @@ def register_repair_result(
 def audit_runtime_incident(
     incident_id: str,
     repair_result: dict[str, Any],
+    *,
+    now_epoch: float | None = None,
+    verify_canonical_result: bool = False,
+    results_dir: Path | None = None,
+    verify_git_diff: bool = False,
+    repo_root: Path | None = None,
+    require_protected_authorization: bool = False,
 ) -> MaintenanceDecision:
     state = _load_state(incident_id)
     if state is None:
         raise ValueError("INCIDENT_NOT_DECLARED")
 
+    current_state_value = str(
+        state.get("state") or ""
+    )
+    if (
+        current_state_value
+        == MaintenanceState.SUPERSEDED.value
+    ):
+        raise ValueError(
+            "MAINTENANCE_INCIDENT_SUPERSEDED"
+        )
+
+    if (
+        isinstance(repair_result, dict)
+        and repair_result.get(
+            "production_touched"
+        )
+        is not False
+    ):
+        state["state"] = (
+            MaintenanceState.REJECTED.value
+        )
+        state["production_touched"] = True
+        _archive_rejected_attempt(
+            state,
+            now_epoch=now_epoch,
+            reason="PRODUCTION_TOUCHED",
+        )
+        _atomic_json(
+            _incident_path(incident_id),
+            state,
+        )
+        return MaintenanceDecision(
+            incident_id=incident_id,
+            state=MaintenanceState.REJECTED,
+            reason="PRODUCTION_TOUCHED",
+            certified=False,
+            production_touched=True,
+        )
+
+    if (
+        current_state_value
+        != MaintenanceState.REPAIRED_PENDING_AUDIT.value
+    ):
+        state["state"] = (
+            MaintenanceState.REJECTED.value
+        )
+        state["production_touched"] = False
+        _archive_rejected_attempt(
+            state,
+            now_epoch=now_epoch,
+            reason="INCIDENT_NOT_PENDING_AUDIT",
+        )
+        _atomic_json(
+            _incident_path(incident_id),
+            state,
+        )
+        return MaintenanceDecision(
+            incident_id=incident_id,
+            state=MaintenanceState.REJECTED,
+            reason="INCIDENT_NOT_PENDING_AUDIT",
+            certified=False,
+        )
+
+    if int(state.get("attempts") or 0) < 1:
+        state["state"] = (
+            MaintenanceState.REJECTED.value
+        )
+        state["production_touched"] = False
+        _archive_rejected_attempt(
+            state,
+            now_epoch=now_epoch,
+            reason="NO_REPAIR_ATTEMPT_REGISTERED",
+        )
+        _atomic_json(
+            _incident_path(incident_id),
+            state,
+        )
+        return MaintenanceDecision(
+            incident_id=incident_id,
+            state=MaintenanceState.REJECTED,
+            reason="NO_REPAIR_ATTEMPT_REGISTERED",
+            certified=False,
+        )
+
     incident = MaintenanceIncident(
         incident_id=incident_id,
         paths=tuple(state.get("target_paths") or []),
-        state=MaintenanceState.REPAIRED_PENDING_AUDIT,
+        state=MaintenanceState(
+            current_state_value
+        ),
         production_allowed=False,
+    )
+
+    bound_job_id = (
+        str(state.get("repair_job_id") or "").strip()
+        or None
+    )
+    bound_sha256 = (
+        str(
+            state.get("repair_result_sha256")
+            or ""
+        )
+        .strip()
+        .lower()
+        or None
+    )
+    bound_commit_sha = (
+        str(
+            state.get("repair_commit_sha") or ""
+        )
+        .strip()
+        .lower()
+        or None
     )
 
     decision = audit_incident(
         incident,
         repair_result,
+        require_pending_audit_state=True,
+        expected_job_id=bound_job_id,
+        expected_result_sha256=bound_sha256,
+        expected_commit_sha=bound_commit_sha,
+        verify_canonical_result=verify_canonical_result,
+        results_dir=results_dir,
+        verify_git_diff=verify_git_diff,
+        repo_root=repo_root,
+        require_protected_authorization=require_protected_authorization,
     )
 
     state["state"] = decision.state.value
     state["production_touched"] = bool(
         repair_result.get("production_touched")
     )
+
+    if decision.state is MaintenanceState.REJECTED:
+        _archive_rejected_attempt(
+            state,
+            now_epoch=now_epoch,
+            reason=decision.reason,
+        )
 
     _atomic_json(_incident_path(incident_id), state)
     return decision
@@ -523,18 +776,7 @@ def read_runtime_incident(
     if state is None:
         return None
 
-    return RuntimeIncidentState(
-        incident_id=incident_id,
-        state=str(state.get("state")),
-        attempts=int(state.get("attempts") or 0),
-        cooldown_until_epoch=state.get("cooldown_until_epoch"),
-        target_paths=tuple(state.get("target_paths") or []),
-        production_touched=bool(state.get("production_touched")),
-        repair_job_id=state.get("repair_job_id"),
-        repair_publication_state=state.get(
-            "repair_publication_state"
-        ),
-        repair_publication_commit=state.get(
-            "repair_publication_commit"
-        ),
+    return _build_runtime_state(
+        incident_id,
+        state,
     )

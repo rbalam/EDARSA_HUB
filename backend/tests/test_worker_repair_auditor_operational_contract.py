@@ -247,3 +247,106 @@ def test_runtime_supersession_is_atomic_and_non_actionable(
 
     assert allowed is False
     assert reason == "INCIDENT_NOT_REPAIRABLE"
+
+
+
+def test_runtime_auditor_rejects_audit_without_pending_state(
+    tmp_path,
+    monkeypatch,
+):
+    _redirect_state(tmp_path, monkeypatch)
+
+    runtime.declare_runtime_incident(
+        "INCIDENT-NO-PENDING",
+        ["tools/mirror_sync/gate_chain_publisher.py"],
+    )
+    runtime.register_published_repair_attempt(
+        "INCIDENT-NO-PENDING",
+        "WORKER-REPAIR-NOPEND-A1",
+        {"status": "PUBLISHED", "commit_sha": "a" * 40},
+        now_epoch=100,
+    )
+
+    decision = runtime.audit_runtime_incident(
+        "INCIDENT-NO-PENDING",
+        valid_result(),
+        now_epoch=120,
+    )
+    assert decision.state is MaintenanceState.REJECTED
+    assert decision.certified is False
+    assert (
+        decision.reason
+        == "INCIDENT_NOT_PENDING_AUDIT"
+    )
+
+    persisted = runtime.read_runtime_incident(
+        "INCIDENT-NO-PENDING"
+    )
+    assert persisted is not None
+    assert (
+        persisted.state
+        == MaintenanceState.REJECTED.value
+    )
+    assert persisted.repair_job_id is None
+    assert (
+        persisted.cooldown_until_epoch
+        == 120 + runtime.REPAIR_COOLDOWN_SECONDS
+    )
+
+
+def test_runtime_binds_job_id_sha256_and_commit_across_pending_and_audit(
+    tmp_path,
+    monkeypatch,
+):
+    _redirect_state(tmp_path, monkeypatch)
+
+    runtime.declare_runtime_incident(
+        "INCIDENT-BINDING",
+        ["tools/mirror_sync/gate_chain_publisher.py"],
+    )
+    runtime.register_published_repair_attempt(
+        "INCIDENT-BINDING",
+        "WORKER-REPAIR-BIND-A1",
+        {"status": "PUBLISHED", "commit_sha": "a" * 40},
+        now_epoch=100,
+    )
+
+    pending_result = valid_result()
+    pending_result["job_id"] = (
+        "WORKER-REPAIR-BIND-A1"
+    )
+    pending_result["result_sha256"] = "1" * 64
+    pending_result["development_sha"] = "2" * 40
+
+    pending = runtime.register_repair_result(
+        "INCIDENT-BINDING",
+        pending_result,
+        now_epoch=110,
+    )
+    assert (
+        pending.state
+        is MaintenanceState.REPAIRED_PENDING_AUDIT
+    )
+
+    tampered = dict(pending_result)
+    tampered["development_sha"] = "9" * 40
+
+    rejected = runtime.audit_runtime_incident(
+        "INCIDENT-BINDING",
+        tampered,
+        now_epoch=120,
+    )
+    assert rejected.state is MaintenanceState.REJECTED
+    assert rejected.certified is False
+    assert (
+        rejected.reason
+        == "REPAIR_COMMIT_SHA_MISMATCH"
+    )
+
+    persisted = runtime.read_runtime_incident(
+        "INCIDENT-BINDING"
+    )
+    assert persisted is not None
+    assert persisted.repair_job_id is None
+    assert persisted.repair_result_sha256 is None
+    assert persisted.repair_commit_sha is None
