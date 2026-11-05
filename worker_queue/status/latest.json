@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "e49d8c7db86e26013c9b761486b2e2949836b30b",
-  "generated_at_utc": "2026-11-05T23:03:06Z",
+  "generated_at_utc": "2026-11-05T23:04:28Z",
   "history": {
     "done_total_local": 1651,
     "pending_total_local": 0,
@@ -16,25 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3584,
-      "job_id": "EDARSAHUB-BOS-GLOBAL-WORKER-ALIGNMENT-G3-MCP-SEMANTIC-INGRESS-20261105",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3340,
+      "age_seconds": 3422,
       "job_id": "SEM-MARKETING_INTELLIGENCE_CONTENT_F-READ_ONLY_CANARY-ED14B59B35A7A3A1A8A5",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1147,
+      "age_seconds": 1228,
       "job_id": "SEM-WORKER_INGRESS-READ_ONLY_CANARY-232840C922F0D2C78D54",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1227,
+      "age_seconds": 1308,
       "job_id": "SEM-WORKER_RUNTIME_CONVERGENCE-READ_ONLY_CANARY-29A3F4BF61A52E07FE55",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,14 +42,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "remote_development_sha": "e49d8c7db86e26013c9b761486b2e2949836b30b",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-05T23:03:01Z",
-    "last_receive_utc": "2026-11-05T23:02:56Z",
+    "last_cycle_utc": "2026-11-05T23:04:17Z",
+    "last_receive_utc": "2026-11-05T23:04:27Z",
     "last_terminal_utc": "2026-11-05T22:43:59Z",
     "pid": "526",
     "runtime_fingerprint": {
