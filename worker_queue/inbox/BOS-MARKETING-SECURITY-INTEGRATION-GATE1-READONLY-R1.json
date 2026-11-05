@@ -1,0 +1,63 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 500,
+        "paths": [
+          "backend/modules/comercial/routes_ingesta_competencia.py",
+          "backend/modules/comercial/services/ingesta_competencia_service.py",
+          "backend/modules/comercial/services/competidores_service.py",
+          "backend/modules/comercial/services/competidores_enterprise_service.py",
+          "backend/modules/comercial/services/pricing_ai_service.py",
+          "backend/modules/agent_harness/marketing_cx.py",
+          "backend/core/ai_gateway_policy_adapter.py",
+          "docs/ARCHITECTURE"
+        ],
+        "search_terms": [
+          "EmpresaID",
+          "UnidadNegocioID",
+          "empresa_id",
+          "unidades_negocio_ids",
+          "confirmar_ingesta",
+          "obtener_ingesta",
+          "actualizar_filas",
+          "rechazar_ingesta",
+          "_scrape_link",
+          "requests.get",
+          "LlmChat",
+          "EMERGENT_LLM_KEY",
+          "authorize_model_route",
+          "require_permission",
+          "communications_executor_required"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "BOS-MARKETING-SECURITY-INTEGRATION-GATE1-READONLY-R1",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY la seguridad y los contratos de integración de Marketing Intelligence & Content Factory y Competitor Insights V1. Revisar aislamiento multiempresa y por unidad de negocio, autorización RBAC de operaciones por identificador, interpretación de unidades_negocio_ids en confirmar_ingesta, validación de URLs externas y protección SSRF en _scrape_link, integración de proveedores LLM mediante AI Gateway canónico, trazabilidad, idempotencia y compatibilidad con Comercial, CRM, Object Storage y Marketing CX. Clasificar hallazgos confirmados y pendientes de prueba. No ejecutar correcciones, no modificar archivos ni SQL y no acceder a Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "MARKETING_INTELLIGENCE_CONTENT_FACTORY",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB_BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "MARKETING_INTELLIGENCE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB_BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
