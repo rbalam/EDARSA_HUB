@@ -1,0 +1,100 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 500,
+        "paths": [
+          "tools/mirror_sync/worker_job_factory.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/worker_requester_rbac.py",
+          "tools/mirror_sync/gate_chain_publisher.py",
+          "tools/mirror_sync/gate_chain_controller.py",
+          "tools/mirror_sync/git_divergence_guard.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "tools/mirror_sync/worker_result_status.py",
+          "tools/mirror_sync/worker_result_integrity.py",
+          "tools/mirror_sync/worker_control_plane.py"
+        ],
+        "search_terms": [
+          "canonicalize_job",
+          "validate_template",
+          "authorize_requester",
+          "REQUESTER_DENIED",
+          "INVALID_JOB",
+          "submit",
+          "schema",
+          "edarsahub.worker-job.v1",
+          "edarsahub.worker-job.v2",
+          "requester",
+          "email",
+          "source",
+          "production_allowed",
+          "ALLOWED_CHECKS",
+          "FORBIDDEN_KEYS",
+          "CANONICAL_FIELD_CONFLICT",
+          "ALREADY_SUBMITTED",
+          "RECOVERY_REQUIRED",
+          "certification",
+          "quality_gate"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "tools/mirror_sync/worker_job_factory.py",
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/worker_requester_rbac.py",
+        "tools/mirror_sync/gate_chain_publisher.py",
+        "tools/mirror_sync/gate_chain_controller.py",
+        "tools/mirror_sync/git_divergence_guard.py",
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "tools/mirror_sync/worker_result_status.py",
+        "tools/mirror_sync/worker_result_integrity.py",
+        "tools/mirror_sync/worker_control_plane.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_requester_rbac_contract.py",
+        "backend/tests/test_universal_job_dispatcher_scope_contract.py",
+        "backend/tests/test_universal_job_result_lineage_certification.py",
+        "backend/tests/test_worker_readonly_result_publisher.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-GLOBAL-WORKER-ALIGNMENT-G0-READONLY-20261104",
+  "mode": "READ_ONLY",
+  "objective": "G0 READ_ONLY: auditoria transversal de alineacion global del Universal Worker: productores de solicitudes, contratos v1/v2, worker_job_factory, universal_job_bridge, universal_job_dispatcher, worker_requester_rbac, gate_chain_publisher, scripts historicos, identidad autenticada del solicitante, RBAC, fallos MCP submit_objective INVALID_ARGUMENT, trabajos rechazados y certificaciones. Sin modificar codigo, SQL, credenciales ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "BOS-G0-GLOBAL-WORKER-ALIGNMENT",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "COPILOT"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
