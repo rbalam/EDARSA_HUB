@@ -9,10 +9,17 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from modules.agent_harness.planner import PlanStep
+from modules.agent_harness.evidence import EvidenceBuilder
+from modules.agent_harness.planner import Planner, PlanStep
+from modules.agent_harness.registry import SkillSpec
 from modules.agent_harness.router import RouteDecision
 from modules.agent_harness.worker_compiler import (
-    TARGET_BRANCH, TARGET_REPO, WorkerCompileError, WorkerCompileRequest, WorkerCompiler,
+    TARGET_BRANCH,
+    TARGET_REPO,
+    WorkerCompileError,
+    WorkerCompileRequest,
+    WorkerCompiler,
+    derive_authorized_requester,
 )
 from tools.mirror_sync.universal_job_bridge import validate
 
@@ -36,6 +43,44 @@ def route(**overrides):
     return RouteDecision(**values)
 
 
+def skill(**overrides):
+    values = dict(
+        id='repo-change', version='1', source='BOS_NATIVE', origin='BOS',
+        domain='engineering', description='repository change', entrypoint='worker',
+        provenance='BOS_NATIVE', checksum='abc123',
+        required_capabilities=('CODE_WRITE',), allowed_scopes=('repo:rbalam/EDARSA_HUB',),
+        max_risk='R2', allowed_data_classifications=('PUBLIC', 'INTERNAL'),
+        allowed_executors=('worker',), lifecycle='APPROVED', adoption='NATIVE',
+    )
+    values.update(overrides)
+    return SkillSpec(**values)
+
+
+def v2_replace_action(**overrides):
+    values = dict(
+        type='replace_text',
+        path='backend/modules/example/generated.py',
+        source_sha256='a' * 64,
+        old_text='x = 1\n',
+        replacement='x = 2\n',
+        expected_occurrences=1,
+    )
+    values.update(overrides)
+    return values
+
+
+def superadmin_rbac(requester):
+    return {
+        'allowed': True,
+        'reason': 'SUPERADMIN_CANONICAL',
+        'usuario_id': 8,
+        'email': str(requester.get('email') or '').strip().lower(),
+        'role_code': 'SUPERADMIN',
+        'role': 'SUPERADMINISTRADOR',
+        'auth_source': 'SQL_USUARIO_CATALOGO',
+    }
+
+
 def request(**overrides):
     values = dict(
         job_id='AH4-test-job', objective='deterministic mutation test',
@@ -55,6 +100,8 @@ def test_compiler_generates_worker_v2_job_accepted_by_canonical_bridge(tmp_path,
     assert job['target_repo'] == TARGET_REPO
     assert job['target_branch'] == TARGET_BRANCH
     assert job['production_allowed'] is False
+    assert job['mode'] == 'MUTATION'
+    assert 'requester' not in job
     assert validate(job) == []
 
 
@@ -109,3 +156,147 @@ def test_compile_preserves_core_growth_guard(tmp_path, monkeypatch):
     (tmp_path / 'backend' / 'core').mkdir(parents=True)
     with pytest.raises(WorkerCompileError, match='CORE_GROWTH_FORBIDDEN'):
         WorkerCompiler().compile(request(actions=({'type': 'write_file', 'path': 'backend/core/new_feature.py', 'content': 'x = 1\n'},)))
+
+
+def test_compile_for_publication_reuses_canonical_factory_and_rbac():
+    compiler = WorkerCompiler(rbac_authorizer=superadmin_rbac)
+    req = request(
+        actions=(v2_replace_action(),),
+        authorized_identity={
+            'email': 'Ricardo@Edarsa.com.mx',
+            'source': 'COPILOT',
+            'project': 'EDARSAHUB-BOS',
+            'chat': 'G1B-COMPILER',
+        },
+        base_sha='b' * 40,
+    )
+    job = compiler.compile_for_publication(req)
+    assert job['schema'] == 'edarsahub.worker-job.v2'
+    assert job['requester'] == {
+        'email': 'ricardo@edarsa.com.mx',
+        'source': 'COPILOT',
+        'project': 'EDARSAHUB-BOS',
+        'chat': 'G1B-COMPILER',
+    }
+    assert job['scheduling']['project_id'] == 'EDARSAHUB-BOS'
+    assert job['scheduling']['bounded_context'] == 'EDARSAHUB-BOS'
+    assert job['scheduling']['conflict_domains'] == ['GLOBAL_GIT_WRITER']
+    assert job['base_sha'] == 'b' * 40
+    assert validate(job) == []
+
+
+def test_compile_for_publication_never_fabricates_requester_and_enforces_rbac():
+    compiler = WorkerCompiler(rbac_authorizer=superadmin_rbac)
+    with pytest.raises(WorkerCompileError, match='REQUESTER_REQUIRED'):
+        compiler.compile_for_publication(request(actions=(v2_replace_action(),)))
+
+    with pytest.raises(WorkerCompileError, match='REQUESTER_IDENTITY_MISMATCH'):
+        compiler.compile_for_publication(
+            request(
+                actions=(v2_replace_action(),),
+                authorized_identity={'email': 'ricardo@edarsa.com.mx', 'source': 'COPILOT'},
+                requester={'email': 'otro@edarsa.com.mx', 'source': 'COPILOT'},
+            )
+        )
+
+    denied_compiler = WorkerCompiler(
+        rbac_authorizer=lambda _: {'allowed': False, 'reason': 'REQUESTER_NOT_SUPERADMIN'}
+    )
+    with pytest.raises(WorkerCompileError, match='REQUESTER_RBAC_DENIED:REQUESTER_NOT_SUPERADMIN'):
+        denied_compiler.compile_for_publication(
+            request(
+                actions=(v2_replace_action(),),
+                authorized_identity={'email': 'visor@edarsa.com.mx', 'source': 'COPILOT'},
+            )
+        )
+
+    with pytest.raises(WorkerCompileError, match='REQUESTER_RBAC_DENIED:REQUESTER_INACTIVE'):
+        derive_authorized_requester(
+            {'email': 'ricardo@edarsa.com.mx', 'active': False, 'source': 'COPILOT'},
+            rbac_authorizer=superadmin_rbac,
+        )
+
+
+def test_compile_never_fabricates_v2_source_sha256_or_expected_occurrences():
+    compiler = WorkerCompiler(rbac_authorizer=superadmin_rbac)
+    missing_sha = v2_replace_action()
+    del missing_sha['source_sha256']
+    with pytest.raises(WorkerCompileError, match='ACTION_SOURCE_SHA256_REQUIRED'):
+        compiler.compile(request(actions=(missing_sha,)))
+
+    missing_occ = v2_replace_action()
+    del missing_occ['expected_occurrences']
+    with pytest.raises(WorkerCompileError, match='ACTION_EXPECTED_OCCURRENCES_REQUIRED'):
+        compiler.compile(request(actions=(missing_occ,)))
+
+    with pytest.raises(WorkerCompileError, match='ACTION_MIXED_V1_V2_KEYS'):
+        compiler.compile(
+            request(actions=({**v2_replace_action(), 'old': 'x = 1\n', 'new': 'x = 2\n'},))
+        )
+
+    with pytest.raises(WorkerCompileError, match='ACTION_V2_REQUIRED'):
+        compiler.compile_for_publication(
+            request(
+                actions=({'type': 'replace_text', 'path': 'backend/modules/example/x.py', 'old': 'a', 'new': 'b'},),
+                authorized_identity={'email': 'ricardo@edarsa.com.mx', 'source': 'COPILOT'},
+            )
+        )
+
+
+def test_compile_supports_v2_insert_and_append_actions_and_evidence_builder():
+    compiler = WorkerCompiler(rbac_authorizer=superadmin_rbac)
+    actions = (
+        v2_replace_action(),
+        {
+            'type': 'insert_before',
+            'path': 'backend/modules/example/generated.py',
+            'source_sha256': 'c' * 64,
+            'anchor': 'x = 2\n',
+            'replacement': '# header\n',
+            'expected_occurrences': 1,
+        },
+        {
+            'type': 'append_once',
+            'path': 'backend/modules/example/generated.py',
+            'source_sha256': 'd' * 64,
+            'replacement': '# footer\n',
+            'expected_occurrences': 1,
+        },
+    )
+    item = step()
+    rt = route()
+    plan = Planner().build('req-g1b', [item])
+    job = compiler.compile_for_publication(
+        request(
+            job_id='AH4-g1b-v2-job',
+            step=item,
+            route=rt,
+            actions=actions,
+            authorized_identity={
+                'email': 'ricardo@edarsa.com.mx',
+                'source': 'COPILOT',
+                'project': 'EDARSAHUB-BOS',
+                'chat': 'G1B-COMPILER',
+            },
+        )
+    )
+    record = EvidenceBuilder().build(
+        plan=plan,
+        step=item,
+        route=rt,
+        skill=skill(),
+        compiled_job=job,
+        worker_result={
+            'job_id': 'AH4-g1b-v2-job',
+            'source_repo': TARGET_REPO,
+            'source_branch': TARGET_BRANCH,
+            'status': 'INTEGRATED',
+            'certification': 'CERTIFIED',
+            'quality_gate': 'PASS',
+            'tests': 'PASS',
+            'production_touched': False,
+            'blockers': [],
+            'percent_complete': 100,
+        },
+    )
+    assert EvidenceBuilder.is_certified_success(record) is True
