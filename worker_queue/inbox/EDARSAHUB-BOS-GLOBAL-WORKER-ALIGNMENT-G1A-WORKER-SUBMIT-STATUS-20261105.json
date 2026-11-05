@@ -1,0 +1,67 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "    result = gate_chain_publisher.submit(job)\n    status = str(result.get(\"status\") or \"\")\n    accepted = {\n        \"PUBLISHED\",\n        \"ALREADY_SUBMITTED\",\n        \"ALREADY_PENDING\",\n        \"ALREADY_PROCESSING\",\n        \"PENDING\",\n        \"PROCESSING\",\n    }",
+      "path": "backend/modules/sync_historicos/worker_submit.py",
+      "replacement": "    result = gate_chain_publisher.submit(job)\n    status = str(result.get(\"status\") or \"\")\n    accepted = {\n        \"SUBMITTED\",\n        \"PUBLISHED\",\n        \"ALREADY_SUBMITTED\",\n        \"ALREADY_PENDING\",\n        \"ALREADY_PROCESSING\",\n        \"PENDING\",\n        \"PROCESSING\",\n    }",
+      "source_sha256": "16d4d90e572232fd8f25fc272905e869f2ddf22eaaab43221973c890da97051d",
+      "type": "replace_text"
+    }
+  ],
+  "base_sha": "194bfe1564eadc52496540f1ea05955ef4b41029",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/sync_historicos/worker_submit.py",
+        "backend/modules/sync_historicos/routes.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_sync_historical_api_contract.py",
+        "backend/tests/test_sync_historical_canonical_compatibility_fix.py",
+        "backend/tests/test_sync_historical_capability_registry_contract.py",
+        "backend/tests/test_sync_historical_dashboard_contract.py",
+        "backend/tests/test_sync_historical_planner_contract.py",
+        "backend/tests/test_sync_historical_resync_entrypoint_contract.py",
+        "backend/tests/test_sync_historical_worker_atomic_contract.py",
+        "backend/tests/test_sync_historical_worker_parent_contract.py",
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_canonical_job_factory_contract.py",
+        "backend/tests/test_worker_canonical_job_ingress_contract.py",
+        "backend/tests/test_worker_requester_rbac_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-GLOBAL-WORKER-ALIGNMENT-G1A-WORKER-SUBMIT-STATUS-20261105",
+  "mode": "MUTATION",
+  "objective": "G1A: corregir backend/modules/sync_historicos/worker_submit.py para reconocer SUBMITTED como estado aceptado de gate_chain_publisher.submit(), conservando estados existentes, idempotencia y semantica de error.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "BOS-G1A-GLOBAL-WORKER-ALIGNMENT",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "COPILOT"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
