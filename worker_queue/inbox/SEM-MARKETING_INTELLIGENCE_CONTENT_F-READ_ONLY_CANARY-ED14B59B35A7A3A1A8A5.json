@@ -1,0 +1,33 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-MARKETING_INTELLIGENCE_CONTENT_F-READ_ONLY_CANARY-ED14B59B35A7A3A1A8A5",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente en lectura la preparación funcional y las brechas del recorrido MKT Intelligence & Content Factory: campaña, brief, generación IA mediante AI Gateway canónico, aprobación RBAC, activación y medición. Reutilizar los resultados certificados de Campaign Orchestrator Gate 5 y Security Integration Gate 1 sin repetirlos. Revisar módulos y contratos existentes, integraciones y evidencia de pruebas; entregar matriz PASS/FAIL/UNKNOWN, dependencias, riesgos y el siguiente Gate mínimo necesario. No crear código, tablas, catálogos, jobs paralelos ni tocar Producción. No considerar que un Gate READ_ONLY certifique implementación funcional.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "MARKETING_INTELLIGENCE_CONTENT_FACTORY",
+    "conflict_domains": [
+      "MARKETING_INTELLIGENCE_CONTENT_FACTORY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
