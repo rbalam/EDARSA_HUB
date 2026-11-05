@@ -102,28 +102,88 @@ def test_dispatcher_prefers_executable_repo_python(
     )
 
 
+def install_fake_check_process(
+    module,
+    monkeypatch,
+    outcomes=None,
+):
+    calls = []
+    popen_calls = []
+    queued = list(
+        outcomes
+        or [
+            (0, "ok"),
+        ]
+    )
+    original_run_check_process = (
+        module.run_check_process
+    )
+
+    class FakePopen:
+        def __init__(self, args, **kwargs):
+            popen_calls.append((list(args), kwargs))
+            rc, text_out = (
+                queued.pop(0)
+                if queued
+                else (0, "ok")
+            )
+            self.returncode = rc
+            stdout_handle = kwargs.get("stdout")
+            if stdout_handle is not None and text_out:
+                stdout_handle.write(text_out)
+                stdout_handle.flush()
+
+        def wait(self, timeout=None):
+            return self.returncode
+
+        def kill(self):
+            return None
+
+    def wrapped_run_check_process(args, **kwargs):
+        calls.append((list(args), kwargs))
+        return original_run_check_process(
+            args,
+            **kwargs,
+        )
+
+    monkeypatch.setattr(
+        module,
+        "heartbeat_active_slot",
+        lambda: False,
+    )
+    monkeypatch.setattr(
+        module.subprocess,
+        "Popen",
+        FakePopen,
+    )
+    monkeypatch.setattr(
+        module,
+        "run_check_process",
+        wrapped_run_check_process,
+    )
+    return calls, popen_calls
+
+
 def test_py_compile_uses_canonical_python(
     tmp_path,
     monkeypatch,
 ):
     module = load_dispatcher()
-    calls = []
-
-    def fake_run(args, **kwargs):
-        calls.append((args, kwargs))
-        return SimpleNamespace(
-            returncode=0,
-            stdout="ok",
-        )
-
-    monkeypatch.setattr(module, "run", fake_run)
+    calls, popen_calls = install_fake_check_process(
+        module,
+        monkeypatch,
+        outcomes=[
+            (0, "ok"),
+            (1, "SyntaxError: invalid syntax"),
+        ],
+    )
     monkeypatch.setattr(
         module,
         "PYTHON_BIN",
         "/canonical/python",
     )
 
-    module.run_check(
+    result = module.run_check(
         tmp_path,
         {
             "type": "py_compile",
@@ -131,12 +191,34 @@ def test_py_compile_uses_canonical_python(
         },
     )
 
+    assert result["status"] == "PASS"
+    assert result["returncode"] == 0
+    assert result["output"] == "ok"
     assert calls[0][0] == [
         "/canonical/python",
         "-m",
         "py_compile",
         "backend/example.py",
     ]
+    assert calls[0][1]["cwd"] == tmp_path
+    assert popen_calls[0][0] == [
+        "/canonical/python",
+        "-m",
+        "py_compile",
+        "backend/example.py",
+    ]
+    assert popen_calls[0][1]["cwd"] == str(tmp_path)
+
+    fail_result = module.run_check(
+        tmp_path,
+        {
+            "type": "py_compile",
+            "paths": ["backend/example.py"],
+        },
+    )
+    assert fail_result["status"] == "FAIL"
+    assert fail_result["returncode"] == 1
+    assert "SyntaxError" in fail_result["output"]
 
 
 def test_pytest_uses_canonical_python(
@@ -144,16 +226,14 @@ def test_pytest_uses_canonical_python(
     monkeypatch,
 ):
     module = load_dispatcher()
-    calls = []
-
-    def fake_run(args, **kwargs):
-        calls.append((args, kwargs))
-        return SimpleNamespace(
-            returncode=0,
-            stdout="ok",
-        )
-
-    monkeypatch.setattr(module, "run", fake_run)
+    calls, popen_calls = install_fake_check_process(
+        module,
+        monkeypatch,
+        outcomes=[
+            (0, "ok"),
+            (1, "1 failed"),
+        ],
+    )
     monkeypatch.setattr(
         module,
         "PYTHON_BIN",
@@ -162,7 +242,7 @@ def test_pytest_uses_canonical_python(
 
     (tmp_path / "backend").mkdir()
 
-    module.run_check(
+    result = module.run_check(
         tmp_path,
         {
             "type": "pytest",
@@ -172,6 +252,8 @@ def test_pytest_uses_canonical_python(
         },
     )
 
+    assert result["status"] == "PASS"
+    assert result["returncode"] == 0
     assert calls[0][0] == [
         "/canonical/python",
         "-m",
@@ -179,6 +261,30 @@ def test_pytest_uses_canonical_python(
         "-q",
         "tests/test_example.py",
     ]
+    assert calls[0][1]["cwd"] == tmp_path / "backend"
+    assert popen_calls[0][0] == [
+        "/canonical/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_example.py",
+    ]
+    assert popen_calls[0][1]["cwd"] == str(
+        tmp_path / "backend"
+    )
+
+    fail_result = module.run_check(
+        tmp_path,
+        {
+            "type": "pytest",
+            "paths": [
+                "backend/tests/test_example.py"
+            ],
+        },
+    )
+    assert fail_result["status"] == "FAIL"
+    assert fail_result["returncode"] == 1
+    assert "1 failed" in fail_result["output"]
 
 
 def test_all_internal_python_subprocesses_are_canonical():
@@ -202,7 +308,14 @@ def test_all_internal_python_subprocesses_are_canonical():
 
 def test_pytest_loads_missing_backend_runtime_env(tmp_path, monkeypatch):
     module = load_dispatcher()
-    calls = []
+    calls, popen_calls = install_fake_check_process(
+        module,
+        monkeypatch,
+        outcomes=[
+            (0, "ok"),
+            (2, "env check failed"),
+        ],
+    )
 
     backend = tmp_path / "backend"
     backend.mkdir()
@@ -215,35 +328,49 @@ def test_pytest_loads_missing_backend_runtime_env(tmp_path, monkeypatch):
         encoding="utf-8",
     )
 
-    def fake_run(args, **kwargs):
-        calls.append((args, kwargs))
-        return SimpleNamespace(returncode=0, stdout="ok")
-
     monkeypatch.setattr(module, "ROOT", tmp_path)
-    monkeypatch.setattr(module, "run", fake_run)
     monkeypatch.delenv("EDARSAHUB_SQL_HOST", raising=False)
     monkeypatch.delenv("EDARSAHUB_SQL_PORT", raising=False)
     monkeypatch.delenv("EDARSAHUB_SQL_DATABASE", raising=False)
     monkeypatch.delenv("EDARSAHUB_SQL_USER", raising=False)
     monkeypatch.delenv("EDARSAHUB_SQL_PASSWORD", raising=False)
 
-    module.run_check(
+    result = module.run_check(
         tmp_path,
         {"type": "pytest", "paths": ["backend/tests/test_example.py"]},
     )
 
+    assert result["status"] == "PASS"
+    assert result["returncode"] == 0
     env_extra = calls[0][1]["env_extra"]
-    assert env_extra["PYTHONPATH"] == os.pathsep.join(
+    expected_pythonpath = os.pathsep.join(
         (
             str(backend),
             str(tmp_path),
         )
     )
+    assert env_extra["PYTHONPATH"] == expected_pythonpath
     assert env_extra["EDARSAHUB_SQL_HOST"] == "db.example"
     assert env_extra["EDARSAHUB_SQL_PORT"] == "1433"
     assert env_extra["EDARSAHUB_SQL_DATABASE"] == "EDARSAHUB"
     assert env_extra["EDARSAHUB_SQL_USER"] == "worker"
     assert env_extra["EDARSAHUB_SQL_PASSWORD"] == "value with spaces"
+
+    popen_env = popen_calls[0][1]["env"]
+    assert popen_env["PYTHONPATH"] == expected_pythonpath
+    assert popen_env["EDARSAHUB_SQL_HOST"] == "db.example"
+    assert popen_env["EDARSAHUB_SQL_PORT"] == "1433"
+    assert popen_env["EDARSAHUB_SQL_DATABASE"] == "EDARSAHUB"
+    assert popen_env["EDARSAHUB_SQL_USER"] == "worker"
+    assert popen_env["EDARSAHUB_SQL_PASSWORD"] == "value with spaces"
+
+    fail_result = module.run_check(
+        tmp_path,
+        {"type": "pytest", "paths": ["backend/tests/test_example.py"]},
+    )
+    assert fail_result["status"] == "FAIL"
+    assert fail_result["returncode"] == 2
+    assert "env check failed" in fail_result["output"]
 
 
 def test_backend_runtime_env_does_not_override_process_env(tmp_path, monkeypatch):
@@ -264,7 +391,14 @@ def test_backend_runtime_env_does_not_override_process_env(tmp_path, monkeypatch
 
 def test_frontend_build_reuses_canonical_frontend_toolchain(tmp_path, monkeypatch):
     module = load_dispatcher()
-    calls = []
+    calls, popen_calls = install_fake_check_process(
+        module,
+        monkeypatch,
+        outcomes=[
+            (0, "ok"),
+            (1, "build failed"),
+        ],
+    )
 
     frontend = tmp_path / "frontend"
     frontend.mkdir()
@@ -272,14 +406,9 @@ def test_frontend_build_reuses_canonical_frontend_toolchain(tmp_path, monkeypatc
     canonical_bin = canonical_modules / ".bin"
     canonical_bin.mkdir(parents=True)
 
-    def fake_run(args, **kwargs):
-        calls.append((args, kwargs))
-        return SimpleNamespace(returncode=0, stdout="ok")
-
     monkeypatch.setattr(module, "ROOT", tmp_path / "canonical-root")
     module.ROOT.mkdir()
     (module.ROOT / "frontend").mkdir()
-    monkeypatch.setattr(module, "run", fake_run)
     monkeypatch.setenv("PATH", "/usr/bin")
 
     real_modules = module.ROOT / "frontend" / "node_modules"
@@ -292,10 +421,26 @@ def test_frontend_build_reuses_canonical_frontend_toolchain(tmp_path, monkeypatc
     )
 
     assert result["status"] == "PASS"
+    assert result["returncode"] == 0
     assert calls[0][0] == ["yarn", "build"]
+    assert popen_calls[0][0] == ["yarn", "build"]
+    assert popen_calls[0][1]["cwd"] == str(
+        frontend.resolve()
+    )
     env_extra = calls[0][1]["env_extra"]
     assert env_extra["NODE_PATH"] == str(real_modules)
     assert env_extra["PATH"].startswith(str(real_bin) + ":")
+    popen_env = popen_calls[0][1]["env"]
+    assert popen_env["NODE_PATH"] == str(real_modules)
+    assert popen_env["PATH"].startswith(str(real_bin) + ":")
+
+    fail_result = module.run_check(
+        tmp_path,
+        {"type": "frontend_build", "directory": "frontend"},
+    )
+    assert fail_result["status"] == "FAIL"
+    assert fail_result["returncode"] == 1
+    assert "build failed" in fail_result["output"]
 
 
 def test_integrate_push_uses_only_repository_local_credential_helper():
