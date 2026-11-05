@@ -19,6 +19,7 @@ class DomainCapabilitySpec:
     risk: RiskLevel
     data_classification: DataClassification
     tool_codes: tuple[str, ...]
+    permission_aliases: tuple[str, ...] = ()
     side_effect: bool = False
     approval_required: bool = False
 
@@ -28,8 +29,15 @@ class DomainCapabilitySpec:
                 raise CapabilityRegistryError(f'{field_name.upper()}_REQUIRED')
         if not self.tool_codes:
             raise CapabilityRegistryError('TOOL_CODES_REQUIRED')
+        if any(not str(value or '').strip() for value in self.permission_aliases):
+            raise CapabilityRegistryError('PERMISSION_ALIAS_INVALID')
         if self.side_effect and not self.approval_required:
             raise CapabilityRegistryError('SIDE_EFFECT_REQUIRES_APPROVAL')
+
+    @property
+    def accepted_permissions(self) -> tuple[str, ...]:
+        values = (self.required_permission, *self.permission_aliases)
+        return tuple(dict.fromkeys(str(value).strip().upper() for value in values if str(value or '').strip()))
 
 
 _CAPABILITIES: Mapping[str, DomainCapabilitySpec] = {
@@ -149,6 +157,46 @@ _CAPABILITIES: Mapping[str, DomainCapabilitySpec] = {
         risk=RiskLevel.R2,
         data_classification=DataClassification.CONFIDENTIAL,
         tool_codes=('edarsahub_sql_read', 'commercial_read', 'ai_inference'),
+    ),
+    'HR_DOCUMENT_ANALYZE': DomainCapabilitySpec(
+        code='HR_DOCUMENT_ANALYZE',
+        domain='RH',
+        procedure='hr-document-analyze',
+        required_permission='RH_VER',
+        permission_aliases=('RECURSOS_HUMANOS_VER',),
+        risk=RiskLevel.R1,
+        data_classification=DataClassification.PII,
+        tool_codes=('edarsahub_sql_read', 'hr_read', 'ai_inference'),
+    ),
+    'HR_EMPLOYEE_CASE_SUMMARIZE': DomainCapabilitySpec(
+        code='HR_EMPLOYEE_CASE_SUMMARIZE',
+        domain='RH',
+        procedure='hr-employee-case-summarize',
+        required_permission='RH_VER',
+        permission_aliases=('RECURSOS_HUMANOS_VER',),
+        risk=RiskLevel.R2,
+        data_classification=DataClassification.PII,
+        tool_codes=('edarsahub_sql_read', 'hr_read', 'ai_inference'),
+    ),
+    'HR_RECRUITMENT_ASSIST': DomainCapabilitySpec(
+        code='HR_RECRUITMENT_ASSIST',
+        domain='RH',
+        procedure='hr-recruitment-assist',
+        required_permission='RH_VER',
+        permission_aliases=('RECURSOS_HUMANOS_VER',),
+        risk=RiskLevel.R2,
+        data_classification=DataClassification.PII,
+        tool_codes=('edarsahub_sql_read', 'hr_read', 'ai_inference'),
+    ),
+    'HR_PAYROLL_EXPLAIN': DomainCapabilitySpec(
+        code='HR_PAYROLL_EXPLAIN',
+        domain='RH',
+        procedure='hr-payroll-explain',
+        required_permission='RH_VER',
+        permission_aliases=('RECURSOS_HUMANOS_VER',),
+        risk=RiskLevel.R2,
+        data_classification=DataClassification.FINANCIAL_PRIVATE,
+        tool_codes=('edarsahub_sql_read', 'hr_read', 'payroll_read', 'ai_inference'),
     ),
 }
 
