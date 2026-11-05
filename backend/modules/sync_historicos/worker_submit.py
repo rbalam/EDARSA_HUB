@@ -125,6 +125,7 @@ def submit_parent_to_worker(
     result = gate_chain_publisher.submit(job)
     status = str(result.get("status") or "")
     accepted = {
+        "SUBMITTED",
         "PUBLISHED",
         "ALREADY_SUBMITTED",
         "ALREADY_PENDING",
