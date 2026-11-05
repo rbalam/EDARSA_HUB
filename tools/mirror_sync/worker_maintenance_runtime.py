@@ -88,6 +88,13 @@ class RuntimeIncidentState:
     repair_publication_commit: str | None = None
     repair_result_sha256: str | None = None
     repair_commit_sha: str | None = None
+    source_job_id: str | None = None
+    source_status: str | None = None
+    problem_signature: str | None = None
+    blocker_signature: str | None = None
+    capability_code: str | None = None
+    requester: dict[str, Any] | None = None
+    superseded_reason: str | None = None
 
 
 def _incident_path(incident_id: str) -> Path:
@@ -123,6 +130,68 @@ def _load_state(incident_id: str) -> dict[str, Any] | None:
     return data
 
 
+def _normalize_optional_requester(
+    requester: Any,
+) -> dict[str, Any] | None:
+    if not isinstance(requester, dict):
+        return None
+    email = str(requester.get("email") or "").strip().lower()
+    if not email or "@" not in email:
+        return None
+    return {
+        "email": email,
+        "source": str(
+            requester.get("source") or "worker_repair"
+        ).strip(),
+        "project": str(
+            requester.get("project") or "EDARSAHUB-BOS"
+        ).strip(),
+        "chat": str(
+            requester.get("chat") or "Worker Repair"
+        ).strip(),
+    }
+
+
+def _merge_incident_metadata(
+    state: dict[str, Any],
+    *,
+    source_job_id: str | None = None,
+    source_status: str | None = None,
+    problem_signature: str | None = None,
+    blocker_signature: str | None = None,
+    capability_code: str | None = None,
+    requester: dict[str, Any] | None = None,
+) -> bool:
+    changed = False
+    for key, raw_val in (
+        ("source_job_id", source_job_id),
+        ("source_status", source_status),
+        ("problem_signature", problem_signature),
+        ("blocker_signature", blocker_signature),
+        ("capability_code", capability_code),
+    ):
+        text = str(raw_val or "").strip()
+        if not text:
+            continue
+        current = str(state.get(key) or "").strip()
+        if not current:
+            state[key] = text
+            changed = True
+
+    normalized_requester = _normalize_optional_requester(
+        requester
+    )
+    if normalized_requester is not None:
+        current_requester = _normalize_optional_requester(
+            state.get("requester")
+        )
+        if current_requester is None:
+            state["requester"] = normalized_requester
+            changed = True
+
+    return changed
+
+
 def _build_runtime_state(
     incident_id: str,
     state: dict[str, Any],
@@ -147,12 +216,46 @@ def _build_runtime_state(
         repair_commit_sha=state.get(
             "repair_commit_sha"
         ),
+        source_job_id=(
+            str(state.get("source_job_id") or "").strip()
+            or None
+        ),
+        source_status=(
+            str(state.get("source_status") or "").strip()
+            or None
+        ),
+        problem_signature=(
+            str(state.get("problem_signature") or "").strip()
+            or None
+        ),
+        blocker_signature=(
+            str(state.get("blocker_signature") or "").strip()
+            or None
+        ),
+        capability_code=(
+            str(state.get("capability_code") or "").strip()
+            or None
+        ),
+        requester=_normalize_optional_requester(
+            state.get("requester")
+        ),
+        superseded_reason=(
+            str(state.get("superseded_reason") or "").strip()
+            or None
+        ),
     )
 
 
 def declare_runtime_incident(
     incident_id: str,
     target_paths: list[str],
+    *,
+    source_job_id: str | None = None,
+    source_status: str | None = None,
+    problem_signature: str | None = None,
+    blocker_signature: str | None = None,
+    capability_code: str | None = None,
+    requester: dict[str, Any] | None = None,
 ) -> RuntimeIncidentState:
     existing = _load_state(incident_id)
 
@@ -163,6 +266,17 @@ def declare_runtime_incident(
         if existing_paths != requested_paths:
             raise ValueError("MAINTENANCE_INCIDENT_SCOPE_MISMATCH")
 
+        if _merge_incident_metadata(
+            existing,
+            source_job_id=source_job_id,
+            source_status=source_status,
+            problem_signature=problem_signature,
+            blocker_signature=blocker_signature,
+            capability_code=capability_code,
+            requester=requester,
+        ):
+            _atomic_json(_incident_path(incident_id), existing)
+
         return _build_runtime_state(
             incident_id,
             existing,
@@ -170,7 +284,7 @@ def declare_runtime_incident(
 
     incident = declare_incident(incident_id, target_paths)
 
-    payload = {
+    payload: dict[str, Any] = {
         "incident_id": incident.incident_id,
         "state": incident.state.value,
         "attempts": 0,
@@ -178,21 +292,47 @@ def declare_runtime_incident(
         "target_paths": list(incident.paths),
         "production_touched": False,
     }
+    _merge_incident_metadata(
+        payload,
+        source_job_id=source_job_id,
+        source_status=source_status,
+        problem_signature=problem_signature,
+        blocker_signature=blocker_signature,
+        capability_code=capability_code,
+        requester=requester,
+    )
     _atomic_json(_incident_path(incident_id), payload)
 
-    return RuntimeIncidentState(
-        incident_id=incident.incident_id,
-        state=incident.state.value,
-        attempts=0,
-        cooldown_until_epoch=None,
-        target_paths=tuple(incident.paths),
-        production_touched=False,
-        repair_job_id=None,
-        repair_publication_state=None,
-        repair_publication_commit=None,
-        repair_result_sha256=None,
-        repair_commit_sha=None,
+    return _build_runtime_state(
+        incident.incident_id,
+        payload,
     )
+
+
+def record_runtime_incident_metadata(
+    incident_id: str,
+    *,
+    source_job_id: str | None = None,
+    source_status: str | None = None,
+    problem_signature: str | None = None,
+    blocker_signature: str | None = None,
+    capability_code: str | None = None,
+    requester: dict[str, Any] | None = None,
+) -> RuntimeIncidentState | None:
+    state = _load_state(incident_id)
+    if state is None:
+        return None
+    if _merge_incident_metadata(
+        state,
+        source_job_id=source_job_id,
+        source_status=source_status,
+        problem_signature=problem_signature,
+        blocker_signature=blocker_signature,
+        capability_code=capability_code,
+        requester=requester,
+    ):
+        _atomic_json(_incident_path(incident_id), state)
+    return _build_runtime_state(incident_id, state)
 
 
 def supersede_runtime_incident(
@@ -205,8 +345,17 @@ def supersede_runtime_incident(
     if state is None:
         raise ValueError("MAINTENANCE_INCIDENT_NOT_FOUND")
 
-    if state.get("state") != MaintenanceState.REPAIR_REQUIRED.value:
+    if state.get("production_touched") is not False:
+        raise ValueError("MAINTENANCE_SUPERSESSION_PRODUCTION_FORBIDDEN")
+
+    if state.get("state") not in {
+        MaintenanceState.REPAIR_REQUIRED.value,
+        MaintenanceState.REJECTED.value,
+    }:
         raise ValueError("MAINTENANCE_SUPERSESSION_INVALID_STATE")
+
+    if str(state.get("repair_job_id") or "").strip():
+        raise ValueError("MAINTENANCE_SUPERSESSION_ACTIVE_REPAIR_BOUND")
 
     state["state"] = MaintenanceState.SUPERSEDED.value
     state["cooldown_until_epoch"] = None

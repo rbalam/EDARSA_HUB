@@ -207,6 +207,16 @@ def normalize_learned_capability(
     if not source_job_id or not blocker_signature:
         raise ValueError("LEARNED_CAPABILITY_EVIDENCE_INCOMPLETE")
 
+    if "certified" in evidence and evidence.get("certified") is not True:
+        raise ValueError("LEARNED_CAPABILITY_EVIDENCE_NOT_CERTIFIED")
+
+    if (
+        "certification" in evidence
+        and str(evidence.get("certification") or "").strip().upper()
+        != "CERTIFIED"
+    ):
+        raise ValueError("LEARNED_CAPABILITY_EVIDENCE_NOT_CERTIFIED")
+
     learned_from = str(payload.get("learned_from_incident") or "").strip()
     if not learned_from:
         raise ValueError("LEARNED_CAPABILITY_SOURCE_INCIDENT_REQUIRED")
@@ -254,8 +264,26 @@ def register_learned_capability(
     payload: dict[str, Any],
     *,
     incident: Any,
+    require_certified_incident: bool = False,
 ) -> dict[str, Any]:
     capability = normalize_learned_capability(payload)
+
+    if getattr(incident, "production_touched", False) is not False:
+        raise ValueError("LEARNED_CAPABILITY_PRODUCTION_FORBIDDEN")
+
+    incident_state = str(
+        getattr(incident, "state", "") or ""
+    ).strip().upper()
+
+    if incident_state in {
+        "REJECTED",
+        "SUPERSEDED",
+        "REPAIRED_PENDING_AUDIT",
+    }:
+        raise ValueError("LEARNED_CAPABILITY_INCIDENT_NOT_CERTIFIED")
+
+    if require_certified_incident and incident_state != "CERTIFIED":
+        raise ValueError("LEARNED_CAPABILITY_INCIDENT_NOT_CERTIFIED")
 
     if capability.learned_from_incident != str(incident.incident_id):
         raise ValueError("LEARNED_CAPABILITY_INCIDENT_BINDING_MISMATCH")
@@ -329,6 +357,40 @@ def _matches(
     return False
 
 
+def _filter_superseded_capabilities(
+    capabilities: list[LearnedCapability],
+) -> list[LearnedCapability]:
+    if len(capabilities) <= 1:
+        return capabilities
+
+    present_codes = {item.code for item in capabilities}
+    superseded_codes: set[str] = set()
+
+    for item in capabilities:
+        evidence = item.evidence or {}
+        if evidence.get("previous_repair_certified") is not True:
+            continue
+        previous_code = str(
+            evidence.get("previous_capability") or ""
+        ).strip().upper()
+        if (
+            previous_code
+            and previous_code != item.code
+            and previous_code in present_codes
+        ):
+            superseded_codes.add(previous_code)
+
+    if not superseded_codes:
+        return capabilities
+
+    filtered = [
+        item
+        for item in capabilities
+        if item.code not in superseded_codes
+    ]
+    return filtered or capabilities
+
+
 def resolve_learned_capability(
     *,
     incident_id: str,
@@ -350,6 +412,48 @@ def resolve_learned_capability(
 
     if not matches:
         return None
+
+    if not code and len(matches) > 1:
+        exact_matches = [
+            item
+            for item in matches
+            if incident_id in item.incident_ids
+        ]
+        if exact_matches:
+            matches = exact_matches
+        matches = _filter_superseded_capabilities(matches)
+
+    if len(matches) != 1:
+        raise ValueError("LEARNED_CAPABILITY_AMBIGUOUS")
+
+    return matches[0]
+
+
+def resolve_learned_capability_for_blockers(
+    blockers: set[str] | list[str] | tuple[str, ...],
+) -> LearnedCapability | None:
+    normalized = {
+        str(value or "").strip().upper()
+        for value in (blockers or ())
+        if str(value or "").strip()
+    }
+    if not normalized:
+        return None
+
+    matches: list[LearnedCapability] = []
+    for capability in iter_learned_capabilities():
+        if not capability.reusable:
+            continue
+        blocker_signature = str(
+            (capability.evidence or {}).get("blocker_signature") or ""
+        ).strip().upper()
+        if blocker_signature and blocker_signature in normalized:
+            matches.append(capability)
+
+    if not matches:
+        return None
+
+    matches = _filter_superseded_capabilities(matches)
     if len(matches) != 1:
         raise ValueError("LEARNED_CAPABILITY_AMBIGUOUS")
 

@@ -157,3 +157,89 @@ def test_git_lock_busy_is_a_repairable_worker_incident():
         '"tools/mirror_sync/universal_job_dispatcher.py"'
         in text
     )
+
+
+def test_source_anchor_prioritizes_base_commits_before_candidate_sha(
+    tmp_path,
+    monkeypatch,
+):
+    import json
+    from tools.mirror_sync import worker_control_plane as control
+
+    base_sha = "1" * 40
+    candidate_sha = "2" * 40
+    anchor, field = control.automatic_repair_source_anchor(
+        {
+            "job_id": "JOB-ANCHOR-ORDER",
+            "candidate_sha": candidate_sha,
+            "execution_base_sha": base_sha,
+        }
+    )
+    assert anchor == base_sha
+    assert field == "execution_base_sha"
+
+    queue_done = (
+        tmp_path / ".git" / "universal-worker-queue" / "done"
+    )
+    queue_done.mkdir(parents=True, exist_ok=True)
+    envelope_sha = "3" * 40
+    (queue_done / "JOB-ENVELOPE-FALLBACK.json").write_text(
+        json.dumps({"job": {"base_sha": envelope_sha}}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(control, "ROOT", tmp_path)
+    anchor2, field2 = control.automatic_repair_source_anchor(
+        {"job_id": "JOB-ENVELOPE-FALLBACK"}
+    )
+    assert anchor2 == envelope_sha
+    assert field2 == "job_envelope_base_sha"
+
+
+def test_find_certified_successor_supports_preworktree_git_lock_busy(
+    monkeypatch,
+):
+    from tools.mirror_sync import worker_control_plane as control
+
+    monkeypatch.setattr(
+        control,
+        "_git_is_ancestor",
+        lambda _a, _b: True,
+    )
+    monkeypatch.setattr(
+        control,
+        "_target_diff_paths",
+        lambda _a, _b, paths: set(paths),
+    )
+
+    source_res = {
+        "job_id": "OLD-LOCK-BUSY-JOB",
+        "status": "GIT_LOCK_BUSY",
+        "completed_at_utc": "2026-09-25T02:16:37Z",
+        "production_touched": False,
+    }
+    target_paths = (
+        "tools/mirror_sync/git_divergence_guard.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+    )
+    successor_res = {
+        "job_id": "LATER-CERTIFIED-REPAIR",
+        "status": "INTEGRATED",
+        "certification": "CERTIFIED",
+        "quality_gate": "PASS",
+        "tests": "PASS",
+        "git_sync_status": "CERTIFIED_GIT_SYNC",
+        "production_touched": False,
+        "completed_at_utc": "2026-10-01T21:11:12Z",
+        "execution_base_sha": "a" * 40,
+        "development_sha": "b" * 40,
+        "files_changed": list(target_paths),
+    }
+
+    matched = control.find_certified_successor_result(
+        source_res,
+        target_paths,
+        (successor_res,),
+        current_head="c" * 40,
+    )
+    assert matched is not None
+    assert matched["job_id"] == "LATER-CERTIFIED-REPAIR"

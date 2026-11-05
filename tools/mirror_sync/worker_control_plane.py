@@ -796,12 +796,12 @@ def automatic_repair_source_anchor(
     source_result: dict[str, Any],
 ) -> tuple[str | None, str]:
     for field in (
-        "candidate_sha",
         "execution_base_sha",
         "base_sha",
         "initial_base_sha",
         "remote_at_start",
         "local_at_start",
+        "candidate_sha",
     ):
         value = _valid_git_sha(
             source_result.get(field)
@@ -809,6 +809,67 @@ def automatic_repair_source_anchor(
 
         if value is not None:
             return value, field
+
+    source_job_id = str(
+        source_result.get("job_id") or ""
+    ).strip()
+
+    if source_job_id:
+        queue_root = (
+            ROOT / ".git" / "universal-worker-queue"
+        )
+        envelope_paths: list[Path] = [
+            queue_root / folder / f"{source_job_id}.json"
+            for folder in (
+                "done",
+                "rejected",
+                "processing",
+                "pending",
+                "drafts",
+            )
+        ]
+        rejected_history = (
+            queue_root / "rejected_history"
+        )
+        if rejected_history.is_dir():
+            envelope_paths.extend(
+                sorted(
+                    rejected_history.glob(
+                        f"{source_job_id}*.json"
+                    )
+                )
+            )
+        for envelope_path in envelope_paths:
+            if not envelope_path.is_file():
+                continue
+            try:
+                envelope = json.loads(
+                    envelope_path.read_text(
+                        encoding="utf-8"
+                    )
+                )
+            except Exception:
+                continue
+            if not isinstance(envelope, dict):
+                continue
+            embedded = (
+                envelope.get("job")
+                if isinstance(
+                    envelope.get("job"),
+                    dict,
+                )
+                else envelope
+            )
+            if not isinstance(embedded, dict):
+                continue
+            envelope_sha = _valid_git_sha(
+                embedded.get("base_sha")
+            )
+            if envelope_sha is not None:
+                return (
+                    envelope_sha,
+                    "job_envelope_base_sha",
+                )
 
     return None, "SOURCE_ANCHOR_UNAVAILABLE"
 
@@ -897,7 +958,15 @@ def find_certified_successor_result(
         )
     )
 
-    if source_anchor is None:
+    source_status = str(
+        source_result.get("status") or ""
+    ).strip()
+    preworktree_failure = source_status in {
+        "GIT_LOCK_BUSY",
+        "GIT_WORKTREE_NOT_CLEAN",
+    }
+
+    if source_anchor is None and not preworktree_failure:
         return None
 
     if not _valid_git_sha(current_head):
@@ -911,12 +980,15 @@ def find_certified_successor_result(
         source_result.get("completed_at_utc")
     )
 
+    if source_anchor is None and source_completed is None:
+        return None
+
     required_paths = set(target_paths)
 
     if not required_paths:
         return None
 
-    candidates: list[
+    preliminary: list[
         tuple[datetime, str, dict[str, Any]]
     ] = []
 
@@ -950,7 +1022,13 @@ def find_certified_successor_result(
             candidate.get("completed_at_utc")
         )
 
-        if (
+        if source_anchor is None:
+            if (
+                candidate_completed is None
+                or candidate_completed <= source_completed
+            ):
+                continue
+        elif (
             source_completed is not None
             and candidate_completed is not None
             and candidate_completed <= source_completed
@@ -976,8 +1054,50 @@ def find_certified_successor_result(
         ):
             continue
 
+        sort_time = (
+            candidate_completed
+            or datetime.min.replace(
+                tzinfo=timezone.utc
+            )
+        )
+
+        preliminary.append(
+            (
+                sort_time,
+                successor_sha,
+                candidate,
+            )
+        )
+
+    if not preliminary:
+        return None
+
+    preliminary.sort(
+        key=lambda item: (
+            item[0],
+            item[1],
+            str(
+                item[2].get("job_id") or ""
+            ),
+        )
+    )
+
+    for _sort_time, successor_sha, candidate in preliminary:
+        anchor_to_verify = (
+            source_anchor
+            or _valid_git_sha(
+                candidate.get("execution_base_sha")
+            )
+            or _valid_git_sha(
+                candidate.get("base_sha")
+            )
+        )
+
+        if anchor_to_verify is None:
+            continue
+
         if not _git_is_ancestor(
-            source_anchor,
+            anchor_to_verify,
             successor_sha,
         ):
             continue
@@ -989,7 +1109,7 @@ def find_certified_successor_result(
             continue
 
         changed = _target_diff_paths(
-            source_anchor,
+            anchor_to_verify,
             successor_sha,
             target_paths,
         )
@@ -1000,35 +1120,9 @@ def find_certified_successor_result(
         if not required_paths.issubset(changed):
             continue
 
-        sort_time = (
-            candidate_completed
-            or datetime.min.replace(
-                tzinfo=timezone.utc
-            )
-        )
+        return candidate
 
-        candidates.append(
-            (
-                sort_time,
-                successor_sha,
-                candidate,
-            )
-        )
-
-    if not candidates:
-        return None
-
-    candidates.sort(
-        key=lambda item: (
-            item[0],
-            item[1],
-            str(
-                item[2].get("job_id") or ""
-            ),
-        )
-    )
-
-    return candidates[0][2]
+    return None
 
 
 def repair_incident_is_superseded(
@@ -1214,6 +1308,8 @@ def automatic_repair_orchestration() -> dict[str, Any]:
             for capability in (
                 learned_registry.iter_learned_capabilities()
             ):
+                if not capability.reusable:
+                    continue
                 blocker_signature = str(
                     (capability.evidence or {}).get(
                         "blocker_signature"
@@ -1227,7 +1323,28 @@ def automatic_repair_orchestration() -> dict[str, Any]:
                 ):
                     learned_matches.append(capability)
 
+            learned_matches = (
+                learned_registry._filter_superseded_capabilities(
+                    learned_matches
+                )
+            )
+
         if len(learned_matches) > 1:
+            if not boundary_allowed:
+                incidents.append(
+                    {
+                        "incident_id": None,
+                        "source_job_id": source_job_id,
+                        "source_status": status,
+                        "state": "OBSERVED_NOT_ELIGIBLE",
+                        "target_paths": [],
+                        "repair_allowed": False,
+                        "repair_reason": boundary_reason,
+                        "publication_required": False,
+                    }
+                )
+                continue
+
             blocked += 1
             incidents.append(
                 {
@@ -1398,6 +1515,17 @@ def automatic_repair_orchestration() -> dict[str, Any]:
             incident_id
         )
 
+        blocker_sig = (
+            str(
+                (learned_capability.evidence or {}).get(
+                    "blocker_signature"
+                )
+                or ""
+            ).strip()
+            if learned_capability is not None
+            else ""
+        )
+
         incidents.append(
             {
                 "incident_id": incident.incident_id,
@@ -1408,6 +1536,17 @@ def automatic_repair_orchestration() -> dict[str, Any]:
                 "repair_allowed": allowed,
                 "repair_reason": reason,
                 "publication_required": allowed,
+                "capability_code": (
+                    learned_capability.code
+                    if learned_capability is not None
+                    else None
+                ),
+                "problem_signature": (
+                    learned_capability.problem_signature
+                    if learned_capability is not None
+                    else None
+                ),
+                "blocker_signature": blocker_sig or None,
             }
         )
 
