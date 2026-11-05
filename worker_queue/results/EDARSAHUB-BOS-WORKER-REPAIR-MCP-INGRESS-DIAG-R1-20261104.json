@@ -1,0 +1,570 @@
+{
+  "base_sha": "1f01acba9de93787b1b1aac2eaa833f3149ac092",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-05T02:00:25Z",
+  "execution_base_sha": "1f01acba9de93787b1b1aac2eaa833f3149ac092",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-MCP-INGRESS-DIAG-R1-20261104",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-05T02:01:30Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.worker_mcp",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "json",
+              "typing",
+              "urllib.error",
+              "urllib.parse",
+              "urllib.request"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "submit_objective"
+            ],
+            "path": "backend/modules/worker_mcp/client.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "WorkerMcpBackendError",
+              "__init__",
+              "_request_json",
+              "exchange_service_credential",
+              "get_job_status",
+              "submit_objective",
+              "verify_worker_access"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.worker_mcp",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "auth",
+              "client",
+              "config",
+              "mcp.server",
+              "mcp.server.auth.middleware.auth_context",
+              "mcp.server.auth.provider",
+              "mcp.server.auth.settings",
+              "mcp.server.fastmcp",
+              "mcp.server.transport_security",
+              "mcp.types",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "submit_objective"
+            ],
+            "path": "backend/modules/worker_mcp/server.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_backend_url",
+              "_bearer_token",
+              "build_mcp_server",
+              "build_transport_security",
+              "get_job_status_tool",
+              "submit_objective_tool"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.worker_ingress",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.rbac.middleware",
+              "fastapi",
+              "schemas",
+              "service",
+              "service_credential",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "submit_objective"
+            ],
+            "path": "backend/modules/worker_ingress/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/auth/exchange",
+              "/jobs",
+              "/jobs/{job_id}",
+              "/objectives"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_bearer_credential",
+              "_raise_for_submit_status",
+              "exchange_worker_service_credential",
+              "read_worker_job_status",
+              "submit_worker_job",
+              "submit_worker_objective"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.worker_ingress",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "hashlib",
+              "json",
+              "pathlib",
+              "re",
+              "semantic_capabilities",
+              "tools.mirror_sync",
+              "tools.mirror_sync.worker_job_factory",
+              "tools.mirror_sync.worker_result_reader",
+              "tools.mirror_sync.worker_result_status",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "submit_objective"
+            ],
+            "path": "backend/modules/worker_ingress/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "WorkerIngressError",
+              "_assert_no_sensitive_keys",
+              "_clean",
+              "_read_json_if_object",
+              "_requester_from_authenticated_user",
+              "_safe_terminal_fields",
+              "_semantic_job_id",
+              "build_canonical_job",
+              "build_semantic_job",
+              "get_job_status",
+              "submit_job",
+              "submit_objective"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "tools.mirror_sync.worker_maintenance_contract"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "worker_repair"
+            ],
+            "path": "tools/mirror_sync/worker_repair.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RepairPlan",
+              "build_repair_plan",
+              "repair_requires_independent_audit",
+              "touches_protected_universal_component"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "hashlib",
+              "json",
+              "os",
+              "pathlib",
+              "subprocess",
+              "tempfile",
+              "tools.mirror_sync",
+              "tools.mirror_sync.git_divergence_guard",
+              "tools.mirror_sync.universal_job_bridge",
+              "tools.mirror_sync.worker_job_factory",
+              "tools.mirror_sync.worker_repair_execution",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "worker_repair"
+            ],
+            "path": "tools/mirror_sync/worker_repair_planner.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "RepairCapability",
+              "_canonical_job_ingress_recipe",
+              "_canonical_requester",
+              "_git",
+              "_learned_as_runtime_capability",
+              "_persist_spec",
+              "_resolve_capability",
+              "_validate_scope",
+              "build_deterministic_repair_job",
+              "builder",
+              "convergence_state",
+              "publish_planned_repair",
+              "register_capability",
+              "registered_capabilities"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "hashlib",
+              "pathlib",
+              "tools.mirror_sync",
+              "tools.mirror_sync.worker_result_reader",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "worker_repair"
+            ],
+            "path": "tools/mirror_sync/worker_repair_execution.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_action_paths",
+              "_result_completed_epoch",
+              "deterministic_repair_job_id",
+              "publish_repair_job",
+              "read_repair_terminal_result",
+              "reconcile_repair_result",
+              "validate_repair_worker_job"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "fnmatch",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "tempfile",
+              "tools.mirror_sync",
+              "tools.mirror_sync.universal_job_bridge",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "worker_repair"
+            ],
+            "path": "tools/mirror_sync/worker_repair_capability_registry.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "LearnedCapability",
+              "_atomic_json",
+              "_clean_strings",
+              "_matches",
+              "_payload",
+              "_validate_recipe",
+              "_walk_keys",
+              "iter_learned_capabilities",
+              "normalize_learned_capability",
+              "recipe_from_learned",
+              "register_learned_capability",
+              "resolve_learned_capability"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "json",
+              "os",
+              "pathlib",
+              "tools.mirror_sync",
+              "tools.mirror_sync.git_divergence_guard",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "worker_repair"
+            ],
+            "path": "tools/mirror_sync/worker_repair_auto_loop.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_advance_bound_repair",
+              "_candidate_source_jobs",
+              "_learned_capability",
+              "_load_json",
+              "_repair_result_payload",
+              "_source_requester",
+              "_source_result",
+              "advance_repair_automation"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "readonly_audit_profiles",
+              "subprocess",
+              "sys",
+              "tools.mirror_sync.readonly_audit_profiles",
+              "tools.mirror_sync.worker_deliverable_contract",
+              "tools.mirror_sync.worker_mutation_materializer",
+              "typing",
+              "worker_deliverable_contract",
+              "worker_mutation_materializer",
+              "worker_requester_rbac"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "worker_result_semantic_extract"
+            ],
+            "path": "tools/mirror_sync/universal_job_bridge.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_expected_native_decision_requires_semantic_extract",
+              "_has_worker_result_semantic_extract",
+              "_preexecution_retry_history_matches",
+              "_read_json_file",
+              "already_claimed",
+              "archive_preexecution_retry_evidence",
+              "archive_rejection_for_retry",
+              "ensure_dirs",
+              "git",
+              "main",
+              "preexecution_infrastructure_retry_decision",
+              "queue_files",
+              "read_remote",
+              "receive",
+              "rejected_correction_retry_decision",
+              "resolve_queue_remote",
+              "safe_repo_path",
+              "status",
+              "validate",
+              "validate_action",
+              "validate_check",
+              "write_rejection"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "asyncio",
+              "datetime",
+              "fcntl",
+              "git_divergence_guard",
+              "hashlib",
+              "json",
+              "modules.api_connections.repository",
+              "os",
+              "pathlib",
+              "re",
+              "readonly_audit_profiles",
+              "shutil",
+              "subprocess",
+              "sys",
+              "tempfile",
+              "time",
+              "tools.mirror_sync.readonly_audit_profiles",
+              "tools.mirror_sync.worker_deliverable_contract",
+              "tools.mirror_sync.worker_mutation_materializer",
+              "typing",
+              "worker_concurrency",
+              "worker_deliverable_contract",
+              "worker_mutation_materializer",
+              "worker_scheduling",
+              "worker_slot_runtime"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "worker_result_semantic_extract"
+            ],
+            "path": "tools/mirror_sync/universal_job_dispatcher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_cleanup_residual_worker_worktree",
+              "_load_preferred_job",
+              "_native_decision_contract_required",
+              "_native_decision_from_repository_contract_audit",
+              "_promote_native_decision_from_semantic_extract",
+              "_select_pending_job",
+              "_semantic_extract_payload",
+              "apply_action",
+              "build_comercial_audit_checks",
+              "changed_files",
+              "claim_one",
+              "create_commit",
+              "dispatch",
+              "ensure_dirs",
+              "evaluate_objective_criteria",
+              "git",
+              "git_changed_paths",
+              "git_is_ancestor",
+              "heartbeat_active_slot",
+              "integrate",
+              "load_backend_runtime_env",
+              "load_envelope",
+              "main",
+              "now",
+              "prepare_worktree",
+              "process_one",
+              "release_agent_guard_claim",
+              "resolve_canonical_python",
+              "resolve_repository_credential_helper",
+              "run",
+              "run_check",
+              "run_check_process",
+              "safe_path",
+              "sha256_file",
+              "summarize_iscam_detail_backfill_output",
+              "summarize_softrestaurant_output",
+              "validate_scope",
+              "verify_expected_hash",
+              "write_json"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "Sync_Control_Ejecuciones"
+            ]
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "argparse",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "subprocess",
+              "sys",
+              "tempfile",
+              "tools.mirror_sync.gate_chain_controller",
+              "tools.mirror_sync.git_divergence_guard",
+              "tools.mirror_sync.universal_job_bridge",
+              "tools.mirror_sync.worker_job_factory",
+              "tools.mirror_sync.worker_requester_rbac",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "worker_result_semantic_extract"
+            ],
+            "path": "tools/mirror_sync/gate_chain_publisher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_atomic_submit_draft",
+              "_cleanup_queue_worktree",
+              "_prepare_queue_worktree",
+              "_queue_remote_head",
+              "_release_agent_guard",
+              "_safe_id",
+              "_submit_convergence",
+              "_submit_failure_status",
+              "_submit_local_lifecycle",
+              "_submit_remote_exists",
+              "_walk",
+              "build_plan",
+              "gate_for",
+              "git",
+              "main",
+              "publish",
+              "run",
+              "submit",
+              "validate_template",
+              "walk_with_path"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 12,
+          "scanned_files": 27,
+          "skipped_sensitive": 18
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-05T02:00:24Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
