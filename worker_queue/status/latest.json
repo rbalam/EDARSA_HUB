@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "1f01acba9de93787b1b1aac2eaa833f3149ac092",
-  "generated_at_utc": "2026-11-05T01:44:53Z",
+  "generated_at_utc": "2026-11-05T01:46:23Z",
   "history": {
     "done_total_local": 1636,
     "pending_total_local": 0,
@@ -16,37 +16,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3411,
+      "age_seconds": 3501,
       "job_id": "BOS-MARKETING-SECURITY-INTEGRATION-GATE1-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 540,
+      "age_seconds": 630,
       "job_id": "EDARSAHUB-BOS-MCP-RESULT-RECONCILIATION-GATE-R1-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 439,
+      "age_seconds": 529,
       "job_id": "EDARSAHUB-BOS-MCP-RESULT-RECONCILIATION-GATE-R2-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2579,
+      "age_seconds": 2669,
       "job_id": "EDARSAHUB-BOS-WORKER-AUDITOR-INDEPENDENCE-GATE-R1-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 70,
+      "age_seconds": 160,
       "job_id": "EDARSAHUB-BOS-WORKER-SEMANTIC-ARCHITECTURE-AUDIT-R1-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3054,
+      "age_seconds": 3144,
       "job_id": "SEM-WORKER-READ_ONLY_CANARY-E851C1941BDFB8CCB76E",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,8 +66,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-05T01:44:30Z",
-    "last_receive_utc": "2026-11-05T01:44:48Z",
+    "last_cycle_utc": "2026-11-05T01:46:04Z",
+    "last_receive_utc": "2026-11-05T01:46:19Z",
     "last_terminal_utc": "2026-11-05T01:43:42Z",
     "pid": "642643",
     "runtime_fingerprint": {
