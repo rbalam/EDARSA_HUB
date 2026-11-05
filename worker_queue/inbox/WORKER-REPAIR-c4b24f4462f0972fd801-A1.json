@@ -1,0 +1,105 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "new": "import subprocess\nimport sys\nimport tempfile\nimport threading\nfrom datetime import datetime, timezone\n",
+      "old": "import subprocess\nimport sys\nimport tempfile\nfrom datetime import datetime, timezone\n",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "from worker_slot_runtime import create_slot, heartbeat_slot, reclaim_stale_slot, release_slot, update_slot_state\n",
+      "old": "from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state\n",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "def now() -> str:\n    return datetime.now(timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\")\n\n\nSLOT_HEARTBEAT_INTERVAL_SECONDS = int(\n    os.environ.get(\"EDARSAHUB_SLOT_HEARTBEAT_INTERVAL_SECONDS\", \"30\")\n)\n\n\ndef _slot_heartbeat_loop(\n    slot_id: str,\n    stop_event: threading.Event,\n) -> None:\n    while not stop_event.wait(SLOT_HEARTBEAT_INTERVAL_SECONDS):\n        try:\n            heartbeat_slot(\n                slot_id,\n                execution_pid=os.getpid(),\n            )\n        except SlotRuntimeError as exc:\n            if str(exc) == \"SLOT_NOT_FOUND\":\n                return\n        except Exception:\n            continue\n\n\ndef build_comercial_audit_checks",
+      "old": "def now() -> str:\n    return datetime.now(timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\")\n\n\ndef build_comercial_audit_checks",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "    git_writer_lock: dict[str, Any] | None = None\n    slot_id: str | None = None\n    slot_heartbeat_stop: threading.Event | None = None\n    slot_heartbeat_thread: threading.Thread | None = None\n    try:\n",
+      "old": "    git_writer_lock: dict[str, Any] | None = None\n    slot_id: str | None = None\n    try:\n",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "        update_slot_state(slot_id, \"RUNNING\", execution_pid=os.getpid())\n        slot_heartbeat_stop = threading.Event()\n        slot_heartbeat_thread = threading.Thread(\n            target=_slot_heartbeat_loop,\n            args=(slot_id, slot_heartbeat_stop),\n            name=f\"slot-heartbeat-{slot_id}\",\n            daemon=True,\n        )\n        slot_heartbeat_thread.start()\n        result[\"slot_id\"] = slot_id\n",
+      "old": "        update_slot_state(slot_id, \"RUNNING\", execution_pid=os.getpid())\n        result[\"slot_id\"] = slot_id\n",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "    finally:\n        if slot_heartbeat_stop is not None:\n            slot_heartbeat_stop.set()\n        if slot_heartbeat_thread is not None:\n            slot_heartbeat_thread.join(timeout=5)\n        if slot_id is not None:\n",
+      "old": "    finally:\n        if slot_id is not None:\n",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 2,
+      "new": "    assert 'from worker_slot_runtime import create_slot, heartbeat_slot, reclaim_stale_slot, release_slot, update_slot_state' in text\n",
+      "old": "    assert 'from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state' in text\n",
+      "path": "backend/tests/test_worker_universal_queue_sla_contract.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "def test_running_slot_is_heartbeated_during_long_jobs():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    control = CONTROL.read_text(encoding='utf-8')\n    assert 'heartbeat_slot' in text\n    assert 'SLOT_HEARTBEAT_INTERVAL_SECONDS' in text\n    assert 'def _slot_heartbeat_loop(' in text\n    assert 'slot_heartbeat_thread.start()' in text\n    assert 'slot_heartbeat_stop.set()' in text\n    assert 'slot_heartbeat_thread.join(timeout=5)' in text\n    assert 'EDARSAHUB_PROCESSING_REQUEUE_SECONDS\", \"120\"' in control\n\n\ndef test_dispatcher_claim_is_atomic_and_execution_is_outside_lock():\n",
+      "old": "def test_dispatcher_claim_is_atomic_and_execution_is_outside_lock():\n",
+      "path": "backend/tests/test_worker_universal_queue_sla_contract.py",
+      "type": "replace_text"
+    }
+  ],
+  "base_sha": "77c5ce15276c2d667b948c4364e1e4bec23ff7ce",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_slot_runtime_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "WORKER-REPAIR-c4b24f4462f0972fd801-A1",
+  "mode": "MUTATION",
+  "objective": "Mantener fresco el heartbeat del slot canonico durante la ejecucion completa de jobs largos para impedir falsos processing stale, sin ampliar PROCESSING_GRACE, sin ocultar procesos realmente colgados y sin tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Soporte Worker",
+    "email": "carlosruz@edarsa.com.mx",
+    "project": "V1",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "V1",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "V1",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
