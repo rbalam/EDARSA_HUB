@@ -43,6 +43,15 @@ _SAFE_RESULT_KEYS = {
     "status",
     "quality_gate",
     "certification",
+    "work_completion",
+    "certification_basis",
+    "certified_source_sha",
+    "converged_head",
+    "development_sha",
+    "reconciliation_status",
+    "published_result_commit",
+    "published_result_sha256",
+    "attestation_sha256",
     "tests",
     "percent_complete",
     "blockers",
@@ -281,33 +290,77 @@ def get_job_status(job_id: str) -> dict[str, Any]:
             expected_job_id=value,
         )
         status = build_job_status(result_read=result_read)
-        payload = result_read.payload or {}
-        status.update(_safe_terminal_fields(payload))
+        if result_read.terminal_result_valid and isinstance(
+            result_read.payload, dict
+        ):
+            status.update(_safe_terminal_fields(result_read.payload))
+            if not status.get("commit_sha"):
+                commit_sha = (
+                    result_read.payload.get("certified_source_sha")
+                    or result_read.payload.get("development_sha")
+                    or result_read.payload.get("integrated_commit")
+                )
+                if commit_sha:
+                    status["commit_sha"] = commit_sha
         status["lifecycle"] = "RESULT"
         return status
 
-    lifecycle_dirs = (
+    rejected_path = STATE_ROOT / "rejected" / f"{value}.json"
+    if rejected_path.is_file():
+        payload = _read_json_if_object(rejected_path)
+        response: dict[str, Any] = {
+            "job_id": value,
+            "lifecycle": "REJECTED",
+            "status": str(payload.get("status") or "REJECTED"),
+            "quality_gate": "FAIL",
+            "tests": "FAIL",
+            "certification": "NOT_CERTIFIED",
+            "work_completion": "REJECTED",
+            "percent_complete": 0,
+            "blockers": list(payload.get("blockers") or ["job_rejected"]),
+            "terminal_result_valid": False,
+            "result_state": "RESULT_REJECTED",
+            "production_touched": False,
+        }
+        for key in ("completed_at_utc", "summary_es"):
+            if key in payload:
+                response[key] = payload[key]
+        return response
+
+    published_path = STATE_ROOT / "published" / f"{value}.json"
+    done_path = STATE_ROOT / "done" / f"{value}.json"
+    if published_path.is_file() or done_path.is_file():
+        absent_read = read_canonical_result(
+            result_path,
+            expected_job_id=value,
+        )
+        status = build_job_status(result_read=absent_read)
+        status["lifecycle"] = "RESULT"
+        return status
+
+    non_terminal_dirs = (
         ("PROCESSING", "processing"),
         ("PENDING", "pending"),
-        ("PUBLISHED", "published"),
-        ("DONE", "done"),
-        ("REJECTED", "rejected"),
         ("DRAFT", "drafts"),
     )
 
-    for lifecycle, directory in lifecycle_dirs:
+    for lifecycle, directory in non_terminal_dirs:
         path = STATE_ROOT / directory / f"{value}.json"
         if not path.is_file():
             continue
         payload = _read_json_if_object(path)
-        response = {
+        return {
             "job_id": value,
             "lifecycle": lifecycle,
-            "status": payload.get("status") or lifecycle,
-            "production_touched": bool(payload.get("production_touched", False)),
+            "status": lifecycle,
+            "certification": "NOT_CERTIFIED",
+            "work_completion": lifecycle,
+            "percent_complete": 0,
+            "terminal_result_valid": False,
+            "result_state": "RESULT_NON_TERMINAL",
+            "production_touched": False,
+            "summary_es": payload.get("summary_es"),
         }
-        response.update(_safe_terminal_fields(payload))
-        return response
 
     return {
         "job_id": value,
