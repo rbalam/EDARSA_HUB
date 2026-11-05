@@ -1,0 +1,67 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENTS-IA-TRANSVERSAL-GATE4-RH-R1-20261104",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e10fedde7009c79579629876cb5c3701dcc5aac5",
+  "production_allowed": false,
+  "objective": "Gate4 transversal de Agentes e IA para RH. Extender el mismo registry transversal certificado para capacidades de lectura/analisis/asistencia en expedientes, reclutamiento y nomina. Reutilizar los permisos ya reconocidos por el mapa efectivo de RH: RH_VER como permiso primario y RECURSOS_HUMANOS_VER como alias compatible, sin crear nuevos permisos. Crear adapter RH fail-closed con scope empresa/unidad y clasificacion PII/FINANCIAL_PRIVATE. Solo READ/ANALYZE/ASSIST/EXPLAIN: no contratar, no despedir, no aprobar reingresos, no modificar expedientes, no calcular/aplicar nomina, no enviar comunicaciones, no DDL/DML, no SQL runtime, no external egress y no Produccion.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/agent_harness/transversal_capability_registry.py",
+      "old": "    tool_codes: tuple[str, ...]\n    side_effect: bool = False\n    approval_required: bool = False\n",
+      "new": "    tool_codes: tuple[str, ...]\n    permission_aliases: tuple[str, ...] = ()\n    side_effect: bool = False\n    approval_required: bool = False\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/agent_harness/transversal_capability_registry.py",
+      "old": "        if not self.tool_codes:\n            raise CapabilityRegistryError('TOOL_CODES_REQUIRED')\n        if self.side_effect and not self.approval_required:\n            raise CapabilityRegistryError('SIDE_EFFECT_REQUIRES_APPROVAL')\n",
+      "new": "        if not self.tool_codes:\n            raise CapabilityRegistryError('TOOL_CODES_REQUIRED')\n        if any(not str(value or '').strip() for value in self.permission_aliases):\n            raise CapabilityRegistryError('PERMISSION_ALIAS_INVALID')\n        if self.side_effect and not self.approval_required:\n            raise CapabilityRegistryError('SIDE_EFFECT_REQUIRES_APPROVAL')\n\n    @property\n    def accepted_permissions(self) -> tuple[str, ...]:\n        values = (self.required_permission, *self.permission_aliases)\n        return tuple(dict.fromkeys(str(value).strip().upper() for value in values if str(value or '').strip()))\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/agent_harness/transversal_capability_registry.py",
+      "old": "    'COMMERCIAL_ACTION_PROPOSE': DomainCapabilitySpec(\n        code='COMMERCIAL_ACTION_PROPOSE',\n        domain='COMERCIAL',\n        procedure='commercial-action-propose',\n        required_permission='COMERCIAL_VER',\n        risk=RiskLevel.R2,\n        data_classification=DataClassification.CONFIDENTIAL,\n        tool_codes=('edarsahub_sql_read', 'commercial_read', 'ai_inference'),\n    ),\n}",
+      "new": "    'COMMERCIAL_ACTION_PROPOSE': DomainCapabilitySpec(\n        code='COMMERCIAL_ACTION_PROPOSE',\n        domain='COMERCIAL',\n        procedure='commercial-action-propose',\n        required_permission='COMERCIAL_VER',\n        risk=RiskLevel.R2,\n        data_classification=DataClassification.CONFIDENTIAL,\n        tool_codes=('edarsahub_sql_read', 'commercial_read', 'ai_inference'),\n    ),\n    'HR_DOCUMENT_ANALYZE': DomainCapabilitySpec(\n        code='HR_DOCUMENT_ANALYZE',\n        domain='RH',\n        procedure='hr-document-analyze',\n        required_permission='RH_VER',\n        permission_aliases=('RECURSOS_HUMANOS_VER',),\n        risk=RiskLevel.R1,\n        data_classification=DataClassification.PII,\n        tool_codes=('edarsahub_sql_read', 'hr_read', 'ai_inference'),\n    ),\n    'HR_EMPLOYEE_CASE_SUMMARIZE': DomainCapabilitySpec(\n        code='HR_EMPLOYEE_CASE_SUMMARIZE',\n        domain='RH',\n        procedure='hr-employee-case-summarize',\n        required_permission='RH_VER',\n        permission_aliases=('RECURSOS_HUMANOS_VER',),\n        risk=RiskLevel.R2,\n        data_classification=DataClassification.PII,\n        tool_codes=('edarsahub_sql_read', 'hr_read', 'ai_inference'),\n    ),\n    'HR_RECRUITMENT_ASSIST': DomainCapabilitySpec(\n        code='HR_RECRUITMENT_ASSIST',\n        domain='RH',\n        procedure='hr-recruitment-assist',\n        required_permission='RH_VER',\n        permission_aliases=('RECURSOS_HUMANOS_VER',),\n        risk=RiskLevel.R2,\n        data_classification=DataClassification.PII,\n        tool_codes=('edarsahub_sql_read', 'hr_read', 'ai_inference'),\n    ),\n    'HR_PAYROLL_EXPLAIN': DomainCapabilitySpec(\n        code='HR_PAYROLL_EXPLAIN',\n        domain='RH',\n        procedure='hr-payroll-explain',\n        required_permission='RH_VER',\n        permission_aliases=('RECURSOS_HUMANOS_VER',),\n        risk=RiskLevel.R2,\n        data_classification=DataClassification.FINANCIAL_PRIVATE,\n        tool_codes=('edarsahub_sql_read', 'hr_read', 'payroll_read', 'ai_inference'),\n    ),\n}",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/modules/agent_harness/hr_adapter.py",
+      "content": "from __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom typing import Mapping\n\nfrom core.agent_capability_policy import BudgetRequest, PolicyContext, PolicyRequest\nfrom core.agent_execution_gate import ExecutionGateDecision, authorize_internal_capability_execution\nfrom modules.agent_harness.transversal_capability_registry import get_domain_capability\n\n\nclass HRAgentAdapterError(ValueError):\n    pass\n\n\n@dataclass(frozen=True)\nclass HRAgentRequest:\n    request_id: str\n    empresa_id: int\n    unidad_id: int\n    capability: str = 'HR_DOCUMENT_ANALYZE'\n\n    def __post_init__(self) -> None:\n        if not str(self.request_id or '').strip():\n            raise HRAgentAdapterError('REQUEST_ID_REQUIRED')\n        if self.empresa_id <= 0 or self.unidad_id <= 0:\n            raise HRAgentAdapterError('BUSINESS_SCOPE_INVALID')\n        spec = get_domain_capability(self.capability)\n        if spec.domain != 'RH':\n            raise HRAgentAdapterError('HR_CAPABILITY_REQUIRED')\n        if spec.side_effect:\n            raise HRAgentAdapterError('SIDE_EFFECT_CAPABILITY_FORBIDDEN')\n\n\ndef _authorization(req: HRAgentRequest, auth: Mapping[str, object]) -> dict[str, object]:\n    spec = get_domain_capability(req.capability)\n    if not isinstance(auth, Mapping) or auth.get('allowed') is not True:\n        return {'allowed': False, 'reason': 'REQUESTER_RBAC_DENIED'}\n    permission = str(auth.get('permission') or '').strip().upper()\n    if permission not in spec.accepted_permissions:\n        return {'allowed': False, 'reason': 'REQUESTER_PERMISSION_MISMATCH'}\n    if int(auth.get('empresa_id') or 0) != req.empresa_id or int(auth.get('unidad_id') or 0) != req.unidad_id:\n        return {'allowed': False, 'reason': 'REQUESTER_BUSINESS_SCOPE_MISMATCH'}\n    return {'allowed': True}\n\n\ndef authorize_hr_agent(\n    req: HRAgentRequest,\n    requester_authorization: Mapping[str, object],\n    context: PolicyContext,\n) -> tuple[ExecutionGateDecision, PolicyRequest]:\n    spec = get_domain_capability(req.capability)\n    scopes = frozenset({\n        f'empresa:{req.empresa_id}',\n        f'unidad:{req.unidad_id}',\n        'domain:rh',\n        'resource:human-resources',\n    })\n    policy = PolicyRequest(\n        capabilities=frozenset({spec.code}),\n        scopes=scopes,\n        risk=spec.risk,\n        data_classification=spec.data_classification,\n        budgets=BudgetRequest(runtime_seconds=30, sql_rows=250, inference_cost_usd=0.10),\n        external_egress=False,\n        production_allowed=False,\n        privilege_expansion=False,\n        approval_granted=False,\n        procedure=spec.procedure,\n    )\n    gate = authorize_internal_capability_execution(_authorization(req, requester_authorization), policy, context)\n    return gate, policy\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_bos_transversal_agent_rh.py",
+      "content": "import pytest\n\nfrom core.agent_capability_policy import PolicyContext\nfrom modules.agent_harness.hr_adapter import HRAgentRequest, authorize_hr_agent\nfrom modules.agent_harness.transversal_capability_registry import list_domain_capabilities\n\n\ndef context(capability, scopes):\n    caps = frozenset({capability})\n    scope_set = frozenset(scopes)\n    limits = {\n        'runtime_seconds': 60,\n        'files_changed': 0,\n        'lines_changed': 0,\n        'external_calls': 0,\n        'sql_rows': 1000,\n        'inference_cost_usd': 1.0,\n    }\n    return PolicyContext(caps, caps, caps, caps, scope_set, scope_set, scope_set, scope_set, limits)\n\n\ndef test_gate4_registry_extends_same_registry_with_hr_read_only_capabilities():\n    items = list_domain_capabilities('RH')\n    assert {item.code for item in items} == {\n        'HR_DOCUMENT_ANALYZE',\n        'HR_EMPLOYEE_CASE_SUMMARIZE',\n        'HR_RECRUITMENT_ASSIST',\n        'HR_PAYROLL_EXPLAIN',\n    }\n    assert all(not item.side_effect for item in items)\n    assert all(not item.approval_required for item in items)\n    assert all(item.accepted_permissions == ('RH_VER', 'RECURSOS_HUMANOS_VER') for item in items)\n\n\ndef test_hr_accepts_primary_permission_and_scope():\n    req = HRAgentRequest('rh-1', 1, 2, 'HR_DOCUMENT_ANALYZE')\n    scopes = {'empresa:1', 'unidad:2', 'domain:rh', 'resource:human-resources'}\n    gate, policy = authorize_hr_agent(\n        req,\n        {'allowed': True, 'permission': 'RH_VER', 'empresa_id': 1, 'unidad_id': 2},\n        context(req.capability, scopes),\n    )\n    assert gate.allowed is True\n    assert policy.data_classification.value == 'PII'\n    assert policy.external_egress is False\n    assert policy.production_allowed is False\n\n\ndef test_hr_accepts_existing_legacy_compatible_permission_alias():\n    req = HRAgentRequest('rh-2', 1, 2, 'HR_EMPLOYEE_CASE_SUMMARIZE')\n    scopes = {'empresa:1', 'unidad:2', 'domain:rh', 'resource:human-resources'}\n    gate, _ = authorize_hr_agent(\n        req,\n        {'allowed': True, 'permission': 'RECURSOS_HUMANOS_VER', 'empresa_id': 1, 'unidad_id': 2},\n        context(req.capability, scopes),\n    )\n    assert gate.allowed is True\n\n\ndef test_hr_payroll_is_financial_private_and_read_only():\n    req = HRAgentRequest('rh-3', 1, 2, 'HR_PAYROLL_EXPLAIN')\n    scopes = {'empresa:1', 'unidad:2', 'domain:rh', 'resource:human-resources'}\n    gate, policy = authorize_hr_agent(\n        req,\n        {'allowed': True, 'permission': 'RH_VER', 'empresa_id': 1, 'unidad_id': 2},\n        context(req.capability, scopes),\n    )\n    assert gate.allowed is True\n    assert policy.data_classification.value == 'FINANCIAL_PRIVATE'\n    assert policy.external_egress is False\n\n\ndef test_hr_fails_closed_on_permission_or_scope():\n    req = HRAgentRequest('rh-4', 1, 2)\n    scopes = {'empresa:1', 'unidad:2', 'domain:rh', 'resource:human-resources'}\n    gate, _ = authorize_hr_agent(\n        req,\n        {'allowed': True, 'permission': 'OTRO_VER', 'empresa_id': 1, 'unidad_id': 2},\n        context(req.capability, scopes),\n    )\n    assert gate.allowed is False\n    assert gate.reasons == ('REQUESTER_PERMISSION_MISMATCH',)\n\n    gate, _ = authorize_hr_agent(\n        req,\n        {'allowed': True, 'permission': 'RH_VER', 'empresa_id': 1, 'unidad_id': 99},\n        context(req.capability, scopes),\n    )\n    assert gate.allowed is False\n    assert gate.reasons == ('REQUESTER_BUSINESS_SCOPE_MISMATCH',)\n\n\ndef test_cross_domain_capability_is_rejected():\n    with pytest.raises(Exception, match='HR_CAPABILITY_REQUIRED'):\n        HRAgentRequest('rh-5', 1, 2, 'CRM_SUMMARIZE')\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/agent_harness/transversal_capability_registry.py",
+        "backend/modules/agent_harness/hr_adapter.py",
+        "backend/tests/test_bos_transversal_agent_rh.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_bos_transversal_agent_rh.py",
+        "backend/tests/test_bos_transversal_agent_crm_comercial.py",
+        "backend/tests/test_bos_transversal_agent_compras_inventarios.py",
+        "backend/tests/test_bos_transversal_agent_capabilities.py",
+        "backend/tests/test_agent_execution_gate_e2e.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
