@@ -1,0 +1,75 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "expected_sha256": "da806ff14f996d2776caad279338dafe74d883a13700c93f18a338dc0a7c5a11",
+      "new": "import argparse\nimport json\nimport os\nimport re\nimport subprocess\nimport sys\nimport tempfile\n",
+      "old": "import argparse\nimport json\nimport os\nimport re\nimport subprocess\nimport sys\nimport tempfile\n",
+      "path": "tools/mirror_sync/gate_chain_publisher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "    def walk_with_path(\n        value: Any,\n        path: tuple[Any, ...] = (),\n    ):\n        if isinstance(value, dict):\n            for raw_key, item in value.items():\n                key = str(raw_key).lower()\n                child = path + (str(raw_key),)\n                yield child, key, item\n                yield from walk_with_path(\n                    item,\n                    child,\n                )\n        elif isinstance(value, list):\n            for index, item in enumerate(value):\n                yield from walk_with_path(\n                    item,\n                    path + (index,),\n                )\n\n    for path, key, _ in walk_with_path(\n        template\n    ):\n        readonly_sql_query = (\n            key == \"sql\"\n            and str(\n                template.get(\"mode\") or \"\"\n            ).strip().upper()\n            == \"READ_ONLY_SQL\"\n            and len(path) == 5\n            and path[0] == \"checks\"\n            and isinstance(path[1], int)\n            and path[2] == \"queries\"\n            and isinstance(path[3], int)\n            and path[4] == \"sql\"\n        )\n\n        if (\n            key in FORBIDDEN_KEYS\n            and not readonly_sql_query\n        ):\n            raise ValueError(\n                f\"FORBIDDEN_TEMPLATE_KEY:{key}\"\n            )\n",
+      "old": "    def walk_with_path(\n        value: Any,\n        path: tuple[Any, ...] = (),\n    ):\n        if isinstance(value, dict):\n            for raw_key, item in value.items():\n                key = str(raw_key).lower()\n                child = path + (str(raw_key),)\n                yield child, key, item\n                yield from walk_with_path(\n                    item,\n                    child,\n                )\n        elif isinstance(value, list):\n            for index, item in enumerate(value):\n                yield from walk_with_path(\n                    item,\n                    path + (index,),\n                )\n\n    for path, key, _ in walk_with_path(\n        template\n    ):\n        readonly_sql_query = (\n            key == \"sql\"\n            and str(\n                template.get(\"mode\") or \"\"\n            ).strip().upper()\n            == \"READ_ONLY_SQL\"\n            and len(path) == 5\n            and path[0] == \"checks\"\n            and isinstance(path[1], int)\n            and path[2] == \"queries\"\n            and isinstance(path[3], int)\n            and path[4] == \"sql\"\n        )\n\n        if (\n            key in FORBIDDEN_KEYS\n            and not readonly_sql_query\n        ):\n            raise ValueError(\n                f\"FORBIDDEN_TEMPLATE_KEY:{key}\"\n            )\n",
+      "path": "tools/mirror_sync/gate_chain_publisher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "def main() -> int:\n",
+      "old": "def main() -> int:\n",
+      "path": "tools/mirror_sync/gate_chain_publisher.py",
+      "type": "replace_text"
+    },
+    {
+      "content": "from __future__ import annotations\n\nfrom pathlib import Path\n\nimport pytest\n\nfrom tools.mirror_sync import gate_chain_publisher as ingress\n\n\ndef requester():\n    return {\n        \"email\": \"test@example.invalid\",\n        \"source\": \"pytest\",\n        \"project\": \"EDARSAHUB\",\n        \"chat\": \"canonical-ingress\",\n    }\n\n\ndef readonly_job(job_id):\n    return {\n        \"job_id\": job_id,\n        \"objective\": \"Test canonical ingress.\",\n        \"requester\": requester(),\n        \"mode\": \"READ_ONLY\",\n        \"actions\": [],\n        \"checks\": [\n            {\n                \"type\": \"git_diff_check\",\n            }\n        ],\n    }\n\n\ndef readonly_sql_job(job_id):\n    return {\n        \"job_id\": job_id,\n        \"objective\": \"Test READ_ONLY_SQL ingress.\",\n        \"requester\": requester(),\n        \"mode\": \"READ_ONLY_SQL\",\n        \"actions\": [],\n        \"checks\": [\n            {\n                \"type\": \"sql_readonly_audit\",\n                \"source\": \"EDARSAHUB\",\n                \"queries\": [\n                    {\n                        \"name\": \"identity\",\n                        \"sql\": (\n                            \"SELECT DB_NAME() \"\n                            \"AS database_name\"\n                        ),\n                    }\n                ],\n            }\n        ],\n    }\n\n\ndef redirect_state(\n    tmp_path,\n    monkeypatch,\n):\n    for name in (\n        \"DRAFTS\",\n        \"PENDING\",\n        \"PROCESSING\",\n        \"RESULTS\",\n        \"DONE\",\n        \"REJECTED\",\n    ):\n        path = (\n            tmp_path\n            / name.lower()\n        )\n\n        path.mkdir()\n\n        monkeypatch.setattr(\n            ingress,\n            name,\n            path,\n        )\n\n\ndef test_submit_exists():\n    assert callable(\n        ingress.submit\n    )\n\n\ndef test_readonly_sql_allowed_only_in_query():\n    result = ingress.validate_template(\n        readonly_sql_job(\n            \"INGRESS-SQL-1\"\n        )\n    )\n\n    assert (\n        result[\"mode\"]\n        == \"READ_ONLY_SQL\"\n    )\n\n    bad = readonly_sql_job(\n        \"INGRESS-SQL-2\"\n    )\n\n    bad[\"requester\"][\"sql\"] = (\n        \"SELECT 1\"\n    )\n\n    with pytest.raises(\n        ValueError,\n        match=\"FORBIDDEN_TEMPLATE_KEY:sql\",\n    ):\n        ingress.validate_template(\n            bad\n        )\n\n\ndef test_completed_idempotency(\n    tmp_path,\n    monkeypatch,\n):\n    redirect_state(\n        tmp_path,\n        monkeypatch,\n    )\n\n    (\n        ingress.RESULTS\n        / \"INGRESS-DONE.json\"\n    ).write_text(\n        \"{}\\n\",\n        encoding=\"utf-8\",\n    )\n\n    result = ingress.submit(\n        readonly_job(\n            \"INGRESS-DONE\"\n        )\n    )\n\n    assert (\n        result[\"status\"]\n        == \"ALREADY_COMPLETED\"\n    )\n\n\ndef test_processing_idempotency(\n    tmp_path,\n    monkeypatch,\n):\n    redirect_state(\n        tmp_path,\n        monkeypatch,\n    )\n\n    (\n        ingress.PROCESSING\n        / \"INGRESS-PROCESSING.json\"\n    ).write_text(\n        \"{}\\n\",\n        encoding=\"utf-8\",\n    )\n\n    result = ingress.submit(\n        readonly_job(\n            \"INGRESS-PROCESSING\"\n        )\n    )\n\n    assert (\n        result[\"status\"]\n        == \"ALREADY_PROCESSING\"\n    )\n\n\ndef test_pending_idempotency(\n    tmp_path,\n    monkeypatch,\n):\n    redirect_state(\n        tmp_path,\n        monkeypatch,\n    )\n\n    (\n        ingress.PENDING\n        / \"INGRESS-PENDING.json\"\n    ).write_text(\n        \"{}\\n\",\n        encoding=\"utf-8\",\n    )\n\n    result = ingress.submit(\n        readonly_job(\n            \"INGRESS-PENDING\"\n        )\n    )\n\n    assert (\n        result[\"status\"]\n        == \"ALREADY_SUBMITTED\"\n    )\n\n\ndef test_no_tmp_dependency():\n    assert \"/tmp\" not in str(\n        ingress.DRAFTS\n    )\n\n\ndef test_submit_reuses_canonical_publisher():\n    source = Path(\n        ingress.__file__\n    ).read_text(\n        encoding=\"utf-8\"\n    )\n\n    assert \"def submit(\" in source\n    assert \"publication = publish(\" in source\n",
+      "path": "backend/tests/test_worker_canonical_job_ingress_contract.py",
+      "type": "write_file"
+    }
+  ],
+  "base_sha": "77c5ce15276c2d667b948c4364e1e4bec23ff7ce",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/gate_chain_publisher.py",
+        "backend/tests/test_worker_canonical_job_ingress_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_canonical_job_ingress_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "WORKER-REPAIR-655bc5526751eccfb8f4-A2",
+  "mode": "MUTATION",
+  "objective": "Materializar canonical job ingress submit(job_spec), persistente, idempotente y fail-closed.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Worker Repair Planner",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "worker_repair"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
