@@ -4,97 +4,103 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "77c5ce15276c2d667b948c4364e1e4bec23ff7ce",
-  "generated_at_utc": "2026-11-05T03:47:58Z",
+  "generated_at_utc": "2026-11-05T03:49:21Z",
   "history": {
     "done_total_local": 1640,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1321,
-    "results_total_local": 2728
+    "rejected_total_local": 1322,
+    "results_total_local": 2729
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2201,
+      "age_seconds": 2283,
       "job_id": "BOS-AGENTS-IA-TRANSVERSAL-GATE3-CRM-COMERCIAL-R1-20261027",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 741,
+      "age_seconds": 45,
+      "job_id": "EDARSAHUB-BOS-DISPATCHER-SCOPE-CONTRACT-TEST-SYSPATH-FIX-R1-20261105",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 823,
       "job_id": "EDARSAHUB-BOS-GLOBAL-WORKER-ALIGNMENT-G0-READONLY-20261104",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1363,
+      "age_seconds": 1445,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-KNOWLEDGE-LOOP-INTEGRATION-GATE-R1-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1292,
+      "age_seconds": 1374,
       "job_id": "WORKER-REPAIR-18849401bce45484c441-A1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1258,
+      "age_seconds": 1341,
       "job_id": "WORKER-REPAIR-2deb98bf2a3e6fb2f1b6-A1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 918,
+      "age_seconds": 1000,
       "job_id": "WORKER-REPAIR-3d541e4011493ebf5999-A2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 940,
+      "age_seconds": 1022,
       "job_id": "WORKER-REPAIR-4e673446ace85459425d-A2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1271,
+      "age_seconds": 1353,
       "job_id": "WORKER-REPAIR-5eaa13251a966f682eff-A1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1287,
+      "age_seconds": 1369,
       "job_id": "WORKER-REPAIR-655bc5526751eccfb8f4-A2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 906,
+      "age_seconds": 988,
       "job_id": "WORKER-REPAIR-6ba7148e11a26369c088-A2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1246,
+      "age_seconds": 1328,
       "job_id": "WORKER-REPAIR-c4b24f4462f0972fd801-A1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 928,
+      "age_seconds": 1010,
       "job_id": "WORKER-REPAIR-d92f1952a28551aa998a-A2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1281,
+      "age_seconds": 1363,
       "job_id": "WORKER-REPAIR-ece47da9fd47e28e0adb-A1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 896,
+      "age_seconds": 978,
       "job_id": "WORKER-REPAIR-edbfb76e7d78dbd01503-A2",
       "reason": null,
       "state": "RESULT_READY"
@@ -108,15 +114,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 14,
+  "queue_result_ready_recent": 15,
   "queue_running": 0,
   "remote_development_sha": "77c5ce15276c2d667b948c4364e1e4bec23ff7ce",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-05T03:47:52Z",
-    "last_receive_utc": "2026-11-05T03:47:47Z",
-    "last_terminal_utc": "2026-11-05T03:35:37Z",
+    "last_cycle_utc": "2026-11-05T03:49:15Z",
+    "last_receive_utc": "2026-11-05T03:49:10Z",
+    "last_terminal_utc": "2026-11-05T03:48:35Z",
     "pid": "515",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "7375c39846eb7448cb8f35882f488888daacc624",
