@@ -114,6 +114,42 @@ _CAPABILITIES: Mapping[str, DomainCapabilitySpec] = {
         data_classification=DataClassification.CONFIDENTIAL,
         tool_codes=('edarsahub_sql_read', 'inventory_read', 'compras_read', 'ai_inference'),
     ),
+    'CRM_SUMMARIZE': DomainCapabilitySpec(
+        code='CRM_SUMMARIZE',
+        domain='CRM',
+        procedure='crm-summarize',
+        required_permission='COMERCIAL_VER',
+        risk=RiskLevel.R1,
+        data_classification=DataClassification.CONFIDENTIAL,
+        tool_codes=('edarsahub_sql_read', 'crm_read', 'ai_inference'),
+    ),
+    'CRM_NEXT_ACTION_PROPOSE': DomainCapabilitySpec(
+        code='CRM_NEXT_ACTION_PROPOSE',
+        domain='CRM',
+        procedure='crm-next-action-propose',
+        required_permission='COMERCIAL_VER',
+        risk=RiskLevel.R2,
+        data_classification=DataClassification.CONFIDENTIAL,
+        tool_codes=('edarsahub_sql_read', 'crm_read', 'ai_inference'),
+    ),
+    'COMMERCIAL_KPI_ANALYZE': DomainCapabilitySpec(
+        code='COMMERCIAL_KPI_ANALYZE',
+        domain='COMERCIAL',
+        procedure='commercial-kpi-analyze',
+        required_permission='COMERCIAL_VER',
+        risk=RiskLevel.R1,
+        data_classification=DataClassification.CONFIDENTIAL,
+        tool_codes=('edarsahub_sql_read', 'commercial_read'),
+    ),
+    'COMMERCIAL_ACTION_PROPOSE': DomainCapabilitySpec(
+        code='COMMERCIAL_ACTION_PROPOSE',
+        domain='COMERCIAL',
+        procedure='commercial-action-propose',
+        required_permission='COMERCIAL_VER',
+        risk=RiskLevel.R2,
+        data_classification=DataClassification.CONFIDENTIAL,
+        tool_codes=('edarsahub_sql_read', 'commercial_read', 'ai_inference'),
+    ),
 }
 
 
