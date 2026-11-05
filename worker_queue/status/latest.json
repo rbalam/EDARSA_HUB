@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "64885ec8c0d92488cea4b61fda2bf2e107ec79eb",
-  "generated_at_utc": "2026-11-05T04:44:50Z",
+  "generated_at_utc": "2026-11-05T04:47:57Z",
   "history": {
     "done_total_local": 1643,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3374,
+      "age_seconds": 3561,
       "job_id": "EDARSAHUB-BOS-DISPATCHER-SCOPE-CONTRACT-TEST-SYSPATH-FIX-R1-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3038,
+      "age_seconds": 3225,
       "job_id": "EDARSAHUB-BOS-DISPATCHER-SCOPE-CONTRACT-TEST-SYSPATH-FIX-R2-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2587,
+      "age_seconds": 2775,
       "job_id": "EDARSAHUB-BOS-GLOBAL-WORKER-ALIGNMENT-G0-R2-READONLY-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 807,
+      "age_seconds": 995,
       "job_id": "EDARSAHUB-BOS-GLOBAL-WORKER-ALIGNMENT-G1A-WORKER-SUBMIT-STATUS-20261105",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,10 +54,10 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-05T04:44:38Z",
-    "last_receive_utc": "2026-11-05T04:44:33Z",
+    "last_cycle_utc": "2026-11-05T04:47:48Z",
+    "last_receive_utc": "2026-11-05T04:47:43Z",
     "last_terminal_utc": "2026-11-05T04:31:22Z",
-    "pid": "97472",
+    "pid": "497",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "7375c39846eb7448cb8f35882f488888daacc624",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
