@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "e49d8c7db86e26013c9b761486b2e2949836b30b",
-  "generated_at_utc": "2026-11-05T21:29:53Z",
+  "generated_at_utc": "2026-11-05T21:31:14Z",
   "history": {
     "done_total_local": 1648,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 180,
+      "age_seconds": 261,
       "job_id": "SEM-WORKER_MCP-READ_ONLY_CANARY-4983300FFDBDB49D1033",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,8 +36,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-05T21:29:45Z",
-    "last_receive_utc": "2026-11-05T21:29:40Z",
+    "last_cycle_utc": "2026-11-05T21:31:07Z",
+    "last_receive_utc": "2026-11-05T21:31:02Z",
     "last_terminal_utc": "2026-11-05T21:26:52Z",
     "pid": "364",
     "runtime_fingerprint": {
