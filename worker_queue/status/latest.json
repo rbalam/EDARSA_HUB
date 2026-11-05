@@ -4,37 +4,43 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "1f01acba9de93787b1b1aac2eaa833f3149ac092",
-  "generated_at_utc": "2026-11-05T01:59:29Z",
+  "generated_at_utc": "2026-11-05T02:01:04Z",
   "history": {
-    "done_total_local": 1636,
+    "done_total_local": 1637,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1309,
-    "results_total_local": 2712
+    "results_total_local": 2713
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1417,
+      "age_seconds": 1511,
       "job_id": "EDARSAHUB-BOS-MCP-RESULT-RECONCILIATION-GATE-R1-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1315,
+      "age_seconds": 1410,
       "job_id": "EDARSAHUB-BOS-MCP-RESULT-RECONCILIATION-GATE-R2-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3455,
+      "age_seconds": 3550,
       "job_id": "EDARSAHUB-BOS-WORKER-AUDITOR-INDEPENDENCE-GATE-R1-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 947,
+      "age_seconds": 39,
+      "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-MCP-INGRESS-DIAG-R1-20261104",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1041,
       "job_id": "EDARSAHUB-BOS-WORKER-SEMANTIC-ARCHITECTURE-AUDIT-R1-20261105",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,15 +54,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "remote_development_sha": "1f01acba9de93787b1b1aac2eaa833f3149ac092",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-05T01:59:11Z",
-    "last_receive_utc": "2026-11-05T01:59:27Z",
-    "last_terminal_utc": "2026-11-05T01:43:42Z",
+    "last_cycle_utc": "2026-11-05T02:00:46Z",
+    "last_receive_utc": "2026-11-05T02:01:02Z",
+    "last_terminal_utc": "2026-11-05T02:00:25Z",
     "pid": "642643",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "0971915baefd192ac1dd73a355af6e653542f002",
