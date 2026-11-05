@@ -1,0 +1,68 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-MCP-SEMANTIC-REPOSITORY-CONTRACT-AUDIT-CAPABILITY-R1-20261105",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "base_sha": "e49d8c7db86e26013c9b761486b2e2949836b30b",
+  "objective": "Registrar REPOSITORY_CONTRACT_AUDIT como capability semantica READ_ONLY en el ingress existente, reutilizando exclusivamente el check interno repository_contract_audit. Mantener frontera fail-closed: no exponer actions/checks crudos, SQL, shell, comandos, slot_id ni controles de bajo nivel. Validar constraints limitados a paths, search_terms y max_results. No tocar gateway MCP, API routes, Worker runtime, slots, .gitignore, staging, SQL ni Produccion.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-orchestrator",
+    "project": "EDARSAHUB BOS",
+    "chat": "worker-d2-runtime-convergence"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB",
+    "bounded_context": "WORKER_INGRESS",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [
+      "backend/modules/worker_ingress/semantic_capabilities.py",
+      "backend/tests/test_worker_remote_semantic_ingress_gate2a.py"
+    ],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "old": "def _read_only_canary_builder(request: Mapping[str, Any]) -> dict[str, Any]:\n    constraints = request.get(\"constraints\")\n    constraints = dict(constraints) if isinstance(constraints, Mapping) else {}\n    if constraints:\n        unknown = sorted(constraints)\n        raise SemanticCapabilityError(\n            \"SEMANTIC_CONSTRAINTS_UNSUPPORTED:\" + \",\".join(unknown)\n        )\n\n    bounded_context = str(request.get(\"bounded_context\") or \"\").strip().upper()\n    return {\n        \"actions\": [],\n        \"checks\": [{\"type\": \"git_diff_check\"}],\n        \"scheduling\": {\n            \"project_id\": \"EDARSAHUB\",\n            \"bounded_context\": bounded_context,\n            \"priority_class\": \"NORMAL\",\n            \"fairness_weight\": 1,\n            \"max_parallelism\": 1,\n            \"resource_claims\": [],\n            \"conflict_domains\": [bounded_context],\n        },\n    }\n\n\nregister_capability(\n    SemanticCapability(\n        code=\"READ_ONLY_CANARY\",\n        modes=(\"READ_ONLY\",),\n        builder=_read_only_canary_builder,\n    )\n)\n",
+      "new": "def _read_only_canary_builder(request: Mapping[str, Any]) -> dict[str, Any]:\n    constraints = request.get(\"constraints\")\n    constraints = dict(constraints) if isinstance(constraints, Mapping) else {}\n    if constraints:\n        unknown = sorted(constraints)\n        raise SemanticCapabilityError(\n            \"SEMANTIC_CONSTRAINTS_UNSUPPORTED:\" + \",\".join(unknown)\n        )\n\n    bounded_context = str(request.get(\"bounded_context\") or \"\").strip().upper()\n    return {\n        \"actions\": [],\n        \"checks\": [{\"type\": \"git_diff_check\"}],\n        \"scheduling\": {\n            \"project_id\": \"EDARSAHUB\",\n            \"bounded_context\": bounded_context,\n            \"priority_class\": \"NORMAL\",\n            \"fairness_weight\": 1,\n            \"max_parallelism\": 1,\n            \"resource_claims\": [],\n            \"conflict_domains\": [bounded_context],\n        },\n    }\n\n\ndef _repository_contract_audit_builder(\n    request: Mapping[str, Any],\n) -> dict[str, Any]:\n    constraints = request.get(\"constraints\")\n    constraints = dict(constraints) if isinstance(constraints, Mapping) else {}\n\n    allowed = {\"paths\", \"search_terms\", \"max_results\"}\n    unknown = sorted(set(constraints) - allowed)\n    if unknown:\n        raise SemanticCapabilityError(\n            \"SEMANTIC_CONSTRAINTS_UNSUPPORTED:\" + \",\".join(unknown)\n        )\n\n    raw_paths = constraints.get(\"paths\")\n    if not isinstance(raw_paths, list) or not raw_paths or len(raw_paths) > 32:\n        raise SemanticCapabilityError(\"SEMANTIC_REPOSITORY_PATHS_INVALID\")\n\n    paths: list[str] = []\n    for item in raw_paths:\n        path = str(item or \"\").strip().replace(\"\\\\\", \"/\")\n        parts = path.split(\"/\")\n        if (\n            not path\n            or path.startswith(\"/\")\n            or path.endswith(\"/\")\n            or \"..\" in parts\n            or \".\" in parts\n            or any(not part for part in parts)\n            or len(path) > 240\n        ):\n            raise SemanticCapabilityError(\"SEMANTIC_REPOSITORY_PATH_INVALID\")\n        paths.append(path)\n\n    raw_terms = constraints.get(\"search_terms\")\n    if (\n        not isinstance(raw_terms, list)\n        or not raw_terms\n        or len(raw_terms) > 64\n    ):\n        raise SemanticCapabilityError(\"SEMANTIC_SEARCH_TERMS_INVALID\")\n\n    search_terms: list[str] = []\n    for item in raw_terms:\n        term = str(item or \"\").strip()\n        if not term or len(term) > 120:\n            raise SemanticCapabilityError(\"SEMANTIC_SEARCH_TERM_INVALID\")\n        search_terms.append(term)\n\n    max_results = constraints.get(\"max_results\", 50)\n    if (\n        isinstance(max_results, bool)\n        or not isinstance(max_results, int)\n        or max_results < 1\n        or max_results > 100\n    ):\n        raise SemanticCapabilityError(\"SEMANTIC_MAX_RESULTS_INVALID\")\n\n    bounded_context = str(request.get(\"bounded_context\") or \"\").strip().upper()\n    return {\n        \"actions\": [],\n        \"checks\": [\n            {\"type\": \"git_diff_check\"},\n            {\n                \"type\": \"repository_contract_audit\",\n                \"request\": {\n                    \"paths\": paths,\n                    \"search_terms\": search_terms,\n                    \"max_results\": max_results,\n                },\n            },\n        ],\n        \"scheduling\": {\n            \"project_id\": \"EDARSAHUB\",\n            \"bounded_context\": bounded_context,\n            \"priority_class\": \"NORMAL\",\n            \"fairness_weight\": 1,\n            \"max_parallelism\": 1,\n            \"resource_claims\": [\n                \"repository_read:\" + path for path in paths\n            ],\n            \"conflict_domains\": [bounded_context],\n        },\n    }\n\n\nregister_capability(\n    SemanticCapability(\n        code=\"READ_ONLY_CANARY\",\n        modes=(\"READ_ONLY\",),\n        builder=_read_only_canary_builder,\n    )\n)\n\nregister_capability(\n    SemanticCapability(\n        code=\"REPOSITORY_CONTRACT_AUDIT\",\n        modes=(\"READ_ONLY\",),\n        builder=_repository_contract_audit_builder,\n    )\n)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_remote_semantic_ingress_gate2a.py",
+      "old": "def test_read_only_canary_capability_is_registered():\n    assert \"READ_ONLY_CANARY\" in registered_capabilities()\n\n\ndef test_unknown_capability_fails_closed():\n",
+      "new": "def test_read_only_canary_capability_is_registered():\n    assert \"READ_ONLY_CANARY\" in registered_capabilities()\n\n\ndef test_repository_contract_audit_capability_is_registered():\n    assert \"REPOSITORY_CONTRACT_AUDIT\" in registered_capabilities()\n\n\ndef test_repository_contract_audit_expands_to_existing_readonly_check():\n    job = service.build_semantic_job(\n        _objective(\n            capability=\"REPOSITORY_CONTRACT_AUDIT\",\n            constraints={\n                \"paths\": [\n                    \"backend/modules/worker_ingress\",\n                    \"tools/mirror_sync\",\n                ],\n                \"search_terms\": [\n                    \"submit_objective\",\n                    \"worker_slot_runtime\",\n                ],\n                \"max_results\": 25,\n            },\n        ),\n        current_user=_user(),\n    )\n\n    assert job[\"mode\"] == \"READ_ONLY\"\n    assert job[\"actions\"] == []\n    assert job[\"checks\"][0] == {\"type\": \"git_diff_check\"}\n    assert job[\"checks\"][1] == {\n        \"type\": \"repository_contract_audit\",\n        \"request\": {\n            \"paths\": [\n                \"backend/modules/worker_ingress\",\n                \"tools/mirror_sync\",\n            ],\n            \"search_terms\": [\n                \"submit_objective\",\n                \"worker_slot_runtime\",\n            ],\n            \"max_results\": 25,\n        },\n    }\n    assert job[\"production_allowed\"] is False\n    assert job[\"scheduling\"][\"bounded_context\"] == \"WORKER_INGRESS\"\n\n\n@pytest.mark.parametrize(\n    \"constraints,error\",\n    [\n        (\n            {\"paths\": [\"../secret\"], \"search_terms\": [\"worker\"]},\n            \"SEMANTIC_REPOSITORY_PATH_INVALID\",\n        ),\n        (\n            {\"paths\": [\"/etc\"], \"search_terms\": [\"worker\"]},\n            \"SEMANTIC_REPOSITORY_PATH_INVALID\",\n        ),\n        (\n            {\"paths\": [\"backend\"], \"search_terms\": []},\n            \"SEMANTIC_SEARCH_TERMS_INVALID\",\n        ),\n        (\n            {\n                \"paths\": [\"backend\"],\n                \"search_terms\": [\"worker\"],\n                \"max_results\": 101,\n            },\n            \"SEMANTIC_MAX_RESULTS_INVALID\",\n        ),\n        (\n            {\n                \"paths\": [\"backend\"],\n                \"search_terms\": [\"worker\"],\n                \"raw_sql\": \"SELECT 1\",\n            },\n            \"SEMANTIC_CONSTRAINTS_UNSUPPORTED\",\n        ),\n    ],\n)\ndef test_repository_contract_audit_constraints_fail_closed(\n    constraints,\n    error,\n):\n    with pytest.raises(service.WorkerIngressError, match=error):\n        service.build_semantic_job(\n            _objective(\n                capability=\"REPOSITORY_CONTRACT_AUDIT\",\n                constraints=constraints,\n            ),\n            current_user=_user(),\n        )\n\n\ndef test_unknown_capability_fails_closed():\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_remote_semantic_ingress_gate2a.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_remote_semantic_ingress_gate2a.py",
+        "tools/tests/test_worker_mcp_gate2b.py",
+        "backend/tests/test_worker_generic_readonly.py",
+        "backend/tests/test_worker_repository_contract_audit.py"
+      ]
+    }
+  ]
+}
