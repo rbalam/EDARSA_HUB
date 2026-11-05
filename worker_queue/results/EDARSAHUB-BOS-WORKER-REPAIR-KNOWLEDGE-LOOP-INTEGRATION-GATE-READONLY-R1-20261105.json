@@ -1,0 +1,520 @@
+{
+  "base_sha": "1f01acba9de93787b1b1aac2eaa833f3149ac092",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-05T02:12:47Z",
+  "execution_base_sha": "1f01acba9de93787b1b1aac2eaa833f3149ac092",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-KNOWLEDGE-LOOP-INTEGRATION-GATE-READONLY-R1-20261105",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-05T02:14:15Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "tools.mirror_sync.worker_maintenance_contract"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "build_repair_plan"
+            ],
+            "path": "tools/mirror_sync/worker_repair.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RepairPlan",
+              "build_repair_plan",
+              "repair_requires_independent_audit",
+              "touches_protected_universal_component"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "hashlib",
+              "json",
+              "os",
+              "pathlib",
+              "subprocess",
+              "tempfile",
+              "tools.mirror_sync",
+              "tools.mirror_sync.git_divergence_guard",
+              "tools.mirror_sync.universal_job_bridge",
+              "tools.mirror_sync.worker_job_factory",
+              "tools.mirror_sync.worker_repair_execution",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "resolve_learned_capability"
+            ],
+            "path": "tools/mirror_sync/worker_repair_planner.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "RepairCapability",
+              "_canonical_job_ingress_recipe",
+              "_canonical_requester",
+              "_git",
+              "_learned_as_runtime_capability",
+              "_persist_spec",
+              "_resolve_capability",
+              "_validate_scope",
+              "build_deterministic_repair_job",
+              "builder",
+              "convergence_state",
+              "publish_planned_repair",
+              "register_capability",
+              "registered_capabilities"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "hashlib",
+              "pathlib",
+              "tools.mirror_sync",
+              "tools.mirror_sync.worker_result_reader",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "reconcile_repair_result"
+            ],
+            "path": "tools/mirror_sync/worker_repair_execution.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_action_paths",
+              "_result_completed_epoch",
+              "deterministic_repair_job_id",
+              "publish_repair_job",
+              "read_repair_terminal_result",
+              "reconcile_repair_result",
+              "validate_repair_worker_job"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "fnmatch",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "tempfile",
+              "tools.mirror_sync",
+              "tools.mirror_sync.universal_job_bridge",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "learned_capability_ambiguous",
+              "register_learned_capability",
+              "resolve_learned_capability"
+            ],
+            "path": "tools/mirror_sync/worker_repair_capability_registry.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "LearnedCapability",
+              "_atomic_json",
+              "_clean_strings",
+              "_matches",
+              "_payload",
+              "_validate_recipe",
+              "_walk_keys",
+              "iter_learned_capabilities",
+              "normalize_learned_capability",
+              "recipe_from_learned",
+              "register_learned_capability",
+              "resolve_learned_capability"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "json",
+              "os",
+              "pathlib",
+              "tools.mirror_sync",
+              "tools.mirror_sync.git_divergence_guard",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "advance_repair_automation",
+              "audit_runtime_incident",
+              "learned_capability_ambiguous",
+              "reconcile_repair_result",
+              "resolve_learned_capability"
+            ],
+            "path": "tools/mirror_sync/worker_repair_auto_loop.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_advance_bound_repair",
+              "_candidate_source_jobs",
+              "_learned_capability",
+              "_load_json",
+              "_repair_result_payload",
+              "_source_requester",
+              "_source_result",
+              "advance_repair_automation"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "enum",
+              "pathlib",
+              "tools.mirror_sync.worker_auditor",
+              "tools.mirror_sync.worker_maintenance_contract",
+              "tools.mirror_sync.worker_repair",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "build_repair_plan"
+            ],
+            "path": "tools/mirror_sync/worker_maintenance_controller.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "MaintenanceDecision",
+              "MaintenanceIncident",
+              "MaintenanceState",
+              "audit_incident",
+              "declare_incident",
+              "repair_plan_for",
+              "repaired_pending_audit"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "json",
+              "os",
+              "pathlib",
+              "subprocess",
+              "tempfile",
+              "time",
+              "tools.mirror_sync.worker_maintenance_controller",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "audit_runtime_incident",
+              "declare_runtime_incident",
+              "supersede_runtime_incident"
+            ],
+            "path": "tools/mirror_sync/worker_maintenance_runtime.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RuntimeIncidentState",
+              "_archive_rejected_attempt",
+              "_atomic_json",
+              "_build_runtime_state",
+              "_canonical_git_common_dir",
+              "_incident_path",
+              "_load_state",
+              "audit_runtime_incident",
+              "declare_runtime_incident",
+              "read_runtime_incident",
+              "register_published_repair_attempt",
+              "register_repair_attempt",
+              "register_repair_result",
+              "repair_attempt_allowed",
+              "supersede_runtime_incident"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "hashlib",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "shutil",
+              "signal",
+              "subprocess",
+              "tempfile",
+              "time",
+              "tools.mirror_sync",
+              "tools.mirror_sync.worker_maintenance_runtime",
+              "tools.mirror_sync.worker_repair_auto_loop",
+              "tools.mirror_sync.worker_slot_runtime",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "advance_repair_automation",
+              "audit_runtime_incident",
+              "automatic_repair_orchestration",
+              "automatic_repair_source_anchor",
+              "declare_runtime_incident",
+              "known_blocker_capability_ambiguous",
+              "supersede_runtime_incident"
+            ],
+            "path": "tools/mirror_sync/worker_control_plane.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_git_is_ancestor",
+              "_parse_canonical_utc",
+              "_target_diff_paths",
+              "_valid_git_sha",
+              "active_execution_ownership",
+              "atomic_json",
+              "audit",
+              "automatic_repair_orchestration",
+              "automatic_repair_result_commit",
+              "automatic_repair_result_is_certified_successor",
+              "automatic_repair_result_is_eligible",
+              "automatic_repair_source_anchor",
+              "claim_candidates",
+              "control_plane_runtime_identity",
+              "cycle",
+              "effective_git_status",
+              "epoch",
+              "expected_generation",
+              "expected_platform_system_deps_drift",
+              "find_certified_successor_result",
+              "git_output",
+              "heal_runtime_generation_and_heartbeat",
+              "load_repair_automation_state",
+              "main",
+              "maintenance_runtime_summary",
+              "parse_iso_age",
+              "pid_alive",
+              "preserve_and_fast_forward",
+              "read_text",
+              "reconcile_agent_guard_orphans",
+              "repair_automation_state_path",
+              "repair_incident_is_superseded",
+              "request_universal_restart",
+              "requeue_stale_processing",
+              "run",
+              "utc_now",
+              "write_control_plane_runtime_marker"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "json",
+              "pytest",
+              "tools.mirror_sync",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "register_learned_capability",
+              "resolve_learned_capability"
+            ],
+            "path": "backend/tests/test_worker_repair_learned_capability_registry.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "incident",
+              "payload",
+              "test_register_and_reuse_by_signature",
+              "test_registration_is_idempotent",
+              "test_scope_escape_fails_closed",
+              "test_seed_registry_payload_conflict_fails_closed",
+              "test_shell_sql_and_production_are_forbidden",
+              "test_unknown_without_registry_remains_unknown"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "pytest",
+              "tools.mirror_sync",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "audit_runtime_incident",
+              "register_learned_capability",
+              "resolve_learned_capability"
+            ],
+            "path": "backend/tests/test_worker_repair_planner_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_duplicate_capability_is_rejected",
+              "test_job_identity_uses_canonical_repair_identity",
+              "test_persistent_specs_never_use_tmp",
+              "test_planner_can_resolve_learned_capability",
+              "test_planner_has_no_direct_push_or_audit",
+              "test_required_scope_must_be_authorized",
+              "test_scope_escape_is_rejected",
+              "test_unknown_capability_fails_closed"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "inspect",
+              "pathlib",
+              "pytest",
+              "sys",
+              "tools.mirror_sync",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "audit_runtime_incident",
+              "declare_runtime_incident",
+              "reconcile_repair_result"
+            ],
+            "path": "backend/tests/test_worker_repair_execution_bridge_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_job",
+              "_redirect_state",
+              "fake_publish",
+              "test_bridge_does_not_self_certify",
+              "test_different_job_cannot_rebind_attempt",
+              "test_execution_bridge_has_no_direct_executor",
+              "test_invalid_terminal_result_does_not_transition",
+              "test_publication_registers_exactly_one_attempt",
+              "test_repair_job_identity_is_deterministic",
+              "test_valid_terminal_result_becomes_pending_audit",
+              "test_validate_repair_job_is_scope_bound"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "advance_repair_automation",
+              "audit_runtime_incident",
+              "automatic_repair_orchestration",
+              "reconcile_repair_result",
+              "resolve_learned_capability"
+            ],
+            "path": "backend/tests/test_worker_repair_auto_loop_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_auto_loop_only_orchestrates_existing_components",
+              "test_auto_loop_requires_certified_result_before_audit",
+              "test_control_plane_advances_repairs_outside_detector",
+              "test_detector_boundary_remains_separate",
+              "test_planner_accepts_inherited_requester",
+              "test_planner_uses_safe_convergence",
+              "test_production_remains_forbidden"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 12,
+          "scanned_files": 15,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "requested_base_sha": "1f01acba9de93787b1b1aac2eaa833f3149ac092",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-05T02:12:42Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
