@@ -1,0 +1,32 @@
+{
+  "base_sha": "1f01acba9de93787b1b1aac2eaa833f3149ac092",
+  "blockers": [],
+  "candidate_sha": "e10fedde7009c79579629876cb5c3701dcc5aac5",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-11-05T03:11:17Z",
+  "development_sha": "e10fedde7009c79579629876cb5c3701dcc5aac5",
+  "execution_base_sha": "1f01acba9de93787b1b1aac2eaa833f3149ac092",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/agent_harness/commercial_adapter.py",
+    "backend/modules/agent_harness/crm_adapter.py",
+    "backend/modules/agent_harness/transversal_capability_registry.py",
+    "backend/tests/test_bos_transversal_agent_crm_comercial.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-AGENTS-IA-TRANSVERSAL-GATE3-CRM-COMERCIAL-R1-20261027",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-11-05T03:13:40Z",
+  "quality_gate": "PASS",
+  "requested_base_sha": "1f01acba9de93787b1b1aac2eaa833f3149ac092",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-05T03:10:54Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
