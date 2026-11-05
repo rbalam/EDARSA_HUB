@@ -1,0 +1,33 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER-READ_ONLY_CANARY-E851C1941BDFB8CCB76E",
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar READ_ONLY la comunicacion MCP remota y la disponibilidad del Universal Worker existente, sin modificar archivos ni Produccion. Reportar estado de autenticacion, gateway, ingress, mirror y resultados, sin exponer secretos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER",
+    "conflict_domains": [
+      "WORKER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
