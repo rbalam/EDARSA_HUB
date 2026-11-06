@@ -46,3 +46,21 @@ def test_interpret_marker_fallback(tmp_path):
     doc = C.read_json_file(f)
     assert isinstance(doc, dict)
     assert doc.get("certification") == "NOT_CERTIFIED"
+
+
+
+def test_public_control_plane_status_redacts_maintenance():
+    source = {
+        "schema": "edarsahub.worker-control-plane.v1",
+        "maintenance": {"incidents": [{"incident_id": "SENSITIVE"}]},
+        "runtime": {"status": "HEALTHY"},
+    }
+    result = C.public_control_plane_status(source)
+    assert "maintenance" not in result
+    assert result["runtime"] == {"status": "HEALTHY"}
+    assert "maintenance" in source
+
+
+def test_public_control_plane_status_fails_closed_for_non_dict():
+    assert C.public_control_plane_status(None) is None
+    assert C.public_control_plane_status([]) == []
