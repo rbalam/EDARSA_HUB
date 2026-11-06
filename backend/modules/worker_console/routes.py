@@ -136,7 +136,7 @@ async def lifecycle(job_id: str, current_user: dict = Depends(get_current_user))
     if rp is not None:
         doc = C.read_json_file(rp)
         if doc is not None:
-            result_interp = C.interpret_result(doc)
+            result_interp = C.public_result_interpretation(doc)
 
     if not any(presence.values()):
         raise HTTPException(status_code=404, detail="job_id no encontrado en ningún estado")
@@ -159,7 +159,7 @@ async def result(job_id: str, current_user: dict = Depends(get_current_user)):
             return {
                 "job_id": job_id,
                 "found_in": st,
-                "interpretation": C.interpret_result(doc) if doc is not None else None,
+                "interpretation": C.public_result_interpretation(doc) if doc is not None else None,
             }
     raise HTTPException(status_code=404, detail="Sin resultado para ese job_id")
 
@@ -203,7 +203,7 @@ async def tablajerias_checklist(current_user: dict = Depends(get_current_user)):
         best = None  # (rank, jid, interp)
         for jid in candidates:
             doc = C.read_json_file(index[jid])
-            interp = C.interpret_result(doc) if doc is not None else None
+            interp = C.public_result_interpretation(doc) if doc is not None else None
             if not interp:
                 continue
             rank = {"PASS": 3, "FAIL": 2}.get(interp.get("verdict"), 1)
