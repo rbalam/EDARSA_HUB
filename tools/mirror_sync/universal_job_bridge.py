@@ -776,21 +776,20 @@ _PREEXECUTION_INFRASTRUCTURE_RETRY_CONTRACT = {
 }
 
 
-def _worktree_clean_retry_ready(name: str) -> bool:
+_PREEXECUTION_WORKTREE_RETRY_MAX_AGE_SECONDS = int(
+    os.environ.get(
+        "EDARSAHUB_PREEXECUTION_WORKTREE_RETRY_MAX_AGE_SECONDS",
+        "14400",
+    )
+)
+
+
+def _worktree_clean_retry_ready(
+    name: str,
+    result: dict[str, Any],
+) -> bool:
     if RESULTS != STATE / "results":
         return True
-    preferred_path = STATE / "runtime" / "preferred_job.json"
-    preferred = _read_json_file(preferred_path)
-    preferred_id = str(preferred.get("job_id") or "").strip()
-    try:
-        expires_at = float(preferred.get("expires_at_epoch") or 0)
-    except (TypeError, ValueError):
-        expires_at = 0.0
-    if (
-        preferred_id != Path(name).stem
-        or expires_at <= datetime.now(timezone.utc).timestamp()
-    ):
-        return False
     try:
         from tools.mirror_sync.git_divergence_guard import _status_counts
     except ModuleNotFoundError:
@@ -799,7 +798,32 @@ def _worktree_clean_retry_ready(name: str) -> bool:
         counts = _status_counts(ROOT)
     except Exception:
         return False
-    return counts.get("worktree_dirty") is False
+    if counts.get("worktree_dirty") is not False:
+        return False
+
+    now_ts = datetime.now(timezone.utc).timestamp()
+    preferred_path = STATE / "runtime" / "preferred_job.json"
+    preferred = _read_json_file(preferred_path)
+    preferred_id = str(preferred.get("job_id") or "").strip()
+    try:
+        expires_at = float(preferred.get("expires_at_epoch") or 0)
+    except (TypeError, ValueError):
+        expires_at = 0.0
+    if preferred_id == Path(name).stem and expires_at > now_ts:
+        return True
+
+    completed_raw = str(result.get("completed_at_utc") or "").strip()
+    if completed_raw:
+        try:
+            completed_dt = datetime.fromisoformat(
+                completed_raw.replace("Z", "+00:00")
+            )
+            age_seconds = max(0.0, now_ts - completed_dt.timestamp())
+            if age_seconds <= _PREEXECUTION_WORKTREE_RETRY_MAX_AGE_SECONDS:
+                return True
+        except ValueError:
+            pass
+    return False
 
 
 def _preexecution_retry_history_matches(name: str) -> list[Path]:
@@ -839,7 +863,7 @@ def preexecution_infrastructure_retry_decision(
         and blockers[0] in allowed_blockers
     )
     worktree_ready = (
-        _worktree_clean_retry_ready(name)
+        _worktree_clean_retry_ready(name, result)
         if status == "GIT_WORKTREE_NOT_CLEAN"
         else True
     )
@@ -1042,7 +1066,12 @@ def receive() -> int:
         }
         if job.get("requester") is not None:
             try:
-                from worker_requester_rbac import authorize_requester
+                try:
+                    from tools.mirror_sync.worker_requester_rbac import (
+                        authorize_requester,
+                    )
+                except ModuleNotFoundError:
+                    from worker_requester_rbac import authorize_requester
                 requester_authorization = authorize_requester(job.get("requester"))
             except Exception:
                 requester_authorization = {
