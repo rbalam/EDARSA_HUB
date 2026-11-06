@@ -102,3 +102,32 @@ def test_worker_audit_endpoint_requires_effective_rbac_permission():
     assert dependency is not None
     import inspect
     assert "AUDIT_ADMIN_DEPENDENCY" in inspect.getsource(routes.audit)
+
+
+def test_dashboard_does_not_serialize_preferred_or_reconciler_documents(tmp_path, monkeypatch):
+    """Dashboard must not disclose unstructured Worker runtime documents."""
+    import asyncio
+    import json
+    from modules.worker_console import routes
+
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    (runtime / "preferred_job.json").write_text(
+        json.dumps({"maintenance": {"incident_id": "PRIVATE_INCIDENT"}}), encoding="utf-8"
+    )
+    (runtime / "reconciler.json").write_text(
+        json.dumps({"private_detail": "PRIVATE_RECONCILER"}), encoding="utf-8"
+    )
+    (runtime / "control_plane_status.json").write_text(
+        json.dumps({"runtime": {"status": "HEALTHY"}, "maintenance": {"incident_id": "PRIVATE_MAINTENANCE"}}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(C, "QUEUE_ROOT", tmp_path)
+    data = asyncio.run(routes.dashboard(current_user={"email": "test@example.org"}))
+    exposed = json.dumps(data)
+    assert "PRIVATE_INCIDENT" not in exposed
+    assert "PRIVATE_RECONCILER" not in exposed
+    assert "PRIVATE_MAINTENANCE" not in exposed
+    assert data["runtime"]["reconciler"] is None
+    assert data["runtime"]["preferred_job"] is None
+    assert data["runtime"]["control_plane_status"]["runtime"]["status"] == "HEALTHY"
