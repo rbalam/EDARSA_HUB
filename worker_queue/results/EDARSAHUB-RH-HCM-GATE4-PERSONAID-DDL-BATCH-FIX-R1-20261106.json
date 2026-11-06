@@ -1,0 +1,91 @@
+{
+  "base_sha": "a26f750610b78c3e3ec9dba1ff0abab6d28c4bfb",
+  "blockers": [],
+  "candidate_sha": "07a66d439c04fc5482a8d41f1dba9f8ec38ad1c3",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-11-06T09:26:54Z",
+  "development_sha": "07a66d439c04fc5482a8d41f1dba9f8ec38ad1c3",
+  "execution_base_sha": "a26f750610b78c3e3ec9dba1ff0abab6d28c4bfb",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    ".github/workflows/hcm-identity-link-development-migration.yml",
+    "backend/database/migrations/20261106_hcm_colaborador_gobierno_persona_link.sql"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-RH-HCM-GATE4-PERSONAID-DDL-BATCH-FIX-R1-20261106",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-11-06T09:27:50Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "backfill",
+              "gobierno_persona",
+              "personaid",
+              "sp_executesql"
+            ],
+            "path": "backend/database/migrations/20261106_hcm_colaborador_gobierno_persona_link.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Gobierno_Persona",
+              "RH_Colaboradores_Expediente"
+            ]
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "backfill",
+              "d0c8929ec446916d0097c17f7ae15ced6d55d803",
+              "edarsahub_sql_writer_password",
+              "edarsahub_sql_writer_user",
+              "gobierno_persona",
+              "personaid"
+            ],
+            "path": ".github/workflows/hcm-identity-link-development-migration.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Gobierno_Persona",
+              "RH_Colaboradores_Expediente"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 2,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-06T09:26:45Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
