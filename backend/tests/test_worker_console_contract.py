@@ -65,3 +65,13 @@ def test_public_control_plane_status_fails_closed_for_non_dict():
     assert C.public_control_plane_status(None) is None
     assert C.public_control_plane_status([]) is None
     assert C.public_control_plane_status([{"maintenance": {"incident_id": "SENSITIVE"}}]) is None
+
+
+def test_worker_result_endpoint_does_not_expose_raw_document():
+    """Nonprivileged users must not receive arbitrary Worker result payloads."""
+    import inspect
+    from modules.worker_console import routes
+
+    source = inspect.getsource(routes.result)
+    assert '"raw"' not in source
+    assert '"interpretation"' in source
