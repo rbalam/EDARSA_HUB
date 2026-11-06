@@ -75,3 +75,17 @@ def test_worker_result_endpoint_does_not_expose_raw_document():
     source = inspect.getsource(routes.result)
     assert '"raw"' not in source
     assert '"interpretation"' in source
+
+
+def test_public_job_metadata_excludes_sensitive_fields_and_nested_payloads():
+    payload = {"job": {"schema": C.SCHEMA_ID, "mode": "READ_ONLY",
+        "objective": "SECRET_OBJECTIVE", "requester": {"email": "private@example.com"},
+        "actions": [{"password": "SECRET_PASSWORD"}], "maintenance": {"incident_id": "SENSITIVE"}}}
+    assert C.public_job_metadata(payload) == {"schema": C.SCHEMA_ID, "mode": "READ_ONLY"}
+    assert "objective" in payload["job"]
+
+
+def test_public_job_metadata_fails_closed_for_invalid_or_unexpected_job():
+    assert C.public_job_metadata(None) is None
+    assert C.public_job_metadata([]) is None
+    assert C.public_job_metadata({"job": {"schema": "unknown", "mode": "ROOT"}}) == {}
