@@ -1,0 +1,47 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 30,
+        "paths": [
+          "backend/modules/worker_console/",
+          "backend/modules/worker_ingress/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "control_plane_status",
+          "maintenance",
+          "get_current_user",
+          "RBAC"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_CONSOLE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B3ED1AD5842B78A6726E",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY contrato de autenticacion RBAC y Worker Console dashboard en Desarrollo; determinar requisitos para consulta segura de maintenance sin acceder a runtime ni modificar permisos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONSOLE",
+    "conflict_domains": [
+      "WORKER_CONSOLE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
