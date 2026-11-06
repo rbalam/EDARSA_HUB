@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "aa9e6011acf79514b612b8cdc542d189eeff4ba3",
-  "generated_at_utc": "2026-11-06T06:09:59Z",
+  "generated_at_utc": "2026-11-06T06:11:17Z",
   "history": {
     "done_total_local": 1659,
     "pending_total_local": 0,
@@ -16,43 +16,43 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3384,
+      "age_seconds": 3462,
       "job_id": "EDARSAHUB-BOS-G3-SEMANTIC-CAPABILITIES-R1-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 885,
+      "age_seconds": 964,
       "job_id": "EDARSAHUB-RBAC-INIT-CONTRACT-GATE1-READONLY-R1-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 646,
+      "age_seconds": 725,
       "job_id": "EDARSAHUB-RBAC-INIT-HARDENING-GATE2-R1-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 284,
+      "age_seconds": 362,
       "job_id": "EDARSAHUB-RBAC-INIT-HARDENING-GATE2-R2-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1672,
+      "age_seconds": 1751,
       "job_id": "EDARSAHUB-RBAC-ROLES-INDEX-GATE0-READONLY-R2-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 834,
+      "age_seconds": 912,
       "job_id": "SEM-RBAC-WORKER_RESULT_SEMANTIC_EXTRACT-8BE2BFE45771E6466138",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1394,
+      "age_seconds": 1472,
       "job_id": "SEM-WORKER_REPAIR-REPOSITORY_CONTRACT_AUDIT_BOUNDE-53FB14C17CD768E85BBF",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,8 +72,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-06T06:09:52Z",
-    "last_receive_utc": "2026-11-06T06:09:47Z",
+    "last_cycle_utc": "2026-11-06T06:11:12Z",
+    "last_receive_utc": "2026-11-06T06:11:07Z",
     "last_terminal_utc": "2026-11-06T06:05:15Z",
     "pid": "7304",
     "runtime_fingerprint": {
