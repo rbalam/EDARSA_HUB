@@ -1,0 +1,115 @@
+{
+  "acceptance": [
+    "status=READ_ONLY_COMPLETE",
+    "certification=CERTIFIED_READ_ONLY",
+    "quality_gate=PASS",
+    "tests=PASS",
+    "production_touched=false",
+    "files_changed=[]",
+    "Confirmar Gate4 fisico PersonaID/FK/indice",
+    "Clasificar cohortes de auto-backfill",
+    "No devolver PII individual",
+    "Cuantificar identificadores invalidos",
+    "Cuantificar duplicados secundarios",
+    "Cuantificar ambiguedad sin CURP/RFC",
+    "Cuantificar bajas/reingresos potenciales",
+    "No DDL",
+    "No DML",
+    "No backfill"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "queries": [
+        {
+          "name": "gate4_physical_link_state",
+          "sql": "SELECT\n    CASE WHEN COL_LENGTH(\n        'dbo.RH_Colaboradores_Expediente',\n        'PersonaID'\n    ) IS NULL THEN 0 ELSE 1 END AS persona_id_exists,\n    (\n        SELECT COUNT(*)\n        FROM sys.foreign_keys\n        WHERE parent_object_id =\n              OBJECT_ID('dbo.RH_Colaboradores_Expediente')\n          AND name =\n              'FK_RH_Colaboradores_Expediente_GobiernoPersona'\n    ) AS persona_fk_exists,\n    (\n        SELECT COUNT(*)\n        FROM sys.indexes\n        WHERE object_id =\n              OBJECT_ID('dbo.RH_Colaboradores_Expediente')\n          AND name =\n              'IX_RH_Colaboradores_Expediente_PersonaID'\n    ) AS persona_index_exists;"
+        },
+        {
+          "name": "backfill_population_baseline",
+          "sql": "SELECT\n    COUNT_BIG(*) AS total_colaboradores,\n    SUM(CASE\n        WHEN CURP IS NOT NULL\n         AND LTRIM(RTRIM(CURP)) <> ''\n        THEN 1 ELSE 0\n    END) AS con_curp,\n    SUM(CASE\n        WHEN RFC IS NOT NULL\n         AND LTRIM(RTRIM(RFC)) <> ''\n        THEN 1 ELSE 0\n    END) AS con_rfc,\n    SUM(CASE\n        WHEN (CURP IS NULL OR LTRIM(RTRIM(CURP)) = '')\n         AND (RFC IS NULL OR LTRIM(RTRIM(RFC)) = '')\n        THEN 1 ELSE 0\n    END) AS sin_curp_y_rfc,\n    SUM(CASE\n        WHEN PersonaID IS NOT NULL\n        THEN 1 ELSE 0\n    END) AS ya_vinculados\nFROM dbo.RH_Colaboradores_Expediente;"
+        },
+        {
+          "name": "backfill_auto_cohort_curp",
+          "sql": "SELECT COUNT_BIG(*) AS auto_curp\nFROM dbo.RH_Colaboradores_Expediente c\nWHERE c.PersonaID IS NULL\n  AND c.CURP IS NOT NULL\n  AND LTRIM(RTRIM(c.CURP)) <> ''\n  AND LEN(LTRIM(RTRIM(c.CURP))) = 18\n  AND NOT EXISTS (\n      SELECT 1\n      FROM dbo.RH_Colaboradores_Expediente x\n      WHERE x.ColaboradorID <> c.ColaboradorID\n        AND x.CURP = c.CURP\n  );"
+        },
+        {
+          "name": "backfill_auto_cohort_rfc_without_curp",
+          "sql": "SELECT COUNT_BIG(*) AS auto_rfc_only\nFROM dbo.RH_Colaboradores_Expediente c\nWHERE c.PersonaID IS NULL\n  AND (c.CURP IS NULL OR LTRIM(RTRIM(c.CURP)) = '')\n  AND c.RFC IS NOT NULL\n  AND LTRIM(RTRIM(c.RFC)) <> ''\n  AND LEN(LTRIM(RTRIM(c.RFC))) IN (12,13)\n  AND NOT EXISTS (\n      SELECT 1\n      FROM dbo.RH_Colaboradores_Expediente x\n      WHERE x.ColaboradorID <> c.ColaboradorID\n        AND x.RFC = c.RFC\n  );"
+        },
+        {
+          "name": "identifier_format_quality",
+          "sql": "SELECT\n    SUM(CASE\n        WHEN CURP IS NOT NULL\n         AND LTRIM(RTRIM(CURP)) <> ''\n         AND LEN(LTRIM(RTRIM(CURP))) <> 18\n        THEN 1 ELSE 0\n    END) AS curp_longitud_invalida,\n    SUM(CASE\n        WHEN RFC IS NOT NULL\n         AND LTRIM(RTRIM(RFC)) <> ''\n         AND LEN(LTRIM(RTRIM(RFC))) NOT IN (12,13)\n        THEN 1 ELSE 0\n    END) AS rfc_longitud_invalida\nFROM dbo.RH_Colaboradores_Expediente;"
+        },
+        {
+          "name": "secondary_identity_duplicate_groups",
+          "sql": "WITH numero AS (\n    SELECT NumeroEmpleado\n    FROM dbo.RH_Colaboradores_Expediente\n    WHERE NumeroEmpleado IS NOT NULL\n      AND LTRIM(RTRIM(NumeroEmpleado)) <> ''\n    GROUP BY NumeroEmpleado\n    HAVING COUNT(*) > 1\n),\ncodigo AS (\n    SELECT CodigoColaborador\n    FROM dbo.RH_Colaboradores_Expediente\n    WHERE CodigoColaborador IS NOT NULL\n      AND LTRIM(RTRIM(CodigoColaborador)) <> ''\n    GROUP BY CodigoColaborador\n    HAVING COUNT(*) > 1\n),\nusuario AS (\n    SELECT UsuarioID\n    FROM dbo.RH_Colaboradores_Expediente\n    WHERE UsuarioID IS NOT NULL\n    GROUP BY UsuarioID\n    HAVING COUNT(*) > 1\n)\nSELECT\n    (SELECT COUNT(*) FROM numero)\n        AS numero_empleado_duplicate_groups,\n    (SELECT COUNT(*) FROM codigo)\n        AS codigo_colaborador_duplicate_groups,\n    (SELECT COUNT(*) FROM usuario)\n        AS usuario_id_duplicate_groups;"
+        },
+        {
+          "name": "secondary_identity_coverage",
+          "sql": "SELECT\n    SUM(CASE\n        WHEN NumeroEmpleado IS NOT NULL\n         AND LTRIM(RTRIM(NumeroEmpleado)) <> ''\n        THEN 1 ELSE 0\n    END) AS con_numero_empleado,\n    SUM(CASE\n        WHEN CodigoColaborador IS NOT NULL\n         AND LTRIM(RTRIM(CodigoColaborador)) <> ''\n        THEN 1 ELSE 0\n    END) AS con_codigo_colaborador,\n    SUM(CASE\n        WHEN UsuarioID IS NOT NULL\n        THEN 1 ELSE 0\n    END) AS con_usuario_id\nFROM dbo.RH_Colaboradores_Expediente;"
+        },
+        {
+          "name": "no_tax_id_name_birth_ambiguity",
+          "sql": "WITH base AS (\n    SELECT\n        UPPER(\n            LTRIM(\n                RTRIM(\n                    REPLACE(\n                        REPLACE(\n                            REPLACE(Nombre_Completo,'.',''),\n                            ',',''\n                        ),\n                        '  ',' '\n                    )\n                )\n            )\n        ) AS nombre_norm,\n        FechaNacimiento\n    FROM dbo.RH_Colaboradores_Expediente\n    WHERE (CURP IS NULL OR LTRIM(RTRIM(CURP)) = '')\n      AND (RFC IS NULL OR LTRIM(RTRIM(RFC)) = '')\n),\ngrupos AS (\n    SELECT\n        nombre_norm,\n        FechaNacimiento,\n        COUNT(*) AS cantidad\n    FROM base\n    GROUP BY nombre_norm, FechaNacimiento\n    HAVING COUNT(*) > 1\n)\nSELECT\n    COUNT(*) AS duplicate_groups,\n    COALESCE(SUM(cantidad),0) AS affected_rows\nFROM grupos;"
+        },
+        {
+          "name": "no_tax_id_exact_name_duplicates",
+          "sql": "WITH grupos AS (\n    SELECT\n        UPPER(LTRIM(RTRIM(Nombre_Completo))) AS nombre_norm,\n        COUNT(*) AS cantidad\n    FROM dbo.RH_Colaboradores_Expediente\n    WHERE (CURP IS NULL OR LTRIM(RTRIM(CURP)) = '')\n      AND (RFC IS NULL OR LTRIM(RTRIM(RFC)) = '')\n    GROUP BY UPPER(LTRIM(RTRIM(Nombre_Completo)))\n    HAVING COUNT(*) > 1\n)\nSELECT\n    COUNT(*) AS duplicate_groups,\n    COALESCE(SUM(cantidad),0) AS affected_rows\nFROM grupos;"
+        },
+        {
+          "name": "employment_history_state",
+          "sql": "SELECT\n    COUNT_BIG(*) AS total,\n    SUM(CASE WHEN FechaBaja IS NOT NULL THEN 1 ELSE 0 END)\n        AS con_fecha_baja,\n    SUM(CASE WHEN FechaBaja IS NULL THEN 1 ELSE 0 END)\n        AS sin_fecha_baja,\n    SUM(CASE\n        WHEN UPPER(LTRIM(RTRIM(\n            COALESCE(Estatus_Laboral,'')\n        ))) IN ('BAJA','INACTIVO','TERMINADO')\n        THEN 1 ELSE 0\n    END) AS estatus_no_activo\nFROM dbo.RH_Colaboradores_Expediente;"
+        },
+        {
+          "name": "persona_target_state",
+          "sql": "SELECT\n    COUNT_BIG(*) AS personas_existentes,\n    SUM(CASE WHEN CURP IS NOT NULL THEN 1 ELSE 0 END)\n        AS personas_con_curp,\n    SUM(CASE WHEN RFC IS NOT NULL THEN 1 ELSE 0 END)\n        AS personas_con_rfc\nFROM dbo.Gobierno_Persona;"
+        },
+        {
+          "name": "backfill_cohort_summary",
+          "sql": "SELECT\n    COUNT_BIG(*) AS total_pendientes,\n    SUM(CASE\n        WHEN PersonaID IS NULL\n         AND CURP IS NOT NULL\n         AND LTRIM(RTRIM(CURP)) <> ''\n         AND LEN(LTRIM(RTRIM(CURP))) = 18\n        THEN 1 ELSE 0\n    END) AS candidatos_por_curp,\n    SUM(CASE\n        WHEN PersonaID IS NULL\n         AND (CURP IS NULL OR LTRIM(RTRIM(CURP)) = '')\n         AND RFC IS NOT NULL\n         AND LTRIM(RTRIM(RFC)) <> ''\n         AND LEN(LTRIM(RTRIM(RFC))) IN (12,13)\n        THEN 1 ELSE 0\n    END) AS candidatos_por_rfc_sin_curp,\n    SUM(CASE\n        WHEN PersonaID IS NULL\n         AND (CURP IS NULL OR LTRIM(RTRIM(CURP)) = '')\n         AND (RFC IS NULL OR LTRIM(RTRIM(RFC)) = '')\n        THEN 1 ELSE 0\n    END) AS requieren_resolucion_adicional\nFROM dbo.RH_Colaboradores_Expediente;"
+        }
+      ],
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "constraints": [
+    "Gate4 ya esta CERTIFIED 100%",
+    "SQL Server EDARSAHUB es fuente canonica",
+    "Gobierno_Persona es identidad transversal",
+    "READ_ONLY_SQL estricto",
+    "actions=[]",
+    "No exponer PII individual",
+    "No crear personas",
+    "No actualizar PersonaID",
+    "No migraciones",
+    "No MongoDB operativo",
+    "No tocar Produccion",
+    "Fail-closed ante evidencia insuficiente"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-RH-HCM-IDENTITY-BACKFILL-PREFLIGHT-GATE5A-READONLY-R1-20261106",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar exclusivamente en READ_ONLY_SQL el preflight del backfill HCM sobre dbo.RH_Colaboradores_Expediente. Clasificar los 510 registros en cohortes seguras o ambiguas para futura materializacion en dbo.Gobierno_Persona. No devolver PII individual; solo conteos agregados. Evaluar CURP/RFC, calidad de identificadores, duplicados por identidad secundaria, NumeroEmpleado/CodigoColaborador, UsuarioID, nombre normalizado + fecha de nacimiento, bajas/reingresos y estado actual de PersonaID. No ejecutar DDL/DML ni tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "HCM-GLOBAL",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "manual_authorized_app"
+  },
+  "scheduling": {
+    "bounded_context": "RH-HCM",
+    "conflict_domains": [
+      "RH-HCM-IDENTITY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
