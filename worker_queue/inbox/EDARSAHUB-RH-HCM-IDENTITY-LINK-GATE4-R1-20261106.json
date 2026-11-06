@@ -1,0 +1,86 @@
+{
+  "acceptance": [
+    "Solo dos archivos nuevos",
+    "PersonaID BIGINT NULL",
+    "FK a dbo.Gobierno_Persona(PersonaID)",
+    "Indice filtrado por PersonaID IS NOT NULL",
+    "Migracion idempotente",
+    "Transaccion y rollback",
+    "No backfill",
+    "No INSERT/UPDATE/DELETE/MERGE de datos",
+    "No eliminar ni modificar ColaboradorID",
+    "No crear maestro RH/HCM paralelo de personas",
+    "pytest PASS",
+    "py_compile PASS",
+    "git_diff_check PASS",
+    "production_touched=false"
+  ],
+  "actions": [
+    {
+      "content": "/*\nEDARSAHUB BOS - HCM Identity Convergence Gate 4\nColaborador -> Gobierno_Persona\nDESARROLLO. NO EJECUTAR EN PRODUCCION DESDE ESTE GATE.\n\nPrincipios:\n- Gobierno_Persona es la identidad transversal.\n- RH_Colaboradores_Expediente conserva ColaboradorID y compatibilidad legacy.\n- PersonaID es nullable durante convergencia.\n- Este Gate NO ejecuta backfill.\n- Este Gate NO mueve ni elimina PII.\n*/\n\nSET NOCOUNT ON;\nSET XACT_ABORT ON;\n\nBEGIN TRY\n    BEGIN TRANSACTION;\n\n    IF OBJECT_ID(\n        N'dbo.RH_Colaboradores_Expediente',\n        N'U'\n    ) IS NULL\n        THROW 51000,\n            'Falta dbo.RH_Colaboradores_Expediente.',\n            1;\n\n    IF OBJECT_ID(\n        N'dbo.Gobierno_Persona',\n        N'U'\n    ) IS NULL\n        THROW 51000,\n            'Falta dbo.Gobierno_Persona BOS canonica.',\n            1;\n\n    IF COL_LENGTH(\n        N'dbo.RH_Colaboradores_Expediente',\n        N'PersonaID'\n    ) IS NULL\n    BEGIN\n        ALTER TABLE dbo.RH_Colaboradores_Expediente\n        ADD PersonaID BIGINT NULL;\n    END;\n\n    IF NOT EXISTS (\n        SELECT 1\n        FROM sys.foreign_keys\n        WHERE parent_object_id =\n              OBJECT_ID(N'dbo.RH_Colaboradores_Expediente')\n          AND name =\n              N'FK_RH_Colaboradores_Expediente_GobiernoPersona'\n    )\n    BEGIN\n        ALTER TABLE dbo.RH_Colaboradores_Expediente\n        WITH CHECK\n        ADD CONSTRAINT\n            FK_RH_Colaboradores_Expediente_GobiernoPersona\n        FOREIGN KEY (PersonaID)\n        REFERENCES dbo.Gobierno_Persona(PersonaID);\n\n        ALTER TABLE dbo.RH_Colaboradores_Expediente\n        CHECK CONSTRAINT\n            FK_RH_Colaboradores_Expediente_GobiernoPersona;\n    END;\n\n    IF NOT EXISTS (\n        SELECT 1\n        FROM sys.indexes\n        WHERE object_id =\n              OBJECT_ID(N'dbo.RH_Colaboradores_Expediente')\n          AND name =\n              N'IX_RH_Colaboradores_Expediente_PersonaID'\n    )\n    BEGIN\n        CREATE INDEX\n            IX_RH_Colaboradores_Expediente_PersonaID\n        ON dbo.RH_Colaboradores_Expediente(PersonaID)\n        WHERE PersonaID IS NOT NULL;\n    END;\n\n    /*\n    Gate 4 intentionally performs NO backfill.\n\n    Certified Gate 3 evidence:\n    - RH_Colaboradores_Expediente: 510 rows\n    - Gobierno_Persona: 0 rows\n    - PersonaID in RH: absent\n    - Duplicate CURP in RH: 0\n    - Duplicate RFC in RH: 0\n    - 56 colaboradores without CURP\n    - 74 colaboradores without RFC\n    - 56 without CURP and RFC\n\n    Backfill belongs to a separate Gate.\n    */\n\n    COMMIT TRANSACTION;\nEND TRY\nBEGIN CATCH\n    IF @@TRANCOUNT > 0\n        ROLLBACK TRANSACTION;\n\n    THROW;\nEND CATCH;\n",
+      "path": "backend/database/migrations/20261106_hcm_colaborador_gobierno_persona_link.sql",
+      "type": "write_file"
+    },
+    {
+      "content": "from pathlib import Path\n\nSQL = (\n    Path(__file__).resolve().parents[1]\n    / \"database\"\n    / \"migrations\"\n    / \"20261106_hcm_colaborador_gobierno_persona_link.sql\"\n).read_text(encoding=\"utf-8\")\n\n\ndef test_gate4_uses_canonical_gobierno_persona():\n    assert \"ADD PersonaID BIGINT NULL\" in SQL\n    assert (\n        \"REFERENCES dbo.Gobierno_Persona(PersonaID)\"\n        in SQL\n    )\n    assert (\n        \"IX_RH_Colaboradores_Expediente_PersonaID\"\n        in SQL\n    )\n\n\ndef test_gate4_preserves_legacy_colaborador_identity():\n    upper = SQL.upper()\n\n    assert \"DROP TABLE\" not in upper\n    assert \"DROP COLUMN\" not in upper\n    assert \"ALTER COLUMN COLABORADORID\" not in upper\n    assert \"DROP CONSTRAINT\" not in upper\n\n\ndef test_gate4_performs_no_backfill_or_data_mutation():\n    upper = SQL.upper()\n\n    forbidden = (\n        \"UPDATE DBO.RH_COLABORADORES_EXPEDIENTE\",\n        \"INSERT INTO DBO.GOBIERNO_PERSONA\",\n        \"INSERT INTO DBO.RH_COLABORADORES_EXPEDIENTE\",\n        \"DELETE FROM DBO.RH_COLABORADORES_EXPEDIENTE\",\n        \"MERGE DBO.RH_COLABORADORES_EXPEDIENTE\",\n    )\n\n    for token in forbidden:\n        assert token not in upper\n\n\ndef test_gate4_does_not_create_parallel_person_master():\n    upper = SQL.upper()\n\n    assert \"CREATE TABLE DBO.RH_PERSONA\" not in upper\n    assert \"CREATE TABLE DBO.RH_PERSONAS\" not in upper\n    assert \"CREATE TABLE DBO.HCM_PERSONA\" not in upper\n    assert \"CREATE TABLE DBO.HCM_PERSONAS\" not in upper\n\n\ndef test_gate4_is_idempotent():\n    upper = SQL.upper()\n\n    assert \"COL_LENGTH(\" in upper\n    assert \"SYS.FOREIGN_KEYS\" in upper\n    assert \"SYS.INDEXES\" in upper\n\n\ndef test_gate4_is_transactional_and_reversible_on_error():\n    upper = SQL.upper()\n\n    assert \"BEGIN TRANSACTION\" in upper\n    assert \"COMMIT TRANSACTION\" in upper\n    assert \"ROLLBACK TRANSACTION\" in upper\n    assert \"SET XACT_ABORT ON\" in upper\n\n\ndef test_gate4_requires_both_existing_canonical_objects():\n    assert (\n        \"Falta dbo.RH_Colaboradores_Expediente.\"\n        in SQL\n    )\n    assert (\n        \"Falta dbo.Gobierno_Persona BOS canonica.\"\n        in SQL\n    )\n",
+      "path": "backend/tests/test_hcm_colaborador_persona_link_gate4_contract.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_hcm_colaborador_persona_link_gate4_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_hcm_colaborador_persona_link_gate4_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Gate3 READ_ONLY ya esta CERTIFIED_READ_ONLY 100%",
+    "SQL Server EDARSAHUB es fuente canonica",
+    "Gobierno_Persona es identidad transversal",
+    "RH_Colaboradores_Expediente conserva compatibilidad legacy",
+    "No MongoDB operativo",
+    "No backfill en este Gate",
+    "No tocar RH_Candidatos",
+    "No modificar APIs",
+    "No ejecutar migracion en Produccion",
+    "No crear Workers, colas ni publicadores alternativos",
+    "Fail-closed ante cualquier divergencia"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-RH-HCM-IDENTITY-LINK-GATE4-R1-20261106",
+  "mode": "MUTATION",
+  "objective": "Implementar exclusivamente el Gate 4 de convergencia de identidad HCM en Edarsahub_Desarrollo. Reutilizar el patrón BOS ya probado de Cavas: agregar PersonaID BIGINT NULL a dbo.RH_Colaboradores_Expediente, FK a dbo.Gobierno_Persona(PersonaID) e índice filtrado. No ejecutar backfill, no insertar personas, no mover ni eliminar PII, no cambiar ColaboradorID, APIs ni comportamiento runtime. Crear únicamente la migración y prueba contractual. No tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "HCM-GLOBAL",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "manual_authorized_app"
+  },
+  "scheduling": {
+    "bounded_context": "RH-HCM",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "RH-HCM-IDENTITY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
