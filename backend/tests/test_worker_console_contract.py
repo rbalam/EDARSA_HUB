@@ -92,16 +92,14 @@ def test_public_job_metadata_fails_closed_for_invalid_or_unexpected_job():
 
 
 def test_worker_audit_endpoint_requires_effective_rbac_permission():
-    """Unstructured runtime logs must not be available to all authenticated users."""
-    from modules.worker_console import routes
-    from core.rbac.middleware import require_explicit_permission
-
-    assert routes.AUDIT_ADMIN_DEPENDENCY is not None
-    assert routes.audit.__name__ == "audit"
-    dependency = routes.audit.__defaults__
-    assert dependency is not None
+    """Assert FastAPI actually binds the existing explicit RBAC dependency."""
     import inspect
-    assert "AUDIT_ADMIN_DEPENDENCY" in inspect.getsource(routes.audit)
+    from fastapi.params import Depends
+    from modules.worker_console import routes
+
+    default = inspect.signature(routes.audit).parameters["current_user"].default
+    assert isinstance(default, Depends)
+    assert default.dependency is routes.AUDIT_ADMIN_DEPENDENCY
 
 
 def test_dashboard_does_not_serialize_preferred_or_reconciler_documents(tmp_path, monkeypatch):
