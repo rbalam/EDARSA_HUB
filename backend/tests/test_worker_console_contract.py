@@ -63,4 +63,5 @@ def test_public_control_plane_status_redacts_maintenance():
 
 def test_public_control_plane_status_fails_closed_for_non_dict():
     assert C.public_control_plane_status(None) is None
-    assert C.public_control_plane_status([]) == []
+    assert C.public_control_plane_status([]) is None
+    assert C.public_control_plane_status([{"maintenance": {"incident_id": "SENSITIVE"}}]) is None
