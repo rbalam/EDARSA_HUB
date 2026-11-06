@@ -89,3 +89,16 @@ def test_public_job_metadata_fails_closed_for_invalid_or_unexpected_job():
     assert C.public_job_metadata(None) is None
     assert C.public_job_metadata([]) is None
     assert C.public_job_metadata({"job": {"schema": "unknown", "mode": "ROOT"}}) == {}
+
+
+def test_worker_audit_endpoint_requires_effective_rbac_permission():
+    """Unstructured runtime logs must not be available to all authenticated users."""
+    from modules.worker_console import routes
+    from core.rbac.middleware import require_explicit_permission
+
+    assert routes.AUDIT_ADMIN_DEPENDENCY is not None
+    assert routes.audit.__name__ == "audit"
+    dependency = routes.audit.__defaults__
+    assert dependency is not None
+    import inspect
+    assert "AUDIT_ADMIN_DEPENDENCY" in inspect.getsource(routes.audit)
