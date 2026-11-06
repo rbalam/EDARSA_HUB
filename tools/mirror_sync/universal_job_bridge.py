@@ -766,10 +766,40 @@ _SLOT_ALREADY_CLAIMED_BLOCKER = (
 _NEEDS_FAST_FORWARD_REFRESH_BLOCKER = (
     "dispatcher_exception:RuntimeError:NEEDS_FAST_FORWARD_REFRESH"
 )
+_GIT_WORKTREE_NOT_CLEAN_BLOCKER = (
+    "dispatcher_exception:RuntimeError:GIT_WORKTREE_NOT_CLEAN"
+)
 _PREEXECUTION_INFRASTRUCTURE_RETRY_CONTRACT = {
     "BLOCKED": {_SLOT_ALREADY_CLAIMED_BLOCKER},
     "GIT_DIVERGENCE_BLOCKED": {_NEEDS_FAST_FORWARD_REFRESH_BLOCKER},
+    "GIT_WORKTREE_NOT_CLEAN": {_GIT_WORKTREE_NOT_CLEAN_BLOCKER},
 }
+
+
+def _worktree_clean_retry_ready(name: str) -> bool:
+    if RESULTS != STATE / "results":
+        return True
+    preferred_path = STATE / "runtime" / "preferred_job.json"
+    preferred = _read_json_file(preferred_path)
+    preferred_id = str(preferred.get("job_id") or "").strip()
+    try:
+        expires_at = float(preferred.get("expires_at_epoch") or 0)
+    except (TypeError, ValueError):
+        expires_at = 0.0
+    if (
+        preferred_id != Path(name).stem
+        or expires_at <= datetime.now(timezone.utc).timestamp()
+    ):
+        return False
+    try:
+        from tools.mirror_sync.git_divergence_guard import _status_counts
+    except ModuleNotFoundError:
+        from git_divergence_guard import _status_counts
+    try:
+        counts = _status_counts(ROOT)
+    except Exception:
+        return False
+    return counts.get("worktree_dirty") is False
 
 
 def _preexecution_retry_history_matches(name: str) -> list[Path]:
@@ -808,7 +838,12 @@ def preexecution_infrastructure_retry_decision(
         and len(blockers) == 1
         and blockers[0] in allowed_blockers
     )
-    allowed = retryable_shape and not history
+    worktree_ready = (
+        _worktree_clean_retry_ready(name)
+        if status == "GIT_WORKTREE_NOT_CLEAN"
+        else True
+    )
+    allowed = retryable_shape and not history and worktree_ready
 
     return {
         "present": True,

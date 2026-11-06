@@ -643,4 +643,5 @@ auditorias_canonicas/
 # Emergent testing runtime is platform-generated.
 /.emergent/testing/.runtime/
 /.emergent/testing/browser_runs/**
+/.emergent/stripped_env_names
 
