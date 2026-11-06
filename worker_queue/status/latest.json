@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "70842a62015c4113b4c57e7b2fe878b417788249",
-  "generated_at_utc": "2026-11-06T05:50:35Z",
+  "generated_at_utc": "2026-11-06T05:53:14Z",
   "history": {
     "done_total_local": 1657,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2219,
+      "age_seconds": 2379,
       "job_id": "EDARSAHUB-BOS-G3-SEMANTIC-CAPABILITIES-R1-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 508,
+      "age_seconds": 667,
       "job_id": "EDARSAHUB-RBAC-ROLES-INDEX-GATE0-READONLY-R2-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2903,
+      "age_seconds": 3062,
       "job_id": "SEM-WORKER_INGRESS-READ_ONLY_CANARY-AB22213212DC4C1D31F7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 229,
+      "age_seconds": 388,
       "job_id": "SEM-WORKER_REPAIR-REPOSITORY_CONTRACT_AUDIT_BOUNDE-53FB14C17CD768E85BBF",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,10 +54,10 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-06T05:50:25Z",
-    "last_receive_utc": "2026-11-06T05:50:20Z",
+    "last_cycle_utc": "2026-11-06T05:52:58Z",
+    "last_receive_utc": "2026-11-06T05:50:39Z",
     "last_terminal_utc": "2026-11-06T05:46:45Z",
-    "pid": "310912",
+    "pid": "4885",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "46056ee5d22f69835bf1c6be1c75410b69637496",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
