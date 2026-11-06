@@ -55,9 +55,7 @@ async def dashboard(current_user: dict = Depends(get_current_user)):
     control_plane = C.public_control_plane_status(
         C.read_json_file(runtime_dir / "control_plane_status.json")
     )
-    reconciler = C.read_json_file(runtime_dir / "reconciler.json")
     orphaned = (runtime_dir / "orphaned-preferred").exists()
-    preferred = C.read_json_file(runtime_dir / "preferred_job.json")
 
     return {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -69,8 +67,8 @@ async def dashboard(current_user: dict = Depends(get_current_user)):
             "last_receive_utc": _read_txt("last_receive_utc"),
             "last_terminal_utc": _read_txt("last_terminal_utc"),
             "control_plane_status": control_plane,
-            "reconciler": reconciler,
-            "preferred_job": preferred,
+            "reconciler": None,
+            "preferred_job": None,
             "preferred_job_orphaned": orphaned,
         },
     }
