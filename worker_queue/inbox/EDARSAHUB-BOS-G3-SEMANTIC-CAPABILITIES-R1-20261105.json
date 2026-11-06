@@ -1,0 +1,61 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "\n\n# G3 - Additional bounded semantic READ_ONLY capabilities.\nimport re as _g3_re\n\n_G3_JOB_ID = _g3_re.compile(r\"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$\")\n_G3_TERM = _g3_re.compile(r\"^[A-Za-z0-9_.-]{2,64}$\")\n_G3_PATH = _g3_re.compile(r\"^[A-Za-z0-9_./-]+$\")\n_G3_ROOTS = (\n    \"backend/modules/\",\n    \"backend/tests/\",\n    \"frontend/src/\",\n    \"tools/mirror_sync/\",\n)\n_G3_DENIED = {\n    \".git\", \".env\", \".venv\", \"venv\",\n    \"node_modules\", \"__pycache__\", \"dist\", \"build\",\n}\n_G3_SENSITIVE = (\n    \"secret\", \"credential\", \"password\", \"token\",\n    \"private_key\", \"api_key\",\n)\n\ndef _g3_context(request):\n    context = str(request.get(\"bounded_context\") or \"\").strip().upper()\n    if not _g3_re.fullmatch(r\"[A-Z0-9][A-Z0-9._-]{1,119}\", context):\n        raise SemanticCapabilityError(\"SEMANTIC_CONTEXT_INVALID\")\n    return context\n\ndef _g3_constraints(request, allowed):\n    value = request.get(\"constraints\")\n    if not isinstance(value, Mapping):\n        raise SemanticCapabilityError(\"SEMANTIC_CONSTRAINTS_INVALID\")\n    if set(value) - set(allowed):\n        raise SemanticCapabilityError(\"SEMANTIC_CONSTRAINTS_UNSUPPORTED\")\n    return dict(value)\n\ndef _g3_scheduling(context):\n    return {\n        \"project_id\": \"EDARSAHUB\",\n        \"bounded_context\": context,\n        \"priority_class\": \"NORMAL\",\n        \"fairness_weight\": 1,\n        \"max_parallelism\": 1,\n        \"resource_claims\": [],\n        \"conflict_domains\": [context],\n    }\n\ndef _g3_repository_builder(request):\n    context = _g3_context(request)\n    c = _g3_constraints(\n        request, {\"paths\", \"search_terms\", \"max_results\"}\n    )\n    paths = c.get(\"paths\")\n    terms = c.get(\"search_terms\")\n    limit = c.get(\"max_results\", 100)\n\n    if not isinstance(paths, list) or not 1 <= len(paths) <= 20:\n        raise SemanticCapabilityError(\"SEMANTIC_PATHS_INVALID\")\n    if not isinstance(terms, list) or not 1 <= len(terms) <= 20:\n        raise SemanticCapabilityError(\"SEMANTIC_TERMS_INVALID\")\n    if type(limit) is not int or not 1 <= limit <= 100:\n        raise SemanticCapabilityError(\"SEMANTIC_LIMIT_INVALID\")\n\n    for value in paths:\n        if not isinstance(value, str) or not _G3_PATH.fullmatch(value):\n            raise SemanticCapabilityError(\"SEMANTIC_PATH_INVALID\")\n\n        # Directory paths ending in / are valid.\n        parts = value.rstrip(\"/\").split(\"/\")\n\n        if (\n            not value.startswith(_G3_ROOTS)\n            or any(p in (\"\", \".\", \"..\") for p in parts)\n            or any(p in _G3_DENIED for p in parts)\n            or any(\n                marker in p.lower()\n                for p in parts\n                for marker in _G3_SENSITIVE\n            )\n        ):\n            raise SemanticCapabilityError(\"SEMANTIC_PATH_FORBIDDEN\")\n\n    if any(\n        not isinstance(t, str) or not _G3_TERM.fullmatch(t)\n        for t in terms\n    ):\n        raise SemanticCapabilityError(\"SEMANTIC_TERMS_INVALID\")\n\n    return {\n        \"actions\": [],\n        \"checks\": [{\n            \"type\": \"repository_contract_audit\",\n            \"request\": {\n                \"paths\": paths,\n                \"search_terms\": terms,\n                \"max_results\": limit,\n            },\n        }],\n        \"scheduling\": _g3_scheduling(context),\n    }\n\ndef _g3_result_builder(request):\n    context = _g3_context(request)\n    c = _g3_constraints(request, {\"source_job_id\"})\n    job_id = c.get(\"source_job_id\")\n\n    if not isinstance(job_id, str) or not _G3_JOB_ID.fullmatch(job_id):\n        raise SemanticCapabilityError(\"SEMANTIC_SOURCE_JOB_INVALID\")\n\n    return {\n        \"actions\": [],\n        \"checks\": [{\n            \"type\": \"worker_result_semantic_extract\",\n            \"request\": {\n                \"source_result\": {\n                    \"branch\": \"worker/results\",\n                    \"path\": (\n                        \"worker_queue/results/\"\n                        + job_id + \".json\"\n                    ),\n                },\n            },\n        }],\n        \"scheduling\": _g3_scheduling(context),\n    }\n\nregister_capability(\n    SemanticCapability(\n        code=\"REPOSITORY_CONTRACT_AUDIT_BOUNDED\",\n        modes=(\"READ_ONLY\",),\n        builder=_g3_repository_builder,\n    )\n)\n\nregister_capability(\n    SemanticCapability(\n        code=\"WORKER_RESULT_SEMANTIC_EXTRACT\",\n        modes=(\"READ_ONLY\",),\n        builder=_g3_result_builder,\n    )\n)\n",
+      "source_sha256": "f2b1444f2b537f429514899d261a2dbaf13b98326593e69df48e81e3524da5b5",
+      "type": "append_once"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_objective_certification_r2.py",
+      "replacement": "\n\n# G3 - Semantic capability tests.\nimport importlib.util as _g3_importlib\nimport sys as _g3_sys\nimport pytest as _g3_pytest\n\ndef _g3_module():\n    source = (\n        Path(__file__).resolve().parents[1]\n        / \"modules/worker_ingress/semantic_capabilities.py\"\n    )\n    spec = _g3_importlib.spec_from_file_location(\n        \"_g3_semantic_capabilities\", source\n    )\n    module = _g3_importlib.module_from_spec(spec)\n    _g3_sys.modules[spec.name] = module\n    spec.loader.exec_module(module)\n    return module\n\ndef _g3_build(code, constraints, context=\"WORKER_INGRESS\"):\n    module = _g3_module()\n    return module.resolve_capability(code).builder({\n        \"bounded_context\": context,\n        \"constraints\": constraints,\n    })\n\ndef test_g3_registration():\n    module = _g3_module()\n    names = module.registered_capabilities()\n    assert \"REPOSITORY_CONTRACT_AUDIT\" in names\n    assert \"REPOSITORY_CONTRACT_AUDIT_BOUNDED\" in names\n    assert \"WORKER_RESULT_SEMANTIC_EXTRACT\" in names\n\ndef test_g3_rh_compatibility():\n    result = _g3_build(\"REPOSITORY_CONTRACT_AUDIT\", {}, \"RH\")\n    assert result[\"actions\"] == []\n    assert result[\"checks\"][0][\"request\"][\"max_results\"] == 200\n\ndef test_g3_repository_valid():\n    result = _g3_build(\"REPOSITORY_CONTRACT_AUDIT_BOUNDED\", {\n        \"paths\": [\"backend/modules/worker_ingress/\"],\n        \"search_terms\": [\"semantic\"],\n        \"max_results\": 10,\n    })\n    assert result[\"actions\"] == []\n    assert result[\"checks\"][0][\"type\"] == \"repository_contract_audit\"\n\n@_g3_pytest.mark.parametrize(\"path\", [\n    \"../secret\",\n    \"/etc/passwd\",\n    \".git/config\",\n    \"backend/modules/../../secret\",\n    \"backend/modules/.env\",\n    \"backend/modules/node_modules/file\",\n    \"backend/modules/auth/passwords.py\",\n])\ndef test_g3_repository_rejects_paths(path):\n    with _g3_pytest.raises(ValueError):\n        _g3_build(\"REPOSITORY_CONTRACT_AUDIT_BOUNDED\", {\n            \"paths\": [path],\n            \"search_terms\": [\"semantic\"],\n        })\n\ndef test_g3_result_valid():\n    result = _g3_build(\"WORKER_RESULT_SEMANTIC_EXTRACT\", {\n        \"source_job_id\": \"BOS-GATE1-TEST\",\n    })\n    assert result[\"actions\"] == []\n    assert result[\"checks\"][0][\"request\"][\"source_result\"] == {\n        \"branch\": \"worker/results\",\n        \"path\": \"worker_queue/results/BOS-GATE1-TEST.json\",\n    }\n\n@_g3_pytest.mark.parametrize(\"job_id\", [\n    \"../secret\", \"bad/name\", \"\", \"x\",\n])\ndef test_g3_result_rejects_job_id(job_id):\n    with _g3_pytest.raises(ValueError):\n        _g3_build(\"WORKER_RESULT_SEMANTIC_EXTRACT\", {\n            \"source_job_id\": job_id,\n        })\n\ndef test_g3_result_rejects_arbitrary_refs():\n    with _g3_pytest.raises(ValueError):\n        _g3_build(\"WORKER_RESULT_SEMANTIC_EXTRACT\", {\n            \"source_job_id\": \"BOS-GATE1-TEST\",\n            \"branch\": \"other\",\n        })\n",
+      "source_sha256": "489c23ca67e0bf17590c7a97f0365202890e910b16901b4fd4bbfbbd9dc588f2",
+      "type": "append_once"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_objective_certification_r2.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_objective_certification_r2.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-G3-SEMANTIC-CAPABILITIES-R1-20261105",
+  "mode": "MUTATION",
+  "objective": "Integrar capacidades semanticas G3 preservando el contrato RH existente.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "G3_SEMANTIC_CAPABILITIES",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
