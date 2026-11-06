@@ -96,7 +96,10 @@ jobs:
             tests/test_inventory_analysis_mpro_canonical.py \
             tests/test_inventory_analysis_soft_canonical.py \
             tests/test_inventory_origin_selection_transversal.py \
-            tests/test_worker_rh_repository_contract_semantic.py
+            tests/test_worker_rh_repository_contract_semantic.py \
+            tests/test_no_mongo_legacy_contract.py \
+            tests_guardrails/test_p5_1_no_mongo_residual_modules.py \
+            tests/test_scheduler_persistent_pause_contract.py
 
       - name: Backend OpenAPI smoke
         shell: bash
