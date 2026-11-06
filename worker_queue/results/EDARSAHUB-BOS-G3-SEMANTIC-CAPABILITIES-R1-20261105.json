@@ -1,22 +1,29 @@
 {
-  "blockers": [
-    "dispatcher_exception:RuntimeError:GIT_WORKTREE_NOT_CLEAN"
-  ],
-  "certification": "NOT_CERTIFIED",
-  "completed_at_utc": "2026-11-06T04:19:23Z",
+  "base_sha": "09d0076009a13820c70d95823b3447ea19c6890a",
+  "blockers": [],
+  "candidate_sha": "70842a62015c4113b4c57e7b2fe878b417788249",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-11-06T05:13:35Z",
+  "development_sha": "70842a62015c4113b4c57e7b2fe878b417788249",
+  "execution_base_sha": "09d0076009a13820c70d95823b3447ea19c6890a",
   "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/worker_ingress/semantic_capabilities.py",
+    "backend/tests/test_worker_objective_certification_r2.py"
+  ],
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "EDARSAHUB-BOS-G3-SEMANTIC-CAPABILITIES-R1-20261105",
-  "percent_complete": 0,
+  "percent_complete": 95,
   "production_touched": false,
-  "published_at_utc": "2026-11-06T04:20:35Z",
-  "quality_gate": "FAIL",
+  "published_at_utc": "2026-11-06T05:15:32Z",
+  "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
   "source_repo": "rbalam/EDARSA_HUB",
-  "started_at_utc": "2026-11-06T04:19:22Z",
-  "status": "GIT_WORKTREE_NOT_CLEAN",
-  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
-  "work_completion": "NOT_CERTIFIED"
+  "started_at_utc": "2026-11-06T05:13:15Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
 }
