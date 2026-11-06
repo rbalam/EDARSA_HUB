@@ -1,0 +1,128 @@
+{
+  "acceptance": [
+    "status=READ_ONLY_COMPLETE o BLOCKED con blocker explícito",
+    "production_touched=false",
+    "files_changed=[]",
+    "tables_changed=[]",
+    "Confirmar existencia física de objetos HCM e identidad",
+    "Enumerar columnas y FKs reales",
+    "Confirmar presencia o ausencia de PersonaID en RH",
+    "Cuantificar volúmenes",
+    "Cuantificar duplicados CURP/RFC",
+    "Cuantificar colaboradores sin identificadores",
+    "Cuantificar matches exactos contra Gobierno_Persona",
+    "Detectar ambigüedades",
+    "Confirmar si roles HCM ya existen antes de proponer nuevos",
+    "No DDL",
+    "No DML",
+    "No migraciones",
+    "No Producción"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "queries": [
+        {
+          "name": "hcm_identity_objects",
+          "sql": "SELECT\n    s.name AS schema_name,\n    o.name AS object_name,\n    o.type_desc\nFROM sys.objects o\nJOIN sys.schemas s\n  ON s.schema_id = o.schema_id\nWHERE s.name = 'dbo'\n  AND o.name IN (\n      'Gobierno_Persona',\n      'Gobierno_PersonaVinculo',\n      'Gobierno_PersonaEmpresaRol',\n      'Gobierno_RolCorporativoCatalogo',\n      'RH_Colaboradores_Expediente',\n      'RH_Candidatos'\n  )\nORDER BY o.name;"
+        },
+        {
+          "name": "hcm_identity_columns",
+          "sql": "SELECT\n    t.name AS table_name,\n    c.column_id,\n    c.name AS column_name,\n    ty.name AS data_type,\n    c.max_length,\n    c.is_nullable,\n    c.is_identity,\n    c.is_computed\nFROM sys.tables t\nJOIN sys.columns c\n  ON c.object_id = t.object_id\nJOIN sys.types ty\n  ON ty.user_type_id = c.user_type_id\nWHERE t.name IN (\n    'Gobierno_Persona',\n    'Gobierno_PersonaVinculo',\n    'Gobierno_PersonaEmpresaRol',\n    'Gobierno_RolCorporativoCatalogo',\n    'RH_Colaboradores_Expediente',\n    'RH_Candidatos'\n)\nORDER BY t.name, c.column_id;"
+        },
+        {
+          "name": "hcm_identity_foreign_keys",
+          "sql": "SELECT\n    OBJECT_NAME(fk.parent_object_id) AS parent_table,\n    pc.name AS parent_column,\n    OBJECT_NAME(fk.referenced_object_id) AS referenced_table,\n    rc.name AS referenced_column,\n    fk.name AS foreign_key_name\nFROM sys.foreign_keys fk\nJOIN sys.foreign_key_columns fkc\n  ON fkc.constraint_object_id = fk.object_id\nJOIN sys.columns pc\n  ON pc.object_id = fk.parent_object_id\n AND pc.column_id = fkc.parent_column_id\nJOIN sys.columns rc\n  ON rc.object_id = fk.referenced_object_id\n AND rc.column_id = fkc.referenced_column_id\nWHERE OBJECT_NAME(fk.parent_object_id) IN (\n    'Gobierno_Persona',\n    'Gobierno_PersonaVinculo',\n    'Gobierno_PersonaEmpresaRol',\n    'RH_Colaboradores_Expediente',\n    'RH_Candidatos'\n)\nORDER BY parent_table, foreign_key_name;"
+        },
+        {
+          "name": "rh_personaid_presence",
+          "sql": "SELECT\n    t.name AS table_name,\n    c.name AS column_name,\n    ty.name AS data_type,\n    c.is_nullable\nFROM sys.tables t\nJOIN sys.columns c\n  ON c.object_id = t.object_id\nJOIN sys.types ty\n  ON ty.user_type_id = c.user_type_id\nWHERE t.name IN (\n    'RH_Colaboradores_Expediente',\n    'RH_Candidatos'\n)\nAND (\n    c.name LIKE '%PersonaID%'\n    OR c.name LIKE '%Gobierno%'\n)\nORDER BY t.name, c.column_id;"
+        },
+        {
+          "name": "identity_table_rowcounts",
+          "sql": "SELECT\n    t.name AS table_name,\n    SUM(p.rows) AS row_count\nFROM sys.tables t\nJOIN sys.partitions p\n  ON p.object_id = t.object_id\n AND p.index_id IN (0,1)\nWHERE t.name IN (\n    'Gobierno_Persona',\n    'Gobierno_PersonaVinculo',\n    'Gobierno_PersonaEmpresaRol',\n    'Gobierno_RolCorporativoCatalogo',\n    'RH_Colaboradores_Expediente',\n    'RH_Candidatos'\n)\nGROUP BY t.name\nORDER BY t.name;"
+        },
+        {
+          "name": "gobierno_persona_duplicate_curp",
+          "sql": "SELECT\n    CURP,\n    COUNT(*) AS cantidad\nFROM dbo.Gobierno_Persona\nWHERE CURP IS NOT NULL\n  AND LTRIM(RTRIM(CURP)) <> ''\nGROUP BY CURP\nHAVING COUNT(*) > 1\nORDER BY cantidad DESC, CURP;"
+        },
+        {
+          "name": "gobierno_persona_duplicate_rfc",
+          "sql": "SELECT\n    RFC,\n    COUNT(*) AS cantidad\nFROM dbo.Gobierno_Persona\nWHERE RFC IS NOT NULL\n  AND LTRIM(RTRIM(RFC)) <> ''\nGROUP BY RFC\nHAVING COUNT(*) > 1\nORDER BY cantidad DESC, RFC;"
+        },
+        {
+          "name": "rh_colaborador_duplicate_curp",
+          "sql": "SELECT\n    CURP,\n    COUNT(*) AS cantidad\nFROM dbo.RH_Colaboradores_Expediente\nWHERE CURP IS NOT NULL\n  AND LTRIM(RTRIM(CURP)) <> ''\nGROUP BY CURP\nHAVING COUNT(*) > 1\nORDER BY cantidad DESC, CURP;"
+        },
+        {
+          "name": "rh_colaborador_duplicate_rfc",
+          "sql": "SELECT\n    RFC,\n    COUNT(*) AS cantidad\nFROM dbo.RH_Colaboradores_Expediente\nWHERE RFC IS NOT NULL\n  AND LTRIM(RTRIM(RFC)) <> ''\nGROUP BY RFC\nHAVING COUNT(*) > 1\nORDER BY cantidad DESC, RFC;"
+        },
+        {
+          "name": "rh_colaborador_identity_quality",
+          "sql": "SELECT\n    COUNT(*) AS total,\n    SUM(CASE WHEN CURP IS NULL OR LTRIM(RTRIM(CURP))='' THEN 1 ELSE 0 END) AS sin_curp,\n    SUM(CASE WHEN RFC IS NULL OR LTRIM(RTRIM(RFC))='' THEN 1 ELSE 0 END) AS sin_rfc,\n    SUM(\n        CASE\n            WHEN (CURP IS NULL OR LTRIM(RTRIM(CURP))='')\n             AND (RFC IS NULL OR LTRIM(RTRIM(RFC))='')\n            THEN 1 ELSE 0\n        END\n    ) AS sin_curp_y_rfc\nFROM dbo.RH_Colaboradores_Expediente;"
+        },
+        {
+          "name": "rh_colaborador_gobierno_match_curp",
+          "sql": "SELECT\n    COUNT(*) AS matches_curp\nFROM dbo.RH_Colaboradores_Expediente c\nJOIN dbo.Gobierno_Persona p\n  ON p.CURP = c.CURP\nWHERE c.CURP IS NOT NULL\n  AND LTRIM(RTRIM(c.CURP)) <> '';"
+        },
+        {
+          "name": "rh_colaborador_gobierno_match_rfc_only",
+          "sql": "SELECT\n    COUNT(*) AS matches_rfc_only\nFROM dbo.RH_Colaboradores_Expediente c\nJOIN dbo.Gobierno_Persona p\n  ON p.RFC = c.RFC\nWHERE c.RFC IS NOT NULL\n  AND LTRIM(RTRIM(c.RFC)) <> ''\n  AND (\n      c.CURP IS NULL\n      OR LTRIM(RTRIM(c.CURP))=''\n      OR p.CURP IS NULL\n      OR p.CURP <> c.CURP\n  );"
+        },
+        {
+          "name": "rh_colaborador_rfc_ambiguous_matches",
+          "sql": "SELECT\n    c.RFC,\n    COUNT(DISTINCT p.PersonaID) AS personas_coincidentes\nFROM dbo.RH_Colaboradores_Expediente c\nJOIN dbo.Gobierno_Persona p\n  ON p.RFC = c.RFC\nWHERE c.RFC IS NOT NULL\n  AND LTRIM(RTRIM(c.RFC)) <> ''\nGROUP BY c.RFC\nHAVING COUNT(DISTINCT p.PersonaID) > 1\nORDER BY personas_coincidentes DESC, c.RFC;"
+        },
+        {
+          "name": "gobierno_roles_catalogo_hcm_candidates",
+          "sql": "SELECT\n    RolCorporativoID,\n    Codigo,\n    Nombre,\n    RequiereParticipacion,\n    RequiereFacultades,\n    Activo\nFROM dbo.Gobierno_RolCorporativoCatalogo\nWHERE UPPER(Codigo) LIKE '%COLAB%'\n   OR UPPER(Codigo) LIKE '%EMPLE%'\n   OR UPPER(Codigo) LIKE '%CANDID%'\n   OR UPPER(Nombre) LIKE '%COLAB%'\n   OR UPPER(Nombre) LIKE '%EMPLE%'\n   OR UPPER(Nombre) LIKE '%CANDID%'\nORDER BY Codigo;"
+        },
+        {
+          "name": "gobierno_persona_vinculo_distribution",
+          "sql": "SELECT\n    SUM(CASE WHEN UsuarioID IS NOT NULL THEN 1 ELSE 0 END) AS usuarios,\n    SUM(CASE WHEN ClienteID IS NOT NULL THEN 1 ELSE 0 END) AS clientes,\n    SUM(CASE WHEN ProveedorID IS NOT NULL THEN 1 ELSE 0 END) AS proveedores,\n    SUM(CASE WHEN ContactoClienteID IS NOT NULL THEN 1 ELSE 0 END) AS contactos_cliente,\n    SUM(CASE WHEN ContactoProveedorID IS NOT NULL THEN 1 ELSE 0 END) AS contactos_proveedor,\n    COUNT(*) AS total\nFROM dbo.Gobierno_PersonaVinculo\nWHERE Activo=1;"
+        }
+      ],
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "constraints": [
+    "SQL Server EDARSAHUB es fuente canónica",
+    "READ_ONLY_SQL estricto",
+    "actions=[]",
+    "No DDL ni DML",
+    "No MongoDB operativo",
+    "No crear tablas ni columnas",
+    "No modificar datos",
+    "No eliminar catálogos legacy",
+    "No crear roles HCM durante este Gate",
+    "No tocar Producción",
+    "No crear Worker, cola o publicador alternativo",
+    "Fail-closed ante evidencia insuficiente"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-RH-HCM-IDENTITY-CONVERGENCE-GATE3-READONLY-R1-20261106",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar exclusivamente en READ_ONLY_SQL la convergencia de identidad HCM contra la identidad transversal Gobierno_Persona. Validar existencia, esquema, claves, FKs, volumen y duplicados de Gobierno_Persona, Gobierno_PersonaVinculo, Gobierno_PersonaEmpresaRol, RH_Colaboradores_Expediente y RH_Candidatos. Determinar si RH ya posee PersonaID o vínculos canónicos, cuantificar duplicados por CURP/RFC, personas sin identificadores y coincidencias potenciales entre colaboradores, candidatos y Gobierno_Persona. No modificar datos ni esquema. La evidencia servirá únicamente para diseñar posteriormente una migración compatible, idempotente y reversible conservando ColaboradorID/CandidatoID legacy.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "HCM-GLOBAL",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "manual_authorized_app"
+  },
+  "scheduling": {
+    "bounded_context": "RH-HCM",
+    "conflict_domains": [
+      "RH-HCM-IDENTITY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
