@@ -39,6 +39,10 @@ jobs:
           set -euo pipefail
           test "${{ github.job }}" = "sql-canonical-audit"
           test "${{ github.ref_type }}" = "branch"
+          case "${GITHUB_REF_NAME:-}" in
+            Edarsahub_Desarrollo|security/worker-console-maintenance-redaction-20261106) ;;
+            *) echo "SQL_AUDIT_BRANCH_FORBIDDEN"; exit 1 ;;
+          esac
           test "${EDARSAHUB_SQL_TARGET_CLASS:-}" = "development"
           test -n "${EDARSAHUB_SQL_HOST:-}"
           test -n "${EDARSAHUB_SQL_PASSWORD:-}"
