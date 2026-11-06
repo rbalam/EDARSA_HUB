@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/EDARSAHUB-RBAC-INIT-CONTRACT-GATE1-READONLY-R1-20261105.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RBAC-WORKER_RESULT_SEMANTIC_EXTRACT-8BE2BFE45771E6466138",
+  "mode": "READ_ONLY",
+  "objective": "Extraer en modo READ_ONLY la evidencia terminal del job EDARSAHUB-RBAC-INIT-CONTRACT-GATE1-READONLY-R1-20261105 para continuar con el siguiente Gate sin repetir la auditoría.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RBAC",
+    "conflict_domains": [
+      "RBAC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
