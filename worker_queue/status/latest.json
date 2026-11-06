@@ -4,37 +4,49 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "70842a62015c4113b4c57e7b2fe878b417788249",
-  "generated_at_utc": "2026-11-06T05:54:59Z",
+  "generated_at_utc": "2026-11-06T05:56:26Z",
   "history": {
-    "done_total_local": 1657,
+    "done_total_local": 1658,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1326,
-    "results_total_local": 2748
+    "rejected_total_local": 1327,
+    "results_total_local": 2750
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2483,
+      "age_seconds": 2570,
       "job_id": "EDARSAHUB-BOS-G3-SEMANTIC-CAPABILITIES-R1-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 772,
+      "age_seconds": 72,
+      "job_id": "EDARSAHUB-RBAC-INIT-CONTRACT-GATE1-READONLY-R1-20261105",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 859,
       "job_id": "EDARSAHUB-RBAC-ROLES-INDEX-GATE0-READONLY-R2-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3167,
+      "age_seconds": 20,
+      "job_id": "SEM-RBAC-WORKER_RESULT_SEMANTIC_EXTRACT-8BE2BFE45771E6466138",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3254,
       "job_id": "SEM-WORKER_INGRESS-READ_ONLY_CANARY-AB22213212DC4C1D31F7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 493,
+      "age_seconds": 580,
       "job_id": "SEM-WORKER_REPAIR-REPOSITORY_CONTRACT_AUDIT_BOUNDE-53FB14C17CD768E85BBF",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,15 +60,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
   "remote_development_sha": "70842a62015c4113b4c57e7b2fe878b417788249",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-06T05:54:41Z",
-    "last_receive_utc": "2026-11-06T05:54:36Z",
-    "last_terminal_utc": "2026-11-06T05:46:45Z",
+    "last_cycle_utc": "2026-11-06T05:56:08Z",
+    "last_receive_utc": "2026-11-06T05:56:24Z",
+    "last_terminal_utc": "2026-11-06T05:56:05Z",
     "pid": "7304",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "46056ee5d22f69835bf1c6be1c75410b69637496",
