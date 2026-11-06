@@ -26,6 +26,13 @@ LIFECYCLE_STATES: List[str] = [
     "rejected",
 ]
 
+def public_control_plane_status(document: Any) -> Any:
+    """Exclude restricted Maintenance details from general authenticated views."""
+    if not isinstance(document, dict):
+        return document
+    return {key: value for key, value in document.items() if key != "maintenance"}
+
+
 SCHEMA_ID = "edarsahub.worker-job.v2"
 VALID_MODES = {"READ_ONLY", "MUTATION"}
 
