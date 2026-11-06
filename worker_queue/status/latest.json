@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "70842a62015c4113b4c57e7b2fe878b417788249",
-  "generated_at_utc": "2026-11-06T05:40:03Z",
+  "generated_at_utc": "2026-11-06T05:41:28Z",
   "history": {
     "done_total_local": 1655,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1588,
+      "age_seconds": 1673,
       "job_id": "EDARSAHUB-BOS-G3-SEMANTIC-CAPABILITIES-R1-20261105",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2271,
+      "age_seconds": 2357,
       "job_id": "SEM-WORKER_INGRESS-READ_ONLY_CANARY-AB22213212DC4C1D31F7",
       "reason": null,
       "state": "RESULT_READY"
@@ -42,8 +42,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-06T05:39:52Z",
-    "last_receive_utc": "2026-11-06T05:39:47Z",
+    "last_cycle_utc": "2026-11-06T05:41:09Z",
+    "last_receive_utc": "2026-11-06T05:41:27Z",
     "last_terminal_utc": "2026-11-06T05:13:35Z",
     "pid": "5491",
     "runtime_fingerprint": {
