@@ -1,0 +1,282 @@
+name: HCM Identity Link Development Migration
+
+on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - ops/migrations/requests/HCM-IDENTITY-LINK-GATE4-20261106.execute
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hcm-identity-link-development-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate-development:
+    if: github.ref == 'refs/heads/Edarsahub_Desarrollo'
+    runs-on: ubuntu-latest
+    environment: development
+    timeout-minutes: 20
+    env:
+      EDARSAHUB_SQL_HOST: '54.39.104.176'
+      EDARSAHUB_SQL_PORT: '1433'
+      EDARSAHUB_SQL_DATABASE: 'EDARSAHUB'
+      MIGRATION_SCRIPT: backend/database/migrations/20261106_hcm_colaborador_gobierno_persona_link.sql
+      EXPECTED_MIGRATION_BLOB_SHA: 'bee5953535ca1e8b233fe21c354c6997e715dbb3'
+
+    steps:
+      - name: Checkout exact Development commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install SQL runtime
+        run: python -m pip install pymssql pydantic python-dotenv email-validator
+
+      - name: Verify immutable migration contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          test "${GITHUB_REF}" = 'refs/heads/Edarsahub_Desarrollo'
+          test -f "${MIGRATION_SCRIPT}"
+          actual_blob="$(git hash-object "${MIGRATION_SCRIPT}")"
+          echo "EXPECTED_MIGRATION_BLOB_SHA=${EXPECTED_MIGRATION_BLOB_SHA}" | tee evidence/blob.txt
+          echo "ACTUAL_MIGRATION_BLOB_SHA=${actual_blob}" | tee -a evidence/blob.txt
+          test "${actual_blob}" = "${EXPECTED_MIGRATION_BLOB_SHA}"
+          ! grep -Eiq '^[[:space:]]*(INSERT[[:space:]]+INTO|UPDATE[[:space:]]|DELETE[[:space:]]+FROM|MERGE[[:space:]])' "${MIGRATION_SCRIPT}"
+          echo 'HCM_GATE4_IMMUTABLE_MIGRATION=PASS' | tee -a evidence/blob.txt
+
+      - name: Preflight readonly canonical state
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${EDARSAHUB_SQL_PASSWORD:-}"
+          python - <<'PY' | tee evidence/preflight.txt
+          import os
+          import pymssql
+
+          conn = pymssql.connect(
+              server=os.environ['EDARSAHUB_SQL_HOST'],
+              port=int(os.environ['EDARSAHUB_SQL_PORT']),
+              database=os.environ['EDARSAHUB_SQL_DATABASE'],
+              user=os.environ['EDARSAHUB_SQL_USER'],
+              password=os.environ['EDARSAHUB_SQL_PASSWORD'],
+              timeout=60,
+              login_timeout=15,
+          )
+          cur = conn.cursor(as_dict=True)
+
+          cur.execute("SELECT DB_NAME() database_name,SUSER_SNAME() login_name,USER_NAME() db_user")
+          ident = cur.fetchone()
+          print({'identity': ident})
+          if ident['database_name'] != 'EDARSAHUB' or ident['login_name'] != 'HRLectura' or ident['db_user'] != 'HRLectura':
+              raise SystemExit('HCM_GATE4_READONLY_IDENTITY_MISMATCH')
+
+          cur.execute("SELECT COUNT_BIG(*) n FROM sys.tables WHERE object_id=OBJECT_ID(N'dbo.RH_Colaboradores_Expediente')")
+          if int(cur.fetchone()['n']) != 1:
+              raise SystemExit('HCM_GATE4_COLABORADORES_TABLE_MISSING')
+
+          cur.execute("SELECT COUNT_BIG(*) n FROM sys.tables WHERE object_id=OBJECT_ID(N'dbo.Gobierno_Persona')")
+          if int(cur.fetchone()['n']) != 1:
+              raise SystemExit('HCM_GATE4_GOBIERNO_PERSONA_MISSING')
+
+          cur.execute("SELECT COUNT_BIG(*) n FROM sys.columns WHERE object_id=OBJECT_ID(N'dbo.RH_Colaboradores_Expediente') AND name=N'PersonaID'")
+          personaid = int(cur.fetchone()['n'])
+          print({'personaid_columns': personaid})
+          if personaid not in (0, 1):
+              raise SystemExit('HCM_GATE4_PERSONAID_METADATA_INVALID')
+
+          cur.execute("SELECT COUNT_BIG(*) n FROM dbo.RH_Colaboradores_Expediente")
+          total = int(cur.fetchone()['n'])
+          print({'colaboradores': total})
+
+          cur.close()
+          conn.close()
+          print('HCM_GATE4_PREFLIGHT=PASS')
+          PY
+
+      - name: Validate dedicated migration writer
+        env:
+          EDARSAHUB_SQL_MIGRATION_USER: ${{ secrets.EDARSAHUB_SQL_WRITER_USER }}
+          EDARSAHUB_SQL_MIGRATION_PASSWORD: ${{ secrets.EDARSAHUB_SQL_WRITER_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${EDARSAHUB_SQL_MIGRATION_USER:-}"
+          test -n "${EDARSAHUB_SQL_MIGRATION_PASSWORD:-}"
+          test "${EDARSAHUB_SQL_MIGRATION_USER}" = 'GptEscritura'
+          python - <<'PY' | tee evidence/writer_permissions.txt
+          import os
+          import pymssql
+
+          conn = pymssql.connect(
+              server=os.environ['EDARSAHUB_SQL_HOST'],
+              port=int(os.environ['EDARSAHUB_SQL_PORT']),
+              database=os.environ['EDARSAHUB_SQL_DATABASE'],
+              user=os.environ['EDARSAHUB_SQL_MIGRATION_USER'],
+              password=os.environ['EDARSAHUB_SQL_MIGRATION_PASSWORD'],
+              timeout=60,
+              login_timeout=15,
+          )
+          cur = conn.cursor(as_dict=True)
+
+          cur.execute("""
+          SELECT
+              DB_NAME() database_name,
+              SUSER_SNAME() login_name,
+              USER_NAME() db_user,
+              COALESCE(HAS_PERMS_BY_NAME('dbo.RH_Colaboradores_Expediente','OBJECT','ALTER'),0) can_alter_colaboradores,
+              COALESCE(HAS_PERMS_BY_NAME('dbo.Gobierno_Persona','OBJECT','REFERENCES'),0) can_reference_persona
+          """)
+          row = cur.fetchone()
+          print(row)
+
+          cur.close()
+          conn.close()
+
+          if row['database_name'] != 'EDARSAHUB':
+              raise SystemExit('HCM_GATE4_WRITER_DATABASE_MISMATCH')
+          if row['login_name'] != 'GptEscritura':
+              raise SystemExit('HCM_GATE4_WRITER_LOGIN_MISMATCH')
+          if row['db_user'] != 'HUB_Escritura':
+              raise SystemExit('HCM_GATE4_WRITER_DBUSER_MISMATCH')
+          if int(row['can_alter_colaboradores']) != 1:
+              raise SystemExit('HCM_GATE4_WRITER_ALTER_PERMISSION_MISSING')
+          if int(row['can_reference_persona']) != 1:
+              raise SystemExit('HCM_GATE4_WRITER_REFERENCE_PERMISSION_MISSING')
+
+          print('HCM_GATE4_DEDICATED_WRITER=PASS')
+          PY
+
+      - name: Execute certified transactional migration
+        env:
+          EDARSAHUB_SQL_USER: ${{ secrets.EDARSAHUB_SQL_WRITER_USER }}
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_WRITER_PASSWORD }}
+          EDARSAHUB_ALLOW_MIGRATIONS: 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${EDARSAHUB_SQL_USER}" = 'GptEscritura'
+          PYTHONPATH="${GITHUB_WORKSPACE}/backend"             python backend/tools/edarsahub_sql_runner.py             --mode migrate             --script "${MIGRATION_SCRIPT}"             2>&1 | tee evidence/migration.txt
+
+      - name: Postcheck readonly physical certification
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' | tee evidence/postcheck.txt
+          import os
+          import pymssql
+
+          conn = pymssql.connect(
+              server=os.environ['EDARSAHUB_SQL_HOST'],
+              port=int(os.environ['EDARSAHUB_SQL_PORT']),
+              database=os.environ['EDARSAHUB_SQL_DATABASE'],
+              user=os.environ['EDARSAHUB_SQL_USER'],
+              password=os.environ['EDARSAHUB_SQL_PASSWORD'],
+              timeout=60,
+              login_timeout=15,
+          )
+          cur = conn.cursor(as_dict=True)
+
+          cur.execute("SELECT DB_NAME() database_name,SUSER_SNAME() login_name,USER_NAME() db_user")
+          ident = cur.fetchone()
+          print({'identity': ident})
+          if ident['database_name'] != 'EDARSAHUB' or ident['login_name'] != 'HRLectura' or ident['db_user'] != 'HRLectura':
+              raise SystemExit('HCM_GATE4_POSTCHECK_IDENTITY_MISMATCH')
+
+          cur.execute("""
+          SELECT c.name column_name,t.name data_type,c.is_nullable
+          FROM sys.columns c
+          JOIN sys.types t ON t.user_type_id=c.user_type_id
+          WHERE c.object_id=OBJECT_ID(N'dbo.RH_Colaboradores_Expediente')
+            AND c.name=N'PersonaID'
+          """)
+          col = cur.fetchone()
+          print({'personaid': col})
+          if not col or col['data_type'] != 'bigint' or int(col['is_nullable']) != 1:
+              raise SystemExit('HCM_GATE4_PERSONAID_METADATA_FAIL')
+
+          cur.execute("""
+          SELECT
+              fk.name fk_name,
+              pc.name parent_column,
+              OBJECT_SCHEMA_NAME(fk.referenced_object_id) referenced_schema,
+              OBJECT_NAME(fk.referenced_object_id) referenced_table,
+              rc.name referenced_column,
+              fk.is_disabled,
+              fk.is_not_trusted
+          FROM sys.foreign_keys fk
+          JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id
+          JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id
+          JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id
+          WHERE fk.parent_object_id=OBJECT_ID(N'dbo.RH_Colaboradores_Expediente')
+            AND pc.name=N'PersonaID'
+          """)
+          fks = cur.fetchall()
+          print({'persona_fks': fks})
+          if len(fks) != 1:
+              raise SystemExit('HCM_GATE4_PERSONA_FK_COUNT_FAIL')
+          fk = fks[0]
+          if fk['fk_name'] != 'FK_RH_Colaboradores_Expediente_GobiernoPersona':
+              raise SystemExit('HCM_GATE4_PERSONA_FK_NAME_FAIL')
+          if fk['referenced_schema'] != 'dbo' or fk['referenced_table'] != 'Gobierno_Persona' or fk['referenced_column'] != 'PersonaID':
+              raise SystemExit('HCM_GATE4_PERSONA_FK_TARGET_FAIL')
+          if fk['is_disabled'] or fk['is_not_trusted']:
+              raise SystemExit('HCM_GATE4_PERSONA_FK_TRUST_FAIL')
+
+          cur.execute("""
+          SELECT i.name index_name,i.is_unique,i.is_disabled,i.has_filter,i.filter_definition,c.name column_name,ic.key_ordinal
+          FROM sys.indexes i
+          JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id
+          JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id
+          WHERE i.object_id=OBJECT_ID(N'dbo.RH_Colaboradores_Expediente')
+            AND i.name=N'IX_RH_Colaboradores_Expediente_PersonaID'
+          ORDER BY ic.key_ordinal
+          """)
+          idx = cur.fetchall()
+          print({'persona_index': idx})
+          if len(idx) != 1 or idx[0]['column_name'] != 'PersonaID' or int(idx[0]['key_ordinal']) != 1:
+              raise SystemExit('HCM_GATE4_PERSONA_INDEX_FAIL')
+          if idx[0]['is_disabled'] or not idx[0]['has_filter'] or 'PersonaID' not in str(idx[0]['filter_definition']):
+              raise SystemExit('HCM_GATE4_PERSONA_INDEX_FILTER_FAIL')
+
+          cur.execute("""
+          SELECT
+              COUNT_BIG(*) total,
+              SUM(CASE WHEN PersonaID IS NULL THEN 1 ELSE 0 END) personaid_null,
+              SUM(CASE WHEN PersonaID IS NOT NULL THEN 1 ELSE 0 END) personaid_present
+          FROM dbo.RH_Colaboradores_Expediente
+          """)
+          pop = cur.fetchone()
+          print({'population': pop})
+          if int(pop['personaid_present'] or 0) != 0:
+              raise SystemExit('HCM_GATE4_UNEXPECTED_BACKFILL')
+
+          cur.close()
+          conn.close()
+          print('HCM_GATE4_POSTCHECK=PASS')
+          PY
+
+      - name: Upload migration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hcm-identity-link-development-migration-${{ github.run_id }}
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 30
