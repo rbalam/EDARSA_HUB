@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "7d148bf1dbc681d307d21c9cbfd7eba718f36061",
-  "generated_at_utc": "2026-11-06T08:03:18Z",
+  "generated_at_utc": "2026-11-06T08:04:49Z",
   "history": {
     "done_total_local": 1662,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 166,
+      "age_seconds": 257,
       "job_id": "EDARSAHUB-RH-HCM-GATE4-WRITER-SECRET-CANON-R1-20261106",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2786,
+      "age_seconds": 2877,
       "job_id": "EDARSAHUB-RH-HCM-IDENTITY-BACKFILL-PREFLIGHT-GATE5A-READONLY-R1-20261106",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3183,
+      "age_seconds": 3274,
       "job_id": "EDARSAHUB-RH-HCM-IDENTITY-LINK-GATE4-R1-20261106",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-06T08:03:03Z",
-    "last_receive_utc": "2026-11-06T08:02:58Z",
+    "last_cycle_utc": "2026-11-06T08:04:34Z",
+    "last_receive_utc": "2026-11-06T08:04:29Z",
     "last_terminal_utc": "2026-11-06T08:00:32Z",
     "pid": "9185",
     "runtime_fingerprint": {
