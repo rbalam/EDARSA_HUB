@@ -25,7 +25,7 @@ jobs:
       EDARSAHUB_SQL_PORT: '1433'
       EDARSAHUB_SQL_DATABASE: 'EDARSAHUB'
       MIGRATION_SCRIPT: backend/database/migrations/20261106_hcm_colaborador_gobierno_persona_link.sql
-      EXPECTED_MIGRATION_BLOB_SHA: 'bee5953535ca1e8b233fe21c354c6997e715dbb3'
+      EXPECTED_MIGRATION_BLOB_SHA: 'd0c8929ec446916d0097c17f7ae15ced6d55d803'
 
     steps:
       - name: Checkout exact Development commit

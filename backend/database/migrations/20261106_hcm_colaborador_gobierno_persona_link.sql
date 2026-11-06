@@ -38,8 +38,10 @@ BEGIN TRY
         N'PersonaID'
     ) IS NULL
     BEGIN
-        ALTER TABLE dbo.RH_Colaboradores_Expediente
-        ADD PersonaID BIGINT NULL;
+        EXEC sys.sp_executesql N'
+            ALTER TABLE dbo.RH_Colaboradores_Expediente
+            ADD PersonaID BIGINT NULL;
+        ';
     END;
 
     IF NOT EXISTS (
@@ -51,16 +53,18 @@ BEGIN TRY
               N'FK_RH_Colaboradores_Expediente_GobiernoPersona'
     )
     BEGIN
-        ALTER TABLE dbo.RH_Colaboradores_Expediente
-        WITH CHECK
-        ADD CONSTRAINT
-            FK_RH_Colaboradores_Expediente_GobiernoPersona
-        FOREIGN KEY (PersonaID)
-        REFERENCES dbo.Gobierno_Persona(PersonaID);
+        EXEC sys.sp_executesql N'
+            ALTER TABLE dbo.RH_Colaboradores_Expediente
+            WITH CHECK
+            ADD CONSTRAINT
+                FK_RH_Colaboradores_Expediente_GobiernoPersona
+            FOREIGN KEY (PersonaID)
+            REFERENCES dbo.Gobierno_Persona(PersonaID);
 
-        ALTER TABLE dbo.RH_Colaboradores_Expediente
-        CHECK CONSTRAINT
-            FK_RH_Colaboradores_Expediente_GobiernoPersona;
+            ALTER TABLE dbo.RH_Colaboradores_Expediente
+            CHECK CONSTRAINT
+                FK_RH_Colaboradores_Expediente_GobiernoPersona;
+        ';
     END;
 
     IF NOT EXISTS (
@@ -72,10 +76,12 @@ BEGIN TRY
               N'IX_RH_Colaboradores_Expediente_PersonaID'
     )
     BEGIN
-        CREATE INDEX
-            IX_RH_Colaboradores_Expediente_PersonaID
-        ON dbo.RH_Colaboradores_Expediente(PersonaID)
-        WHERE PersonaID IS NOT NULL;
+        EXEC sys.sp_executesql N'
+            CREATE INDEX
+                IX_RH_Colaboradores_Expediente_PersonaID
+            ON dbo.RH_Colaboradores_Expediente(PersonaID)
+            WHERE PersonaID IS NOT NULL;
+        ';
     END;
 
     /*
