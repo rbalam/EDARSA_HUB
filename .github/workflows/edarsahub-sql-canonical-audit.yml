@@ -23,15 +23,31 @@ jobs:
     timeout-minutes: 20
 
     env:
-      EDARSAHUB_SQL_HOST: "54.39.104.176"
-      EDARSAHUB_SQL_PORT: "1433"
-      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_HOST: ${{ vars.EDARSAHUB_DEV_SQL_HOST }}
+      EDARSAHUB_SQL_PORT: ${{ vars.EDARSAHUB_DEV_SQL_PORT }}
+      EDARSAHUB_SQL_DATABASE: ${{ vars.EDARSAHUB_DEV_SQL_DATABASE }}
       EDARSAHUB_SQL_USER: "HRLectura"
-      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_DEV_SQL_READONLY_PASSWORD }}
+      EDARSAHUB_SQL_TARGET_CLASS: ${{ vars.EDARSAHUB_DEV_SQL_TARGET_CLASS }}
 
 
 
     steps:
+      - name: Fail closed without approved Development SQL configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ github.job }}" = "sql-canonical-audit"
+          test "${{ github.ref_type }}" = "branch"
+          test "${EDARSAHUB_SQL_TARGET_CLASS:-}" = "development"
+          test -n "${EDARSAHUB_SQL_HOST:-}"
+          test -n "${EDARSAHUB_SQL_PASSWORD:-}"
+          test "${EDARSAHUB_SQL_DATABASE:-}" = "EDARSAHUB"
+          [[ "${EDARSAHUB_SQL_PORT:-}" =~ ^[0-9]+$ ]]
+          test "${EDARSAHUB_SQL_USER:-}" = "HRLectura"
+          echo "DEVELOPMENT_SQL_CONFIGURATION=VERIFIED_PRESENT"
+          echo "SQL_CONNECTION_ATTEMPTED=NO"
+
       - name: Checkout
         uses: actions/checkout@v4
 
