@@ -191,6 +191,13 @@ def interpret_result(doc: Any) -> Dict[str, Any]:
     }
 
 
+def public_result_interpretation(document: Any) -> Dict[str, Any]:
+    """Return non-sensitive result summary, never free-text blocker details."""
+    interpreted = interpret_result(document)
+    interpreted["blockers"] = []
+    return interpreted
+
+
 def _parse_marker(text: str) -> Optional[Dict[str, Any]]:
     """Los archivos de published/ son marcadores 'clave=valor' por línea."""
     out: Dict[str, Any] = {}
