@@ -1,0 +1,113 @@
+{
+  "acceptance": [
+    "No llamada a ensure_initialized en scope de import de server.py",
+    "RBAC se inicializa desde startup_scheduler",
+    "create_rol usa SCOPE_IDENTITY y no @@IDENTITY",
+    "create_rol ejecuta rollback ante excepción",
+    "seed_roles tolera materialización concurrente real",
+    "errores DB no relacionados siguen propagándose",
+    "py_compile PASS",
+    "pytest PASS",
+    "git_diff_check PASS",
+    "production_touched=false",
+    "Sin DDL ni DML ejecutado por el Gate",
+    "Sin cambios fuera de server.py, repository_sql.py y test focalizado"
+  ],
+  "actions": [
+    {
+      "expected_count": 1,
+      "new": "def _initialize_rbac_runtime() -> None:\n    \"\"\"Inicializa RBAC en runtime, nunca durante el import del módulo.\"\"\"\n    try:\n        rbac_service = RBACService(db)\n        rbac_service.ensure_initialized()\n        logger.info(\"RBAC Service inicializado (SQL Server)\")\n    except Exception as e:\n        logger.warning(f\"Error inicializando RBAC: {e}\")\n\napp.include_router(rbac_router, prefix=\"/api/v2\", tags=[\"RBAC\"])\n",
+      "old": "# Inicializar RBAC (sembrar permisos y roles si no existen)\ntry:\n    rbac_service = RBACService(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad\n    rbac_service.ensure_initialized()\n    logger.info(\"RBAC Service inicializado (SQL Server)\")\nexcept Exception as e:\n    logger.warning(f\"Error inicializando RBAC: {e}\")\napp.include_router(rbac_router, prefix=\"/api/v2\", tags=[\"RBAC\"])\n",
+      "path": "backend/server.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "async def startup_scheduler():\n    \"\"\"Recupera el Worker y arranca APScheduler solo si la politica lo permite.\"\"\"\n    _initialize_rbac_runtime()\n\n    try:\n",
+      "old": "async def startup_scheduler():\n    \"\"\"Recupera el Worker y arranca APScheduler solo si la politica lo permite.\"\"\"\n    try:\n",
+      "path": "backend/server.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "            # Obtener el RolID generado dentro del scope actual.\n            # Evita capturar identidades producidas por triggers.\n            cur.execute(\"SELECT CAST(SCOPE_IDENTITY() AS INT)\")\n            rol_id = int(cur.fetchone()[0])\n",
+      "old": "            # Obtener RolID generado\n            cur.execute(\"SELECT @@IDENTITY\")\n            rol_id = int(cur.fetchone()[0])\n",
+      "path": "backend/core/rbac/repository_sql.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "            return {\n                \"id\": str(rol_id),\n                \"nombre\": nombre,\n                \"descripcion\": descripcion,\n                \"nivel_jerarquia\": nivel,\n                \"es_sistema\": bool(es_sistema),\n                \"activo\": True,\n                \"permisos\": permisos,\n            }\n\n        except Exception:\n            try:\n                conn.rollback()\n            except Exception:\n                logger.exception(\n                    \"[RBAC-SQL] Fallo ejecutando rollback de create_rol\"\n                )\n            raise\n\n        finally:\n            conn.close()\n    \n    def update_rol(self, rol_id: str, data: Dict) -> Optional[Dict]:\n",
+      "old": "            return {\n                \"id\": str(rol_id),\n                \"nombre\": nombre,\n                \"descripcion\": descripcion,\n                \"nivel_jerarquia\": nivel,\n                \"es_sistema\": bool(es_sistema),\n                \"activo\": True,\n                \"permisos\": permisos,\n            }\n            \n        finally:\n            conn.close()\n    \n    def update_rol(self, rol_id: str, data: Dict) -> Optional[Dict]:\n",
+      "path": "backend/core/rbac/repository_sql.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "    def seed_roles(self, roles: List[Dict]) -> int:\n        \"\"\"Siembra roles faltantes de forma idempotente ante concurrencia.\"\"\"\n        count = 0\n\n        for r in roles:\n            nombre = r[\"nombre\"]\n\n            if self.get_rol_by_nombre(nombre):\n                continue\n\n            try:\n                self.create_rol({\n                    \"nombre\": nombre,\n                    \"descripcion\": r[\"descripcion\"],\n                    \"permisos\": r[\"permisos\"],\n                    \"nivel_jerarquia\": r[\"nivel_jerarquia\"],\n                    \"es_sistema\": r.get(\"es_sistema\", True),\n                })\n                count += 1\n            except pymssql.Error:\n                # Otro proceso puede haber creado el mismo rol entre\n                # la lectura y el INSERT. La restricción UNIQUE canónica\n                # protege el dato; releer permite tratar esa carrera como\n                # idempotencia exitosa sin ocultar otros errores.\n                if self.get_rol_by_nombre(nombre):\n                    logger.info(\n                        \"[RBAC-SQL] Rol %s materializado concurrentemente\",\n                        nombre,\n                    )\n                    continue\n                raise\n\n        return count\n",
+      "old": "    def seed_roles(self, roles: List[Dict]) -> int:\n        \"\"\"Siembra roles del sistema si no existen.\"\"\"\n        count = 0\n        for r in roles:\n            existing = self.get_rol_by_nombre(r[\"nombre\"])\n            if not existing:\n                self.create_rol({\n                    \"nombre\": r[\"nombre\"],\n                    \"descripcion\": r[\"descripcion\"],\n                    \"permisos\": r[\"permisos\"],\n                    \"nivel_jerarquia\": r[\"nivel_jerarquia\"],\n                    \"es_sistema\": r.get(\"es_sistema\", True),\n                })\n                count += 1\n        return count\n",
+      "path": "backend/core/rbac/repository_sql.py",
+      "type": "replace_text"
+    },
+    {
+      "content": "\"\"\"Contratos de hardening para inicialización RBAC.\"\"\"\nfrom __future__ import annotations\n\nimport ast\nfrom pathlib import Path\n\nimport pymssql\n\nfrom core.rbac.repository_sql import RBACRepositorySQL\n\n\nROOT = Path(__file__).resolve().parents[2]\nSERVER = ROOT / \"server.py\"\nREPOSITORY = ROOT / \"core\" / \"rbac\" / \"repository_sql.py\"\n\n\nclass _CallContextVisitor(ast.NodeVisitor):\n    def __init__(self):\n        self.stack = []\n        self.ensure_contexts = []\n        self.runtime_init_contexts = []\n\n    def visit_FunctionDef(self, node):\n        self.stack.append(node.name)\n        self.generic_visit(node)\n        self.stack.pop()\n\n    def visit_AsyncFunctionDef(self, node):\n        self.stack.append(node.name)\n        self.generic_visit(node)\n        self.stack.pop()\n\n    def visit_Call(self, node):\n        func = node.func\n\n        if isinstance(func, ast.Attribute) and func.attr == \"ensure_initialized\":\n            self.ensure_contexts.append(tuple(self.stack))\n\n        if isinstance(func, ast.Name) and func.id == \"_initialize_rbac_runtime\":\n            self.runtime_init_contexts.append(tuple(self.stack))\n\n        self.generic_visit(node)\n\n\ndef test_rbac_seed_is_not_executed_during_server_import():\n    tree = ast.parse(SERVER.read_text(encoding=\"utf-8\"))\n\n    visitor = _CallContextVisitor()\n    visitor.visit(tree)\n\n    assert visitor.ensure_contexts\n    assert all(\n        context and context[-1] == \"_initialize_rbac_runtime\"\n        for context in visitor.ensure_contexts\n    )\n\n    assert any(\n        context and context[-1] == \"startup_scheduler\"\n        for context in visitor.runtime_init_contexts\n    )\n\n\ndef test_create_rol_uses_scope_identity_and_explicit_rollback():\n    source = REPOSITORY.read_text(encoding=\"utf-8\")\n    tree = ast.parse(source)\n\n    create_rol = next(\n        node\n        for node in ast.walk(tree)\n        if isinstance(node, ast.FunctionDef)\n        and node.name == \"create_rol\"\n    )\n\n    segment = ast.get_source_segment(source, create_rol)\n\n    assert \"SCOPE_IDENTITY()\" in segment\n    assert \"@@IDENTITY\" not in segment\n    assert \"conn.rollback()\" in segment\n\n\ndef test_seed_roles_accepts_concurrent_materialization():\n    repo = object.__new__(RBACRepositorySQL)\n\n    lookups = {\"count\": 0}\n\n    def fake_get(_name):\n        lookups[\"count\"] += 1\n        if lookups[\"count\"] == 1:\n            return None\n        return {\"nombre\": \"SUPERADMIN\"}\n\n    def fake_create(_role):\n        raise pymssql.Error(\"simulated unique race\")\n\n    repo.get_rol_by_nombre = fake_get\n    repo.create_rol = fake_create\n\n    created = repo.seed_roles([\n        {\n            \"nombre\": \"SUPERADMIN\",\n            \"descripcion\": \"SuperAdministrador\",\n            \"permisos\": [],\n            \"nivel_jerarquia\": 100,\n            \"es_sistema\": True,\n        }\n    ])\n\n    assert created == 0\n    assert lookups[\"count\"] == 2\n\n\ndef test_seed_roles_does_not_hide_unrelated_database_error():\n    repo = object.__new__(RBACRepositorySQL)\n\n    repo.get_rol_by_nombre = lambda _name: None\n\n    def fake_create(_role):\n        raise pymssql.Error(\"unrelated database failure\")\n\n    repo.create_rol = fake_create\n\n    try:\n        repo.seed_roles([\n            {\n                \"nombre\": \"SUPERADMIN\",\n                \"descripcion\": \"SuperAdministrador\",\n                \"permisos\": [],\n                \"nivel_jerarquia\": 100,\n                \"es_sistema\": True,\n            }\n        ])\n    except pymssql.Error:\n        pass\n    else:\n        raise AssertionError(\"database error must propagate\")\n",
+      "path": "backend/tests/test_rbac_startup_hardening_contract.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/server.py",
+        "backend/core/rbac/repository_sql.py",
+        "backend/tests/test_rbac_startup_hardening_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_rbac_startup_hardening_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Gate0 R2 y Gate1 están certificados y no deben repetirse",
+    "SQL Server EDARSAHUB es fuente canónica",
+    "No MongoDB operativo",
+    "No tocar Producción",
+    "No ejecutar migraciones",
+    "No modificar tablas, índices, roles ni permisos",
+    "No crear otro Worker ni otra cola",
+    "Cambios atómicos y reversibles",
+    "Fail-closed si cualquier texto esperado no coincide exactamente"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-RBAC-INIT-HARDENING-GATE2-R1-20261105",
+  "mode": "MUTATION",
+  "objective": "Aplicar en Edarsahub_Desarrollo el hardening mínimo derivado de los Gates RBAC 0 y 1 ya certificados. Eliminar escrituras RBAC durante import de backend/server.py moviendo ensure_initialized al startup; usar SCOPE_IDENTITY en create_rol; rollback explícito ante fallo; hacer seed_roles idempotente frente a carrera concurrente protegida por UQ_Usuario_Roles_CodigoRol; agregar pruebas contractuales. No ejecutar SQL ni tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "RBAC-HCM",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "manual_authorized_app"
+  },
+  "scheduling": {
+    "bounded_context": "RBAC",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
