@@ -19,6 +19,7 @@ jobs:
   sql-canonical-audit:
     name: SQL canonical connections, tables and permissions
     runs-on: ubuntu-latest
+    environment: development
     timeout-minutes: 20
 
     env:
