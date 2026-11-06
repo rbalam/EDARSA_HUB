@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "tools/mirror_sync/worker_repair_planner.py",
+          "tools/mirror_sync/worker_repair_execution.py",
+          "tools/mirror_sync/worker_repair_capability_registry.py",
+          "tools/mirror_sync/worker_repair_auto_loop.py",
+          "tools/mirror_sync/worker_maintenance_runtime.py"
+        ],
+        "search_terms": [
+          "incident",
+          "CERTIFIED",
+          "repair_job_id",
+          "learned_capability",
+          "supersede",
+          "repair_attempt_allowed"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_REPAIR-REPOSITORY_CONTRACT_AUDIT_BOUNDE-53FB14C17CD768E85BBF",
+  "mode": "READ_ONLY",
+  "objective": "Knowledge Loop: auditar en modo READ_ONLY los contratos existentes de Repair Planner, Execution Bridge, Capability Registry y Maintenance Runtime para identificar rutas de reconciliacion de incidentes historicos sin ejecutar reparaciones ni repetir G3 o Gates certificados. Entregar hallazgos verificables, limites del check y proximo Gate minimo.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_REPAIR",
+    "conflict_domains": [
+      "WORKER_REPAIR"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
