@@ -1,0 +1,73 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "path": "ops/migrations/requests/HCM-IDENTITY-LINK-GATE4-20261106.execute",
+      "replacement": "TRIGGER_REVISION=2\n",
+      "source_sha256": "1d661cd15cd5eb9b2c5229520f6edaf86114c97ae84d6da7e70ca163fa9ded4e",
+      "type": "append_once"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.execute"
+        ],
+        "max_results": 50,
+        "paths": [
+          "ops/migrations/requests/HCM-IDENTITY-LINK-GATE4-20261106.execute"
+        ],
+        "search_terms": [
+          "TRIGGER_REVISION=2",
+          "PRODUCTION_ALLOWED=false",
+          "BACKFILL_ALLOWED=false",
+          "DEDICATED_MIGRATION_WRITER",
+          "20261106_hcm_colaborador_gobierno_persona_link.sql"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "constraints": [
+    "Modificar exclusivamente el archivo trigger HCM Gate4",
+    "Agregar solamente TRIGGER_REVISION=2",
+    "No modificar workflow",
+    "No modificar migracion SQL",
+    "No cambiar blob SHA",
+    "No habilitar backfill",
+    "No cambiar Produccion",
+    "No crear credenciales",
+    "No ejecutar SQL desde este Job"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-RH-HCM-GATE4-SQL-TRIGGER-R2-20261106",
+  "mode": "MUTATION",
+  "objective": "Publicar exclusivamente la revision 2 del trigger del Gate4 SQL fisico HCM para que GitHub Actions ejecute el workflow ya normalizado con los secrets writer canonicos. Agregar solo TRIGGER_REVISION=2 al request existente. No modificar migracion SQL, workflow, credenciales, backfill ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "HCM-GLOBAL",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "manual_authorized_app"
+  },
+  "scheduling": {
+    "bounded_context": "RH-HCM",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "RH-HCM-IDENTITY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
