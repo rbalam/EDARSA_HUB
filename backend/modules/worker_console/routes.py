@@ -15,10 +15,12 @@ from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from core.rbac.middleware import require_explicit_permission
 from core.rbac.routes import get_current_user
 from modules.worker_console import contract as C
 
 router = APIRouter(prefix="/worker/console", tags=["worker-console"])
+AUDIT_ADMIN_DEPENDENCY = require_explicit_permission("RBAC_ADMIN")
 
 
 def _list_state(directory: Path) -> List[Path]:
@@ -243,7 +245,7 @@ async def tablajerias_checklist(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/audit")
-async def audit(tail: int = Query(80, ge=1, le=500), current_user: dict = Depends(get_current_user)):
+async def audit(tail: int = Query(80, ge=1, le=500), current_user: dict = Depends(AUDIT_ADMIN_DEPENDENCY)):
     """Visor de evidencia/auditoría del runtime (solo lectura de logs existentes)."""
     runtime_dir = C.QUEUE_ROOT / "runtime"
 
