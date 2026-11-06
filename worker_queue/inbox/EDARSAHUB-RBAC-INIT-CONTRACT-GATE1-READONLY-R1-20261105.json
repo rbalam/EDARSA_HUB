@@ -1,0 +1,93 @@
+{
+  "acceptance": [
+    "status=READ_ONLY_COMPLETE o BLOCKED con blocker explícito",
+    "production_touched=false",
+    "files_changed=[]",
+    "No repetir Gate0 R2 ni consultas SQL",
+    "Confirmar o descartar escritura RBAC durante import de server.py",
+    "Evaluar carrera concurrente de seed_roles",
+    "Evaluar comportamiento ante UNIQUE violation",
+    "Evaluar @@IDENTITY frente a SCOPE_IDENTITY",
+    "Evaluar commit, rollback y cierre de conexión",
+    "Identificar pruebas existentes reutilizables",
+    "Proponer un único cambio mínimo y reversible para Gate2",
+    "No modificar código, SQL, RBAC ni Producción"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [
+          ".git/**",
+          "__pycache__/**",
+          "node_modules/**"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sql"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend/server.py",
+          "backend/core/rbac",
+          "backend/core/rbac_sql",
+          "backend/database/migrations",
+          "backend/database/validation",
+          "backend/tests"
+        ],
+        "search_terms": [
+          "RBACService",
+          "ensure_initialized",
+          "seed_roles",
+          "seed_permisos",
+          "create_rol",
+          "@@IDENTITY",
+          "SCOPE_IDENTITY",
+          "rollback",
+          "commit",
+          "Usuario_Roles",
+          "UQ_Usuario_Roles_CodigoRol"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "constraints": [
+    "Gate0 R2 ya está CERTIFIED_READ_ONLY 100% y no debe repetirse",
+    "SQL Server EDARSAHUB sigue siendo fuente canónica",
+    "No MongoDB operativo",
+    "No SQL",
+    "No DDL",
+    "No DML",
+    "No modificaciones de repositorio",
+    "No cambios de roles o permisos",
+    "No tocar Producción",
+    "No crear Workers, colas ni publicadores alternativos",
+    "Fail-closed ante evidencia insuficiente"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-RBAC-INIT-CONTRACT-GATE1-READONLY-R1-20261105",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente en READ_ONLY el contrato actual de inicialización RBAC. Reutilizar la evidencia certificada de EDARSAHUB-RBAC-ROLES-INDEX-GATE0-READONLY-R2-20261105 y NO repetir auditoría SQL. Verificar el llamado import-time a RBACService.ensure_initialized() en backend/server.py; seed_roles(), create_rol(), concurrencia frente a la restricción UQ_Usuario_Roles_CodigoRol, uso de @@IDENTITY/SCOPE_IDENTITY, commit/rollback y manejo de excepciones. Determinar el cambio mínimo atómico, reversible y probado para evitar escrituras administrativas durante importación y fallos concurrentes. No implementar cambios.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "RBAC-HCM",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "manual_authorized_app"
+  },
+  "scheduling": {
+    "bounded_context": "RBAC",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
