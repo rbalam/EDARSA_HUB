@@ -129,7 +129,7 @@ async def lifecycle(job_id: str, current_user: dict = Depends(get_current_user))
         if present and job_doc is None and st in ("requests", "pending", "processing"):
             doc = C.read_json_file(p)
             if doc is not None:
-                job_doc = C.extract_job(doc)
+                job_doc = C.public_job_metadata(doc)
 
     result_interp = None
     rp = _find_in_state("results", job_id) or _find_in_state("done", job_id) or _find_in_state("published", job_id)
