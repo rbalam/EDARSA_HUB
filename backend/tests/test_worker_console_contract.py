@@ -131,3 +131,13 @@ def test_dashboard_does_not_serialize_preferred_or_reconciler_documents(tmp_path
     assert data["runtime"]["reconciler"] is None
     assert data["runtime"]["preferred_job"] is None
     assert data["runtime"]["control_plane_status"]["runtime"]["status"] == "HEALTHY"
+
+
+def test_public_result_interpretation_redacts_blocker_text():
+    source = {"certification": "NOT_CERTIFIED", "quality_gate": "FAIL",
+        "blockers": ["SENSITIVE_INCIDENT_DETAIL"], "production_touched": False}
+    summary = C.public_result_interpretation(source)
+    assert summary["verdict"] == "FAIL"
+    assert summary["blocker_count"] == 1
+    assert summary["blockers"] == []
+    assert source["blockers"] == ["SENSITIVE_INCIDENT_DETAIL"]
