@@ -1,0 +1,33 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_INGRESS-READ_ONLY_CANARY-1791F85FE2A8FB130E4A",
+  "mode": "READ_ONLY",
+  "objective": "Preparar y validar en aislamiento el Gate G3 de capacidades semánticas del Universal Worker, sin editar el worktree compartido ni Producción. Generar dos mutaciones append_once para backend/modules/worker_ingress/semantic_capabilities.py y backend/tests/test_worker_objective_certification_r2.py, implementando REPOSITORY_CONTRACT_AUDIT y WORKER_RESULT_SEMANTIC_EXTRACT con ruta publicada worker_queue/results/<source_job_id>.json en branch worker/results. Exigir pruebas, contrato V2, RBAC y antduplicación. No publicar una mutación si no está autorizada por las capacidades y el contrato; devolver bloqueo verificable en ese caso.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS",
+    "conflict_domains": [
+      "WORKER_INGRESS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
