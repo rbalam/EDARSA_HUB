@@ -76,6 +76,7 @@ jobs:
         shell: bash
         working-directory: backend
         env:
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
           # Exclusivamente placeholders CI; las pruebas no abren conexiones.
           EDARSAHUB_SQL_HOST: ci.invalid
           EDARSAHUB_SQL_PORT: "1433"
