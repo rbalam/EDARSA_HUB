@@ -8,6 +8,7 @@ Consola visual para **operar el Universal Worker** sin pegar bash, JSON crudo ni
 - Ruta frontend: **`/worker-console`** (requiere sesión iniciada).
 - Backend: **`/api/worker/console/*`** (todos los endpoints exigen JWT).
 - **RBAC:** consultar = cualquier usuario autenticado. Publicar / limpiar preferred_job = **solo SUPERADMIN** (Fase 2).
+- **Maintenance:** los endpoints generales `dashboard` y `audit` excluyen el campo `maintenance` de `control_plane_status` para todos los usuarios, incluso autenticados. No se ofrece un endpoint Maintenance privilegiado hasta verificar el permiso SQL efectivo y sus asignaciones mediante la conexion canonica de Desarrollo; la autenticacion por si sola no autoriza esta informacion.
 
 ## Fuente de datos (solo lectura)
 - `worker/requests/` (publicación futura — Fase 2)
