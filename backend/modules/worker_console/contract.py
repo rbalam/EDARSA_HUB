@@ -37,6 +37,19 @@ SCHEMA_ID = "edarsahub.worker-job.v2"
 VALID_MODES = {"READ_ONLY", "MUTATION"}
 
 
+def public_job_metadata(document: Any) -> Optional[Dict[str, str]]:
+    """Expose only fixed, non-sensitive lifecycle metadata to general viewers."""
+    if not isinstance(document, dict):
+        return None
+    job = extract_job(document)
+    metadata: Dict[str, str] = {}
+    if job.get("schema") == SCHEMA_ID:
+        metadata["schema"] = SCHEMA_ID
+    if job.get("mode") in VALID_MODES:
+        metadata["mode"] = job["mode"]
+    return metadata
+
+
 def state_dir(state: str) -> Optional[Path]:
     """Devuelve el Path de una carpeta de estado válida, o None."""
     if state == "requests":
