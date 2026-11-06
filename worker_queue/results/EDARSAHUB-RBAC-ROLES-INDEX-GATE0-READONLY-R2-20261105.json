@@ -1,0 +1,179 @@
+{
+  "base_sha": "70842a62015c4113b4c57e7b2fe878b417788249",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-06T05:42:06Z",
+  "execution_base_sha": "70842a62015c4113b4c57e7b2fe878b417788249",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-RBAC-ROLES-INDEX-GATE0-READONLY-R2-20261105",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-06T05:43:41Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "schema_name",
+              "table_name",
+              "index_id",
+              "index_name",
+              "type_desc",
+              "is_unique",
+              "is_primary_key",
+              "is_unique_constraint",
+              "is_disabled",
+              "column_name",
+              "key_ordinal",
+              "is_included_column"
+            ],
+            "name": "usuario_roles_indexes",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "dbo",
+                "Usuario_Roles",
+                1,
+                "PK_Usuario_Roles",
+                "CLUSTERED",
+                true,
+                true,
+                false,
+                false,
+                "RolID",
+                1,
+                false
+              ],
+              [
+                "dbo",
+                "Usuario_Roles",
+                2,
+                "UQ_Usuario_Roles_NombreRol",
+                "NONCLUSTERED",
+                true,
+                false,
+                true,
+                false,
+                "NombreRol",
+                1,
+                false
+              ],
+              [
+                "dbo",
+                "Usuario_Roles",
+                3,
+                "UQ_Usuario_Roles_CodigoRol",
+                "NONCLUSTERED",
+                true,
+                false,
+                true,
+                false,
+                "CodigoRol",
+                1,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "table_name",
+              "constraint_name",
+              "type_desc",
+              "index_name",
+              "is_unique",
+              "is_primary_key",
+              "is_unique_constraint"
+            ],
+            "name": "usuario_roles_key_constraints",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "dbo",
+                "Usuario_Roles",
+                "PK_Usuario_Roles",
+                "PRIMARY_KEY_CONSTRAINT",
+                "PK_Usuario_Roles",
+                true,
+                true,
+                false
+              ],
+              [
+                "dbo",
+                "Usuario_Roles",
+                "UQ_Usuario_Roles_CodigoRol",
+                "UNIQUE_CONSTRAINT",
+                "UQ_Usuario_Roles_CodigoRol",
+                true,
+                false,
+                true
+              ],
+              [
+                "dbo",
+                "Usuario_Roles",
+                "UQ_Usuario_Roles_NombreRol",
+                "UNIQUE_CONSTRAINT",
+                "UQ_Usuario_Roles_NombreRol",
+                true,
+                false,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_name",
+              "is_unique",
+              "is_primary_key",
+              "is_unique_constraint",
+              "column_name",
+              "key_ordinal"
+            ],
+            "name": "usuario_roles_codigo_indexes",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "UQ_Usuario_Roles_CodigoRol",
+                true,
+                false,
+                true,
+                "CodigoRol",
+                1
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "CodigoRol",
+              "cantidad"
+            ],
+            "name": "usuario_roles_duplicate_codigo_check",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-11-06T05:42:05Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
