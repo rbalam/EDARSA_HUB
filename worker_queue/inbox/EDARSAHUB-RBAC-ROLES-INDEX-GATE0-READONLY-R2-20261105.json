@@ -1,0 +1,76 @@
+{
+  "acceptance": [
+    "status=READ_ONLY_COMPLETE o BLOCKED con blocker explícito",
+    "production_touched=false",
+    "files_changed=[]",
+    "tables_changed=[]",
+    "Enumerar índices reales de dbo.Usuario_Roles",
+    "Enumerar key constraints reales de dbo.Usuario_Roles",
+    "Determinar si CodigoRol tiene unicidad efectiva",
+    "Detectar códigos duplicados si existen",
+    "No realizar DDL ni DML",
+    "No modificar roles ni permisos"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "queries": [
+        {
+          "name": "usuario_roles_indexes",
+          "sql": "SELECT\n    s.name AS schema_name,\n    t.name AS table_name,\n    i.index_id,\n    i.name AS index_name,\n    i.type_desc,\n    i.is_unique,\n    i.is_primary_key,\n    i.is_unique_constraint,\n    i.is_disabled,\n    c.name AS column_name,\n    ic.key_ordinal,\n    ic.is_included_column\nFROM sys.tables AS t\nJOIN sys.schemas AS s\n    ON s.schema_id = t.schema_id\nJOIN sys.indexes AS i\n    ON i.object_id = t.object_id\nLEFT JOIN sys.index_columns AS ic\n    ON ic.object_id = i.object_id\n   AND ic.index_id = i.index_id\nLEFT JOIN sys.columns AS c\n    ON c.object_id = ic.object_id\n   AND c.column_id = ic.column_id\nWHERE s.name = 'dbo'\n  AND t.name = 'Usuario_Roles'\nORDER BY i.index_id, ic.key_ordinal, c.column_id;"
+        },
+        {
+          "name": "usuario_roles_key_constraints",
+          "sql": "SELECT\n    s.name AS schema_name,\n    t.name AS table_name,\n    kc.name AS constraint_name,\n    kc.type_desc,\n    i.name AS index_name,\n    i.is_unique,\n    i.is_primary_key,\n    i.is_unique_constraint\nFROM sys.key_constraints AS kc\nJOIN sys.tables AS t\n    ON t.object_id = kc.parent_object_id\nJOIN sys.schemas AS s\n    ON s.schema_id = t.schema_id\nJOIN sys.indexes AS i\n    ON i.object_id = kc.parent_object_id\n   AND i.index_id = kc.unique_index_id\nWHERE s.name = 'dbo'\n  AND t.name = 'Usuario_Roles'\nORDER BY kc.name;"
+        },
+        {
+          "name": "usuario_roles_codigo_indexes",
+          "sql": "SELECT\n    i.name AS index_name,\n    i.is_unique,\n    i.is_primary_key,\n    i.is_unique_constraint,\n    c.name AS column_name,\n    ic.key_ordinal\nFROM sys.tables AS t\nJOIN sys.schemas AS s\n    ON s.schema_id = t.schema_id\nJOIN sys.indexes AS i\n    ON i.object_id = t.object_id\nJOIN sys.index_columns AS ic\n    ON ic.object_id = i.object_id\n   AND ic.index_id = i.index_id\nJOIN sys.columns AS c\n    ON c.object_id = ic.object_id\n   AND c.column_id = ic.column_id\nWHERE s.name = 'dbo'\n  AND t.name = 'Usuario_Roles'\n  AND c.name = 'CodigoRol'\nORDER BY i.index_id, ic.key_ordinal;"
+        },
+        {
+          "name": "usuario_roles_duplicate_codigo_check",
+          "sql": "SELECT\n    CodigoRol,\n    COUNT(*) AS cantidad\nFROM dbo.Usuario_Roles\nGROUP BY CodigoRol\nHAVING COUNT(*) > 1\nORDER BY CodigoRol;"
+        }
+      ],
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "constraints": [
+    "SQL Server EDARSAHUB es la fuente canónica",
+    "READ_ONLY_SQL estricto",
+    "No DDL",
+    "No DML",
+    "No cambios de permisos",
+    "No cambios de roles",
+    "No MongoDB operativo",
+    "No tocar Producción",
+    "No crear Workers ni colas alternativas",
+    "No borrar ni modificar el draft R1 bloqueado",
+    "Fail-closed ante evidencia insuficiente"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-RBAC-ROLES-INDEX-GATE0-READONLY-R2-20261105",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar exclusivamente en modo READ_ONLY_SQL los metadatos canónicos de dbo.Usuario_Roles en SQL Server EDARSAHUB. Determinar índices, key constraints, unicidad efectiva de CodigoRol y existencia de códigos duplicados. R1 quedó bloqueado localmente antes de publicación por requester no canónico; R2 reemplaza ese intento sin modificar ni borrar su evidencia. No ejecutar DDL, DML, cambios de permisos, código, runtime ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "RBAC-HCM",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "manual_authorized_app"
+  },
+  "scheduling": {
+    "bounded_context": "RBAC",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
