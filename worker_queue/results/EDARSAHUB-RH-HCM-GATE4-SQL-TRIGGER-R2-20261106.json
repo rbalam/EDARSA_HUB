@@ -1,0 +1,64 @@
+{
+  "base_sha": "8d6be612227e0fae9b1d4038575ddee062bbb216",
+  "blockers": [],
+  "candidate_sha": "a26f750610b78c3e3ec9dba1ff0abab6d28c4bfb",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-11-06T08:08:22Z",
+  "development_sha": "a26f750610b78c3e3ec9dba1ff0abab6d28c4bfb",
+  "execution_base_sha": "8d6be612227e0fae9b1d4038575ddee062bbb216",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "ops/migrations/requests/HCM-IDENTITY-LINK-GATE4-20261106.execute"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-RH-HCM-GATE4-SQL-TRIGGER-R2-20261106",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-11-06T08:09:14Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "ops",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "20261106_hcm_colaborador_gobierno_persona_link.sql",
+              "backfill_allowed=false",
+              "dedicated_migration_writer",
+              "production_allowed=false",
+              "trigger_revision=2"
+            ],
+            "path": "ops/migrations/requests/HCM-IDENTITY-LINK-GATE4-20261106.execute",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 1,
+          "scanned_files": 1,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-06T08:08:16Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
