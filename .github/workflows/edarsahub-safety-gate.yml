@@ -94,7 +94,8 @@ jobs:
             tests/test_soft_inventory_drilldown_canonical.py \
             tests/test_inventory_analysis_mpro_canonical.py \
             tests/test_inventory_analysis_soft_canonical.py \
-            tests/test_inventory_origin_selection_transversal.py
+            tests/test_inventory_origin_selection_transversal.py \
+            tests/test_worker_rh_repository_contract_semantic.py
 
       - name: Backend OpenAPI smoke
         shell: bash
