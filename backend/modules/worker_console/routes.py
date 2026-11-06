@@ -50,7 +50,9 @@ async def dashboard(current_user: dict = Depends(get_current_user)):
         except Exception:
             return None
 
-    control_plane = C.read_json_file(runtime_dir / "control_plane_status.json")
+    control_plane = C.public_control_plane_status(
+        C.read_json_file(runtime_dir / "control_plane_status.json")
+    )
     reconciler = C.read_json_file(runtime_dir / "reconciler.json")
     orphaned = (runtime_dir / "orphaned-preferred").exists()
     preferred = C.read_json_file(runtime_dir / "preferred_job.json")
@@ -260,6 +262,8 @@ async def audit(tail: int = Query(80, ge=1, le=500), current_user: dict = Depend
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "cert_log": _tail("universal-worker-cert.log"),
         "launch_log": _tail("universal-worker-launch.log"),
-        "control_plane_status": C.read_json_file(runtime_dir / "control_plane_status.json"),
+        "control_plane_status": C.public_control_plane_status(
+            C.read_json_file(runtime_dir / "control_plane_status.json")
+        ),
         "reconciler": C.read_json_file(runtime_dir / "reconciler.json"),
     }
