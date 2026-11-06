@@ -29,7 +29,7 @@ LIFECYCLE_STATES: List[str] = [
 def public_control_plane_status(document: Any) -> Any:
     """Exclude restricted Maintenance details from general authenticated views."""
     if not isinstance(document, dict):
-        return document
+        return None
     return {key: value for key, value in document.items() if key != "maintenance"}
 
 
