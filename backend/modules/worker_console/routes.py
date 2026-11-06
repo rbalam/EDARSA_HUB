@@ -160,7 +160,6 @@ async def result(job_id: str, current_user: dict = Depends(get_current_user)):
                 "job_id": job_id,
                 "found_in": st,
                 "interpretation": C.interpret_result(doc) if doc is not None else None,
-                "raw": doc,
             }
     raise HTTPException(status_code=404, detail="Sin resultado para ese job_id")
 
