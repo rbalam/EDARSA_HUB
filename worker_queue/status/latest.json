@@ -4,49 +4,55 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "95b6851385d6e994d65e3e8a2f0123822238a3f2",
-  "generated_at_utc": "2026-11-07T02:15:17Z",
+  "generated_at_utc": "2026-11-07T02:16:38Z",
   "history": {
-    "done_total_local": 1672,
+    "done_total_local": 1673,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1332,
-    "results_total_local": 2769
+    "results_total_local": 2770
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2099,
+      "age_seconds": 2180,
       "job_id": "SEM-RH-READ_ONLY_CANARY-ECEB6A55B40149C8B586",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1999,
+      "age_seconds": 2080,
       "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT_BOUNDE-91D198CCB2A3313568AA",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 149,
+      "age_seconds": 230,
       "job_id": "SEM-WORKER_INGRESS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-BDF25C560B886EF95488",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 85,
+      "age_seconds": 166,
       "job_id": "SEM-WORKER_RUNTIME_CONVERGENCE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-5A0C1320E8591732779E",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 35,
+      "age_seconds": 76,
+      "job_id": "SEM-WORKER_RUNTIME_CONVERGENCE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-9DB98278A5B5B1D73B9C",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 116,
       "job_id": "SEM-WORKER_RUNTIME_CONVERGENCE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-D900D0A0D077468AE936",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 57,
+      "age_seconds": 138,
       "job_id": "SEM-WORKER_RUNTIME_CONVERGENCE-WORKER_RESULT_SEMANTIC_EXTRACT-A3450EB9212F6A00713E",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,15 +66,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 7,
   "queue_running": 0,
   "remote_development_sha": "95b6851385d6e994d65e3e8a2f0123822238a3f2",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-07T02:15:13Z",
-    "last_receive_utc": "2026-11-07T02:15:08Z",
-    "last_terminal_utc": "2026-11-07T02:14:42Z",
+    "last_cycle_utc": "2026-11-07T02:16:30Z",
+    "last_receive_utc": "2026-11-07T02:16:25Z",
+    "last_terminal_utc": "2026-11-07T02:15:22Z",
     "pid": "4798",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "4ec77541b37b8da68ae141464e1a370d3eefcb7c",
