@@ -2,10 +2,11 @@ import React, { useEffect, useState, useCallback } from "react";
 import { getToken } from "../lib/api";
 import {
   LayoutDashboard, GitBranch, FileSearch, ScrollText, ClipboardCheck,
-  RefreshCw, CheckCircle2, XCircle, AlertTriangle, HelpCircle,
+  RefreshCw, CheckCircle2, XCircle, AlertTriangle, HelpCircle, Send,
 } from "lucide-react";
 
 const API = process.env.REACT_APP_BACKEND_URL || "";
+const INGRESS = `${API}/api/internal/worker`;
 const STATES = ["requests", "pending", "processing", "results", "done", "published", "rejected"];
 
 async function apiGet(path) {
@@ -39,6 +40,7 @@ const TABS = [
   ["result", "Intérprete", FileSearch],
   ["tablajerias", "Tablajerías", ClipboardCheck],
   ["audit", "Auditoría", ScrollText],
+  ["publish", "Publicar JOB", Send],
 ];
 
 export default function WorkerConsole() {
@@ -49,7 +51,7 @@ export default function WorkerConsole() {
         <h1 className="text-2xl font-bold tracking-tight" data-testid="wc-title">
           EDARSAHUB · Universal Worker Console
         </h1>
-        <p className="text-sm text-zinc-400">Consola de operación — Fase 1 (solo lectura). No toca Producción · No ejecuta SQL · No muta.</p>
+        <p className="text-sm text-zinc-400">Consola de operación — supervisión y publicación canónica con autorización RBAC. Producción protegida.</p>
       </header>
 
       <nav className="flex flex-wrap gap-2 mb-6 border-b border-zinc-800 pb-3">
@@ -72,6 +74,7 @@ export default function WorkerConsole() {
       {tab === "result" && <ResultTab />}
       {tab === "tablajerias" && <TablajeriasTab />}
       {tab === "audit" && <AuditTab />}
+      {tab === "publish" && <PublishTab />}
     </div>
   );
 }
@@ -268,4 +271,105 @@ function AuditTab() {
       ))}
     </div>
   );
+}
+
+/**
+ * Phase 2: thin UI over the existing authenticated canonical worker ingress.
+ * No queue writes, git transport, credential exchange or worker execution here.
+ * The backend enforces RBAC_ADMIN and canonical publisher validation.
+ */
+function PublishTab() {
+  const [jobId, setJobId] = useState("");
+  const [objective, setObjective] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
+  const [status, setStatus] = useState(null);
+  const payload = {
+    job_id: jobId.trim(),
+    objective: objective.trim(),
+    mode: "READ_ONLY",
+    actions: [],
+    checks: [{ type: "git_diff_check" }],
+    scheduling: {
+      project_id: "EDARSAHUB",
+      bounded_context: "WORKER_CONSOLE",
+      priority_class: "NORMAL",
+      fairness_weight: 1,
+      max_parallelism: 1,
+      resource_claims: [],
+      conflict_domains: ["WORKER_CONSOLE"],
+    },
+  };
+  const request = async (path, options = {}) => {
+    const token = getToken();
+    const response = await fetch(`${INGRESS}${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      credentials: "include",
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${JSON.stringify(data.detail || data)}`);
+    return data;
+  };
+  const validate = async () => {
+    setError(""); setResult(null); setStatus(null); setVerified(false);
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$/.test(payload.job_id) || payload.objective.length < 3) {
+      setError("Se requiere un job_id válido y un objetivo de al menos 3 caracteres.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const data = await request("/jobs/preview", { method: "POST", body: JSON.stringify(payload) });
+      if (!data.valid) throw new Error("El ingreso canónico rechazó el contrato.");
+      setVerified(true);
+    } catch (e) { setError(e.message); } finally { setBusy(false); }
+  };
+  const publish = async () => {
+    if (!verified || busy) return;
+    if (!window.confirm(`Publicar ${payload.job_id} por el ingreso canónico? Sin acceso a Producción.`)) return;
+    setBusy(true); setError(""); setStatus(null);
+    try {
+      const data = await request("/jobs", { method: "POST", body: JSON.stringify(payload) });
+      setResult(data);
+      setVerified(false);
+    } catch (e) { setError(e.message); } finally { setBusy(false); }
+  };
+  const refresh = async () => {
+    if (!result?.job_id) return;
+    setBusy(true); setError("");
+    try { setStatus(await request(`/jobs/${encodeURIComponent(result.job_id)}`)); }
+    catch (e) { setError(e.message); } finally { setBusy(false); }
+  };
+  return <div className="space-y-4" data-testid="wc-publish">
+    <Panel>
+      <h2 className="font-semibold mb-2">Publicación canónica · READ_ONLY</h2>
+      <p className="text-sm text-zinc-400 mb-4">Requiere RBAC_ADMIN. No publica directamente en GitHub ni inicia workers alternativos. Las mutaciones no están habilitadas en esta interfaz.</p>
+      <label className="block text-sm mb-1" htmlFor="wc-publish-id">JOB ID único</label>
+      <input id="wc-publish-id" data-testid="wc-publish-id" value={jobId}
+        onChange={e => { setJobId(e.target.value); setVerified(false); }}
+        className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 mb-3" placeholder="BOS-WORKER-CONSOLE-CANARY-R1" />
+      <label className="block text-sm mb-1" htmlFor="wc-publish-objective">Objetivo</label>
+      <textarea id="wc-publish-objective" data-testid="wc-publish-objective" value={objective}
+        onChange={e => { setObjective(e.target.value); setVerified(false); }}
+        className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 min-h-28" placeholder="Objetivo de auditoría READ_ONLY" />
+      <div className="flex flex-wrap gap-2 mt-3">
+        <button disabled={busy} onClick={validate} data-testid="wc-publish-validate" className="px-4 py-2 rounded-lg bg-zinc-700 disabled:opacity-50">Validar</button>
+        <button disabled={!verified || busy} onClick={publish} data-testid="wc-publish-submit" className="px-4 py-2 rounded-lg bg-emerald-700 disabled:opacity-50">Confirmar y publicar</button>
+      </div>
+      {verified && <p className="text-emerald-400 text-sm mt-2">Contrato canónico validado por el servidor. La publicación volverá a verificar permisos, concurrencia y disponibilidad.</p>}
+      {error && <p role="alert" className="text-red-400 text-sm mt-3">{error}</p>}
+    </Panel>
+    {result && <Panel testid="wc-publish-result">
+      <h3 className="font-semibold mb-2">Respuesta del publicador</h3>
+      <pre className="text-xs overflow-auto bg-zinc-950 p-3 rounded-lg">{JSON.stringify(result, null, 2)}</pre>
+      <button disabled={busy} onClick={refresh} data-testid="wc-publish-refresh" className="mt-3 px-4 py-2 bg-zinc-700 rounded-lg disabled:opacity-50">Consultar lifecycle</button>
+      {status && <pre className="text-xs overflow-auto bg-zinc-950 p-3 rounded-lg mt-3">{JSON.stringify(status, null, 2)}</pre>}
+      <p className="text-xs text-amber-300 mt-2">Una respuesta de publicación no equivale a ejecución certificada; verificar resultado terminal.</p>
+    </Panel>}
+  </div>;
 }
