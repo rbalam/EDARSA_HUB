@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "tools/mirror_sync/worker_maintenance_runtime.py",
+          "tools/mirror_sync/worker_repair_planner.py",
+          "tools/mirror_sync/worker_repair_execution.py"
+        ],
+        "search_terms": [
+          "EDARSAHUB-BOS-WORKER-V1.2-CANONICAL-JOB-INGRESS-R1",
+          "CANONICAL_JOB_INGRESS",
+          "supersede_runtime_incident",
+          "declare_runtime_incident",
+          "repair_attempt_allowed"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT_BOUNDE-91D198CCB2A3313568AA",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en READ_ONLY el estado Maintenance del incidente EDARSAHUB-BOS-WORKER-V1.2-CANONICAL-JOB-INGRESS-R1 despues de la certificacion 100% del fix EDARSAHUB-WORKER-REPAIR-PLANNER-EXPECTED-SHA-FIX-R1-20261106. Recuperar incident_id, state, attempts, repair_job_history, repair_job_id, target_paths, capability_code, problem_signature, blocker_signature, production_touched y determinar si existe ya un incidente sucesor o binding autorizado. No mutar Maintenance, no publicar repair, no tocar SQL ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH",
+    "conflict_domains": [
+      "RH"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
