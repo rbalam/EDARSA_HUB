@@ -98,6 +98,9 @@ jobs:
             tests/test_inventory_origin_selection_transversal.py \
             tests/test_worker_rh_repository_contract_semantic.py \
             tests/test_worker_remote_semantic_ingress_gate2a.py \
+            tests/test_worker_maintenance_controller_contract.py \
+            tests/test_worker_repair_auditor_foundation_contract.py \
+            tests/test_worker_repair_planner_contract.py \
             tests/test_no_mongo_legacy_contract.py \
             tests_guardrails/test_p5_1_no_mongo_residual_modules.py \
             tests/test_scheduler_persistent_pause_contract.py \

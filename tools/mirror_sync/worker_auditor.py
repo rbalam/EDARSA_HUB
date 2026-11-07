@@ -269,6 +269,8 @@ def audit_repair_result(
     verify_git_diff: bool = False,
     repo_root: Path | None = None,
     require_protected_authorization: bool = False,
+    incident_id: str | None = None,
+    capability_code: str | None = None,
 ) -> AuditDecision:
     if not isinstance(result, dict):
         return AuditDecision(
@@ -402,7 +404,11 @@ def audit_repair_result(
             reason="REPAIR_SCOPE_OUTSIDE_WORKER_INFRASTRUCTURE",
         )
 
-    if not auditor_scope_allowed(normalized_paths):
+    if not auditor_scope_allowed(
+        normalized_paths,
+        incident_id=incident_id,
+        capability_code=capability_code,
+    ):
         return AuditDecision(
             certified=False,
             reason="REPAIR_SCOPE_OUTSIDE_WORKER_INFRASTRUCTURE",
@@ -529,7 +535,9 @@ def audit_repair_result(
                 reason="REPAIR_GIT_DIFF_MISMATCH",
             )
         if not auditor_scope_allowed(
-            committed_paths
+            committed_paths,
+            incident_id=incident_id,
+            capability_code=capability_code,
         ):
             return AuditDecision(
                 certified=False,

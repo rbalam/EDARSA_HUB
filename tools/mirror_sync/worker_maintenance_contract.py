@@ -32,6 +32,14 @@ FORBIDDEN_APPLICATION_ROOTS: Final[tuple[str, ...]] = (
     "frontend/",
 )
 
+D2_2_INCIDENT_ID: Final = "EDARSAHUB-D2-2-RUNTIME-ARTIFACT-CONVERGENCE-R1"
+D2_2_CAPABILITY_CODE: Final = "D2_2_RUNTIME_ARTIFACT_CONVERGENCE"
+D2_2_EXTRA_AUTHORIZED_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        ".gitignore",
+    }
+)
+
 PROTECTED_UNIVERSAL_COMPONENTS: Final[frozenset[str]] = frozenset(
     {
         "tools/mirror_sync/universal_job_bridge.py",
@@ -91,7 +99,31 @@ def is_worker_infrastructure_path(path: str) -> bool:
     )
 
 
-def repair_scope_allowed(paths: list[str] | tuple[str, ...]) -> bool:
+def _d2_2_exact_scope_exception_allowed(
+    normalized: list[str] | tuple[str, ...],
+    *,
+    incident_id: str | None,
+    capability_code: str | None,
+) -> bool:
+    if str(incident_id or "").strip() != D2_2_INCIDENT_ID:
+        return False
+    if str(capability_code or "").strip() != D2_2_CAPABILITY_CODE:
+        return False
+
+    allowed = set(D2_2_EXTRA_AUTHORIZED_PATHS)
+    return all(
+        is_worker_infrastructure_path(path)
+        or path in allowed
+        for path in normalized
+    )
+
+
+def repair_scope_allowed(
+    paths: list[str] | tuple[str, ...],
+    *,
+    incident_id: str | None = None,
+    capability_code: str | None = None,
+) -> bool:
     if not paths:
         return False
 
@@ -103,8 +135,24 @@ def repair_scope_allowed(paths: list[str] | tuple[str, ...]) -> bool:
     ):
         return False
 
-    return all(is_worker_infrastructure_path(path) for path in normalized)
+    if all(is_worker_infrastructure_path(path) for path in normalized):
+        return True
+
+    return _d2_2_exact_scope_exception_allowed(
+        normalized,
+        incident_id=incident_id,
+        capability_code=capability_code,
+    )
 
 
-def auditor_scope_allowed(paths: list[str] | tuple[str, ...]) -> bool:
-    return repair_scope_allowed(paths)
+def auditor_scope_allowed(
+    paths: list[str] | tuple[str, ...],
+    *,
+    incident_id: str | None = None,
+    capability_code: str | None = None,
+) -> bool:
+    return repair_scope_allowed(
+        paths,
+        incident_id=incident_id,
+        capability_code=capability_code,
+    )

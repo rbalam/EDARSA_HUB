@@ -22,6 +22,7 @@ from tools.mirror_sync.worker_maintenance_contract import (
 class RepairPlan:
     incident_id: str
     paths: tuple[str, ...]
+    capability_code: str | None = None
     authority: str = REPAIR_AUTHORITY.role
     production_allowed: bool = False
 
@@ -29,6 +30,8 @@ class RepairPlan:
 def build_repair_plan(
     incident_id: str,
     paths: list[str] | tuple[str, ...],
+    *,
+    capability_code: str | None = None,
 ) -> RepairPlan:
     incident = str(incident_id or "").strip()
 
@@ -37,12 +40,19 @@ def build_repair_plan(
 
     clean_paths = tuple(str(path).strip() for path in paths)
 
-    if not repair_scope_allowed(clean_paths):
+    clean_capability = str(capability_code or "").strip() or None
+
+    if not repair_scope_allowed(
+        clean_paths,
+        incident_id=incident,
+        capability_code=clean_capability,
+    ):
         raise ValueError("REPAIR_SCOPE_FORBIDDEN")
 
     return RepairPlan(
         incident_id=incident,
         paths=clean_paths,
+        capability_code=clean_capability,
     )
 
 

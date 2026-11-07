@@ -307,3 +307,63 @@ def test_auditor_independently_reads_canonical_result_and_published_certificatio
         confirmed.reason
         == "CERTIFIED_WORKER_REPAIR"
     )
+
+
+def test_d2_2_scope_exception_is_exact_and_not_global():
+    from tools.mirror_sync.worker_maintenance_contract import (
+        D2_2_CAPABILITY_CODE,
+        D2_2_INCIDENT_ID,
+        auditor_scope_allowed,
+    )
+
+    assert not repair_scope_allowed([".gitignore"])
+    assert not auditor_scope_allowed([".gitignore"])
+
+    assert repair_scope_allowed(
+        [".gitignore"],
+        incident_id=D2_2_INCIDENT_ID,
+        capability_code=D2_2_CAPABILITY_CODE,
+    )
+    assert auditor_scope_allowed(
+        [".gitignore"],
+        incident_id=D2_2_INCIDENT_ID,
+        capability_code=D2_2_CAPABILITY_CODE,
+    )
+
+    assert not repair_scope_allowed(
+        [".gitignore"],
+        incident_id="OTHER",
+        capability_code=D2_2_CAPABILITY_CODE,
+    )
+    assert not repair_scope_allowed(
+        [".gitignore"],
+        incident_id=D2_2_INCIDENT_ID,
+        capability_code="OTHER",
+    )
+
+
+def test_d2_2_auditor_requires_exact_context_for_gitignore():
+    from tools.mirror_sync.worker_maintenance_contract import (
+        D2_2_CAPABILITY_CODE,
+        D2_2_INCIDENT_ID,
+    )
+
+    payload = {
+        "files_changed": [".gitignore"],
+        "production_touched": False,
+        "quality_gate": "PASS",
+        "tests": "PASS",
+        "blockers": [],
+        "git_sync_status": "CERTIFIED_GIT_SYNC",
+    }
+
+    denied = audit_repair_result(payload)
+    assert denied.certified is False
+
+    allowed = audit_repair_result(
+        payload,
+        authorized_paths=[".gitignore"],
+        incident_id=D2_2_INCIDENT_ID,
+        capability_code=D2_2_CAPABILITY_CODE,
+    )
+    assert allowed.certified is True

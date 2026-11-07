@@ -318,6 +318,11 @@ def _worker_repair_bounded_submitter(
     from tools.mirror_sync import worker_repair_planner
 
     try:
+        worker_repair_planner.declare_registered_incident(
+            incident_id,
+            capability_code=capability_code.upper(),
+            requester=dict(requester),
+        )
         result = worker_repair_planner.publish_planned_repair(
             incident_id,
             capability_code=capability_code.upper(),
