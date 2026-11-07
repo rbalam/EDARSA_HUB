@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "tools/mirror_sync/git_divergence_guard.py",
+          "tools/mirror_sync/worker_slot_runtime.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/shared_app_safety_guard.sh",
+          "tools/mirror_sync/worker_control_plane.py",
+          "backend/modules/worker_runtime_wake/routes.py"
+        ],
+        "search_terms": [
+          "MODE_INVALID",
+          "SLOT_NOT_FOUND",
+          "ALREADY_RELEASED",
+          "status",
+          "porcelain",
+          "untracked",
+          "gitignore",
+          "stash",
+          "skip-worktree",
+          "assume-unchanged"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_RUNTIME_CONVERGENCE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-9DB98278A5B5B1D73B9C",
+  "mode": "READ_ONLY",
+  "objective": "Certificar de forma READ_ONLY el cierre definitivo de D2.1 Runtime Convergence sobre el HEAD actual. La certificacion debe verificar que los defectos historicos MODE_INVALID y SLOT_NOT_FOUND de RETRY4 ya no representan un fallo activo; que el runtime actual mantiene manejo fail-closed del dirty worktree y liberacion idempotente de slots; que no se usan bypasses como gitignore, stash, skip-worktree o assume-unchanged; y que no se requiere mutacion adicional para D2.1. No modificar repositorio ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_RUNTIME_CONVERGENCE",
+    "conflict_domains": [
+      "WORKER_RUNTIME_CONVERGENCE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
