@@ -251,8 +251,15 @@ def submit_objective(
     payload = dict(request_payload)
     _assert_no_sensitive_keys(payload)
 
+    objective = _clean(payload.get("objective"))
+    bounded_context = _clean(payload.get("bounded_context")).upper()
     capability_code = _clean(payload.get("capability")).upper()
     requested_mode = _clean(payload.get("mode")).upper()
+
+    if not objective:
+        raise WorkerIngressError("OBJECTIVE_REQUIRED")
+    if not bounded_context:
+        raise WorkerIngressError("BOUNDED_CONTEXT_REQUIRED")
 
     try:
         capability = resolve_capability(capability_code)
@@ -281,8 +288,16 @@ def submit_objective(
         if not isinstance(publication, dict):
             raise WorkerIngressError("SEMANTIC_REPAIR_PUBLICATION_MISSING")
 
+        publication_state = _clean(
+            publication.get("publication_status")
+        ).upper()
+        if publication_state not in {"PUBLISHED", "EXISTS"}:
+            raise WorkerIngressError(
+                "SEMANTIC_REPAIR_PUBLICATION_NOT_COMMITTED"
+            )
+
         job_id = _clean(
-            publication.get("job_id")
+            publication.get("repair_job_id")
             or result.get("job_id")
             or (result.get("job") or {}).get("job_id")
         )
@@ -290,11 +305,11 @@ def submit_objective(
             raise WorkerIngressError("SEMANTIC_REPAIR_JOB_ID_MISSING")
 
         safe = {
-            "status": _clean(publication.get("status")) or "SUBMITTED",
+            "status": "SUBMITTED",
             "job_id": job_id,
             "production_touched": False,
             "capability": capability_code,
-            "bounded_context": _clean(payload.get("bounded_context")).upper(),
+            "bounded_context": bounded_context,
         }
         return safe
 
