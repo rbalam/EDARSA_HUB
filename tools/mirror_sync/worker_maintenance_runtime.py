@@ -698,6 +698,10 @@ def register_repair_result(
         state=MaintenanceState(
             current_state_value
         ),
+        capability_code=(
+            str(state.get("capability_code") or "").strip()
+            or None
+        ),
         production_allowed=False,
     )
 
@@ -866,6 +870,10 @@ def audit_runtime_incident(
         paths=tuple(state.get("target_paths") or []),
         state=MaintenanceState(
             current_state_value
+        ),
+        capability_code=(
+            str(state.get("capability_code") or "").strip()
+            or None
         ),
         production_allowed=False,
     )
