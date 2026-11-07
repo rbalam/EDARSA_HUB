@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/SEM-WORKER_RUNTIME_CONVERGENCE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-5A0C1320E8591732779E.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_RUNTIME_CONVERGENCE-WORKER_RESULT_SEMANTIC_EXTRACT-A3450EB9212F6A00713E",
+  "mode": "READ_ONLY",
+  "objective": "Extraer de forma READ_ONLY la evidencia semantica del resultado certificado de la auditoria D2.1 y determinar si el diseño REAL_DIRTY vs VALIDATED_RUNTIME_ARTIFACT esta funcionalmente absorbido o si persiste un defecto que requiera una unica mutacion. No modificar repositorio ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_RUNTIME_CONVERGENCE",
+    "conflict_domains": [
+      "WORKER_RUNTIME_CONVERGENCE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
