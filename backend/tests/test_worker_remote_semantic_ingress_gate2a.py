@@ -170,16 +170,14 @@ def test_g4_maintenance_history_capability_registered_and_bounded():
     {"constraints": {"checks": [{"type": "git_diff_check"}]}},
 ])
 def test_g4_maintenance_history_fails_closed(override):
+    payload = _objective(
+        bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP",
+        capability="WORKER_MAINTENANCE_HISTORY_READONLY",
+        constraints={},
+    )
+    payload.update(override)
     with pytest.raises(service.WorkerIngressError, match="SEMANTIC_"):
-        service.build_semantic_job(
-            _objective(
-                bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP",
-                capability="WORKER_MAINTENANCE_HISTORY_READONLY",
-                constraints={},
-                **override,
-            ),
-            current_user=_user(),
-        )
+        service.build_semantic_job(payload, current_user=_user())
 
 
 def test_g4_semantic_submission_uses_existing_publisher(monkeypatch):
