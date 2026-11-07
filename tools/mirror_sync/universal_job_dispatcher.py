@@ -69,9 +69,9 @@ MAX_SECONDS = int(os.environ.get("EDARSAHUB_JOB_MAX_SECONDS", "1800"))
 MAX_CONCURRENCY_REPLAY_ATTEMPTS = int(os.environ.get("EDARSAHUB_CONCURRENCY_REPLAY_ATTEMPTS", "3"))
 JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file", "insert_before", "insert_after", "append_once"}
-ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract", "worker_maintenance_history_readonly"}
+ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract", "worker_maintenance_history_readonly", "worker_result_detail_read"}
 READ_ONLY_MODE = "READ_ONLY"
-READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract", "worker_maintenance_history_readonly"}
+READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract", "worker_maintenance_history_readonly", "worker_result_detail_read"}
 SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
 MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
 COMERCIAL_RANGE_RESYNC_MODE = "COMERCIAL_RANGE_RESYNC"
@@ -740,6 +740,32 @@ def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False, bas
         cmd = [PYTHON_BIN, str(helper)]
         cwd = worktree
         env_extra = {"PYTHONDONTWRITEBYTECODE": "1"}
+    elif kind == "worker_result_detail_read":
+        helper = (
+            worktree
+            / "tools"
+            / "mirror_sync"
+            / "worker_result_detail_read.py"
+        )
+        if not helper.is_file():
+            helper = (
+                ROOT
+                / "tools"
+                / "mirror_sync"
+                / "worker_result_detail_read.py"
+            )
+        request = check.get("request") or {}
+        cmd = [
+            PYTHON_BIN,
+            str(helper),
+            "--job-id",
+            str(request.get("job_id") or ""),
+        ]
+        cwd = worktree
+        env_extra = {
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONPATH": str(ROOT),
+        }
     elif kind == "worker_result_semantic_extract":
         helper = worktree / "tools" / "mirror_sync" / "worker_result_semantic_extract.py"
         if not helper.is_file():
@@ -790,7 +816,7 @@ def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False, bas
         )
         full_output = result.stdout or ""
         response = {"type": kind, "status": "PASS" if result.returncode == 0 else "FAIL", "returncode": result.returncode, "started_at_utc": started, "completed_at_utc": now(), "output": full_output[-12000:]}
-        if kind in {"sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract", "worker_maintenance_history_readonly"}:
+        if kind in {"sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract", "worker_maintenance_history_readonly", "worker_result_detail_read"}:
             try:
                 structured_evidence = json.loads(full_output.strip())
             except (json.JSONDecodeError, TypeError):
@@ -802,6 +828,8 @@ def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False, bas
                     response["repository_evidence"] = structured_evidence
                 elif kind == "worker_maintenance_history_readonly":
                     response["maintenance_history_evidence"] = structured_evidence
+                elif kind == "worker_result_detail_read":
+                    response["result_detail_evidence"] = structured_evidence
                 else:
                     response["semantic_evidence"] = structured_evidence
         return response

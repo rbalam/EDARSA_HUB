@@ -17,7 +17,11 @@ class SemanticCapabilityError(ValueError):
 class SemanticCapability:
     code: str
     modes: tuple[str, ...]
-    builder: Callable[[Mapping[str, Any]], dict[str, Any]]
+    builder: Callable[[Mapping[str, Any]], dict[str, Any]] | None = None
+    submitter: Callable[
+        [Mapping[str, Any], Mapping[str, Any]],
+        dict[str, Any],
+    ] | None = None
 
 
 _CAPABILITIES: dict[str, SemanticCapability] = {}
@@ -31,6 +35,8 @@ def register_capability(capability: SemanticCapability) -> None:
         raise SemanticCapabilityError("SEMANTIC_CAPABILITY_DUPLICATE")
     if not capability.modes:
         raise SemanticCapabilityError("SEMANTIC_CAPABILITY_MODE_REQUIRED")
+    if (capability.builder is None) == (capability.submitter is None):
+        raise SemanticCapabilityError("SEMANTIC_CAPABILITY_HANDLER_INVALID")
     _CAPABILITIES[code] = capability
 
 
@@ -276,6 +282,110 @@ register_capability(
 )
 
 
+# D2.2 - Bounded Worker Repair semantic mutation boundary.
+# The caller never provides Worker actions/checks/paths. The declared
+# Maintenance incident and registered Repair capability own the mutation scope.
+_WORKER_REPAIR_CONTEXT = "WORKER_RUNTIME_CONVERGENCE"
+_WORKER_REPAIR_CODE = _g3_re.compile(r"^[A-Z0-9][A-Z0-9._-]{2,120}$")
+
+
+def _worker_repair_bounded_submitter(
+    request: Mapping[str, Any],
+    requester: Mapping[str, Any],
+) -> dict[str, Any]:
+    context = _g3_context(request)
+    if context != _WORKER_REPAIR_CONTEXT:
+        raise SemanticCapabilityError("SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED")
+
+    c = _g3_constraints(
+        request,
+        {"incident_id", "capability_code"},
+    )
+    incident_id = c.get("incident_id")
+    capability_code = c.get("capability_code")
+
+    if (
+        not isinstance(incident_id, str)
+        or not _G3_JOB_ID.fullmatch(incident_id)
+    ):
+        raise SemanticCapabilityError("SEMANTIC_INCIDENT_ID_INVALID")
+    if (
+        not isinstance(capability_code, str)
+        or not _WORKER_REPAIR_CODE.fullmatch(capability_code.upper())
+    ):
+        raise SemanticCapabilityError("SEMANTIC_REPAIR_CAPABILITY_INVALID")
+
+    from tools.mirror_sync import worker_repair_planner
+
+    try:
+        result = worker_repair_planner.publish_planned_repair(
+            incident_id,
+            capability_code=capability_code.upper(),
+            requester=dict(requester),
+        )
+    except ValueError as exc:
+        raise SemanticCapabilityError(str(exc)) from exc
+
+    if not isinstance(result, dict):
+        raise SemanticCapabilityError("SEMANTIC_REPAIR_INVALID_RESPONSE")
+    if result.get("production_touched") is not False:
+        raise SemanticCapabilityError("SEMANTIC_REPAIR_PRODUCTION_POLICY_VIOLATION")
+    return result
+
+
+register_capability(
+    SemanticCapability(
+        code="WORKER_REPAIR_BOUNDED",
+        modes=("MUTATION",),
+        submitter=_worker_repair_bounded_submitter,
+    )
+)
+
+
+# Knowledge Loop - bounded local Worker failure evidence.
+# The semantic caller supplies only a canonical source_job_id.
+def _worker_result_detail_builder(request):
+    context = _g3_context(request)
+
+    c = _g3_constraints(
+        request,
+        {"source_job_id"},
+    )
+
+    job_id = c.get("source_job_id")
+
+    if (
+        not isinstance(job_id, str)
+        or not _G3_JOB_ID.fullmatch(job_id)
+    ):
+        raise SemanticCapabilityError(
+            "SEMANTIC_SOURCE_JOB_INVALID"
+        )
+
+    return {
+        "actions": [],
+        "checks": [
+            {
+                "type": "worker_result_detail_read",
+                "request": {
+                    "job_id": job_id,
+                },
+            },
+        ],
+        "scheduling": _g3_scheduling(
+            context
+        ),
+    }
+
+
+register_capability(
+    SemanticCapability(
+        code="WORKER_RESULT_DETAIL_READ",
+        modes=("READ_ONLY",),
+        builder=_worker_result_detail_builder,
+    )
+)
+
 # G4 Maintenance history: expose only the already-registered, bounded,
 # sanitizing Worker check. No caller-supplied paths, actions or checks.
 def _maintenance_history_readonly_builder(request: Mapping[str, Any]) -> dict[str, Any]:
@@ -303,3 +413,4 @@ register_capability(
         builder=_maintenance_history_readonly_builder,
     )
 )
+
