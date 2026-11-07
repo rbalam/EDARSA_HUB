@@ -245,8 +245,58 @@ def submit_objective(
     *,
     current_user: Mapping[str, Any],
 ) -> dict[str, Any]:
+    payload = dict(request_payload)
+    _assert_no_sensitive_keys(payload)
+
+    capability_code = _clean(payload.get("capability")).upper()
+    requested_mode = _clean(payload.get("mode")).upper()
+
+    try:
+        capability = resolve_capability(capability_code)
+    except SemanticCapabilityError as exc:
+        raise WorkerIngressError(str(exc)) from exc
+
+    allowed_modes = tuple(str(mode).upper() for mode in capability.modes)
+    if requested_mode not in allowed_modes:
+        raise WorkerIngressError("SEMANTIC_CAPABILITY_MODE_MISMATCH")
+
+    requester = _requester_from_authenticated_user(
+        current_user,
+        project="EDARSAHUB",
+    )
+
+    if capability.submitter is not None:
+        try:
+            result = capability.submitter(payload, requester)
+        except SemanticCapabilityError as exc:
+            raise WorkerIngressError(str(exc)) from exc
+
+        if not isinstance(result, dict):
+            raise WorkerIngressError("SEMANTIC_CAPABILITY_INVALID_RESPONSE")
+
+        publication = result.get("publication")
+        if not isinstance(publication, dict):
+            raise WorkerIngressError("SEMANTIC_REPAIR_PUBLICATION_MISSING")
+
+        job_id = _clean(
+            publication.get("job_id")
+            or result.get("job_id")
+            or (result.get("job") or {}).get("job_id")
+        )
+        if not job_id:
+            raise WorkerIngressError("SEMANTIC_REPAIR_JOB_ID_MISSING")
+
+        safe = {
+            "status": _clean(publication.get("status")) or "SUBMITTED",
+            "job_id": job_id,
+            "production_touched": False,
+            "capability": capability_code,
+            "bounded_context": _clean(payload.get("bounded_context")).upper(),
+        }
+        return safe
+
     canonical_job = build_semantic_job(
-        request_payload,
+        payload,
         current_user=current_user,
     )
     result = gate_chain_publisher.submit(canonical_job)
@@ -256,8 +306,8 @@ def submit_objective(
     safe = dict(result)
     safe["job_id"] = _clean(result.get("job_id")) or canonical_job["job_id"]
     safe["production_touched"] = bool(result.get("production_touched", False))
-    safe["capability"] = _clean(request_payload.get("capability")).upper()
-    safe["bounded_context"] = _clean(request_payload.get("bounded_context")).upper()
+    safe["capability"] = capability_code
+    safe["bounded_context"] = _clean(payload.get("bounded_context")).upper()
     safe.pop("template", None)
     return safe
 
