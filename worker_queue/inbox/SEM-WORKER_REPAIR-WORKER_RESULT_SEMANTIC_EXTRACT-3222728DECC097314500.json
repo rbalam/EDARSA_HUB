@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/EDARSAHUB-WORKER-REPAIR-PLANNER-CANONICAL-INGRESS-R2-BINDING-R1-20261106.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_REPAIR-WORKER_RESULT_SEMANTIC_EXTRACT-3222728DECC097314500",
+  "mode": "READ_ONLY",
+  "objective": "Extraer en READ_ONLY el resultado del job EDARSAHUB-WORKER-REPAIR-PLANNER-CANONICAL-INGRESS-R2-BINDING-R1-20261106 y devolver exclusivamente evidencia del fallo pytest, nombre de prueba fallida, mensaje/assertion y rutas implicadas. No modificar archivos ni publicar repair.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_REPAIR",
+    "conflict_domains": [
+      "WORKER_REPAIR"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
