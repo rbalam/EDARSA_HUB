@@ -69,7 +69,7 @@ MAX_SECONDS = int(os.environ.get("EDARSAHUB_JOB_MAX_SECONDS", "1800"))
 MAX_CONCURRENCY_REPLAY_ATTEMPTS = int(os.environ.get("EDARSAHUB_CONCURRENCY_REPLAY_ATTEMPTS", "3"))
 JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file", "insert_before", "insert_after", "append_once"}
-ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract"}
+ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract", "worker_maintenance_history_readonly"}
 READ_ONLY_MODE = "READ_ONLY"
 READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract"}
 SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
@@ -731,6 +731,15 @@ def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False, bas
         cmd = [PYTHON_BIN, str(helper), "--request-json", json.dumps(check.get("request") or {}, ensure_ascii=False)]
         cwd = worktree
         env_extra = {"PYTHONDONTWRITEBYTECODE": "1"}
+    elif kind == "worker_maintenance_history_readonly":
+        # Local Git common-dir Maintenance history; only the canonical Worker
+        # host can access it. The helper accepts no caller-selected paths.
+        helper = worktree / "tools" / "mirror_sync" / "worker_maintenance_history_readonly.py"
+        if not helper.is_file():
+            raise RuntimeError("G4_HISTORY_HELPER_UNAVAILABLE")
+        cmd = [PYTHON_BIN, str(helper)]
+        cwd = worktree
+        env_extra = {"PYTHONDONTWRITEBYTECODE": "1"}
     elif kind == "worker_result_semantic_extract":
         helper = worktree / "tools" / "mirror_sync" / "worker_result_semantic_extract.py"
         if not helper.is_file():
@@ -781,7 +790,7 @@ def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False, bas
         )
         full_output = result.stdout or ""
         response = {"type": kind, "status": "PASS" if result.returncode == 0 else "FAIL", "returncode": result.returncode, "started_at_utc": started, "completed_at_utc": now(), "output": full_output[-12000:]}
-        if kind in {"sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract"}:
+        if kind in {"sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract", "worker_maintenance_history_readonly"}:
             try:
                 structured_evidence = json.loads(full_output.strip())
             except (json.JSONDecodeError, TypeError):
@@ -791,6 +800,8 @@ def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False, bas
                     response["sql_evidence"] = structured_evidence
                 elif kind == "repository_contract_audit":
                     response["repository_evidence"] = structured_evidence
+                elif kind == "worker_maintenance_history_readonly":
+                    response["maintenance_history_evidence"] = structured_evidence
                 else:
                     response["semantic_evidence"] = structured_evidence
         return response
