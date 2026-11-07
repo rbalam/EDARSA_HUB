@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "backend/tests/test_worker_result_semantic_extract_contract.py",
+          "backend/modules/worker_ingress/semantic_capabilities.py"
+        ],
+        "search_terms": [
+          "worker_result_semantic_extract",
+          "source_result",
+          "required_semantic_fields",
+          "RESULT_READ_OK",
+          "repository_contract_audit",
+          "semantic_extract"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_RUNTIME_CONVERGENCE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-D900D0A0D077468AE936",
+  "mode": "READ_ONLY",
+  "objective": "Auditar de forma READ_ONLY por que WORKER_RESULT_SEMANTIC_EXTRACT fallo sobre un resultado READ_ONLY certificado de repository_contract_audit. Verificar contrato del check, campos requeridos del source_result, normalizacion de paths y validaciones fail-closed. No modificar repositorio ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_RUNTIME_CONVERGENCE",
+    "conflict_domains": [
+      "WORKER_RUNTIME_CONVERGENCE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
