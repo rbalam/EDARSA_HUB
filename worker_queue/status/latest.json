@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "95b6851385d6e994d65e3e8a2f0123822238a3f2",
-  "generated_at_utc": "2026-11-07T01:57:23Z",
+  "generated_at_utc": "2026-11-07T02:01:19Z",
   "history": {
     "done_total_local": 1669,
     "pending_total_local": 0,
@@ -16,19 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3561,
-      "job_id": "EDARSAHUB-WORKER-REPAIR-PLANNER-EXPECTED-SHA-FIX-R1-20261106",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1025,
+      "age_seconds": 1261,
       "job_id": "SEM-RH-READ_ONLY_CANARY-ECEB6A55B40149C8B586",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 925,
+      "age_seconds": 1160,
       "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT_BOUNDE-91D198CCB2A3313568AA",
       "reason": null,
       "state": "RESULT_READY"
@@ -42,16 +36,16 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "remote_development_sha": "95b6851385d6e994d65e3e8a2f0123822238a3f2",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-07T01:57:13Z",
-    "last_receive_utc": "2026-11-07T01:57:08Z",
+    "last_cycle_utc": "2026-11-07T02:00:58Z",
+    "last_receive_utc": "2026-11-07T02:00:57Z",
     "last_terminal_utc": "2026-11-07T01:41:58Z",
-    "pid": "142041",
+    "pid": "4798",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "4ec77541b37b8da68ae141464e1a370d3eefcb7c",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
