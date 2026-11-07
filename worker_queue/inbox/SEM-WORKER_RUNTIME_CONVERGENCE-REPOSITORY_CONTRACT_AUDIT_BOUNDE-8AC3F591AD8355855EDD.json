@@ -1,0 +1,64 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "tools/mirror_sync/git_divergence_guard.py",
+          "tools/mirror_sync/shared_app_safety_guard.sh",
+          "tools/mirror_sync/apply_remote_update.sh",
+          "tools/mirror_sync/check_remote_update.sh",
+          "tools/mirror_sync/finalize_local_snapshot.sh",
+          "tools/mirror_sync/publish_local_snapshot.sh",
+          "tools/mirror_sync/mirror_sync_worker.sh",
+          "tools/mirror_sync/worker_control_plane.py",
+          "backend/modules/worker_runtime_wake/routes.py",
+          "backend/tests/test_git_divergence_guard_r1.py",
+          "backend/tests/test_shared_app_sync_safety_contract.py",
+          "backend/tests/test_mirror_sync_no_destructive_local_update_contract.py"
+        ],
+        "search_terms": [
+          "staged",
+          "unstaged",
+          "untracked",
+          "porcelain",
+          "GIT_WORKTREE_NOT_CLEAN",
+          "defer_local_dirty",
+          "read-tree",
+          "update-ref",
+          "ff-only",
+          "reset",
+          "stash",
+          "gitignore"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_RUNTIME_CONVERGENCE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-8AC3F591AD8355855EDD",
+  "mode": "READ_ONLY",
+  "objective": "D2.2 Gate0 READ_ONLY: descubrir el alcance canonico de la staging migration posterior a D2.1 Runtime Convergence. Auditar como se gestionan hoy staged changes, unstaged changes, untracked files, shared worktree safety, mirror update/finalization y control plane. Identificar consumidores actuales del dirty-worktree contract, duplicaciones y puntos exactos que requeririan migracion para centralizar o alinear el comportamiento sin ocultar archivos ni reducir fail-closed. No modificar repositorio, Git state, SQL ni Produccion. Entregar evidencia suficiente para definir una unica D2.2 mutation allowlist si realmente hace falta.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_RUNTIME_CONVERGENCE",
+    "conflict_domains": [
+      "WORKER_RUNTIME_CONVERGENCE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
