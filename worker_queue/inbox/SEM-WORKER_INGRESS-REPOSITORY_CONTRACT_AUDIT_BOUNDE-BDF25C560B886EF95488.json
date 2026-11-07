@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "backend/modules/worker_ingress/semantic_capabilities.py",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "run_check",
+          "credential.helper",
+          "REVISION_ISSUE",
+          "github_issue_readonly",
+          "semantic_capabilities",
+          "scoped_push_env"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_INGRESS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-BDF25C560B886EF95488",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente en modo READ_ONLY el contrato canónico de Universal Worker para incorporar en un Gate futuro github_issue_readonly y la capacidad semántica REVISION_ISSUE. Verificar reutilización del credential.helper Git existente, validaciones de seguridad y registro de capacidades. Entregar hallazgos y criterios de implementación sin modificar código, sin publicar otros jobs y sin tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS",
+    "conflict_domains": [
+      "WORKER_INGRESS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
