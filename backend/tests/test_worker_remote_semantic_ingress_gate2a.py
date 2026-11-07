@@ -221,8 +221,9 @@ def test_worker_repair_bounded_delegates_to_canonical_planner(monkeypatch):
         return {
             "job": {"job_id": "REPAIR-WORKER-ABC123-A1"},
             "publication": {
-                "status": "SUBMITTED",
-                "job_id": "REPAIR-WORKER-ABC123-A1",
+                "repair_job_id": "REPAIR-WORKER-ABC123-A1",
+                "publication_status": "PUBLISHED",
+                "production_touched": False,
             },
             "production_touched": False,
         }
@@ -265,8 +266,9 @@ def test_worker_repair_bounded_fails_closed_on_production_violation(monkeypatch)
         return {
             "job": {"job_id": "REPAIR-WORKER-ABC123-A1"},
             "publication": {
-                "status": "SUBMITTED",
-                "job_id": "REPAIR-WORKER-ABC123-A1",
+                "repair_job_id": "REPAIR-WORKER-ABC123-A1",
+                "publication_status": "PUBLISHED",
+                "production_touched": False,
             },
             "production_touched": True,
         }
@@ -280,6 +282,36 @@ def test_worker_repair_bounded_fails_closed_on_production_violation(monkeypatch)
     with pytest.raises(
         service.WorkerIngressError,
         match="SEMANTIC_REPAIR_PRODUCTION_POLICY_VIOLATION",
+    ):
+        service.submit_objective(
+            _repair_objective(),
+            current_user=_user(),
+        )
+
+
+def test_worker_repair_bounded_rejects_uncommitted_publication(monkeypatch):
+    from tools.mirror_sync import worker_repair_planner
+
+    def not_committed(*_args, **_kwargs):
+        return {
+            "job": {"job_id": "REPAIR-WORKER-ABC123-A1"},
+            "publication": {
+                "repair_job_id": "REPAIR-WORKER-ABC123-A1",
+                "publication_status": "READY_TO_PUBLISH",
+                "production_touched": False,
+            },
+            "production_touched": False,
+        }
+
+    monkeypatch.setattr(
+        worker_repair_planner,
+        "publish_planned_repair",
+        not_committed,
+    )
+
+    with pytest.raises(
+        service.WorkerIngressError,
+        match="SEMANTIC_REPAIR_PUBLICATION_NOT_COMMITTED",
     ):
         service.submit_objective(
             _repair_objective(),
