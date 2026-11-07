@@ -46,3 +46,96 @@ def test_interpret_marker_fallback(tmp_path):
     doc = C.read_json_file(f)
     assert isinstance(doc, dict)
     assert doc.get("certification") == "NOT_CERTIFIED"
+
+
+
+def test_public_control_plane_status_redacts_maintenance():
+    source = {
+        "schema": "edarsahub.worker-control-plane.v1",
+        "maintenance": {"incidents": [{"incident_id": "SENSITIVE"}]},
+        "runtime": {"status": "HEALTHY"},
+    }
+    result = C.public_control_plane_status(source)
+    assert "maintenance" not in result
+    assert result["runtime"] == {"status": "HEALTHY"}
+    assert "maintenance" in source
+
+
+def test_public_control_plane_status_fails_closed_for_non_dict():
+    assert C.public_control_plane_status(None) is None
+    assert C.public_control_plane_status([]) is None
+    assert C.public_control_plane_status([{"maintenance": {"incident_id": "SENSITIVE"}}]) is None
+
+
+def test_worker_result_endpoint_does_not_expose_raw_document():
+    """Nonprivileged users must not receive arbitrary Worker result payloads."""
+    import inspect
+    from modules.worker_console import routes
+
+    source = inspect.getsource(routes.result)
+    assert '"raw"' not in source
+    assert '"interpretation"' in source
+
+
+def test_public_job_metadata_excludes_sensitive_fields_and_nested_payloads():
+    payload = {"job": {"schema": C.SCHEMA_ID, "mode": "READ_ONLY",
+        "objective": "SECRET_OBJECTIVE", "requester": {"email": "private@example.com"},
+        "actions": [{"password": "SECRET_PASSWORD"}], "maintenance": {"incident_id": "SENSITIVE"}}}
+    assert C.public_job_metadata(payload) == {"schema": C.SCHEMA_ID, "mode": "READ_ONLY"}
+    assert "objective" in payload["job"]
+
+
+def test_public_job_metadata_fails_closed_for_invalid_or_unexpected_job():
+    assert C.public_job_metadata(None) is None
+    assert C.public_job_metadata([]) is None
+    assert C.public_job_metadata({"job": {"schema": "unknown", "mode": "ROOT"}}) == {}
+
+
+def test_worker_audit_endpoint_requires_effective_rbac_permission():
+    """Assert FastAPI actually binds the existing explicit RBAC dependency."""
+    import inspect
+    from fastapi.params import Depends
+    from modules.worker_console import routes
+
+    default = inspect.signature(routes.audit).parameters["current_user"].default
+    assert isinstance(default, Depends)
+    assert default.dependency is routes.AUDIT_ADMIN_DEPENDENCY
+
+
+def test_dashboard_does_not_serialize_preferred_or_reconciler_documents(tmp_path, monkeypatch):
+    """Dashboard must not disclose unstructured Worker runtime documents."""
+    import asyncio
+    import json
+    from modules.worker_console import routes
+
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    (runtime / "preferred_job.json").write_text(
+        json.dumps({"maintenance": {"incident_id": "PRIVATE_INCIDENT"}}), encoding="utf-8"
+    )
+    (runtime / "reconciler.json").write_text(
+        json.dumps({"private_detail": "PRIVATE_RECONCILER"}), encoding="utf-8"
+    )
+    (runtime / "control_plane_status.json").write_text(
+        json.dumps({"runtime": {"status": "HEALTHY"}, "maintenance": {"incident_id": "PRIVATE_MAINTENANCE"}}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(C, "QUEUE_ROOT", tmp_path)
+    data = asyncio.run(routes.dashboard(current_user={"email": "test@example.org"}))
+    exposed = json.dumps(data)
+    assert "PRIVATE_INCIDENT" not in exposed
+    assert "PRIVATE_RECONCILER" not in exposed
+    assert "PRIVATE_MAINTENANCE" not in exposed
+    assert data["runtime"]["reconciler"] is None
+    assert data["runtime"]["preferred_job"] is None
+    assert data["runtime"]["control_plane_status"]["runtime"]["status"] == "HEALTHY"
+
+
+def test_public_result_interpretation_redacts_blocker_text():
+    source = {"certification": "NOT_CERTIFIED", "quality_gate": "FAIL",
+        "blockers": ["SENSITIVE_INCIDENT_DETAIL"], "production_touched": False}
+    summary = C.public_result_interpretation(source)
+    assert summary["verdict"] == "FAIL"
+    assert summary["blocker_count"] == 1
+    assert summary["blockers"] == []
+    assert source["blockers"] == ["SENSITIVE_INCIDENT_DETAIL"]

@@ -26,8 +26,28 @@ LIFECYCLE_STATES: List[str] = [
     "rejected",
 ]
 
+def public_control_plane_status(document: Any) -> Any:
+    """Exclude restricted Maintenance details from general authenticated views."""
+    if not isinstance(document, dict):
+        return None
+    return {key: value for key, value in document.items() if key != "maintenance"}
+
+
 SCHEMA_ID = "edarsahub.worker-job.v2"
 VALID_MODES = {"READ_ONLY", "MUTATION"}
+
+
+def public_job_metadata(document: Any) -> Optional[Dict[str, str]]:
+    """Expose only fixed, non-sensitive lifecycle metadata to general viewers."""
+    if not isinstance(document, dict):
+        return None
+    job = extract_job(document)
+    metadata: Dict[str, str] = {}
+    if job.get("schema") == SCHEMA_ID:
+        metadata["schema"] = SCHEMA_ID
+    if job.get("mode") in VALID_MODES:
+        metadata["mode"] = job["mode"]
+    return metadata
 
 
 def state_dir(state: str) -> Optional[Path]:
@@ -169,6 +189,13 @@ def interpret_result(doc: Any) -> Dict[str, Any]:
         "files_changed_count": files_count,
         "job_id": root.get("job_id") or extract_job(root).get("job_id"),
     }
+
+
+def public_result_interpretation(document: Any) -> Dict[str, Any]:
+    """Return non-sensitive result summary, never free-text blocker details."""
+    interpreted = interpret_result(document)
+    interpreted["blockers"] = []
+    return interpreted
 
 
 def _parse_marker(text: str) -> Optional[Dict[str, Any]]:

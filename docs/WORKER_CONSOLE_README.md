@@ -7,7 +7,8 @@ Consola visual para **operar el Universal Worker** sin pegar bash, JSON crudo ni
 ## Acceso
 - Ruta frontend: **`/worker-console`** (requiere sesión iniciada).
 - Backend: **`/api/worker/console/*`** (todos los endpoints exigen JWT).
-- **RBAC:** consultar = cualquier usuario autenticado. Publicar / limpiar preferred_job = **solo SUPERADMIN** (Fase 2).
+- **RBAC:** consultas generales = usuarios autenticados. El endpoint `/audit` (logs sin estructura y datos del reconciliador) requiere permiso SQL efectivo `RBAC_ADMIN` mediante el middleware explícito, sin bypass por rol heredado. Publicar / limpiar preferred_job = **solo SUPERADMIN** (Fase 2).
+- **Maintenance:** los endpoints generales `dashboard` y `audit` excluyen el campo `maintenance` de `control_plane_status` para todos los usuarios, incluso autenticados. `dashboard` conserva los campos `reconciler` y `preferred_job` como `null` por compatibilidad, sin publicar sus documentos íntegros; los logs y datos del reconciliador siguen reservados a `RBAC_ADMIN` en `/audit`. Los endpoints `result` y `lifecycle` no entregan documentos completos: `result` expone una interpretación resumida sin texto libre de bloqueos (conservando `blocker_count`), y `lifecycle` solo permite metadata `schema`/`mode` del job y el resultado resumido. No se ofrece un endpoint Maintenance privilegiado hasta verificar el permiso SQL efectivo y sus asignaciones mediante la conexion canonica de Desarrollo; la autenticacion por si sola no autoriza esta informacion.
 
 ## Fuente de datos (solo lectura)
 - `worker/requests/` (publicación futura — Fase 2)

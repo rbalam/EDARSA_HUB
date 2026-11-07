@@ -19,18 +19,39 @@ jobs:
   sql-canonical-audit:
     name: SQL canonical connections, tables and permissions
     runs-on: ubuntu-latest
+    environment: development
     timeout-minutes: 20
 
     env:
-      EDARSAHUB_SQL_HOST: "54.39.104.176"
-      EDARSAHUB_SQL_PORT: "1433"
-      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_HOST: ${{ vars.EDARSAHUB_DEV_SQL_HOST }}
+      EDARSAHUB_SQL_PORT: ${{ vars.EDARSAHUB_DEV_SQL_PORT }}
+      EDARSAHUB_SQL_DATABASE: ${{ vars.EDARSAHUB_DEV_SQL_DATABASE }}
       EDARSAHUB_SQL_USER: "HRLectura"
-      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_DEV_SQL_READONLY_PASSWORD }}
+      EDARSAHUB_SQL_TARGET_CLASS: ${{ vars.EDARSAHUB_DEV_SQL_TARGET_CLASS }}
 
 
 
     steps:
+      - name: Fail closed without approved Development SQL configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ github.job }}" = "sql-canonical-audit"
+          test "${{ github.ref_type }}" = "branch"
+          case "${GITHUB_REF_NAME:-}" in
+            Edarsahub_Desarrollo|security/worker-console-maintenance-redaction-20261106) ;;
+            *) echo "SQL_AUDIT_BRANCH_FORBIDDEN"; exit 1 ;;
+          esac
+          test "${EDARSAHUB_SQL_TARGET_CLASS:-}" = "development"
+          test -n "${EDARSAHUB_SQL_HOST:-}"
+          test -n "${EDARSAHUB_SQL_PASSWORD:-}"
+          test "${EDARSAHUB_SQL_DATABASE:-}" = "EDARSAHUB"
+          [[ "${EDARSAHUB_SQL_PORT:-}" =~ ^[0-9]+$ ]]
+          test "${EDARSAHUB_SQL_USER:-}" = "HRLectura"
+          echo "DEVELOPMENT_SQL_CONFIGURATION=VERIFIED_PRESENT"
+          echo "SQL_CONNECTION_ATTEMPTED=NO"
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -185,4 +206,70 @@ jobs:
 
           cur.close()
           conn.close()
+          PY
+
+      - name: Worker Console Maintenance RBAC metadata (READ_ONLY)
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          PYTHONPATH="$GITHUB_WORKSPACE/backend" python - <<'PY'
+          from core.connections.edarsahub_readonly_repository import validate_readonly_identity
+          from core.connections.hrlectura_connection_factory import build_hrlectura_connection_factory
+
+          required = (
+              "Usuario_Catalogo", "Usuario_RolesAsignacion", "Usuario_Roles",
+              "Usuario_PermisosRolModulo", "Usuario_Modulos", "Usuario_Acciones",
+          )
+          conn = build_hrlectura_connection_factory()()
+          try:
+              validate_readonly_identity(conn)
+              cur = conn.cursor()
+              try:
+                  for table in required:
+                      name = "dbo." + table
+                      cur.execute(
+                          "SELECT OBJECT_ID(%s, 'U'), HAS_PERMS_BY_NAME(%s, 'OBJECT', 'SELECT')",
+                          (name, name),
+                      )
+                      found, permitted = cur.fetchone()
+                      print(f"RBAC_TABLE={table} PRESENT={int(found is not None)} SELECT={int(permitted or 0)}")
+                      if found is None or permitted != 1:
+                          raise SystemExit("RBAC_AUDIT_BLOCKED_MISSING_READ_PERMISSION_OR_TABLE")
+                  cur.execute("""
+                      SELECT m.CodigoModulo, a.CodigoAccion,
+                             COUNT(DISTINCT r.RolID) AS roles_with_permission,
+                             COUNT(DISTINCT u.UsuarioID) AS active_users_with_permission
+                      FROM dbo.Usuario_Modulos m
+                      INNER JOIN dbo.Usuario_PermisosRolModulo prm
+                          ON prm.ModuloID = m.ModuloID AND prm.Activo = 1 AND prm.Permitido = 1
+                      INNER JOIN dbo.Usuario_Acciones a
+                          ON a.AccionID = prm.AccionID AND a.Activo = 1
+                      INNER JOIN dbo.Usuario_Roles r
+                          ON r.RolID = prm.RolID AND r.Activo = 1
+                      LEFT JOIN dbo.Usuario_RolesAsignacion ura
+                          ON ura.RolID = r.RolID AND ura.Activo = 1
+                      LEFT JOIN dbo.Usuario_Catalogo u
+                          ON u.UsuarioID = ura.UsuarioID AND u.Activo = 1
+                      WHERE m.Activo = 1
+                        AND (UPPER(m.CodigoModulo) LIKE '%WORKER%'
+                          OR UPPER(m.CodigoModulo) LIKE '%MAINT%'
+                          OR UPPER(a.CodigoAccion) LIKE '%MAINT%'
+                          OR UPPER(a.CodigoAccion) LIKE '%INCIDENT%'
+                          OR UPPER(a.CodigoAccion) LIKE '%REPAIR%')
+                      GROUP BY m.CodigoModulo, a.CodigoAccion
+                      ORDER BY m.CodigoModulo, a.CodigoAccion
+                  """)
+                  matches = cur.fetchall()
+                  for module_code, action_code, role_count, user_count in matches:
+                      print(
+                          f"RBAC_CANDIDATE={module_code}.{action_code} "
+                          f"ROLES={role_count} ACTIVE_USERS={user_count}"
+                      )
+                  if not matches:
+                      raise SystemExit("RBAC_MAINTENANCE_PERMISSION_NOT_IDENTIFIED")
+                  print("RBAC_MAINTENANCE_METADATA_READONLY=PASS")
+              finally:
+                  cur.close()
+          finally:
+              conn.close()
           PY

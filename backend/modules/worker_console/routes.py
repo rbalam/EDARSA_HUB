@@ -15,10 +15,12 @@ from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from core.rbac.middleware import require_explicit_permission
 from core.rbac.routes import get_current_user
 from modules.worker_console import contract as C
 
 router = APIRouter(prefix="/worker/console", tags=["worker-console"])
+AUDIT_ADMIN_DEPENDENCY = require_explicit_permission("RBAC_ADMIN")
 
 
 def _list_state(directory: Path) -> List[Path]:
@@ -50,10 +52,10 @@ async def dashboard(current_user: dict = Depends(get_current_user)):
         except Exception:
             return None
 
-    control_plane = C.read_json_file(runtime_dir / "control_plane_status.json")
-    reconciler = C.read_json_file(runtime_dir / "reconciler.json")
+    control_plane = C.public_control_plane_status(
+        C.read_json_file(runtime_dir / "control_plane_status.json")
+    )
     orphaned = (runtime_dir / "orphaned-preferred").exists()
-    preferred = C.read_json_file(runtime_dir / "preferred_job.json")
 
     return {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -65,8 +67,8 @@ async def dashboard(current_user: dict = Depends(get_current_user)):
             "last_receive_utc": _read_txt("last_receive_utc"),
             "last_terminal_utc": _read_txt("last_terminal_utc"),
             "control_plane_status": control_plane,
-            "reconciler": reconciler,
-            "preferred_job": preferred,
+            "reconciler": None,
+            "preferred_job": None,
             "preferred_job_orphaned": orphaned,
         },
     }
@@ -127,14 +129,14 @@ async def lifecycle(job_id: str, current_user: dict = Depends(get_current_user))
         if present and job_doc is None and st in ("requests", "pending", "processing"):
             doc = C.read_json_file(p)
             if doc is not None:
-                job_doc = C.extract_job(doc)
+                job_doc = C.public_job_metadata(doc)
 
     result_interp = None
     rp = _find_in_state("results", job_id) or _find_in_state("done", job_id) or _find_in_state("published", job_id)
     if rp is not None:
         doc = C.read_json_file(rp)
         if doc is not None:
-            result_interp = C.interpret_result(doc)
+            result_interp = C.public_result_interpretation(doc)
 
     if not any(presence.values()):
         raise HTTPException(status_code=404, detail="job_id no encontrado en ningún estado")
@@ -157,8 +159,7 @@ async def result(job_id: str, current_user: dict = Depends(get_current_user)):
             return {
                 "job_id": job_id,
                 "found_in": st,
-                "interpretation": C.interpret_result(doc) if doc is not None else None,
-                "raw": doc,
+                "interpretation": C.public_result_interpretation(doc) if doc is not None else None,
             }
     raise HTTPException(status_code=404, detail="Sin resultado para ese job_id")
 
@@ -202,7 +203,7 @@ async def tablajerias_checklist(current_user: dict = Depends(get_current_user)):
         best = None  # (rank, jid, interp)
         for jid in candidates:
             doc = C.read_json_file(index[jid])
-            interp = C.interpret_result(doc) if doc is not None else None
+            interp = C.public_result_interpretation(doc) if doc is not None else None
             if not interp:
                 continue
             rank = {"PASS": 3, "FAIL": 2}.get(interp.get("verdict"), 1)
@@ -242,7 +243,7 @@ async def tablajerias_checklist(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/audit")
-async def audit(tail: int = Query(80, ge=1, le=500), current_user: dict = Depends(get_current_user)):
+async def audit(tail: int = Query(80, ge=1, le=500), current_user: dict = Depends(AUDIT_ADMIN_DEPENDENCY)):
     """Visor de evidencia/auditoría del runtime (solo lectura de logs existentes)."""
     runtime_dir = C.QUEUE_ROOT / "runtime"
 
@@ -260,6 +261,8 @@ async def audit(tail: int = Query(80, ge=1, le=500), current_user: dict = Depend
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "cert_log": _tail("universal-worker-cert.log"),
         "launch_log": _tail("universal-worker-launch.log"),
-        "control_plane_status": C.read_json_file(runtime_dir / "control_plane_status.json"),
+        "control_plane_status": C.public_control_plane_status(
+            C.read_json_file(runtime_dir / "control_plane_status.json")
+        ),
         "reconciler": C.read_json_file(runtime_dir / "reconciler.json"),
     }
