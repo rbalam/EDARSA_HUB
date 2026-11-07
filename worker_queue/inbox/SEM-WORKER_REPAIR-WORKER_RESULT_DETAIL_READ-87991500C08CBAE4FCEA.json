@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "EDARSAHUB-WORKER-REPAIR-PLANNER-CANONICAL-INGRESS-R2-BINDING-R1-20261106"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_REPAIR-WORKER_RESULT_DETAIL_READ-87991500C08CBAE4FCEA",
+  "mode": "READ_ONLY",
+  "objective": "Leer en READ_ONLY y de forma sanitizada el resultado local fallido del job EDARSAHUB-WORKER-REPAIR-PLANNER-CANONICAL-INGRESS-R2-BINDING-R1-20261106 para recuperar únicamente failed_checks, pytest output, assertion_lines, blockers, files_changed y production_touched. No modificar archivos, no publicar repair y no tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_REPAIR",
+    "conflict_domains": [
+      "WORKER_REPAIR"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
