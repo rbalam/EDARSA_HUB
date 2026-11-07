@@ -282,7 +282,11 @@ def declare_runtime_incident(
             existing,
         )
 
-    incident = declare_incident(incident_id, target_paths)
+    incident = declare_incident(
+        incident_id,
+        target_paths,
+        capability_code=capability_code,
+    )
 
     payload: dict[str, Any] = {
         "incident_id": incident.incident_id,
