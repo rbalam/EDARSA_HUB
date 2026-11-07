@@ -317,3 +317,12 @@ def test_dispatcher_registers_detail_evidence():
         'response["result_detail_evidence"]'
         in source
     )
+
+
+def test_result_detail_is_safe_status_field():
+    from modules.worker_ingress import service as ingress_service
+
+    assert (
+        "result_detail_evidence"
+        in ingress_service._SAFE_RESULT_KEYS
+    )

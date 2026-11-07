@@ -62,6 +62,7 @@ _SAFE_RESULT_KEYS = {
     "production_touched",
     "completed_at_utc",
     "summary_es",
+    "result_detail_evidence",
 }
 
 

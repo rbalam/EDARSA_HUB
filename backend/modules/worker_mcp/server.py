@@ -105,6 +105,9 @@ def get_job_status_tool(
             False,
         ),
         "summary_es": result.get("summary_es"),
+        "result_detail_evidence": result.get(
+            "result_detail_evidence"
+        ),
     }
 
 
