@@ -77,7 +77,7 @@ def collect() -> dict:
         inner = payload.get("incident")
         incident = inner if isinstance(inner, dict) else payload
         state = str(payload.get("state") or incident.get("state") or "UNKNOWN").upper()
-        state = _bounded_code(state) or "UNKNOWN"
+        state = state if state in {"REPAIR_REQUIRED", "REJECTED", "SUPERSEDED", "REPAIRED_PENDING_AUDIT", "CERTIFIED", "AUDITED", "CLOSED"} else "UNKNOWN"
         statuses[state] += 1
         signature = incident.get("problem_signature") or payload.get("problem_signature")
         capability = incident.get("capability_code") or payload.get("capability_code")
