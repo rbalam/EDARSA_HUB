@@ -671,6 +671,24 @@ def _canonical_job_ingress_recipe(
         encoding="utf-8"
     )
 
+    test_path = (
+        ROOT
+        / _CANONICAL_INGRESS_TEST
+    )
+
+    if not test_path.is_file():
+        raise ValueError(
+            "CANONICAL_INGRESS_TEST_MISSING"
+        )
+
+    test_source = test_path.read_text(
+        encoding="utf-8"
+    )
+
+    test_sha = hashlib.sha256(
+        test_source.encode("utf-8")
+    ).hexdigest()
+
     old_imports = """import argparse
 import json
 import re
@@ -1420,6 +1438,7 @@ def test_submit_reuses_canonical_publisher():
                 "type": "write_file",
                 "path": _CANONICAL_INGRESS_TEST,
                 "content": ingress_test,
+                "expected_sha256": test_sha,
             },
         ],
         "checks": [

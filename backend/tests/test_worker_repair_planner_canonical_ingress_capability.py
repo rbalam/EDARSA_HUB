@@ -95,3 +95,50 @@ def test_unknown_capability_fail_closed():
         raise AssertionError(
             "unknown capability accepted"
         )
+
+
+def test_existing_test_write_has_expected_sha256():
+    capability = (
+        planner._CAPABILITIES[
+            "CANONICAL_JOB_INGRESS"
+        ]
+    )
+
+    incident = SimpleNamespace(
+        target_paths=(
+            "tools/mirror_sync/gate_chain_publisher.py",
+            (
+                "backend/tests/"
+                "test_worker_canonical_job_ingress_contract.py"
+            ),
+        )
+    )
+
+    recipe = capability.builder(
+        incident,
+        {
+            "base_sha": "a" * 40,
+            "requester": {
+                "email": "test@example.invalid",
+                "source": "pytest",
+            },
+        },
+    )
+
+    actions = [
+        action
+        for action in recipe["actions"]
+        if action.get("path")
+        == (
+            "backend/tests/"
+            "test_worker_canonical_job_ingress_contract.py"
+        )
+    ]
+
+    assert len(actions) == 1
+
+    action = actions[0]
+
+    assert action["type"] == "write_file"
+    assert action.get("expected_sha256")
+    assert len(action["expected_sha256"]) == 64
