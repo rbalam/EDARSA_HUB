@@ -372,3 +372,18 @@ def test_g4_semantic_submission_uses_existing_publisher(monkeypatch):
     assert captured["job"]["actions"] == []
     assert captured["job"]["requester"]["email"] == _user()["email"]
 
+
+def test_g4_semantic_schema_rejects_raw_job_fields():
+    payload = _objective(
+        bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP",
+        capability="WORKER_MAINTENANCE_HISTORY_READONLY",
+        constraints={},
+    )
+    for field, value in (
+        ("actions", [{"type": "write_file", "path": "backend/unsafe.py"}]),
+        ("checks", [{"type": "git_diff_check"}]),
+        ("production_allowed", True),
+        ("requester", {"email": "other@example.com"}),
+    ):
+        with pytest.raises(ValidationError):
+            WorkerObjectiveRequest.model_validate({**payload, field: value})
