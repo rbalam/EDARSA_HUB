@@ -54,6 +54,7 @@ ALLOWED_CHECKS = {
     "sql_readonly_audit",
     "repository_contract_audit",
     "worker_result_semantic_extract",
+    "worker_maintenance_history_readonly",
 }
 
 FORBIDDEN_KEYS = {
