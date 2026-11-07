@@ -424,3 +424,68 @@ def test_gateway_preserves_oauth_bearer_authentication(monkeypatch):
             Authorization="Bearer invalid-token",
         )
         assert bad_token.status_code == 401
+
+
+def test_get_job_status_projects_sanitized_result_detail(monkeypatch):
+    from modules.worker_mcp import server
+
+    expected = {
+        "checks": [
+            {
+                "source_job_id": "JOB-1",
+                "result_status": "GIT_TESTS_FAILED",
+                "failed_checks": [
+                    {
+                        "type": "pytest",
+                        "status": "FAIL",
+                        "returncode": 1,
+                        "output": "FAILED test_x",
+                        "assertion_lines": [
+                            "E AssertionError"
+                        ],
+                    }
+                ],
+                "production_touched": False,
+            }
+        ]
+    }
+
+    monkeypatch.setattr(
+        server,
+        "_BACKEND_URL",
+        "http://backend.test",
+    )
+
+    monkeypatch.setattr(
+        server,
+        "_bearer_token",
+        lambda: "opaque-test-token",
+    )
+
+    monkeypatch.setattr(
+        server,
+        "backend_get_job_status",
+        lambda **kwargs: {
+            "job_id": "JOB-1",
+            "lifecycle": "RESULT",
+            "status": "READ_ONLY_COMPLETE",
+            "certification": "CERTIFIED_READ_ONLY",
+            "work_completion": "COMPLETE",
+            "quality_gate": "PASS",
+            "tests": "PASS",
+            "percent_complete": 100,
+            "production_touched": False,
+            "result_detail_evidence": expected,
+        },
+    )
+
+    result = server.get_job_status_tool(
+        "JOB-1"
+    )
+
+    assert (
+        result[
+            "result_detail_evidence"
+        ]
+        == expected
+    )
