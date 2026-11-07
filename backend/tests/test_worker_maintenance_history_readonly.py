@@ -51,7 +51,7 @@ def test_g4_recurrence_and_missing_fields(tmp_path, monkeypatch):
     monkeypatch.setattr(planner, "registered_capabilities", lambda: ())
     monkeypatch.setattr(registry, "iter_learned_capabilities", lambda: ())
     report = audit.collect()
-    assert report["recurring_signatures"] == [{"signature": "RECURRING_FAILURE", "count": 3}]
+    assert report["recurring_signatures"] == [{"signature": "SIG:" + audit._fingerprint("RECURRING_FAILURE"), "count": 3}]
     assert report["missing_fields"]["capability_code"] == 3
     assert report["missing_fields"]["source_job_id"] == 3
     assert report["states"]["REJECTED"] == 3
