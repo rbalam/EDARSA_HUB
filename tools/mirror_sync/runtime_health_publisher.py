@@ -214,6 +214,172 @@ def history_summary() -> dict[str, int]:
     }
 
 
+
+# Only aggregate counts leave this runtime. The repository and worker/health
+# branch are public; file paths stay in a private, untracked Git state folder.
+PRIVATE_WORKTREE_DIR = STATE / "private_health"
+PRIVATE_WORKTREE_FILE = PRIVATE_WORKTREE_DIR / "shared_worktree.json"
+MAX_WORKTREE_STATUS_BYTES = 1024 * 1024
+MAX_WORKTREE_STATUS_ENTRIES = 10000
+
+
+def _expected_platform_managed_drift() -> bool:
+    """Reuse the canonical Git guard's exact, fail-closed Preview exception."""
+    guard_path = Path(__file__).resolve().with_name("git_divergence_guard.py")
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "edarsahub_health_git_guard", guard_path
+        )
+        if spec is None or spec.loader is None:
+            return False
+        guard = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(guard)
+        return bool(guard._expected_platform_system_deps_drift(ROOT))
+    except Exception:
+        # Never hide changes when the canonical exception cannot be verified.
+        return False
+
+
+def _read_only_worktree_snapshot() -> dict:
+    """Read Git porcelain -z without optional index locks or file contents."""
+    result = subprocess.run(
+        [
+            "git", "--no-optional-locks", "status",
+            "--porcelain=v1", "-z", "--untracked-files=all",
+        ],
+        cwd=str(ROOT),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        env={**os.environ, "GIT_TERMINAL_PROMPT": "0", "GIT_OPTIONAL_LOCKS": "0"},
+        timeout=20,
+        check=False,
+    )
+    raw = result.stdout
+    if result.returncode != 0 or not isinstance(raw, bytes):
+        raise RuntimeError("WORKTREE_STATUS_UNAVAILABLE")
+    if len(raw) > MAX_WORKTREE_STATUS_BYTES:
+        raise RuntimeError("WORKTREE_STATUS_TOO_LARGE")
+    if raw and not raw.endswith(b"\x00"):
+        raise RuntimeError("WORKTREE_STATUS_INCOMPLETE")
+
+    records = raw.split(b"\x00")[:-1] if raw else []
+    staged: list[str] = []
+    unstaged: list[str] = []
+    untracked: list[str] = []
+    renamed_from: list[str] = []
+    ignored_platform_drift = False
+    index = 0
+
+    while index < len(records):
+        if index >= MAX_WORKTREE_STATUS_ENTRIES:
+            raise RuntimeError("WORKTREE_STATUS_TOO_MANY_ENTRIES")
+        entry = records[index]
+        if len(entry) < 4 or entry[2:3] != b" ":
+            raise RuntimeError("WORKTREE_STATUS_INVALID_RECORD")
+        status = entry[:2]
+        relative = entry[3:].decode("utf-8", errors="surrogateescape")
+        if not relative or relative.startswith("/"):
+            raise RuntimeError("WORKTREE_STATUS_INVALID_PATH")
+
+        if b"R" in status or b"C" in status:
+            index += 1
+            if index >= len(records):
+                raise RuntimeError("WORKTREE_RENAME_INCOMPLETE")
+            old_path = records[index].decode("utf-8", errors="surrogateescape")
+            if not old_path:
+                raise RuntimeError("WORKTREE_RENAME_INVALID_PATH")
+            renamed_from.append(old_path)
+
+        if (
+            status == b" M"
+            and relative == ".emergent/system_deps.txt"
+            and _expected_platform_managed_drift()
+        ):
+            ignored_platform_drift = True
+            index += 1
+            continue
+
+        if status == b"??":
+            untracked.append(relative)
+        elif status == b"!!":
+            raise RuntimeError("WORKTREE_STATUS_IGNORED_RECORD")
+        else:
+            if status[:1] != b" ":
+                staged.append(relative)
+            if status[1:2] != b" ":
+                unstaged.append(relative)
+        index += 1
+
+    return {
+        "schema": "edarsahub.worker-worktree-evidence.v1",
+        "generated_at_utc": now(),
+        "staged": staged,
+        "unstaged": unstaged,
+        "untracked": untracked,
+        "renamed_from": renamed_from,
+        "platform_managed_exception_applied": ignored_platform_drift,
+    }
+
+
+def _persist_private_worktree_snapshot(snapshot: dict) -> None:
+    """Atomic, owner-only evidence in .git; never commit to worker/health."""
+    directory = PRIVATE_WORKTREE_DIR
+    if directory.is_symlink():
+        raise RuntimeError("PRIVATE_WORKTREE_DIRECTORY_UNSAFE")
+    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if (
+        directory.is_symlink()
+        or not directory.is_dir()
+        or directory.stat().st_uid != os.geteuid()
+    ):
+        raise RuntimeError("PRIVATE_WORKTREE_DIRECTORY_UNSAFE")
+    os.chmod(directory, 0o700)
+
+    destination = PRIVATE_WORKTREE_FILE
+    if destination.is_symlink():
+        raise RuntimeError("PRIVATE_WORKTREE_EVIDENCE_SYMLINK")
+    temporary: str | None = None
+    try:
+        fd, temporary = tempfile.mkstemp(prefix=".worktree-", dir=str(directory))
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(snapshot, handle, ensure_ascii=True, sort_keys=True)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, destination)
+        temporary = None
+    finally:
+        if temporary is not None and os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+def _worktree_public_status() -> dict:
+    """Never send paths, Git output or exceptions to the public health branch."""
+    try:
+        snapshot = _read_only_worktree_snapshot()
+        _persist_private_worktree_snapshot(snapshot)
+    except Exception:
+        return {
+            "state": "UNAVAILABLE",
+            "private_evidence": "UNAVAILABLE",
+        }
+
+    staged = len(snapshot["staged"])
+    unstaged = len(snapshot["unstaged"])
+    untracked = len(snapshot["untracked"])
+    return {
+        "state": "DIRTY" if (staged or unstaged or untracked) else "CLEAN",
+        "staged_count": staged,
+        "unstaged_count": unstaged,
+        "untracked_count": untracked,
+        "platform_managed_exception_applied": snapshot[
+            "platform_managed_exception_applied"
+        ],
+        "private_evidence": "LOCAL_RESTRICTED",
+    }
+
+
 def runtime_summary() -> dict:
     try:
         fingerprint = _runtime_fingerprint.build_runtime_fingerprint()
@@ -232,6 +398,7 @@ def runtime_summary() -> dict:
         "current_job_id": read_text(RUNTIME / "current_job_id"),
         "last_terminal_utc": read_text(RUNTIME / "last_terminal_utc"),
         "runtime_fingerprint": fingerprint,
+        "shared_worktree": _worktree_public_status(),
     }
 
 
