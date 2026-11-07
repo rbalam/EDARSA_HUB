@@ -210,6 +210,9 @@ def build_semantic_job(
     if requested_mode not in allowed_modes:
         raise WorkerIngressError("SEMANTIC_CAPABILITY_MODE_MISMATCH")
 
+    if capability.builder is None:
+        raise WorkerIngressError("SEMANTIC_CAPABILITY_DIRECT_SUBMISSION_REQUIRED")
+
     try:
         expansion = capability.builder(payload)
     except SemanticCapabilityError as exc:
