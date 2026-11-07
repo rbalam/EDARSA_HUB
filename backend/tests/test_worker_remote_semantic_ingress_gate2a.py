@@ -143,3 +143,177 @@ def test_objective_route_is_exposed_and_jobs_route_remains_internal():
     assert '@router.post("/objectives"' in ROUTES
     assert '@router.post("/jobs"' in ROUTES
     assert '@router.get("/jobs/{job_id}")' in ROUTES
+
+
+def _repair_objective(**overrides):
+    payload = {
+        "objective": "Ejecutar una reparacion Worker acotada.",
+        "bounded_context": "WORKER_RUNTIME_CONVERGENCE",
+        "mode": "MUTATION",
+        "capability": "WORKER_REPAIR_BOUNDED",
+        "constraints": {
+            "incident_id": "WORKER-ABC123",
+            "capability_code": "CANONICAL_JOB_INGRESS",
+        },
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_worker_repair_bounded_capability_is_registered():
+    assert "WORKER_REPAIR_BOUNDED" in registered_capabilities()
+
+
+def test_worker_repair_bounded_rejects_wrong_context():
+    with pytest.raises(
+        service.WorkerIngressError,
+        match="SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED",
+    ):
+        service.submit_objective(
+            _repair_objective(bounded_context="RH"),
+            current_user=_user(),
+        )
+
+
+def test_worker_repair_bounded_rejects_unknown_constraints():
+    with pytest.raises(
+        service.WorkerIngressError,
+        match="SEMANTIC_CONSTRAINTS_UNSUPPORTED",
+    ):
+        service.submit_objective(
+            _repair_objective(
+                constraints={
+                    "incident_id": "WORKER-ABC123",
+                    "capability_code": "CANONICAL_JOB_INGRESS",
+                    "actions": [{"type": "write_file"}],
+                }
+            ),
+            current_user=_user(),
+        )
+
+
+def test_worker_repair_bounded_rejects_generic_builder_path():
+    with pytest.raises(
+        service.WorkerIngressError,
+        match="SEMANTIC_CAPABILITY_DIRECT_SUBMISSION_REQUIRED",
+    ):
+        service.build_semantic_job(
+            _repair_objective(),
+            current_user=_user(),
+        )
+
+
+def test_worker_repair_bounded_delegates_to_canonical_planner(monkeypatch):
+    from tools.mirror_sync import worker_repair_planner
+
+    captured = {}
+
+    def fake_publish(
+        incident_id,
+        *,
+        capability_code=None,
+        problem_signature=None,
+        requester=None,
+    ):
+        captured["incident_id"] = incident_id
+        captured["capability_code"] = capability_code
+        captured["requester"] = requester
+        return {
+            "job": {"job_id": "REPAIR-WORKER-ABC123-A1"},
+            "publication": {
+                "repair_job_id": "REPAIR-WORKER-ABC123-A1",
+                "publication_status": "PUBLISHED",
+                "production_touched": False,
+            },
+            "production_touched": False,
+        }
+
+    def forbidden_generic_submit(_job):
+        raise AssertionError("generic publisher path must not be used directly")
+
+    monkeypatch.setattr(
+        worker_repair_planner,
+        "publish_planned_repair",
+        fake_publish,
+    )
+    monkeypatch.setattr(
+        service.gate_chain_publisher,
+        "submit",
+        forbidden_generic_submit,
+    )
+
+    result = service.submit_objective(
+        _repair_objective(),
+        current_user=_user(),
+    )
+
+    assert result == {
+        "status": "SUBMITTED",
+        "job_id": "REPAIR-WORKER-ABC123-A1",
+        "production_touched": False,
+        "capability": "WORKER_REPAIR_BOUNDED",
+        "bounded_context": "WORKER_RUNTIME_CONVERGENCE",
+    }
+    assert captured["incident_id"] == "WORKER-ABC123"
+    assert captured["capability_code"] == "CANONICAL_JOB_INGRESS"
+    assert captured["requester"]["email"] == "admin@example.com"
+
+
+def test_worker_repair_bounded_fails_closed_on_production_violation(monkeypatch):
+    from tools.mirror_sync import worker_repair_planner
+
+    def unsafe_publish(*_args, **_kwargs):
+        return {
+            "job": {"job_id": "REPAIR-WORKER-ABC123-A1"},
+            "publication": {
+                "repair_job_id": "REPAIR-WORKER-ABC123-A1",
+                "publication_status": "PUBLISHED",
+                "production_touched": False,
+            },
+            "production_touched": True,
+        }
+
+    monkeypatch.setattr(
+        worker_repair_planner,
+        "publish_planned_repair",
+        unsafe_publish,
+    )
+
+    with pytest.raises(
+        service.WorkerIngressError,
+        match="SEMANTIC_REPAIR_PRODUCTION_POLICY_VIOLATION",
+    ):
+        service.submit_objective(
+            _repair_objective(),
+            current_user=_user(),
+        )
+
+
+def test_worker_repair_bounded_rejects_uncommitted_publication(monkeypatch):
+    from tools.mirror_sync import worker_repair_planner
+
+    def not_committed(*_args, **_kwargs):
+        return {
+            "job": {"job_id": "REPAIR-WORKER-ABC123-A1"},
+            "publication": {
+                "repair_job_id": "REPAIR-WORKER-ABC123-A1",
+                "publication_status": "READY_TO_PUBLISH",
+                "production_touched": False,
+            },
+            "production_touched": False,
+        }
+
+    monkeypatch.setattr(
+        worker_repair_planner,
+        "publish_planned_repair",
+        not_committed,
+    )
+
+    with pytest.raises(
+        service.WorkerIngressError,
+        match="SEMANTIC_REPAIR_PUBLICATION_NOT_COMMITTED",
+    ):
+        service.submit_objective(
+            _repair_objective(),
+            current_user=_user(),
+        )
