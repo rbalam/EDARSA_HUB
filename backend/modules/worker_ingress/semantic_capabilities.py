@@ -340,3 +340,48 @@ register_capability(
         submitter=_worker_repair_bounded_submitter,
     )
 )
+
+
+# Knowledge Loop - bounded local Worker failure evidence.
+# The semantic caller supplies only a canonical source_job_id.
+def _worker_result_detail_builder(request):
+    context = _g3_context(request)
+
+    c = _g3_constraints(
+        request,
+        {"source_job_id"},
+    )
+
+    job_id = c.get("source_job_id")
+
+    if (
+        not isinstance(job_id, str)
+        or not _G3_JOB_ID.fullmatch(job_id)
+    ):
+        raise SemanticCapabilityError(
+            "SEMANTIC_SOURCE_JOB_INVALID"
+        )
+
+    return {
+        "actions": [],
+        "checks": [
+            {
+                "type": "worker_result_detail_read",
+                "request": {
+                    "job_id": job_id,
+                },
+            },
+        ],
+        "scheduling": _g3_scheduling(
+            context
+        ),
+    }
+
+
+register_capability(
+    SemanticCapability(
+        code="WORKER_RESULT_DETAIL_READ",
+        modes=("READ_ONLY",),
+        builder=_worker_result_detail_builder,
+    )
+)

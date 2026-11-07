@@ -54,9 +54,9 @@ QUEUE_REF = os.environ.get(
 SCHEMA = "edarsahub.worker-job.v2"
 JOB_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file", "insert_before", "insert_after", "append_once"}
-ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract", "worker_maintenance_history_readonly"}
+ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract", "worker_maintenance_history_readonly", "worker_result_detail_read"}
 READ_ONLY_MODE = "READ_ONLY"
-READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract", "worker_maintenance_history_readonly"}
+READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract", "worker_maintenance_history_readonly", "worker_result_detail_read"}
 SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
 MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
 COMERCIAL_RANGE_RESYNC_MODE = "COMERCIAL_RANGE_RESYNC"
@@ -270,6 +270,17 @@ def validate_check(check: Any, index: int) -> list[str]:
     if kind == "worker_maintenance_history_readonly":
         if set(check) != {"type"}:
             return [f"{prefix}_UNSUPPORTED_FIELDS"]
+    if kind == "worker_result_detail_read":
+        if set(check) != {"type", "request"}:
+            return [f"{prefix}_UNSUPPORTED_FIELDS"]
+        request = check.get("request")
+        if not isinstance(request, dict):
+            return [f"{prefix}_REQUEST_REQUIRED"]
+        if set(request) != {"job_id"}:
+            return [f"{prefix}_REQUEST_FIELDS_INVALID"]
+        job_id = str(request.get("job_id") or "").strip()
+        if not JOB_ID.fullmatch(job_id):
+            return [f"{prefix}_JOB_ID_INVALID"]
     if kind == "repository_contract_audit":
         request = check.get("request")
         if not isinstance(request, dict):
