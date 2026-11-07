@@ -1,0 +1,207 @@
+{
+  "base_sha": "95b6851385d6e994d65e3e8a2f0123822238a3f2",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-07T02:14:42Z",
+  "execution_base_sha": "95b6851385d6e994d65e3e8a2f0123822238a3f2",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-WORKER_RUNTIME_CONVERGENCE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-D900D0A0D077468AE936",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-07T02:17:13Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "asyncio",
+              "datetime",
+              "fcntl",
+              "git_divergence_guard",
+              "hashlib",
+              "json",
+              "modules.api_connections.repository",
+              "os",
+              "pathlib",
+              "re",
+              "readonly_audit_profiles",
+              "shutil",
+              "subprocess",
+              "sys",
+              "tempfile",
+              "time",
+              "tools.mirror_sync.readonly_audit_profiles",
+              "tools.mirror_sync.worker_deliverable_contract",
+              "tools.mirror_sync.worker_mutation_materializer",
+              "typing",
+              "worker_concurrency",
+              "worker_deliverable_contract",
+              "worker_mutation_materializer",
+              "worker_scheduling",
+              "worker_slot_runtime"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "repository_contract_audit",
+              "semantic_extract",
+              "worker_result_semantic_extract"
+            ],
+            "path": "tools/mirror_sync/universal_job_dispatcher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_cleanup_residual_worker_worktree",
+              "_load_preferred_job",
+              "_native_decision_contract_required",
+              "_native_decision_from_repository_contract_audit",
+              "_promote_native_decision_from_semantic_extract",
+              "_select_pending_job",
+              "_semantic_extract_payload",
+              "apply_action",
+              "build_comercial_audit_checks",
+              "changed_files",
+              "claim_one",
+              "create_commit",
+              "dispatch",
+              "ensure_dirs",
+              "evaluate_objective_criteria",
+              "git",
+              "git_changed_paths",
+              "git_is_ancestor",
+              "heartbeat_active_slot",
+              "integrate",
+              "load_backend_runtime_env",
+              "load_envelope",
+              "main",
+              "now",
+              "prepare_worktree",
+              "process_one",
+              "release_agent_guard_claim",
+              "resolve_canonical_python",
+              "resolve_repository_credential_helper",
+              "run",
+              "run_check",
+              "run_check_process",
+              "safe_path",
+              "sha256_file",
+              "summarize_iscam_detail_backfill_output",
+              "summarize_softrestaurant_output",
+              "validate_scope",
+              "verify_expected_hash",
+              "write_json"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "Sync_Control_Ejecuciones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "json",
+              "tools.mirror_sync.universal_job_result_publisher",
+              "tools.mirror_sync.worker_result_semantic_extract"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "required_semantic_fields",
+              "result_read_ok",
+              "semantic_extract",
+              "source_result",
+              "worker_result_semantic_extract"
+            ],
+            "path": "backend/tests/test_worker_result_semantic_extract_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "test_build_report_allows_only_explicit_complete_gate3",
+              "test_build_report_derives_fail_closed_when_required_fields_are_missing",
+              "test_canonical_compatibility_resolves_execution_base_sha_and_repository_evidence_with_provenance",
+              "test_failure_report_is_fail_closed",
+              "test_invalid_base_sha_or_failed_repository_contract_evidence_fails_closed",
+              "test_publisher_preserves_execution_base_sha_and_sanitized_semantic_provenance_fields",
+              "test_sec01_recursive_sanitization_blocks_fictitious_secrets_bombs_types_and_oversized_fields",
+              "test_sec02_rejects_nonexistent_git_commit_sha_even_when_40_hex",
+              "test_sec03_rejects_sha_conflicts_and_blocks_nested_bfs_decision_spoofing",
+              "test_sec04_multiple_semantic_checks_aggregate_fail_closed_in_publisher"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.worker_ingress",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "re",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "repository_contract_audit",
+              "semantic_extract",
+              "source_result",
+              "worker_result_semantic_extract"
+            ],
+            "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "SemanticCapability",
+              "SemanticCapabilityError",
+              "_g3_constraints",
+              "_g3_context",
+              "_g3_repository_builder",
+              "_g3_result_builder",
+              "_g3_scheduling",
+              "_read_only_canary_builder",
+              "_repository_contract_audit_builder",
+              "register_capability",
+              "registered_capabilities",
+              "resolve_capability"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 3,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-07T02:14:41Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
