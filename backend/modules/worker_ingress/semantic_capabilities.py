@@ -385,3 +385,32 @@ register_capability(
         builder=_worker_result_detail_builder,
     )
 )
+
+# G4 Maintenance history: expose only the already-registered, bounded,
+# sanitizing Worker check. No caller-supplied paths, actions or checks.
+def _maintenance_history_readonly_builder(request: Mapping[str, Any]) -> dict[str, Any]:
+    context = str(request.get("bounded_context") or "").strip().upper()
+    if context != "WORKER_REPAIR_KNOWLEDGE_LOOP":
+        raise SemanticCapabilityError("SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED")
+
+    constraints = request.get("constraints")
+    if constraints is not None and (
+        not isinstance(constraints, Mapping) or bool(constraints)
+    ):
+        raise SemanticCapabilityError("SEMANTIC_CONSTRAINTS_UNSUPPORTED")
+
+    return {
+        "actions": [],
+        "checks": [{"type": "worker_maintenance_history_readonly"}],
+        "scheduling": _g3_scheduling(context),
+    }
+
+
+register_capability(
+    SemanticCapability(
+        code="WORKER_MAINTENANCE_HISTORY_READONLY",
+        modes=("READ_ONLY",),
+        builder=_maintenance_history_readonly_builder,
+    )
+)
+

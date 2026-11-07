@@ -317,3 +317,73 @@ def test_worker_repair_bounded_rejects_uncommitted_publication(monkeypatch):
             _repair_objective(),
             current_user=_user(),
         )
+
+def test_g4_maintenance_history_capability_registered_and_bounded():
+    assert "WORKER_MAINTENANCE_HISTORY_READONLY" in registered_capabilities()
+    job = service.build_semantic_job(
+        _objective(
+            bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP",
+            capability="WORKER_MAINTENANCE_HISTORY_READONLY",
+            constraints={},
+        ),
+        current_user=_user(),
+    )
+    assert job["mode"] == "READ_ONLY"
+    assert job["actions"] == []
+    assert job["production_allowed"] is False
+    assert job["checks"] == [{"type": "worker_maintenance_history_readonly"}]
+    assert job["scheduling"]["bounded_context"] == "WORKER_REPAIR_KNOWLEDGE_LOOP"
+
+
+@pytest.mark.parametrize("override", [
+    {"mode": "MUTATION"},
+    {"bounded_context": "OTHER_DOMAIN"},
+    {"constraints": {"paths": ["/app/.git"]}},
+    {"constraints": {"actions": []}},
+    {"constraints": {"checks": [{"type": "git_diff_check"}]}},
+])
+def test_g4_maintenance_history_fails_closed(override):
+    payload = _objective(
+        bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP",
+        capability="WORKER_MAINTENANCE_HISTORY_READONLY",
+        constraints={},
+    )
+    payload.update(override)
+    with pytest.raises(service.WorkerIngressError, match="SEMANTIC_"):
+        service.build_semantic_job(payload, current_user=_user())
+
+
+def test_g4_semantic_submission_uses_existing_publisher(monkeypatch):
+    captured = {}
+    def fake_submit(job):
+        captured["job"] = job
+        return {"status": "SUBMITTED", "job_id": job["job_id"], "production_touched": False}
+    monkeypatch.setattr(service.gate_chain_publisher, "submit", fake_submit)
+    payload = _objective(
+        bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP",
+        capability="WORKER_MAINTENANCE_HISTORY_READONLY",
+        constraints={},
+        request_key="g4-maintenance-r1",
+    )
+    result = service.submit_objective(payload, current_user=_user())
+    assert result["status"] == "SUBMITTED"
+    assert result["production_touched"] is False
+    assert captured["job"]["checks"] == [{"type": "worker_maintenance_history_readonly"}]
+    assert captured["job"]["actions"] == []
+    assert captured["job"]["requester"]["email"] == _user()["email"]
+
+
+def test_g4_semantic_schema_rejects_raw_job_fields():
+    payload = _objective(
+        bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP",
+        capability="WORKER_MAINTENANCE_HISTORY_READONLY",
+        constraints={},
+    )
+    for field, value in (
+        ("actions", [{"type": "write_file", "path": "backend/unsafe.py"}]),
+        ("checks", [{"type": "git_diff_check"}]),
+        ("production_allowed", True),
+        ("requester", {"email": "other@example.com"}),
+    ):
+        with pytest.raises(ValidationError):
+            WorkerObjectiveRequest.model_validate({**payload, field: value})
