@@ -89,11 +89,11 @@ def collect() -> dict:
         if not isinstance(signature, str) or not signature:
             missing["problem_signature"] += 1
         else:
-            signatures[_bounded_code(signature)] += 1
+            signatures["SIG:" + _fingerprint(signature)] += 1
         if not isinstance(capability, str) or not capability:
             missing["capability_code"] += 1
         else:
-            used_capabilities[_bounded_code(capability)] += 1
+            used_capabilities[_bounded_code(capability) if capability in known else "UNKNOWN:" + _fingerprint(capability)] += 1
         if not isinstance(source_id, str) or not source_id:
             missing["source_job_id"] += 1
         else:
@@ -113,8 +113,8 @@ def collect() -> dict:
             pending.append({
                 "incident_fingerprint": _fingerprint(incident_id or file.stem),
                 "state": state,
-                "signature": _bounded_code(signature),
-                "capability": _bounded_code(capability),
+                "signature": ("SIG:" + _fingerprint(signature)) if isinstance(signature, str) else None,
+                "capability": _bounded_code(capability) if isinstance(capability, str) and capability in known else None,
                 "capability_registered": capability in known if isinstance(capability, str) else False,
                 "source_job_fingerprint": _fingerprint(source_id) if isinstance(source_id, str) else None,
                 "repair_job_fingerprint": _fingerprint(repair_id) if isinstance(repair_id, str) else None,
@@ -163,7 +163,7 @@ def main() -> int:
         return 0
     except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
         # Do not disclose local paths or contents on errors.
-        print(json.dumps({"status": "FAIL", "error_code": str(exc).split(":", 1)[0][:80]}))
+        print(json.dumps({"status": "FAIL", "error_code": type(exc).__name__}))
         return 1
 
 
