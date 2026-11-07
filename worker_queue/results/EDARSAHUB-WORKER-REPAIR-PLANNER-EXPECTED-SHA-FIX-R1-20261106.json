@@ -1,0 +1,123 @@
+{
+  "base_sha": "07a66d439c04fc5482a8d41f1dba9f8ec38ad1c3",
+  "blockers": [],
+  "candidate_sha": "2f59ec056e6cca7fabad9d6890f44eca8455e498",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-11-07T00:58:02Z",
+  "development_sha": "2f59ec056e6cca7fabad9d6890f44eca8455e498",
+  "execution_base_sha": "07a66d439c04fc5482a8d41f1dba9f8ec38ad1c3",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_worker_repair_planner_canonical_ingress_capability.py",
+    "tools/mirror_sync/worker_repair_planner.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-WORKER-REPAIR-PLANNER-EXPECTED-SHA-FIX-R1-20261106",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-11-07T00:59:15Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "hashlib",
+              "json",
+              "os",
+              "pathlib",
+              "subprocess",
+              "tempfile",
+              "tools.mirror_sync",
+              "tools.mirror_sync.git_divergence_guard",
+              "tools.mirror_sync.universal_job_bridge",
+              "tools.mirror_sync.worker_job_factory",
+              "tools.mirror_sync.worker_repair_execution",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canonical_job_ingress",
+              "expected_sha256",
+              "test_sha"
+            ],
+            "path": "tools/mirror_sync/worker_repair_planner.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "RepairCapability",
+              "_canonical_job_ingress_recipe",
+              "_canonical_requester",
+              "_git",
+              "_learned_as_runtime_capability",
+              "_persist_spec",
+              "_resolve_capability",
+              "_validate_scope",
+              "build_deterministic_repair_job",
+              "builder",
+              "convergence_state",
+              "publish_planned_repair",
+              "register_capability",
+              "registered_capabilities"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "tools.mirror_sync",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canonical_job_ingress",
+              "expected_sha256"
+            ],
+            "path": "backend/tests/test_worker_repair_planner_canonical_ingress_capability.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_capability_bound_to_incident",
+              "test_capability_registered",
+              "test_capability_scope",
+              "test_existing_test_write_has_expected_sha256",
+              "test_recipe_scope_is_bounded",
+              "test_unknown_capability_fail_closed"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 2,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-07T00:57:57Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
