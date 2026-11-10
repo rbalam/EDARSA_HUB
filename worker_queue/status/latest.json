@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "46f0ebce62b40a10249f378af71ee155dc3a1426",
-  "generated_at_utc": "2026-11-10T21:35:07Z",
+  "generated_at_utc": "2026-11-10T21:36:29Z",
   "history": {
     "done_total_local": 1680,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 434,
+      "age_seconds": 516,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-C9ABA24B582A79087F86",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,8 +36,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-10T21:35:04Z",
-    "last_receive_utc": "2026-11-10T21:34:59Z",
+    "last_cycle_utc": "2026-11-10T21:36:26Z",
+    "last_receive_utc": "2026-11-10T21:36:21Z",
     "last_terminal_utc": "2026-11-10T21:27:53Z",
     "pid": "18423",
     "runtime_fingerprint": {
