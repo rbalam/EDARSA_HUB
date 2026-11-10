@@ -1,0 +1,46 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "backend/modules/worker_mcp/",
+          "backend/modules/worker_ingress/"
+        ],
+        "search_terms": [
+          "submit_objective",
+          "SEMANTIC_SUBMIT_FAILED",
+          "INVALID_ARGUMENT",
+          "WorkerObjectiveRequest"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_MCP-REPOSITORY_CONTRACT_AUDIT_BOUNDE-754DEEC7053D713CCD7B",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en lectura el contrato canonico MCP de submit_objective, el puente HTTP y el registro de capacidades; identificar causas del INVALID_ARGUMENT y evidencias para conformidad multicliente, sin mutaciones ni acceso a Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_MCP",
+    "conflict_domains": [
+      "WORKER_MCP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
