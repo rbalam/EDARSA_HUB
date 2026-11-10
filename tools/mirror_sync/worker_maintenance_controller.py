@@ -47,6 +47,7 @@ class MaintenanceIncident:
     incident_id: str
     paths: tuple[str, ...]
     state: MaintenanceState
+    capability_code: str | None = None
     production_allowed: bool = False
 
 
@@ -62,16 +63,20 @@ class MaintenanceDecision:
 def declare_incident(
     incident_id: str,
     paths: list[str] | tuple[str, ...],
+    *,
+    capability_code: str | None = None,
 ) -> MaintenanceIncident:
     plan = build_repair_plan(
         incident_id,
         paths,
+        capability_code=capability_code,
     )
 
     return MaintenanceIncident(
         incident_id=plan.incident_id,
         paths=plan.paths,
         state=MaintenanceState.REPAIR_REQUIRED,
+        capability_code=plan.capability_code,
     )
 
 
@@ -84,6 +89,7 @@ def repair_plan_for(
     return build_repair_plan(
         incident.incident_id,
         incident.paths,
+        capability_code=incident.capability_code,
     )
 
 
@@ -162,7 +168,9 @@ def repaired_pending_audit(
         )
 
     if not auditor_scope_allowed(
-        normalized_changed
+        normalized_changed,
+        incident_id=incident.incident_id,
+        capability_code=incident.capability_code,
     ):
         return MaintenanceDecision(
             incident_id=incident.incident_id,
@@ -266,6 +274,8 @@ def audit_incident(
         verify_git_diff=verify_git_diff,
         repo_root=repo_root,
         require_protected_authorization=require_protected_authorization,
+        incident_id=incident.incident_id,
+        capability_code=incident.capability_code,
     )
 
     if not audit.certified:

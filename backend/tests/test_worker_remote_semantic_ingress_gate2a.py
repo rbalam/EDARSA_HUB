@@ -208,6 +208,23 @@ def test_worker_repair_bounded_delegates_to_canonical_planner(monkeypatch):
 
     captured = {}
 
+    def fake_declare(
+        incident_id,
+        *,
+        capability_code,
+        requester=None,
+    ):
+        captured["declared_incident_id"] = incident_id
+        captured["declared_capability_code"] = capability_code
+        captured["declared_requester"] = requester
+        return {
+            "incident_id": incident_id,
+            "state": "REPAIR_REQUIRED",
+            "target_paths": ["tools/mirror_sync/gate_chain_publisher.py"],
+            "capability": capability_code,
+            "production_touched": False,
+        }
+
     def fake_publish(
         incident_id,
         *,
@@ -233,6 +250,11 @@ def test_worker_repair_bounded_delegates_to_canonical_planner(monkeypatch):
 
     monkeypatch.setattr(
         worker_repair_planner,
+        "declare_registered_incident",
+        fake_declare,
+    )
+    monkeypatch.setattr(
+        worker_repair_planner,
         "publish_planned_repair",
         fake_publish,
     )
@@ -254,6 +276,9 @@ def test_worker_repair_bounded_delegates_to_canonical_planner(monkeypatch):
         "capability": "WORKER_REPAIR_BOUNDED",
         "bounded_context": "WORKER_RUNTIME_CONVERGENCE",
     }
+    assert captured["declared_incident_id"] == "WORKER-ABC123"
+    assert captured["declared_capability_code"] == "CANONICAL_JOB_INGRESS"
+    assert captured["declared_requester"]["email"] == "admin@example.com"
     assert captured["incident_id"] == "WORKER-ABC123"
     assert captured["capability_code"] == "CANONICAL_JOB_INGRESS"
     assert captured["requester"]["email"] == "admin@example.com"
@@ -273,6 +298,14 @@ def test_worker_repair_bounded_fails_closed_on_production_violation(monkeypatch)
             "production_touched": True,
         }
 
+    monkeypatch.setattr(
+        worker_repair_planner,
+        "declare_registered_incident",
+        lambda *_args, **_kwargs: {
+            "state": "REPAIR_REQUIRED",
+            "production_touched": False,
+        },
+    )
     monkeypatch.setattr(
         worker_repair_planner,
         "publish_planned_repair",
@@ -305,6 +338,14 @@ def test_worker_repair_bounded_rejects_uncommitted_publication(monkeypatch):
 
     monkeypatch.setattr(
         worker_repair_planner,
+        "declare_registered_incident",
+        lambda *_args, **_kwargs: {
+            "state": "REPAIR_REQUIRED",
+            "production_touched": False,
+        },
+    )
+    monkeypatch.setattr(
+        worker_repair_planner,
         "publish_planned_repair",
         not_committed,
     )
@@ -315,6 +356,33 @@ def test_worker_repair_bounded_rejects_uncommitted_publication(monkeypatch):
     ):
         service.submit_objective(
             _repair_objective(),
+            current_user=_user(),
+        )
+
+
+def test_worker_repair_bounded_declaration_rejects_unknown_incident(monkeypatch):
+    from tools.mirror_sync import worker_repair_planner
+
+    def reject(*_args, **_kwargs):
+        raise ValueError("REPAIR_CAPABILITY_UNKNOWN")
+
+    monkeypatch.setattr(
+        worker_repair_planner,
+        "declare_registered_incident",
+        reject,
+    )
+
+    with pytest.raises(
+        service.WorkerIngressError,
+        match="REPAIR_CAPABILITY_UNKNOWN",
+    ):
+        service.submit_objective(
+            _repair_objective(
+                constraints={
+                    "incident_id": "WORKER-NOT-REGISTERED",
+                    "capability_code": "CANONICAL_JOB_INGRESS",
+                }
+            ),
             current_user=_user(),
         )
 
