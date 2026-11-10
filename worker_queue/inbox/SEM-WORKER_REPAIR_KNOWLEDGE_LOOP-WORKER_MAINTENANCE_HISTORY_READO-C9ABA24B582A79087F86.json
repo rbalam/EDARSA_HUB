@@ -1,0 +1,33 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "worker_maintenance_history_readonly"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-C9ABA24B582A79087F86",
+  "mode": "READ_ONLY",
+  "objective": "Inspeccionar historial local de incidentes Maintenance del Universal Worker, localizar incidente asociado a Gate 3 GIT_WORKTREE_NOT_CLEAN y devolver evidencia saneada; exclusivamente READ_ONLY, sin escrituras ni reparación.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_REPAIR_KNOWLEDGE_LOOP",
+    "conflict_domains": [
+      "WORKER_REPAIR_KNOWLEDGE_LOOP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
