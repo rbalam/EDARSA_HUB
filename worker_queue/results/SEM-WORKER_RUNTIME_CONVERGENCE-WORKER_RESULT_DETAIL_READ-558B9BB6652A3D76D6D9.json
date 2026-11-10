@@ -1,0 +1,43 @@
+{
+  "base_sha": "3ecfd9093825ac4eccaff5f068c78942f7f5d7ee",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-10T14:54:20Z",
+  "execution_base_sha": "3ecfd9093825ac4eccaff5f068c78942f7f5d7ee",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-WORKER_RUNTIME_CONVERGENCE-WORKER_RESULT_DETAIL_READ-558B9BB6652A3D76D6D9",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-10T14:55:30Z",
+  "quality_gate": "PASS",
+  "result_detail_evidence": {
+    "checks": [
+      {
+        "blockers": [
+          "dispatcher_exception:RuntimeError:GIT_WORKTREE_NOT_CLEAN"
+        ],
+        "certification": "NOT_CERTIFIED",
+        "failed_checks": [],
+        "files_changed": [],
+        "percent_complete": 0,
+        "production_touched": false,
+        "quality_gate": "FAIL",
+        "result_status": "GIT_WORKTREE_NOT_CLEAN",
+        "source_job_id": "EDARSAHUB-BOS-GLOBAL-WORKER-ALIGNMENT-G3-MCP-SEMANTIC-INGRESS-20261105",
+        "tests": null
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-10T14:54:19Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
