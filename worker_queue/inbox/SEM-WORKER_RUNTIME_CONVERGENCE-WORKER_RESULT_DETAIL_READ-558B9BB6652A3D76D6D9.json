@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "EDARSAHUB-BOS-GLOBAL-WORKER-ALIGNMENT-G3-MCP-SEMANTIC-INGRESS-20261105"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_RUNTIME_CONVERGENCE-WORKER_RESULT_DETAIL_READ-558B9BB6652A3D76D6D9",
+  "mode": "READ_ONLY",
+  "objective": "Consultar de forma READ_ONLY el detalle del resultado del Gate 3 bloqueado para localizar evidencia de incidente Maintenance; no modificar repositorio, archivos ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_RUNTIME_CONVERGENCE",
+    "conflict_domains": [
+      "WORKER_RUNTIME_CONVERGENCE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
