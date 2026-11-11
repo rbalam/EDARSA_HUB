@@ -1,0 +1,41 @@
+{
+  "base_sha": "46f0ebce62b40a10249f378af71ee155dc3a1426",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-11T01:58:11Z",
+  "execution_base_sha": "46f0ebce62b40a10249f378af71ee155dc3a1426",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-FD668AC972071BDF0346",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-11T02:00:08Z",
+  "quality_gate": "PASS",
+  "result_detail_evidence": {
+    "checks": [
+      {
+        "blockers": [],
+        "certification": "CERTIFIED_READ_ONLY",
+        "failed_checks": [],
+        "files_changed": [],
+        "percent_complete": 100,
+        "production_touched": false,
+        "quality_gate": "PASS",
+        "result_status": "READ_ONLY_COMPLETE",
+        "source_job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-5B522B0B725283AA4B99",
+        "tests": "PASS"
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-11T01:58:11Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
