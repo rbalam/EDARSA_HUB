@@ -16,7 +16,9 @@ permissions:
   actions: write
 
 concurrency:
-  group: commercial-open-sales-clock
+  # Separate pending queues: a scheduled watchdog must not replace a queued relay.
+  # The existing distributed SQL owner lock is still the single execution authority.
+  group: commercial-open-sales-clock-${{ github.event_name == 'schedule' && 'recovery' || 'primary' }}
   cancel-in-progress: false
 
 env:
