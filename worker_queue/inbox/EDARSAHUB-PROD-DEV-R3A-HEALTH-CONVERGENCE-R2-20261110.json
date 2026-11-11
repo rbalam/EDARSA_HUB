@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PROD-DEV-R3A-HEALTH-CONVERGENCE-R2-20261110",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "base_sha": "46f0ebce62b40a10249f378af71ee155dc3a1426",
+  "mode": "MUTATION",
+  "objective": "R3A-R2 Health Convergence: agregar GET /health como alias del health canónico existente GET /api/health reutilizando exactamente la misma función health_check; sin SQL, Scheduler, side effects ni lógica duplicada. Añadir prueba contractual mínima. No tocar Producción.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/server.py",
+      "old": "@app.get(\"/api/health\")\nasync def health_check():",
+      "new": "@app.get(\"/api/health\")\n@app.get(\"/health\")\nasync def health_check():",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_root_health_alias_contract.py",
+      "content": "from pathlib import Path\n\n\nSERVER = Path(__file__).resolve().parents[1] / \"server.py\"\n\n\ndef test_root_health_alias_reuses_canonical_health_handler():\n    source = SERVER.read_text(encoding=\"utf-8\")\n    canonical = '@app.get(\"/api/health\")\\n@app.get(\"/health\")\\nasync def health_check():'\n    assert canonical in source\n    assert source.count('async def health_check():') == 1\n    assert source.count('@app.get(\"/api/health\")') == 1\n    assert source.count('@app.get(\"/health\")') == 1\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/server.py",
+        "backend/tests/test_root_health_alias_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_root_health_alias_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Production divergence reconciliation R3A"
+  }
+}
