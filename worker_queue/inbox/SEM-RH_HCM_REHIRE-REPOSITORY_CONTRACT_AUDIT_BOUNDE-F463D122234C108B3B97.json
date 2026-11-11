@@ -1,0 +1,64 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "RH",
+          "empleado",
+          "reclutamiento",
+          "reingreso",
+          "rehire",
+          "vacante",
+          "candidato",
+          "contratacion",
+          "nomina",
+          "puesto",
+          "departamento",
+          "expediente",
+          "documento",
+          "rbac",
+          "workflow",
+          "notification",
+          "auditoria",
+          "sucursal_id",
+          "empresa_id",
+          "centro_costo"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH_HCM_REHIRE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-F463D122234C108B3B97",
+  "mode": "READ_ONLY",
+  "objective": "Auditar la arquitectura real existente de RH/HCM para Rehire Governance en EDARSAHUB BOS, sin implementar cambios. Determinar componentes reutilizables y huecos para identidad global de colaborador, historial laboral entre empresas y unidades, elegibilidad y bloqueo de recontratacion con evidencia, desbloqueo autorizado, autorizacion obligatoria de todo reingreso, informe a Direccion, retroalimentacion automatica de RH anterior con SLA y escalamiento, evaluaciones practicas configurables por puesto, referencias laborales y validaciones autorizadas de antecedentes. Separar EXISTENTE vs FALTA y proponer arquitectura minima compatible con SQL Server canonico, RBAC, workflows, notificaciones, actividades y auditoria existentes. No crear listas negras ni arquitecturas paralelas.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH_HCM_REHIRE",
+    "conflict_domains": [
+      "RH_HCM_REHIRE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
