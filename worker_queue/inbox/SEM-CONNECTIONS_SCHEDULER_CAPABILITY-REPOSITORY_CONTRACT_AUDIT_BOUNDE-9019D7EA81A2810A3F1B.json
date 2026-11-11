@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/worker_ingress/",
+          "backend/modules/worker_mcp/",
+          "backend/tests/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "REPOSITORY_CONTRACT_AUDIT_BOUNDED",
+          "backend.core",
+          "Scheduler_DistributedLocks",
+          "EDARSAHUB_SQL_HOST",
+          "EDARSAHUB_SQL_SERVER",
+          "gate_chain_publisher"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CONNECTIONS_SCHEDULER_CAPABILITY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-9019D7EA81A2810A3F1B",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY el Capability Registry y el ingress semántico actuales para determinar si existe una capability autorizada capaz de inspeccionar backend/core y backend/core/scheduler, y si no existe, identificar la ampliación mínima necesaria sin crear otro Worker, cola o publicador. Verificar también referencias contractuales a EDARSAHUB_SQL_HOST, EDARSAHUB_SQL_SERVER, Scheduler_DistributedLocks y gate_chain_publisher. No modificar archivos ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONNECTIONS_SCHEDULER_CAPABILITY_AUDIT",
+    "conflict_domains": [
+      "CONNECTIONS_SCHEDULER_CAPABILITY_AUDIT"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
