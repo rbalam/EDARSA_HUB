@@ -1,0 +1,51 @@
+{
+  "base_sha": "46f0ebce62b40a10249f378af71ee155dc3a1426",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-11T02:24:48Z",
+  "execution_base_sha": "46f0ebce62b40a10249f378af71ee155dc3a1426",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-UNIDADES_NEGOCIO_CANONICAS-WORKER_RESULT_DETAIL_READ-95EA305CC101732B9D74",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-11T02:26:52Z",
+  "quality_gate": "PASS",
+  "result_detail_evidence": {
+    "checks": [
+      {
+        "blockers": [
+          "check_failed:worker_result_semantic_extract"
+        ],
+        "certification": "NOT_CERTIFIED",
+        "failed_checks": [
+          {
+            "assertion_lines": [],
+            "output": "{\"bridge_verdict\": \"GAP_CONFIRMED\", \"can_emit_semantic_fields_from_source_result\": false, \"can_read_worker_results_by_blob_sha\": false, \"can_read_worker_results_by_branch_path\": false, \"gate3_allowed\": false, \"missing_semantic_fields\": [\"gate3_allowed\", \"last_gate_executed\", \"last_gate_certified\", \"real_implementation_percent\", \"next_allowed_gate\", \"blocking_reason_if_any\"], \"mode\": \"READ_ONLY_WORKER_RESULT_SEMANTIC_EXTRACT\", \"next_allowed_step\": \"EDARSAHUB-WORKER-SOURCE-RESULT-READER-BRIDGE-MUTATION-R1\", \"read_attempts\": [{\"detail\": \"From https://github.com/rbalam/EDARSA_HUB\\n * branch                worker/results -> FETCH_HEAD\\n   2e348dd56..285b5b104  worker/results -> origin/worker/results\\n\", \"method\": \"fetch_branch\", \"status\": \"PASS\"}, {\"detail\": \"fatal: path 'worker_queue/results/SEM-UNIDADES_NEGOCIO_CANONICAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-DFAC7F260B72E9B40F83.json' does not exist in 'origin/worker/results'\\n\", \"method\": \"git_show\", \"ref\": \"origin/worker/results\", \"status\": ",
+            "returncode": 1,
+            "status": "FAIL",
+            "type": "worker_result_semantic_extract"
+          }
+        ],
+        "files_changed": [],
+        "percent_complete": 0,
+        "production_touched": false,
+        "quality_gate": "FAIL",
+        "result_status": "BLOCKED",
+        "source_job_id": "SEM-UNIDADES_NEGOCIO_CANONICAS-WORKER_RESULT_SEMANTIC_EXTRACT-8844D8C0C356F444C760",
+        "tests": "FAIL"
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-11T02:24:48Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
