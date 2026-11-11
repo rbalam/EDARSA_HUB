@@ -1,9 +1,9 @@
 {
   "requested_by": "ChatGPT",
-  "reason": "wake canonical Universal Worker to consume existing EDARSAHUB-PROD-DEV-R3A-HEALTH-CONVERGENCE-20261104 request; no duplicate; no Production",
+  "reason": "wake canonical Universal Worker to consume existing EDARSAHUB-PROD-DEV-R3A-HEALTH-CONVERGENCE-R2-20261110 request; no duplicate; no Production",
   "target_branch": "Edarsahub_Desarrollo",
-  "target_sha": "ca0c0f693f3411b129f49885e40d15b6e900dea3",
+  "target_sha": "46f0ebce62b40a10249f378af71ee155dc3a1426",
   "production_allowed": false,
-  "preferred_job_id": "EDARSAHUB-PROD-DEV-R3A-HEALTH-CONVERGENCE-20261104",
+  "preferred_job_id": "EDARSAHUB-PROD-DEV-R3A-HEALTH-CONVERGENCE-R2-20261110",
   "attempt": 1
 }
