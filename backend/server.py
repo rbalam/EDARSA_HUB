@@ -189,6 +189,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # HEALTH CHECK GENERAL (Monitoreo de Infraestructura)
 # ==========================================
 @app.get("/api/health")
+@app.get("/health")
 async def health_check():
     """
     Endpoint de salud vital. La infraestructura (Docker/Kubernetes) hará ping aquí.
