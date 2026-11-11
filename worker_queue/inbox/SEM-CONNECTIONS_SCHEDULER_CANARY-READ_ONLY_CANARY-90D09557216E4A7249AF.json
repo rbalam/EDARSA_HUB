@@ -1,0 +1,33 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CONNECTIONS_SCHEDULER_CANARY-READ_ONLY_CANARY-90D09557216E4A7249AF",
+  "mode": "READ_ONLY",
+  "objective": "Verificar de forma READ_ONLY que el ingress semántico canónico del Universal Worker acepta y publica correctamente un job sin acciones ni modificaciones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONNECTIONS_SCHEDULER_CANARY",
+    "conflict_domains": [
+      "CONNECTIONS_SCHEDULER_CANARY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
