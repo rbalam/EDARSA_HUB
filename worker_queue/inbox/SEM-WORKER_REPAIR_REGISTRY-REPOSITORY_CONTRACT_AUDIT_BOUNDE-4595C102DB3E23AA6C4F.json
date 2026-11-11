@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "tools/mirror_sync/worker_repair_planner.py",
+          "tools/mirror_sync/worker_repair_capability_registry.py",
+          "tools/mirror_sync/worker_repair_capabilities/"
+        ],
+        "search_terms": [
+          "CANONICAL_JOB_INGRESS",
+          "semantic_capabilities",
+          "RLS_GATE0",
+          "WORKER_REPAIR_BOUNDED",
+          "LearnedCapability",
+          "required_paths"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_REPAIR_REGISTRY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4595C102DB3E23AA6C4F",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en solo lectura el Repair Planner y Capability Registry para confirmar si existe una capability registrada o aprendida que autorice reparar backend/modules/worker_ingress/semantic_capabilities.py o ampliar submit_objective con una capability RLS Gate 0. No modificar código ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_REPAIR_REGISTRY",
+    "conflict_domains": [
+      "WORKER_REPAIR_REGISTRY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
