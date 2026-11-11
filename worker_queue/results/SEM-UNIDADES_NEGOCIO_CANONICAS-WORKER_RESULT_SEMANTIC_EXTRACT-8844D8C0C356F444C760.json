@@ -1,0 +1,124 @@
+{
+  "base_sha": "46f0ebce62b40a10249f378af71ee155dc3a1426",
+  "blockers": [
+    "check_failed:worker_result_semantic_extract"
+  ],
+  "bridge_verdict": "SOURCE_SEMANTIC_FIELDS_DERIVED_FAIL_CLOSED",
+  "can_emit_semantic_fields_from_source_result": false,
+  "can_read_worker_results_by_blob_sha": false,
+  "can_read_worker_results_by_branch_path": false,
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-11-11T02:23:09Z",
+  "execution_base_sha": "46f0ebce62b40a10249f378af71ee155dc3a1426",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "gate3_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-UNIDADES_NEGOCIO_CANONICAS-WORKER_RESULT_SEMANTIC_EXTRACT-8844D8C0C356F444C760",
+  "missing_semantic_fields": [
+    "blocking_reason_if_any",
+    "gate3_allowed",
+    "last_gate_certified",
+    "last_gate_executed",
+    "next_allowed_gate",
+    "real_implementation_percent"
+  ],
+  "next_allowed_step": "GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-11-11T02:25:39Z",
+  "quality_gate": "FAIL",
+  "required_runtime_change": "SOURCE_RESULT_READER_BRIDGE_REQUIRED",
+  "runtime_gap_confirmed": true,
+  "schema": "edarsahub.worker-result.v2",
+  "semantic_fields": {
+    "gate3_allowed": false,
+    "next_allowed_gate": "GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS"
+  },
+  "semantic_fields_complete": false,
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "source_result_blob_sha": "",
+  "source_result_branch": "worker/results",
+  "source_result_commit": "",
+  "source_result_path": "worker_queue/results/SEM-UNIDADES_NEGOCIO_CANONICAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-DFAC7F260B72E9B40F83.json",
+  "source_result_read_status": "RESULT_READ_FAILED",
+  "source_result_reader_capability_current_state": "CANNOT_READ_SOURCE_RESULT_ARTIFACT",
+  "source_semantic_fields_complete": false,
+  "started_at_utc": "2026-11-11T02:23:08Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED",
+  "worker_result_semantic_evidence": {
+    "bridge_verdict": "SOURCE_SEMANTIC_FIELDS_DERIVED_FAIL_CLOSED",
+    "can_emit_semantic_fields_from_source_result": false,
+    "can_read_worker_results_by_blob_sha": false,
+    "can_read_worker_results_by_branch_path": false,
+    "checks": [
+      {
+        "payload": {
+          "bridge_verdict": "SOURCE_SEMANTIC_FIELDS_DERIVED_FAIL_CLOSED",
+          "can_emit_semantic_fields_from_source_result": false,
+          "can_read_worker_results_by_blob_sha": false,
+          "can_read_worker_results_by_branch_path": false,
+          "gate3_allowed": false,
+          "missing_semantic_fields": [
+            "gate3_allowed",
+            "last_gate_executed",
+            "last_gate_certified",
+            "real_implementation_percent",
+            "next_allowed_gate",
+            "blocking_reason_if_any"
+          ],
+          "mode": "READ_ONLY_WORKER_RESULT_SEMANTIC_EXTRACT",
+          "next_allowed_step": "GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS",
+          "required_runtime_change": "SOURCE_RESULT_READER_BRIDGE_REQUIRED",
+          "runtime_gap_confirmed": true,
+          "semantic_fields": {
+            "gate3_allowed": false,
+            "next_allowed_gate": "GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS"
+          },
+          "semantic_fields_complete": false,
+          "source_result_blob_sha": "",
+          "source_result_branch": "worker/results",
+          "source_result_commit": "",
+          "source_result_path": "worker_queue/results/SEM-UNIDADES_NEGOCIO_CANONICAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-DFAC7F260B72E9B40F83.json",
+          "source_result_read_status": "RESULT_READ_FAILED",
+          "source_result_reader_capability_current_state": "CANNOT_READ_SOURCE_RESULT_ARTIFACT",
+          "source_semantic_fields_complete": false,
+          "status": "FAIL"
+        },
+        "returncode": 1,
+        "status": "FAIL"
+      }
+    ],
+    "gate3_allowed": false,
+    "missing_semantic_fields": [
+      "blocking_reason_if_any",
+      "gate3_allowed",
+      "last_gate_certified",
+      "last_gate_executed",
+      "next_allowed_gate",
+      "real_implementation_percent"
+    ],
+    "mode": "READ_ONLY_WORKER_RESULT_SEMANTIC_EXTRACT",
+    "next_allowed_step": "GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS",
+    "required_runtime_change": "SOURCE_RESULT_READER_BRIDGE_REQUIRED",
+    "runtime_gap_confirmed": true,
+    "semantic_fields": {
+      "gate3_allowed": false,
+      "next_allowed_gate": "GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS"
+    },
+    "semantic_fields_complete": false,
+    "source_result_blob_sha": "",
+    "source_result_branch": "worker/results",
+    "source_result_commit": "",
+    "source_result_path": "worker_queue/results/SEM-UNIDADES_NEGOCIO_CANONICAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-DFAC7F260B72E9B40F83.json",
+    "source_result_read_status": "RESULT_READ_FAILED",
+    "source_result_reader_capability_current_state": "CANNOT_READ_SOURCE_RESULT_ARTIFACT",
+    "source_semantic_fields_complete": false,
+    "status": "FAIL"
+  }
+}
