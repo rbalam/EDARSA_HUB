@@ -1,0 +1,64 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "tablajeria",
+          "transformacion",
+          "inventario",
+          "costeo",
+          "merma",
+          "remanente",
+          "reproceso",
+          "rbac",
+          "parrilla",
+          "compras",
+          "contabilidad",
+          "almacen",
+          "lote",
+          "receta",
+          "movimiento",
+          "evidencia",
+          "sincronizacion",
+          "produccion",
+          "unidad",
+          "kardex"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-PRODUCCION_TABLAJERIA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-A9EA45C4A9152C8269C6",
+  "mode": "READ_ONLY",
+  "objective": "Gate0 READ_ONLY de Tablajeria SQL Canonica EDARSAHUB BOS. Auditar contratos de repositorio ya existentes para produccion/transformacion, tablajeria, inventarios y Kardex, productos/insumos, recetas, lotes, KG+PZ, merma/diferencia/remanente, costos backend, contabilidad, compras, RBAC, evidencias, Parrilla/Foto Finish, fechas operativas y sincronizacion legacy. Identificar rutas reales, entidades reutilizables, riesgos de duplicacion, dependencias y brechas; clasificar REUTILIZAR/EXTENDER/CREAR/DEFERIR/BLOQUEAR con evidencia. No suponer que la auditoria del repositorio verifica SQL Server real o el CSV legacy. No SQL LIVE, no produccion, no DDL ni DML, no cambios de archivos, no Gate1. Reutilizar resultados equivalentes si existen. Ejecucion y certificacion se registran en Tablajeria 3.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "PRODUCCION_TABLAJERIA",
+    "conflict_domains": [
+      "PRODUCCION_TABLAJERIA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
