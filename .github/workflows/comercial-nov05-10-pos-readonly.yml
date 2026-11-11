@@ -1,0 +1,183 @@
+name: Commercial Nov 05-10 POS Readonly Canary
+
+on:
+  push:
+    branches: [audit/comercial-integridad-nov05-10-20261111]
+    paths: [".github/workflows/comercial-nov05-10-pos-readonly.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: commercial-nov05-10-pos-readonly
+  cancel-in-progress: false
+
+jobs:
+  pos-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      EDARSA_ENV: DEVELOPMENT
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "HRLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+      SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+      PYTHONPATH: ${{ github.workspace }}/backend
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install existing POS resolver dependencies
+        run: python -m pip install --disable-pip-version-check pymssql pyodbc requests cryptography pytz pydantic email-validator python-dotenv passlib bcrypt python-jose APScheduler
+      - name: Audit 5 branches by operating day (SELECT only; no writes)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$EDARSAHUB_SQL_PASSWORD"
+          test -n "$SERVER_SECRET_KEY"
+          python - <<'PY'
+          from __future__ import annotations
+          import json
+          import os
+          from datetime import date, timedelta
+          from decimal import Decimal
+          from core.connections.edarsahub_readonly_repository import validate_readonly_identity
+          from core.connections.hrlectura_connection_factory import build_hrlectura_connection_factory
+          from core.connections.pos_runtime_resolver import list_pos_runtime_contexts
+          from core.sql_first.connection_factory import get_external_sql_connection
+          from core.unidades_service import UnidadesService
+          from modules.comercial_v2.mpro_closed_api import (
+              build_mpro_closed_sales_query, execute_mpro_select_via_api, resolve_mpro_closed_api
+          )
+          from modules.comercial_v2.schemas import ConnectionStatus
+
+          CODES = ("CIENFUEGOS", "ESTELAR", "130MID", "ORIGEN", "130QRO")
+          SR = ("CIENFUEGOS", "ESTELAR", "130MID")
+          MPRO = ("ORIGEN", "130QRO")
+          START = date(2026, 11, 5)
+          END = date(2026, 11, 10)
+          if os.environ.get("EDARSA_ENV") != "DEVELOPMENT":
+              raise SystemExit("ENVIRONMENT_NOT_DEVELOPMENT")
+          if os.environ.get("EDARSAHUB_SQL_USER") != "HRLectura":
+              raise SystemExit("PRINCIPAL_NOT_READONLY")
+          central = build_hrlectura_connection_factory()()
+          try:
+              validate_readonly_identity(central)
+          finally:
+              central.close()
+          print("POS_AUDIT_IDENTITY=VALIDATED_SQL_FIRST")
+          outcomes = []
+          contexts = {}
+          context_error = None
+          try:
+              contexts = {c.unidad_codigo: c for c in list_pos_runtime_contexts(system_types=("SOFTRESTAURANT",))}
+          except Exception as exc:
+              context_error = type(exc).__name__
+
+          for code in CODES:
+              if code in SR:
+                  ctx = contexts.get(code)
+                  if ctx is None:
+                      for i in range(6):
+                          day = START + timedelta(days=i)
+                          outcomes.append({"unidad": code, "fecha": day.isoformat(),
+                                           "status": "NOT_RESOLVED", "error_type": context_error})
+                      continue
+                  connection = None
+                  try:
+                      connection = get_external_sql_connection(ctx.external_connection_config(as_dict=True))
+                      cursor = connection.cursor(as_dict=True)
+                      cursor.execute("SELECT DB_NAME() AS db_name")
+                      if str(cursor.fetchone().get("db_name") or "").lower() != ctx.database.lower():
+                          raise RuntimeError("SOURCE_DATABASE_MISMATCH")
+                      for i in range(6):
+                          day = START + timedelta(days=i)
+                          next_day = day + timedelta(days=1)
+                          try:
+                              # Non-mutating validation of the canonical turn-opening date.
+                              cursor.execute("""
+                                  SELECT COUNT(DISTINCT ch.folio) AS tickets,
+                                         SUM(CAST(ISNULL(ch.total,0) AS decimal(18,2))) AS ventas,
+                                         SUM(ISNULL(ch.nopersonas,0)) AS pax
+                                  FROM cheques AS ch
+                                  INNER JOIN turnos AS tr ON tr.idturno=ch.idturno
+                                  WHERE tr.apertura >= %s AND tr.apertura < %s
+                                    AND ISNULL(ch.cancelado,0)=0
+                              """, (day.isoformat(),next_day.isoformat()))
+                              row = cursor.fetchone() or {}
+                              outcomes.append({"unidad":code,"fecha":day.isoformat(),
+                                               "status":"ONLINE","tickets":int(row.get("tickets") or 0),
+                                               "ventas":str(Decimal(str(row.get("ventas") or 0))),
+                                               "pax":int(row.get("pax") or 0),
+                                               "basis":"POS_TURNOS_APERTURA_SR"})
+                          except Exception as exc:
+                              outcomes.append({"unidad":code,"fecha":day.isoformat(),
+                                               "status":"ERROR","error_type":type(exc).__name__})
+                      try: connection.rollback()
+                      except Exception: pass
+                  except Exception as exc:
+                      existing = {o["fecha"] for o in outcomes if o["unidad"]==code}
+                      for i in range(6):
+                          day = (START + timedelta(days=i)).isoformat()
+                          if day not in existing:
+                              outcomes.append({"unidad":code,"fecha":day,"status":"OFFLINE",
+                                               "error_type":type(exc).__name__})
+                  finally:
+                      if connection:
+                          connection.close()
+              else:
+                  api = None
+                  try:
+                      unit = UnidadesService.get_by_codigo(code)
+                      if not unit: raise ValueError("UNIT_UNRESOLVED")
+                      api = resolve_mpro_closed_api(unit["unidad_negocio_pk"])
+                      if not api: raise ValueError("API_UNRESOLVED")
+                  except Exception as exc:
+                      for i in range(6):
+                          outcomes.append({"unidad":code,"fecha":(START+timedelta(days=i)).isoformat(),
+                                           "status":"NOT_RESOLVED","error_type":type(exc).__name__})
+                      continue
+                  for i in range(6):
+                      day = START + timedelta(days=i)
+                      try:
+                          sql = build_mpro_closed_sales_query(code,api.get("sucursal_id"),day,day)
+                          if not sql.lstrip().upper().startswith("SELECT"):
+                              raise RuntimeError("NON_SELECT_FORBIDDEN")
+                          rows, status = execute_mpro_select_via_api(api, sql, timeout=25)
+                          if status != ConnectionStatus.ONLINE:
+                              outcomes.append({"unidad":code,"fecha":day.isoformat(),
+                                               "status":str(status.value if hasattr(status,"value") else status)})
+                              continue
+                          folios = {str(r.get("Vn_Folio") or "").strip() for r in rows or []}
+                          outcomes.append({
+                              "unidad":code,"fecha":day.isoformat(),"status":"ONLINE",
+                              "tickets":len(folios),
+                              "ventas":str(sum((Decimal(str(r.get("Vn_Precio_Neto_Importe") or 0)) for r in rows or []),Decimal(0))),
+                              "pax":sum(int(r.get("total_personas") or 0) for r in rows or []),
+                              "basis":"POS_VENTA_ENCABEZADO_MPRO"})
+                      except Exception as exc:
+                          outcomes.append({"unidad":code,"fecha":day.isoformat(),
+                                           "status":"ERROR","error_type":type(exc).__name__})
+          result = {"rows_expected":30, "rows_returned":len(outcomes),
+                    "online":sum(r["status"]=="ONLINE" for r in outcomes),
+                    "unavailable":sum(r["status"]!="ONLINE" for r in outcomes),
+                    "production_touched":False, "writes":0}
+          for row in outcomes:
+              print("POS_AUDIT=" + json.dumps(row,ensure_ascii=False,sort_keys=True))
+          print("POS_SUMMARY=" + json.dumps(result,sort_keys=True))
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf-8") as f:
+              f.write("## POS SELECT-only - 5 al 10 noviembre 2026\n\n")
+              f.write("| Unidad | Fecha | Estado | Tickets | Ventas |\n|---|---|---|---:|---:|\n")
+              for row in outcomes:
+                  f.write("| {unidad} | {fecha} | {status} | {tickets} | {ventas} |\n".format(
+                      unidad=row["unidad"],fecha=row["fecha"],status=row["status"],
+                      tickets=row.get("tickets","-"),ventas=row.get("ventas","-")))
+              f.write("\nLos datos deben conciliarse con fechas operativas, filtros y reglas vigentes antes de autorizar repoblación.\n")
+          if result["rows_returned"]!=30 or result["unavailable"]:
+              raise SystemExit(2)
+          PY
