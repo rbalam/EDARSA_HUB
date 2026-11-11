@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "busqueda",
+          "search",
+          "lookup",
+          "selector",
+          "rbac",
+          "execute_sql_query",
+          "formatted"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-BUSQUEDAS_FORMATEADAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-AE72BA24B861DBE08EBF",
+  "mode": "READ_ONLY",
+  "objective": "Auditoria READ_ONLY de Busquedas Formateadas EDARSAHUB BOS. Inventariar buscadores, selectores, filtros, endpoints, catálogos, SQL parametrizado y RBAC existentes; recomendar reutilizacion y brechas sin acciones ni cambios en Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "BUSQUEDAS_FORMATEADAS",
+    "conflict_domains": [
+      "BUSQUEDAS_FORMATEADAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
