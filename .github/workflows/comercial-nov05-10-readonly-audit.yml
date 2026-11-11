@@ -1,0 +1,208 @@
+name: Commercial Nov 05-10 SQL READ_ONLY Audit
+
+on:
+  push:
+    branches:
+      - audit/comercial-integridad-nov05-10-20261111
+    paths:
+      - ".github/workflows/comercial-nov05-10-readonly-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: commercial-nov05-10-readonly-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EDARSA_ENV: DEVELOPMENT
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "HRLectura"
+      EDARSAHUB_SQL_PASSWORD: \${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONPATH: \${{ github.workspace }}/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install existing SQL-First dependencies
+        run: python -m pip install --disable-pip-version-check pymssql pydantic email-validator python-dotenv passlib bcrypt python-jose
+      - name: Read only canonical Development SQL; never resync or modify data
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$EDARSAHUB_SQL_PASSWORD"
+          python - <<'PY'
+          from __future__ import annotations
+          import json
+          import os
+          import sys
+          import unicodedata
+          from datetime import date, timedelta
+          from decimal import Decimal
+          from core.connections.hrlectura_connection_factory import build_hrlectura_connection_factory
+          from core.connections.edarsahub_readonly_repository import validate_readonly_identity
+
+          CODES = ("CIENFUEGOS", "ESTELAR", "130MID", "ORIGEN", "130QRO")
+          FIRST = date(2026, 11, 5)
+          LAST = date(2026, 11, 10)
+          REQUIRED = {
+              "Unidades_Negocio": {"id", "codigo", "nombre", "activo"},
+              "Comercial_KPIs_Diarios_v2": {"fecha_operacion", "unidad_negocio_id", "unidad_negocio_nombre", "ventas_total", "tickets_total", "pax_total"},
+              "Comercial_Inteligencia_VentasDetalleProducto": {"fecha_operacion", "unidad_negocio_nombre", "importe_neto", "numero_ticket", "activo"},
+              "Comercial_Ventas_Dia_Abiertas_v2": {"fecha_operacion", "unidad_negocio_id", "ventas_abiertas", "ventas_cerradas_dia", "total_estimado_dia"},
+          }
+
+          def norm(text):
+              plain = unicodedata.normalize("NFKD", str(text or "").upper())
+              return "".join(c for c in plain if not unicodedata.combining(c)).strip()
+
+          def decimal(value):
+              return str(Decimal(str(value or 0)).quantize(Decimal("0.01")))
+
+          def bydate(value):
+              return str(value)[:10]
+
+          def query(cursor, sql, args=()):
+              cursor.execute(sql, args)
+              return cursor.fetchall()
+
+          if os.environ.get("EDARSA_ENV") != "DEVELOPMENT":
+              raise SystemExit("FAIL_CLOSED_ENVIRONMENT")
+          if os.environ.get("EDARSAHUB_SQL_USER") != "HRLectura":
+              raise SystemExit("FAIL_CLOSED_SQL_PRINCIPAL")
+
+          conn = build_hrlectura_connection_factory()()
+          try:
+              identity = validate_readonly_identity(conn)
+              print("SQL_IDENTITY=VALIDATED_HRLECTURA_EDARSAHUB")
+              cur = conn.cursor(as_dict=True)
+
+              placeholders = ",".join(["%s"] * len(REQUIRED))
+              meta = query(cur, """
+                  SELECT TABLE_NAME, COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                  WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME IN (""" + placeholders + ")",
+                  tuple(REQUIRED.keys()))
+              found = {}
+              for item in meta:
+                  found.setdefault(item["TABLE_NAME"], set()).add(item["COLUMN_NAME"])
+              missing = {name: sorted(cols - found.get(name, set())) for name, cols in REQUIRED.items()
+                         if cols - found.get(name, set())}
+              if missing:
+                  print("CONTRACT_MISMATCH=" + json.dumps(missing, sort_keys=True))
+                  raise SystemExit(2)
+              print("SQL_CONTRACT=VALIDATED")
+
+              for tbl in REQUIRED:
+                  permission = query(cur, "SELECT COALESCE(HAS_PERMS_BY_NAME(%s,'OBJECT','SELECT'),0) AS allowed",
+                                     ("dbo." + tbl,))[0]["allowed"]
+                  if permission != 1:
+                      raise SystemExit("FAIL_CLOSED_SELECT_PERMISSION:" + tbl)
+
+              units = query(cur, """
+                  SELECT CONVERT(varchar(36),id) AS pk, codigo, nombre
+                  FROM dbo.Unidades_Negocio
+                  WHERE activo=1 AND codigo IN (%s,%s,%s,%s,%s)
+              """, CODES)
+              units_by_code = {str(x["codigo"]).upper().strip(): x for x in units}
+              not_resolved = sorted(set(CODES) - set(units_by_code))
+              if not_resolved:
+                  print("UNITS_NOT_RESOLVED=" + json.dumps(not_resolved))
+
+              kpi_rows = query(cur, """
+                  SELECT CONVERT(varchar(80),unidad_negocio_id) AS unit_id,
+                         CONVERT(varchar(200),unidad_negocio_nombre) AS unit_name,
+                         CONVERT(varchar(10),CONVERT(date,fecha_operacion),23) AS dia,
+                         COUNT_BIG(*) AS filas, SUM(ISNULL(ventas_total,0)) AS venta,
+                         SUM(ISNULL(tickets_total,0)) AS tickets, SUM(ISNULL(pax_total,0)) AS pax
+                  FROM dbo.Comercial_KPIs_Diarios_v2
+                  WHERE fecha_operacion >= %s AND fecha_operacion < DATEADD(day,1,CONVERT(date,%s,23))
+                  GROUP BY unidad_negocio_id,unidad_negocio_nombre,CONVERT(date,fecha_operacion)
+              """, (FIRST.isoformat(), LAST.isoformat()))
+              details = query(cur, """
+                  SELECT CONVERT(varchar(200),unidad_negocio_nombre) AS unit_name,
+                         CONVERT(varchar(10),CONVERT(date,fecha_operacion),23) AS dia,
+                         COUNT_BIG(*) AS lineas,
+                         COUNT(DISTINCT CONVERT(varchar(100),numero_ticket)) AS tickets,
+                         SUM(ISNULL(importe_neto,0)) AS importe_detalle
+                  FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
+                  WHERE fecha_operacion >= %s AND fecha_operacion < DATEADD(day,1,CONVERT(date,%s,23))
+                    AND ISNULL(activo,1)=1
+                  GROUP BY unidad_negocio_nombre,CONVERT(date,fecha_operacion)
+              """, (FIRST.isoformat(), LAST.isoformat()))
+              snapshots = query(cur, """
+                  SELECT CONVERT(varchar(80),unidad_negocio_id) AS unit_id,
+                         CONVERT(varchar(10),CONVERT(date,fecha_operacion),23) AS dia,
+                         COUNT_BIG(*) AS filas, MAX(ISNULL(total_estimado_dia,0)) AS estimado_max
+                  FROM dbo.Comercial_Ventas_Dia_Abiertas_v2
+                  WHERE fecha_operacion >= %s AND fecha_operacion < DATEADD(day,1,CONVERT(date,%s,23))
+                  GROUP BY unidad_negocio_id,CONVERT(date,fecha_operacion)
+              """, (FIRST.isoformat(), LAST.isoformat()))
+
+              def belongs(row, unit, code):
+                  pk = norm(unit.get("pk"))
+                  name = norm(unit.get("nombre"))
+                  return norm(row.get("unit_id")) in {norm(code), pk} or norm(row.get("unit_name")) == name
+
+              stats = {}
+              suspicious = []
+              for code in CODES:
+                  unit = units_by_code.get(code)
+                  for offset in range((LAST - FIRST).days + 1):
+                      day = (FIRST + timedelta(days=offset)).isoformat()
+                      if unit is None:
+                          out = {"unidad":code, "fecha":day, "estado":"UNIDAD_NO_RESUELTA"}
+                      else:
+                          kr = [x for x in kpi_rows if bydate(x["dia"])==day and belongs(x,unit,code)]
+                          dr = [x for x in details if bydate(x["dia"])==day and belongs(x,unit,code)]
+                          sr = [x for x in snapshots if bydate(x["dia"])==day and belongs(x,unit,code)]
+                          krows = sum(int(x["filas"]) for x in kr)
+                          kventa = sum((Decimal(str(x["venta"] or 0)) for x in kr), Decimal(0))
+                          ktickets = sum(int(x["tickets"] or 0) for x in kr)
+                          kpax = sum(int(x["pax"] or 0) for x in kr)
+                          dlines = sum(int(x["lineas"] or 0) for x in dr)
+                          dtickets = sum(int(x["tickets"] or 0) for x in dr)
+                          dventa = sum((Decimal(str(x["importe_detalle"] or 0)) for x in dr),Decimal(0))
+                          if krows == 0 and dlines == 0:
+                              state = "SIN_DATOS_HUB_REQUIERE_POS"
+                          elif krows == 0:
+                              state = "DETALLE_SIN_KPI"
+                          elif dlines == 0 and kventa > 0:
+                              state = "KPI_SIN_DETALLE"
+                          elif kventa == 0 and dventa > 0:
+                              state = "KPI_CERO_CON_DETALLE"
+                          else:
+                              state = "PRESENTE_REQUIERE_CONCILIACION_POS"
+                          out = {"unidad":code, "fecha":day, "estado":state,
+                                 "kpi_filas":krows, "kpi_ventas":decimal(kventa),
+                                 "kpi_tickets":ktickets, "kpi_pax":kpax,
+                                 "detalle_lineas":dlines, "detalle_tickets":dtickets,
+                                 "detalle_importe":decimal(dventa), "snapshot_filas":sum(int(x["filas"]) for x in sr)}
+                      stats[out["estado"]] = stats.get(out["estado"], 0) + 1
+                      if out["estado"] != "PRESENTE_REQUIERE_CONCILIACION_POS":
+                          suspicious.append(out)
+                      print("HUB_COVERAGE=" + json.dumps(out,ensure_ascii=False,sort_keys=True))
+              print("HUB_SUMMARY=" + json.dumps({"rows_expected":30,"rows_processed":sum(stats.values()),
+                                                 "states":stats,"sospechas":len(suspicious),
+                                                 "pos_verified":False,"production_touched":False},sort_keys=True))
+              print("NOTICE=Presencia en EDARSAHUB no prueba paridad POS; snapshots históricos pueden sobrescribirse.")
+              with open(os.environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf8") as f:
+                  f.write("## Auditoría SQL solo lectura — 5 al 10 noviembre 2026\n\n")
+                  f.write("30 combinaciones esperadas, 5 sucursales × 6 fechas.\n\n")
+                  f.write("| Estado | Pares |\n|---|---:|\n")
+                  for state, count in sorted(stats.items()):
+                      f.write(f"| {state} | {count} |\n")
+                  f.write("\nFuentes POS todavía no verificadas; jamás interpretar ausencia de snapshot histórico como certeza de ventas faltantes.\n")
+              if suspicious:
+                  raise SystemExit(2)
+          finally:
+              conn.close()
+          PY
