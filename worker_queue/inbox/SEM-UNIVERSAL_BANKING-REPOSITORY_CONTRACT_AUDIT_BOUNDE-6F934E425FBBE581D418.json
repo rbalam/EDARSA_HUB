@@ -1,0 +1,64 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "tools/mirror_sync/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "Finanzas_Pagos",
+          "Finanzas_CxP",
+          "Global_Cat_Bancos",
+          "Proveedor_CuentasBancarias",
+          "Finanzas_Cat_CuentasBancarias",
+          "Servidores_Conexiones",
+          "Sistema_Capacidades",
+          "Sync_Control_Ejecuciones",
+          "Sync_Control_Evidencias",
+          "conciliacion",
+          "bank",
+          "banco",
+          "payment",
+          "SPEI",
+          "SWIFT",
+          "BBVA",
+          "Banorte",
+          "NetPay",
+          "timezone_iana",
+          "locale_operativo"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-UNIVERSAL_BANKING-REPOSITORY_CONTRACT_AUDIT_BOUNDE-6F934E425FBBE581D418",
+  "mode": "READ_ONLY",
+  "objective": "UNIVERSAL-BANKING-1 CANONICAL DOMAIN DESIGN. Auditar en READ_ONLY la evidencia de repositorio necesaria para cerrar el diseño canonico minimo de Universal Banking. Reutilizar primero contratos financieros, bancarios, integraciones, capabilities, sync, conciliacion, timezone/locale y patrones existentes. No implementar ni modificar codigo, schema, datos o Produccion. La evidencia debe permitir clasificar REUTILIZAR_CANONICO, EXTENDER_CANONICO, ENCAPSULAR_LEGACY, MIGRAR_LEGACY, REALMENTE_NUEVO, NO_APLICA o PENDIENTE_EVIDENCIA y soportar un diseno posterior sin duplicar entidades, conexiones, secretos, scheduler, CxP ni autorizaciones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "UNIVERSAL_BANKING",
+    "conflict_domains": [
+      "UNIVERSAL_BANKING"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
