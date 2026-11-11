@@ -76,7 +76,8 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}/backend
         run: |
-          python -m pytest -q --tb=short             backend/tests/test_preview_scheduler_http_trigger.py             backend/tests/test_preview_sales_wake.py             backend/tests/test_preview_closed_sales_wake.py             backend/tests/test_preview_scoped_scheduler.py             backend/tests/test_scheduler_runtime_policy.py
+          python -m pytest -q --tb=short             backend/tests/test_preview_scheduler_http_trigger.py             backend/tests/test_preview_sales_wake.py             backend/tests/test_preview_closed_sales_wake.py             backend/tests/test_preview_scoped_scheduler.py             backend/tests/test_scheduler_runtime_policy.py \
+            backend/tests/test_commercial_clock_recovery.py
 
       - name: Assert isolated change surface
         env:
@@ -104,6 +105,8 @@ jobs:
           from pathlib import Path
 
           commercial_exact = {
+              "backend/tools/commercial_clock_recovery.py",
+              "backend/tests/test_commercial_clock_recovery.py",
               ".github/workflows/preview-commercial-external-trigger-gate.yml",
               ".github/workflows/preview-commercial-external-owner.yml",
               ".github/workflows/commercial-open-sales-clock.yml",
