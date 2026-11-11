@@ -25,9 +25,9 @@ jobs:
       EDARSAHUB_SQL_PORT: "1433"
       EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
       EDARSAHUB_SQL_USER: "HRLectura"
-      EDARSAHUB_SQL_PASSWORD: \${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
       PYTHONDONTWRITEBYTECODE: "1"
-      PYTHONPATH: \${{ github.workspace }}/backend
+      PYTHONPATH: ${{ github.workspace }}/backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
