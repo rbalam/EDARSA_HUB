@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "SEM-UNIDADES_NEGOCIO_CANONICAS-WORKER_RESULT_SEMANTIC_EXTRACT-8844D8C0C356F444C760"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-UNIDADES_NEGOCIO_CANONICAS-WORKER_RESULT_DETAIL_READ-95EA305CC101732B9D74",
+  "mode": "READ_ONLY",
+  "objective": "Leer en solo lectura el detalle sanitizado del job de extraccion semantica bloqueado para identificar el error exacto de acceso al resultado fuente y resolver el bloqueo sin repetir auditorias ni modificar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "UNIDADES_NEGOCIO_CANONICAS",
+    "conflict_domains": [
+      "UNIDADES_NEGOCIO_CANONICAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
