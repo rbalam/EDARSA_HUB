@@ -221,6 +221,7 @@ PRIVATE_WORKTREE_DIR = STATE / "private_health"
 PRIVATE_WORKTREE_FILE = PRIVATE_WORKTREE_DIR / "shared_worktree.json"
 MAX_WORKTREE_STATUS_BYTES = 1024 * 1024
 MAX_WORKTREE_STATUS_ENTRIES = 10000
+MAX_PRIVATE_WORKTREE_EVIDENCE_AGE_SECONDS = 180
 
 
 def _expected_platform_managed_drift() -> bool:
@@ -321,8 +322,68 @@ def _read_only_worktree_snapshot() -> dict:
     }
 
 
+def _private_worktree_parent_is_safe() -> bool:
+    """Deny symlinked/unowned .git parents before accessing private evidence."""
+    git_dir = ROOT / ".git"
+    return all(
+        path.is_dir()
+        and not path.is_symlink()
+        and path.stat().st_uid == os.geteuid()
+        for path in (git_dir, STATE)
+    )
+
+
+def read_private_worktree_snapshot() -> dict:
+    """For an authorized local reader only; never call from public health.
+
+    The caller is responsible for SQL RBAC before returning any filenames.
+    Reject stale, broad-permission or symlinked evidence rather than returning
+    an old snapshot as if it described the current runtime.
+    """
+    if not _private_worktree_parent_is_safe():
+        raise RuntimeError("PRIVATE_WORKTREE_PARENT_UNSAFE")
+    directory = PRIVATE_WORKTREE_DIR
+    destination = PRIVATE_WORKTREE_FILE
+    if (
+        directory.is_symlink()
+        or not directory.is_dir()
+        or directory.stat().st_uid != os.geteuid()
+        or directory.stat().st_mode & 0o077
+    ):
+        raise RuntimeError("PRIVATE_WORKTREE_DIRECTORY_UNSAFE")
+    if destination.is_symlink() or not destination.is_file():
+        raise RuntimeError("PRIVATE_WORKTREE_EVIDENCE_UNAVAILABLE")
+    stat = destination.stat()
+    if stat.st_uid != os.geteuid() or stat.st_mode & 0o077:
+        raise RuntimeError("PRIVATE_WORKTREE_EVIDENCE_PERMISSIONS")
+    age_seconds = time.time() - stat.st_mtime
+    if (
+        age_seconds < -30
+        or age_seconds > MAX_PRIVATE_WORKTREE_EVIDENCE_AGE_SECONDS
+        or stat.st_size > MAX_WORKTREE_STATUS_BYTES * 2
+    ):
+        raise RuntimeError("PRIVATE_WORKTREE_EVIDENCE_STALE_OR_INVALID")
+    with destination.open("r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    if not isinstance(payload, dict) or payload.get("schema") != (
+        "edarsahub.worker-worktree-evidence.v1"
+    ):
+        raise RuntimeError("PRIVATE_WORKTREE_EVIDENCE_INVALID")
+    for key in ("staged", "unstaged", "untracked", "renamed_from"):
+        value = payload.get(key)
+        if (
+            not isinstance(value, list)
+            or len(value) > MAX_WORKTREE_STATUS_ENTRIES
+            or any(not isinstance(item, str) for item in value)
+        ):
+            raise RuntimeError("PRIVATE_WORKTREE_EVIDENCE_INVALID")
+    return payload
+
+
 def _persist_private_worktree_snapshot(snapshot: dict) -> None:
     """Atomic, owner-only evidence in .git; never commit to worker/health."""
+    if not _private_worktree_parent_is_safe():
+        raise RuntimeError("PRIVATE_WORKTREE_PARENT_UNSAFE")
     directory = PRIVATE_WORKTREE_DIR
     if directory.is_symlink():
         raise RuntimeError("PRIVATE_WORKTREE_DIRECTORY_UNSAFE")
