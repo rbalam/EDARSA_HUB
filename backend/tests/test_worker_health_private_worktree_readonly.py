@@ -181,3 +181,61 @@ def test_health_payload_uses_only_aggregate_snapshot():
     assert 'git("reset"' not in text
     assert 'git("clean"' not in text
     assert '"private_evidence": "LOCAL_RESTRICTED"' in text
+
+
+def test_private_snapshot_reader_requires_fresh_owner_only_evidence(monkeypatch, tmp_path):
+    module = publisher(monkeypatch, tmp_path)
+    fake_git_status(monkeypatch, module, b"?? src/local-change.txt\0")
+    assert module._worktree_public_status()["state"] == "DIRTY"
+    snapshot = module.read_private_worktree_snapshot()
+    assert snapshot["untracked"] == ["src/local-change.txt"]
+
+
+def test_private_snapshot_reader_rejects_stale_evidence(monkeypatch, tmp_path):
+    module = publisher(monkeypatch, tmp_path)
+    fake_git_status(monkeypatch, module, b"?? src/local-change.txt\0")
+    module._worktree_public_status()
+    monkeypatch.setattr(module.time, "time", lambda: module.PRIVATE_WORKTREE_FILE.stat().st_mtime + 1000)
+    with pytest.raises(RuntimeError, match="STALE_OR_INVALID"):
+        module.read_private_worktree_snapshot()
+
+
+def test_private_snapshot_reader_rejects_broad_file_permissions(monkeypatch, tmp_path):
+    module = publisher(monkeypatch, tmp_path)
+    fake_git_status(monkeypatch, module, b"?? src/local-change.txt\0")
+    module._worktree_public_status()
+    module.PRIVATE_WORKTREE_FILE.chmod(0o644)
+    with pytest.raises(RuntimeError, match="PERMISSIONS"):
+        module.read_private_worktree_snapshot()
+
+
+def test_private_snapshot_reader_rejects_git_parent_symlink(monkeypatch, tmp_path):
+    module = publisher(monkeypatch, tmp_path)
+    # Make the real Git directory elsewhere, replacing .git with a symlink.
+    import shutil
+    git_dir = module.ROOT / ".git"
+    relocated = tmp_path / "git-storage"
+    shutil.move(str(git_dir), str(relocated))
+    git_dir.symlink_to(relocated, target_is_directory=True)
+    fake_git_status(monkeypatch, module, b"?? src/local-change.txt\0")
+    assert module._worktree_public_status()["state"] == "UNAVAILABLE"
+    with pytest.raises(RuntimeError, match="PARENT_UNSAFE"):
+        module.read_private_worktree_snapshot()
+
+
+def test_private_snapshot_reader_rejects_file_symlink(monkeypatch, tmp_path):
+    module = publisher(monkeypatch, tmp_path)
+    fake_git_status(monkeypatch, module, b"?? src/local-change.txt\0")
+    module._worktree_public_status()
+    target = tmp_path / "sensitive.json"
+    target.write_text('{"secret":"not-to-be-read"}')
+    module.PRIVATE_WORKTREE_FILE.unlink()
+    module.PRIVATE_WORKTREE_FILE.symlink_to(target)
+    with pytest.raises(RuntimeError, match="UNAVAILABLE"):
+        module.read_private_worktree_snapshot()
+
+
+def test_worker_health_private_reader_is_not_published_on_worker_health():
+    text = PUBLISHER.read_text(encoding="utf-8")
+    assert '"shared_worktree": _worktree_public_status()' in text
+    assert "read_private_worktree_snapshot()" not in text.split("def runtime_summary()")[1]
