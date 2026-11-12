@@ -1,0 +1,59 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "SESSION_CONTEXT",
+          "RBAC",
+          "EmpresaID",
+          "UnidadNegocioID",
+          "SucursalID",
+          "ServidorID",
+          "Scheduler",
+          "NetPay",
+          "pymssql.connect",
+          "pyodbc.connect",
+          "get_sql_connection",
+          "get_edarsahub_pymssql_connection",
+          "Usuario_EmpresasAsignacion",
+          "Usuario_ServidoresAsignacion",
+          "Usuario_SucursalesAsignacion",
+          "ROW_LEVEL_SECURITY"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RLS_GATE0-REPOSITORY_CONTRACT_AUDIT_BOUNDE-58115DB24D5F24B5027C",
+  "mode": "READ_ONLY",
+  "objective": "RLS Gate 0 parcial en solo lectura: auditar contrato de RLS/RBAC, aislamiento Empresa/Unidad/Sucursal/Servidor, SESSION_CONTEXT, conexiones SQL reutilizadas y compatibilidad con Scheduler/NetPay dentro de los roots permitidos por el ingress semantico vigente. No modificar archivos, SQL ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RLS_GATE0",
+    "conflict_domains": [
+      "RLS_GATE0"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
