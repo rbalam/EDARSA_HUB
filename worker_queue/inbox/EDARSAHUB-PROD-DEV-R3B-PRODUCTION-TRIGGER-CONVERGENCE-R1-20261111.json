@@ -1,0 +1,62 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PROD-DEV-R3B-PRODUCTION-TRIGGER-CONVERGENCE-R1-20261111",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "base_sha": "7c19a36c63e18747a06bc582faee978b8f47d054",
+  "mode": "MUTATION",
+  "objective": "R3B Production Trigger Convergence: incorporar en Development el trigger HTTP productivo para sync_comercial_abiertas_v2 usando SchedulerManager canónico, aislado estrictamente a PRODUCTION + PRODUCTION_WEB, deshabilitado por defecto, secreto dedicado fail-closed y sin fingerprint temporal. No implementar wake loop todavía; R3C queda separado. No tocar Producción.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/scheduler_trigger/__init__.py",
+      "content": "\"\"\"Production-only HTTP scheduler trigger boundary.\"\"\"\n\nfrom .routes import router\n\n__all__ = [\"router\"]\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/modules/scheduler_trigger/routes.py",
+      "content": "\"\"\"Trigger HTTP productivo para el job protegido de Ventas del Dia.\n\nEste modulo no duplica logica de negocio. Invoca exclusivamente el\nSchedulerManager canonico y falla cerrado fuera de Production Web.\n\"\"\"\n\nfrom __future__ import annotations\n\nfrom datetime import datetime, timezone\nimport hmac\nimport logging\nimport os\nfrom typing import Any, Dict, Optional\n\nfrom fastapi import APIRouter, Header, HTTPException\n\nfrom modules.scheduler_runtime.policy import (\n    PRODUCTION_WEB,\n    runtime_environment,\n    runtime_policy_snapshot,\n    runtime_role,\n)\n\n\nlogger = logging.getLogger(__name__)\n\nrouter = APIRouter(\n    prefix=\"/api/internal/scheduler-trigger\",\n    tags=[\"Internal Scheduler Trigger\"],\n)\n\nJOB_ID = \"sync_comercial_abiertas_v2\"\nTOKEN_ENV = \"EDARSA_SCHEDULER_TRIGGER_KEY\"\nENABLED_ENV = \"EDARSA_SCHEDULER_TRIGGER_ENABLED\"\n\n\ndef _truthy_env(name: str, default: str = \"false\") -> bool:\n    return str(os.environ.get(name, default)).strip().lower() in {\n        \"1\",\n        \"true\",\n        \"yes\",\n        \"on\",\n    }\n\n\ndef _extract_token(\n    authorization: Optional[str],\n    x_edarsa_scheduler_key: Optional[str],\n) -> str:\n    header = str(authorization or \"\").strip()\n    if header:\n        scheme, separator, token = header.partition(\" \")\n        if separator and scheme.lower() == \"bearer\" and token.strip():\n            return token.strip()\n\n    return str(x_edarsa_scheduler_key or \"\").strip()\n\n\ndef _authorize_trigger(\n    authorization: Optional[str],\n    x_edarsa_scheduler_key: Optional[str],\n) -> Dict[str, Any]:\n    if runtime_environment() != \"PRODUCTION\":\n        raise HTTPException(\n            status_code=403,\n            detail=\"SCHEDULER_TRIGGER_PRODUCTION_ONLY\",\n        )\n\n    try:\n        role = runtime_role()\n    except RuntimeError as exc:\n        raise HTTPException(\n            status_code=403,\n            detail=\"SCHEDULER_TRIGGER_INVALID_RUNTIME_ROLE\",\n        ) from exc\n\n    if role != PRODUCTION_WEB:\n        raise HTTPException(\n            status_code=403,\n            detail=\"SCHEDULER_TRIGGER_PRODUCTION_WEB_ONLY\",\n        )\n\n    if not _truthy_env(ENABLED_ENV):\n        raise HTTPException(\n            status_code=503,\n            detail=\"SCHEDULER_TRIGGER_DISABLED\",\n        )\n\n    expected = str(os.environ.get(TOKEN_ENV) or \"\").strip()\n    if not expected:\n        raise HTTPException(\n            status_code=503,\n            detail=\"SCHEDULER_TRIGGER_NOT_CONFIGURED\",\n        )\n\n    provided = _extract_token(\n        authorization,\n        x_edarsa_scheduler_key,\n    )\n\n    if not provided or not hmac.compare_digest(provided, expected):\n        raise HTTPException(\n            status_code=401,\n            detail=\"SCHEDULER_TRIGGER_UNAUTHORIZED\",\n            headers={\"WWW-Authenticate\": \"Bearer\"},\n        )\n\n    return runtime_policy_snapshot()\n\n\n@router.get(\"/health\")\nasync def scheduler_trigger_health(\n    authorization: Optional[str] = Header(default=None),\n    x_edarsa_scheduler_key: Optional[str] = Header(\n        default=None,\n        alias=\"X-EDARSA-Scheduler-Key\",\n    ),\n):\n    policy = _authorize_trigger(\n        authorization,\n        x_edarsa_scheduler_key,\n    )\n\n    return {\n        \"status\": \"ready\",\n        \"service\": \"edarsahub-production-scheduler-trigger\",\n        \"environment\": policy.get(\"environment\"),\n        \"runtime_role\": policy.get(\"role\"),\n        \"trigger_enabled\": True,\n        \"job_id\": JOB_ID,\n    }\n\n\n@router.post(\"/sync-comercial-abiertas-v2\")\nasync def trigger_sync_comercial_abiertas_v2(\n    authorization: Optional[str] = Header(default=None),\n    x_edarsa_scheduler_key: Optional[str] = Header(\n        default=None,\n        alias=\"X-EDARSA-Scheduler-Key\",\n    ),\n):\n    policy = _authorize_trigger(\n        authorization,\n        x_edarsa_scheduler_key,\n    )\n\n    from core.mongo_stub import get_stub_database\n    from core.scheduler import get_scheduler_manager\n\n    manager = get_scheduler_manager(get_stub_database())\n    result = await manager.run_job_now(JOB_ID)\n\n    logger.warning(\n        \"Production scheduler HTTP trigger completed job=%s runtime_role=%s\",\n        JOB_ID,\n        policy.get(\"role\"),\n    )\n\n    return {\n        \"status\": result.get(\"status\", \"executed\"),\n        \"job_id\": JOB_ID,\n        \"triggered_at_utc\": datetime.now(timezone.utc).isoformat(),\n        \"environment\": policy.get(\"environment\"),\n        \"runtime_role\": policy.get(\"role\"),\n    }\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_scheduler_http_trigger_production_contract.py",
+      "content": "import asyncio\nfrom pathlib import Path\nimport sys\nfrom types import ModuleType\n\nimport pytest\nfrom fastapi import HTTPException\n\nfrom modules.scheduler_trigger import routes\n\n\n_ENV_KEYS = (\n    \"EDARSA_ENV\",\n    \"APP_ENV\",\n    \"ENVIRONMENT\",\n    \"EDARSA_RUNTIME_ROLE\",\n    \"EDARSA_RUNTIME_ROLE_REQUIRED\",\n    \"EDARSA_SCHEDULER_TRIGGER_ENABLED\",\n    \"EDARSA_SCHEDULER_TRIGGER_KEY\",\n)\n\n\ndef _clear(monkeypatch):\n    for key in _ENV_KEYS:\n        monkeypatch.delenv(key, raising=False)\n\n\ndef _production_web_enabled(monkeypatch):\n    _clear(monkeypatch)\n    monkeypatch.setenv(\"EDARSA_ENV\", \"PRODUCTION\")\n    monkeypatch.setenv(\"EDARSA_RUNTIME_ROLE\", \"PRODUCTION_WEB\")\n    monkeypatch.setenv(\"EDARSA_SCHEDULER_TRIGGER_ENABLED\", \"true\")\n    monkeypatch.setenv(\"EDARSA_SCHEDULER_TRIGGER_KEY\", \"unit-test-secret\")\n\n\ndef test_trigger_fails_closed_outside_production(monkeypatch):\n    _production_web_enabled(monkeypatch)\n    monkeypatch.setenv(\"EDARSA_ENV\", \"PREVIEW\")\n    with pytest.raises(HTTPException) as exc:\n        routes._authorize_trigger(\"Bearer unit-test-secret\", None)\n    assert exc.value.status_code == 403\n    assert exc.value.detail == \"SCHEDULER_TRIGGER_PRODUCTION_ONLY\"\n\n\ndef test_trigger_requires_production_web_role(monkeypatch):\n    _production_web_enabled(monkeypatch)\n    monkeypatch.setenv(\"EDARSA_RUNTIME_ROLE\", \"PRODUCTION_SCHEDULER\")\n    with pytest.raises(HTTPException) as exc:\n        routes._authorize_trigger(\"Bearer unit-test-secret\", None)\n    assert exc.value.status_code == 403\n    assert exc.value.detail == \"SCHEDULER_TRIGGER_PRODUCTION_WEB_ONLY\"\n\n\ndef test_trigger_is_disabled_by_default(monkeypatch):\n    _clear(monkeypatch)\n    monkeypatch.setenv(\"EDARSA_ENV\", \"PRODUCTION\")\n    monkeypatch.setenv(\"EDARSA_RUNTIME_ROLE\", \"PRODUCTION_WEB\")\n    monkeypatch.setenv(\"EDARSA_SCHEDULER_TRIGGER_KEY\", \"unit-test-secret\")\n    with pytest.raises(HTTPException) as exc:\n        routes._authorize_trigger(\"Bearer unit-test-secret\", None)\n    assert exc.value.status_code == 503\n    assert exc.value.detail == \"SCHEDULER_TRIGGER_DISABLED\"\n\n\ndef test_trigger_requires_dedicated_secret(monkeypatch):\n    _clear(monkeypatch)\n    monkeypatch.setenv(\"EDARSA_ENV\", \"PRODUCTION\")\n    monkeypatch.setenv(\"EDARSA_RUNTIME_ROLE\", \"PRODUCTION_WEB\")\n    monkeypatch.setenv(\"EDARSA_SCHEDULER_TRIGGER_ENABLED\", \"true\")\n    with pytest.raises(HTTPException) as exc:\n        routes._authorize_trigger(\"Bearer anything\", None)\n    assert exc.value.status_code == 503\n    assert exc.value.detail == \"SCHEDULER_TRIGGER_NOT_CONFIGURED\"\n\n\ndef test_trigger_rejects_wrong_secret(monkeypatch):\n    _production_web_enabled(monkeypatch)\n    with pytest.raises(HTTPException) as exc:\n        routes._authorize_trigger(\"Bearer wrong\", None)\n    assert exc.value.status_code == 401\n    assert exc.value.detail == \"SCHEDULER_TRIGGER_UNAUTHORIZED\"\n\n\ndef test_trigger_accepts_bearer_and_dedicated_header(monkeypatch):\n    _production_web_enabled(monkeypatch)\n    bearer = routes._authorize_trigger(\"Bearer unit-test-secret\", None)\n    dedicated = routes._authorize_trigger(None, \"unit-test-secret\")\n    assert bearer[\"environment\"] == \"PRODUCTION\"\n    assert bearer[\"role\"] == \"PRODUCTION_WEB\"\n    assert dedicated[\"role\"] == \"PRODUCTION_WEB\"\n\n\ndef test_trigger_invokes_only_canonical_protected_job(monkeypatch):\n    _production_web_enabled(monkeypatch)\n    calls = []\n\n    class FakeManager:\n        async def run_job_now(self, job_id):\n            calls.append(job_id)\n            return {\"status\": \"executed\", \"job_id\": job_id}\n\n    fake_scheduler = ModuleType(\"core.scheduler\")\n    fake_scheduler.get_scheduler_manager = lambda _db: FakeManager()\n    monkeypatch.setitem(sys.modules, \"core.scheduler\", fake_scheduler)\n\n    result = asyncio.run(\n        routes.trigger_sync_comercial_abiertas_v2(\n            authorization=\"Bearer unit-test-secret\",\n            x_edarsa_scheduler_key=None,\n        )\n    )\n\n    assert calls == [\"sync_comercial_abiertas_v2\"]\n    assert result[\"job_id\"] == \"sync_comercial_abiertas_v2\"\n    assert result[\"runtime_role\"] == \"PRODUCTION_WEB\"\n\n\ndef test_trigger_has_no_temporary_secret_fingerprint_logging():\n    source = Path(routes.__file__).read_text(encoding=\"utf-8\")\n    assert \"SCHEDULER_TRIGGER_SECRET_DIAG\" not in source\n    assert \"_log_trigger_secret_fingerprint\" not in source\n    assert \"core.scheduler.jobs.sync_comercial_abiertas_v2_job\" not in source\n"
+    },
+    {
+      "type": "append_once",
+      "path": "backend/server.py",
+      "source_sha256": "c707381bdc3d07f0df25abfa6acca813f171e07a",
+      "anchor": "",
+      "replacement": "\n\n# Production-only Scheduler HTTP trigger. El propio router falla cerrado fuera de PRODUCTION_WEB.\ntry:\n    from modules.scheduler_trigger.routes import router as production_scheduler_trigger_router\n    app.include_router(production_scheduler_trigger_router)\n    logger.info(\"Production scheduler HTTP trigger router registrado\")\nexcept Exception as e:\n    logger.warning(f\"Error registrando production scheduler HTTP trigger router: {e}\")\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/scheduler_trigger/__init__.py",
+        "backend/modules/scheduler_trigger/routes.py",
+        "backend/tests/test_scheduler_http_trigger_production_contract.py",
+        "backend/server.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_scheduler_http_trigger_production_contract.py",
+        "backend/tests/test_scheduler_runtime_policy.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Production divergence reconciliation R3B"
+  }
+}
