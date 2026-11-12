@@ -1,0 +1,47 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/worker_ingress/",
+          "backend/modules/worker_mcp/"
+        ],
+        "search_terms": [
+          "submit_objective",
+          "semantic_capabilities",
+          "repository_contract_audit",
+          "SEMANTIC_CONSTRAINTS_UNSUPPORTED",
+          "SEMANTIC_PATH_FORBIDDEN"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-EDARSAHUB_SERVICES-REPOSITORY_CONTRACT_AUDIT_BOUNDE-D14019190A691E706915",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY el contrato existente de submit_objective y semantic_capabilities para identificar la ampliación mínima autorizada que permita certificar scripts de Services Gate4A R2 sin debilitar RBAC, sin añadir rutas genéricas ni modificar Producción. Reportar evidencia y propuesta acotada, sin editar código.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB_SERVICES",
+    "conflict_domains": [
+      "EDARSAHUB_SERVICES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
