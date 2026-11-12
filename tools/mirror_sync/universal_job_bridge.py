@@ -54,9 +54,9 @@ QUEUE_REF = os.environ.get(
 SCHEMA = "edarsahub.worker-job.v2"
 JOB_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file", "insert_before", "insert_after", "append_once"}
-ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract"}
+ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract", "worker_maintenance_history_readonly", "worker_result_detail_read"}
 READ_ONLY_MODE = "READ_ONLY"
-READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract"}
+READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract", "worker_maintenance_history_readonly", "worker_result_detail_read"}
 SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
 MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
 COMERCIAL_RANGE_RESYNC_MODE = "COMERCIAL_RANGE_RESYNC"
@@ -267,6 +267,20 @@ def validate_check(check: Any, index: int) -> list[str]:
         fields = request.get("required_semantic_fields", [])
         if fields is not None and (not isinstance(fields, list) or not all(isinstance(item, str) and item.strip() for item in fields)):
             return [f"{prefix}_REQUIRED_SEMANTIC_FIELDS_INVALID"]
+    if kind == "worker_maintenance_history_readonly":
+        if set(check) != {"type"}:
+            return [f"{prefix}_UNSUPPORTED_FIELDS"]
+    if kind == "worker_result_detail_read":
+        if set(check) != {"type", "request"}:
+            return [f"{prefix}_UNSUPPORTED_FIELDS"]
+        request = check.get("request")
+        if not isinstance(request, dict):
+            return [f"{prefix}_REQUEST_REQUIRED"]
+        if set(request) != {"job_id"}:
+            return [f"{prefix}_REQUEST_FIELDS_INVALID"]
+        job_id = str(request.get("job_id") or "").strip()
+        if not JOB_ID.fullmatch(job_id):
+            return [f"{prefix}_JOB_ID_INVALID"]
     if kind == "repository_contract_audit":
         request = check.get("request")
         if not isinstance(request, dict):
@@ -766,10 +780,64 @@ _SLOT_ALREADY_CLAIMED_BLOCKER = (
 _NEEDS_FAST_FORWARD_REFRESH_BLOCKER = (
     "dispatcher_exception:RuntimeError:NEEDS_FAST_FORWARD_REFRESH"
 )
+_GIT_WORKTREE_NOT_CLEAN_BLOCKER = (
+    "dispatcher_exception:RuntimeError:GIT_WORKTREE_NOT_CLEAN"
+)
 _PREEXECUTION_INFRASTRUCTURE_RETRY_CONTRACT = {
     "BLOCKED": {_SLOT_ALREADY_CLAIMED_BLOCKER},
     "GIT_DIVERGENCE_BLOCKED": {_NEEDS_FAST_FORWARD_REFRESH_BLOCKER},
+    "GIT_WORKTREE_NOT_CLEAN": {_GIT_WORKTREE_NOT_CLEAN_BLOCKER},
 }
+
+
+_PREEXECUTION_WORKTREE_RETRY_MAX_AGE_SECONDS = int(
+    os.environ.get(
+        "EDARSAHUB_PREEXECUTION_WORKTREE_RETRY_MAX_AGE_SECONDS",
+        "14400",
+    )
+)
+
+
+def _worktree_clean_retry_ready(
+    name: str,
+    result: dict[str, Any],
+) -> bool:
+    if RESULTS != STATE / "results":
+        return True
+    try:
+        from tools.mirror_sync.git_divergence_guard import _status_counts
+    except ModuleNotFoundError:
+        from git_divergence_guard import _status_counts
+    try:
+        counts = _status_counts(ROOT)
+    except Exception:
+        return False
+    if counts.get("worktree_dirty") is not False:
+        return False
+
+    now_ts = datetime.now(timezone.utc).timestamp()
+    preferred_path = STATE / "runtime" / "preferred_job.json"
+    preferred = _read_json_file(preferred_path)
+    preferred_id = str(preferred.get("job_id") or "").strip()
+    try:
+        expires_at = float(preferred.get("expires_at_epoch") or 0)
+    except (TypeError, ValueError):
+        expires_at = 0.0
+    if preferred_id == Path(name).stem and expires_at > now_ts:
+        return True
+
+    completed_raw = str(result.get("completed_at_utc") or "").strip()
+    if completed_raw:
+        try:
+            completed_dt = datetime.fromisoformat(
+                completed_raw.replace("Z", "+00:00")
+            )
+            age_seconds = max(0.0, now_ts - completed_dt.timestamp())
+            if age_seconds <= _PREEXECUTION_WORKTREE_RETRY_MAX_AGE_SECONDS:
+                return True
+        except ValueError:
+            pass
+    return False
 
 
 def _preexecution_retry_history_matches(name: str) -> list[Path]:
@@ -808,7 +876,12 @@ def preexecution_infrastructure_retry_decision(
         and len(blockers) == 1
         and blockers[0] in allowed_blockers
     )
-    allowed = retryable_shape and not history
+    worktree_ready = (
+        _worktree_clean_retry_ready(name, result)
+        if status == "GIT_WORKTREE_NOT_CLEAN"
+        else True
+    )
+    allowed = retryable_shape and not history and worktree_ready
 
     return {
         "present": True,
@@ -1007,7 +1080,12 @@ def receive() -> int:
         }
         if job.get("requester") is not None:
             try:
-                from worker_requester_rbac import authorize_requester
+                try:
+                    from tools.mirror_sync.worker_requester_rbac import (
+                        authorize_requester,
+                    )
+                except ModuleNotFoundError:
+                    from worker_requester_rbac import authorize_requester
                 requester_authorization = authorize_requester(job.get("requester"))
             except Exception:
                 requester_authorization = {

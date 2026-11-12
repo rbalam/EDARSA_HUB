@@ -282,7 +282,11 @@ def declare_runtime_incident(
             existing,
         )
 
-    incident = declare_incident(incident_id, target_paths)
+    incident = declare_incident(
+        incident_id,
+        target_paths,
+        capability_code=capability_code,
+    )
 
     payload: dict[str, Any] = {
         "incident_id": incident.incident_id,
@@ -694,6 +698,10 @@ def register_repair_result(
         state=MaintenanceState(
             current_state_value
         ),
+        capability_code=(
+            str(state.get("capability_code") or "").strip()
+            or None
+        ),
         production_allowed=False,
     )
 
@@ -862,6 +870,10 @@ def audit_runtime_incident(
         paths=tuple(state.get("target_paths") or []),
         state=MaintenanceState(
             current_state_value
+        ),
+        capability_code=(
+            str(state.get("capability_code") or "").strip()
+            or None
         ),
         production_allowed=False,
     )

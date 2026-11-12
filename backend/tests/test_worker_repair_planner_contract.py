@@ -300,3 +300,94 @@ def test_planner_can_resolve_learned_capability(
         "tools/mirror_sync/"
         "worker_control_plane.py",
     )
+
+
+def test_d2_2_capability_is_registered_with_exact_scope():
+    capability = planner._resolve_capability(
+        planner._D2_2_INCIDENT,
+        planner._D2_2_CAPABILITY,
+    )
+
+    assert capability.code == planner._D2_2_CAPABILITY
+    assert capability.incident_ids == (
+        planner._D2_2_INCIDENT,
+    )
+    assert capability.required_paths == (
+        planner._D2_2_GITIGNORE,
+        planner._D2_2_GUARD,
+        planner._D2_2_IGNORE_TEST,
+        planner._D2_2_SAFETY_TEST,
+    )
+
+
+def test_declared_repair_incident_derives_scope_from_registered_capability(
+    monkeypatch,
+):
+    captured = {}
+
+    def fake_declare(
+        incident_id,
+        target_paths,
+        **kwargs,
+    ):
+        captured["incident_id"] = incident_id
+        captured["target_paths"] = tuple(target_paths)
+        captured.update(kwargs)
+        return SimpleNamespace(
+            incident_id=incident_id,
+            state="REPAIR_REQUIRED",
+            target_paths=tuple(target_paths),
+            capability_code=kwargs.get(
+                "capability_code"
+            ),
+        )
+
+    monkeypatch.setattr(
+        planner.maintenance,
+        "declare_runtime_incident",
+        fake_declare,
+    )
+
+    result = planner.declare_registered_incident(
+        planner._D2_2_INCIDENT,
+        capability_code=planner._D2_2_CAPABILITY,
+        requester={
+            "email": "admin@example.com",
+        },
+    )
+
+    assert captured["target_paths"] == (
+        planner._D2_2_GITIGNORE,
+        planner._D2_2_GUARD,
+        planner._D2_2_IGNORE_TEST,
+        planner._D2_2_SAFETY_TEST,
+    )
+    assert (
+        captured["capability_code"]
+        == planner._D2_2_CAPABILITY
+    )
+    assert result["production_touched"] is False
+
+
+def test_d2_2_recipe_actions_are_exactly_registered_scope():
+    capability = planner._resolve_capability(
+        planner._D2_2_INCIDENT,
+        planner._D2_2_CAPABILITY,
+    )
+    recipe = capability.builder(
+        SimpleNamespace(
+            incident_id=planner._D2_2_INCIDENT,
+        ),
+        {"base_sha": "a" * 40},
+    )
+
+    action_paths = {
+        action["path"]
+        for action in recipe["actions"]
+    }
+    assert action_paths == set(
+        capability.required_paths
+    )
+    assert recipe["checks"][-1] == {
+        "type": "git_diff_check",
+    }

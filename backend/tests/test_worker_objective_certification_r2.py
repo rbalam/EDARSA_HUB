@@ -123,3 +123,92 @@ def test_empty_criteria_rejected():
     request = job()
     request["acceptance_criteria"] = []
     assert "ACCEPTANCE_CRITERIA_INVALID" in validate(request)
+
+
+# G3 - Semantic capability tests.
+import importlib.util as _g3_importlib
+import sys as _g3_sys
+import pytest as _g3_pytest
+
+def _g3_module():
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "modules/worker_ingress/semantic_capabilities.py"
+    )
+    spec = _g3_importlib.spec_from_file_location(
+        "_g3_semantic_capabilities", source
+    )
+    module = _g3_importlib.module_from_spec(spec)
+    _g3_sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+def _g3_build(code, constraints, context="WORKER_INGRESS"):
+    module = _g3_module()
+    return module.resolve_capability(code).builder({
+        "bounded_context": context,
+        "constraints": constraints,
+    })
+
+def test_g3_registration():
+    module = _g3_module()
+    names = module.registered_capabilities()
+    assert "REPOSITORY_CONTRACT_AUDIT" in names
+    assert "REPOSITORY_CONTRACT_AUDIT_BOUNDED" in names
+    assert "WORKER_RESULT_SEMANTIC_EXTRACT" in names
+
+def test_g3_rh_compatibility():
+    result = _g3_build("REPOSITORY_CONTRACT_AUDIT", {}, "RH")
+    assert result["actions"] == []
+    assert result["checks"][0]["request"]["max_results"] == 200
+
+def test_g3_repository_valid():
+    result = _g3_build("REPOSITORY_CONTRACT_AUDIT_BOUNDED", {
+        "paths": ["backend/modules/worker_ingress/"],
+        "search_terms": ["semantic"],
+        "max_results": 10,
+    })
+    assert result["actions"] == []
+    assert result["checks"][0]["type"] == "repository_contract_audit"
+
+@_g3_pytest.mark.parametrize("path", [
+    "../secret",
+    "/etc/passwd",
+    ".git/config",
+    "backend/modules/../../secret",
+    "backend/modules/.env",
+    "backend/modules/node_modules/file",
+    "backend/modules/auth/passwords.py",
+])
+def test_g3_repository_rejects_paths(path):
+    with _g3_pytest.raises(ValueError):
+        _g3_build("REPOSITORY_CONTRACT_AUDIT_BOUNDED", {
+            "paths": [path],
+            "search_terms": ["semantic"],
+        })
+
+def test_g3_result_valid():
+    result = _g3_build("WORKER_RESULT_SEMANTIC_EXTRACT", {
+        "source_job_id": "BOS-GATE1-TEST",
+    })
+    assert result["actions"] == []
+    assert result["checks"][0]["request"]["source_result"] == {
+        "branch": "worker/results",
+        "path": "worker_queue/results/BOS-GATE1-TEST.json",
+    }
+
+@_g3_pytest.mark.parametrize("job_id", [
+    "../secret", "bad/name", "", "x",
+])
+def test_g3_result_rejects_job_id(job_id):
+    with _g3_pytest.raises(ValueError):
+        _g3_build("WORKER_RESULT_SEMANTIC_EXTRACT", {
+            "source_job_id": job_id,
+        })
+
+def test_g3_result_rejects_arbitrary_refs():
+    with _g3_pytest.raises(ValueError):
+        _g3_build("WORKER_RESULT_SEMANTIC_EXTRACT", {
+            "source_job_id": "BOS-GATE1-TEST",
+            "branch": "other",
+        })

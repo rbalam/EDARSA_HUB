@@ -600,6 +600,32 @@ def build_deterministic_repair_job(
     }
 
 
+def declare_registered_incident(
+    incident_id: str,
+    *,
+    capability_code: str,
+    requester: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    capability = _resolve_capability(
+        incident_id,
+        capability_code,
+    )
+    state = maintenance.declare_runtime_incident(
+        incident_id,
+        list(capability.required_paths),
+        problem_signature=capability.code,
+        capability_code=capability.code,
+        requester=requester,
+    )
+    return {
+        "incident_id": state.incident_id,
+        "state": state.state,
+        "target_paths": list(state.target_paths),
+        "capability": state.capability_code,
+        "production_touched": False,
+    }
+
+
 def publish_planned_repair(
     incident_id: str,
     *,
@@ -670,6 +696,24 @@ def _canonical_job_ingress_recipe(
     publisher = publisher_path.read_text(
         encoding="utf-8"
     )
+
+    test_path = (
+        ROOT
+        / _CANONICAL_INGRESS_TEST
+    )
+
+    if not test_path.is_file():
+        raise ValueError(
+            "CANONICAL_INGRESS_TEST_MISSING"
+        )
+
+    test_source = test_path.read_text(
+        encoding="utf-8"
+    )
+
+    test_sha = hashlib.sha256(
+        test_source.encode("utf-8")
+    ).hexdigest()
 
     old_imports = """import argparse
 import json
@@ -1420,6 +1464,7 @@ def test_submit_reuses_canonical_publisher():
                 "type": "write_file",
                 "path": _CANONICAL_INGRESS_TEST,
                 "content": ingress_test,
+                "expected_sha256": test_sha,
             },
         ],
         "checks": [
@@ -1454,5 +1499,250 @@ register_capability(
             _CANONICAL_INGRESS_TEST,
         ),
         builder=_canonical_job_ingress_recipe,
+    )
+)
+
+
+# D2.2 - exact runtime artifact convergence repair.
+_D2_2_INCIDENT = "EDARSAHUB-D2-2-RUNTIME-ARTIFACT-CONVERGENCE-R1"
+_D2_2_CAPABILITY = "D2_2_RUNTIME_ARTIFACT_CONVERGENCE"
+_D2_2_GITIGNORE = ".gitignore"
+_D2_2_GUARD = "tools/mirror_sync/shared_app_safety_guard.sh"
+_D2_2_IGNORE_TEST = "backend/tests/test_preview_local_artifacts_ignore_contract.py"
+_D2_2_SAFETY_TEST = "backend/tests/test_shared_app_sync_safety_contract.py"
+
+
+def _d2_2_runtime_artifact_recipe(
+    incident: Any,
+    context: dict[str, Any],
+) -> dict[str, Any]:
+    gitignore_path = ROOT / _D2_2_GITIGNORE
+    guard_path = ROOT / _D2_2_GUARD
+    ignore_test_path = ROOT / _D2_2_IGNORE_TEST
+    safety_test_path = ROOT / _D2_2_SAFETY_TEST
+
+    for path in (
+        gitignore_path,
+        guard_path,
+        ignore_test_path,
+        safety_test_path,
+    ):
+        if not path.is_file():
+            raise ValueError("D2_2_REQUIRED_FILE_MISSING")
+
+    gitignore = gitignore_path.read_text(encoding="utf-8")
+    guard = guard_path.read_text(encoding="utf-8")
+    ignore_test = ignore_test_path.read_text(encoding="utf-8")
+    safety_test = safety_test_path.read_text(encoding="utf-8")
+
+    ignored_line = "/.emergent/stripped_env_names\n"
+    if gitignore.count(ignored_line) != 1:
+        raise ValueError("D2_2_GITIGNORE_ANCHOR_DRIFT")
+
+    guard_const = 'EDARSAHUB_PLATFORM_MANAGED_SYSTEM_DEPS_REL=".emergent/system_deps.txt"\n'
+    guard_const_new = (
+        guard_const
+        + 'EDARSAHUB_PLATFORM_MANAGED_STRIPPED_ENV_REL=".emergent/stripped_env_names"\n'
+    )
+    if guard.count(guard_const) != 1:
+        raise ValueError("D2_2_GUARD_CONST_ANCHOR_DRIFT")
+
+    status_anchor = """edarsahub_effective_status() {
+    local raw
+    raw="$(git -C "$EDARSAHUB_APP" status --porcelain=v1 --untracked-files=all)"
+    if edarsahub_expected_platform_system_deps_drift; then
+        printf '%s\\n' "$raw" | grep -v '^ M \\.emergent/system_deps\\.txt$' || true
+    else
+        printf '%s\\n' "$raw"
+    fi
+}
+"""
+    status_new = """edarsahub_validated_platform_stripped_env_artifact() {
+    local current_path raw size
+    current_path="$EDARSAHUB_APP/$EDARSAHUB_PLATFORM_MANAGED_STRIPPED_ENV_REL"
+
+    [ -f "$current_path" ] || return 1
+    [ ! -L "$current_path" ] || return 1
+
+    raw="$(git -C "$EDARSAHUB_APP" status --porcelain=v1 --untracked-files=all -- "$EDARSAHUB_PLATFORM_MANAGED_STRIPPED_ENV_REL")"
+    [ "$raw" = "?? $EDARSAHUB_PLATFORM_MANAGED_STRIPPED_ENV_REL" ] || return 1
+
+    size="$(wc -c < "$current_path" 2>/dev/null || echo 65537)"
+    case "$size" in ''|*[!0-9]*) return 1 ;; esac
+    [ "$size" -le 65536 ] || return 1
+
+    return 0
+}
+
+edarsahub_effective_status() {
+    local raw effective
+    raw="$(git -C "$EDARSAHUB_APP" status --porcelain=v1 --untracked-files=all)"
+    effective="$raw"
+
+    if edarsahub_expected_platform_system_deps_drift; then
+        effective="$(printf '%s\\n' "$effective" | grep -v '^ M \\.emergent/system_deps\\.txt$' || true)"
+    fi
+    if edarsahub_validated_platform_stripped_env_artifact; then
+        effective="$(printf '%s\\n' "$effective" | grep -v '^?? \\.emergent/stripped_env_names$' || true)"
+    fi
+
+    printf '%s\\n' "$effective"
+}
+"""
+    if guard.count(status_anchor) != 1:
+        raise ValueError("D2_2_GUARD_STATUS_ANCHOR_DRIFT")
+
+    untracked_old = 'untracked="$(git -C "$EDARSAHUB_APP" status --porcelain=v1 --untracked-files=all | grep \'^?? \' | wc -l)"'
+    untracked_new = 'untracked="$(edarsahub_effective_status | grep \'^?? \' | wc -l)"'
+    if guard.count(untracked_old) != 1:
+        raise ValueError("D2_2_GUARD_UNTRACKED_ANCHOR_DRIFT")
+
+    echo_anchor = """    if edarsahub_expected_platform_system_deps_drift; then
+        echo "PLATFORM_MANAGED_SYSTEM_DEPS_DRIFT=IGNORED_EXPECTED_EMPTY_RUNTIME"
+    fi
+"""
+    echo_new = echo_anchor + """    if edarsahub_validated_platform_stripped_env_artifact; then
+        echo "PLATFORM_MANAGED_STRIPPED_ENV_ARTIFACT=VALIDATED_RUNTIME_ARTIFACT"
+    fi
+"""
+    if guard.count(echo_anchor) != 1:
+        raise ValueError("D2_2_GUARD_ECHO_ANCHOR_DRIFT")
+
+    ignore_old = '        "/.emergent/stripped_env_names",\n'
+    if ignore_test.count(ignore_old) != 1:
+        raise ValueError("D2_2_IGNORE_TEST_ANCHOR_DRIFT")
+    ignore_tail = """    for pattern in required:
+        assert pattern in text
+
+
+"""
+    ignore_tail_new = """    for pattern in required:
+        assert pattern in text
+
+    assert "/.emergent/stripped_env_names" not in text
+
+
+"""
+    if ignore_test.count(ignore_tail) != 1:
+        raise ValueError("D2_2_IGNORE_TEST_TAIL_DRIFT")
+
+    safety_anchor = """def test_dirty_app_is_hard_blocked_without_discarding_local_work():
+"""
+    safety_new = """def test_stripped_env_runtime_artifact_is_exact_and_bounded():
+    guard = ROOT / "tools/mirror_sync/shared_app_safety_guard.sh"
+    text = guard.read_text(encoding="utf-8")
+    assert 'EDARSAHUB_PLATFORM_MANAGED_STRIPPED_ENV_REL=".emergent/stripped_env_names"' in text
+    assert '[ ! -L "$current_path" ] || return 1' in text
+    assert '[ "$raw" = "?? $EDARSAHUB_PLATFORM_MANAGED_STRIPPED_ENV_REL" ] || return 1' in text
+    assert '[ "$size" -le 65536 ] || return 1' in text
+    assert "PLATFORM_MANAGED_STRIPPED_ENV_ARTIFACT=VALIDATED_RUNTIME_ARTIFACT" in text
+
+
+""" + safety_anchor
+    if safety_test.count(safety_anchor) != 1:
+        raise ValueError("D2_2_SAFETY_TEST_ANCHOR_DRIFT")
+
+    return {
+        "objective": (
+            "D2.2 Runtime Artifact Convergence: retirar stripped_env_names "
+            "de .gitignore y clasificar exclusivamente ese artefacto runtime "
+            "como VALIDATED_RUNTIME_ARTIFACT con validacion estricta."
+        ),
+        "actions": [
+            {
+                "type": "replace_text",
+                "path": _D2_2_GITIGNORE,
+                "old": ignored_line,
+                "new": "",
+                "expected_count": 1,
+                "expected_sha256": hashlib.sha256(
+                    gitignore.encode("utf-8")
+                ).hexdigest(),
+            },
+            {
+                "type": "replace_text",
+                "path": _D2_2_GUARD,
+                "old": guard_const,
+                "new": guard_const_new,
+                "expected_count": 1,
+                "expected_sha256": hashlib.sha256(
+                    guard.encode("utf-8")
+                ).hexdigest(),
+            },
+            {
+                "type": "replace_text",
+                "path": _D2_2_GUARD,
+                "old": status_anchor,
+                "new": status_new,
+                "expected_count": 1,
+            },
+            {
+                "type": "replace_text",
+                "path": _D2_2_GUARD,
+                "old": untracked_old,
+                "new": untracked_new,
+                "expected_count": 1,
+            },
+            {
+                "type": "replace_text",
+                "path": _D2_2_GUARD,
+                "old": echo_anchor,
+                "new": echo_new,
+                "expected_count": 1,
+            },
+            {
+                "type": "replace_text",
+                "path": _D2_2_IGNORE_TEST,
+                "old": ignore_old,
+                "new": "",
+                "expected_count": 1,
+                "expected_sha256": hashlib.sha256(
+                    ignore_test.encode("utf-8")
+                ).hexdigest(),
+            },
+            {
+                "type": "replace_text",
+                "path": _D2_2_IGNORE_TEST,
+                "old": ignore_tail,
+                "new": ignore_tail_new,
+                "expected_count": 1,
+            },
+            {
+                "type": "replace_text",
+                "path": _D2_2_SAFETY_TEST,
+                "old": safety_anchor,
+                "new": safety_new,
+                "expected_count": 1,
+                "expected_sha256": hashlib.sha256(
+                    safety_test.encode("utf-8")
+                ).hexdigest(),
+            },
+        ],
+        "checks": [
+            {
+                "type": "pytest",
+                "paths": [
+                    _D2_2_IGNORE_TEST,
+                    _D2_2_SAFETY_TEST,
+                ],
+            },
+            {
+                "type": "git_diff_check",
+            },
+        ],
+    }
+
+
+register_capability(
+    RepairCapability(
+        code=_D2_2_CAPABILITY,
+        incident_ids=(_D2_2_INCIDENT,),
+        required_paths=(
+            _D2_2_GITIGNORE,
+            _D2_2_GUARD,
+            _D2_2_IGNORE_TEST,
+            _D2_2_SAFETY_TEST,
+        ),
+        builder=_d2_2_runtime_artifact_recipe,
     )
 )

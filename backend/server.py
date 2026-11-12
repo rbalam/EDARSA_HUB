@@ -189,6 +189,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # HEALTH CHECK GENERAL (Monitoreo de Infraestructura)
 # ==========================================
 @app.get("/api/health")
+@app.get("/health")
 async def health_check():
     """
     Endpoint de salud vital. La infraestructura (Docker/Kubernetes) hará ping aquí.
@@ -16890,13 +16891,15 @@ from modules.rentabilidad.routes import router as rentabilidad_router
 from modules.alertas_estrategicas.routes import router as alertas_estrategicas_router
 from core.sql_first.db import get_sql_connection
 from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
-# Inicializar RBAC (sembrar permisos y roles si no existen)
-try:
-    rbac_service = RBACService(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad
-    rbac_service.ensure_initialized()
-    logger.info("RBAC Service inicializado (SQL Server)")
-except Exception as e:
-    logger.warning(f"Error inicializando RBAC: {e}")
+def _initialize_rbac_runtime() -> None:
+    """Inicializa RBAC en runtime, nunca durante el import del módulo."""
+    try:
+        rbac_service = RBACService(db)
+        rbac_service.ensure_initialized()
+        logger.info("RBAC Service inicializado (SQL Server)")
+    except Exception as e:
+        logger.warning(f"Error inicializando RBAC: {e}")
+
 app.include_router(rbac_router, prefix="/api/v2", tags=["RBAC"])
 
 # ============= COMERCIAL V2 - ENDPOINTS AISLADOS =============
@@ -17269,6 +17272,8 @@ except Exception as e:
 @app.on_event("startup")
 async def startup_scheduler():
     """Recupera el Worker y arranca APScheduler solo si la politica lo permite."""
+    _initialize_rbac_runtime()
+
     try:
         worker_runtime_state = ensure_worker_runtime_on_preview_startup()
         logger.info(f"Universal Worker startup self-heal: {worker_runtime_state}")

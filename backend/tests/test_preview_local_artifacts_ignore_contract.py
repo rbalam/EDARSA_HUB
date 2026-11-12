@@ -13,6 +13,7 @@ def test_preview_local_runtime_artifacts_are_ignored():
         "/EJECUTAR_GATE_WORKER_UNICO*.sh",
         "/.emergent/testing/.runtime/",
         "/.emergent/testing/browser_runs/**",
+        "/.emergent/stripped_env_names",
     )
     for pattern in required:
         assert pattern in text

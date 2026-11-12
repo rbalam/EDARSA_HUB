@@ -190,3 +190,61 @@ def test_audit_incident_rejects_non_pending_when_required():
         decision.reason
         == "INCIDENT_NOT_PENDING_AUDIT"
     )
+
+
+def test_d2_2_gitignore_scope_requires_exact_incident_and_capability():
+    from tools.mirror_sync.worker_maintenance_contract import (
+        D2_2_CAPABILITY_CODE,
+        D2_2_INCIDENT_ID,
+    )
+
+    incident = declare_incident(
+        D2_2_INCIDENT_ID,
+        [
+            ".gitignore",
+            "tools/mirror_sync/shared_app_safety_guard.sh",
+            "backend/tests/test_worker_d2_2_runtime_artifact_contract.py",
+        ],
+        capability_code=D2_2_CAPABILITY_CODE,
+    )
+    assert incident.state is MaintenanceState.REPAIR_REQUIRED
+    assert incident.capability_code == D2_2_CAPABILITY_CODE
+
+    for bad_incident, bad_capability in (
+        ("OTHER-INCIDENT", D2_2_CAPABILITY_CODE),
+        (D2_2_INCIDENT_ID, "OTHER_CAPABILITY"),
+        ("OTHER-INCIDENT", "OTHER_CAPABILITY"),
+    ):
+        try:
+            declare_incident(
+                bad_incident,
+                [".gitignore"],
+                capability_code=bad_capability,
+            )
+        except ValueError as exc:
+            assert "REPAIR_SCOPE_FORBIDDEN" in str(exc)
+        else:
+            raise AssertionError("D2.2 exception must fail closed")
+
+
+def test_d2_2_pending_audit_accepts_only_exact_authority_context():
+    from tools.mirror_sync.worker_maintenance_contract import (
+        D2_2_CAPABILITY_CODE,
+        D2_2_INCIDENT_ID,
+    )
+
+    incident = declare_incident(
+        D2_2_INCIDENT_ID,
+        [".gitignore"],
+        capability_code=D2_2_CAPABILITY_CODE,
+    )
+    result = {
+        "files_changed": [".gitignore"],
+        "production_touched": False,
+        "quality_gate": "PASS",
+        "tests": "PASS",
+        "blockers": [],
+        "git_sync_status": "CERTIFIED_GIT_SYNC",
+    }
+    decision = repaired_pending_audit(incident, result)
+    assert decision.state is MaintenanceState.REPAIRED_PENDING_AUDIT

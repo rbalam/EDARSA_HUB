@@ -404,6 +404,49 @@ def test_bridge_git_divergence_preexecution_block_reenters_same_job_once(
     assert bridge.already_claimed(name) is True
 
 
+def test_bridge_git_worktree_not_clean_preexecution_block_reenters_same_job_once(
+    tmp_path,
+    monkeypatch,
+):
+    bridge = _bridge_redirect_state(tmp_path, monkeypatch)
+    name = "INGRESS-GIT-WORKTREE-NOT-CLEAN.json"
+    _write_bridge_result(
+        bridge,
+        name,
+        status="GIT_WORKTREE_NOT_CLEAN",
+        blockers=[
+            "dispatcher_exception:RuntimeError:GIT_WORKTREE_NOT_CLEAN"
+        ],
+    )
+    job = _bridge_readonly_job("INGRESS-GIT-WORKTREE-NOT-CLEAN")
+    raw = json.dumps(job)
+    monkeypatch.setattr(
+        bridge,
+        "queue_files",
+        lambda: ["worker_queue/inbox/" + name],
+    )
+    monkeypatch.setattr(bridge, "read_remote", lambda path: raw)
+
+    first = bridge.preexecution_infrastructure_retry_decision(name)
+    assert first["allowed"] is True
+    assert bridge.receive() == 0
+    envelope = json.loads(
+        (bridge.PENDING / name).read_text(encoding="utf-8")
+    )
+    assert envelope["_worker_preexecution_retry"]["same_job_id"] is True
+    assert envelope["_worker_preexecution_retry"]["previous_status"] == (
+        "GIT_WORKTREE_NOT_CLEAN"
+    )
+
+    (bridge.PENDING / name).unlink()
+    second = bridge.preexecution_infrastructure_retry_decision(name)
+    assert second["allowed"] is False
+    assert second["reason"] == (
+        "PREEXECUTION_INFRASTRUCTURE_RETRY_LIMIT_REACHED"
+    )
+    assert bridge.already_claimed(name) is True
+
+
 def test_bridge_other_git_divergence_blocker_remains_terminal(
     tmp_path,
     monkeypatch,

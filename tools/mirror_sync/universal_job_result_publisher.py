@@ -661,6 +661,225 @@ def sanitize_semantic_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
     return {"checks": checks, **promoted}
 
 
+
+def sanitize_result_detail_evidence(
+    result: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Publish only bounded, already-sanitized Worker failure evidence."""
+
+    safe_checks: list[dict[str, Any]] = []
+
+    for check in result.get("checks") or []:
+        if (
+            not isinstance(check, dict)
+            or check.get("type")
+            != "worker_result_detail_read"
+        ):
+            continue
+
+        payload = check.get(
+            "result_detail_evidence"
+        )
+
+        if not isinstance(
+            payload,
+            dict,
+        ):
+            raw = check.get("output")
+
+            if isinstance(raw, str):
+                try:
+                    candidate = json.loads(
+                        raw.strip()
+                    )
+                except (
+                    json.JSONDecodeError,
+                    TypeError,
+                ):
+                    candidate = None
+
+                if isinstance(
+                    candidate,
+                    dict,
+                ):
+                    payload = candidate
+
+        if (
+            not isinstance(payload, dict)
+            or payload.get("status")
+            != "PASS"
+        ):
+            continue
+
+        failed_checks = []
+
+        for item in (
+            payload.get(
+                "failed_checks"
+            )
+            or []
+        )[:20]:
+
+            if not isinstance(
+                item,
+                dict,
+            ):
+                continue
+
+            safe_output = (
+                redact_sensitive_text(
+                    str(
+                        item.get(
+                            "output"
+                        )
+                        or ""
+                    ),
+                    max_length=8000,
+                )
+            )
+
+            assertions = []
+
+            for line in (
+                item.get(
+                    "assertion_lines"
+                )
+                or []
+            )[:50]:
+
+                if not isinstance(
+                    line,
+                    str,
+                ):
+                    continue
+
+                assertions.append(
+                    redact_sensitive_text(
+                        line,
+                        max_length=500,
+                    )
+                )
+
+            returncode = (
+                item.get(
+                    "returncode"
+                )
+            )
+
+            if (
+                isinstance(
+                    returncode,
+                    bool,
+                )
+                or not isinstance(
+                    returncode,
+                    int,
+                )
+            ):
+                returncode = None
+
+            failed_checks.append(
+                {
+                    "type":
+                        redact_sensitive_text(
+                            str(
+                                item.get(
+                                    "type"
+                                )
+                                or ""
+                            ),
+                            max_length=128,
+                        ),
+                    "status": (
+                        "FAIL"
+                        if str(
+                            item.get(
+                                "status"
+                            )
+                            or ""
+                        ).upper()
+                        == "FAIL"
+                        else None
+                    ),
+                    "returncode":
+                        returncode,
+                    "output":
+                        safe_output,
+                    "assertion_lines":
+                        assertions,
+                }
+            )
+
+        safe_checks.append(
+            {
+                "source_job_id":
+                    redact_sensitive_text(
+                        str(
+                            payload.get(
+                                "source_job_id"
+                            )
+                            or ""
+                        ),
+                        max_length=121,
+                    ),
+                "result_status":
+                    redact_sensitive_text(
+                        str(
+                            payload.get(
+                                "result_status"
+                            )
+                            or ""
+                        ),
+                        max_length=128,
+                    ),
+                "quality_gate":
+                    payload.get(
+                        "quality_gate"
+                    ),
+                "tests":
+                    payload.get(
+                        "tests"
+                    ),
+                "certification":
+                    payload.get(
+                        "certification"
+                    ),
+                "percent_complete":
+                    payload.get(
+                        "percent_complete"
+                    ),
+                "blockers":
+                    _sanitize_string_list(
+                        payload.get(
+                            "blockers"
+                        ),
+                        max_item_len=500,
+                    ),
+                "files_changed":
+                    _sanitize_string_list(
+                        payload.get(
+                            "files_changed"
+                        ),
+                        max_item_len=512,
+                    ),
+                "failed_checks":
+                    failed_checks,
+                "production_touched":
+                    payload.get(
+                        "production_touched"
+                    )
+                    is True,
+            }
+        )
+
+    if not safe_checks:
+        return None
+
+    return {
+        "checks": safe_checks,
+    }
+
+
 def sanitize_frontend_build_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
     """Expose only the tail needed to diagnose frontend build failures.
 
@@ -777,6 +996,7 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
         readonly_evidence = sanitize_readonly_evidence(result)
         repository_evidence = sanitize_repository_evidence(result)
         semantic_evidence = sanitize_semantic_evidence(result)
+        result_detail_evidence = sanitize_result_detail_evidence(result)
         generic_evidence = generic_readonly_evidence(result)
         base_pass = (
             str(result.get("tests", "")).upper() == "PASS"
@@ -828,11 +1048,14 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
             readonly_evidence is not None
             or repository_evidence is not None
             or semantic_evidence is not None
+            or result_detail_evidence is not None
         ):
             if readonly_evidence is not None:
                 basis = "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE"
             elif semantic_evidence is not None:
                 basis = "READ_ONLY_SEMANTIC_EXTRACT_PASS_PLUS_SANITIZED_EVIDENCE"
+            elif result_detail_evidence is not None:
+                basis = "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE"
             else:
                 basis = "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE"
             return {
@@ -1111,6 +1334,10 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
     frontend_build_evidence = sanitize_frontend_build_evidence(result)
     if frontend_build_evidence is not None:
         public["frontend_build_evidence"] = frontend_build_evidence
+
+    result_detail_evidence = sanitize_result_detail_evidence(result)
+    if result_detail_evidence is not None:
+        public["result_detail_evidence"] = result_detail_evidence
 
     evidence = certification_evidence(result)
 
