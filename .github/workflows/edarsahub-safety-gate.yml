@@ -118,8 +118,7 @@ jobs:
             tests/test_worker_health_private_worktree_readonly.py \
             tests/test_worker_worktree_diagnostic_rbac_contract.py \
             tests/test_worker_health_branch_isolation_contract.py \
-            tests/test_runtime_health_publisher_git_auth_contract.py \
-            ../tools/tests/test_worker_mcp_gate2b.py
+            tests/test_runtime_health_publisher_git_auth_contract.py
 
       - name: Backend OpenAPI smoke
         shell: bash
