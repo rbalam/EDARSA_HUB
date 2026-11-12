@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "7c19a36c63e18747a06bc582faee978b8f47d054",
-  "generated_at_utc": "2026-11-12T02:46:32Z",
+  "generated_at_utc": "2026-11-12T02:47:52Z",
   "history": {
     "done_total_local": 1708,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1405,
+      "age_seconds": 1484,
       "job_id": "EDARSAHUB-PROD-DEV-R3B-PRODUCTION-TRIGGER-CONVERGENCE-R1-20261111",
       "reasons": [
         "ACTION_4_SOURCE_SHA256_REQUIRED_OR_INVALID"
@@ -25,55 +25,55 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1343,
+      "age_seconds": 1423,
       "job_id": "EDARSAHUB-PROD-DEV-R3B-PRODUCTION-TRIGGER-CONVERGENCE-R2-20261111",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1291,
+      "age_seconds": 1371,
       "job_id": "EDARSAHUB-PROD-DEV-R3B-PRODUCTION-TRIGGER-CONVERGENCE-R3-20261111",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 975,
+      "age_seconds": 1055,
       "job_id": "SEM-CONNECTIONS_SCHEDULER_CAPABILITY-WORKER_RESULT_DETAIL_READ-59D3923642629406274B",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1256,
+      "age_seconds": 1336,
       "job_id": "SEM-EDARSAHUB_SERVICES-REPOSITORY_CONTRACT_AUDIT_BOUNDE-D14019190A691E706915",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3489,
+      "age_seconds": 3569,
       "job_id": "SEM-RLS_GATE0-REPOSITORY_CONTRACT_AUDIT_BOUNDE-58115DB24D5F24B5027C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3416,
+      "age_seconds": 3495,
       "job_id": "SEM-RLS_GATE0-WORKER_RESULT_DETAIL_READ-2D5E705D8DE2B31D5FDD",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3457,
+      "age_seconds": 3536,
       "job_id": "SEM-RLS_GATE0-WORKER_RESULT_SEMANTIC_EXTRACT-514D0808410888E297C2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 978,
+      "age_seconds": 1057,
       "job_id": "SEM-WORKER_INGRESS-WORKER_RESULT_DETAIL_READ-ACC34F720CF765BB9E6F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 991,
+      "age_seconds": 1070,
       "job_id": "SEM-WORKER_MCP-REPOSITORY_CONTRACT_AUDIT_BOUNDE-1C69580940AD073EBC75",
       "reason": null,
       "state": "RESULT_READY"
@@ -93,8 +93,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-12T02:46:16Z",
-    "last_receive_utc": "2026-11-12T02:46:30Z",
+    "last_cycle_utc": "2026-11-12T02:47:45Z",
+    "last_receive_utc": "2026-11-12T02:47:40Z",
     "last_terminal_utc": "2026-11-12T02:30:17Z",
     "pid": "7378",
     "runtime_fingerprint": {
