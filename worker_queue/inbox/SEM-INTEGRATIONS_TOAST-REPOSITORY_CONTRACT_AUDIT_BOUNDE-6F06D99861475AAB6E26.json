@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "tools/mirror_sync/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "restaurantGuid",
+          "toastapi",
+          "toastpos",
+          "toasttab",
+          "toastintegration"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-INTEGRATIONS_TOAST-REPOSITORY_CONTRACT_AUDIT_BOUNDE-6F06D99861475AAB6E26",
+  "mode": "READ_ONLY",
+  "objective": "Gate Toast R2: auditoria focalizada READ_ONLY para verificar si existe integracion real con Toast POS y distinguirla de notificaciones UI toast. No repetir auditoria general R1. Buscar referencias concretas de API Toast, restaurantGuid y credenciales OAuth sin revelar secretos. Emitir evidencia de rutas, ausencia de coincidencias o limites de cobertura; no modificar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INTEGRATIONS_TOAST",
+    "conflict_domains": [
+      "INTEGRATIONS_TOAST"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
