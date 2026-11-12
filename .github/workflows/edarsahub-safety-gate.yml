@@ -96,6 +96,31 @@ jobs:
             tests/test_inventory_analysis_soft_canonical.py \
             tests/test_inventory_origin_selection_transversal.py
 
+      - name: Worker health and private MCP diagnostic regression
+        shell: bash
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
+          EDARSAHUB_SQL_HOST: ci.invalid
+          EDARSAHUB_SQL_PORT: "1433"
+          EDARSAHUB_SQL_DATABASE: EDARSAHUB_CI
+          EDARSAHUB_SQL_USER: ci_readonly
+          EDARSAHUB_SQL_PASSWORD: ci-not-a-real-secret
+          SERVER_SECRET_KEY: ci-openapi-smoke-only
+          JWT_SECRET: ci-jwt-smoke-only
+          ENV: development
+        run: |
+          set -euo pipefail
+          python -m py_compile ../tools/mirror_sync/runtime_health_publisher.py \
+            modules/worker_ingress/service.py modules/worker_ingress/routes.py \
+            modules/worker_mcp/client.py modules/worker_mcp/server.py
+          python -m pytest -q \
+            tests/test_worker_health_private_worktree_readonly.py \
+            tests/test_worker_worktree_diagnostic_rbac_contract.py \
+            tests/test_worker_health_branch_isolation_contract.py \
+            tests/test_runtime_health_publisher_git_auth_contract.py \
+            ../tools/tests/test_worker_mcp_gate2b.py
+
       - name: Backend OpenAPI smoke
         shell: bash
         env:
