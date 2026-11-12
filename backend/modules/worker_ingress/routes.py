@@ -11,6 +11,7 @@ from .schemas import WorkerObjectiveRequest, WorkerSubmitRequest
 from .service import (
     WorkerIngressError,
     get_job_status,
+    get_shared_worktree_diagnostic,
     submit_job,
     submit_objective,
 )
@@ -136,6 +137,21 @@ def submit_worker_objective(
 
     _raise_for_submit_status(result)
     return result
+
+
+@router.get("/worktree-diagnostic")
+def read_shared_worktree_diagnostic(
+    current_user: dict = Depends(WORKER_ADMIN_DEPENDENCY),
+):
+    """Expose local-only evidence to the same SQL RBAC administrator boundary."""
+    del current_user
+    try:
+        return get_shared_worktree_diagnostic()
+    except WorkerIngressError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
 
 
 @router.get("/jobs/{job_id}")
