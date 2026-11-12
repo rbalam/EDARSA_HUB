@@ -62,6 +62,7 @@ _SAFE_RESULT_KEYS = {
     "production_touched",
     "completed_at_utc",
     "summary_es",
+    "result_detail_evidence",
 }
 
 
@@ -210,6 +211,9 @@ def build_semantic_job(
     if requested_mode not in allowed_modes:
         raise WorkerIngressError("SEMANTIC_CAPABILITY_MODE_MISMATCH")
 
+    if capability.builder is None:
+        raise WorkerIngressError("SEMANTIC_CAPABILITY_DIRECT_SUBMISSION_REQUIRED")
+
     try:
         expansion = capability.builder(payload)
     except SemanticCapabilityError as exc:
@@ -245,8 +249,73 @@ def submit_objective(
     *,
     current_user: Mapping[str, Any],
 ) -> dict[str, Any]:
+    payload = dict(request_payload)
+    _assert_no_sensitive_keys(payload)
+
+    objective = _clean(payload.get("objective"))
+    bounded_context = _clean(payload.get("bounded_context")).upper()
+    capability_code = _clean(payload.get("capability")).upper()
+    requested_mode = _clean(payload.get("mode")).upper()
+
+    if not objective:
+        raise WorkerIngressError("OBJECTIVE_REQUIRED")
+    if not bounded_context:
+        raise WorkerIngressError("BOUNDED_CONTEXT_REQUIRED")
+
+    try:
+        capability = resolve_capability(capability_code)
+    except SemanticCapabilityError as exc:
+        raise WorkerIngressError(str(exc)) from exc
+
+    allowed_modes = tuple(str(mode).upper() for mode in capability.modes)
+    if requested_mode not in allowed_modes:
+        raise WorkerIngressError("SEMANTIC_CAPABILITY_MODE_MISMATCH")
+
+    requester = _requester_from_authenticated_user(
+        current_user,
+        project="EDARSAHUB",
+    )
+
+    if capability.submitter is not None:
+        try:
+            result = capability.submitter(payload, requester)
+        except SemanticCapabilityError as exc:
+            raise WorkerIngressError(str(exc)) from exc
+
+        if not isinstance(result, dict):
+            raise WorkerIngressError("SEMANTIC_CAPABILITY_INVALID_RESPONSE")
+
+        publication = result.get("publication")
+        if not isinstance(publication, dict):
+            raise WorkerIngressError("SEMANTIC_REPAIR_PUBLICATION_MISSING")
+
+        publication_state = _clean(
+            publication.get("publication_status")
+        ).upper()
+        if publication_state not in {"PUBLISHED", "EXISTS"}:
+            raise WorkerIngressError(
+                "SEMANTIC_REPAIR_PUBLICATION_NOT_COMMITTED"
+            )
+
+        job_id = _clean(
+            publication.get("repair_job_id")
+            or result.get("job_id")
+            or (result.get("job") or {}).get("job_id")
+        )
+        if not job_id:
+            raise WorkerIngressError("SEMANTIC_REPAIR_JOB_ID_MISSING")
+
+        safe = {
+            "status": "SUBMITTED",
+            "job_id": job_id,
+            "production_touched": False,
+            "capability": capability_code,
+            "bounded_context": bounded_context,
+        }
+        return safe
+
     canonical_job = build_semantic_job(
-        request_payload,
+        payload,
         current_user=current_user,
     )
     result = gate_chain_publisher.submit(canonical_job)
@@ -256,8 +325,8 @@ def submit_objective(
     safe = dict(result)
     safe["job_id"] = _clean(result.get("job_id")) or canonical_job["job_id"]
     safe["production_touched"] = bool(result.get("production_touched", False))
-    safe["capability"] = _clean(request_payload.get("capability")).upper()
-    safe["bounded_context"] = _clean(request_payload.get("bounded_context")).upper()
+    safe["capability"] = capability_code
+    safe["bounded_context"] = _clean(payload.get("bounded_context")).upper()
     safe.pop("template", None)
     return safe
 
