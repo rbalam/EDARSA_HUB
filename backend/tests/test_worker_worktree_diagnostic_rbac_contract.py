@@ -85,7 +85,7 @@ def test_private_diagnostic_mcp_bridge_is_fixed_readonly_route(monkeypatch):
     assert seen["method"] == "GET"
     assert seen["url"] == "https://hub.example.test/api/internal/worker/worktree-diagnostic"
     assert seen["token"] == "short-lived-internal-token"
-    assert seen["payload"] is None
+    assert "payload" not in seen
 
 
 def test_private_mcp_bridge_fails_closed_and_sanitizes_response(monkeypatch):
