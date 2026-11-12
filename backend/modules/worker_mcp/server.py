@@ -16,6 +16,7 @@ from pydantic import AnyHttpUrl
 from .auth import EdarsahubTokenVerifier
 from .client import (
     get_job_status as backend_get_job_status,
+    get_shared_worktree_diagnostic as backend_get_shared_worktree_diagnostic,
     submit_objective as backend_submit_objective,
 )
 from .config import WorkerMcpConfig
@@ -111,6 +112,14 @@ def get_job_status_tool(
     }
 
 
+def get_shared_worktree_diagnostic_tool() -> dict[str, Any]:
+    """Read authorized local runtime filenames; never publish as Worker results."""
+    return backend_get_shared_worktree_diagnostic(
+        backend_url=_backend_url(),
+        token=_bearer_token(),
+    )
+
+
 def build_mcp_server(
     config: WorkerMcpConfig,
     *,
@@ -165,6 +174,17 @@ def build_mcp_server(
             openWorldHint=False,
         ),
     )(get_job_status_tool)
+
+    mcp.tool(
+        name="get_shared_worktree_diagnostic",
+        title="Read EDARSAHUB private shared worktree diagnostic",
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )(get_shared_worktree_diagnostic_tool)
 
     return mcp
 

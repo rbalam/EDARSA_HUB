@@ -187,3 +187,27 @@ def get_job_status(
         if isinstance(detail, Mapping):
             return dict(detail)
     return response
+
+
+def get_shared_worktree_diagnostic(
+    *,
+    backend_url: str,
+    token: str,
+) -> dict[str, Any]:
+    """Get bounded private runtime evidence through the canonical SQL RBAC gateway."""
+    internal_token = exchange_service_credential(
+        backend_url=backend_url,
+        credential=token,
+    )
+    status_code, response = _request_json(
+        method="GET",
+        url=backend_url.rstrip("/") + "/api/internal/worker/worktree-diagnostic",
+        token=internal_token,
+    )
+    if status_code != 200:
+        raise WorkerMcpBackendError(
+            "WORKTREE_DIAGNOSTIC_READ_FAILED",
+            status_code=status_code,
+            payload={"detail": "WORKTREE_DIAGNOSTIC_UNAVAILABLE"},
+        )
+    return response

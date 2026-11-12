@@ -37,7 +37,7 @@ def _access_token() -> AccessToken:
 
 
 @pytest.mark.asyncio
-async def test_mcp_exposes_exactly_two_public_tools():
+async def test_mcp_exposes_only_bounded_canonical_tools():
     mcp = server.build_mcp_server(_config())
 
     async with Client(mcp) as mcp_client:
@@ -46,6 +46,7 @@ async def test_mcp_exposes_exactly_two_public_tools():
     assert {tool.name for tool in result.tools} == {
         "submit_objective",
         "get_job_status",
+        "get_shared_worktree_diagnostic",
     }
 
 
@@ -362,3 +363,60 @@ def test_refresh_token_session_types_are_isolated_from_mcp_service():
     ) == 2
     assert 'expected_user_type="interno"' in routes_text
     assert 'user_type="interno"' in routes_text
+
+
+def test_private_worktree_tool_reuses_canonical_authentication(monkeypatch):
+    server.build_mcp_server(_config())
+    monkeypatch.setattr(server, "get_access_token", _access_token)
+    calls = []
+    def fake_read(*, backend_url, token):
+        calls.append((backend_url, token))
+        return {
+            "state": "DIRTY",
+            "staged": ["tools/mirror_sync/worker_control_plane.py"],
+            "unstaged": [],
+            "untracked": [],
+            "renamed_from": [],
+            "production_touched": False,
+        }
+    monkeypatch.setattr(server, "backend_get_shared_worktree_diagnostic", fake_read)
+    evidence = server.get_shared_worktree_diagnostic_tool()
+    assert evidence["state"] == "DIRTY"
+    assert calls == [("https://hub.example.test", "opaque-test-token")]
+
+
+def test_private_worktree_client_does_not_allow_path_or_command_arguments(monkeypatch):
+    monkeypatch.setattr(
+        client,
+        "exchange_service_credential",
+        lambda *, backend_url, credential: "short-internal-jwt",
+    )
+    captured = {}
+    def fake_request(**kwargs):
+        captured.update(kwargs)
+        return 200, {"state": "CLEAN", "staged": [], "unstaged": [], "untracked": []}
+    monkeypatch.setattr(client, "_request_json", fake_request)
+    result = client.get_shared_worktree_diagnostic(
+        backend_url="https://hub.example.test",
+        token="opaque-test-token",
+    )
+    assert result["state"] == "CLEAN"
+    assert captured["method"] == "GET"
+    assert captured["url"] == "https://hub.example.test/api/internal/worker/worktree-diagnostic"
+    assert captured["payload"] is None
+
+
+def test_private_worktree_client_fails_closed(monkeypatch):
+    monkeypatch.setattr(
+        client,
+        "exchange_service_credential",
+        lambda *, backend_url, credential: "short-internal-jwt",
+    )
+    monkeypatch.setattr(client, "_request_json", lambda **kwargs: (403, {"detail": "private-file"}))
+    with pytest.raises(client.WorkerMcpBackendError, match="WORKTREE_DIAGNOSTIC_READ_FAILED") as exc:
+        client.get_shared_worktree_diagnostic(
+            backend_url="https://hub.example.test",
+            token="opaque-test-token",
+        )
+    assert "private-file" not in str(exc.value)
+    assert exc.value.payload == {"detail": "WORKTREE_DIAGNOSTIC_UNAVAILABLE"}
