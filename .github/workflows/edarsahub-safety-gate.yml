@@ -76,6 +76,7 @@ jobs:
         shell: bash
         working-directory: backend
         env:
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
           # Exclusivamente placeholders CI; las pruebas no abren conexiones.
           EDARSAHUB_SQL_HOST: ci.invalid
           EDARSAHUB_SQL_PORT: "1433"
@@ -94,7 +95,16 @@ jobs:
             tests/test_soft_inventory_drilldown_canonical.py \
             tests/test_inventory_analysis_mpro_canonical.py \
             tests/test_inventory_analysis_soft_canonical.py \
-            tests/test_inventory_origin_selection_transversal.py
+            tests/test_inventory_origin_selection_transversal.py \
+            tests/test_worker_rh_repository_contract_semantic.py \
+            tests/test_worker_remote_semantic_ingress_gate2a.py \
+            tests/test_worker_maintenance_controller_contract.py \
+            tests/test_worker_repair_auditor_foundation_contract.py \
+            tests/test_worker_repair_planner_contract.py \
+            tests/test_no_mongo_legacy_contract.py \
+            tests_guardrails/test_p5_1_no_mongo_residual_modules.py \
+            tests/test_scheduler_persistent_pause_contract.py \
+            tests/test_worker_maintenance_history_readonly.py
 
       - name: Worker health and private MCP diagnostic regression
         shell: bash
