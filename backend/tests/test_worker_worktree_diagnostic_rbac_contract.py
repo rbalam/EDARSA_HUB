@@ -63,3 +63,54 @@ def test_route_does_not_fall_back_to_public_health(monkeypatch):
         routes.read_shared_worktree_diagnostic(current_user={"email": "admin@example.com"})
     assert exc.value.status_code == 503
     assert exc.value.detail == "WORKTREE_DIAGNOSTIC_UNAVAILABLE"
+
+
+def test_private_diagnostic_mcp_bridge_is_fixed_readonly_route(monkeypatch):
+    from modules.worker_mcp import client
+    monkeypatch.setattr(
+        client,
+        "exchange_service_credential",
+        lambda *, backend_url, credential: "short-lived-internal-token",
+    )
+    seen = {}
+    def fake_json(**kwargs):
+        seen.update(kwargs)
+        return 200, {"state": "DIRTY", "staged": ["src/x.py"], "untracked": [], "unstaged": []}
+    monkeypatch.setattr(client, "_request_json", fake_json)
+    result = client.get_shared_worktree_diagnostic(
+        backend_url="https://hub.example.test",
+        token="mock-service-token",
+    )
+    assert result["state"] == "DIRTY"
+    assert seen["method"] == "GET"
+    assert seen["url"] == "https://hub.example.test/api/internal/worker/worktree-diagnostic"
+    assert seen["token"] == "short-lived-internal-token"
+    assert seen["payload"] is None
+
+
+def test_private_mcp_bridge_fails_closed_and_sanitizes_response(monkeypatch):
+    from modules.worker_mcp import client
+    monkeypatch.setattr(
+        client, "exchange_service_credential",
+        lambda *, backend_url, credential: "short-lived-internal-token",
+    )
+    monkeypatch.setattr(
+        client, "_request_json",
+        lambda **kwargs: (403, {"detail": "secret-filename"}),
+    )
+    with pytest.raises(client.WorkerMcpBackendError) as exc:
+        client.get_shared_worktree_diagnostic(
+            backend_url="https://hub.example.test",
+            token="mock-service-token",
+        )
+    assert exc.value.code == "WORKTREE_DIAGNOSTIC_READ_FAILED"
+    assert "secret-filename" not in str(exc.value)
+    assert "secret-filename" not in str(exc.value.payload)
+
+
+def test_private_mcp_adapter_registers_readonly_bounded_tool():
+    text = (ROOT / "backend/modules/worker_mcp/server.py").read_text()
+    assert 'name="get_shared_worktree_diagnostic"' in text
+    assert "readOnlyHint=True" in text
+    assert "get_shared_worktree_diagnostic_tool" in text
+    assert "backend_get_shared_worktree_diagnostic" in text
