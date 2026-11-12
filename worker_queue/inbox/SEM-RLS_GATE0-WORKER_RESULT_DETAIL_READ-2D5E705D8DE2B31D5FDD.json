@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "SEM-RLS_GATE0-REPOSITORY_CONTRACT_AUDIT_BOUNDE-58115DB24D5F24B5027C"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RLS_GATE0-WORKER_RESULT_DETAIL_READ-2D5E705D8DE2B31D5FDD",
+  "mode": "READ_ONLY",
+  "objective": "Leer en solo lectura el detalle sanitizado del resultado del RLS Gate 0 parcial para recuperar evidencia, hallazgos, cobertura y riesgos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RLS_GATE0",
+    "conflict_domains": [
+      "RLS_GATE0"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
