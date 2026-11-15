@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-98663F5F297D4D642299"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-790B10B0D3D6A8601B36",
+  "mode": "READ_ONLY",
+  "objective": "Leer en modo READ_ONLY la evidencia detallada del resultado CONTRADICTORY_RESULT_ARTIFACT del job de Maintenance History para confirmar si comparte la misma firma published_marker_contradicts_non_mutation_result y aislar el componente afectado. No modificar nada.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_REPAIR_KNOWLEDGE_LOOP",
+    "conflict_domains": [
+      "WORKER_REPAIR_KNOWLEDGE_LOOP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
