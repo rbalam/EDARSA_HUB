@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/SEM-RRHH_CUSTODIA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B3E857AFF4935ED24466.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RRHH_CUSTODIA-WORKER_RESULT_SEMANTIC_EXTRACT-7DB7B8046FDFE22E4089",
+  "mode": "READ_ONLY",
+  "objective": "Extraer evidencia semantica del resultado de la auditoria bounded RRHH Custodia sobre el semantic ingress, para identificar el cambio minimo requerido para una capability SQL READ_ONLY bounded. Solo lectura, sin cambios, sin Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RRHH_CUSTODIA",
+    "conflict_domains": [
+      "RRHH_CUSTODIA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
