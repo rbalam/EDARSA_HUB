@@ -1203,6 +1203,274 @@ def repair_incident_is_superseded(
     return True, "CERTIFIED_SUCCESSOR_RESULT"
 
 
+def _resolve_automatic_repair_candidate_scope(
+    result: dict[str, Any],
+    *,
+    fallback_job_id: str,
+    automation_state: dict[str, Any],
+    repairable_statuses: set[str],
+    worker_roots: tuple[str, ...],
+    git_lock_busy_repair_paths: tuple[str, ...] = GIT_LOCK_BUSY_REPAIR_PATHS,
+) -> dict[str, Any] | None:
+    status = str(result.get("status") or "").strip()
+    certification = str(
+        result.get("certification") or ""
+    ).strip()
+
+    if status not in repairable_statuses:
+        return None
+
+    if certification not in {
+        "",
+        "NOT_CERTIFIED",
+        "PENDING_AUDIT_EVIDENCE",
+    }:
+        return None
+
+    if result.get("production_touched") is not False:
+        return None
+
+    boundary_allowed, boundary_reason = (
+        automatic_repair_result_is_eligible(
+            result,
+            automation_state,
+        )
+    )
+
+    source_job_id = str(
+        result.get("job_id") or fallback_job_id
+    ).strip()
+    if not source_job_id:
+        return None
+
+    blockers = {
+        str(value or "").strip().upper()
+        for value in result.get("blockers") or []
+        if str(value or "").strip()
+    }
+
+    learned_matches = []
+
+    if blockers:
+        for capability in (
+            learned_registry.iter_learned_capabilities()
+        ):
+            if not capability.reusable:
+                continue
+            blocker_signature = str(
+                (capability.evidence or {}).get(
+                    "blocker_signature"
+                )
+                or ""
+            ).strip().upper()
+
+            if (
+                blocker_signature
+                and blocker_signature in blockers
+            ):
+                learned_matches.append(capability)
+
+        learned_matches = (
+            learned_registry._filter_superseded_capabilities(
+                learned_matches
+            )
+        )
+
+    if len(learned_matches) > 1:
+        return {
+            "ambiguous": True,
+            "source_job_id": source_job_id,
+            "status": status,
+            "boundary_allowed": boundary_allowed,
+            "boundary_reason": boundary_reason,
+        }
+
+    learned_capability = (
+        learned_matches[0]
+        if len(learned_matches) == 1
+        else None
+    )
+
+    if learned_capability is not None:
+        raw_paths = list(
+            learned_capability.required_paths
+        )
+    else:
+        raw_paths = (
+            result.get("files_changed")
+            or result.get("expected_scope")
+            or []
+        )
+
+    if status == "GIT_LOCK_BUSY" and not raw_paths:
+        raw_paths = list(
+            git_lock_busy_repair_paths
+        )
+
+    if not isinstance(raw_paths, list):
+        return None
+
+    normalized = {
+        str(path).strip()
+        for path in raw_paths
+        if isinstance(path, str)
+        and str(path).strip()
+    }
+
+    target_paths = tuple(
+        sorted(
+            path
+            for path in normalized
+            if any(
+                path.startswith(root)
+                for root in worker_roots
+            )
+        )
+    )
+
+    if not target_paths:
+        return None
+
+    # Scope derivado de capability conocida o resultado debe ser
+    # exclusivamente infraestructura Worker.
+    if len(target_paths) != len(normalized):
+        return None
+
+    digest = hashlib.sha256(
+        (
+            source_job_id
+            + "\n"
+            + status
+            + "\n"
+            + "\n".join(target_paths)
+        ).encode("utf-8")
+    ).hexdigest()[:20]
+
+    return {
+        "ambiguous": False,
+        "source_job_id": source_job_id,
+        "status": status,
+        "boundary_allowed": boundary_allowed,
+        "boundary_reason": boundary_reason,
+        "target_paths": target_paths,
+        "incident_id": f"WORKER-{digest}",
+        "learned_capability": learned_capability,
+        "normalized_blockers": tuple(sorted(blockers)),
+    }
+
+
+def select_automatic_repair_candidates(
+    results: tuple[dict[str, Any], ...],
+    automation_state: dict[str, Any],
+    repairable_statuses: set[str],
+    worker_roots: tuple[str, ...],
+    *,
+    fallback_job_ids: tuple[str, ...] = (),
+) -> tuple[dict[str, dict[str, Any]], int]:
+    """Select one canonical repair incident per active root cause."""
+    groups: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
+
+    for index, result in enumerate(results):
+        fallback_job_id = (
+            fallback_job_ids[index]
+            if index < len(fallback_job_ids)
+            else ""
+        )
+        resolved = _resolve_automatic_repair_candidate_scope(
+            result,
+            fallback_job_id=fallback_job_id,
+            automation_state=automation_state,
+            repairable_statuses=repairable_statuses,
+            worker_roots=worker_roots,
+        )
+        if resolved is None or resolved["ambiguous"]:
+            continue
+
+        if not resolved["boundary_allowed"]:
+            continue
+
+        source_job_id = resolved["source_job_id"]
+        status = resolved["status"]
+        target_paths = resolved["target_paths"]
+        incident_id = resolved["incident_id"]
+        learned_capability = resolved["learned_capability"]
+
+        existing = read_runtime_incident(incident_id)
+        if existing is not None and existing.state in {
+            "SUPERSEDED",
+            "CERTIFIED",
+        }:
+            continue
+
+        candidate_superseded, _ = repair_incident_is_superseded(
+            result,
+            target_paths,
+            result_corpus=results,
+        )
+        if candidate_superseded:
+            continue
+
+        if existing is None:
+            has_binding = False
+            attempts = 0
+            owns_attempt_history = False
+            attempt_allowed = True
+        else:
+            has_binding = bool(existing.repair_job_id)
+            attempts = int(existing.attempts or 0)
+            owns_attempt_history = bool(
+                attempts > 0
+                or existing.cooldown_until_epoch is not None
+                or existing.state == "REPAIRED_PENDING_AUDIT"
+            )
+            attempt_allowed, _ = repair_attempt_allowed(
+                incident_id
+            )
+
+        completed = _parse_canonical_utc(
+            result.get("completed_at_utc")
+        ) or datetime.min.replace(tzinfo=timezone.utc)
+
+        cause_discriminator = (
+            ("CAPABILITY", learned_capability.code)
+            if learned_capability is not None
+            else ("BLOCKERS", resolved["normalized_blockers"])
+        )
+        cause_key = (
+            status,
+            cause_discriminator,
+            target_paths,
+        )
+
+        groups.setdefault(cause_key, []).append(
+            {
+                "source_job_id": source_job_id,
+                "incident_id": incident_id,
+                # Active repair binding and attempt-history/cooldown/max-attempts
+                # ownership always take precedence over raw recency.
+                "priority": (
+                    has_binding,
+                    owns_attempt_history,
+                    attempts,
+                    attempt_allowed,
+                    completed,
+                    source_job_id,
+                ),
+            }
+        )
+
+    selections: dict[str, dict[str, Any]] = {}
+    for candidates in groups.values():
+        selected = max(
+            candidates,
+            key=lambda item: item["priority"],
+        )
+        for candidate in candidates:
+            selections[candidate["incident_id"]] = selected
+
+    return selections, len(groups)
+
+
 def automatic_repair_orchestration() -> dict[str, Any]:
     """Detect bounded Worker-infrastructure repair incidents only.
 
@@ -1243,11 +1511,13 @@ def automatic_repair_orchestration() -> dict[str, Any]:
             "eligible_incidents": 0,
             "declared_incidents": 0,
             "blocked_incidents": 0,
+            "selected_incidents": 0,
             "incidents": [],
             "production_touched": False,
         }
 
     result_corpus: list[dict[str, Any]] = []
+    result_stems: list[str] = []
 
     for result_path in sorted(results_root.glob("*.json")):
         try:
@@ -1261,75 +1531,43 @@ def automatic_repair_orchestration() -> dict[str, Any]:
             continue
 
         result_corpus.append(result)
+        result_stems.append(result_path.stem)
 
     result_corpus_tuple = tuple(result_corpus)
+    result_stems_tuple = tuple(result_stems)
+    root_cause_selections, selected_incident_count = (
+        select_automatic_repair_candidates(
+            result_corpus_tuple,
+            automation_state,
+            repairable_statuses,
+            worker_roots,
+            fallback_job_ids=result_stems_tuple,
+        )
+    )
 
-    for result in result_corpus_tuple:
+    for index, result in enumerate(result_corpus_tuple):
         observed += 1
-
-        status = str(result.get("status") or "").strip()
-        certification = str(
-            result.get("certification") or ""
-        ).strip()
-
-        if status not in repairable_statuses:
-            continue
-
-        if certification not in {
-            "",
-            "NOT_CERTIFIED",
-            "PENDING_AUDIT_EVIDENCE",
-        }:
-            continue
 
         if result.get("production_touched") is not False:
             continue
 
-        boundary_allowed, boundary_reason = (
-            automatic_repair_result_is_eligible(
-                result,
-                automation_state,
-            )
+        resolved = _resolve_automatic_repair_candidate_scope(
+            result,
+            fallback_job_id=result_stems_tuple[index],
+            automation_state=automation_state,
+            repairable_statuses=repairable_statuses,
+            worker_roots=worker_roots,
+            git_lock_busy_repair_paths=GIT_LOCK_BUSY_REPAIR_PATHS,
         )
+        if resolved is None:
+            continue
 
-        source_job_id = str(
-            result.get("job_id") or result_path.stem
-        ).strip()
+        source_job_id = resolved["source_job_id"]
+        status = resolved["status"]
+        boundary_allowed = resolved["boundary_allowed"]
+        boundary_reason = resolved["boundary_reason"]
 
-        blockers = {
-            str(value or "").strip().upper()
-            for value in result.get("blockers") or []
-            if str(value or "").strip()
-        }
-
-        learned_matches = []
-
-        if blockers:
-            for capability in (
-                learned_registry.iter_learned_capabilities()
-            ):
-                if not capability.reusable:
-                    continue
-                blocker_signature = str(
-                    (capability.evidence or {}).get(
-                        "blocker_signature"
-                    )
-                    or ""
-                ).strip().upper()
-
-                if (
-                    blocker_signature
-                    and blocker_signature in blockers
-                ):
-                    learned_matches.append(capability)
-
-            learned_matches = (
-                learned_registry._filter_superseded_capabilities(
-                    learned_matches
-                )
-            )
-
-        if len(learned_matches) > 1:
+        if resolved["ambiguous"]:
             if not boundary_allowed:
                 incidents.append(
                     {
@@ -1362,56 +1600,8 @@ def automatic_repair_orchestration() -> dict[str, Any]:
             )
             continue
 
-        learned_capability = (
-            learned_matches[0]
-            if len(learned_matches) == 1
-            else None
-        )
-
-        if learned_capability is not None:
-            raw_paths = list(
-                learned_capability.required_paths
-            )
-        else:
-            raw_paths = (
-                result.get("files_changed")
-                or result.get("expected_scope")
-                or []
-            )
-
-        if status == "GIT_LOCK_BUSY" and not raw_paths:
-            raw_paths = list(
-                GIT_LOCK_BUSY_REPAIR_PATHS
-            )
-
-        if not isinstance(raw_paths, list):
-            continue
-
-        normalized = {
-            str(path).strip()
-            for path in raw_paths
-            if isinstance(path, str)
-            and str(path).strip()
-        }
-
-        target_paths = tuple(
-            sorted(
-                path
-                for path in normalized
-                if any(
-                    path.startswith(root)
-                    for root in worker_roots
-                )
-            )
-        )
-
-        if not target_paths:
-            continue
-
-        # Scope derivado de capability conocida debe ser
-        # exclusivamente infraestructura Worker.
-        if len(target_paths) != len(normalized):
-            continue
+        learned_capability = resolved["learned_capability"]
+        target_paths = resolved["target_paths"]
 
         if not boundary_allowed:
             incidents.append(
@@ -1430,10 +1620,6 @@ def automatic_repair_orchestration() -> dict[str, Any]:
 
         eligible += 1
 
-        source_job_id = str(
-            result.get("job_id") or result_path.stem
-        ).strip()
-
         digest = hashlib.sha256(
             (
                 source_job_id
@@ -1445,6 +1631,55 @@ def automatic_repair_orchestration() -> dict[str, Any]:
         ).hexdigest()[:20]
 
         incident_id = f"WORKER-{digest}"
+
+        blocker_sig = (
+            str(
+                (learned_capability.evidence or {}).get(
+                    "blocker_signature"
+                )
+                or ""
+            ).strip()
+            if learned_capability is not None
+            else ""
+        )
+
+        root_cause_selection = root_cause_selections.get(
+            incident_id
+        )
+        if (
+            root_cause_selection is not None
+            and root_cause_selection["incident_id"]
+            != incident_id
+        ):
+            incidents.append(
+                {
+                    "incident_id": incident_id,
+                    "source_job_id": source_job_id,
+                    "source_status": status,
+                    "state": "DUPLICATE_ROOT_CAUSE_SUPPRESSED",
+                    "target_paths": list(target_paths),
+                    "repair_allowed": False,
+                    "repair_reason": (
+                        "DUPLICATE_ROOT_CAUSE_SUPPRESSED"
+                    ),
+                    "selected_incident_id": (
+                        root_cause_selection["incident_id"]
+                    ),
+                    "publication_required": False,
+                    "capability_code": (
+                        learned_capability.code
+                        if learned_capability is not None
+                        else None
+                    ),
+                    "problem_signature": (
+                        learned_capability.problem_signature
+                        if learned_capability is not None
+                        else None
+                    ),
+                    "blocker_signature": blocker_sig or None,
+                }
+            )
+            continue
 
         try:
             incident = declare_runtime_incident(
@@ -1515,17 +1750,6 @@ def automatic_repair_orchestration() -> dict[str, Any]:
             incident_id
         )
 
-        blocker_sig = (
-            str(
-                (learned_capability.evidence or {}).get(
-                    "blocker_signature"
-                )
-                or ""
-            ).strip()
-            if learned_capability is not None
-            else ""
-        )
-
         incidents.append(
             {
                 "incident_id": incident.incident_id,
@@ -1561,6 +1785,7 @@ def automatic_repair_orchestration() -> dict[str, Any]:
         "eligible_incidents": eligible,
         "declared_incidents": declared,
         "blocked_incidents": blocked,
+        "selected_incidents": selected_incident_count,
         "incidents": incidents,
         "production_touched": False,
     }

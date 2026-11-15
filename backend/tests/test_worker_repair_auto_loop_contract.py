@@ -307,3 +307,149 @@ def test_auto_loop_persists_requester_and_supersedes_resolved_incidents(
     }
     assert by_id[stale_rejected]["action"] == "SUPERSEDED"
     assert by_id[stale_rejected]["state"] == "SUPERSEDED"
+
+
+def test_auto_loop_suppresses_persisted_duplicate_incident_without_mutating_or_publishing(
+    tmp_path,
+    monkeypatch,
+):
+    import hashlib
+    import json
+    from tools.mirror_sync import (
+        worker_control_plane as control,
+        worker_maintenance_runtime as maintenance,
+        worker_repair_auto_loop as auto_loop,
+        worker_repair_planner as planner,
+    )
+
+    maint_dir = tmp_path / ".git" / "universal-worker-queue" / "maintenance"
+    inc_dir = maint_dir / "incidents"
+    results_dir = tmp_path / ".git" / "universal-worker-queue" / "results"
+    queue_dir = tmp_path / ".git" / "universal-worker-queue"
+    results_dir.mkdir(parents=True)
+
+    monkeypatch.setattr(control, "ROOT", tmp_path)
+    monkeypatch.setattr(maintenance, "STATE_DIR", maint_dir)
+    monkeypatch.setattr(maintenance, "INCIDENT_DIR", inc_dir)
+    monkeypatch.setattr(auto_loop, "QUEUE_ROOT", queue_dir)
+    monkeypatch.setattr(
+        control,
+        "load_repair_automation_state",
+        lambda: {"valid": True, "enabled": True, "production_allowed": False},
+    )
+    monkeypatch.setattr(
+        control,
+        "automatic_repair_result_is_eligible",
+        lambda result, st: (True, "POST_ACTIVATION_RESULT"),
+    )
+    monkeypatch.setattr(
+        control,
+        "repair_incident_is_superseded",
+        lambda result, paths, result_corpus=(): (
+            False,
+            "SOURCE_IS_CURRENT_HEAD",
+        ),
+    )
+
+    done_dir = queue_dir / "done"
+    done_dir.mkdir(parents=True, exist_ok=True)
+    for job_id, completed_at in (
+        ("HIST-DUP-OLDER", "2026-10-21T10:00:00Z"),
+        ("HIST-DUP-WINNER", "2026-10-21T11:00:00Z"),
+    ):
+        (results_dir / f"{job_id}.json").write_text(
+            json.dumps(
+                {
+                    "job_id": job_id,
+                    "status": "GIT_LOCK_BUSY",
+                    "certification": "NOT_CERTIFIED",
+                    "completed_at_utc": completed_at,
+                    "production_touched": False,
+                    "blockers": [
+                        "dispatcher_exception:RuntimeError:GIT_LOCK_BUSY"
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        (done_dir / f"{job_id}.json").write_text(
+            json.dumps(
+                {
+                    "job": {
+                        "requester": {
+                            "email": "ricardo@edarsa.com.mx",
+                            "source": "CHATGPT",
+                            "project": "EDARSAHUB-BOS",
+                            "chat": "Gate3F-Dedup",
+                        }
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    paths = sorted(control.GIT_LOCK_BUSY_REPAIR_PATHS)
+    older_digest = hashlib.sha256(
+        ("HIST-DUP-OLDER\nGIT_LOCK_BUSY\n" + "\n".join(paths)).encode(
+            "utf-8"
+        )
+    ).hexdigest()[:20]
+    older_id = f"WORKER-{older_digest}"
+
+    winner_digest = hashlib.sha256(
+        ("HIST-DUP-WINNER\nGIT_LOCK_BUSY\n" + "\n".join(paths)).encode(
+            "utf-8"
+        )
+    ).hexdigest()[:20]
+    winner_id = f"WORKER-{winner_digest}"
+
+    # Pre-persist the older duplicate incident as if created before Gate 3F.
+    maintenance.declare_runtime_incident(older_id, paths)
+    older_path = inc_dir / f"{older_id}.json"
+    older_before_bytes = older_path.read_bytes()
+
+    published_incidents: list[str] = []
+
+    def fake_publish_planned_repair(
+        incident_id,
+        *,
+        capability_code=None,
+        problem_signature=None,
+        requester=None,
+    ):
+        published_incidents.append(incident_id)
+        repair_job_id = f"REPAIR-{incident_id}"
+        maintenance.register_published_repair_attempt(
+            incident_id,
+            repair_job_id,
+            {"status": "PUBLISHED", "commit_sha": "f" * 40},
+        )
+        return {
+            "incident_id": incident_id,
+            "capability": capability_code or "GIT_LOCK_BUSY",
+            "publication": {
+                "status": "PUBLISHED",
+                "repair_job_id": repair_job_id,
+                "commit_sha": "f" * 40,
+            },
+        }
+
+    monkeypatch.setattr(
+        planner,
+        "publish_planned_repair",
+        fake_publish_planned_repair,
+    )
+
+    detection = control.automatic_repair_orchestration()
+    execution_summary = auto_loop.advance_repair_automation(detection)
+    rows_by_id = {
+        row["incident_id"]: row for row in execution_summary["incidents"]
+    }
+
+    assert published_incidents == [winner_id]
+    assert rows_by_id[older_id]["action"] == "SUPPRESSED_DUPLICATE_ROOT_CAUSE"
+    assert rows_by_id[older_id]["reason"] == "DUPLICATE_ROOT_CAUSE_SUPPRESSED"
+    assert rows_by_id[older_id]["selected_incident_id"] == winner_id
+    assert rows_by_id[older_id]["source_job_id"] == "HIST-DUP-OLDER"
+    assert rows_by_id[older_id]["production_touched"] is False
+    assert older_path.read_bytes() == older_before_bytes

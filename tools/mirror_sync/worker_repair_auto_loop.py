@@ -772,7 +772,13 @@ def advance_repair_automation(
             continue
 
         det_row = detection_rows.get(incident_id)
-        if isinstance(det_row, dict):
+        is_suppressed_duplicate = isinstance(det_row, dict) and (
+            det_row.get("repair_reason")
+            == "DUPLICATE_ROOT_CAUSE_SUPPRESSED"
+            or det_row.get("state")
+            == "DUPLICATE_ROOT_CAUSE_SUPPRESSED"
+        )
+        if isinstance(det_row, dict) and not is_suppressed_duplicate:
             det_source_job_id = str(
                 det_row.get("source_job_id") or ""
             ).strip()
@@ -843,6 +849,34 @@ def advance_repair_automation(
                         "production_touched": False,
                     }
                 )
+            continue
+
+        if is_suppressed_duplicate:
+            selected_incident_id = (
+                str(
+                    det_row.get("selected_incident_id")
+                    or ""
+                ).strip()
+                or None
+            )
+            suppressed_source_job_id = (
+                str(det_row.get("source_job_id") or "").strip()
+                or str(
+                    getattr(state, "source_job_id", None) or ""
+                ).strip()
+                or None
+            )
+            rows.append(
+                {
+                    "incident_id": incident_id,
+                    "action": "SUPPRESSED_DUPLICATE_ROOT_CAUSE",
+                    "reason": "DUPLICATE_ROOT_CAUSE_SUPPRESSED",
+                    "selected_incident_id": selected_incident_id,
+                    "source_job_id": suppressed_source_job_id,
+                    "state": state.state,
+                    "production_touched": False,
+                }
+            )
             continue
 
         superseded_reason = _persisted_incident_superseded_reason(
