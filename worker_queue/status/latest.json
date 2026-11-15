@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "e5fb1b35aab77e58d7f46eeb7aeca6c5612db267",
-  "generated_at_utc": "2026-11-15T01:53:13Z",
+  "generated_at_utc": "2026-11-15T01:54:37Z",
   "history": {
     "done_total_local": 1712,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 153,
+      "age_seconds": 237,
       "job_id": "SEM-RH_GLOBAL_HCM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-0EC978A768C18EE3C3E0",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1506,
+      "age_seconds": 1590,
       "job_id": "SEM-RH_GLOBAL_HCM-WORKER_RESULT_DETAIL_READ-6334BC9F92CF611DB464",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1635,
+      "age_seconds": 1719,
       "job_id": "SEM-RH_HCM_REHIRE-WORKER_RESULT_DETAIL_READ-7D2139A6F91D1EF23B5F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 525,
+      "age_seconds": 609,
       "job_id": "SEM-RH_HCM_REHIRE-WORKER_RESULT_SEMANTIC_EXTRACT-66BD96EC74C4917F9078",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 218,
+      "age_seconds": 302,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-98663F5F297D4D642299",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-15T01:53:01Z",
-    "last_receive_utc": "2026-11-15T01:52:56Z",
+    "last_cycle_utc": "2026-11-15T01:54:31Z",
+    "last_receive_utc": "2026-11-15T01:54:26Z",
     "last_terminal_utc": "2026-11-15T01:50:40Z",
     "pid": "5049",
     "runtime_fingerprint": {
