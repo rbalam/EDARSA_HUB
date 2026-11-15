@@ -1,0 +1,33 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "worker_maintenance_history_readonly"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-76DE072D89DCAE65BFA7",
+  "mode": "READ_ONLY",
+  "objective": "Consultar el historial y Capability Registry del Knowledge Loop para localizar una capacidad certificada reutilizable que repare inconsistencias entre worker result JSON, published marker y lectura canónica de certificación READ_ONLY, incluyendo firmas como published_marker_contradicts_non_mutation_result, NOT_CERTIFIED remoto con marker CERTIFIED_READ_ONLY y republish incompleto. Solo lectura; no publicar reparaciones ni modificar archivos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_REPAIR_KNOWLEDGE_LOOP",
+    "conflict_domains": [
+      "WORKER_REPAIR_KNOWLEDGE_LOOP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
