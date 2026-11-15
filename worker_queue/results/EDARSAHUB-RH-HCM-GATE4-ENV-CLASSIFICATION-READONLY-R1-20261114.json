@@ -1,0 +1,85 @@
+{
+  "base_sha": "7784855e9b5ac46530d027d49d4f60beb62f6a4b",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-15T05:13:25Z",
+  "execution_base_sha": "7784855e9b5ac46530d027d49d4f60beb62f6a4b",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-RH-HCM-GATE4-ENV-CLASSIFICATION-READONLY-R1-20261114",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-15T05:14:46Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "54.39.104.176",
+              "edarsahub",
+              "edarsahub_sql_database",
+              "edarsahub_sql_host",
+              "environment: development",
+              "personaid"
+            ],
+            "path": ".github/workflows/hcm-identity-link-development-migration.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Gobierno_Persona",
+              "RH_Colaboradores_Expediente"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub",
+              "personaid"
+            ],
+            "path": "backend/database/migrations/20261106_hcm_colaborador_gobierno_persona_link.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Gobierno_Persona",
+              "RH_Colaboradores_Expediente"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 2,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-15T05:13:25Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
