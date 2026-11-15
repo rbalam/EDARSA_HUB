@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/admin_sql/",
+          "backend/modules/auth/",
+          "backend/modules/rh/"
+        ],
+        "search_terms": [
+          "rbac",
+          "permission",
+          "sucursal",
+          "persona_id",
+          "idempotencia",
+          "incidencia",
+          "asistencia",
+          "nomina",
+          "autorizacion",
+          "catalogo"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT_BOUNDE-C1FCC3DE914992F0F8F7",
+  "mode": "READ_ONLY",
+  "objective": "Gate RH seguridad e integridad READ_ONLY: inspeccionar exclusivamente contratos transversales existentes que mitiguen hallazgos previamente documentados en RH (autorizacion efectiva RBAC por empresa/sucursal, identidad PersonaID, SQL canonical fail-closed, idempotencia, integridad de incidencias y asistencia, transiciones de nomina). No repetir auditorias RH ya certificadas. Identificar evidencia y brechas, sin ejecutar cambios, sin SQL LIVE, sin tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH",
+    "conflict_domains": [
+      "RH"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
