@@ -4,119 +4,125 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "a50085386118aa8bc3c33b70d092843117d81ea0",
-  "generated_at_utc": "2026-11-15T02:58:54Z",
+  "generated_at_utc": "2026-11-15T03:00:30Z",
   "history": {
-    "done_total_local": 1725,
-    "pending_total_local": 1,
+    "done_total_local": 1727,
+    "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1340,
-    "results_total_local": 2829
+    "results_total_local": 2831
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1,
-      "job_id": "SEM-RRHH_CUSTODIA-READ_ONLY_CANARY-CE817C42039A6141A9D7",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 2302,
+      "age_seconds": 2397,
       "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT_BOUNDE-6DBB7CA8F127119A3BFD",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3043,
+      "age_seconds": 3139,
       "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT_BOUNDE-72ED12C8AE12B3871697",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1886,
+      "age_seconds": 1981,
       "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT_BOUNDE-C1FCC3DE914992F0F8F7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1699,
+      "age_seconds": 1794,
       "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT_BOUNDE-FF58C7E6CC52CC751AA0",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2879,
+      "age_seconds": 2975,
       "job_id": "SEM-RH-WORKER_RESULT_DETAIL_READ-6CFF393082ED63CC3BC7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 519,
+      "age_seconds": 614,
       "job_id": "SEM-RH_GLOBAL_HCM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-366EF55981C71A87023F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 42,
+      "age_seconds": 138,
       "job_id": "SEM-RH_GLOBAL_HCM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-70AB69E4EE839CE31D84",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 69,
+      "age_seconds": 165,
       "job_id": "SEM-RH_GLOBAL_HCM-WORKER_RESULT_DETAIL_READ-8B51AFC9633F85401C46",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 365,
+      "age_seconds": 460,
       "job_id": "SEM-RH_GLOBAL_HCM-WORKER_RESULT_SEMANTIC_EXTRACT-7A97E63B111F2C110027",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1131,
+      "age_seconds": 1226,
       "job_id": "SEM-RRHH_CUSTODIA-READ_ONLY_CANARY-C4CF94DE789CFD9257C3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 255,
+      "age_seconds": 94,
+      "job_id": "SEM-RRHH_CUSTODIA-READ_ONLY_CANARY-CE817C42039A6141A9D7",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 59,
+      "job_id": "SEM-RRHH_CUSTODIA-WORKER_RESULT_DETAIL_READ-43AAE68504C3CDA26469",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 351,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-76DE072D89DCAE65BFA7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 110,
+      "age_seconds": 205,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-22658D4C8D78E7653AB9",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1200,
+      "age_seconds": 1295,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-790B10B0D3D6A8601B36",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
   "local_development_sha": "a50085386118aa8bc3c33b70d092843117d81ea0",
-  "oldest_pending_age_seconds": 1,
+  "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
-  "queue_pending": 1,
+  "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 13,
+  "queue_result_ready_recent": 15,
   "queue_running": 0,
   "remote_development_sha": "a50085386118aa8bc3c33b70d092843117d81ea0",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-15T02:58:30Z",
-    "last_receive_utc": "2026-11-15T02:58:54Z",
-    "last_terminal_utc": "2026-11-15T02:58:12Z",
+    "last_cycle_utc": "2026-11-15T03:00:10Z",
+    "last_receive_utc": "2026-11-15T03:00:05Z",
+    "last_terminal_utc": "2026-11-15T02:59:30Z",
     "pid": "2965789",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "d37af8c6c167af33d8233bbfb7ae68346c032e29",
