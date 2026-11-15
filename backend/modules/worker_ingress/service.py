@@ -347,6 +347,39 @@ def _safe_terminal_fields(payload: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def get_shared_worktree_diagnostic() -> dict[str, Any]:
+    """Read only the private local worker snapshot after route-level SQL RBAC.
+
+    No arbitrary path, command, branch, environment, or user-provided selector
+    enters this read. The shared health publisher owns evidence creation.
+    """
+    from tools.mirror_sync.runtime_health_publisher import (
+        read_private_worktree_snapshot,
+    )
+
+    try:
+        snapshot = read_private_worktree_snapshot()
+    except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
+        raise WorkerIngressError("WORKTREE_DIAGNOSTIC_UNAVAILABLE") from exc
+
+    return {
+        "schema": "edarsahub.worker-worktree-diagnostic.v1",
+        "mode": "READ_ONLY",
+        "state": "DIRTY" if any(
+            snapshot[key] for key in ("staged", "unstaged", "untracked")
+        ) else "CLEAN",
+        "generated_at_utc": snapshot["generated_at_utc"],
+        "staged": snapshot["staged"],
+        "unstaged": snapshot["unstaged"],
+        "untracked": snapshot["untracked"],
+        "renamed_from": snapshot["renamed_from"],
+        "platform_managed_exception_applied": snapshot[
+            "platform_managed_exception_applied"
+        ],
+        "production_touched": False,
+    }
+
+
 def get_job_status(job_id: str) -> dict[str, Any]:
     value = _clean(job_id)
     if not JOB_ID_RE.fullmatch(value):
