@@ -1,0 +1,65 @@
+{
+  "actions": [
+    {
+      "expected_sha256": "c3fb7c89888c8b81c6a73473ec1f9c351a6c09907460cacc49edbce636725e00",
+      "new": "register_capability(\n    SemanticCapability(\n        code=\"WORKER_MAINTENANCE_HISTORY_READONLY\",\n        modes=(\"READ_ONLY\",),\n        builder=_maintenance_history_readonly_builder,\n    )\n)\n\n\n# RRHH Custodia Gate3B - bounded SQL preflight.\n# El caller nunca suministra SQL.\ndef _rrhh_custodia_gate3b_sql_preflight_builder(request):\n    context = _g3_context(request)\n    if context != \"RRHH_CUSTODIA\":\n        raise SemanticCapabilityError(\n            \"SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED\"\n        )\n\n    constraints = request.get(\"constraints\")\n    if constraints is not None and (\n        not isinstance(constraints, Mapping)\n        or bool(constraints)\n    ):\n        raise SemanticCapabilityError(\n            \"SEMANTIC_CONSTRAINTS_UNSUPPORTED\"\n        )\n\n    queries = [\n        {\"name\": \"custodia_target_table_collisions\", \"sql\": \"SELECT s.name AS schema_name, t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name='dbo' AND t.name IN ('Custodia_Recurso','Custodia_Resguardo','Custodia_Movimiento','Custodia_Devolucion','Custodia_Incidencia','Custodia_CargoPropuesto','RH_UniformePolitica','RH_UniformePoliticaDetalle') ORDER BY t.name\"},\n        {\"name\": \"custodia_constraint_name_collisions\", \"sql\": \"SELECT o.type_desc, o.name, OBJECT_SCHEMA_NAME(o.parent_object_id) AS parent_schema, OBJECT_NAME(o.parent_object_id) AS parent_object FROM sys.objects o WHERE o.name LIKE '%Custodia%' OR o.name LIKE '%UniformePolitica%' ORDER BY o.name\"},\n        {\"name\": \"custodia_index_name_collisions\", \"sql\": \"SELECT OBJECT_SCHEMA_NAME(i.object_id) AS schema_name, OBJECT_NAME(i.object_id) AS table_name, i.name AS index_name FROM sys.indexes i WHERE i.name LIKE '%Custodia%' OR i.name LIKE '%Uniforme%' ORDER BY i.name\"},\n        {\"name\": \"custodia_fk_target_types\", \"sql\": \"SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND ((t.name='RH_Colaboradores_Expediente' AND c.name='ColaboradorID') OR (t.name='RH_Cat_Puestos' AND c.name='PuestoID') OR (t.name='Producto_Catalogo' AND c.name='ProductoID') OR (t.name='ActivoFijo_Activos' AND c.name='ActivoID') OR (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Sistema_Sucursales' AND c.name='SucursalID') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') OR (t.name='Gobierno_Documento' AND c.name='DocumentoID') OR (t.name='RH_Nomina_Detalle' AND c.name='NominaDetalleID')) ORDER BY t.name,c.name\"},\n        {\"name\": \"custodia_fk_targets_keys\", \"sql\": \"SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,i.name AS index_name,i.is_unique FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE s.name='dbo' AND i.is_unique=1 AND ((t.name='RH_Colaboradores_Expediente' AND c.name='ColaboradorID') OR (t.name='RH_Cat_Puestos' AND c.name='PuestoID') OR (t.name='Producto_Catalogo' AND c.name='ProductoID') OR (t.name='ActivoFijo_Activos' AND c.name='ActivoID') OR (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Sistema_Sucursales' AND c.name='SucursalID') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') OR (t.name='Gobierno_Documento' AND c.name='DocumentoID') OR (t.name='RH_Nomina_Detalle' AND c.name='NominaDetalleID')) ORDER BY t.name,c.name\"},\n        {\"name\": \"custodia_ddl_permissions_observed\", \"sql\": \"SELECT DB_NAME() AS database_name, ORIGINAL_LOGIN() AS original_login, SUSER_SNAME() AS effective_login, HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE TABLE') AS can_create_table, HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER') AS can_alter_dbo, HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','VIEW DEFINITION') AS can_view_definition\"},\n        {\"name\": \"custodia_scope_columns_presence\", \"sql\": \"SELECT t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND ((t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Sistema_Sucursales' AND c.name='SucursalID')) ORDER BY t.name\"},\n    ]\n\n    return {\n        \"actions\": [],\n        \"checks\": [{\n            \"type\": \"sql_readonly_audit\",\n            \"queries\": queries,\n        }],\n        \"scheduling\": _g3_scheduling(context),\n    }\n\n\nregister_capability(\n    SemanticCapability(\n        code=\"RRHH_CUSTODIA_GATE3B_SQL_PREFLIGHT\",\n        modes=(\"READ_ONLY\",),\n        builder=_rrhh_custodia_gate3b_sql_preflight_builder,\n    )\n)\n",
+      "old": "register_capability(\n    SemanticCapability(\n        code=\"WORKER_MAINTENANCE_HISTORY_READONLY\",\n        modes=(\"READ_ONLY\",),\n        builder=_maintenance_history_readonly_builder,\n    )\n)\n",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "type": "replace_text"
+    },
+    {
+      "content": "from __future__ import annotations\n\nimport pytest\n\nfrom modules.worker_ingress import service\nfrom modules.worker_ingress.semantic_capabilities import (\n    registered_capabilities,\n    resolve_capability,\n)\n\nUSER = {\"email\": \"admin@example.com\"}\n\nREQUEST = {\n    \"objective\": \"Certificar Gate3B SQL READ_ONLY de RRHH Custodia.\",\n    \"bounded_context\": \"RRHH_CUSTODIA\",\n    \"mode\": \"READ_ONLY\",\n    \"capability\": \"RRHH_CUSTODIA_GATE3B_SQL_PREFLIGHT\",\n    \"constraints\": {},\n}\n\n\ndef test_capability_registered_read_only():\n    assert \"RRHH_CUSTODIA_GATE3B_SQL_PREFLIGHT\" in registered_capabilities()\n    capability = resolve_capability(\"RRHH_CUSTODIA_GATE3B_SQL_PREFLIGHT\")\n    assert capability.modes == (\"READ_ONLY\",)\n\n\ndef test_expansion_is_sql_readonly_and_non_mutating():\n    job = service.build_semantic_job(REQUEST, current_user=USER)\n\n    assert job[\"mode\"] == \"READ_ONLY\"\n    assert job[\"production_allowed\"] is False\n    assert job[\"actions\"] == []\n    assert len(job[\"checks\"]) == 1\n    assert job[\"checks\"][0][\"type\"] == \"sql_readonly_audit\"\n    assert len(job[\"checks\"][0][\"queries\"]) == 7\n\n\n@pytest.mark.parametrize(\n    \"constraints\",\n    [\n        {\"sql\": \"SELECT 1\"},\n        {\"actions\": []},\n        {\"checks\": []},\n        {\"production_allowed\": False},\n        {\"paths\": [\"backend\"]},\n    ],\n)\ndef test_caller_cannot_override_sql_contract(constraints):\n    with pytest.raises(\n        service.WorkerIngressError,\n        match=\"SEMANTIC_CONSTRAINTS_UNSUPPORTED\",\n    ):\n        service.build_semantic_job(\n            {**REQUEST, \"constraints\": constraints},\n            current_user=USER,\n        )\n\n\ndef test_other_context_rejected():\n    with pytest.raises(\n        service.WorkerIngressError,\n        match=\"SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED\",\n    ):\n        service.build_semantic_job(\n            {**REQUEST, \"bounded_context\": \"FINANZAS\"},\n            current_user=USER,\n        )\n",
+      "path": "backend/tests/test_worker_rrhh_custodia_sql_preflight_semantic.py",
+      "type": "write_file"
+    }
+  ],
+  "allowed_paths": [
+    "backend/modules/worker_ingress/semantic_capabilities.py",
+    "backend/tests/test_worker_rrhh_custodia_sql_preflight_semantic.py"
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_rrhh_custodia_sql_preflight_semantic.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_rrhh_custodia_sql_preflight_semantic.py",
+        "backend/tests/test_worker_sql_readonly_audit.py",
+        "backend/tests/test_worker_remote_semantic_ingress_gate2a.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "RRHH-CUSTODIA-GATE3B-SEMANTIC-SQL-CAPABILITY-MUTATION-R1",
+  "mode": "MUTATION",
+  "objective": "Agregar una capability semantica bounded y fail-closed para RRHH_CUSTODIA Gate3B SQL preflight. Debe usar mode READ_ONLY en el ingress semantico y expandir internamente a un check sql_readonly_audit con consultas hardcodeadas por la capability. El caller NO puede suministrar SQL, actions, checks, production_allowed, requester, repo ni branch. No modificar schemas.py, routes.py, service.py, Core, dispatcher, publisher ni componentes transversales fuera del scope. No ejecutar SQL ni tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "RRHH Custodia Gate3B",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
