@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          ".github/workflows/hcm-identity-link-development-migration.yml",
+          "backend/database/migrations/20261106_hcm_colaborador_gobierno_persona_link.sql"
+        ],
+        "search_terms": [
+          "EDARSAHUB_SQL_HOST",
+          "EDARSAHUB_SQL_DATABASE",
+          "54.39.104.176",
+          "EDARSAHUB",
+          "environment: development",
+          "PersonaID"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "constraints": {
+    "no_production_writes": true,
+    "no_sql_migrations": true,
+    "no_workflow_triggers": true,
+    "reuse_existing_evidence": true
+  },
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-RH-HCM-GATE4-ENV-CLASSIFICATION-READONLY-R1-20261114",
+  "mode": "READ_ONLY",
+  "objective": "Auditar la clasificacion canonica del entorno SQL ns559627 / EDARSAHUB y los controles de despliegue del HCM Gate 4 PersonaID. Reutilizar resultados historicos certificados. No ejecutar migraciones, no modificar archivos, no activar workflows y no acceder a Produccion con permisos de escritura. Entregar evidencia de clasificacion, riesgos y decision de habilitacion o bloqueo.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "HCM Gate 4",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB BOS HCM",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB BOS HCM",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB BOS HCM",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
