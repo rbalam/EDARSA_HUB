@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "659d51d36babff8ef35ba45b63ad4466e774cda2",
-  "generated_at_utc": "2026-11-15T05:29:53Z",
+  "generated_at_utc": "2026-11-15T05:31:23Z",
   "history": {
     "done_total_local": 1730,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 987,
+      "age_seconds": 1077,
       "job_id": "EDARSAHUB-RH-HCM-GATE4-ENV-CLASSIFICATION-READONLY-R1-20261114",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2130,
+      "age_seconds": 2220,
       "job_id": "EDARSAHUB-WORKER-SQL-READONLY-RUN-CHECK-PROCESS-TEST-REPAIR-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1619,
+      "age_seconds": 1708,
       "job_id": "EDARSAHUB-WORKER-SQL-READONLY-RUN-CHECK-PROCESS-TEST-REPAIR-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 31,
+      "age_seconds": 121,
       "job_id": "EDARSAHUB-WORKER-SQL-READONLY-RUN-CHECK-PROCESS-TEST-REPAIR-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3240,
+      "age_seconds": 3330,
       "job_id": "RRHH-CUSTODIA-GATE3B-SEMANTIC-SQL-CAPABILITY-MUTATION-R1",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-15T05:29:38Z",
-    "last_receive_utc": "2026-11-15T05:29:33Z",
+    "last_cycle_utc": "2026-11-15T05:31:13Z",
+    "last_receive_utc": "2026-11-15T05:31:08Z",
     "last_terminal_utc": "2026-11-15T05:29:22Z",
     "pid": "2965789",
     "runtime_fingerprint": {
