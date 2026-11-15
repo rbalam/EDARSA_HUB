@@ -1,0 +1,33 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RRHH_CUSTODIA-READ_ONLY_CANARY-CE817C42039A6141A9D7",
+  "mode": "READ_ONLY",
+  "objective": "Canario READ_ONLY para validar que el runtime Preview ya cargo el ingress semantico actual del Universal Worker. Sin SQL, sin acciones y sin Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RRHH_CUSTODIA",
+    "conflict_domains": [
+      "RRHH_CUSTODIA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
