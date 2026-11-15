@@ -1,0 +1,61 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/rh/",
+          "backend/tests/",
+          "tools/mirror_sync/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "hr2020",
+          "nomipaq",
+          "mpro",
+          "importador",
+          "staging",
+          "homologacion",
+          "deduplicacion",
+          "bitacora",
+          "sync",
+          "scheduler",
+          "idempotencia",
+          "edarsahub",
+          "mongo",
+          "legacy",
+          "aprobacion",
+          "mapping",
+          "mapeo"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH_GLOBAL_HCM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-70AB69E4EE839CE31D84",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en modo READ_ONLY el camino canónico actual de sincronización/importación RH desde HR2020/NomiPAQ/MPRO hacia EDARSAHUB SQL, evitando cualquier propuesta de conexión LIVE operativa. Identificar staging, homologación, deduplicación, aprobaciones, mapeos, bitácoras, idempotencia, jobs/scheduler existentes y puntos donde aún haya lectura directa o dependencia legacy de Mongo/config. Objetivo: definir cómo deben alimentar nómina/IMSS/compliance sin convertir HR2020 en fuente operativa.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH_GLOBAL_HCM",
+    "conflict_domains": [
+      "RH_GLOBAL_HCM"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
