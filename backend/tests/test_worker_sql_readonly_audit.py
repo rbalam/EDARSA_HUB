@@ -102,7 +102,7 @@ def test_sql_readonly_evidence_survives_output_truncation(monkeypatch, tmp_path)
         returncode = 0
         stdout = full_output
 
-    monkeypatch.setattr(module, 'run', lambda *args, **kwargs: Completed())
+    monkeypatch.setattr(module, 'run_check_process', lambda *args, **kwargs: Completed())
     result = module.run_check(tmp_path, {
         'type': 'sql_readonly_audit',
         'queries': [{'name': 'large_schema', 'sql': 'SELECT 1'}],
@@ -130,7 +130,7 @@ def test_sql_readonly_invalid_json_is_not_promoted(monkeypatch, tmp_path):
         returncode = 0
         stdout = 'not-json'
 
-    monkeypatch.setattr(module, 'run', lambda *args, **kwargs: Completed())
+    monkeypatch.setattr(module, 'run_check_process', lambda *args, **kwargs: Completed())
     result = module.run_check(tmp_path, {
         'type': 'sql_readonly_audit',
         'queries': [{'name': 'x', 'sql': 'SELECT 1'}],
