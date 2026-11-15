@@ -1,0 +1,53 @@
+{
+  "base_sha": "a50085386118aa8bc3c33b70d092843117d81ea0",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-15T02:59:30Z",
+  "execution_base_sha": "a50085386118aa8bc3c33b70d092843117d81ea0",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-RRHH_CUSTODIA-WORKER_RESULT_DETAIL_READ-43AAE68504C3CDA26469",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-15T03:01:06Z",
+  "quality_gate": "PASS",
+  "result_detail_evidence": {
+    "checks": [
+      {
+        "blockers": [
+          "check_failed:sql_readonly_audit"
+        ],
+        "certification": "NOT_CERTIFIED",
+        "failed_checks": [
+          {
+            "assertion_lines": [
+              "{\"error\": \"OperationalError:(20009, b'DB-Lib error message 20009, severity 9:\\\\nUnable to connect: Adaptive Server is unavailable or does not exist (54.39.104.176)\\\\nNet-Lib error during Connection timed out (110)\\\\n')\", \"status\": \"FAIL\"}"
+            ],
+            "output": "{\"error\": \"OperationalError:(20009, b'DB-Lib error message 20009, severity 9:\\\\nUnable to connect: Adaptive Server is unavailable or does not exist (54.39.104.176)\\\\nNet-Lib error during Connection timed out (110)\\\\n')\", \"status\": \"FAIL\"}",
+            "returncode": 2,
+            "status": "FAIL",
+            "type": "sql_readonly_audit"
+          }
+        ],
+        "files_changed": [],
+        "percent_complete": 0,
+        "production_touched": false,
+        "quality_gate": "FAIL",
+        "result_status": "BLOCKED",
+        "source_job_id": "RRHH-CUSTODIA-GATE3B-SQL-DDL-PREFLIGHT-READONLY-R1",
+        "tests": "FAIL"
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-15T02:59:30Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
