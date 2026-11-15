@@ -17,12 +17,18 @@ from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from core.rbac_sql.service import RBACSQLService
-from core.security import JWT_ALGORITHM, JWT_SECRET, get_current_user_dual
+from core.security import (
+    ACCESS_TOKEN_MINUTES,
+    JWT_ALGORITHM,
+    JWT_SECRET,
+     _normalize_jwt_identity_claims,
+    get_current_user_dual,
+    verify_token,
+)
 from core.sql_first.db import get_sql_connection
 from modules.auth.repository import AuthRepository
 
 from .oauth_discovery import MCP_SCOPES, authorization_metadata
-from .public_origin import PublicOriginError, public_https_origin
 from .oauth_pkce import (
     OAuthValidationError,
     validate_pkce_challenge,
@@ -30,6 +36,13 @@ from .oauth_pkce import (
     validate_scopes,
     verify_pkce,
 )
+from .oauth_security import (
+    SUPPORTED_SCOPES,
+    _validate_resource,
+    require_tool_scope,
+    validate_grant,
+)
+from .public_origin import PublicOriginError, public_https_origin
 
 
 router = APIRouter(prefix="/api/mcp/oauth", tags=["worker-mcp-oauth"])
@@ -43,7 +56,9 @@ ACCESS_TTL_SECONDS = 15 * 60
 CODE_TTL_SECONDS = 5 * 60
 REFRESH_TTL_SECONDS = 7 * 24 * 60 * 60
 CLIENT_TTL_SECONDS = 365 * 24 * 60 * 60
-_ALLOWED_SCOPES = frozenset(MCP_SCOPES)
+_ALLOWED_SCOPES = SUPPORTED_SCOPES & frozenset(MCP_SCOPES)
+SUPERADMIN_ROLE_CODES = frozenset({"SUPERADMIN"})
+SUPERADMIN_ROLE_NAMES = frozenset({"SUPERADMINISTRADOR", "SUPER ADMINISTRADOR"})
 
 
 class OAuthServerError(ValueError):
@@ -264,6 +279,104 @@ def _require_worker_permission(user_id: int) -> None:
         raise OAuthServerError("access_denied", status_code=403)
 
 
+def resolve_identity_scopes(user: dict[str, Any] | None) -> frozenset[str]:
+    """Resolve canonical OAuth scopes permitted for an active RBAC_ADMIN user.
+
+    Global objective submission requires canonical SUPERADMIN (aligned with
+    worker_requester_rbac); non-SUPERADMIN RBAC_ADMIN identities are bounded
+    strictly to read-only job status queries (worker:status).
+    """
+    if not isinstance(user, dict) or not bool(user.get("active", True)):
+        return frozenset()
+    role_code = str(
+        user.get("role_code") or user.get("_sql_rol_codigo") or ""
+    ).strip().upper()
+    role_name = str(user.get("role") or "").strip().upper()
+    if role_code in SUPERADMIN_ROLE_CODES or role_name in SUPERADMIN_ROLE_NAMES:
+        return SUPPORTED_SCOPES
+    return frozenset({"worker:status"})
+
+
+def decode_mcp_service_token_claims(token: str) -> dict[str, Any]:
+    """Decode and validate a signed mcp_service OAuth access token."""
+    try:
+        return _decode(token, ACCESS_SESSION_TYPE)
+    except OAuthServerError as exc:
+        raise OAuthValidationError("TOKEN_INVALID") from exc
+
+
+def mint_scoped_internal_access_token(
+    *,
+    user_id: str,
+    email: str,
+    role: str,
+    scopes: frozenset[str],
+    resource: str | None = None,
+    usuario_id: int | None = None,
+    public_uuid: str | None = None,
+) -> str:
+    """Mint a short-lived internal JWT carrying bounded MCP scopes."""
+    if not isinstance(scopes, frozenset) or not scopes or not scopes.issubset(SUPPORTED_SCOPES):
+        raise OAuthValidationError("SCOPES_FORBIDDEN")
+    resolved_usuario_id, resolved_public_uuid = _normalize_jwt_identity_claims(
+        user_id,
+        usuario_id=usuario_id,
+        public_uuid=public_uuid,
+    )
+    payload: dict[str, Any] = {
+        "sub": str(resolved_public_uuid or user_id),
+        "user_id": user_id,
+        "usuario_id": resolved_usuario_id,
+        "public_uuid": resolved_public_uuid,
+        "email": email,
+        "role": role,
+        "type": "internal",
+        "mcp_scopes": sorted(scopes),
+        "exp": _now() + timedelta(minutes=ACCESS_TOKEN_MINUTES),
+    }
+    if resource:
+        payload["mcp_resource"] = resource
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+def enforce_internal_jwt_mcp_scope(
+    *,
+    authorization: str | None,
+    required_scope: str,
+    current_user: dict[str, Any] | None = None,
+) -> None:
+    """Enforce bounded MCP scopes on internal worker ingress requests."""
+    if isinstance(current_user, dict) and "mcp_scopes" in current_user:
+        raw_user_scopes = current_user.get("mcp_scopes")
+        if not isinstance(raw_user_scopes, (list, tuple, set, frozenset)):
+            raise OAuthValidationError("INSUFFICIENT_SCOPE")
+        granted = frozenset(
+            str(item) for item in raw_user_scopes if isinstance(item, str) and item
+        )
+        require_tool_scope(required_scope, granted)
+        return
+
+    header = str(authorization or "").strip()
+    if not header.lower().startswith("bearer "):
+        return
+    raw_token = header[7:].strip()
+    if not raw_token:
+        return
+    try:
+        payload = verify_token(raw_token)
+    except Exception:
+        return
+    if not isinstance(payload, dict) or "mcp_scopes" not in payload:
+        return
+    raw_scopes = payload.get("mcp_scopes")
+    if not isinstance(raw_scopes, (list, tuple, set, frozenset)):
+        raise OAuthValidationError("INSUFFICIENT_SCOPE")
+    granted = frozenset(
+        str(item) for item in raw_scopes if isinstance(item, str) and item
+    )
+    require_tool_scope(required_scope, granted)
+
+
 def _user_for_id(user_id: int) -> dict[str, Any]:
     user = AuthRepository.get_user_by_id(str(user_id))
     if not user or not bool(user.get("active")):
@@ -282,8 +395,27 @@ def _issue_access_token(
     *,
     user_id: int,
     request: Request,
+    client_id: str = "",
+    scopes: frozenset[str] = _ALLOWED_SCOPES,
+    resource: str | None = None,
 ) -> str:
-    token = secrets.token_urlsafe(48)
+    resolved_resource = str(resource or _resource(request)).strip()
+    _validate_resource(resolved_resource)
+    validated_scopes = validate_scopes(
+        " ".join(sorted(scopes)),
+        _ALLOWED_SCOPES,
+    )
+    token = _sign(
+        ACCESS_SESSION_TYPE,
+        {
+            "uid": int(user_id),
+            "client_id_hash": _token_hash(client_id) if client_id else "",
+            "scope": " ".join(sorted(validated_scopes)),
+            "resource": resolved_resource,
+            "nonce": secrets.token_urlsafe(16),
+        },
+        ACCESS_TTL_SECONDS,
+    )
     ip, ua = _request_context(request)
     _insert_session_token(
         user_id=user_id,
@@ -395,6 +527,8 @@ def _validated_authorization_request(
     request: Request,
     values: dict[str, str],
     user_id: int,
+    *,
+    user: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if values.get("response_type") != "code":
         raise OAuthServerError("unsupported_response_type")
@@ -409,12 +543,28 @@ def _validated_authorization_request(
         values.get("code_challenge_method", ""),
     )
     _require_worker_permission(user_id)
+    resolved_user = (
+        user
+        if isinstance(user, dict)
+        and (
+            user.get("role")
+            or user.get("role_code")
+            or user.get("_sql_rol_codigo")
+        )
+        else _user_for_id(user_id)
+    )
+    identity_scopes = resolve_identity_scopes(resolved_user)
+    if not identity_scopes:
+        raise OAuthServerError("access_denied", status_code=403)
     scopes = validate_scopes(
         values.get("scope", ""),
-        _ALLOWED_SCOPES,
+        identity_scopes,
     )
-    resource = str(values.get("resource") or _resource(request)).strip()
-    if resource != _resource(request):
+    registered_resource = _resource(request)
+    resource = str(values.get("resource") or registered_resource).strip()
+    _validate_resource(registered_resource)
+    _validate_resource(resource)
+    if resource != registered_resource:
         raise OAuthServerError("invalid_target")
 
     return {
@@ -422,7 +572,9 @@ def _validated_authorization_request(
         "redirect_uri": redirect_uri,
         "challenge": challenge,
         "scopes": scopes,
+        "identity_scopes": identity_scopes,
         "resource": resource,
+        "registered_resource": registered_resource,
         "state": str(values.get("state") or ""),
     }
 
@@ -473,7 +625,12 @@ async def oauth_authorize(request: Request):
 
     try:
         user_id = _sql_user_id(user)
-        validated = _validated_authorization_request(request, values, user_id)
+        validated = _validated_authorization_request(
+            request,
+            values,
+            user_id,
+            user=user,
+        )
     except (OAuthServerError, OAuthValidationError) as exc:
         return HTMLResponse(
             status_code=400,
@@ -517,7 +674,12 @@ async def oauth_authorize_submit(request: Request):
     try:
         user = await get_current_user_dual(request)
         user_id = _sql_user_id(user)
-        validated = _validated_authorization_request(request, values, user_id)
+        validated = _validated_authorization_request(
+            request,
+            values,
+            user_id,
+            user=user,
+        )
     except HTTPException:
         return _oauth_error("login_required", status_code=401)
     except (OAuthServerError, OAuthValidationError) as exc:
@@ -532,13 +694,26 @@ async def oauth_authorize_submit(request: Request):
             query["state"] = state_value
         return RedirectResponse(_redirect_with_params(redirect_uri, query), status_code=302)
 
+    try:
+        granted_scopes = validate_grant(
+            requested_scopes=str(values.get("scope") or ""),
+            identity_scopes=validated["identity_scopes"],
+            consented_scopes=validated["scopes"],
+            resource=validated["resource"],
+            registered_resource=validated["registered_resource"],
+            expires_at=_now() + timedelta(seconds=CODE_TTL_SECONDS),
+            revoked=False,
+        )
+    except OAuthValidationError as exc:
+        return _oauth_error(str(exc))
+
     code = _sign(
         CODE_SESSION_TYPE,
         {
             "uid": user_id,
             "client_id_hash": _token_hash(values["client_id"]),
             "redirect_uri": redirect_uri,
-            "scope": " ".join(sorted(validated["scopes"])),
+            "scope": " ".join(sorted(granted_scopes)),
             "resource": validated["resource"],
             "code_challenge": validated["challenge"],
             "nonce": secrets.token_urlsafe(16),
@@ -606,15 +781,33 @@ async def oauth_token(request: Request):
             user_id = int(record["UsuarioID"])
             if int(claims.get("uid") or 0) != user_id:
                 raise OAuthServerError("invalid_grant")
-            _user_for_id(user_id)
-            scopes = validate_scopes(
+            user = _user_for_id(user_id)
+            identity_scopes = resolve_identity_scopes(user)
+            consented_scopes = validate_scopes(
                 str(claims.get("scope") or ""),
                 _ALLOWED_SCOPES,
             )
-            resource = str(claims.get("resource") or "")
-            if resource != _resource(request):
+            registered_resource = _resource(request)
+            resource = str(form.get("resource") or claims.get("resource") or "").strip()
+            if resource != str(claims.get("resource") or ""):
                 raise OAuthServerError("invalid_target")
-            access_token = _issue_access_token(user_id=user_id, request=request)
+            code_exp = datetime.fromtimestamp(int(claims["exp"]), tz=timezone.utc)
+            scopes = validate_grant(
+                requested_scopes=str(claims.get("scope") or ""),
+                identity_scopes=identity_scopes,
+                consented_scopes=consented_scopes,
+                resource=resource,
+                registered_resource=registered_resource,
+                expires_at=code_exp,
+                revoked=False,
+            )
+            access_token = _issue_access_token(
+                user_id=user_id,
+                client_id=client_id,
+                scopes=scopes,
+                resource=resource,
+                request=request,
+            )
             refresh_token = _issue_refresh_token(
                 user_id=user_id,
                 client_id=client_id,
@@ -627,7 +820,7 @@ async def oauth_token(request: Request):
                 refresh_token=refresh_token,
                 scopes=scopes,
             )
-        except (OAuthServerError, OAuthValidationError, ValueError):
+        except (OAuthServerError, OAuthValidationError, ValueError, KeyError):
             return _oauth_error("invalid_grant")
 
     if grant_type == "refresh_token":
@@ -640,15 +833,36 @@ async def oauth_token(request: Request):
             user_id = int(record["UsuarioID"])
             if int(claims.get("uid") or 0) != user_id:
                 raise OAuthServerError("invalid_grant")
-            _user_for_id(user_id)
-            scopes = validate_scopes(
+            user = _user_for_id(user_id)
+            identity_scopes = resolve_identity_scopes(user)
+            consented_scopes = validate_scopes(
                 str(claims.get("scope") or ""),
                 _ALLOWED_SCOPES,
             )
-            resource = str(claims.get("resource") or "")
-            if resource != _resource(request):
+            requested_scope_str = str(
+                form.get("scope") or claims.get("scope") or ""
+            ).strip()
+            registered_resource = _resource(request)
+            resource = str(form.get("resource") or claims.get("resource") or "").strip()
+            if resource != str(claims.get("resource") or ""):
                 raise OAuthServerError("invalid_target")
-            access_token = _issue_access_token(user_id=user_id, request=request)
+            refresh_exp = datetime.fromtimestamp(int(claims["exp"]), tz=timezone.utc)
+            scopes = validate_grant(
+                requested_scopes=requested_scope_str,
+                identity_scopes=identity_scopes,
+                consented_scopes=consented_scopes,
+                resource=resource,
+                registered_resource=registered_resource,
+                expires_at=refresh_exp,
+                revoked=False,
+            )
+            access_token = _issue_access_token(
+                user_id=user_id,
+                client_id=client_id,
+                scopes=scopes,
+                resource=resource,
+                request=request,
+            )
             new_refresh = _issue_refresh_token(
                 user_id=user_id,
                 client_id=client_id,
@@ -662,7 +876,7 @@ async def oauth_token(request: Request):
                 refresh_token=new_refresh,
                 scopes=scopes,
             )
-        except (OAuthServerError, OAuthValidationError, ValueError):
+        except (OAuthServerError, OAuthValidationError, ValueError, KeyError):
             return _oauth_error("invalid_grant")
 
     return _oauth_error("unsupported_grant_type")

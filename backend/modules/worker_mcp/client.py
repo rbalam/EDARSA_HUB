@@ -2,10 +2,14 @@
 from __future__ import annotations
 
 import json
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from typing import Any, Mapping
+
+from .oauth_pkce import OAuthValidationError, validate_scopes
+from .oauth_security import SUPPORTED_SCOPES, _validate_resource
 
 
 class WorkerMcpBackendError(RuntimeError):
@@ -96,19 +100,11 @@ def exchange_service_credential(
     return access_token
 
 
-def verify_worker_access(
+def _probe_worker_access(
     *,
     backend_url: str,
-    token: str,
+    internal_token: str,
 ) -> bool:
-    try:
-        internal_token = exchange_service_credential(
-            backend_url=backend_url,
-            credential=token,
-        )
-    except WorkerMcpBackendError:
-        return False
-
     status_code, payload = _request_json(
         method="GET",
         url=(
@@ -126,6 +122,104 @@ def verify_worker_access(
                 detail.get("lifecycle") or ""
             ).upper() == "NOT_FOUND"
     return False
+
+
+def verify_worker_access(
+    *,
+    backend_url: str,
+    token: str,
+) -> bool:
+    try:
+        internal_token = exchange_service_credential(
+            backend_url=backend_url,
+            credential=token,
+        )
+    except WorkerMcpBackendError:
+        return False
+
+    return _probe_worker_access(
+        backend_url=backend_url,
+        internal_token=internal_token,
+    )
+
+
+def verify_worker_access_grant(
+    *,
+    backend_url: str,
+    token: str,
+) -> dict[str, Any] | None:
+    """Verify a bearer credential and extract its bounded OAuth/MCP scopes."""
+    try:
+        status_code, response = _request_json(
+            method="POST",
+            url=(
+                backend_url.rstrip("/")
+                + "/api/internal/worker/auth/exchange"
+            ),
+            token=token,
+        )
+    except WorkerMcpBackendError:
+        return None
+
+    access_token = str(response.get("access_token") or "").strip()
+    if status_code != 200 or not access_token:
+        return None
+
+    raw_scope = response.get("scope")
+    if isinstance(raw_scope, str) and raw_scope.strip():
+        scope_str = raw_scope.strip()
+    elif isinstance(response.get("scopes"), list) and all(
+        isinstance(item, str) and item.strip()
+        for item in response["scopes"]
+    ):
+        scope_str = " ".join(
+            item.strip() for item in response["scopes"]
+        )
+    else:
+        return None
+
+    try:
+        granted_scopes = validate_scopes(scope_str, SUPPORTED_SCOPES)
+    except OAuthValidationError:
+        return None
+
+    expires_at_raw = response.get("expires_at")
+    expires_at: int | None = None
+    if expires_at_raw is not None:
+        if isinstance(expires_at_raw, bool) or not isinstance(
+            expires_at_raw, int
+        ):
+            return None
+        if expires_at_raw <= int(time.time()):
+            return None
+        expires_at = expires_at_raw
+
+    resource_raw = response.get("resource")
+    resource: str | None = None
+    if resource_raw is not None:
+        if not isinstance(resource_raw, str) or not resource_raw.strip():
+            return None
+        try:
+            _validate_resource(resource_raw.strip())
+        except OAuthValidationError:
+            return None
+        resource = resource_raw.strip()
+
+    try:
+        probe_ok = _probe_worker_access(
+            backend_url=backend_url,
+            internal_token=access_token,
+        )
+    except WorkerMcpBackendError:
+        return None
+    if not probe_ok:
+        return None
+
+    return {
+        "scopes": granted_scopes,
+        "expires_at": expires_at,
+        "resource": resource,
+    }
 
 
 def submit_objective(

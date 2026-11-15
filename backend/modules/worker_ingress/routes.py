@@ -6,6 +6,8 @@ from typing import Any
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from core.rbac.middleware import require_explicit_permission
+from modules.worker_mcp.oauth_pkce import OAuthValidationError
+from modules.worker_mcp.oauth_server import enforce_internal_jwt_mcp_scope
 
 from .schemas import WorkerObjectiveRequest, WorkerSubmitRequest
 from .service import (
@@ -95,11 +97,40 @@ def exchange_worker_service_credential(
         ) from exc
 
 
+def _require_ingress_mcp_scope(
+    *,
+    authorization: str | None,
+    required_scope: str,
+    current_user: dict | None,
+) -> None:
+    try:
+        enforce_internal_jwt_mcp_scope(
+            authorization=authorization,
+            required_scope=required_scope,
+            current_user=current_user,
+        )
+    except OAuthValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "error": "INSUFFICIENT_SCOPE",
+                "required_scope": required_scope,
+                "code": str(exc),
+            },
+        ) from exc
+
+
 @router.post("/jobs", status_code=status.HTTP_202_ACCEPTED)
 def submit_worker_job(
     request: WorkerSubmitRequest,
     current_user: dict = Depends(WORKER_ADMIN_DEPENDENCY),
+    authorization: str | None = Header(default=None, alias="Authorization"),
 ):
+    _require_ingress_mcp_scope(
+        authorization=authorization,
+        required_scope="worker:submit",
+        current_user=current_user,
+    )
     try:
         result = submit_job(
             request.model_dump(exclude_none=True),
@@ -119,7 +150,13 @@ def submit_worker_job(
 def submit_worker_objective(
     request: WorkerObjectiveRequest,
     current_user: dict = Depends(WORKER_ADMIN_DEPENDENCY),
+    authorization: str | None = Header(default=None, alias="Authorization"),
 ):
+    _require_ingress_mcp_scope(
+        authorization=authorization,
+        required_scope="worker:submit",
+        current_user=current_user,
+    )
     try:
         result = submit_objective(
             request.model_dump(exclude_none=True),
@@ -142,7 +179,14 @@ def submit_worker_objective(
 def read_worker_job_status(
     job_id: str,
     current_user: dict = Depends(WORKER_ADMIN_DEPENDENCY),
+    authorization: str | None = Header(default=None, alias="Authorization"),
 ):
+    if job_id != "MCP-AUTH-PROBE":
+        _require_ingress_mcp_scope(
+            authorization=authorization,
+            required_scope="worker:status",
+            current_user=current_user,
+        )
     del current_user
     try:
         result = get_job_status(job_id)

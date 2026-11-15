@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +12,12 @@ from worker_mcp import auth, client, server
 from worker_mcp.config import (
     WorkerMcpConfig,
     WorkerMcpConfigError,
+)
+from worker_mcp.oauth_pkce import OAuthValidationError
+from worker_mcp.oauth_security import (
+    SUPPORTED_SCOPES,
+    require_tool_scope,
+    validate_grant,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -362,3 +369,219 @@ def test_refresh_token_session_types_are_isolated_from_mcp_service():
     ) == 2
     assert 'expected_user_type="interno"' in routes_text
     assert 'user_type="interno"' in routes_text
+
+
+@pytest.mark.asyncio
+async def test_token_verifier_preserves_narrow_status_scope_without_elevation(
+    monkeypatch,
+):
+    def fake_request(**kwargs):
+        if kwargs["url"].endswith("/api/internal/worker/auth/exchange"):
+            return 200, {
+                "access_token": "short-internal-jwt",
+                "token_type": "Bearer",
+                "expires_in": 900,
+                "scope": "worker:status",
+                "scopes": ["worker:status"],
+                "resource": "https://mcp.example.test/api/mcp",
+            }
+        return 404, {
+            "detail": {
+                "job_id": "MCP-AUTH-PROBE",
+                "lifecycle": "NOT_FOUND",
+                "status": "NOT_FOUND",
+                "production_touched": False,
+            }
+        }
+
+    monkeypatch.setattr(client, "_request_json", fake_request)
+    verifier = auth.EdarsahubTokenVerifier(
+        backend_url="https://hub.example.test",
+        resource_url="http://127.0.0.1:32913/mcp",
+    )
+
+    verified = await verifier.verify_token("status-only-token")
+    assert verified is not None
+    assert verified.scopes == ["worker:status"]
+    assert "worker:submit" not in verified.scopes
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "exchange_payload",
+    [
+        {"access_token": "short-internal-jwt"},
+        {"access_token": "short-internal-jwt", "scope": ""},
+        {"access_token": "short-internal-jwt", "scope": "worker:admin"},
+        {
+            "access_token": "short-internal-jwt",
+            "scope": "worker:status",
+            "expires_at": 1,
+        },
+        {
+            "access_token": "short-internal-jwt",
+            "scope": "worker:status",
+            "resource": "http://insecure.example.test/api/mcp",
+        },
+    ],
+)
+async def test_token_verifier_fails_closed_on_missing_invalid_or_expired_grant(
+    monkeypatch,
+    exchange_payload,
+):
+    monkeypatch.setattr(
+        client,
+        "_request_json",
+        lambda **kwargs: (200, exchange_payload),
+    )
+    verifier = auth.EdarsahubTokenVerifier(
+        backend_url="https://hub.example.test",
+        resource_url="https://mcp.example.test/mcp",
+    )
+    assert await verifier.verify_token("bad-grant-token") is None
+
+
+def test_status_only_access_token_cannot_call_submit_objective_tool(monkeypatch):
+    server.build_mcp_server(_config())
+    monkeypatch.setattr(
+        server,
+        "get_access_token",
+        lambda: AccessToken(
+            token="status-only-token",
+            client_id="edarsahub-authenticated-user",
+            scopes=["worker:status"],
+            resource="https://mcp.example.test/mcp",
+        ),
+    )
+    called = {"submit": False}
+    monkeypatch.setattr(
+        server,
+        "backend_submit_objective",
+        lambda **kwargs: called.__setitem__("submit", True),
+    )
+
+    with pytest.raises(
+        PermissionError,
+        match="MCP_SCOPE_FORBIDDEN:INSUFFICIENT_SCOPE",
+    ):
+        server.submit_objective_tool(
+            objective="Should fail closed",
+            bounded_context="WORKER_INGRESS",
+            mode="READ_ONLY",
+            capability="READ_ONLY_CANARY",
+        )
+    assert called["submit"] is False
+
+
+def test_submit_only_access_token_cannot_call_get_job_status_tool(monkeypatch):
+    server.build_mcp_server(_config())
+    monkeypatch.setattr(
+        server,
+        "get_access_token",
+        lambda: AccessToken(
+            token="submit-only-token",
+            client_id="edarsahub-authenticated-user",
+            scopes=["worker:submit"],
+            resource="https://mcp.example.test/mcp",
+        ),
+    )
+    called = {"status": False}
+    monkeypatch.setattr(
+        server,
+        "backend_get_job_status",
+        lambda **kwargs: called.__setitem__("status", True),
+    )
+
+    with pytest.raises(
+        PermissionError,
+        match="MCP_SCOPE_FORBIDDEN:INSUFFICIENT_SCOPE",
+    ):
+        server.get_job_status_tool("SEM-TEST-1")
+    assert called["status"] is False
+
+
+def _grant(**changes):
+    resource = "https://erp-crm-enterprise-1.preview.emergentagent.com/api/mcp"
+    args = dict(
+        requested_scopes="worker:status",
+        identity_scopes=frozenset({"worker:status"}),
+        consented_scopes=frozenset({"worker:status"}),
+        resource=resource,
+        registered_resource=resource,
+        expires_at=datetime.now(timezone.utc) + timedelta(minutes=5),
+        revoked=False,
+    )
+    args.update(changes)
+    return validate_grant(**args)
+
+
+def test_oauth_security_valid_grants_and_mutual_scope_isolation():
+    assert _grant() == frozenset({"worker:status"})
+    assert _grant(
+        requested_scopes="worker:status worker:submit",
+        identity_scopes=SUPPORTED_SCOPES,
+        consented_scopes=SUPPORTED_SCOPES,
+    ) == SUPPORTED_SCOPES
+
+    require_tool_scope("worker:status", frozenset({"worker:status"}))
+    require_tool_scope("worker:submit", frozenset({"worker:submit"}))
+
+    with pytest.raises(OAuthValidationError, match="INSUFFICIENT_SCOPE"):
+        require_tool_scope("worker:submit", frozenset({"worker:status"}))
+    with pytest.raises(OAuthValidationError, match="INSUFFICIENT_SCOPE"):
+        require_tool_scope("worker:status", frozenset({"worker:submit"}))
+    with pytest.raises(OAuthValidationError, match="TOOL_SCOPE_NOT_CONFIGURED"):
+        require_tool_scope("worker:admin", frozenset({"worker:admin"}))
+    with pytest.raises(OAuthValidationError, match="INSUFFICIENT_SCOPE"):
+        require_tool_scope("worker:status", None)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    "changes,expected_code",
+    [
+        ({"revoked": True}, "GRANT_REVOKED"),
+        (
+            {"expires_at": datetime.now(timezone.utc) - timedelta(seconds=1)},
+            "GRANT_EXPIRED",
+        ),
+        (
+            {"expires_at": datetime.now() + timedelta(minutes=5)},
+            "EXPIRATION_INVALID",
+        ),
+        ({"consented_scopes": frozenset()}, "CONSENT_REQUIRED"),
+        ({"consented_scopes": {"worker:status"}}, "CONSENT_REQUIRED"),
+        ({"requested_scopes": "worker:submit"}, "SCOPES_FORBIDDEN"),
+        ({"resource": "https://example.org/api/mcp"}, "RESOURCE_MISMATCH"),
+        (
+            {
+                "resource": "http://example.org/api/mcp",
+                "registered_resource": "http://example.org/api/mcp",
+            },
+            "RESOURCE_INVALID",
+        ),
+        (
+            {
+                "resource": "https://example.org/api/mcp/",
+                "registered_resource": "https://example.org/api/mcp/",
+            },
+            "RESOURCE_INVALID",
+        ),
+        (
+            {
+                "resource": "https://example.org/api/mcp?x=1",
+                "registered_resource": "https://example.org/api/mcp?x=1",
+            },
+            "RESOURCE_INVALID",
+        ),
+        (
+            {
+                "resource": "https://example.org:99999/api/mcp",
+                "registered_resource": "https://example.org:99999/api/mcp",
+            },
+            "RESOURCE_INVALID",
+        ),
+    ],
+)
+def test_oauth_security_invalid_grants_fail_closed(changes, expected_code):
+    with pytest.raises(OAuthValidationError, match=expected_code):
+        _grant(**changes)

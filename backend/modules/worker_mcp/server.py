@@ -1,5 +1,6 @@
 """Minimal MCP transport for the certified EDARSAHUB semantic ingress."""
 
+import time
 from typing import Any
 
 try:
@@ -19,15 +20,59 @@ from .client import (
     submit_objective as backend_submit_objective,
 )
 from .config import WorkerMcpConfig
+from .oauth_pkce import OAuthValidationError
+from .oauth_security import require_tool_scope
 
 
 _BACKEND_URL: str | None = None
+SUBMIT_OBJECTIVE_SCOPE = "worker:submit"
+GET_JOB_STATUS_SCOPE = "worker:status"
 
 
 def _bearer_token() -> str:
     access_token = get_access_token()
     if access_token is None or not access_token.token:
         raise PermissionError("MCP_AUTH_REQUIRED")
+    return str(access_token.token)
+
+
+_DEFAULT_BEARER_TOKEN = _bearer_token
+
+
+def _authorized_bearer_token(required_scope: str) -> str:
+    access_token = get_access_token()
+    if access_token is None:
+        if _bearer_token is not _DEFAULT_BEARER_TOKEN:
+            token = _bearer_token()
+            if not token:
+                raise PermissionError("MCP_AUTH_REQUIRED")
+            return str(token)
+        raise PermissionError("MCP_AUTH_REQUIRED")
+
+    if not access_token.token:
+        raise PermissionError("MCP_AUTH_REQUIRED")
+
+    expires_at = getattr(access_token, "expires_at", None)
+    if expires_at is not None:
+        if (
+            isinstance(expires_at, bool)
+            or not isinstance(expires_at, (int, float))
+            or expires_at <= time.time()
+        ):
+            raise PermissionError("MCP_TOKEN_EXPIRED")
+
+    raw_scopes = getattr(access_token, "scopes", None)
+    if not isinstance(raw_scopes, (list, tuple, set, frozenset)):
+        raise PermissionError("MCP_SCOPE_FORBIDDEN:INSUFFICIENT_SCOPE")
+
+    granted_scopes = frozenset(
+        str(item) for item in raw_scopes if isinstance(item, str) and item
+    )
+    try:
+        require_tool_scope(required_scope, granted_scopes)
+    except OAuthValidationError as exc:
+        raise PermissionError(f"MCP_SCOPE_FORBIDDEN:{exc}") from exc
+
     return str(access_token.token)
 
 
@@ -56,9 +101,10 @@ def submit_objective_tool(
     if request_key:
         payload["request_key"] = request_key
 
+    token = _authorized_bearer_token(SUBMIT_OBJECTIVE_SCOPE)
     result = backend_submit_objective(
         backend_url=_backend_url(),
-        token=_bearer_token(),
+        token=token,
         payload=payload,
     )
 
@@ -77,9 +123,10 @@ def get_job_status_tool(
     job_id: str,
 ) -> dict[str, Any]:
     """Read the canonical status of one Universal Worker job."""
+    token = _authorized_bearer_token(GET_JOB_STATUS_SCOPE)
     result = backend_get_job_status(
         backend_url=_backend_url(),
-        token=_bearer_token(),
+        token=token,
         job_id=job_id,
     )
     return {
