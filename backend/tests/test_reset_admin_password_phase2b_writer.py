@@ -107,7 +107,7 @@ def test_writer_identity_accepts_canonical_contract():
 
     assert identity.database_name == "EDARSAHUB"
     assert identity.login_name == "GptEscritura"
-    assert identity.user_name == "HRLectura"
+    assert identity.user_name == "HUB_Escritura"
 
 
 def test_writer_config_rejects_noncanonical_login():
@@ -121,7 +121,7 @@ def test_writer_config_rejects_noncanonical_login():
 
     with pytest.raises(
         RuntimeError,
-        match="login canonico",
+        match="login writer canonico",
     ):
         validate_writer_identity(
             conn,
@@ -306,7 +306,7 @@ def test_open_writer_uses_canonical_writer_profile(
     )
 
     assert opened is conn
-    assert identity.login_name == "HRLectura"
+    assert identity.login_name == "GptEscritura"
     assert calls == [
         ("config", "writer"),
         ("connect", "writer"),
@@ -333,7 +333,7 @@ def test_noncanonical_config_rejected_before_open(
 
     with pytest.raises(
         RuntimeError,
-        match="login canonico",
+        match="login writer canonico",
     ):
         writer_module.open_validated_writer_connection()
 
