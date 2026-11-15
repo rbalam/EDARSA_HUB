@@ -5,7 +5,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from worker_mcp.oauth_discovery import authorization_metadata, protected_resource_metadata
+from worker_mcp.oauth_discovery import (
+    authorization_metadata,
+    protected_resource_metadata,
+    public_authorization_server_metadata,
+)
 from worker_mcp.oauth_pkce import validate_pkce_challenge, verify_pkce
 from worker_mcp.public_origin import PublicOriginError, public_https_origin
 
@@ -124,3 +128,85 @@ def test_oauth_register_advertises_scopes_without_auto_granting_and_runtime_sync
     assert 'validate_scopes(\n        values.get("scope", ""),\n        identity_scopes,\n    )' in oauth_text
     assert 'MCP_SERVICE="edarsahub-worker-mcp"' in recovery_text
     assert 'supervisorctl restart "$MCP_SERVICE"' in recovery_text
+
+
+def test_canonical_v2_discovery_routes_reuse_single_canonical_metadata_source():
+    oauth_text = OAUTH.read_text(encoding="utf-8")
+    gateway_text = GATEWAY.read_text(encoding="utf-8")
+
+    assert '@router.api_route("/.well-known/oauth-authorization-server", methods=["GET", "OPTIONS"])' in oauth_text
+    assert '@router.api_route("/.well-known/openid-configuration", methods=["GET", "OPTIONS"])' in oauth_text
+    assert "payload = public_authorization_server_metadata(issuer)" in oauth_text
+    assert oauth_text.count("async def oauth_authorization_metadata(") == 1
+
+    assert '"/.well-known/oauth-authorization-server/api/mcp/oauth"' in gateway_text
+    assert '"/.well-known/openid-configuration/api/mcp/oauth"' in gateway_text
+    assert "return await oauth_authorization_metadata(request)" in gateway_text
+
+
+@pytest.mark.asyncio
+async def test_mcp_sdk_discovery_succeeds_via_openid_configuration_behind_api_ingress():
+    import json
+    from httpx2 import Response as Httpx2Response
+    from mcp.client.auth.utils import (
+        build_oauth_authorization_server_metadata_discovery_urls,
+        create_client_registration_request,
+        handle_auth_metadata_response,
+        validate_metadata_issuer,
+    )
+    from mcp.shared.auth import OAuthClientMetadata
+
+    origin = "https://erp-crm-enterprise-1.preview.emergentagent.com"
+    issuer = origin + "/api/mcp/oauth"
+    resource = origin + "/api/mcp"
+
+    candidates = build_oauth_authorization_server_metadata_discovery_urls(issuer, resource)
+    assert candidates == [
+        origin + "/.well-known/oauth-authorization-server/api/mcp/oauth",
+        origin + "/.well-known/openid-configuration/api/mcp/oauth",
+        origin + "/api/mcp/oauth/.well-known/openid-configuration",
+    ]
+
+    canonical_payload = public_authorization_server_metadata(issuer)
+
+    # Simulate Emergent reverse proxy: non-/api root .well-known paths return SPA HTML / 404,
+    # while /api/mcp/oauth/.well-known/openid-configuration reaches FastAPI backend.
+    simulated_wire = {
+        candidates[0]: Httpx2Response(200, headers={"content-type": "text/html"}, content=b"<!doctype html><html></html>"),
+        candidates[1]: Httpx2Response(404, headers={"content-type": "application/json"}, content=b'{"detail":"Not Found"}'),
+        candidates[2]: Httpx2Response(
+            200,
+            headers={"content-type": "application/json", "cache-control": "no-store"},
+            content=json.dumps(canonical_payload).encode("utf-8"),
+        ),
+    }
+
+    discovered = None
+    visited: list[str] = []
+    for url in candidates:
+        visited.append(url)
+        should_continue, asm = await handle_auth_metadata_response(simulated_wire[url])
+        if asm is not None:
+            discovered = asm
+            break
+        assert should_continue is True
+
+    assert visited == candidates
+    assert discovered is not None
+    validate_metadata_issuer(discovered, issuer)
+    assert str(discovered.registration_endpoint) == issuer + "/register"
+    assert discovered.code_challenge_methods_supported == ["S256"]
+    assert discovered.scopes_supported == ["worker:status", "worker:submit"]
+    assert discovered.token_endpoint_auth_methods_supported == ["none"]
+
+    dcr_req = create_client_registration_request(
+        discovered,
+        OAuthClientMetadata(
+            redirect_uris=["https://chatgpt.com/connector_platform_oauth_redirect"],
+            client_name="Canonical V2",
+            token_endpoint_auth_method="none",
+        ),
+        origin,
+    )
+    assert str(dcr_req.url) == issuer + "/register"
+    assert dcr_req.method == "POST"

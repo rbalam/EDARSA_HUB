@@ -5,6 +5,7 @@ from modules.worker_mcp.oauth_discovery import (
     DiscoveryConfigurationError,
     authorization_metadata,
     protected_resource_metadata,
+    public_authorization_server_metadata,
     validate_public_mcp_origin,
 )
 
@@ -50,3 +51,21 @@ def test_public_origin_must_match_resource_origin():
         validate_public_mcp_origin(
             "https://mcp.example.test/api/mcp", "https://mcp.example.test/path"
         )
+
+
+def test_public_authorization_server_metadata_reuses_canonical_contract_with_dcr():
+    issuer = "https://mcp.example.test/api/mcp/oauth"
+    base = authorization_metadata(issuer)
+    published = public_authorization_server_metadata(issuer)
+
+    assert "registration_endpoint" not in base
+    assert published == {
+        **base,
+        "registration_endpoint": "https://mcp.example.test/api/mcp/oauth/register",
+    }
+    assert published["code_challenge_methods_supported"] == ["S256"]
+    assert published["scopes_supported"] == ["worker:status", "worker:submit"]
+    assert published["token_endpoint_auth_methods_supported"] == ["none"]
+
+    with pytest.raises(DiscoveryConfigurationError):
+        public_authorization_server_metadata("http://mcp.example.test/api/mcp/oauth")

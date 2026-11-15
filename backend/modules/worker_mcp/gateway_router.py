@@ -18,6 +18,7 @@ from starlette.background import BackgroundTask
 from . import inprocess
 from .config import WorkerMcpConfig, WorkerMcpConfigError
 from .oauth_discovery import protected_resource_metadata
+from .oauth_server import oauth_authorization_metadata
 from .oauth_server import router as oauth_router
 from .public_origin import PublicOriginError, public_https_origin
 
@@ -63,6 +64,20 @@ async def mcp_protected_resource_metadata(request: Request):
         content=payload,
         headers={"Cache-Control": "no-store"},
     )
+
+
+@router.api_route(
+    "/.well-known/oauth-authorization-server/api/mcp/oauth",
+    methods=["GET", "OPTIONS"],
+)
+@router.api_route(
+    "/.well-known/openid-configuration/api/mcp/oauth",
+    methods=["GET", "OPTIONS"],
+)
+async def mcp_oauth_authorization_metadata(request: Request):
+    """Delegate RFC 8414 §3.1 / §5 path-insertion discovery to canonical OAuth metadata."""
+    return await oauth_authorization_metadata(request)
+
 
 _ALLOWED_RESPONSE_HEADERS = {
     "content-type", "cache-control", "www-authenticate", "mcp-session-id",

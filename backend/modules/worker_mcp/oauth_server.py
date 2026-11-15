@@ -14,7 +14,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import jwt
 from fastapi import APIRouter, HTTPException, Request, status
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from core.rbac_sql.service import RBACSQLService
 from core.security import (
@@ -28,7 +28,11 @@ from core.security import (
 from core.sql_first.db import get_sql_connection
 from modules.auth.repository import AuthRepository
 
-from .oauth_discovery import MCP_SCOPES, authorization_metadata
+from .oauth_discovery import (
+    MCP_SCOPES,
+    authorization_metadata,
+    public_authorization_server_metadata,
+)
 from .oauth_pkce import (
     OAuthValidationError,
     validate_pkce_challenge,
@@ -469,12 +473,20 @@ def _oauth_error(code: str, *, status_code: int = 400) -> JSONResponse:
     )
 
 
-@router.get("/.well-known/oauth-authorization-server")
+@router.api_route("/.well-known/oauth-authorization-server", methods=["GET", "OPTIONS"])
+@router.api_route("/.well-known/openid-configuration", methods=["GET", "OPTIONS"])
 async def oauth_authorization_metadata(request: Request):
-    issuer = _issuer(request)
-    payload = authorization_metadata(issuer)
-    payload["registration_endpoint"] = issuer + "/register"
-    return JSONResponse(payload)
+    if request.method == "OPTIONS":
+        return Response(status_code=204)
+    try:
+        issuer = _issuer(request)
+        payload = public_authorization_server_metadata(issuer)
+    except OAuthServerError as exc:
+        return _oauth_error(exc.code, status_code=exc.status_code)
+    return JSONResponse(
+        content=payload,
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)

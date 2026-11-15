@@ -12,6 +12,7 @@ on:
       - "backend/modules/worker_ingress/routes.py"
       - "backend/modules/worker_ingress/service_credential.py"
       - "backend/tests/test_worker_mcp_oauth_discovery.py"
+      - "backend/tests/test_worker_mcp_oauth_discovery_canonical_v2.py"
       - "backend/tests/test_worker_mcp_oauth_pkce.py"
       - "backend/tests/test_worker_mcp_oauth_security.py"
       - "backend/tests/test_worker_mcp_oauth_server_r1.py"

@@ -40,6 +40,13 @@ def authorization_metadata(issuer_url: str) -> dict:
     }
 
 
+def public_authorization_server_metadata(issuer_url: str) -> dict:
+    """Canonical authorization server metadata reused by RFC 8414 and OIDC discovery."""
+    payload = authorization_metadata(issuer_url)
+    payload["registration_endpoint"] = payload["issuer"] + "/register"
+    return payload
+
+
 def protected_resource_metadata(resource_url: str, issuer_url: str) -> dict:
     """RFC 9728: resource and issuer are independent trust domains."""
     resource = _https_url(resource_url, "RESOURCE_HTTPS_REQUIRED")
