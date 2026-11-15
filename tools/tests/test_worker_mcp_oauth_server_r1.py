@@ -112,3 +112,15 @@ def test_oauth_change_does_not_reference_production_or_sales_sync():
     assert "edarsahub_produccion" not in text
     assert "sync_comercial_abiertas_v2" not in text
     assert "ventas cerradas" not in text
+
+
+def test_oauth_register_advertises_scopes_without_auto_granting_and_runtime_syncs_mcp():
+    oauth_text = OAUTH.read_text(encoding="utf-8")
+    recovery_text = (ROOT / "tools/bootstrap/recover_preview_runtime.sh").read_text(
+        encoding="utf-8"
+    )
+    assert '"scope": advertised_scope' in oauth_text
+    assert '" ".join(MCP_SCOPES)' in oauth_text
+    assert 'validate_scopes(\n        values.get("scope", ""),\n        identity_scopes,\n    )' in oauth_text
+    assert 'MCP_SERVICE="edarsahub-worker-mcp"' in recovery_text
+    assert 'supervisorctl restart "$MCP_SERVICE"' in recovery_text

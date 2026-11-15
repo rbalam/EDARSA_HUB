@@ -120,7 +120,22 @@ def _require_ingress_mcp_scope(
         ) from exc
 
 
-@router.post("/jobs", status_code=status.HTTP_202_ACCEPTED)
+def _require_submit_mcp_scope_dependency(
+    current_user: dict = Depends(WORKER_ADMIN_DEPENDENCY),
+    authorization: str | None = Header(default=None, alias="Authorization"),
+) -> None:
+    _require_ingress_mcp_scope(
+        authorization=authorization,
+        required_scope="worker:submit",
+        current_user=current_user,
+    )
+
+
+@router.post(
+    "/jobs",
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(_require_submit_mcp_scope_dependency)],
+)
 def submit_worker_job(
     request: WorkerSubmitRequest,
     current_user: dict = Depends(WORKER_ADMIN_DEPENDENCY),
@@ -146,7 +161,11 @@ def submit_worker_job(
     return result
 
 
-@router.post("/objectives", status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/objectives",
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(_require_submit_mcp_scope_dependency)],
+)
 def submit_worker_objective(
     request: WorkerObjectiveRequest,
     current_user: dict = Depends(WORKER_ADMIN_DEPENDENCY),

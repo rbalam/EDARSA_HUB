@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -10,6 +11,8 @@ from typing import Any, Mapping
 
 from .oauth_pkce import OAuthValidationError, validate_scopes
 from .oauth_security import SUPPORTED_SCOPES, _validate_resource
+
+_SAFE_REASON_CODE_RE = re.compile(r"^[A-Z][A-Z0-9_]{1,80}$")
 
 
 class WorkerMcpBackendError(RuntimeError):
@@ -24,6 +27,100 @@ class WorkerMcpBackendError(RuntimeError):
         self.code = code
         self.status_code = status_code
         self.payload = dict(payload or {})
+
+
+class WorkerMcpAuthorizationError(WorkerMcpBackendError):
+    """Explicit HTTP 401/403 authorization or insufficient-scope failure."""
+
+    def __init__(
+        self,
+        code: str,
+        *,
+        status_code: int = 403,
+        required_scope: str | None = None,
+        payload: Mapping[str, Any] | None = None,
+    ):
+        super().__init__(
+            code,
+            status_code=status_code,
+            payload=payload,
+        )
+        self.required_scope = required_scope
+
+
+class WorkerMcpValidationError(WorkerMcpBackendError):
+    """Explicit HTTP 422/400 semantic or schema validation failure."""
+
+    def __init__(
+        self,
+        code: str,
+        *,
+        status_code: int = 422,
+        reason_code: str = "VALIDATION_ERROR",
+        payload: Mapping[str, Any] | None = None,
+    ):
+        super().__init__(
+            code,
+            status_code=status_code,
+            payload=payload,
+        )
+        self.reason_code = reason_code
+
+
+def _extract_validation_reason(payload: Mapping[str, Any]) -> str:
+    detail = payload.get("detail")
+    if isinstance(detail, str) and detail.strip():
+        candidate = detail.strip().split(":", 1)[0].strip().upper()
+        if _SAFE_REASON_CODE_RE.fullmatch(candidate):
+            return candidate
+    if isinstance(detail, Mapping):
+        state = str(detail.get("status") or "").strip().upper()
+        if _SAFE_REASON_CODE_RE.fullmatch(state):
+            return state
+    if isinstance(detail, list):
+        return "SCHEMA_VALIDATION_ERROR"
+    return "VALIDATION_ERROR"
+
+
+def _extract_auth_error(
+    status_code: int,
+    payload: Mapping[str, Any],
+    default_required_scope: str,
+) -> WorkerMcpAuthorizationError:
+    if status_code == 401:
+        return WorkerMcpAuthorizationError(
+            "AUTHENTICATION_REQUIRED",
+            status_code=401,
+            payload=payload,
+        )
+    detail = payload.get("detail")
+    if isinstance(detail, Mapping):
+        err = str(detail.get("error") or "").strip().upper()
+        if err == "INSUFFICIENT_SCOPE":
+            raw_req = str(
+                detail.get("required_scope") or default_required_scope
+            ).strip()
+            required_scope = (
+                raw_req if raw_req in SUPPORTED_SCOPES else default_required_scope
+            )
+            return WorkerMcpAuthorizationError(
+                "INSUFFICIENT_SCOPE",
+                status_code=403,
+                required_scope=required_scope,
+                payload=payload,
+            )
+        state = str(detail.get("status") or "").strip().upper()
+        if state == "REQUESTER_DENIED":
+            return WorkerMcpAuthorizationError(
+                "REQUESTER_DENIED",
+                status_code=403,
+                payload=payload,
+            )
+    return WorkerMcpAuthorizationError(
+        "AUTHORIZATION_FORBIDDEN",
+        status_code=403,
+        payload=payload,
+    )
 
 
 def _request_json(
@@ -242,6 +339,19 @@ def submit_objective(
         payload=payload,
     )
     if status_code != 202:
+        if status_code in (401, 403):
+            raise _extract_auth_error(
+                status_code,
+                response,
+                "worker:submit",
+            )
+        if status_code in (400, 422):
+            raise WorkerMcpValidationError(
+                "SEMANTIC_VALIDATION_FAILED",
+                status_code=status_code,
+                reason_code=_extract_validation_reason(response),
+                payload=response,
+            )
         raise WorkerMcpBackendError(
             "SEMANTIC_SUBMIT_FAILED",
             status_code=status_code,
@@ -270,6 +380,19 @@ def get_job_status(
         token=internal_token,
     )
     if status_code not in (200, 404):
+        if status_code in (401, 403):
+            raise _extract_auth_error(
+                status_code,
+                response,
+                "worker:status",
+            )
+        if status_code in (400, 422):
+            raise WorkerMcpValidationError(
+                "STATUS_VALIDATION_FAILED",
+                status_code=status_code,
+                reason_code=_extract_validation_reason(response),
+                payload=response,
+            )
         raise WorkerMcpBackendError(
             "STATUS_READ_FAILED",
             status_code=status_code,

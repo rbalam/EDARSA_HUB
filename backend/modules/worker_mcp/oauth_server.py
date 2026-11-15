@@ -503,6 +503,20 @@ async def oauth_register(request: Request):
     if token_auth != "none":
         return _oauth_error("invalid_client_metadata")
 
+    raw_scope = data.get("scope")
+    if raw_scope is None or raw_scope == "":
+        advertised_scope = " ".join(MCP_SCOPES)
+    elif not isinstance(raw_scope, str):
+        return _oauth_error("invalid_client_metadata")
+    else:
+        try:
+            requested_client_scopes = validate_scopes(raw_scope, _ALLOWED_SCOPES)
+        except OAuthValidationError:
+            return _oauth_error("invalid_client_metadata")
+        advertised_scope = " ".join(
+            scope for scope in MCP_SCOPES if scope in requested_client_scopes
+        )
+
     client_name = str(data.get("client_name") or "MCP Client").strip() or "MCP Client"
     client_id = _register_client_id(
         redirect_uris=redirects,
@@ -518,6 +532,7 @@ async def oauth_register(request: Request):
             "response_types": ["code"],
             "grant_types": ["authorization_code", "refresh_token"],
             "token_endpoint_auth_method": "none",
+            "scope": advertised_scope,
         },
         headers={"Cache-Control": "no-store", "Pragma": "no-cache"},
     )

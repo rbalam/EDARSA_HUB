@@ -76,6 +76,7 @@ else:
 PY2
 }
 WORKER_SERVICE="edarsahub-universal-worker"
+MCP_SERVICE="edarsahub-worker-mcp"
 INSTALLER="$APP/tools/bootstrap/install_bootstrap_watchdog.sh"
 SAFETY_GUARD="$APP/tools/mirror_sync/shared_app_safety_guard.sh"
 PREFERRED_JOB_ID="${1:-}"
@@ -183,6 +184,10 @@ if [ "$BACKEND_READY" -ne 1 ]; then
 fi
 
 echo "PREVIEW_BACKEND_READY=YES"
+if supervisorctl status "$MCP_SERVICE" >/dev/null 2>&1; then
+  supervisorctl restart "$MCP_SERVICE" || supervisorctl start "$MCP_SERVICE"
+  supervisorctl status "$MCP_SERVICE"
+fi
 supervisorctl restart "$WORKER_SERVICE" || supervisorctl start "$WORKER_SERVICE"
 sleep 4
 supervisorctl status "$WORKER_SERVICE"
