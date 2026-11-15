@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/rh/",
+          "backend/modules/auth/",
+          "backend/modules/admin_sql/"
+        ],
+        "search_terms": [
+          "require_explicit_permission",
+          "get_user_sucursales_permitidas_rh",
+          "get_current_user",
+          "get_my_effective_permissions",
+          "Usuario_RolesContexto",
+          "_check_admin_role",
+          "_validar_transicion",
+          "persona_id",
+          "fail_closed"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT_BOUNDE-FF58C7E6CC52CC751AA0",
+  "mode": "READ_ONLY",
+  "objective": "Inspeccion READ_ONLY focalizada de llamadas reales y controles de autorizacion RH. Examinar routes.py, service.py, solicitudes_catalogo.py y los contratos de contexto/permisos de auth y admin_sql para comprobar uso de get_current_user versus permisos efectivos por empresa/sucursal, validacion de gerencia y nomina, filtros fail-closed, identidad PersonaID y acceso SQL. Entregar evidencia por archivo y simbolo, distinguir mitigaciones existentes de brechas no probadas. No repetir jobs certificados, no cambios, no SQL LIVE ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH",
+    "conflict_domains": [
+      "RH"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
