@@ -1,0 +1,64 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "nomina",
+          "payroll",
+          "cfdi",
+          "imss",
+          "sbc",
+          "sdi",
+          "sua",
+          "sipare",
+          "glosa",
+          "confronta",
+          "dispersion",
+          "contabilidad",
+          "infonavit",
+          "fonacot",
+          "isn",
+          "incidencias",
+          "finiquitos",
+          "vacaciones",
+          "incapacidades",
+          "conciliacion"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH_GLOBAL_HCM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-0EC978A768C18EE3C3E0",
+  "mode": "READ_ONLY",
+  "objective": "Construir evidencia READ_ONLY acotada para el Capability Map de Payroll, IMSS y reconciliaciones de RH Global HCM, usando el Gate0 certificado como contexto y sin repetir la auditoria global. Identificar ownership, servicios, rutas, repositorios y contratos existentes para nomina, CFDI, IMSS, SBC, SDI, SUA, SIPARE, glosa, confronta, dispersion, contabilidad, INFONAVIT, FONACOT e ISN.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH_GLOBAL_HCM",
+    "conflict_domains": [
+      "RH_GLOBAL_HCM"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
