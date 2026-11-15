@@ -1,0 +1,59 @@
+{
+  "actions": [
+    {
+      "expected_count": 2,
+      "expected_sha256": "db1d0126391c66d91f01e80832f5476d96908e005e542e9aeb4f938b1fa615b9",
+      "new": "monkeypatch.setattr(module, 'run_check_process', lambda *args, **kwargs: Completed())",
+      "old": "monkeypatch.setattr(module, 'run', lambda *args, **kwargs: Completed())",
+      "path": "backend/tests/test_worker_sql_readonly_audit.py",
+      "type": "replace_text"
+    }
+  ],
+  "allowed_paths": [
+    "backend/tests/test_worker_sql_readonly_audit.py"
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_worker_sql_readonly_audit.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_sql_readonly_audit.py",
+        "backend/tests/test_universal_job_dispatcher_python_runtime.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-WORKER-SQL-READONLY-RUN-CHECK-PROCESS-TEST-REPAIR-R3",
+  "mode": "MUTATION",
+  "objective": "Corregir exclusivamente dos mocks obsoletos en backend/tests/test_worker_sql_readonly_audit.py. El dispatcher usa run_check_process() pero ambos tests siguen mockeando module.run. Sustituir exactamente las dos ocurrencias. No modificar dispatcher, helper SQL, backend productivo, contratos, Core ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "RRHH Custodia Gate3B",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
