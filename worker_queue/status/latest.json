@@ -4,19 +4,25 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "LOCAL_AHEAD_ONLY",
   "development_sha": "537774dad3ca633541c65781c3316b62f751a20c",
-  "generated_at_utc": "2026-11-17T09:42:29Z",
+  "generated_at_utc": "2026-11-17T09:43:48Z",
   "history": {
     "done_total_local": 1740,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1346,
-    "results_total_local": 2848
+    "rejected_total_local": 1347,
+    "results_total_local": 2849
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 73,
+      "age_seconds": 18,
+      "job_id": "SEC-P1-UNIVERSAL-QUERY-AUTH-RBAC-PARAMETRIZED-R1-20261027",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 151,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-121627C10126AC7B4FD5",
       "reason": null,
       "state": "RESULT_READY"
@@ -30,15 +36,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "remote_development_sha": "537774dad3ca633541c65781c3316b62f751a20c",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-17T09:42:26Z",
-    "last_receive_utc": "2026-11-17T09:42:21Z",
-    "last_terminal_utc": "2026-11-17T09:41:16Z",
+    "last_cycle_utc": "2026-11-17T09:43:35Z",
+    "last_receive_utc": "2026-11-17T09:43:45Z",
+    "last_terminal_utc": "2026-11-17T09:43:29Z",
     "pid": "85",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "9400711a6cd0e352847b81ad85bdf5b0e94b4b7b",
