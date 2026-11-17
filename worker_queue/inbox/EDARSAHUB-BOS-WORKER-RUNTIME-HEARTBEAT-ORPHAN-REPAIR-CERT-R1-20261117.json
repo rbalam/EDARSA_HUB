@@ -1,0 +1,60 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "paths": [
+        "tools/mirror_sync/worker_control_plane.py",
+        "tools/bootstrap/edarsahub_bootstrap_watchdog.py",
+        "backend/modules/worker_runtime_wake/routes.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_control_plane_supervisor_ownership_contract.py",
+        "backend/tests/test_worker_runtime_startup_selfheal_r1.py",
+        "backend/tests/test_universal_job_worker_sla_architecture.py",
+        "backend/tests/test_bootstrap_watchdog_safety_contract.py",
+        "backend/tests/test_universal_worker_external_owner_contract.py",
+        "backend/tests/test_worker_runtime_fingerprint_contract.py",
+        "backend/tests/test_worker_operational_complete_lifecycle.py",
+        "backend/tests/test_worker_operational_result_publisher_certification.py",
+        "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_runtime_health_operational_stale_threshold.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-RUNTIME-HEARTBEAT-ORPHAN-REPAIR-CERT-R1-20261117",
+  "mode": "READ_ONLY",
+  "objective": "Certificar en Desarrollo la reparación canónica del ciclo de reinicios, heartbeat de ciclo y terminación de procesos huérfanos del Universal Worker y Control Plane sobre el commit 03564c265, sin repetir Memory Optimization Gate 2 y sin tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Universal Worker Control Plane Repair Gate",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "UNIVERSAL_WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "HIGH",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": [
+      "worker-runtime-readonly-certification"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
