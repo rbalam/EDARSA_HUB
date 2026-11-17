@@ -40,6 +40,19 @@ D2_2_EXTRA_AUTHORIZED_PATHS: Final[frozenset[str]] = frozenset(
     }
 )
 
+PREVIEW_WATCHDOG_INCIDENT_ID: Final = (
+    "EDARSAHUB-BOS-PREVIEW-WATCHDOG-TRANSIENT-RECOVERY-R1"
+)
+PREVIEW_WATCHDOG_CAPABILITY_CODE: Final = (
+    "PREVIEW_WATCHDOG_TRANSIENT_RECOVERY"
+)
+PREVIEW_WATCHDOG_AUTHORIZED_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "tools/bootstrap/edarsahub_bootstrap_watchdog.py",
+        "backend/tests/test_bootstrap_watchdog_safety_contract.py",
+    }
+)
+
 PROTECTED_UNIVERSAL_COMPONENTS: Final[frozenset[str]] = frozenset(
     {
         "tools/mirror_sync/universal_job_bridge.py",
@@ -118,6 +131,21 @@ def _d2_2_exact_scope_exception_allowed(
     )
 
 
+def _preview_watchdog_exact_scope_exception_allowed(
+    normalized: list[str] | tuple[str, ...],
+    *,
+    incident_id: str | None,
+    capability_code: str | None,
+) -> bool:
+    if str(incident_id or "").strip() != PREVIEW_WATCHDOG_INCIDENT_ID:
+        return False
+    if str(capability_code or "").strip() != PREVIEW_WATCHDOG_CAPABILITY_CODE:
+        return False
+
+    allowed = set(PREVIEW_WATCHDOG_AUTHORIZED_PATHS)
+    return all(path in allowed for path in normalized)
+
+
 def repair_scope_allowed(
     paths: list[str] | tuple[str, ...],
     *,
@@ -139,6 +167,10 @@ def repair_scope_allowed(
         return True
 
     return _d2_2_exact_scope_exception_allowed(
+        normalized,
+        incident_id=incident_id,
+        capability_code=capability_code,
+    ) or _preview_watchdog_exact_scope_exception_allowed(
         normalized,
         incident_id=incident_id,
         capability_code=capability_code,

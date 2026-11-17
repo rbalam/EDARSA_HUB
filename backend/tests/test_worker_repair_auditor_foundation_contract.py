@@ -367,3 +367,61 @@ def test_d2_2_auditor_requires_exact_context_for_gitignore():
         capability_code=D2_2_CAPABILITY_CODE,
     )
     assert allowed.certified is True
+
+
+def test_preview_watchdog_scope_exception_is_exact_and_fail_closed():
+    from tools.mirror_sync.worker_maintenance_contract import (
+        PREVIEW_WATCHDOG_AUTHORIZED_PATHS,
+        PREVIEW_WATCHDOG_CAPABILITY_CODE,
+        PREVIEW_WATCHDOG_INCIDENT_ID,
+        auditor_scope_allowed,
+    )
+
+    targets = sorted(PREVIEW_WATCHDOG_AUTHORIZED_PATHS)
+    assert not repair_scope_allowed(targets)
+    assert not auditor_scope_allowed(targets)
+
+    assert repair_scope_allowed(
+        targets,
+        incident_id=PREVIEW_WATCHDOG_INCIDENT_ID,
+        capability_code=PREVIEW_WATCHDOG_CAPABILITY_CODE,
+    )
+    assert auditor_scope_allowed(
+        targets,
+        incident_id=PREVIEW_WATCHDOG_INCIDENT_ID,
+        capability_code=PREVIEW_WATCHDOG_CAPABILITY_CODE,
+    )
+
+    assert not repair_scope_allowed(
+        targets,
+        incident_id="OTHER-INCIDENT",
+        capability_code=PREVIEW_WATCHDOG_CAPABILITY_CODE,
+    )
+    assert not repair_scope_allowed(
+        targets,
+        incident_id=PREVIEW_WATCHDOG_INCIDENT_ID,
+        capability_code="OTHER_CAPABILITY",
+    )
+    assert not repair_scope_allowed(
+        targets + ["tools/mirror_sync/worker_repair.py"],
+        incident_id=PREVIEW_WATCHDOG_INCIDENT_ID,
+        capability_code=PREVIEW_WATCHDOG_CAPABILITY_CODE,
+    )
+
+    payload = {
+        "files_changed": targets,
+        "production_touched": False,
+        "quality_gate": "PASS",
+        "tests": "PASS",
+        "blockers": [],
+        "git_sync_status": "CERTIFIED_GIT_SYNC",
+    }
+    assert audit_repair_result(payload).certified is False
+    approved = audit_repair_result(
+        payload,
+        authorized_paths=targets,
+        incident_id=PREVIEW_WATCHDOG_INCIDENT_ID,
+        capability_code=PREVIEW_WATCHDOG_CAPABILITY_CODE,
+    )
+    assert approved.certified is True
+    assert approved.reason == "CERTIFIED_WORKER_REPAIR"

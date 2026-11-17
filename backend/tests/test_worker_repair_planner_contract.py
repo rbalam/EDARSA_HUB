@@ -391,3 +391,35 @@ def test_d2_2_recipe_actions_are_exactly_registered_scope():
     assert recipe["checks"][-1] == {
         "type": "git_diff_check",
     }
+
+
+def test_preview_watchdog_capability_is_registered_with_exact_scope():
+    capability = planner._resolve_capability(
+        planner._PREVIEW_WATCHDOG_INCIDENT,
+        planner._PREVIEW_WATCHDOG_CAPABILITY,
+    )
+    assert capability.code == planner._PREVIEW_WATCHDOG_CAPABILITY
+    assert capability.incident_ids == (
+        planner._PREVIEW_WATCHDOG_INCIDENT,
+    )
+    assert capability.required_paths == (
+        planner._PREVIEW_WATCHDOG_SCRIPT,
+        planner._PREVIEW_WATCHDOG_TEST,
+    )
+
+    recipe = capability.builder(
+        SimpleNamespace(
+            incident_id=planner._PREVIEW_WATCHDOG_INCIDENT,
+        ),
+        {"base_sha": "a" * 40},
+    )
+    action_paths = {
+        action["path"]
+        for action in recipe["actions"]
+    }
+    assert action_paths == set(
+        capability.required_paths
+    )
+    assert recipe["checks"][-1] == {
+        "type": "git_diff_check",
+    }

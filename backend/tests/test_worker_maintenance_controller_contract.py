@@ -248,3 +248,49 @@ def test_d2_2_pending_audit_accepts_only_exact_authority_context():
     }
     decision = repaired_pending_audit(incident, result)
     assert decision.state is MaintenanceState.REPAIRED_PENDING_AUDIT
+
+
+def test_preview_watchdog_scope_requires_exact_incident_and_capability():
+    from tools.mirror_sync.worker_maintenance_contract import (
+        PREVIEW_WATCHDOG_AUTHORIZED_PATHS,
+        PREVIEW_WATCHDOG_CAPABILITY_CODE,
+        PREVIEW_WATCHDOG_INCIDENT_ID,
+    )
+
+    authorized = sorted(PREVIEW_WATCHDOG_AUTHORIZED_PATHS)
+    incident = declare_incident(
+        PREVIEW_WATCHDOG_INCIDENT_ID,
+        authorized,
+        capability_code=PREVIEW_WATCHDOG_CAPABILITY_CODE,
+    )
+    assert incident.state is MaintenanceState.REPAIR_REQUIRED
+    assert incident.capability_code == PREVIEW_WATCHDOG_CAPABILITY_CODE
+    assert incident.production_allowed is False
+
+    for bad_incident, bad_capability, bad_paths in (
+        ("OTHER-INCIDENT", PREVIEW_WATCHDOG_CAPABILITY_CODE, authorized),
+        (PREVIEW_WATCHDOG_INCIDENT_ID, "OTHER_CAPABILITY", authorized),
+        (PREVIEW_WATCHDOG_INCIDENT_ID, None, authorized),
+        (
+            PREVIEW_WATCHDOG_INCIDENT_ID,
+            PREVIEW_WATCHDOG_CAPABILITY_CODE,
+            authorized + ["tools/bootstrap/install_bootstrap_watchdog.sh"],
+        ),
+        (
+            PREVIEW_WATCHDOG_INCIDENT_ID,
+            PREVIEW_WATCHDOG_CAPABILITY_CODE,
+            authorized + ["backend/modules/inventarios/inventarios_detector_job.py"],
+        ),
+    ):
+        try:
+            declare_incident(
+                bad_incident,
+                bad_paths,
+                capability_code=bad_capability,
+            )
+        except ValueError as exc:
+            assert "REPAIR_SCOPE_FORBIDDEN" in str(exc)
+        else:
+            raise AssertionError(
+                "Preview watchdog exception must fail closed"
+            )
