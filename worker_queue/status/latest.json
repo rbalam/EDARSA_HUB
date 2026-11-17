@@ -1,10 +1,10 @@
 {
-  "ahead_count": 0,
+  "ahead_count": 1,
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "SYNC",
+  "convergence_status": "LOCAL_AHEAD_ONLY",
   "development_sha": "537774dad3ca633541c65781c3316b62f751a20c",
-  "generated_at_utc": "2026-11-17T08:13:52Z",
+  "generated_at_utc": "2026-11-17T08:15:11Z",
   "history": {
     "done_total_local": 1739,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1681,
+      "age_seconds": 1760,
       "job_id": "FLOW-ENV-CONV",
       "reasons": [
         "REQUESTER_RBAC_DENIED:REQUESTER_NOT_FOUND"
@@ -25,7 +25,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1694,
+      "age_seconds": 1773,
       "job_id": "FLOW-REQ-CONV",
       "reasons": [
         "REQUESTER_RBAC_DENIED:REQUESTER_NOT_FOUND"
@@ -34,13 +34,13 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1628,
+      "age_seconds": 1707,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-5BDBD9C4B6261115188F",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "537774dad3ca633541c65781c3316b62f751a20c",
+  "local_development_sha": "3d6efccdba1903a5a1c2d648ffc87ead4e6b6151",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -54,15 +54,15 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-17T08:13:40Z",
-    "last_receive_utc": "2026-11-17T08:13:35Z",
+    "last_cycle_utc": "2026-11-17T08:14:59Z",
+    "last_receive_utc": "2026-11-17T08:15:10Z",
     "last_terminal_utc": "2026-11-17T07:46:43Z",
     "pid": "85",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "9400711a6cd0e352847b81ad85bdf5b0e94b4b7b",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "537774dad3ca633541c65781c3316b62f751a20c",
+      "development_sha": "3d6efccdba1903a5a1c2d648ffc87ead4e6b6151",
       "expected_generation": "20261117-universal-job-worker-lifecycle-v4",
       "generation_aligned": true,
       "production_touched": false,
