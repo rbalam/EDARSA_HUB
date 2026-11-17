@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "sync_compras",
+          "inventarios_detector",
+          "run_in_executor",
+          "to_thread",
+          "pandas",
+          "numpy",
+          "reportlab",
+          "cache",
+          "scheduler"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-PLATFORM_RUNTIME-REPOSITORY_CONTRACT_AUDIT_BOUNDE-04D2F2F57D6BF64A888F",
+  "mode": "READ_ONLY",
+  "objective": "RAM-PREVIEW-GATE0: auditoria READ_ONLY de contratos de codigo para identificar referencias a sync_compras, inventarios_detector, run_in_executor, to_thread, importaciones pesadas y mecanismos de retencion de memoria. No ejecutar cargas, no conectar a Produccion, no modificar archivos. Reportar solo coincidencias verificables y limitaciones de alcance.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "PLATFORM_RUNTIME",
+    "conflict_domains": [
+      "PLATFORM_RUNTIME"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
