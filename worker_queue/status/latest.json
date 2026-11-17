@@ -4,19 +4,19 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "537774dad3ca633541c65781c3316b62f751a20c",
-  "generated_at_utc": "2026-11-17T07:46:40Z",
+  "generated_at_utc": "2026-11-17T08:03:02Z",
   "history": {
-    "done_total_local": 1738,
+    "done_total_local": 1739,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1346,
-    "results_total_local": 2846
+    "results_total_local": 2847
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 50,
+      "age_seconds": 1031,
       "job_id": "FLOW-ENV-CONV",
       "reasons": [
         "REQUESTER_RBAC_DENIED:REQUESTER_NOT_FOUND"
@@ -25,7 +25,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 62,
+      "age_seconds": 1044,
       "job_id": "FLOW-REQ-CONV",
       "reasons": [
         "REQUESTER_RBAC_DENIED:REQUESTER_NOT_FOUND"
@@ -34,13 +34,19 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2541,
+      "age_seconds": 3523,
       "job_id": "SEM-PLATFORM_RUNTIME-REPOSITORY_CONTRACT_AUDIT_BOUNDE-04D2F2F57D6BF64A888F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2293,
+      "age_seconds": 978,
+      "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-5BDBD9C4B6261115188F",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3275,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-D3018893F8A18231F7A7",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,16 +60,16 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 2,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "remote_development_sha": "537774dad3ca633541c65781c3316b62f751a20c",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-17T07:46:16Z",
-    "last_receive_utc": "2026-11-17T07:46:11Z",
-    "last_terminal_utc": "2026-11-17T07:08:26Z",
-    "pid": "2693864",
+    "last_cycle_utc": "2026-11-17T08:02:41Z",
+    "last_receive_utc": "2026-11-17T08:02:58Z",
+    "last_terminal_utc": "2026-11-17T07:46:43Z",
+    "pid": "85",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "9400711a6cd0e352847b81ad85bdf5b0e94b4b7b",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
