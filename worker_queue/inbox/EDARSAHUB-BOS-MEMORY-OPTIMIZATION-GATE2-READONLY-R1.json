@@ -1,0 +1,69 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "request": {
+        "max_results": 35,
+        "paths": [
+          "backend/api/admin_cache.py",
+          "backend/core/db.py",
+          "backend/core/inventarios/resolver_canonico.py",
+          "backend/core/communications/templates/template_service.py",
+          "backend/core/scheduler/__init__.py",
+          "backend/core/scheduler/config.py",
+          "backend/modules/scheduler_runtime",
+          "backend/modules/finanzas/sql_subprocess_helper.py",
+          "backend/modules/sync_historicos",
+          "backend/modules/worker_mcp/inprocess.py",
+          "backend/modules/worker_mcp/app.py",
+          "tools/mirror_sync/edarsahub-universal-worker.conf",
+          "tools/mirror_sync/edarsahub-worker-control-plane.conf",
+          "tools/mirror_sync/universal_job_worker.sh",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/bootstrap/edarsahub_bootstrap_watchdog.py"
+        ],
+        "search_terms": [
+          "cache",
+          "lru_cache",
+          "scheduler",
+          "start_scheduler",
+          "subprocess",
+          "mcp_inprocess",
+          "intake_seconds",
+          "control_plane"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-MEMORY-OPTIMIZATION-GATE2-READONLY-R1",
+  "mode": "READ_ONLY",
+  "objective": "Memory Optimization Gate 2 (READ_ONLY): auditar el consumo potencial de memoria del backend, inicializacion de modulos, caches en memoria, Scheduler, sincronizaciones y procesos auxiliares del Worker/MCP, identificando optimizaciones seguras y verificables sin modificar codigo, sin reiniciar servicios y sin tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Memory Optimization Gate 2",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "MEMORY_OPTIMIZATION_GATE2",
+    "conflict_domains": [
+      "MEMORY_OPTIMIZATION_GATE2"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
