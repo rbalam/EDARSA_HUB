@@ -1,10 +1,10 @@
 {
-  "ahead_count": 0,
+  "ahead_count": 1,
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "SYNC",
+  "convergence_status": "LOCAL_AHEAD_ONLY",
   "development_sha": "3a8d20f96b43147053db7e17cde326d14f634394",
-  "generated_at_utc": "2026-11-17T01:49:41Z",
+  "generated_at_utc": "2026-11-17T01:52:00Z",
   "history": {
     "done_total_local": 1732,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2580,
+      "age_seconds": 2720,
       "job_id": "EDARSAHUB-BOS-MEMORY-OPTIMIZATION-GATE2-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "3a8d20f96b43147053db7e17cde326d14f634394",
+  "local_development_sha": "03564c2650af60d97fdbd4ec3cccaf150bc3b155",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -35,17 +35,17 @@
   "remote_development_sha": "3a8d20f96b43147053db7e17cde326d14f634394",
   "runtime": {
     "current_job_id": null,
-    "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-11-17T01:49:30Z",
-    "last_receive_utc": "2026-11-17T00:45:01Z",
+    "generation": "20261117-universal-job-worker-lifecycle-v4",
+    "last_cycle_utc": "2026-11-17T01:51:53Z",
+    "last_receive_utc": "2026-11-17T01:51:48Z",
     "last_terminal_utc": "2026-11-17T01:06:40Z",
-    "pid": "651624",
+    "pid": "659553",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "d37af8c6c167af33d8233bbfb7ae68346c032e29",
-      "actual_generation": "20260827-universal-job-worker-selfheal-v3",
+      "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "3a8d20f96b43147053db7e17cde326d14f634394",
-      "expected_generation": "20260827-universal-job-worker-selfheal-v3",
+      "development_sha": "03564c2650af60d97fdbd4ec3cccaf150bc3b155",
+      "expected_generation": "20261117-universal-job-worker-lifecycle-v4",
       "generation_aligned": true,
       "production_touched": false,
       "required_capabilities": [
@@ -58,8 +58,8 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": true,
-      "worker_code_tree_sha": "d37af8c6c167af33d8233bbfb7ae68346c032e29"
+      "worker_code_tree_aligned": false,
+      "worker_code_tree_sha": "0ab97a1eddbc0d23b0e73550800be37f7222d9bf"
     }
   },
   "schema": "edarsahub.worker-health.v3",
