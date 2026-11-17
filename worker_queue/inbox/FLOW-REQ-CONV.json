@@ -1,0 +1,33 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "FLOW-REQ-CONV",
+  "mode": "READ_ONLY",
+  "objective": "Certificar flujo canonico universal worker",
+  "production_allowed": false,
+  "requester": {
+    "chat": "universal-worker-flow",
+    "email": "superadmin@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "chatgpt-worker-cert"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
