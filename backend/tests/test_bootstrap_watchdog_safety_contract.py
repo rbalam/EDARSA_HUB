@@ -67,6 +67,9 @@ def test_bootstrap_can_recover_stale_universal_worker_without_mirror_dependency(
     assert "UNIVERSAL_WORKER_STALE_RECOVERY" in text
     assert "BOOTSTRAP_WATCHDOG_SUPERVISOR_FALLBACK" in text
     assert 'supervisor_restart("WORKER_HEARTBEAT_STALE", WORKER_SERVICE)' in text
+    assert 'cycle_age = age_seconds(RUNTIME / "last_cycle_utc")' in text
+    assert "stale = cycle_age is None or cycle_age > MAX_STALE" in text
+    assert '"worker_receive_age_seconds": receive_age' in text
 
 
 def test_bootstrap_may_restart_mirror_only_after_ff():

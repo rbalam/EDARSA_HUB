@@ -610,8 +610,9 @@ def cycle() -> dict:
     control_plane_runtime = (
         control_plane_runtime_convergence()
     )
-    age = age_seconds(RUNTIME / "last_receive_utc")
-    stale = age is None or age > MAX_STALE
+    cycle_age = age_seconds(RUNTIME / "last_cycle_utc")
+    receive_age = age_seconds(RUNTIME / "last_receive_utc")
+    stale = cycle_age is None or cycle_age > MAX_STALE
     restarted = False
 
     # Mirror lifecycle is enabled only after explicit authorization. Pod restart
@@ -633,7 +634,8 @@ def cycle() -> dict:
         restarted = supervisor_restart("WORKER_HEARTBEAT_STALE", WORKER_SERVICE) or restarted
         audit(
             "UNIVERSAL_WORKER_STALE_RECOVERY",
-            worker_receive_age_seconds=age,
+            worker_cycle_age_seconds=cycle_age,
+            worker_receive_age_seconds=receive_age,
             action="SUPERVISOR_RESTART",
             service=WORKER_SERVICE,
             restarted=restarted,
@@ -646,7 +648,8 @@ def cycle() -> dict:
         "ff": ff,
         "backend_recovery": backend,
         "control_plane_runtime": control_plane_runtime,
-        "worker_receive_age_seconds": age,
+        "worker_cycle_age_seconds": cycle_age,
+        "worker_receive_age_seconds": receive_age,
         "worker_stale": stale,
         "restart_requested": restarted,
         "worker_restart_owner": "BOOTSTRAP_WATCHDOG_SUPERVISOR_FALLBACK",

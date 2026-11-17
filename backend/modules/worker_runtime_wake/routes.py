@@ -31,7 +31,7 @@ router = APIRouter(tags=["worker-runtime-internal"])
 REPO_ROOT = Path("/app")
 QUEUE_STATE_DIR = REPO_ROOT / ".git" / "universal-worker-queue"
 RUNTIME_DIR = QUEUE_STATE_DIR / "runtime"
-LAST_RECEIVE = RUNTIME_DIR / "last_receive_utc"
+LAST_CYCLE = RUNTIME_DIR / "last_cycle_utc"
 QUEUE_REF = "refs/heads/worker/requests"
 CANONICAL_QUEUE_REMOTE = "https://github.com/rbalam/EDARSA_HUB.git"
 DEV_BRANCH = "Edarsahub_Desarrollo"
@@ -61,7 +61,7 @@ _JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 WORKER_TREE_STATE = RUNTIME_DIR / "active_worker_code_tree_sha"
 WORKER_CODE_TREE_SPEC = "HEAD:tools/mirror_sync"
 GIT_GUARD_PATH = REPO_ROOT / "tools" / "mirror_sync" / "git_divergence_guard.py"
-WAKE_ROUTE_VERSION = "r35-platform-managed-drift"
+WAKE_ROUTE_VERSION = "r43-cycle-heartbeat"
 PLATFORM_MANAGED_SYSTEM_DEPS = ".emergent/system_deps.txt"
 
 def _expected_platform_system_deps_drift() -> bool:
@@ -330,7 +330,9 @@ def _active_worker_code_tree() -> str | None:
 
 def _heartbeat_age_seconds() -> float | None:
     try:
-        raw = LAST_RECEIVE.read_text(encoding="utf-8").strip().replace("Z", "+00:00")
+        # Receive time is transport telemetry and may be old on an idle,
+        # healthy worker. The worker cycle is the canonical liveness signal.
+        raw = LAST_CYCLE.read_text(encoding="utf-8").strip().replace("Z", "+00:00")
         value = datetime.fromisoformat(raw)
         if value.tzinfo is None:
             value = value.replace(tzinfo=timezone.utc)

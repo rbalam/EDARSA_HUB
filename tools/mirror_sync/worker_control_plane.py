@@ -309,11 +309,16 @@ def heal_runtime_generation_and_heartbeat() -> dict[str, Any]:
     actual = read_text(RUNTIME / "generation")
     pid_raw = read_text(RUNTIME / "pid")
     pid = int(pid_raw) if pid_raw.isdigit() else 0
+    cycle = read_text(RUNTIME / "last_cycle_utc")
+    cycle_age = parse_iso_age(cycle)
     receive = read_text(RUNTIME / "last_receive_utc")
     receive_age = parse_iso_age(receive)
 
     generation_stale = bool(expected and actual != expected)
-    heartbeat_stale = receive_age is None or receive_age > HEARTBEAT_STALE
+    # last_receive_utc is transport telemetry, not process liveness. It can
+    # remain old while the queue is idle or a bounded receive is in flight.
+    # last_cycle_utc is written by the worker before every intake attempt.
+    heartbeat_stale = cycle_age is None or cycle_age > HEARTBEAT_STALE
     pid_dead = not pid_alive(pid)
 
     current_job_id = read_text(
@@ -355,6 +360,8 @@ def heal_runtime_generation_and_heartbeat() -> dict[str, Any]:
         "actual_generation": actual,
         "pid": pid,
         "pid_alive": not pid_dead,
+        "last_cycle_utc": cycle or None,
+        "last_cycle_age_seconds": cycle_age,
         "last_receive_utc": receive or None,
         "last_receive_age_seconds": receive_age,
         "current_job_id": current_job_id or None,

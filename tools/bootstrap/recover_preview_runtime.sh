@@ -230,12 +230,12 @@ case "$HTTP_CODE" in
 esac
 
 for attempt in $(seq 1 12); do
-  if [ -r "$APP/.git/universal-worker-queue/runtime/last_receive_utc" ]; then
-    LAST_RECEIVE="$(cat "$APP/.git/universal-worker-queue/runtime/last_receive_utc" 2>/dev/null || true)"
-    LAST_RECEIVE_EPOCH="$(date -d "$LAST_RECEIVE" +%s 2>/dev/null || echo 0)"
+  if [ -r "$APP/.git/universal-worker-queue/runtime/last_cycle_utc" ]; then
+    LAST_CYCLE="$(cat "$APP/.git/universal-worker-queue/runtime/last_cycle_utc" 2>/dev/null || true)"
+    LAST_CYCLE_EPOCH="$(date -d "$LAST_CYCLE" +%s 2>/dev/null || echo 0)"
     echo "WORKER_HEARTBEAT_ATTEMPT=$attempt"
-    echo "WORKER_LAST_RECEIVE_UTC=$LAST_RECEIVE"
-    if [ "$LAST_RECEIVE_EPOCH" -ge "$RECOVERY_STARTED_EPOCH" ]; then
+    echo "WORKER_LAST_CYCLE_UTC=$LAST_CYCLE"
+    if [ "$LAST_CYCLE_EPOCH" -ge "$RECOVERY_STARTED_EPOCH" ]; then
       echo "WORKER_HEARTBEAT_FRESH=YES"
       echo "PREVIEW_RUNTIME_RECOVERY=COMPLETE"
       echo "PRODUCTION_TOUCHED=NO"

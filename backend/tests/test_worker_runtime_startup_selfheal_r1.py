@@ -52,9 +52,14 @@ def test_preview_recovery_waits_for_backend_http_readiness_before_local_wake():
 
 def test_preview_recovery_requires_fresh_worker_heartbeat():
     assert 'RECOVERY_STARTED_EPOCH="$(date +%s)"' in RECOVERY
-    assert 'LAST_RECEIVE_EPOCH="$(date -d "$LAST_RECEIVE" +%s 2>/dev/null || echo 0)"' in RECOVERY
+    assert 'LAST_CYCLE_EPOCH="$(date -d "$LAST_CYCLE" +%s 2>/dev/null || echo 0)"' in RECOVERY
     assert 'WORKER_HEARTBEAT_FRESH=YES' in RECOVERY
-    assert '"$LAST_RECEIVE_EPOCH" -ge "$RECOVERY_STARTED_EPOCH"' in RECOVERY
+    assert '"$LAST_CYCLE_EPOCH" -ge "$RECOVERY_STARTED_EPOCH"' in RECOVERY
+
+
+def test_preview_recovery_uses_cycle_liveness_not_queue_receive_telemetry():
+    assert "runtime/last_cycle_utc" in RECOVERY
+    assert "runtime/last_receive_utc" not in RECOVERY
 
 
 def test_preview_startup_ensures_recovery_supervisor_services():

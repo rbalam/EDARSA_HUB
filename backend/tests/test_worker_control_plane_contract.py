@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -33,11 +34,53 @@ def test_runtime_self_heal_detects_generation_heartbeat_and_pid():
     assert "HEARTBEAT_STALE" in text
     assert "PID_DEAD" in text
     assert "request_universal_restart" in text
+    assert 'cycle = read_text(RUNTIME / "last_cycle_utc")' in text
+    assert "heartbeat_stale = cycle_age is None" in text
     assert "last_receive_utc" in text
+    assert '"last_cycle_age_seconds": cycle_age' in text
     assert "current_job_id" in text
     assert "active_execution_ownership" in text
     assert "heartbeat_deferred_for_active_job" in text
     assert "WORKER_HEARTBEAT_STALE_DEFERRED_ACTIVE_JOB" in text
+
+
+def test_runtime_self_heal_does_not_restart_idle_worker_with_fresh_cycle(
+    monkeypatch,
+):
+    from tools.mirror_sync import worker_control_plane as control
+
+    fresh_cycle = datetime.now(timezone.utc).isoformat()
+    values = {
+        "generation": "test-generation",
+        "pid": "4242",
+        "last_cycle_utc": fresh_cycle,
+        "last_receive_utc": "2000-01-01T00:00:00+00:00",
+        "current_job_id": "",
+    }
+
+    monkeypatch.setattr(
+        control,
+        "expected_generation",
+        lambda: "test-generation",
+    )
+    monkeypatch.setattr(
+        control,
+        "read_text",
+        lambda path: values.get(path.name, ""),
+    )
+    monkeypatch.setattr(control, "pid_alive", lambda pid: pid == 4242)
+    restarts = []
+    monkeypatch.setattr(
+        control,
+        "request_universal_restart",
+        lambda reason: restarts.append(reason) or True,
+    )
+
+    state = control.heal_runtime_generation_and_heartbeat()
+    assert state["runtime_repair_needed"] is False
+    assert state["last_cycle_age_seconds"] <= control.HEARTBEAT_STALE
+    assert state["last_receive_age_seconds"] > control.HEARTBEAT_STALE
+    assert restarts == []
 
 
 def test_worktree_recovery_is_preserving_and_fast_forward_only():
