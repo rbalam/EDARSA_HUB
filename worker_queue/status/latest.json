@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "LOCAL_AHEAD_ONLY",
   "development_sha": "537774dad3ca633541c65781c3316b62f751a20c",
-  "generated_at_utc": "2026-11-17T19:28:47Z",
+  "generated_at_utc": "2026-11-17T19:30:10Z",
   "history": {
     "done_total_local": 1740,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2973,
+      "age_seconds": 3056,
       "job_id": "EDARSAHUB-COMERCIAL-KPI-WRITER-VERIFY-GATE1-20261117",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,8 +36,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-17T19:28:41Z",
-    "last_receive_utc": "2026-11-17T19:28:36Z",
+    "last_cycle_utc": "2026-11-17T19:30:03Z",
+    "last_receive_utc": "2026-11-17T19:29:58Z",
     "last_terminal_utc": "2026-11-17T18:39:13Z",
     "pid": "85",
     "runtime_fingerprint": {
