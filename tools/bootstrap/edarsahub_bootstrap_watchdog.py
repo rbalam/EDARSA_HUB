@@ -20,6 +20,16 @@ BACKEND_WAKE_URL = os.environ.get("EDARSAHUB_BACKEND_WAKE_URL", "http://127.0.0.
 INTERVAL = int(os.environ.get("EDARSAHUB_BOOTSTRAP_INTERVAL", "20"))
 MAX_STALE = int(os.environ.get("EDARSAHUB_BOOTSTRAP_MAX_STALE", "60"))
 BACKEND_RECOVERY_COOLDOWN = int(os.environ.get("EDARSAHUB_BACKEND_RECOVERY_COOLDOWN", "120"))
+BACKEND_UNHEALTHY_THRESHOLD = max(
+    1,
+    int(os.environ.get("EDARSAHUB_BACKEND_UNHEALTHY_THRESHOLD", "3")),
+)
+BACKEND_STOPWAITSECS = 30
+SUPERVISOR_RESTART_TIMEOUT = max(
+    BACKEND_STOPWAITSECS + 5,
+    int(os.environ.get("EDARSAHUB_SUPERVISOR_RESTART_TIMEOUT", "65")),
+)
+STOPPED_SUPERVISOR_STATES = frozenset({"STOPPED", "FATAL", "EXITED"})
 RUNTIME = APP / ".git" / "universal-worker-queue" / "runtime"
 MIRROR_STATE = APP / ".git" / "mirror-sync"
 MIRROR_ENABLE = MIRROR_STATE / "ENABLED"
@@ -28,6 +38,7 @@ SYNC_PAUSE = APP / ".git" / "EDARSAHUB_SYNC_PAUSED"
 STATUS = STATE / "status.json"
 AUDIT = STATE / "audit.jsonl"
 BACKEND_RECOVERY_STAMP = STATE / "backend_recovery_epoch"
+BACKEND_RECOVERY_STATE = STATE / "backend_recovery_state.json"
 
 CONTROL_PLANE_SERVICE = os.environ.get(
     "EDARSAHUB_CONTROL_PLANE_SERVICE",
@@ -178,7 +189,7 @@ def backend_wake_route_health() -> dict:
                 "--max-time",
                 "5",
                 "--output",
-                "/tmp/edarsahub-bootstrap-wake-probe.json",
+                "/dev/null",
                 "--write-out",
                 "%{http_code}",
                 "--request",
@@ -192,10 +203,114 @@ def backend_wake_route_health() -> dict:
             timeout=8,
         )
         code = (result.stdout or "").strip()[-3:]
+        http_code = code if len(code) == 3 and code.isdigit() else "000"
         healthy = result.returncode == 0 and code == "401"
-        return {"healthy": healthy, "http_code": code or "000", "returncode": result.returncode}
+        if healthy:
+            failure_kind = None
+        elif result.returncode == 28:
+            failure_kind = "PROBE_TIMEOUT"
+        elif http_code == "404":
+            failure_kind = "ROUTE_NOT_MOUNTED"
+        elif result.returncode != 0:
+            failure_kind = "TRANSPORT_ERROR"
+        else:
+            failure_kind = "HTTP_UNHEALTHY"
+        return {
+            "healthy": healthy,
+            "http_code": http_code,
+            "returncode": result.returncode,
+            "failure_kind": failure_kind,
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            "healthy": False,
+            "http_code": "000",
+            "returncode": 124,
+            "failure_kind": "PROBE_TIMEOUT",
+        }
     except Exception as exc:
-        return {"healthy": False, "http_code": "000", "error": str(exc)}
+        return {
+            "healthy": False,
+            "http_code": "000",
+            "failure_kind": "PROBE_ERROR",
+            "error": str(exc),
+        }
+
+
+def backend_supervisor_status(service: str = BACKEND_SERVICE) -> dict:
+    try:
+        result = run(["supervisorctl", "status", service], cwd=APP, timeout=15)
+    except subprocess.TimeoutExpired:
+        return {
+            "state": "STATUS_TIMEOUT",
+            "confirmed_stopped": False,
+            "running": False,
+            "returncode": 124,
+        }
+    except Exception as exc:
+        return {
+            "state": "STATUS_ERROR",
+            "confirmed_stopped": False,
+            "running": False,
+            "error": str(exc),
+        }
+
+    raw = (result.stdout or "").strip()
+    tokens = raw.split()
+    parsed_state = "UNKNOWN"
+    if len(tokens) >= 2 and tokens[0] == service:
+        parsed_state = tokens[1].upper()
+    else:
+        for token in tokens:
+            candidate = token.strip(",:").upper()
+            if candidate in {
+                "RUNNING",
+                "STARTING",
+                "STOPPING",
+                "BACKOFF",
+                *STOPPED_SUPERVISOR_STATES,
+            }:
+                parsed_state = candidate
+                break
+
+    confirmed_stopped = parsed_state in STOPPED_SUPERVISOR_STATES
+    return {
+        "state": parsed_state,
+        "confirmed_stopped": confirmed_stopped,
+        "running": parsed_state == "RUNNING",
+        "returncode": result.returncode,
+    }
+
+
+def _write_atomic_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_name(f"{path.name}.tmp-{os.getpid()}-{time.monotonic_ns()}")
+    temp.write_text(content, encoding="utf-8")
+    os.replace(temp, path)
+
+
+def _read_backend_recovery_state() -> dict:
+    payload = read_json(BACKEND_RECOVERY_STATE)
+    if not isinstance(payload, dict):
+        return {"consecutive_failures": 0}
+    try:
+        failures = max(0, int(payload.get("consecutive_failures") or 0))
+    except (TypeError, ValueError):
+        failures = 0
+    return {**payload, "consecutive_failures": failures}
+
+
+def _write_backend_recovery_state(payload: dict) -> None:
+    record = {
+        "schema": "edarsahub.backend-recovery-state.v1",
+        **payload,
+        "updated_at_utc": now(),
+        "production_touched": False,
+    }
+    _write_atomic_text(
+        BACKEND_RECOVERY_STATE,
+        json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+    )
 
 
 def maybe_recover_backend() -> dict:
@@ -203,33 +318,157 @@ def maybe_recover_backend() -> dict:
         audit("BACKEND_RECOVERY_BLOCKED_PRODUCTION_ENV", service=BACKEND_SERVICE)
         return {"state": "BLOCKED_PRODUCTION_ENV", "restarted": False}
 
+    prev_state = _read_backend_recovery_state()
+    prev_failures = int(prev_state.get("consecutive_failures") or 0)
+
     probe = backend_wake_route_health()
     if probe.get("healthy"):
-        return {"state": "HEALTHY", "probe": probe, "restarted": False}
+        if prev_failures > 0 or BACKEND_RECOVERY_STATE.exists():
+            _write_backend_recovery_state(
+                {
+                    "consecutive_failures": 0,
+                    "last_healthy_at_utc": now(),
+                    "previous_failures": prev_failures,
+                }
+            )
+        if prev_failures > 0:
+            audit(
+                "BACKEND_PROBE_RECOVERED",
+                previous_failures=prev_failures,
+                service=BACKEND_SERVICE,
+            )
+        return {
+            "state": "HEALTHY",
+            "probe": probe,
+            "consecutive_failures": 0,
+            "restarted": False,
+        }
+
+    supervisor_info = backend_supervisor_status(BACKEND_SERVICE)
+    sup_state = str(supervisor_info.get("state") or "UNKNOWN")
+    confirmed_stopped = bool(supervisor_info.get("confirmed_stopped"))
+    consecutive_failures = prev_failures + 1
+
+    if not confirmed_stopped and consecutive_failures < BACKEND_UNHEALTHY_THRESHOLD:
+        _write_backend_recovery_state(
+            {
+                "consecutive_failures": consecutive_failures,
+                "last_unhealthy_at_utc": now(),
+                "last_failure_kind": probe.get("failure_kind"),
+                "supervisor_state": sup_state,
+            }
+        )
+        audit(
+            "BACKEND_PROBE_TRANSIENT_FAILURE",
+            probe=probe,
+            supervisor_state=sup_state,
+            consecutive_failures=consecutive_failures,
+            threshold=BACKEND_UNHEALTHY_THRESHOLD,
+            service=BACKEND_SERVICE,
+        )
+        return {
+            "state": "TRANSIENT_UNHEALTHY",
+            "probe": probe,
+            "supervisor_state": sup_state,
+            "consecutive_failures": consecutive_failures,
+            "threshold": BACKEND_UNHEALTHY_THRESHOLD,
+            "restarted": False,
+        }
 
     now_epoch = int(time.time())
     try:
         last_epoch = int(BACKEND_RECOVERY_STAMP.read_text(encoding="utf-8").strip())
     except Exception:
         last_epoch = 0
-    if now_epoch - last_epoch < BACKEND_RECOVERY_COOLDOWN:
-        audit("BACKEND_RECOVERY_COOLDOWN", probe=probe, service=BACKEND_SERVICE)
-        return {"state": "COOLDOWN", "probe": probe, "restarted": False}
 
-    STATE.mkdir(parents=True, exist_ok=True)
-    BACKEND_RECOVERY_STAMP.write_text(str(now_epoch) + "\n", encoding="utf-8")
-    restarted = supervisor_restart("WAKE_ROUTE_UNHEALTHY", BACKEND_SERVICE)
+    in_cooldown = (now_epoch - last_epoch) < BACKEND_RECOVERY_COOLDOWN
+    if in_cooldown and not confirmed_stopped:
+        _write_backend_recovery_state(
+            {
+                "consecutive_failures": consecutive_failures,
+                "last_unhealthy_at_utc": now(),
+                "last_failure_kind": probe.get("failure_kind"),
+                "supervisor_state": sup_state,
+            }
+        )
+        audit(
+            "BACKEND_RECOVERY_COOLDOWN",
+            probe=probe,
+            supervisor_state=sup_state,
+            consecutive_failures=consecutive_failures,
+            service=BACKEND_SERVICE,
+        )
+        return {
+            "state": "COOLDOWN",
+            "probe": probe,
+            "supervisor_state": sup_state,
+            "consecutive_failures": consecutive_failures,
+            "restarted": False,
+        }
+
+    cooldown_bypassed = bool(in_cooldown and confirmed_stopped)
+    if confirmed_stopped:
+        restarted = supervisor_restart("BACKEND_PROCESS_STOPPED", BACKEND_SERVICE)
+        recovery_reason = "BACKEND_PROCESS_STOPPED"
+    else:
+        restarted = supervisor_restart("WAKE_ROUTE_UNHEALTHY", BACKEND_SERVICE)
+        recovery_reason = "WAKE_ROUTE_UNHEALTHY"
+
+    post_supervisor = (
+        backend_supervisor_status(BACKEND_SERVICE)
+        if restarted
+        else supervisor_info
+    )
+    post_probe = backend_wake_route_health() if restarted else probe
+    restart_confirmed = bool(
+        restarted
+        and not post_supervisor.get("confirmed_stopped")
+        and (post_supervisor.get("running") or post_probe.get("healthy"))
+    )
+
+    if restart_confirmed:
+        confirmed_epoch = int(time.time())
+        _write_atomic_text(BACKEND_RECOVERY_STAMP, f"{confirmed_epoch}\n")
+        _write_backend_recovery_state(
+            {
+                "consecutive_failures": 0,
+                "last_confirmed_restart_at_utc": now(),
+                "last_recovery_reason": recovery_reason,
+                "supervisor_state": post_supervisor.get("state"),
+            }
+        )
+    else:
+        _write_backend_recovery_state(
+            {
+                "consecutive_failures": consecutive_failures,
+                "last_unhealthy_at_utc": now(),
+                "last_failed_restart_at_utc": now(),
+                "last_recovery_reason": recovery_reason,
+                "supervisor_state": post_supervisor.get("state"),
+            }
+        )
+
     audit(
         "PREVIEW_BACKEND_STALE_RECOVERY",
         probe=probe,
+        supervisor_state=sup_state,
+        post_supervisor_state=post_supervisor.get("state"),
+        consecutive_failures=consecutive_failures,
+        cooldown_bypassed=cooldown_bypassed,
+        reason=recovery_reason,
         action="SUPERVISOR_RESTART",
         service=BACKEND_SERVICE,
-        restarted=restarted,
+        restarted=restart_confirmed,
     )
     return {
-        "state": "RESTART_REQUESTED" if restarted else "RESTART_FAILED",
+        "state": "RESTART_REQUESTED" if restart_confirmed else "RESTART_FAILED",
         "probe": probe,
-        "restarted": restarted,
+        "supervisor_state": sup_state,
+        "post_supervisor_state": post_supervisor.get("state"),
+        "consecutive_failures": 0 if restart_confirmed else consecutive_failures,
+        "cooldown_bypassed": cooldown_bypassed,
+        "restarted": restart_confirmed,
+        "restart_confirmed": restart_confirmed,
     }
 
 
@@ -553,13 +792,41 @@ def control_plane_runtime_convergence() -> dict:
     }
 
 
-def supervisor_restart(reason: str, service: str = SERVICE) -> bool:
+def supervisor_restart(
+    reason: str,
+    service: str = SERVICE,
+    timeout: int | None = None,
+) -> bool:
     if is_production_environment():
         audit("SUPERVISOR_RESTART_BLOCKED_PRODUCTION_ENV", reason=reason, service=service)
         return False
-    result = run(["supervisorctl", "restart", service], cwd=APP, timeout=30)
+    effective_timeout = max(
+        BACKEND_STOPWAITSECS + 5,
+        SUPERVISOR_RESTART_TIMEOUT if timeout is None else int(timeout),
+    )
+    try:
+        result = run(
+            ["supervisorctl", "restart", service],
+            cwd=APP,
+            timeout=effective_timeout,
+        )
+    except subprocess.TimeoutExpired:
+        audit(
+            "SUPERVISOR_RESTART_TIMEOUT",
+            reason=reason,
+            service=service,
+            timeout=effective_timeout,
+        )
+        return False
     ok = result.returncode == 0
-    audit("SUPERVISOR_RESTART", reason=reason, service=service, ok=ok, output=result.stdout[-1000:])
+    audit(
+        "SUPERVISOR_RESTART",
+        reason=reason,
+        service=service,
+        timeout=effective_timeout,
+        ok=ok,
+        output=(result.stdout or "")[-1000:],
+    )
     return ok
 
 

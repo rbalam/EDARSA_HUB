@@ -189,3 +189,328 @@ def test_control_plane_convergence_remains_fail_closed():
     assert "Edarsahub_Produccion" not in text
     assert "MIRROR_ENABLE.unlink" not in text
     assert "MIRROR_STOP.unlink" not in text
+
+
+def _load_watchdog_for_test(tmp_path: Path, monkeypatch):
+    import importlib.util
+
+    state_dir = tmp_path / "bootstrap_state"
+    monkeypatch.setenv("EDARSAHUB_BOOTSTRAP_STATE", str(state_dir))
+    monkeypatch.setenv("EDARSA_ENV", "PREVIEW")
+    monkeypatch.delenv("EDARSAHUB_BACKEND_UNHEALTHY_THRESHOLD", raising=False)
+    monkeypatch.delenv("EDARSAHUB_SUPERVISOR_RESTART_TIMEOUT", raising=False)
+    monkeypatch.delenv("EDARSAHUB_BACKEND_RECOVERY_COOLDOWN", raising=False)
+
+    spec = importlib.util.spec_from_file_location(
+        f"edarsahub_bootstrap_watchdog_test_{id(tmp_path)}",
+        BOOTSTRAP,
+    )
+    module = importlib.util.module_from_spec(spec)
+    assert spec is not None and spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_transient_probe_timeout_does_not_restart_running_backend(tmp_path, monkeypatch):
+    import subprocess
+
+    watchdog = _load_watchdog_for_test(tmp_path, monkeypatch)
+    calls: list[list[str]] = []
+
+    def fake_run(args, cwd=None, timeout=60):
+        calls.append(list(args))
+        if args[0] == "curl":
+            return subprocess.CompletedProcess(args, 28, stdout="000")
+        if args[:2] == ["supervisorctl", "status"]:
+            return subprocess.CompletedProcess(
+                args, 0, stdout="backend RUNNING pid 1001, uptime 0:05:00\n"
+            )
+        raise AssertionError(f"unexpected command: {args}")
+
+    monkeypatch.setattr(watchdog, "run", fake_run)
+    outcome = watchdog.maybe_recover_backend()
+
+    assert outcome["state"] == "TRANSIENT_UNHEALTHY"
+    assert outcome["restarted"] is False
+    assert outcome["consecutive_failures"] == 1
+    assert outcome["probe"]["failure_kind"] == "PROBE_TIMEOUT"
+    assert not watchdog.BACKEND_RECOVERY_STAMP.exists()
+    assert not any(cmd[:2] == ["supervisorctl", "restart"] for cmd in calls)
+
+
+def test_consecutive_failures_require_threshold_before_restart(tmp_path, monkeypatch):
+    import subprocess
+
+    watchdog = _load_watchdog_for_test(tmp_path, monkeypatch)
+    restart_calls = 0
+    restarted_ok = False
+
+    def fake_run(args, cwd=None, timeout=60):
+        nonlocal restart_calls, restarted_ok
+        if args[0] == "curl":
+            if restarted_ok:
+                return subprocess.CompletedProcess(args, 0, stdout="401")
+            return subprocess.CompletedProcess(args, 28, stdout="000")
+        if args[:2] == ["supervisorctl", "status"]:
+            return subprocess.CompletedProcess(
+                args, 0, stdout="backend RUNNING pid 1002, uptime 0:05:00\n"
+            )
+        if args[:2] == ["supervisorctl", "restart"]:
+            restart_calls += 1
+            restarted_ok = True
+            return subprocess.CompletedProcess(args, 0, stdout="backend: started\n")
+        raise AssertionError(f"unexpected command: {args}")
+
+    monkeypatch.setattr(watchdog, "run", fake_run)
+
+    first = watchdog.maybe_recover_backend()
+    second = watchdog.maybe_recover_backend()
+    assert first["state"] == "TRANSIENT_UNHEALTHY"
+    assert first["consecutive_failures"] == 1
+    assert second["state"] == "TRANSIENT_UNHEALTHY"
+    assert second["consecutive_failures"] == 2
+    assert restart_calls == 0
+    assert not watchdog.BACKEND_RECOVERY_STAMP.exists()
+
+    third = watchdog.maybe_recover_backend()
+    assert third["state"] == "RESTART_REQUESTED"
+    assert third["restarted"] is True
+    assert third["restart_confirmed"] is True
+    assert third["consecutive_failures"] == 0
+    assert restart_calls == 1
+    assert watchdog.BACKEND_RECOVERY_STAMP.exists()
+
+
+def test_healthy_probe_resets_consecutive_failure_counter(tmp_path, monkeypatch):
+    import subprocess
+
+    watchdog = _load_watchdog_for_test(tmp_path, monkeypatch)
+    probe_healthy = False
+    restart_calls = 0
+
+    def fake_run(args, cwd=None, timeout=60):
+        nonlocal restart_calls
+        if args[0] == "curl":
+            if probe_healthy:
+                return subprocess.CompletedProcess(args, 0, stdout="401")
+            return subprocess.CompletedProcess(args, 28, stdout="000")
+        if args[:2] == ["supervisorctl", "status"]:
+            return subprocess.CompletedProcess(
+                args, 0, stdout="backend RUNNING pid 1003, uptime 0:05:00\n"
+            )
+        if args[:2] == ["supervisorctl", "restart"]:
+            restart_calls += 1
+            return subprocess.CompletedProcess(args, 0, stdout="ok\n")
+        raise AssertionError(f"unexpected command: {args}")
+
+    monkeypatch.setattr(watchdog, "run", fake_run)
+
+    assert watchdog.maybe_recover_backend()["consecutive_failures"] == 1
+    assert watchdog.maybe_recover_backend()["consecutive_failures"] == 2
+
+    probe_healthy = True
+    healthy = watchdog.maybe_recover_backend()
+    assert healthy["state"] == "HEALTHY"
+    assert healthy["consecutive_failures"] == 0
+
+    probe_healthy = False
+    after_healthy = watchdog.maybe_recover_backend()
+    assert after_healthy["state"] == "TRANSIENT_UNHEALTHY"
+    assert after_healthy["consecutive_failures"] == 1
+    assert restart_calls == 0
+
+
+def test_persistent_unhealthy_route_recovers_after_threshold(tmp_path, monkeypatch):
+    import subprocess
+
+    watchdog = _load_watchdog_for_test(tmp_path, monkeypatch)
+    restarted = False
+
+    def fake_run(args, cwd=None, timeout=60):
+        nonlocal restarted
+        if args[0] == "curl":
+            code = "401" if restarted else "404"
+            return subprocess.CompletedProcess(args, 0, stdout=code)
+        if args[:2] == ["supervisorctl", "status"]:
+            return subprocess.CompletedProcess(
+                args, 0, stdout="backend RUNNING pid 1004, uptime 0:02:00\n"
+            )
+        if args[:2] == ["supervisorctl", "restart"]:
+            restarted = True
+            return subprocess.CompletedProcess(args, 0, stdout="backend: started\n")
+        raise AssertionError(f"unexpected command: {args}")
+
+    monkeypatch.setattr(watchdog, "run", fake_run)
+
+    assert watchdog.maybe_recover_backend()["restarted"] is False
+    assert watchdog.maybe_recover_backend()["restarted"] is False
+    third = watchdog.maybe_recover_backend()
+    assert third["state"] == "RESTART_REQUESTED"
+    assert third["restarted"] is True
+    assert third["probe"]["failure_kind"] == "ROUTE_NOT_MOUNTED"
+
+
+def test_confirmed_stopped_fatal_or_exited_backend_recovers_immediately(tmp_path, monkeypatch):
+    import subprocess
+
+    for dead_state in ("STOPPED", "FATAL", "EXITED"):
+        sub = tmp_path / dead_state.lower()
+        sub.mkdir()
+        watchdog = _load_watchdog_for_test(sub, monkeypatch)
+        process_up = False
+        restart_calls = 0
+
+        def fake_run(args, cwd=None, timeout=60):
+            nonlocal process_up, restart_calls
+            if args[0] == "curl":
+                if process_up:
+                    return subprocess.CompletedProcess(args, 0, stdout="401")
+                return subprocess.CompletedProcess(args, 7, stdout="000")
+            if args[:2] == ["supervisorctl", "status"]:
+                if process_up:
+                    return subprocess.CompletedProcess(
+                        args, 0, stdout="backend RUNNING pid 2001, uptime 0:00:02\n"
+                    )
+                return subprocess.CompletedProcess(
+                    args, 3, stdout=f"backend {dead_state} Nov 17 04:49 AM\n"
+                )
+            if args[:2] == ["supervisorctl", "restart"]:
+                restart_calls += 1
+                process_up = True
+                return subprocess.CompletedProcess(args, 0, stdout="backend: started\n")
+            raise AssertionError(f"unexpected command: {args}")
+
+        monkeypatch.setattr(watchdog, "run", fake_run)
+        result = watchdog.maybe_recover_backend()
+        assert result["restarted"] is True
+        assert result["restart_confirmed"] is True
+        assert result["supervisor_state"] == dead_state
+        assert restart_calls == 1
+
+
+def test_cooldown_blocks_running_unhealthy_but_not_confirmed_stopped(tmp_path, monkeypatch):
+    import subprocess
+    import time
+
+    watchdog = _load_watchdog_for_test(tmp_path, monkeypatch)
+    watchdog.STATE.mkdir(parents=True, exist_ok=True)
+    watchdog.BACKEND_RECOVERY_STAMP.write_text(
+        f"{int(time.time()) - 10}\n", encoding="utf-8"
+    )
+
+    sup_state = "RUNNING"
+    restarted = False
+    restart_calls = 0
+
+    def fake_run(args, cwd=None, timeout=60):
+        nonlocal sup_state, restarted, restart_calls
+        if args[0] == "curl":
+            if restarted:
+                return subprocess.CompletedProcess(args, 0, stdout="401")
+            return subprocess.CompletedProcess(args, 28, stdout="000")
+        if args[:2] == ["supervisorctl", "status"]:
+            rc = 0 if sup_state == "RUNNING" else 3
+            return subprocess.CompletedProcess(
+                args, rc, stdout=f"backend {sup_state} detail\n"
+            )
+        if args[:2] == ["supervisorctl", "restart"]:
+            restart_calls += 1
+            restarted = True
+            sup_state = "RUNNING"
+            return subprocess.CompletedProcess(args, 0, stdout="backend: started\n")
+        raise AssertionError(f"unexpected command: {args}")
+
+    monkeypatch.setattr(watchdog, "run", fake_run)
+
+    assert watchdog.maybe_recover_backend()["state"] == "TRANSIENT_UNHEALTHY"
+    assert watchdog.maybe_recover_backend()["state"] == "TRANSIENT_UNHEALTHY"
+    blocked = watchdog.maybe_recover_backend()
+    assert blocked["state"] == "COOLDOWN"
+    assert blocked["restarted"] is False
+    assert restart_calls == 0
+
+    sup_state = "STOPPED"
+    recovered = watchdog.maybe_recover_backend()
+    assert recovered["state"] == "RESTART_REQUESTED"
+    assert recovered["cooldown_bypassed"] is True
+    assert recovered["restarted"] is True
+    assert restart_calls == 1
+
+
+def test_supervisor_restart_timeout_exceeds_stopwaitsecs_and_handles_timeout_expired(
+    tmp_path, monkeypatch
+):
+    import subprocess
+
+    watchdog = _load_watchdog_for_test(tmp_path, monkeypatch)
+    assert watchdog.BACKEND_STOPWAITSECS == 30
+    assert watchdog.SUPERVISOR_RESTART_TIMEOUT == 65
+    assert watchdog.SUPERVISOR_RESTART_TIMEOUT > watchdog.BACKEND_STOPWAITSECS
+
+    sup_conf = Path("/etc/supervisor/conf.d/supervisord.conf")
+    if sup_conf.is_file():
+        backend_block = sup_conf.read_text(encoding="utf-8").split(
+            "[program:backend]", 1
+        )[1].split("[program:", 1)[0]
+        assert "stopwaitsecs=30" in backend_block
+        assert watchdog.SUPERVISOR_RESTART_TIMEOUT > 30
+
+    observed_timeouts: list[int] = []
+
+    def timeout_run(args, cwd=None, timeout=60):
+        if args[:2] == ["supervisorctl", "restart"]:
+            observed_timeouts.append(timeout)
+            raise subprocess.TimeoutExpired(cmd=args, timeout=timeout)
+        raise AssertionError(f"unexpected command: {args}")
+
+    monkeypatch.setattr(watchdog, "run", timeout_run)
+    assert watchdog.supervisor_restart("WAKE_ROUTE_UNHEALTHY", "backend") is False
+    assert observed_timeouts == [65]
+
+
+def test_regression_unconfirmed_restart_never_poisons_cooldown_stamp(
+    tmp_path, monkeypatch
+):
+    import subprocess
+
+    watchdog = _load_watchdog_for_test(tmp_path, monkeypatch)
+    attempt = 0
+    sup_state = "RUNNING"
+    healthy_after = False
+
+    def fake_run(args, cwd=None, timeout=60):
+        nonlocal attempt, sup_state, healthy_after
+        if args[0] == "curl":
+            if healthy_after:
+                return subprocess.CompletedProcess(args, 0, stdout="401")
+            return subprocess.CompletedProcess(args, 28, stdout="000")
+        if args[:2] == ["supervisorctl", "status"]:
+            rc = 0 if sup_state == "RUNNING" else 3
+            return subprocess.CompletedProcess(
+                args, rc, stdout=f"backend {sup_state} info\n"
+            )
+        if args[:2] == ["supervisorctl", "restart"]:
+            attempt += 1
+            if attempt == 1:
+                sup_state = "STOPPED"
+                raise subprocess.TimeoutExpired(cmd=args, timeout=timeout)
+            sup_state = "RUNNING"
+            healthy_after = True
+            return subprocess.CompletedProcess(args, 0, stdout="backend: started\n")
+        raise AssertionError(f"unexpected command: {args}")
+
+    monkeypatch.setattr(watchdog, "run", fake_run)
+
+    assert watchdog.maybe_recover_backend()["restarted"] is False
+    assert watchdog.maybe_recover_backend()["restarted"] is False
+    failed = watchdog.maybe_recover_backend()
+    assert failed["state"] == "RESTART_FAILED"
+    assert failed["restarted"] is False
+    assert failed["restart_confirmed"] is False
+    assert not watchdog.BACKEND_RECOVERY_STAMP.exists()
+
+    recovered = watchdog.maybe_recover_backend()
+    assert recovered["state"] == "RESTART_REQUESTED"
+    assert recovered["restarted"] is True
+    assert recovered["restart_confirmed"] is True
+    assert watchdog.BACKEND_RECOVERY_STAMP.exists()
