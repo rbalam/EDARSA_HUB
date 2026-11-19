@@ -1,0 +1,333 @@
+{
+  "base_sha": "f4aecf4030983cd8297d6b9695e4c89b12f33641",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-19T10:50:15Z",
+  "execution_base_sha": "f4aecf4030983cd8297d6b9695e4c89b12f33641",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-BOS_V1_GATE_E-REPOSITORY_CONTRACT_AUDIT_BOUNDE-2700A218F64224A48ED2",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-19T10:53:00Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.bos_executive",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "action_bridge_contracts",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "core.agent_procedure_policy",
+              "datetime",
+              "hashlib",
+              "modules.agent_harness.transversal_capability_registry",
+              "recommendation_contracts",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "e3d"
+            ],
+            "path": "backend/modules/bos_executive/action_bridge.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_audit_ref",
+              "_deny",
+              "_parse_time",
+              "_precondition_reasons",
+              "_requester_reasons",
+              "_unique",
+              "authorize_recommended_action"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.bos_executive",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "e3d"
+            ],
+            "path": "backend/modules/bos_executive/action_bridge_contracts.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AuthorizedActionDecision",
+              "AuthorizedActionRequest"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.bos_executive",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "contracts",
+              "dataclasses",
+              "enum"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "e3c"
+            ],
+            "path": "backend/modules/bos_executive/recommendation_contracts.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ExecutiveRecommendation",
+              "RecommendationRisk"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.bos_executive",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "contracts",
+              "hashlib",
+              "priority_contracts",
+              "recommendation_contracts"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "e3c"
+            ],
+            "path": "backend/modules/bos_executive/recommendation_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_priority_confidence",
+              "_priority_risk",
+              "_stable_id",
+              "_unique",
+              "recommend_from_finding",
+              "recommend_from_priority"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.bos_executive"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "e3a"
+            ],
+            "path": "backend/tests/test_bos_executive_e3a.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_request",
+              "test_e3a_correlation_never_becomes_causality",
+              "test_e3a_fact_is_deterministic_when_all_evidence_is_fact",
+              "test_e3a_fails_closed_without_evidence",
+              "test_e3a_inference_is_conservative_and_requires_validation",
+              "test_e3a_marks_stale_if_any_evidence_is_stale"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.bos_executive"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "e3b"
+            ],
+            "path": "backend/tests/test_bos_executive_e3b.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_e3b_adapter_fails_closed_without_source_identity",
+              "test_e3b_aggregate_propagates_stale_without_hiding_priority",
+              "test_e3b_aggregator_is_cross_domain_deterministic_and_read_only",
+              "test_e3b_crm_sla_adapter_normalizes_without_creating_task_lifecycle",
+              "test_e3b_operational_sla_reuses_existing_state_as_priority_signal",
+              "test_e3b_same_band_uses_due_date_not_global_numeric_weights"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.bos_executive"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "e3c"
+            ],
+            "path": "backend/tests/test_bos_executive_e3c.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_finding",
+              "test_e3c_finding_recommendation_is_deterministic",
+              "test_e3c_finding_without_evidence_fails_closed",
+              "test_e3c_priority_requires_evidence_and_propagates_controls"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.agent_capability_policy",
+              "modules.bos_executive"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "e3d"
+            ],
+            "path": "backend/tests/test_bos_executive_e3d.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_context",
+              "_recommendation",
+              "_request",
+              "test_e3d_action_must_be_declared_eligible",
+              "test_e3d_allowlisted_action_is_authorized_but_not_executed",
+              "test_e3d_expired_recommendation_is_denied",
+              "test_e3d_requester_rbac_denied_is_fail_closed",
+              "test_e3d_unknown_capability_is_denied"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "ast",
+              "pathlib",
+              "subprocess"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "e3d"
+            ],
+            "path": "backend/tests/test_iscam_cuentas_comandas_locked_r50.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_baseline",
+              "_between",
+              "_current",
+              "_python_function",
+              "test_backend_cuentas_y_comandas_permanecen_iguales_al_baseline_r49",
+              "test_frontend_descriptores_cuentas_y_comandas_permanecen_iguales",
+              "test_frontend_drill_de_cuenta_permanece_igual",
+              "test_frontend_tablas_cuentas_y_comandas_permanecen_iguales"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "hashlib",
+              "json",
+              "pathlib",
+              "tools.mirror_sync",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "e3f"
+            ],
+            "path": "backend/tests/test_worker_repair_auto_loop_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "fake_publish_planned_repair",
+              "fake_reconcile",
+              "test_auto_loop_only_orchestrates_existing_components",
+              "test_auto_loop_persists_requester_and_supersedes_resolved_incidents",
+              "test_auto_loop_registers_learned_capability_only_after_certified_audit",
+              "test_auto_loop_requires_certified_result_before_audit",
+              "test_auto_loop_suppresses_persisted_duplicate_incident_without_mutating_or_publishing",
+              "test_control_plane_advances_repairs_outside_detector",
+              "test_detector_boundary_remains_separate",
+              "test_planner_accepts_inherited_requester",
+              "test_planner_uses_safe_convergence",
+              "test_production_remains_forbidden"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "e3d"
+            ],
+            "path": "frontend/src/components/edge/mapa_mesas_live3d.ts",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 11,
+          "scanned_files": 1568,
+          "skipped_sensitive": 463
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-19T10:50:14Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
