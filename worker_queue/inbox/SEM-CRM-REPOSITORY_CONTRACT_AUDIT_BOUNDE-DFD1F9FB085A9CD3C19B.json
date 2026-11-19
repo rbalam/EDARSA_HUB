@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "crm",
+          "cliente",
+          "contacto",
+          "lead",
+          "prospecto",
+          "oportunidad",
+          "actividad",
+          "ticket",
+          "sla",
+          "visita",
+          "rbac"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CRM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-DFD1F9FB085A9CD3C19B",
+  "mode": "READ_ONLY",
+  "objective": "Auditoría READ_ONLY del CRM EDARSAHUB BOS: inventariar clientes, contactos, prospectos, oportunidades, actividades, tickets, SLA, pantallas, endpoints y RBAC; entregar evidencia para diseño incremental sin duplicar módulos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CRM",
+    "conflict_domains": [
+      "CRM"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
