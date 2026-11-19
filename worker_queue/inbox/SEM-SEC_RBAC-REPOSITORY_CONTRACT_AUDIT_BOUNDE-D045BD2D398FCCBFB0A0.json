@@ -1,0 +1,66 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/core/rbac/middleware.py",
+          "backend/core/rbac/service.py",
+          "backend/core/rbac/schemas.py",
+          "backend/core/rbac_sql/service.py",
+          "backend/core/rbac_helper_sql.py",
+          "backend/core/security.py",
+          "backend/core/communications/routes.py",
+          "backend/modules/fase2_operativo/routes/cargos_routes.py",
+          "backend/modules/fase2_operativo/routes/responsabilidad_routes.py",
+          "backend/modules/fase2_operativo/access.py",
+          "backend/modules/integrations_center/communications_routes.py",
+          "backend/tests/test_rbac_fase2d.py"
+        ],
+        "search_terms": [
+          "RBAC",
+          "SUPERADMIN",
+          "require_permission",
+          "require_explicit_permission",
+          "NOTIFICACIONES_ENVIAR",
+          "CARGOS_",
+          "RESPONSABILIDAD_",
+          "usuario_id",
+          "JWT",
+          "get_current_user_dual",
+          "Usuario_Catalogo",
+          "verify_token",
+          "check_permission",
+          "PublicUUID"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-SEC_RBAC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-D045BD2D398FCCBFB0A0",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1A Seguridad RBAC (READ_ONLY): auditar exclusivamente contratos existentes de backend/core y modulos relacionados con JWT, autenticacion, Cargos y Responsabilidad, NOTIFICACIONES_ENVIAR, RBAC explicito, SUPERADMIN y trazabilidad del actor. Identificar divergencias y riesgos con evidencia de rutas, sin modificar archivos ni SQL y sin afirmar permisos SQL efectivos. No ejecutar ni repetir migraciones 016 017 018. Produccion prohibida.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SEC_RBAC",
+    "conflict_domains": [
+      "SEC_RBAC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
