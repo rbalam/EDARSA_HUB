@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "7c1f7968b1a46df0213fc9894d068032a964ee05",
-  "generated_at_utc": "2026-11-19T07:21:02Z",
+  "generated_at_utc": "2026-11-19T07:22:26Z",
   "history": {
     "done_total_local": 1768,
     "pending_total_local": 0,
@@ -16,25 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 211,
+      "age_seconds": 295,
       "job_id": "EDARSAHUB-BOS-GLOBAL-WORKER-ALIGNMENT-G3-MCP-SEMANTIC-INGRESS-R2-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 55,
+      "age_seconds": 139,
       "job_id": "EDARSAHUB-BOS-GLOBAL-WORKER-ALIGNMENT-G3-MCP-SEMANTIC-INGRESS-R3-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3546,
-      "job_id": "SEM-COMERCIAL.PORTAL_INTELIGENCIA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7522DD9AD7871DE8880F",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3502,
+      "age_seconds": 3587,
       "job_id": "SEM-COMERCIAL.PORTAL_INTELIGENCIA-WORKER_RESULT_SEMANTIC_EXTRACT-82F1F4764218893A5E6E",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,14 +42,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "remote_development_sha": "7c1f7968b1a46df0213fc9894d068032a964ee05",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T07:20:47Z",
-    "last_receive_utc": "2026-11-19T07:20:42Z",
+    "last_cycle_utc": "2026-11-19T07:22:12Z",
+    "last_receive_utc": "2026-11-19T07:22:26Z",
     "last_terminal_utc": "2026-11-19T07:20:06Z",
     "pid": "1977099",
     "runtime_fingerprint": {
