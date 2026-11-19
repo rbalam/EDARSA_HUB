@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "backend/modules/ia_assistant/",
+          "backend/tests/test_ia_contextual_comercial_contract.py",
+          "backend/tests/test_ia_global_authorized_contract.py",
+          "frontend/src/components/ia/",
+          "frontend/src/components/comercial/analytics/CanonicalTicketDrilldown.jsx"
+        ],
+        "search_terms": [
+          "EXPORT_FILE",
+          "OPEN_VIEW",
+          "dataset_id",
+          "IAContextualLauncher",
+          "contexto_vista",
+          "RBAC",
+          "READ_SOURCE_MISMATCH",
+          "PENDING_AUDIT_EVIDENCE"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-IA_ASSISTANT-REPOSITORY_CONTRACT_AUDIT_BOUNDE-718BCBA2EDACF9402187",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY el contrato existente del Asistente IA Contextual Comercial, sin modificar archivos ni Produccion. Examinar autorizacion RBAC, datasets y acciones OPEN_VIEW/EXPORT_FILE, conservacion de estado del drilldown y referencias a pruebas; determinar brechas para reconciliar los jobs historicos R6 contradictorio, Dual Auth R1 certificado y Modal R2 pendiente de evidencia. No repetir trabajos ya certificados; devolver evidencia y proximo Gate minimo.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "IA_ASSISTANT",
+    "conflict_domains": [
+      "IA_ASSISTANT"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
