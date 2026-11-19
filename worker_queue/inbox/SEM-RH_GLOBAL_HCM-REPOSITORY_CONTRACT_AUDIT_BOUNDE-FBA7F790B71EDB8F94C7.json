@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/rh/",
+          "backend/tests/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "RH_Nomina",
+          "RH_Nomina_Detalle",
+          "RH_Nomina_Recibos",
+          "RH_Nomina_Dispersion",
+          "RH_IMSS_Movimientos",
+          "RH_Incidencias_Nomina",
+          "RH_Periodos_Nomina",
+          "HR2020",
+          "NomiPAQ",
+          "scheduler_manager",
+          "Scheduler_BitacoraJobs",
+          "idempotent",
+          "no_live"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH_GLOBAL_HCM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-FBA7F790B71EDB8F94C7",
+  "mode": "READ_ONLY",
+  "objective": "Auditar y preparar el Gate 2 de sincronización canónica HR2020/NomiPAQ -> EDARSAHUB para Payroll/Compliance. Confirmar contratos reales, ownership, tablas RH existentes, scheduler canónico, resolución de Servidores_Conexiones, JobLogger SQL, locks, idempotencia, NO-LIVE, fail-closed y pruebas requeridas. No implementar cambios, no crear arquitectura paralela, no activar cron y no tocar Producción. Entregar el cambio mínimo recomendado y los archivos exactos a modificar en el siguiente Gate.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH_GLOBAL_HCM",
+    "conflict_domains": [
+      "RH_GLOBAL_HCM"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
