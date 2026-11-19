@@ -1,0 +1,47 @@
+{
+  "base_sha": "621f89dc940c296bbf381b3a14bce0937e465167",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-19T14:12:18Z",
+  "execution_base_sha": "621f89dc940c296bbf381b3a14bce0937e465167",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-CD4F28A3191CFA6451BE",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-19T14:15:02Z",
+  "quality_gate": "PASS",
+  "result_detail_evidence": {
+    "checks": [
+      {
+        "blockers": [
+          "dispatcher_exception:RuntimeError:CONCURRENT_SCOPE_CONFLICT:expected=a1d524b6b8f0406173dfc5732ff03678aaa03939:actual=8b7ef2b57a3406be7daa2616729634bb138b2a53:paths=backend/tests/test_sync_historical_resync_entrypoint_contract.py,frontend/src/components/admin/ResyncPanel.jsx"
+        ],
+        "certification": "NOT_CERTIFIED",
+        "evidence_status": "FAILED_RESULT_NO_STRUCTURED_EVIDENCE",
+        "evidence_truncated": false,
+        "failed_checks": [],
+        "files_changed": [],
+        "percent_complete": 0,
+        "production_touched": false,
+        "quality_gate": "FAIL",
+        "result_status": "BLOCKED",
+        "source_completed_at_utc": "2026-10-14T17:52:51Z",
+        "source_job_id": "EDARSAHUB-HISTORICAL-RESYNC-ENTRYPOINT-R1-CARLOS-20261014",
+        "source_terminal": true,
+        "tests": null
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-19T14:12:18Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
