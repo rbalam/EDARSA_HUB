@@ -1,0 +1,2195 @@
+{
+  "base_sha": "537774dad3ca633541c65781c3316b62f751a20c",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-19T03:56:27Z",
+  "execution_base_sha": "537774dad3ca633541c65781c3316b62f751a20c",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-SEC_RBAC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-5C8F641C8B169DAC20A5",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-19T03:57:30Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "collections",
+              "core.auth.sql_user_identity",
+              "core.corporate_filters.service",
+              "core.rbac_sql.service",
+              "core.unidades_service",
+              "fastapi",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/fase2_operativo/access.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_branch_pairs",
+              "_context_values",
+              "_normalize",
+              "_normalize_key",
+              "_resolve_permission_scopes",
+              "get_allowed_unidad_pks",
+              "get_legacy_server_ids_for_unidad_scope",
+              "get_unidad_metadata",
+              "resolve_operativo_unit_filter",
+              "resolve_unidad_pk"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asignacion_repository",
+              "auditoria_programada_repository",
+              "auditoria_repository",
+              "base_repository",
+              "cargos_repository",
+              "configuracion_repository",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "detalle_diferencias_repository",
+              "historial_repository",
+              "historial_responsabilidad_repository",
+              "justificacion_repository",
+              "responsabilidad_repository",
+              "tarea_repository",
+              "workflow_repository"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cargo",
+              "responsabilidad"
+            ],
+            "path": "backend/modules/fase2_operativo/repositories/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "sql_base_repository",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cargo",
+              "responsabilidad"
+            ],
+            "path": "backend/modules/fase2_operativo/repositories/cargos_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CargosEconomicosRepository",
+              "CargosLogRepository",
+              "__init__",
+              "_ensure_indexes",
+              "_row_to_cargo_dict",
+              "_row_to_log_dict",
+              "_serialize_id",
+              "actualizar_cargo",
+              "contar_acciones_por_usuario",
+              "contar_por_estatus",
+              "crear_cargo",
+              "get_by_cargo",
+              "get_by_id",
+              "get_by_responsabilidad",
+              "get_cargo_activo_por_responsabilidad",
+              "get_ultimos_logs",
+              "listar_con_filtros",
+              "obtener_metricas",
+              "obtener_monto_autorizado_total",
+              "registrar_log"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "sql_base_repository",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cargo",
+              "responsabilidad"
+            ],
+            "path": "backend/modules/fase2_operativo/repositories/historial_responsabilidad_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "HistorialResponsabilidadRepository",
+              "__init__",
+              "_crear_indices",
+              "_row_to_historial_dict",
+              "_serialize_id",
+              "contar_transiciones",
+              "get_by_responsabilidad",
+              "get_estadisticas_acciones",
+              "get_transiciones_por_usuario",
+              "get_ultima_transicion",
+              "registrar_transicion"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "base_repository",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac",
+              "responsabilidad"
+            ],
+            "path": "backend/modules/fase2_operativo/repositories/responsabilidad_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ResponsabilidadRepository",
+              "__init__",
+              "_serialize_id",
+              "_serialize_list",
+              "actualizar_calculo",
+              "aprobar",
+              "crear_calculo",
+              "eliminar_por_workflow",
+              "existe_calculo",
+              "get_by_responsable",
+              "get_by_workflow",
+              "get_pendientes_revision",
+              "listar_con_filtros",
+              "listar_por_estado",
+              "listar_por_sucursal",
+              "obtener_metricas_globales",
+              "rechazar"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "concurrent.futures",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "re",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cargo",
+              "responsabilidad"
+            ],
+            "path": "backend/modules/fase2_operativo/repositories/sql_base_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "BaseRepository",
+              "SQLBaseRepository",
+              "SQLCursor",
+              "SQLRepositoryNotImplementedError",
+              "__init__",
+              "__iter__",
+              "__list__",
+              "_build_order_clause",
+              "_build_where_clause",
+              "_execute",
+              "_execute_group_aggregate",
+              "_field_exists_in_table",
+              "_find_internal",
+              "_generate_id",
+              "_get_connection",
+              "_get_id_field_name",
+              "_get_table_columns",
+              "_get_timestamp",
+              "_map_field",
+              "_row_to_dict",
+              "_run_coro_sync",
+              "_serialize_id",
+              "_serialize_list",
+              "_to_snake_case",
+              "aggregate",
+              "count",
+              "count_documents",
+              "create",
+              "delete",
+              "delete_one",
+              "exists",
+              "find",
+              "find_one",
+              "find_one_and_update",
+              "get_all",
+              "get_by_id",
+              "get_sql_repository",
+              "insert_one",
+              "limit",
+              "skip",
+              "sort",
+              "update",
+              "update_many",
+              "update_one"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [
+              "pymongo"
+            ],
+            "helpers": [],
+            "imports": [
+              "base_repository",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/fase2_operativo/repositories/tarea_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TareaRepository",
+              "__init__",
+              "_get_timestamp",
+              "_serialize_list",
+              "actualizar_estado",
+              "asignar",
+              "buscar_tareas",
+              "completar",
+              "contar_por_estado",
+              "contar_por_usuario",
+              "get_by_usuario",
+              "get_by_workflow",
+              "get_pendientes_globales",
+              "get_sin_asignar",
+              "get_tareas_con_rbac",
+              "get_vencidas",
+              "marcar_en_progreso",
+              "marcar_vencida"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [
+              "pymongo"
+            ],
+            "helpers": [],
+            "imports": [
+              "base_repository",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/fase2_operativo/repositories/workflow_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "WorkflowRepository",
+              "__init__",
+              "_serialize_id",
+              "_serialize_list",
+              "_to_object_id",
+              "actualizar_estado",
+              "buscar_workflows",
+              "contar_por_estado",
+              "get_by_estado",
+              "get_by_procesado_id",
+              "get_en_auditoria",
+              "get_en_revision",
+              "get_escalados",
+              "get_pendientes_asignacion",
+              "get_pendientes_justificacion",
+              "get_uuids_by_servers",
+              "get_workflow_completo",
+              "incrementar_ciclo"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "fastapi",
+              "routes.auditoria_programada_routes",
+              "routes.auditoria_routes",
+              "routes.automatizacion_compras_routes",
+              "routes.cargos_routes",
+              "routes.configuracion_routes",
+              "routes.dashboard_routes",
+              "routes.documentos_routes",
+              "routes.justificacion_routes",
+              "routes.notificaciones_routes",
+              "routes.responsabilidad_routes",
+              "routes.sla_routes",
+              "routes.tarea_routes",
+              "routes.workflow_routes"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cargo",
+              "responsabilidad"
+            ],
+            "path": "backend/modules/fase2_operativo/router.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/health"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "health_check"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "access",
+              "api_schemas",
+              "core.rbac.middleware",
+              "db_utils",
+              "fastapi",
+              "schemas.auditoria_programada_schemas",
+              "services.auditoria_programada_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/fase2_operativo/routes/auditoria_programada_routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/calendario",
+              "/historial",
+              "/kpis",
+              "/{auditoria_id}",
+              "/{auditoria_id}/activar",
+              "/{auditoria_id}/desactivar",
+              "/{auditoria_id}/ejecutar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_authenticated_actor_id",
+              "activar_auditoria",
+              "actualizar_auditoria",
+              "crear_auditoria",
+              "desactivar_auditoria",
+              "ejecutar_auditoria",
+              "eliminar_auditoria",
+              "get_db",
+              "listar_auditorias",
+              "obtener_auditoria",
+              "obtener_calendario",
+              "obtener_historial",
+              "obtener_kpis"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "api_schemas",
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "db_utils",
+              "fastapi",
+              "schemas.enums",
+              "services.auditoria_service",
+              "services.operativo_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/fase2_operativo/routes/auditoria_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/decisiones",
+              "/decisiones/procesar",
+              "/decisiones/{decision_id}",
+              "/pendientes",
+              "/resumen",
+              "/workflow/{workflow_id}/decisiones",
+              "/workflow/{workflow_id}/ultima-decision"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "get_db",
+              "listar_decisiones",
+              "obtener_decision",
+              "obtener_decisiones_workflow",
+              "obtener_pendientes_auditoria",
+              "obtener_resumen_auditoria",
+              "obtener_ultima_decision",
+              "procesar_decision_completa",
+              "registrar_decision"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.rbac.middleware",
+              "core.rbac_helper_sql",
+              "core.scheduler.jobs.pedidos_detector_job",
+              "core.scheduler.scheduler_manager",
+              "core.unidades_service",
+              "datetime",
+              "db_utils",
+              "fastapi",
+              "json",
+              "modules.compras.sync_service",
+              "modules.fase2_operativo.access",
+              "modules.fase2_operativo.services.automatizacion_compras_service",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "jwt",
+              "rbac"
+            ],
+            "path": "backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/compras",
+              "/compras/detector/bitacora",
+              "/compras/detector/ejecutar",
+              "/compras/detector/estado",
+              "/compras/kpis",
+              "/compras/pedidos-procesados",
+              "/compras/procesar",
+              "/compras/tareas",
+              "/compras/tareas/{tarea_id}",
+              "/compras/tareas/{tarea_id}/asignar",
+              "/compras/tareas/{tarea_id}/completar",
+              "/compras/{automatizacion_id}",
+              "/compras/{automatizacion_id}/bitacora",
+              "/compras/{automatizacion_id}/dias-objetivo",
+              "/compras/{automatizacion_id}/gerencia",
+              "/compras/{automatizacion_id}/parametros-consumo",
+              "/compras/{automatizacion_id}/tesoreria"
+            ],
+            "scheduler_contracts": [
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "AccionGerenciaRequest",
+              "AccionTesoreriaRequest",
+              "EjecutarDetectorRequest",
+              "ModificarDiasObjetivoRequest",
+              "ModificarParametrosConsumoRequest",
+              "ProcesarPedidoRequest",
+              "_assert_automatizacion_scope",
+              "_get_authenticated_compras_actor",
+              "_p2a_add_server_scope",
+              "_p2a_asignar_tarea",
+              "_p2a_completar_tarea",
+              "_p2a_conn",
+              "_p2a_exec",
+              "_p2a_get_tarea",
+              "_p2a_json",
+              "_p2a_list_bitacora",
+              "_p2a_list_pedidos",
+              "_p2a_list_tareas",
+              "_p2a_next_id",
+              "_p2a_norm_tarea",
+              "_p2a_one",
+              "_p2a_rows",
+              "_p2a_ultimo_scheduler_log",
+              "_resolve_compras_server_scope",
+              "_resolve_compras_unit_scope",
+              "asignar_tarea_operativa",
+              "autorizar_gerencia",
+              "autorizar_tesoreria",
+              "completar_tarea_operativa",
+              "ejecutar_detector_manual",
+              "listar_automatizaciones",
+              "listar_pedidos_procesados",
+              "listar_tareas_operativas",
+              "modificar_dias_objetivo",
+              "modificar_parametros_consumo",
+              "obtener_automatizacion",
+              "obtener_bitacora",
+              "obtener_bitacora_detector",
+              "obtener_estado_detector",
+              "obtener_kpis",
+              "obtener_tarea_operativa",
+              "procesar_pedido"
+            ],
+            "tables_referenced": [
+              "Operativo_BitacoraCompras",
+              "Operativo_PedidosProcesados",
+              "Operativo_TareasCompras",
+              "Scheduler_BitacoraJobs"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.rbac.middleware",
+              "core.rbac_helper_sql",
+              "core.unidades_service",
+              "db_utils",
+              "fastapi",
+              "logging",
+              "schemas.cargos_schemas",
+              "services.cargos_service",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "cargo",
+              "jwt",
+              "rbac",
+              "responsabilidad"
+            ],
+            "path": "backend/modules/fase2_operativo/routes/cargos_routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/aplicados",
+              "/elegibilidad/{responsabilidad_id}",
+              "/metricas",
+              "/pendientes",
+              "/{cargo_id}",
+              "/{cargo_id}/aplicar",
+              "/{cargo_id}/autorizar",
+              "/{cargo_id}/cancelar",
+              "/{cargo_id}/log",
+              "/{cargo_id}/rechazar",
+              "/{cargo_id}/revertir"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_authenticated_cargos_actor",
+              "aplicar_cargo",
+              "autorizar_cargo",
+              "cancelar_cargo",
+              "crear_propuesta_cargo",
+              "evaluar_elegibilidad",
+              "get_cargos_service",
+              "listar_cargos",
+              "obtener_aplicados",
+              "obtener_cargo",
+              "obtener_log_cargo",
+              "obtener_metricas",
+              "obtener_pendientes",
+              "rechazar_cargo",
+              "revertir_cargo"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "api_schemas",
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "db_utils",
+              "fastapi",
+              "services.configuracion_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/fase2_operativo/routes/configuracion_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/dias-limite-tarea/valor",
+              "/max-ciclos-reasignacion/valor",
+              "/todas",
+              "/umbral-justificacion/valor",
+              "/{clave}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "actualizar_configuracion",
+              "actualizar_dias_limite_tarea",
+              "actualizar_max_ciclos_reasignacion",
+              "actualizar_umbral_justificacion",
+              "get_db",
+              "listar_todas_configuraciones",
+              "obtener_configuracion",
+              "obtener_dias_limite_tarea",
+              "obtener_max_ciclos_reasignacion",
+              "obtener_parametros_operativos",
+              "obtener_umbral_justificacion"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.request_resolver",
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "db_utils",
+              "fastapi",
+              "services.operativo_service",
+              "services.sla_service",
+              "services.tarea_service",
+              "services.workflow_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/fase2_operativo/routes/dashboard_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/alertas",
+              "/kpis",
+              "/resumen",
+              "/tareas/por-estado",
+              "/tareas/vencidas/conteo",
+              "/workflows/por-estado"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "get_db",
+              "get_user_server_ids",
+              "obtener_alertas",
+              "obtener_conteo_tareas_vencidas",
+              "obtener_kpis",
+              "obtener_resumen_dashboard",
+              "obtener_tareas_por_estado",
+              "obtener_workflows_por_estado"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "core.corporate_filters.service",
+              "core.security",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "db_utils",
+              "fastapi",
+              "fastapi.responses",
+              "logging",
+              "modules.compras.sync_service",
+              "services.document_data_service",
+              "services.excel_service",
+              "services.pdf_service",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/fase2_operativo/routes/documentos_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/historial",
+              "/workflow/{workflow_id}/datos",
+              "/workflow/{workflow_id}/excel",
+              "/workflow/{workflow_id}/pdf",
+              "/workflow/{workflow_id}/resumen"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_run",
+              "descargar_excel_workflow",
+              "descargar_pdf_workflow",
+              "obtener_datos_workflow",
+              "obtener_historial_documentos",
+              "obtener_resumen_workflow"
+            ],
+            "tables_referenced": [
+              "Operativo_DocumentosGenerados"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "api_schemas",
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "db_utils",
+              "fastapi",
+              "schemas.enums",
+              "services.justificacion_service",
+              "services.operativo_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/fase2_operativo/routes/justificacion_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/determinar-tipo",
+              "/umbral",
+              "/workflow/{workflow_id}",
+              "/workflow/{workflow_id}/verificar",
+              "/{justificacion_id}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "determinar_tipo_justificacion",
+              "get_db",
+              "listar_justificaciones",
+              "obtener_justificacion",
+              "obtener_justificaciones_workflow",
+              "obtener_umbral_justificacion",
+              "registrar_justificacion",
+              "verificar_justificaciones_workflow"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "core.corporate_filters.service",
+              "core.security",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "db_utils",
+              "fastapi",
+              "logging",
+              "modules.compras.sync_service",
+              "services.email_service",
+              "services.notification_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/fase2_operativo/routes/notificaciones_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/log",
+              "/status",
+              "/test-email",
+              "/verificar-vencidas"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_run",
+              "get_notification_log",
+              "get_notification_status",
+              "test_email",
+              "verificar_tareas_vencidas"
+            ],
+            "tables_referenced": [
+              "Operativo_Notificaciones_Log",
+              "Tareas_Inventario",
+              "Usuario_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "api_schemas",
+              "core.corporate_filters.service",
+              "core.rbac.middleware",
+              "core.rbac_helper_sql",
+              "core.unidades_service",
+              "db_utils",
+              "fastapi",
+              "schemas.responsabilidad_schemas",
+              "services.responsabilidad_service",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "cargo",
+              "jwt",
+              "rbac",
+              "responsabilidad"
+            ],
+            "path": "backend/modules/fase2_operativo/routes/responsabilidad_routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/calcular/{workflow_id}",
+              "/configuracion",
+              "/en-disputa",
+              "/inicializar-configuracion",
+              "/metricas",
+              "/pendientes-aprobacion",
+              "/workflow/{workflow_id}",
+              "/{responsabilidad_id}/aprobar",
+              "/{responsabilidad_id}/disputar",
+              "/{responsabilidad_id}/exonerar",
+              "/{responsabilidad_id}/historial",
+              "/{responsabilidad_id}/proponer",
+              "/{responsabilidad_id}/rechazar",
+              "/{responsabilidad_id}/resolver-disputa"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_authenticated_responsabilidad_actor",
+              "_handle_aprobacion_error",
+              "actualizar_configuracion",
+              "aprobar",
+              "calcular_responsabilidad",
+              "disputar",
+              "exonerar",
+              "get_db",
+              "inicializar_configuracion",
+              "listar_en_disputa",
+              "listar_pendientes_aprobacion",
+              "listar_responsabilidades",
+              "obtener_configuracion",
+              "obtener_historial",
+              "obtener_metricas",
+              "obtener_por_workflow",
+              "proponer",
+              "rechazar",
+              "resolver_disputa"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.rbac.middleware",
+              "core.unidades_service",
+              "db_utils",
+              "fastapi",
+              "logging",
+              "modules.compras.sync_service",
+              "services.sla_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/fase2_operativo/routes/sla_routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/actualizar-estados",
+              "/configuracion",
+              "/estados",
+              "/metricas",
+              "/tarea/{tarea_id}",
+              "/tareas/proximas-vencer",
+              "/tareas/vencidas"
+            ],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "actualizar_configuracion_sla",
+              "actualizar_estados_sla",
+              "obtener_configuracion_sla",
+              "obtener_definicion_estados",
+              "obtener_metricas_sla",
+              "obtener_sla_tarea",
+              "obtener_tareas_proximas_vencer",
+              "obtener_tareas_vencidas"
+            ],
+            "tables_referenced": [
+              "Tareas_Inventario"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "api_schemas",
+              "core.corporate_filters.request_resolver",
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "db_utils",
+              "fastapi",
+              "schemas.enums",
+              "services.tarea_service",
+              "services.workflow_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/fase2_operativo/routes/tarea_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/marcar-vencidas",
+              "/{tarea_id}",
+              "/{tarea_id}/asignar",
+              "/{tarea_id}/completar",
+              "/{tarea_id}/en-progreso",
+              "/{tarea_id}/historial",
+              "/{tarea_id}/reasignar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "asignar_tarea",
+              "completar_tarea",
+              "crear_tarea",
+              "get_db",
+              "listar_tareas",
+              "marcar_en_progreso",
+              "marcar_tareas_vencidas",
+              "obtener_historial_tarea",
+              "obtener_tarea",
+              "reasignar_tarea"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "api_schemas",
+              "core.corporate_filters.request_resolver",
+              "core.corporate_filters.service",
+              "core.rbac.middleware",
+              "core.security",
+              "core.unidades_service",
+              "db_utils",
+              "fastapi",
+              "schemas.enums",
+              "services.justificacion_service",
+              "services.operativo_service",
+              "services.workflow_service",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "jwt",
+              "rbac"
+            ],
+            "path": "backend/modules/fase2_operativo/routes/workflow_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/{workflow_id}",
+              "/{workflow_id}/escalar",
+              "/{workflow_id}/estado",
+              "/{workflow_id}/resumen"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_authenticated_workflow_actor",
+              "_match",
+              "cambiar_estado_workflow",
+              "crear_workflow",
+              "escalar_workflow",
+              "get_db",
+              "get_user_server_ids",
+              "listar_workflows",
+              "obtener_resumen_workflow",
+              "obtener_workflow"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "auditoria_schemas",
+              "cargos_schemas",
+              "configuracion_schemas",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "enums",
+              "justificacion_schemas",
+              "responsabilidad_schemas",
+              "tarea_schemas",
+              "workflow_schemas"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "cargo",
+              "responsabilidad"
+            ],
+            "path": "backend/modules/fase2_operativo/schemas/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "enum",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "cargo",
+              "responsabilidad"
+            ],
+            "path": "backend/modules/fase2_operativo/schemas/cargos_schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AccionCargo",
+              "CargoAccionRequest",
+              "CargoAccionResponse",
+              "CargoEconomicoCreate",
+              "CargoEconomicoListResponse",
+              "CargoEconomicoResponse",
+              "CargoLogListResponse",
+              "CargoLogResponse",
+              "CargoReversaRequest",
+              "CargosAplicadosResponse",
+              "CargosMetricasResponse",
+              "CargosPendientesResponse",
+              "Config",
+              "ElegibilidadCargoResponse",
+              "EstatusCargo",
+              "OrigenCargo",
+              "validar_comentario",
+              "validar_motivo"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "enum"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "responsabilidad"
+            ],
+            "path": "backend/modules/fase2_operativo/schemas/enums.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "DecisionAuditoria",
+              "EstadoTarea",
+              "EstadoWorkflow",
+              "TipoJustificacion",
+              "TipoTarea"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "enum",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "cargo",
+              "rbac",
+              "responsabilidad"
+            ],
+            "path": "backend/modules/fase2_operativo/schemas/responsabilidad_schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AccionResponsabilidad",
+              "AccionResponsabilidadRequest",
+              "AccionResponsabilidadResponse",
+              "Config",
+              "ConfiguracionResponsabilidadResponse",
+              "ConfiguracionResponsabilidadUpdate",
+              "EnDisputaResponse",
+              "EstadoResponsabilidad",
+              "HistorialListResponse",
+              "HistorialTransicionResponse",
+              "PendientesAprobacionResponse",
+              "ResponsabilidadBase",
+              "ResponsabilidadCreate",
+              "ResponsabilidadInDB",
+              "ResponsabilidadListResponse",
+              "ResponsabilidadPendienteResponse",
+              "ResponsabilidadResponse",
+              "ResponsabilidadResumenCalculo",
+              "ResumenFaltantes",
+              "ResumenSobrantes",
+              "RolAutorizacion",
+              "ToleranciaAplicada",
+              "validar_comentario"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "auditoria_service",
+              "cargos_service",
+              "configuracion_service",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "email_service",
+              "justificacion_service",
+              "notification_service",
+              "operativo_service",
+              "orquestador_service",
+              "responsabilidad_service",
+              "tarea_service",
+              "workflow_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cargo",
+              "responsabilidad"
+            ],
+            "path": "backend/modules/fase2_operativo/services/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "repositories.auditoria_repository",
+              "repositories.workflow_repository",
+              "schemas.enums",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "responsabilidad"
+            ],
+            "path": "backend/modules/fase2_operativo/services/auditoria_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AuditoriaService",
+              "AuditoriaServiceError",
+              "DecisionInvalidaError",
+              "WorkflowNoEnAuditoriaError",
+              "__init__",
+              "listar_por_auditor",
+              "listar_por_decision",
+              "obtener_decision",
+              "obtener_decisiones_workflow",
+              "obtener_ultima_decision",
+              "obtener_workflows_pendientes_auditoria",
+              "registrar_decision",
+              "resumen_por_decision",
+              "validar_si_workflow_tiene_decision"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.mongo_stub",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "notification_service",
+              "repositories.cargos_repository",
+              "repositories.responsabilidad_repository",
+              "repositories.workflow_repository",
+              "schemas.cargos_schemas",
+              "schemas.responsabilidad_schemas",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "cargo",
+              "responsabilidad"
+            ],
+            "path": "backend/modules/fase2_operativo/services/cargos_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CargoNoEncontradoError",
+              "CargoYaExisteError",
+              "CargosService",
+              "CargosServiceError",
+              "NoElegibleParaCargoError",
+              "PermisoInsuficienteError",
+              "ResponsabilidadNoEncontradaError",
+              "TransicionInvalidaError",
+              "__init__",
+              "_cerrar_workflow_si_corresponde",
+              "_check_is_stub",
+              "_mapear_a_response",
+              "_notificar_cargo_aplicado",
+              "_obtener_cargo",
+              "_obtener_responsabilidad",
+              "_validar_permiso_por_monto",
+              "_validar_transicion",
+              "aplicar_cargo",
+              "autorizar_cargo",
+              "cancelar_cargo",
+              "crear_propuesta_cargo",
+              "evaluar_elegibilidad",
+              "listar_cargos",
+              "obtener_aplicados",
+              "obtener_cargo",
+              "obtener_cargo_por_responsabilidad",
+              "obtener_log_cargo",
+              "obtener_metricas",
+              "obtener_pendientes_autorizacion",
+              "rechazar_cargo",
+              "revertir_cargo"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "email_service",
+              "logging",
+              "repositories.sql_base_repository",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "cargo"
+            ],
+            "path": "backend/modules/fase2_operativo/services/notification_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "NotificationService",
+              "__init__",
+              "_generar_html_cargo_aplicado",
+              "_generar_html_tarea_asignada",
+              "_generar_html_tarea_vencida",
+              "_generar_html_workflow_creado",
+              "_registrar_notificacion",
+              "get_notification_service",
+              "notificar_cargo_aplicado",
+              "notificar_tarea_asignada",
+              "notificar_tarea_vencida",
+              "notificar_workflow_creado"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "auditoria_service",
+              "configuracion_service",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "justificacion_service",
+              "schemas.enums",
+              "tarea_service",
+              "typing",
+              "workflow_service"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/fase2_operativo/services/operativo_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FlujoInvalidoError",
+              "OperativoService",
+              "OperativoServiceError",
+              "__init__",
+              "completar_justificacion_y_enviar_auditoria",
+              "completar_revision",
+              "escalar_workflow",
+              "iniciar_workflow_completo",
+              "obtener_alertas_activas",
+              "obtener_resumen_dashboard",
+              "procesar_decision_auditoria",
+              "registrar_justificacion_y_verificar"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "repositories.configuracion_repository",
+              "repositories.detalle_diferencias_repository",
+              "repositories.historial_responsabilidad_repository",
+              "repositories.responsabilidad_repository",
+              "repositories.workflow_repository",
+              "schemas.enums",
+              "schemas.responsabilidad_schemas",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "cargo",
+              "responsabilidad"
+            ],
+            "path": "backend/modules/fase2_operativo/services/responsabilidad_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AprobacionesDesactivadasError",
+              "CalculoYaExisteError",
+              "ModuloDesactivadoError",
+              "PermisoInsuficienteError",
+              "ResponsabilidadNoEncontradaError",
+              "ResponsabilidadService",
+              "ResponsabilidadServiceError",
+              "SinDiferenciasError",
+              "TransicionInvalidaError",
+              "WorkflowNoEncontradoError",
+              "__init__",
+              "_actualizar_estado_responsabilidad",
+              "_actualizar_estado_workflow_si_corresponde",
+              "_actualizar_workflow_por_uuid",
+              "_buscar_workflow_por_uuid",
+              "_calcular_impacto",
+              "_esta_dentro_tolerancia",
+              "_extraer_sucursal",
+              "_generar_mensaje_resumen",
+              "_mapear_a_response",
+              "_obtener_responsabilidad",
+              "_obtener_top_sucursales",
+              "_registrar_transicion",
+              "_validar_permiso_por_monto",
+              "_validar_transicion",
+              "_verificar_aprobaciones_habilitadas",
+              "actualizar_configuracion",
+              "aprobar",
+              "calcular_responsabilidad",
+              "disputar",
+              "exonerar",
+              "inicializar_configuracion",
+              "listar",
+              "obtener_configuracion",
+              "obtener_en_disputa",
+              "obtener_historial",
+              "obtener_metricas_dashboard",
+              "obtener_pendientes_aprobacion",
+              "obtener_por_workflow",
+              "proponer",
+              "rechazar",
+              "resolver_disputa"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "repositories.detalle_diferencias_repository",
+              "repositories.workflow_repository",
+              "schemas.enums",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/fase2_operativo/services/workflow_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TransicionInvalidaError",
+              "WorkflowNoEncontradoError",
+              "WorkflowService",
+              "WorkflowServiceError",
+              "WorkflowYaExisteError",
+              "__init__",
+              "_validar_transicion",
+              "cambiar_estado",
+              "crear_workflow",
+              "crear_workflow_si_no_existe",
+              "get_uuids_by_servers",
+              "incrementar_ciclo",
+              "listar_en_auditoria",
+              "listar_en_revision",
+              "listar_escalados",
+              "listar_pendientes_asignacion",
+              "listar_pendientes_justificacion",
+              "listar_workflows",
+              "obtener_workflow_completo",
+              "obtener_workflow_por_id",
+              "obtener_workflow_por_procesado_id",
+              "resumen_por_estado"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [
+              "get_sql_connection"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/auth/context_service.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_all_empresas_sql",
+              "_get_empresa_by_uuid_sql",
+              "_get_sql_connection",
+              "_get_sucursales_by_empresa_sql",
+              "_get_user_allowed_servers_sql",
+              "_get_user_allowed_sucursales_sql",
+              "_get_user_by_public_uuid",
+              "_get_user_empresas_sql",
+              "_get_user_role_sql",
+              "get_empresas_disponibles",
+              "get_user_context",
+              "get_user_context_for_empresa"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.sql_first.db",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac",
+              "usuario_rolescontexto"
+            ],
+            "path": "backend/modules/auth/repository.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AuthRepository",
+              "_normalize_role",
+              "_normalize_user",
+              "_row_as_dict",
+              "_rows_as_dicts",
+              "build_user_response",
+              "count_users_with_role",
+              "create_default_roles",
+              "create_role",
+              "create_user",
+              "deactivate_user",
+              "delete_role",
+              "delete_user",
+              "find_role_by_id",
+              "find_role_by_name",
+              "find_user_by_email",
+              "find_user_by_id",
+              "get_all_roles",
+              "get_all_users",
+              "get_db",
+              "get_user_by_email",
+              "get_user_by_id",
+              "get_users_by_empresas",
+              "init_auth_repository",
+              "update_role",
+              "update_user"
+            ],
+            "tables_referenced": [
+              "Usuario_Catalogo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion",
+              "Usuario_RolesContexto"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.corporate_filters.service",
+              "core.rbac.service",
+              "core.rbac_sql.service",
+              "core.refresh_tokens",
+              "core.security",
+              "core.unidades_service",
+              "core.user_access_context",
+              "fastapi",
+              "logging",
+              "modules.auth",
+              "modules.auth.password_reset",
+              "modules.auth.schemas",
+              "modules.auth.service",
+              "modules.rbac_context_sql.context_service",
+              "os",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "jwt",
+              "rbac"
+            ],
+            "path": "backend/modules/auth/routes.py",
+            "rbac_contracts": [
+              "get_current_user",
+              "menu-permissions"
+            ],
+            "routes": [
+              "/auth/context",
+              "/auth/empresas",
+              "/auth/forgot-password",
+              "/auth/login",
+              "/auth/logout",
+              "/auth/logout-all",
+              "/auth/me",
+              "/auth/me/access-context",
+              "/auth/me/context",
+              "/auth/me/effective-permissions",
+              "/auth/me/menu-permissions",
+              "/auth/refresh",
+              "/auth/register",
+              "/auth/reset-password",
+              "/roles",
+              "/roles/modulos",
+              "/roles/{role_id}",
+              "/users",
+              "/users/{user_id}",
+              "/users/{user_id}/permissions"
+            ],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "ForgotPasswordRequest",
+              "ResetPasswordRequest",
+              "_build_effective_permissions_payload",
+              "_build_menu_permissions",
+              "_group_permissions_by_module",
+              "_normalize_permission_codes",
+              "_p5_extract_usuario_id_from_payload",
+              "change_context",
+              "create_role",
+              "create_user_admin",
+              "delete_role",
+              "delete_user",
+              "forgot_password",
+              "get_me",
+              "get_modulos_disponibles",
+              "get_my_access_context",
+              "get_my_context",
+              "get_my_effective_permissions",
+              "get_my_empresas",
+              "get_my_menu_permissions",
+              "get_roles",
+              "get_user_dual",
+              "get_users",
+              "login",
+              "logout",
+              "logout_all_sessions",
+              "refresh_tokens",
+              "register",
+              "reset_password_endpoint",
+              "update_role",
+              "update_user",
+              "update_user_permissions"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/auth/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "Role",
+              "RoleCreate",
+              "RoleUpdate",
+              "User",
+              "UserCreate",
+              "UserLogin",
+              "UserPermissions",
+              "UserRole",
+              "UserUpdate"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.alcance_helper",
+              "core.corporate_filters.service",
+              "core.rbac_helper",
+              "core.security",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.auth",
+              "modules.auth.password_reset",
+              "modules.auth.schemas",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "jwt",
+              "rbac"
+            ],
+            "path": "backend/modules/auth/service.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_can_manage_user",
+              "_get_role_level",
+              "_p5_extract_usuario_id_from_payload",
+              "create_role",
+              "create_user_admin",
+              "delete_role",
+              "delete_user",
+              "get_roles",
+              "get_user_by_id",
+              "get_users",
+              "login_user",
+              "register_user",
+              "update_role",
+              "update_user",
+              "update_user_permissions"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.worker_ingress",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.rbac.middleware",
+              "fastapi",
+              "modules.worker_mcp.oauth_pkce",
+              "modules.worker_mcp.oauth_server",
+              "schemas",
+              "service",
+              "service_credential",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "jwt",
+              "rbac"
+            ],
+            "path": "backend/modules/worker_ingress/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/auth/exchange",
+              "/jobs",
+              "/jobs/{job_id}",
+              "/objectives"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_bearer_credential",
+              "_raise_for_submit_status",
+              "_require_ingress_mcp_scope",
+              "_require_submit_mcp_scope_dependency",
+              "exchange_worker_service_credential",
+              "read_worker_job_status",
+              "submit_worker_job",
+              "submit_worker_objective"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.worker_ingress",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "core.rbac_sql.service",
+              "core.security",
+              "core.sql_first.db",
+              "datetime",
+              "hashlib",
+              "modules.auth.repository",
+              "modules.worker_mcp.oauth_pkce",
+              "modules.worker_mcp.oauth_security",
+              "modules.worker_mcp.oauth_server",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "jwt",
+              "rbac"
+            ],
+            "path": "backend/modules/worker_ingress/service_credential.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "WorkerServiceCredentialError",
+              "__init__",
+              "_coerce_utc_datetime",
+              "_credential_hash",
+              "_resolve_active_service_session",
+              "exchange_service_credential"
+            ],
+            "tables_referenced": [
+              "Sesiones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "os",
+              "pytest",
+              "requests",
+              "tests.test_config"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "cargo",
+              "notificaciones_enviar",
+              "rbac",
+              "responsabilidad"
+            ],
+            "path": "backend/tests/test_rbac_fase2d.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TestAuthenticationRequired",
+              "TestCargosRBAC",
+              "TestNotificacionesRBAC",
+              "TestRBACAudit",
+              "TestRBACSetup",
+              "TestResponsabilidadRBAC",
+              "TestSLARBAC",
+              "admin_token",
+              "get_auth_headers",
+              "operador_token",
+              "test_admin_login",
+              "test_api_health",
+              "test_get_cargos_admin",
+              "test_get_cargos_metricas_operador",
+              "test_get_cargos_operador",
+              "test_get_cargos_pendientes_operador",
+              "test_get_configuracion_operador",
+              "test_get_notificaciones_config_admin",
+              "test_get_notificaciones_config_operador_forbidden",
+              "test_get_responsabilidad_admin",
+              "test_get_responsabilidad_operador",
+              "test_get_sla_config_admin",
+              "test_get_sla_config_operador",
+              "test_invalid_token_returns_401",
+              "test_no_token_returns_401",
+              "test_operador_login",
+              "test_post_aplicar_operador_forbidden",
+              "test_post_autorizar_operador_forbidden",
+              "test_post_calcular_operador_forbidden",
+              "test_post_cargos_admin",
+              "test_post_cargos_operador_forbidden",
+              "test_post_disputar_operador_allowed",
+              "test_post_exonerar_operador_forbidden",
+              "test_post_notificaciones_test_operador_forbidden",
+              "test_put_sla_config_admin",
+              "test_put_sla_config_operador_forbidden",
+              "test_rbac_audit_endpoint"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "os",
+              "pytest",
+              "requests",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cargo",
+              "responsabilidad"
+            ],
+            "path": "backend/tests/test_cargos_economicos.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TestCancelacionCargo",
+              "TestCargoNoEncontrado",
+              "TestCargosBasicEndpoints",
+              "TestCicloCompletoCargo",
+              "TestCrearCargoValidaciones",
+              "TestElegibilidad",
+              "TestFiltrosCargos",
+              "TestPermisosRol",
+              "TestRechazoCargo",
+              "TestTransicionesInvalidas",
+              "cargo_para_cancelar",
+              "cargo_para_rechazar",
+              "cargo_pendiente",
+              "cargo_pendiente_alto_monto",
+              "setup_test_data",
+              "test_01_elegibilidad_responsabilidad_aprobada",
+              "test_02_crear_propuesta_cargo",
+              "test_03_obtener_cargo_creado",
+              "test_04_obtener_log_cargo",
+              "test_05_cargo_aparece_en_pendientes",
+              "test_06_autorizar_cargo",
+              "test_07_aplicar_cargo",
+              "test_08_cargo_aparece_en_aplicados",
+              "test_09_revertir_cargo_aplicado",
+              "test_10_verificar_log_completo",
+              "test_afectado_no_puede_autorizar",
+              "test_aplicar_cargo_no_existe",
+              "test_aplicar_cargo_pendiente_directo",
+              "test_autorizar_cargo_no_existe",
+              "test_cancelar_cargo_no_existe",
+              "test_cancelar_cargo_pendiente",
+              "test_cargos_aplicados",
+              "test_cargos_pendientes",
+              "test_crear_cargo_comentario_muy_corto",
+              "test_crear_cargo_comentario_trivial",
+              "test_crear_cargo_responsabilidad_no_existe",
+              "test_elegibilidad_responsabilidad_calculado",
+              "test_elegibilidad_responsabilidad_exonerado",
+              "test_elegibilidad_responsabilidad_no_existe",
+              "test_elegibilidad_responsabilidad_propuesto",
+              "test_filtrar_por_estatus",
+              "test_filtrar_por_sucursal",
+              "test_listar_cargos_empty",
+              "test_metricas_cargos",
+              "test_obtener_cargo_no_existe",
+              "test_obtener_log_cargo_no_existe",
+              "test_paginacion",
+              "test_rechazar_cargo_no_existe",
+              "test_rechazar_cargo_pendiente",
+              "test_revertir_cargo_no_existe",
+              "test_revertir_cargo_pendiente",
+              "test_supervisor_no_puede_revertir"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dotenv",
+              "modules.auth.repository",
+              "os",
+              "pathlib",
+              "sys",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "tools/mirror_sync/worker_requester_rbac.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_norm",
+              "authorize_requester"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 43,
+          "scanned_files": 82,
+          "skipped_sensitive": 76
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-19T03:56:26Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
