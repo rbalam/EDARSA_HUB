@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/fase2_operativo/",
+          "backend/modules/auth/",
+          "backend/modules/worker_ingress/",
+          "backend/tests/test_rbac_fase2d.py",
+          "backend/tests/test_cargos_economicos.py",
+          "tools/mirror_sync/worker_requester_rbac.py"
+        ],
+        "search_terms": [
+          "cargo",
+          "responsabilidad",
+          "JWT",
+          "NOTIFICACIONES_ENVIAR",
+          "RBAC",
+          "Usuario_RolesContexto"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-SEC_RBAC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-5C8F641C8B169DAC20A5",
+  "mode": "READ_ONLY",
+  "objective": "Gate 0 READ_ONLY Seguridad RBAC: auditar los contratos de Cargos y Responsabilidad, identidad JWT y permiso NOTIFICACIONES_ENVIAR en modulos y pruebas del repositorio EDARSAHUB. Confirmar referencias, dependencias y riesgos de alcance sin ejecutar migraciones 016, 017 ni 018; sin SQL LIVE, sin cambios de archivos ni Produccion. Informar explicitamente las rutas backend/core excluidas del alcance de esta capacidad.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SEC_RBAC",
+    "conflict_domains": [
+      "SEC_RBAC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
