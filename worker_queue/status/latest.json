@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "c86542ce762f8c206019209851296255774c5214",
-  "generated_at_utc": "2026-11-19T13:39:44Z",
+  "generated_at_utc": "2026-11-19T13:41:19Z",
   "history": {
     "done_total_local": 1850,
     "pending_total_local": 0,
@@ -16,14 +16,8 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1699,
+      "age_seconds": 1793,
       "job_id": "EDARSAHUB-BOS-WORKER-RELIABILITY-GATE-R2-RESERVED-PREFLIGHT-FIELDS-20261119",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3511,
-      "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT-0DDCE7DF4129DAC1CD82",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -36,14 +30,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 1,
   "queue_running": 0,
   "remote_development_sha": "c86542ce762f8c206019209851296255774c5214",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T13:39:23Z",
-    "last_receive_utc": "2026-11-19T13:39:44Z",
+    "last_cycle_utc": "2026-11-19T13:41:00Z",
+    "last_receive_utc": "2026-11-19T13:40:55Z",
     "last_terminal_utc": "2026-11-19T13:11:25Z",
     "pid": "471544",
     "runtime_fingerprint": {
