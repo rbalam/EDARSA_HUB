@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/core/scheduler/config.py",
+          "backend/core/scheduler/scheduler_manager.py",
+          "backend/core/scheduler/"
+        ],
+        "search_terms": [
+          "cava_socios_monthly",
+          "SCHEDULER_CAVA_MONTHLY_ENABLED",
+          "timezone",
+          "start_execution",
+          "get_job_logger"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CAVAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4DD2801E1A0F6B3AB91D",
+  "mode": "READ_ONLY",
+  "objective": "READ_ONLY: auditar contrato de activacion, configuracion cron y zona horaria, logs e historial de ejecucion del job cava_socios_monthly en repositorio. Determinar qué puede y qué no puede probarse sin acceso a runtime. No ejecutar envios, no modificar configuracion, no tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CAVAS",
+    "conflict_domains": [
+      "CAVAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
