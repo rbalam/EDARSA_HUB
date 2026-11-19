@@ -1,0 +1,778 @@
+{
+  "base_sha": "1ae40c524ea7574d4f5a68c27b5eab4efa93bee3",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-19T15:24:22Z",
+  "execution_base_sha": "1ae40c524ea7574d4f5a68c27b5eab4efa93bee3",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-SEC_RBAC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-D045BD2D398FCCBFB0A0",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-19T15:40:13Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.rbac_helper_sql",
+              "core.security",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "fastapi",
+              "fastapi.security",
+              "functools",
+              "logging",
+              "service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cargos_",
+              "check_permission",
+              "get_current_user_dual",
+              "jwt",
+              "rbac",
+              "require_explicit_permission",
+              "require_permission",
+              "superadmin",
+              "usuario_catalogo",
+              "verify_token"
+            ],
+            "path": "backend/core/rbac/middleware.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "get_current_user"
+            ],
+            "routes": [
+              "/cargos/{id}/aplicar",
+              "/endpoint"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACAllDependency",
+              "RBACAnyDependency",
+              "RBACDependency",
+              "RBACExplicitDependency",
+              "RBACExplicitDualDependency",
+              "__call__",
+              "__init__",
+              "_get_db",
+              "get_current_user_from_token",
+              "get_current_user_with_permissions",
+              "require_all_permissions",
+              "require_any_permission",
+              "require_explicit_permission",
+              "require_explicit_permission_dual",
+              "require_permission"
+            ],
+            "tables_referenced": [
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "logging",
+              "repository",
+              "schemas",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cargos_",
+              "check_permission",
+              "rbac",
+              "require_permission",
+              "responsabilidad_",
+              "superadmin"
+            ],
+            "path": "backend/core/rbac/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "PermisoDenegadoError",
+              "RBACService",
+              "__init__",
+              "_get_permisos_from_legacy_role",
+              "asignar_rol_a_usuario",
+              "check_all_permissions",
+              "check_any_permission",
+              "check_permission",
+              "create_rol",
+              "delete_rol",
+              "ensure_initialized",
+              "get_all_permisos",
+              "get_all_roles",
+              "get_audit_logs",
+              "get_rbac_service",
+              "get_rol",
+              "get_user_permissions",
+              "initialize",
+              "require_permission",
+              "revocar_rol_de_usuario",
+              "update_rol"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "enum",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cargos_",
+              "notificaciones_enviar",
+              "rbac",
+              "responsabilidad_"
+            ],
+            "path": "backend/core/rbac/schemas.py",
+            "rbac_contracts": [
+              "RBAC_Permisos"
+            ],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "AccionPermiso",
+              "AsignacionRol",
+              "AsignacionRolCreate",
+              "AsignacionRolResponse",
+              "ModuloSistema",
+              "Permiso",
+              "PermisoCreate",
+              "PermisoResponse",
+              "PermisoUsuarioResponse",
+              "RBACAuditLog",
+              "RolRBAC",
+              "RolRBACCreate",
+              "RolRBACResponse",
+              "RolRBACUpdate",
+              "VerificacionPermisoResponse"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac_sql",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.db"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "jwt",
+              "rbac",
+              "superadmin",
+              "usuario_id"
+            ],
+            "path": "backend/core/rbac_sql/service.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACSQLService",
+              "_has_superadmin_role",
+              "build_context",
+              "can_access_empresa",
+              "can_access_permission",
+              "can_access_servidor",
+              "can_access_sucursal",
+              "can_access_unidad",
+              "can_access_unit_metadata",
+              "get_effective_permissions",
+              "get_empresas",
+              "get_permission_scope_by_code",
+              "get_roles",
+              "get_scope_assignment_state",
+              "get_servidores",
+              "get_sucursales",
+              "get_unidades"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_SucursalServidorMapeo",
+              "Sistema_Sucursales",
+              "Unidades_Negocio",
+              "Usuario_Acciones",
+              "Usuario_EmpresasAsignacion",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion",
+              "Usuario_ServidoresAsignacion",
+              "Usuario_SucursalesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.rbac_helper_sql.py",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "os",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "jwt",
+              "rbac",
+              "superadmin"
+            ],
+            "path": "backend/core/rbac_helper_sql.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_connection",
+              "_is_cache_valid",
+              "_load_roles_from_sql",
+              "es_admin",
+              "es_aprobador",
+              "es_superadmin",
+              "es_supervisor_o_superior",
+              "get_role_code",
+              "get_role_level",
+              "get_role_names_with_full_access",
+              "get_roles_with_full_access",
+              "has_full_access",
+              "invalidate_cache",
+              "puede_solicitar_comercial",
+              "tiene_acceso_lectura_comercial"
+            ],
+            "tables_referenced": [
+              "Usuario_Roles"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.security.py",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "bcrypt",
+              "core.access_context.sql_context",
+              "core.auth.user_repository_sql",
+              "core.corporate_filters.service",
+              "core.mongo_stub",
+              "core.rbac_helper_sql",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "dataclasses",
+              "datetime",
+              "fastapi",
+              "fastapi.security",
+              "jwt",
+              "logging",
+              "modules.auth.repository",
+              "os",
+              "pymssql",
+              "re",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_current_user_dual",
+              "jwt",
+              "publicuuid",
+              "rbac",
+              "superadmin",
+              "usuario_catalogo",
+              "usuario_id",
+              "verify_token"
+            ],
+            "path": "backend/core/security.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/protected"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "SQLSanitizer",
+              "SQLValidationResult",
+              "_get_all_empresas_sql",
+              "_get_user_sql_only",
+              "_normalize_jwt_identity_claims",
+              "_normalize_sql",
+              "_p5_extract_usuario_id_from_payload",
+              "_safe_user_for_log",
+              "_validate_sql_user_structure",
+              "clear_auth_cookie",
+              "compare_user_mongo_vs_sql_passive",
+              "create_access_token",
+              "create_token",
+              "dependency",
+              "filter_by_user_context",
+              "filter_servers_by_permissions",
+              "filter_sucursales_by_permissions",
+              "get_current_user",
+              "get_current_user_dual",
+              "get_current_user_dual_dependency",
+              "get_db",
+              "get_servers_for_empresas",
+              "get_user_empresas_permitidas",
+              "hash_password",
+              "init_security",
+              "log_auth_preflight_status",
+              "log_blocked_sql",
+              "quick_validate",
+              "set_auth_cookie",
+              "to_dict",
+              "user_has_empresa_access",
+              "user_has_server_access",
+              "validate",
+              "validate_for_catalog",
+              "validate_for_explorer",
+              "validate_sql_detailed",
+              "validate_sql_safe",
+              "verify_password",
+              "verify_token"
+            ],
+            "tables_referenced": [
+              "Usuario_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.communications.audit.audit_service",
+              "core.communications.dispatcher.dispatcher",
+              "core.communications.notifications.repository",
+              "core.communications.notifications.schemas",
+              "core.communications.scripts",
+              "core.communications.templates.template_service",
+              "core.corporate_filters.service",
+              "core.rbac.middleware",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "notificaciones_enviar",
+              "rbac",
+              "require_explicit_permission",
+              "require_permission"
+            ],
+            "path": "backend/core/communications/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/config",
+              "/config/set-twilio",
+              "/config/{config_id}",
+              "/config/{config_id}/set-provider",
+              "/inicializar",
+              "/log",
+              "/provider-status",
+              "/providers",
+              "/providers/{provider_id}",
+              "/queue-status",
+              "/reprocesar",
+              "/stats",
+              "/templates",
+              "/templates/{template_id}",
+              "/test",
+              "/test-real"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConfigCreateRequest",
+              "ConfigUpdateRequest",
+              "TemplateCreateRequest",
+              "TemplateUpdateRequest",
+              "TestNotificationRequest",
+              "TestRealNotificationRequest",
+              "configure_twilio_provider",
+              "create_config",
+              "create_template",
+              "get_config",
+              "get_db",
+              "get_notification_logs",
+              "get_notification_stats",
+              "get_provider",
+              "get_provider_runtime_status",
+              "get_queue_status",
+              "get_template",
+              "init_notifications_routes",
+              "initialize_notification_system",
+              "is_mongo_available",
+              "list_configs",
+              "list_providers",
+              "list_templates",
+              "reprocess_queue",
+              "test_notification",
+              "test_real_notification",
+              "update_config",
+              "update_event_provider",
+              "update_template"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.rbac.middleware",
+              "core.rbac_helper_sql",
+              "core.unidades_service",
+              "db_utils",
+              "fastapi",
+              "logging",
+              "schemas.cargos_schemas",
+              "services.cargos_service",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "cargos_",
+              "jwt",
+              "rbac",
+              "require_explicit_permission",
+              "require_permission",
+              "responsabilidad_",
+              "usuario_id"
+            ],
+            "path": "backend/modules/fase2_operativo/routes/cargos_routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/aplicados",
+              "/elegibilidad/{responsabilidad_id}",
+              "/metricas",
+              "/pendientes",
+              "/{cargo_id}",
+              "/{cargo_id}/aplicar",
+              "/{cargo_id}/autorizar",
+              "/{cargo_id}/cancelar",
+              "/{cargo_id}/log",
+              "/{cargo_id}/rechazar",
+              "/{cargo_id}/revertir"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_authenticated_cargos_actor",
+              "aplicar_cargo",
+              "autorizar_cargo",
+              "cancelar_cargo",
+              "crear_propuesta_cargo",
+              "evaluar_elegibilidad",
+              "get_cargos_service",
+              "listar_cargos",
+              "obtener_aplicados",
+              "obtener_cargo",
+              "obtener_log_cargo",
+              "obtener_metricas",
+              "obtener_pendientes",
+              "rechazar_cargo",
+              "revertir_cargo"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "api_schemas",
+              "core.corporate_filters.service",
+              "core.rbac.middleware",
+              "core.rbac_helper_sql",
+              "core.unidades_service",
+              "db_utils",
+              "fastapi",
+              "schemas.responsabilidad_schemas",
+              "services.responsabilidad_service",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "jwt",
+              "rbac",
+              "require_explicit_permission",
+              "require_permission",
+              "responsabilidad_",
+              "usuario_id"
+            ],
+            "path": "backend/modules/fase2_operativo/routes/responsabilidad_routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/calcular/{workflow_id}",
+              "/configuracion",
+              "/en-disputa",
+              "/inicializar-configuracion",
+              "/metricas",
+              "/pendientes-aprobacion",
+              "/workflow/{workflow_id}",
+              "/{responsabilidad_id}/aprobar",
+              "/{responsabilidad_id}/disputar",
+              "/{responsabilidad_id}/exonerar",
+              "/{responsabilidad_id}/historial",
+              "/{responsabilidad_id}/proponer",
+              "/{responsabilidad_id}/rechazar",
+              "/{responsabilidad_id}/resolver-disputa"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_authenticated_responsabilidad_actor",
+              "_handle_aprobacion_error",
+              "actualizar_configuracion",
+              "aprobar",
+              "calcular_responsabilidad",
+              "disputar",
+              "exonerar",
+              "get_db",
+              "inicializar_configuracion",
+              "listar_en_disputa",
+              "listar_pendientes_aprobacion",
+              "listar_responsabilidades",
+              "obtener_configuracion",
+              "obtener_historial",
+              "obtener_metricas",
+              "obtener_por_workflow",
+              "proponer",
+              "rechazar",
+              "resolver_disputa"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "collections",
+              "core.auth.sql_user_identity",
+              "core.corporate_filters.service",
+              "core.rbac_sql.service",
+              "core.unidades_service",
+              "fastapi",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac",
+              "usuario_id"
+            ],
+            "path": "backend/modules/fase2_operativo/access.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_branch_pairs",
+              "_context_values",
+              "_normalize",
+              "_normalize_key",
+              "_resolve_permission_scopes",
+              "get_allowed_unidad_pks",
+              "get_legacy_server_ids_for_unidad_scope",
+              "get_unidad_metadata",
+              "resolve_operativo_unit_filter",
+              "resolve_unidad_pk"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.communications.notifications.repository",
+              "core.rbac.middleware",
+              "fastapi",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac",
+              "require_permission"
+            ],
+            "path": "backend/modules/integrations_center/communications_routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/configs",
+              "/configs/{config_id}",
+              "/logs",
+              "/providers",
+              "/providers/{provider_id}",
+              "/queue",
+              "/templates",
+              "/templates/{template_id}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_meta",
+              "_reject_secret_fields",
+              "_repo",
+              "_safe_doc",
+              "create_config",
+              "create_provider",
+              "create_template",
+              "deactivate_config",
+              "deactivate_template",
+              "list_configs",
+              "list_providers",
+              "list_templates",
+              "logs",
+              "queue_status",
+              "update_config",
+              "update_provider",
+              "update_template"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "os",
+              "pytest",
+              "requests",
+              "tests.test_config"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "cargos_",
+              "notificaciones_enviar",
+              "rbac",
+              "responsabilidad_",
+              "usuario_id"
+            ],
+            "path": "backend/tests/test_rbac_fase2d.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TestAuthenticationRequired",
+              "TestCargosRBAC",
+              "TestNotificacionesRBAC",
+              "TestRBACAudit",
+              "TestRBACSetup",
+              "TestResponsabilidadRBAC",
+              "TestSLARBAC",
+              "admin_token",
+              "get_auth_headers",
+              "operador_token",
+              "test_admin_login",
+              "test_api_health",
+              "test_get_cargos_admin",
+              "test_get_cargos_metricas_operador",
+              "test_get_cargos_operador",
+              "test_get_cargos_pendientes_operador",
+              "test_get_configuracion_operador",
+              "test_get_notificaciones_config_admin",
+              "test_get_notificaciones_config_operador_forbidden",
+              "test_get_responsabilidad_admin",
+              "test_get_responsabilidad_operador",
+              "test_get_sla_config_admin",
+              "test_get_sla_config_operador",
+              "test_invalid_token_returns_401",
+              "test_no_token_returns_401",
+              "test_operador_login",
+              "test_post_aplicar_operador_forbidden",
+              "test_post_autorizar_operador_forbidden",
+              "test_post_calcular_operador_forbidden",
+              "test_post_cargos_admin",
+              "test_post_cargos_operador_forbidden",
+              "test_post_disputar_operador_allowed",
+              "test_post_exonerar_operador_forbidden",
+              "test_post_notificaciones_test_operador_forbidden",
+              "test_put_sla_config_admin",
+              "test_put_sla_config_operador_forbidden",
+              "test_rbac_audit_endpoint"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 12,
+          "scanned_files": 12,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-19T15:24:21Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
