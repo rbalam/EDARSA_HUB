@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "14859b188eb7b7ff398f4a945fa721211c52272c",
-  "generated_at_utc": "2026-11-19T07:32:52Z",
+  "generated_at_utc": "2026-11-19T07:34:18Z",
   "history": {
     "done_total_local": 1769,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 922,
+      "age_seconds": 1008,
       "job_id": "EDARSAHUB-BOS-GLOBAL-WORKER-ALIGNMENT-G3-MCP-SEMANTIC-INGRESS-R2-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 765,
+      "age_seconds": 852,
       "job_id": "EDARSAHUB-BOS-GLOBAL-WORKER-ALIGNMENT-G3-MCP-SEMANTIC-INGRESS-R3-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 39,
+      "age_seconds": 125,
       "job_id": "EDARSAHUB-BOS-WORKER-RESULT-REF-SYNC-FIX-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,10 +48,10 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T07:32:29Z",
-    "last_receive_utc": "2026-11-19T07:32:24Z",
+    "last_cycle_utc": "2026-11-19T07:34:08Z",
+    "last_receive_utc": "2026-11-19T07:34:18Z",
     "last_terminal_utc": "2026-11-19T07:32:13Z",
-    "pid": "1977099",
+    "pid": "2068136",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "93b9df6a2135687af40cb8416188bc76a59b6906",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
