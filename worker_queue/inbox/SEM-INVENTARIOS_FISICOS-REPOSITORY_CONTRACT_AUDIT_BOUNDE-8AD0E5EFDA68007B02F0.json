@@ -1,0 +1,55 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/inventarios/",
+          "backend/modules/cava_socios/",
+          "backend/modules/fase2_operativo/"
+        ],
+        "search_terms": [
+          "ajuste",
+          "RBAC",
+          "idempotencia",
+          "concurrencia",
+          "nivel",
+          "altura",
+          "volumen",
+          "mililitros",
+          "reconteo",
+          "aprobacion",
+          "kardex",
+          "sorpresa"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-INVENTARIOS_FISICOS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-8AD0E5EFDA68007B02F0",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1C Inventarios Fisicos: auditoria READ_ONLY de contratos existentes de ajustes, autorizaciones, RBAC por empresa/unidad, idempotencia, concurrencia, conteos ciegos, reconteos, niveles volumetricos, kardex y auditorias sorpresa. No mutaciones ni Produccion. Reutilizar implementaciones y evidencia existente.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INVENTARIOS_FISICOS",
+    "conflict_domains": [
+      "INVENTARIOS_FISICOS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
