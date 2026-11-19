@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "9da27dd7b6c45c35d6762a3609c2c9b541cd5a99",
-  "generated_at_utc": "2026-11-19T09:30:46Z",
+  "generated_at_utc": "2026-11-19T09:32:12Z",
   "history": {
     "done_total_local": 1792,
     "pending_total_local": 0,
@@ -16,91 +16,91 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1239,
+      "age_seconds": 1325,
       "job_id": "EDARSAHUB-BOS-WORKER-DETAIL-READ-EVIDENCE-RECOVERY-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1112,
+      "age_seconds": 1197,
       "job_id": "EDARSAHUB-BOS-WORKER-DETAIL-READ-EVIDENCE-RECOVERY-R2-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 914,
+      "age_seconds": 1000,
       "job_id": "EDARSAHUB-PROD-DEV-R3B-PRODUCTION-TRIGGER-CONVERGENCE-R4-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 406,
+      "age_seconds": 492,
       "job_id": "SEM-CRM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-BEF1625A65B696C6B61C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 713,
+      "age_seconds": 798,
       "job_id": "SEM-INTEGRATIONS_TOAST-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7C97C26E54E5664895A7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1790,
+      "age_seconds": 1876,
       "job_id": "SEM-WORKER_AUTONOMOUS_EXECUTION_POLI-REPOSITORY_CONTRACT_AUDIT_BOUNDE-3114613653B8E89F106F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1597,
+      "age_seconds": 1683,
       "job_id": "SEM-WORKER_AUTONOMY_POLICY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4FDA7B5D5B7848911C71",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2335,
+      "age_seconds": 2420,
       "job_id": "SEM-WORKER_CONTRACT_COMPATIBILITY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-3A9CD7272D27DF658973",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2280,
+      "age_seconds": 2366,
       "job_id": "SEM-WORKER_CONTRACT_COMPATIBILITY-WORKER_RESULT_DETAIL_READ-B2D40882EF42FA6D81A3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 848,
+      "age_seconds": 934,
       "job_id": "SEM-WORKER_INGRESS-READ_ONLY_CANARY-36445425EDF37D40BDAF",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3023,
+      "age_seconds": 3109,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-3926C81AF27EC26DAFA8",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 831,
+      "age_seconds": 916,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-4347981AB61971D6EF38",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 730,
+      "age_seconds": 816,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_PYTEST_CERTIFICATION_READ-B9F6352189E72E9650E4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 875,
+      "age_seconds": 960,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-4CB79D0D4B412B9DA416",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 816,
+      "age_seconds": 901,
       "job_id": "SEM-WORKER_REPAIR_REGISTRY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-6365BF239206AC08AA4C",
       "reason": null,
       "state": "RESULT_READY"
@@ -120,8 +120,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T09:30:29Z",
-    "last_receive_utc": "2026-11-19T09:30:24Z",
+    "last_cycle_utc": "2026-11-19T09:31:57Z",
+    "last_receive_utc": "2026-11-19T09:31:52Z",
     "last_terminal_utc": "2026-11-19T09:24:00Z",
     "pid": "2782495",
     "runtime_fingerprint": {
