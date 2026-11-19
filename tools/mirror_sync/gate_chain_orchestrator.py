@@ -10,6 +10,11 @@ from pathlib import Path
 from typing import Any
 ROOT=Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path: sys.path.insert(0,str(ROOT))
+from tools.mirror_sync.gate_chain_controller import (
+    AUTONOMOUS_POLICY_SCHEMA,
+    PolicyLimits,
+    evaluate_autonomous_policy,
+)
 from tools.mirror_sync.gate_chain_reconciler import reconcile_chain, discover_state, load_json
 from tools.mirror_sync.gate_chain_publisher import build_plan, publish
 
@@ -29,26 +34,75 @@ def cycle_chain(chain:dict[str,Any],state_root:Path,persist_root:Path,publish_en
     if chain.get('enabled') is not True: return {'chain_id':chain_id,'action':'DISABLED'}
     state_path=persist_root/f'{chain_id}.json'
     prior=read_state(state_path)
+    retry_counts=dict(prior.get('retry_counts') or {})
+    consecutive_failures=int(prior.get('consecutive_failures') or 0)
+    if chain.get('cancel_requested') is True:
+        persisted={
+            'schema':'edarsahub.gate-chain-runtime.v1','policy_schema':AUTONOMOUS_POLICY_SCHEMA,'chain_id':chain_id,'last_cycle_utc':now(),
+            'hop_count':int(prior.get('hop_count') or 0),
+            'last_gate_id':prior.get('last_gate_id'),
+            'next_gate_id':prior.get('next_gate_id'),
+            'last_job_id':prior.get('last_job_id'),
+            'last_action':'CANCELLED_SAFELY',
+            'cancelled_safely':True,
+            'retry_counts':retry_counts,
+            'consecutive_failures':consecutive_failures,
+            'production_touched':False
+        }
+        atomic_json(state_path,persisted)
+        return {'chain_id':chain_id,'action':'CANCELLED_SAFELY','reason':'SAFE_CANCELLATION_REQUESTED','published':False,'runtime_state':persisted}
     row=reconcile_chain(chain,state_root)
     action=row.get('state')
     result={'chain_id':chain_id,'action':action,'reason':row.get('reason'),'current_gate_id':row.get('current_gate_id'),'next_gate_id':row.get('next_gate_id'),'published':False}
+    policy_record=None
     if action=='READY':
-        plan=build_plan(chain,row,existing_ids(state_root))
-        result['plan_status']=plan.get('status')
-        if plan.get('status')=='READY_TO_PUBLISH' and publish_enabled:
-            pub=publish(plan)
-            result['publish_result']=pub
-            result['published']=pub.get('status')=='PUBLISHED'
-            result['job_id']=pub.get('job_id')
-        elif plan.get('status')=='EXISTS':
-            result['action']='WAIT'; result['reason']='NEXT_JOB_ALREADY_EXISTS'; result['job_id']=plan.get('job_id')
+        next_gate_id=str(row.get('next_gate_id') or '').strip()
+        target_gate=next((g for g in chain.get('gates',[]) if str(g.get('gate_id') or '').strip()==next_gate_id),None)
+        raw_limits=chain.get('policy_limits') if isinstance(chain.get('policy_limits'),dict) else {}
+        limits=PolicyLimits(
+            max_hops=int(raw_limits.get('max_hops',chain.get('max_hops',10))),
+            max_retries_per_gate=int(raw_limits.get('max_retries_per_gate',2)),
+            max_parallelism=int(raw_limits.get('max_parallelism',1)),
+            max_runtime_seconds=int(raw_limits.get('max_runtime_seconds',600)),
+            max_actions_per_job=int(raw_limits.get('max_actions_per_job',15)),
+            max_files_per_job=int(raw_limits.get('max_files_per_job',15)),
+            circuit_breaker_threshold=int(raw_limits.get('circuit_breaker_threshold',3)),
+        )
+        if target_gate is not None:
+            policy_record=evaluate_autonomous_policy(
+                target_gate,
+                limits=limits,
+                hop_count=int(row.get('hop_count') or 0),
+                retry_count=int(retry_counts.get(next_gate_id,0)),
+                consecutive_failures=consecutive_failures,
+                authorization_classes=chain.get('authorization_classes',[]),
+                authorization_context=chain.get('authorization_context'),
+            )
+            result['policy_decision']=policy_record
+            if not policy_record['allowed']:
+                result['action']=policy_record['action']
+                result['reason']=policy_record['reason']
+        if result['action']=='READY':
+            plan=build_plan(chain,row,existing_ids(state_root))
+            result['plan_status']=plan.get('status')
+            if plan.get('status')=='READY_TO_PUBLISH' and publish_enabled:
+                pub=publish(plan)
+                result['publish_result']=pub
+                result['published']=pub.get('status')=='PUBLISHED'
+                result['job_id']=pub.get('job_id')
+            elif plan.get('status')=='EXISTS':
+                result['action']='WAIT'; result['reason']='NEXT_JOB_ALREADY_EXISTS'; result['job_id']=plan.get('job_id')
     persisted={
-        'schema':'edarsahub.gate-chain-runtime.v1','chain_id':chain_id,'last_cycle_utc':now(),
+        'schema':'edarsahub.gate-chain-runtime.v1','policy_schema':AUTONOMOUS_POLICY_SCHEMA,'chain_id':chain_id,'last_cycle_utc':now(),
         'hop_count':int(row.get('hop_count') or prior.get('hop_count') or 0),
         'last_gate_id':row.get('current_gate_id') or prior.get('last_gate_id'),
         'next_gate_id':row.get('next_gate_id'),
         'last_job_id':result.get('job_id') or prior.get('last_job_id'),
         'last_action':result.get('action'),
+        'cancelled_safely':False,
+        'retry_counts':retry_counts,
+        'consecutive_failures':consecutive_failures,
+        'last_decision_record':policy_record or prior.get('last_decision_record'),
         'production_touched':False
     }
     atomic_json(state_path,persisted)

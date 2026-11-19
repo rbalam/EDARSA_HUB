@@ -260,3 +260,163 @@ def decide_next(
         authorized=authorized,
     )
     return TransitionDecision('READY', chain_id, current_gate_id, target_gate_id, ready_reason, digest)
+
+
+AUTONOMOUS_POLICY_SCHEMA = 'edarsahub.autonomous-execution-policy.v1'
+POLICY_TIERS = ('READ_ONLY', 'DEVELOPMENT_MUTATION', 'HUMAN_APPROVAL_REQUIRED')
+_HUMAN_APPROVAL_FLAGS = (
+    'requires_human_decision',
+    'touches_credentials',
+    'destructive_operation',
+    'irreversible_financial_operation',
+    'personal_data_outside_scope',
+    'unauthorized_business_change',
+    'out_of_contract',
+)
+
+
+@dataclass(frozen=True)
+class PolicyLimits:
+    max_hops: int = 10
+    max_retries_per_gate: int = 2
+    max_parallelism: int = 1
+    max_runtime_seconds: int = 600
+    max_actions_per_job: int = 15
+    max_files_per_job: int = 15
+    circuit_breaker_threshold: int = 3
+
+    def validated(self) -> 'PolicyLimits':
+        if not 1 <= self.max_hops <= 100:
+            raise GateChainContractError('POLICY_INVALID_MAX_HOPS')
+        if not 0 <= self.max_retries_per_gate <= 3:
+            raise GateChainContractError('POLICY_INVALID_MAX_RETRIES')
+        if not 1 <= self.max_parallelism <= 4:
+            raise GateChainContractError('POLICY_INVALID_MAX_PARALLELISM')
+        if not 30 <= self.max_runtime_seconds <= 1800:
+            raise GateChainContractError('POLICY_INVALID_MAX_RUNTIME')
+        if not 1 <= self.max_actions_per_job <= 25:
+            raise GateChainContractError('POLICY_INVALID_MAX_ACTIONS')
+        if not 1 <= self.max_files_per_job <= 25:
+            raise GateChainContractError('POLICY_INVALID_MAX_FILES')
+        if not 1 <= self.circuit_breaker_threshold <= 5:
+            raise GateChainContractError('POLICY_INVALID_CIRCUIT_BREAKER')
+        return self
+
+
+def classify_policy_tier(
+    gate: Mapping[str, Any],
+    *,
+    template: Mapping[str, Any] | None = None,
+) -> tuple[str, str]:
+    """Classify a gate into READ_ONLY, DEVELOPMENT_MUTATION, or HUMAN_APPROVAL_REQUIRED."""
+    mutation = _text(gate.get('mutation_class') or 'READ_ONLY').upper()
+    if mutation == 'PRODUCTION' or gate.get('production_allowed') is True:
+        return 'HUMAN_APPROVAL_REQUIRED', 'PRODUCTION_FORBIDDEN'
+    if isinstance(template, Mapping) and template.get('production_allowed') is True:
+        return 'HUMAN_APPROVAL_REQUIRED', 'PRODUCTION_FORBIDDEN'
+
+    for flag in _HUMAN_APPROVAL_FLAGS:
+        if gate.get(flag) is True:
+            return 'HUMAN_APPROVAL_REQUIRED', flag.upper()
+
+    if mutation in {'SQL_DML', 'SQL_DDL'}:
+        return 'HUMAN_APPROVAL_REQUIRED', f'MUTATION_CLASS_REQUIRES_APPROVAL:{mutation}'
+
+    effective_template = template if isinstance(template, Mapping) else gate.get('job_template')
+    if isinstance(effective_template, Mapping):
+        for action in effective_template.get('actions') or []:
+            if isinstance(action, Mapping) and _text(action.get('type')).lower() == 'delete_file':
+                return 'HUMAN_APPROVAL_REQUIRED', 'DESTRUCTIVE_ACTION_DELETE_FILE'
+
+    if mutation == 'READ_ONLY':
+        return 'READ_ONLY', 'TIER_READ_ONLY_ALLOWED'
+    if mutation == 'CODE_MUTATION':
+        return 'DEVELOPMENT_MUTATION', 'TIER_DEVELOPMENT_MUTATION_ALLOWED'
+    return 'HUMAN_APPROVAL_REQUIRED', 'UNKNOWN_MUTATION_CLASS'
+
+
+def evaluate_autonomous_policy(
+    gate: Mapping[str, Any],
+    *,
+    limits: PolicyLimits | None = None,
+    hop_count: int = 0,
+    retry_count: int = 0,
+    consecutive_failures: int = 0,
+    elapsed_seconds: float = 0.0,
+    cancel_requested: bool = False,
+    authorization_classes: Iterable[str] = (),
+    authorization_context: Mapping[str, Any] | None = None,
+    now_utc: datetime | None = None,
+) -> dict[str, Any]:
+    """Evaluate edarsahub.autonomous-execution-policy.v1 fail-closed for one gate."""
+    effective_limits = (limits or PolicyLimits()).validated()
+    template = gate.get('job_template') if isinstance(gate.get('job_template'), Mapping) else None
+    tier, tier_reason = classify_policy_tier(gate, template=template)
+
+    allowed = False
+    action = 'STOP'
+    reason = tier_reason
+
+    if cancel_requested:
+        action, reason = 'CANCELLED_SAFELY', 'SAFE_CANCELLATION_REQUESTED'
+    elif hop_count >= effective_limits.max_hops:
+        action, reason = 'STOP', 'POLICY_MAX_HOPS_EXCEEDED'
+    elif retry_count > effective_limits.max_retries_per_gate:
+        action, reason = 'STOP', 'POLICY_RETRY_BUDGET_EXCEEDED'
+    elif consecutive_failures >= effective_limits.circuit_breaker_threshold:
+        action, reason = 'STOP', 'POLICY_CIRCUIT_BREAKER_OPEN'
+    elif elapsed_seconds > effective_limits.max_runtime_seconds:
+        action, reason = 'STOP', 'POLICY_TIMEOUT_EXCEEDED'
+    elif tier == 'HUMAN_APPROVAL_REQUIRED':
+        action, reason = 'STOP', f'HUMAN_APPROVAL_REQUIRED:{tier_reason}'
+    else:
+        auth_ok, auth_reason = evaluate_gate_authorization(
+            gate,
+            authorization_classes=authorization_classes,
+            authorization_context=authorization_context,
+            now_utc=now_utc,
+        )
+        if not auth_ok:
+            action, reason = 'STOP', auth_reason
+        else:
+            if isinstance(template, Mapping):
+                t_actions = list(template.get('actions') or [])
+                touched_files = {
+                    _text(a.get('path'))
+                    for a in t_actions
+                    if isinstance(a, Mapping) and _text(a.get('path'))
+                }
+                if len(t_actions) > effective_limits.max_actions_per_job:
+                    action, reason = 'STOP', 'POLICY_MAX_ACTIONS_EXCEEDED'
+                elif len(touched_files) > effective_limits.max_files_per_job:
+                    action, reason = 'STOP', 'POLICY_MAX_FILES_EXCEEDED'
+                else:
+                    allowed, action, reason = True, 'ALLOW', tier_reason
+            else:
+                allowed, action, reason = True, 'ALLOW', tier_reason
+
+    ts = (now_utc or datetime.now(timezone.utc)).astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    return {
+        'schema': AUTONOMOUS_POLICY_SCHEMA,
+        'gate_id': _text(gate.get('gate_id')),
+        'job_id': _text(gate.get('job_id')),
+        'policy_tier': tier,
+        'allowed': allowed,
+        'action': action,
+        'reason': reason,
+        'retry_count': int(retry_count),
+        'consecutive_failures': int(consecutive_failures),
+        'rollback_eligible': tier == 'DEVELOPMENT_MUTATION',
+        'safe_cancellation_supported': True,
+        'limits': {
+            'max_hops': effective_limits.max_hops,
+            'max_retries_per_gate': effective_limits.max_retries_per_gate,
+            'max_parallelism': effective_limits.max_parallelism,
+            'max_runtime_seconds': effective_limits.max_runtime_seconds,
+            'max_actions_per_job': effective_limits.max_actions_per_job,
+            'max_files_per_job': effective_limits.max_files_per_job,
+            'circuit_breaker_threshold': effective_limits.circuit_breaker_threshold,
+        },
+        'decided_at_utc': ts,
+        'production_touched': False,
+    }
