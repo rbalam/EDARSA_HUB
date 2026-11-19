@@ -1,9 +1,9 @@
 {
   "requested_by": "ChatGPT",
-  "reason": "process SHA-bound audit attestation/final certification for existing integrated EDARSAHUB-PROD-DEV-R3B-PRODUCTION-TRIGGER-CONVERGENCE-R4-20261119; do not reexecute mutation; no duplicate; no Production",
+  "reason": "wake canonical Universal Worker to consume existing EDARSAHUB-PROD-DEV-R3C-PRODUCTION-WAKE-OWNERSHIP-R1-20261119 request; no duplicate; no Production",
   "target_branch": "Edarsahub_Desarrollo",
   "target_sha": "8cf09428fee55a7ba6f0efcd3cc0e98a967229ee",
   "production_allowed": false,
-  "preferred_job_id": "EDARSAHUB-PROD-DEV-R3B-PRODUCTION-TRIGGER-CONVERGENCE-R4-20261119",
-  "attempt": 2
+  "preferred_job_id": "EDARSAHUB-PROD-DEV-R3C-PRODUCTION-WAKE-OWNERSHIP-R1-20261119",
+  "attempt": 1
 }
