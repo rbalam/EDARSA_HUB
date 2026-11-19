@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "10a44a391cd378a669d5951b6a87dc70b9931167",
-  "generated_at_utc": "2026-11-19T16:20:20Z",
+  "generated_at_utc": "2026-11-19T16:21:43Z",
   "history": {
     "done_total_local": 1876,
     "pending_total_local": 0,
@@ -16,79 +16,73 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3344,
+      "age_seconds": 3426,
       "job_id": "BOS-V1-GATE-E-E3D-STALE-SECURITY-FIX-R1-20261028",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2881,
+      "age_seconds": 2963,
       "job_id": "EDARSAHUB-BOS-SEC-RBAC-GATE1B-SQLCAP-MUTATION-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 145,
+      "age_seconds": 227,
       "job_id": "EDARSAHUB-BOS-SQL8-SEMANTIC-BOOTSTRAP-DEV-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1866,
+      "age_seconds": 1949,
       "job_id": "EDARSAHUB-BOS-WORKER-INGRESS-SQL8-LEARNED-SEED-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3458,
+      "age_seconds": 3540,
       "job_id": "SEM-COA-COA_FISCAL_STATUS_SEED_DEVELOPME-DEA36F8D9A0C7AD23F4C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2966,
+      "age_seconds": 3048,
       "job_id": "SEM-COA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-0E23E4586F3078A98F1D",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3527,
-      "job_id": "SEM-COMERCIAL_ANALYTICS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-3602373ECF532E0C0A3F",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3314,
+      "age_seconds": 3397,
       "job_id": "SEM-CONNECTION_PROVIDER_AUDIT-REPOSITORY_CONTRACT_AUDIT_BOUNDE-543595CC82A30DA79707",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3127,
+      "age_seconds": 3209,
       "job_id": "SEM-HOSPITALITY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-0678282A08120157C870",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3493,
+      "age_seconds": 3576,
       "job_id": "SEM-IA_ASSISTANT-WORKER_PYTEST_CERTIFICATION_READ-EA45938248E4286EACEE",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2677,
+      "age_seconds": 2760,
       "job_id": "SEM-MONGO_SUNSET_RUNTIME-REPOSITORY_CONTRACT_AUDIT_BOUNDE-73254A7AA34BDE096612",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3357,
+      "age_seconds": 3440,
       "job_id": "SEM-SEC_RBAC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-D045BD2D398FCCBFB0A0",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3247,
+      "age_seconds": 3330,
       "job_id": "SEM-WORKER_INGRESS-READ_ONLY_CANARY-6A42F51CAEBA7C7EB25C",
       "reason": null,
       "state": "RESULT_READY"
@@ -102,14 +96,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 13,
+  "queue_result_ready_recent": 12,
   "queue_running": 0,
   "remote_development_sha": "10a44a391cd378a669d5951b6a87dc70b9931167",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T16:20:15Z",
-    "last_receive_utc": "2026-11-19T16:20:10Z",
+    "last_cycle_utc": "2026-11-19T16:21:33Z",
+    "last_receive_utc": "2026-11-19T16:21:28Z",
     "last_terminal_utc": "2026-11-19T16:17:55Z",
     "pid": "2059597",
     "runtime_fingerprint": {
