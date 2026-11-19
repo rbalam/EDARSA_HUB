@@ -1,0 +1,59 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "tools/mirror_sync/",
+          "backend/modules/worker_ingress/",
+          "backend/modules/worker_mcp/",
+          "backend/modules/agent_harness/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "capability_registry",
+          "semantic_capabilities",
+          "repair_planner",
+          "execution_bridge",
+          "gate_chain_publisher",
+          "worker_requester_rbac",
+          "universal_job_dispatcher",
+          "universal_job_bridge",
+          "checkpoint",
+          "concurrency",
+          "idempotency",
+          "certification",
+          "policy",
+          "autonomous"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_AUTONOMY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-98F592E88A3F256C6380",
+  "mode": "READ_ONLY",
+  "objective": "G1 READ_ONLY de EDARSAHUB BOS Universal Worker Autonomo Gobernado: auditar exclusivamente arquitectura transversal del Worker v4, ingress MCP, Capability Registry, Repair Planner, Execution Bridge, RBAC, publicador canonico, concurrencia, checkpoints, presupuesto y evidencia terminal; identificar brechas y criterios de aceptacion para G2-G6. Reutilizar auditorias y Gates certificados, especialmente no repetir G3 R3 ni RESULT-REF-SYNC-FIX-R1; no realizar mutaciones, no tocar Produccion ni worktrees. Entregar evidencia verificable y hallazgos, no implementar aun.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_AUTONOMY",
+    "conflict_domains": [
+      "WORKER_AUTONOMY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
