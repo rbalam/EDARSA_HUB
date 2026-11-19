@@ -27,7 +27,11 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from tools.mirror_sync.gate_chain_controller import validate_chain
+from tools.mirror_sync.gate_chain_controller import (
+    _decision_digest,
+    evaluate_gate_authorization,
+    validate_chain,
+)
 from tools.mirror_sync.git_divergence_guard import (
     authorized_push,
     ensure_submit_convergence,
@@ -215,6 +219,9 @@ def build_plan(
     chain: dict[str, Any],
     decision: dict[str, Any],
     existing_job_ids: set[str],
+    *,
+    authorization_classes: list[str] | tuple[str, ...] | set[str] | None = None,
+    authorization_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if str(
         decision.get("state")
@@ -223,11 +230,48 @@ def build_plan(
     ).upper() != "READY":
         raise ValueError("DECISION_NOT_READY")
 
+    chain_id = str(chain.get("chain_id") or "").strip()
+    decision_chain_id = str(decision.get("chain_id") or "").strip()
+    if decision_chain_id and decision_chain_id != chain_id:
+        raise ValueError("STALE_OR_TAMPERED_DECISION:CHAIN_ID_MISMATCH")
+
     gate_id = str(decision.get("next_gate_id") or "").strip()
     gate = gate_for(chain, gate_id)
     template = validate_template(gate.get("job_template"))
 
+    effective_auth = (
+        authorization_classes
+        if authorization_classes is not None
+        else chain.get("authorization_classes") or ()
+    )
+    effective_ctx = (
+        authorization_context
+        if authorization_context is not None
+        else chain.get("authorization_context")
+    )
+    auth_ok, auth_reason = evaluate_gate_authorization(
+        gate,
+        authorization_classes=effective_auth,
+        authorization_context=effective_ctx,
+    )
+    if not auth_ok:
+        raise ValueError(f"GATE_AUTHORIZATION_DENIED:{auth_reason}")
+
+    supplied_digest = str(decision.get("decision_digest") or "").strip()
+    if supplied_digest:
+        expected_digest = _decision_digest(
+            chain_id=chain_id,
+            gate_id=gate_id,
+            gate=gate,
+            authorized=effective_auth,
+        )
+        if supplied_digest != expected_digest:
+            raise ValueError("STALE_OR_TAMPERED_DECISION:DIGEST_MISMATCH")
+
     job_id = str(template["job_id"])
+    declared_gate_job = str(gate.get("job_id") or "").strip()
+    if declared_gate_job and declared_gate_job != job_id:
+        raise ValueError("STALE_OR_TAMPERED_DECISION:GATE_JOB_ID_MISMATCH")
 
     if job_id in existing_job_ids:
         return {

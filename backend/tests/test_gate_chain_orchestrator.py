@@ -4,7 +4,7 @@ ROOT=Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path: sys.path.insert(0,str(ROOT))
 import tools.mirror_sync.gate_chain_orchestrator as orch
 
-def template(job): return {'schema':'edarsahub.worker-job.v2','job_id':job,'target_repo':'rbalam/EDARSA_HUB','target_branch':'Edarsahub_Desarrollo','production_allowed':False,'objective':'x','actions':[],'checks':[{'type':'git_diff_check'}]}
+def template(job): return {'schema':'edarsahub.worker-job.v2','job_id':job,'target_repo':'rbalam/EDARSA_HUB','target_branch':'Edarsahub_Desarrollo','production_allowed':False,'objective':'x','mode':'READ_ONLY','actions':[],'checks':[{'type':'git_diff_check'}],'requester':{'email':'ricardo@edarsa.com.mx','source':'chatgpt','project':'EDARSAHUB BOS','chat':'Gate Orchestrator Test'}}
 def chain(enabled=True): return {'schema':'edarsahub.gate-chain.v1','chain_id':'T','enabled':enabled,'max_hops':5,'start_gate_id':'A','gates':[{'gate_id':'A','job_id':'job-a','mutation_class':'READ_ONLY','next_gate_ids':['B'],'job_template':template('job-a')},{'gate_id':'B','job_id':'job-b','mutation_class':'READ_ONLY','next_gate_ids':[],'job_template':template('job-b')}]}
 def put(root,state,job_id,payload): f=root/state; f.mkdir(parents=True,exist_ok=True); (f/f'{job_id}.json').write_text(json.dumps(payload),encoding='utf-8')
 def certified(job): return {'job_id':job,'status':'READ_ONLY_COMPLETE','certification':'CERTIFIED_READ_ONLY','quality_gate':'PASS','tests':'PASS','blockers':[],'production_touched':False}

@@ -409,3 +409,53 @@ def test_publisher_resume_never_force_pushes_or_bypasses_hooks():
     assert "--force" not in text
     assert "--force-with-lease" not in text
     assert "--no-verify" not in text
+
+
+def test_build_plan_rejects_stale_tampered_or_unauthorized_ready_decision():
+    from concurrent.futures import ThreadPoolExecutor
+    from tools.mirror_sync.gate_chain_controller import decide_next
+
+    # Forged READY decision against gate requiring human decision -> rejected
+    cfg = chain()
+    cfg["gates"][1]["requires_human_decision"] = True
+    with pytest.raises(ValueError, match="GATE_AUTHORIZATION_DENIED:HUMAN_DECISION_REQUIRED"):
+        build_plan(cfg, decision("READY"), set())
+
+    # Forged READY decision against gate requiring missing authorization_class -> rejected
+    cfg2 = chain()
+    cfg2["gates"][1]["mutation_class"] = "CODE_MUTATION"
+    cfg2["gates"][1]["authorization_class"] = "PREAUTHORIZED_CODE_MUTATION"
+    with pytest.raises(ValueError, match="GATE_AUTHORIZATION_DENIED:AUTHORIZATION_REQUIRED"):
+        build_plan(cfg2, decision("READY"), set())
+
+    # Tampered decision_digest -> rejected
+    cfg2["authorization_classes"] = ["PREAUTHORIZED_CODE_MUTATION"]
+    with pytest.raises(ValueError, match="STALE_OR_TAMPERED_DECISION:DIGEST_MISMATCH"):
+        build_plan(cfg2, {**decision("READY"), "decision_digest": "0" * 64}, set())
+
+    # Chain ID mismatch -> rejected
+    with pytest.raises(ValueError, match="STALE_OR_TAMPERED_DECISION:CHAIN_ID_MISMATCH"):
+        build_plan(cfg2, {**decision("READY"), "chain_id": "OTHER_CHAIN"}, set())
+
+    # Concurrency check: parallel plan evaluations remain deterministic & fail-closed
+    d = decide_next(
+        cfg2,
+        completed_results=[{
+            "job_id": "done-a",
+            "status": "READ_ONLY_COMPLETE",
+            "certification": "CERTIFIED_READ_ONLY",
+            "quality_gate": "PASS",
+            "tests": "PASS",
+            "blockers": [],
+            "production_touched": False,
+        }],
+        existing_job_ids=[],
+        hop_count=1,
+        authorization_classes=["PREAUTHORIZED_CODE_MUTATION"],
+    )
+    assert d.action == "READY"
+    valid_decision = {"state": d.action, "chain_id": d.chain_id, "next_gate_id": d.next_gate_id, "decision_digest": d.decision_digest}
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(lambda _: build_plan(cfg2, valid_decision, set()), range(16)))
+    assert all(r["status"] == "READY_TO_PUBLISH" and r["job_id"] == "job-next" for r in results)

@@ -47,8 +47,8 @@ def reconcile_chain(chain:dict[str,Any],state_root:Path)->dict[str,Any]:
             completed_results.append(payload)
     if conflicts: return {'chain_id':chain_id,'state':'STOP','reason':'STATE_CONFLICT','adopted_jobs':adopted,'conflicts':conflicts}
     hop_count=sum(1 for r in completed_results if str(r.get('certification') or '').upper().startswith('CERTIFIED'))
-    decision=decide_next(chain,completed_results=completed_results,existing_job_ids=existing,hop_count=hop_count,authorization_classes=chain.get('authorization_classes',[]))
-    return {'chain_id':chain_id,'state':decision.action,'current_gate_id':decision.current_gate_id,'next_gate_id':decision.next_gate_id,'reason':decision.reason,'hop_count':hop_count,'adopted_jobs':adopted,'conflicts':conflicts}
+    decision=decide_next(chain,completed_results=completed_results,existing_job_ids=existing,hop_count=hop_count,authorization_classes=chain.get('authorization_classes',[]),authorization_context=chain.get('authorization_context'))
+    return {'chain_id':chain_id,'state':decision.action,'current_gate_id':decision.current_gate_id,'next_gate_id':decision.next_gate_id,'reason':decision.reason,'decision_digest':decision.decision_digest,'hop_count':hop_count,'adopted_jobs':adopted,'conflicts':conflicts}
 def reconcile_all(config_dir:Path,state_root:Path)->dict[str,Any]:
     rows=[]
     if config_dir.exists():
