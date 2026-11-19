@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/consultas_sql/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "formatted",
+          "formateada",
+          "lookup",
+          "querybuilder",
+          "selector",
+          "searchmodal"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-BUSQUEDAS_FORMATEADAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-E55C35EEA1DB8CA65135",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2 READ_ONLY específico Búsquedas Formateadas: auditar implementación vigente de consultas_sql, búsqueda parametrizada y componentes UI para definir reutilización exacta, seguridad SQL, RBAC, paginación y faltantes. No cambiar código, SQL ni Producción. Entregar evidencia enfocada y criterio para siguiente Gate de implementación.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "BUSQUEDAS_FORMATEADAS",
+    "conflict_domains": [
+      "BUSQUEDAS_FORMATEADAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
