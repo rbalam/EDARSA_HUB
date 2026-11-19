@@ -17247,6 +17247,14 @@ except Exception as e:
         e,
     )
 
+# Production-only Scheduler HTTP trigger. El router falla cerrado fuera de PRODUCTION_WEB.
+try:
+    from modules.scheduler_trigger.routes import router as production_scheduler_trigger_router
+    app.include_router(production_scheduler_trigger_router)
+    logger.info("Production scheduler HTTP trigger router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando production scheduler HTTP trigger router: {e}")
+
 
 # =============================================================================
 # PREVIEW - TRIGGER HTTP EXTERNO PARA SINCRONIZADORES COMERCIALES
