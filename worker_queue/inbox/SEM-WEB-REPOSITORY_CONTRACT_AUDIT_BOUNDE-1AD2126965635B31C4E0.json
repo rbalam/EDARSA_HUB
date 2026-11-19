@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "frontend/src/",
+          "backend/modules/"
+        ],
+        "search_terms": [
+          "edarsa.com.mx",
+          "EDARSA",
+          "SEO",
+          "meta",
+          "contacto",
+          "WhatsApp",
+          "diagnostico",
+          "landing",
+          "sitemap",
+          "robots",
+          "aria",
+          "accesibilidad"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WEB-REPOSITORY_CONTRACT_AUDIT_BOUNDE-1AD2126965635B31C4E0",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY la implementación existente del sitio EDARSA edarsa.com.mx dentro del repositorio canónico. Identificar evidencia de rutas, contenidos, SEO, accesibilidad, formularios, enlaces y CTA. No modificar archivos ni Producción. No duplicar trabajo.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WEB",
+    "conflict_domains": [
+      "WEB"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
