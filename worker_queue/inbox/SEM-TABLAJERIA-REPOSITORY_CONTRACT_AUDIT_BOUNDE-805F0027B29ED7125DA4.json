@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "tablajeria",
+          "tablaje",
+          "ELIGIBILITY_AUDIT_R1",
+          "INVALID_PENDING_ENVELOPE",
+          "prorrateo",
+          "genealogia",
+          "merma",
+          "inventario"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-TABLAJERIA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-805F0027B29ED7125DA4",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en modo READ_ONLY los contratos existentes de Tablajería en EDARSAHUB BOS, sin modificar código, SQL ni Producción; identificar evidencias de implementación, plantillas, inventario, costos, genealogía y referencias a jobs históricos. No repetir auditorías certificadas. Devolver resultado verificable y bloqueos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "TABLAJERIA",
+    "conflict_domains": [
+      "TABLAJERIA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
