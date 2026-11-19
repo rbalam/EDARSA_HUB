@@ -1007,6 +1007,12 @@ def build_semantic_diagnostic(
     elif code == "SEMANTIC_DEV_OPERATION_FORBIDDEN":
         rejected_field = "constraints.change_spec[].operation"
         allowed_correction = "Use only declarative operations: replace_text, insert_before, insert_after, append_once, write_file."
+    elif code == "SEMANTIC_DEV_WRITE_LARGE_SHRINK_BLOCKED":
+        rejected_field = "constraints.change_spec[].content"
+        allowed_correction = (
+            "Overwriting a >=4096-byte file with <75% of its size is blocked; "
+            "use targeted replace_text, insert_before, insert_after, or append_once instead."
+        )
     elif code in {"RBAC_MUTATION_FORBIDDEN", "AUTHENTICATED_REQUESTER_EMAIL_REQUIRED"}:
         rejected_field = "rbac"
         allowed_correction = "Authenticated admin/worker:submit RBAC identity is required for MUTATION mode."

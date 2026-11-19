@@ -217,3 +217,75 @@ def test_development_mutation_rejects_stale_sha_forbidden_paths_ops_and_rbac(tmp
             },
             current_user=_admin(),
         )
+
+
+def test_write_file_overwrite_emits_expected_sha256_for_dispatcher_and_guards_large_shrink(
+    tmp_path, monkeypatch
+):
+    from pathlib import Path
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "tools" / "mirror_sync"))
+    import universal_job_dispatcher as dispatcher
+
+    repo = tmp_path / "repo"
+    target = repo / "backend" / "modules" / "demo" / "existing.py"
+    target.parent.mkdir(parents=True)
+    original = "VALUE = 1\n"
+    target.write_text(original, encoding="utf-8")
+    monkeypatch.setattr(sem_caps, "_DEV_REPO_ROOT", repo)
+
+    job = service.build_semantic_job(
+        {
+            "objective": "Sobrescribir archivo existente con SHA-256 verificado.",
+            "bounded_context": "SQL_RBAC_019",
+            "mode": "MUTATION",
+            "capability": "DEVELOPMENT_MUTATION_BOUNDED",
+            "constraints": {
+                "change_spec": [
+                    {
+                        "operation": "write_file",
+                        "path": "backend/modules/demo/existing.py",
+                        "overwrite": True,
+                        "source_sha256": _sha256(original),
+                        "content": "VALUE = 2\n",
+                    }
+                ]
+            },
+        },
+        current_user=_admin(),
+    )
+    action = job["actions"][0]
+    assert action["type"] == "write_file"
+    assert action["source_sha256"] == _sha256(original)
+    assert action["expected_sha256"] == _sha256(original)
+
+    # Verify universal_job_dispatcher.apply_action accepts the built action without WRITE_EXISTING_REQUIRES_EXPECTED_SHA256
+    dispatcher.apply_action(repo, action)
+    assert target.read_text(encoding="utf-8") == "VALUE = 2\n"
+
+    # Large shrink on >=4096-byte existing file is caught cleanly at preflight with structured diagnostic
+    big_file = repo / "backend" / "modules" / "demo" / "large.py"
+    big_content = ("# line\n" * 800)
+    big_file.write_text(big_content, encoding="utf-8")
+    pf = service.preflight_semantic_objective(
+        {
+            "objective": "Intento de encoger archivo grande",
+            "bounded_context": "SQL_RBAC_019",
+            "mode": "MUTATION",
+            "capability": "DEVELOPMENT_MUTATION_BOUNDED",
+            "constraints": {
+                "change_spec": [
+                    {
+                        "operation": "write_file",
+                        "path": "backend/modules/demo/large.py",
+                        "overwrite": True,
+                        "source_sha256": _sha256(big_content),
+                        "content": "# tiny\n",
+                    }
+                ]
+            },
+        },
+        current_user=_admin(),
+    )
+    assert pf["ok"] is False
+    assert pf["error_code"] == "SEMANTIC_DEV_WRITE_LARGE_SHRINK_BLOCKED"
+    assert pf["rejected_field"] == "constraints.change_spec[].content"

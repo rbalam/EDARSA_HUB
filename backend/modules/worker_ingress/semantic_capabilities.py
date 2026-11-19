@@ -589,6 +589,7 @@ def _development_mutation_bounded_builder(request: Mapping[str, Any]) -> dict[st
             "operation",
             "path",
             "source_sha256",
+            "expected_sha256",
             "old_text",
             "replacement",
             "anchor",
@@ -616,29 +617,43 @@ def _development_mutation_bounded_builder(request: Mapping[str, Any]) -> dict[st
             live_text = ""
             file_exists = False
 
-        supplied_sha = item.get("source_sha256")
+        raw_source_sha = item.get("source_sha256")
+        raw_expected_sha = item.get("expected_sha256")
+        if (
+            isinstance(raw_source_sha, str)
+            and isinstance(raw_expected_sha, str)
+            and raw_source_sha.strip().lower() != raw_expected_sha.strip().lower()
+        ):
+            raise SemanticCapabilityError("SEMANTIC_SOURCE_SHA256_MISMATCH")
+        supplied_sha = raw_source_sha if raw_source_sha is not None else raw_expected_sha
         if op == "write_file":
             content = item.get("content")
             if not isinstance(content, str) or not content:
                 raise SemanticCapabilityError("SEMANTIC_DEV_CONTENT_REQUIRED")
-            if len(content.encode("utf-8")) > _DEV_MAX_TEXT_BYTES:
+            new_size = len(content.encode("utf-8"))
+            if new_size > _DEV_MAX_TEXT_BYTES:
                 raise SemanticCapabilityError("SEMANTIC_DEV_CONTENT_TOO_LARGE")
             overwrite = bool(item.get("overwrite", False))
+            actual_sha: str | None = None
             if file_exists:
                 if not overwrite:
                     raise SemanticCapabilityError("SEMANTIC_DEV_FILE_ALREADY_EXISTS")
                 if not isinstance(supplied_sha, str) or not _DEV_SHA256_RE.fullmatch(supplied_sha.strip().lower()):
                     raise SemanticCapabilityError("SEMANTIC_SOURCE_SHA256_REQUIRED")
-                actual_sha = _gate_b_hashlib.sha256(live_text.encode("utf-8")).hexdigest()
+                live_bytes = live_text.encode("utf-8")
+                actual_sha = _gate_b_hashlib.sha256(live_bytes).hexdigest()
                 if supplied_sha.strip().lower() != actual_sha:
                     raise SemanticCapabilityError("SEMANTIC_SOURCE_SHA256_MISMATCH")
+                if len(live_bytes) >= 4096 and new_size < int(len(live_bytes) * 0.75):
+                    raise SemanticCapabilityError("SEMANTIC_DEV_WRITE_LARGE_SHRINK_BLOCKED")
             action: dict[str, Any] = {
                 "type": "write_file",
                 "path": rel_path,
                 "content": content,
             }
-            if file_exists and isinstance(supplied_sha, str):
-                action["source_sha256"] = supplied_sha.strip().lower()
+            if file_exists and actual_sha is not None:
+                action["source_sha256"] = actual_sha
+                action["expected_sha256"] = actual_sha
             virtual_files[rel_path] = content
         else:
             if not file_exists:
