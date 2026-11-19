@@ -1,0 +1,57 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/sync_historicos/",
+          "backend/modules/sistema/",
+          "backend/modules/rh/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "Sistema_Sync_Catalogo",
+          "Handler",
+          "HandlerImplementado",
+          "Servidores_Conexiones",
+          "atomic_executor",
+          "dry_run",
+          "resync",
+          "idempotent",
+          "lock",
+          "bitacora",
+          "RH_Nomina",
+          "HR2020",
+          "NomiPAQ"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH_GLOBAL_HCM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-55BF399C35FED348BADB",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en modo READ_ONLY si el Gate 2 de Payroll Source Sync puede implementarse reutilizando el framework canónico existente Sistema_Sync_Catalogo + backend/modules/sync_historicos + backend/modules/sistema/sync_catalogo_service.py, evitando modificar backend/core/scheduler. Determinar ownership, handler registry/dispatch, resolución de Servidores_Conexiones, bitácora, locks, idempotencia, dependencias, dry-run/resync y cómo registrar una capability RH/Payroll sin crear arquitectura paralela. Confirmar si basta extender módulos existentes o si necesariamente se requiere tocar core/scheduler. No modificar archivos ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH_GLOBAL_HCM",
+    "conflict_domains": [
+      "RH_GLOBAL_HCM"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
