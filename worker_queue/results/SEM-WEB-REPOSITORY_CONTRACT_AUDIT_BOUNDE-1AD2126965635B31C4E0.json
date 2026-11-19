@@ -1,0 +1,1723 @@
+{
+  "base_sha": "5547e36636bedcf4915d3fc48eeada296cc3ec0f",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-19T10:56:35Z",
+  "execution_base_sha": "5547e36636bedcf4915d3fc48eeada296cc3ec0f",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-WEB-REPOSITORY_CONTRACT_AUDIT_BOUNDE-1AD2126965635B31C4E0",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-19T11:49:27Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/App.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "edarsa",
+              "edarsa.com.mx"
+            ],
+            "path": "frontend/src/HostRouter.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/BarraLateral.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/GestionSolicitudesCatalogo.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/ModalSolicitudCatalogo.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria",
+              "edarsa",
+              "meta"
+            ],
+            "path": "frontend/src/components/PropinasTPV.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/QueryConfigWizard.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria",
+              "edarsa"
+            ],
+            "path": "frontend/src/components/TabOperativasCompras.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/TesoreriaCorteZ.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "aria",
+              "diagnostico",
+              "edarsa",
+              "meta"
+            ],
+            "path": "frontend/src/components/UniversalQueryTester.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/admin/BitacoraRBAC.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/admin/ComercialRangeResyncCard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "aria",
+              "edarsa"
+            ],
+            "path": "frontend/src/components/admin/ResyncPanel.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": [
+              "Sistema_Sync_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria",
+              "edarsa"
+            ],
+            "path": "frontend/src/components/admin/RolesList.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/admin/bitacora/BitacoraComponents.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/admin/bitacora/useBitacoraRBACData.js",
+            "rbac_contracts": [
+              "Sistema_RBAC"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/auditorias/AuditoriasComponents.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/auth/PasswordControls.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/bos/BosExecutivePanel.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/catalogo-consultas/ConsultasComponents.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/catalogo-consultas/useCatalogoConsultasData.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria",
+              "edarsa"
+            ],
+            "path": "frontend/src/components/catalogos/AuthorizationMatrixAdmin.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/catalogos/ConfiguracionOperativaUnidad.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/centro-control/CentroControlComponents.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "aria",
+              "whatsapp"
+            ],
+            "path": "frontend/src/components/centro-control/DestinatariosManager.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/comercial/TicketVentaModal.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria",
+              "meta"
+            ],
+            "path": "frontend/src/components/comercial/analytics/CanonicalTicketDrilldown.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/comercial/temporal/CommercialTemporalSelector.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/compras/ComprasBadges.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/compras/DetalleProductoModal.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/compras/operativas/AccionesGerenciaCard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/compras/operativas/AccionesTesoreriaCard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/compras/operativas/AutomatizacionesTable.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/compras/operativas/BitacoraList.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/compras/operativas/PeriodoEstadisticoCard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "edarsa",
+              "whatsapp"
+            ],
+            "path": "frontend/src/components/crm/ActividadesPanel.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "contacto",
+              "edarsa"
+            ],
+            "path": "frontend/src/components/crm/CuentasPanel.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "meta"
+            ],
+            "path": "frontend/src/components/crm/KPIDashboardIA.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/crm/PipelineKanban.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/fase2_operativo/AlertasBanner.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/fase2_operativo/KPICards.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria",
+              "edarsa"
+            ],
+            "path": "frontend/src/components/fase2_operativo/OperativoDashboard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/fase2_operativo/ResponsabilidadAccionesModal.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria",
+              "edarsa"
+            ],
+            "path": "frontend/src/components/fase2_operativo/ResponsabilidadCard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/fase2_operativo/ResponsabilidadPendientesPanel.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/fase2_operativo/SLACard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/fase2_operativo/TareaList.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/fase2_operativo/WorkflowList.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/fase2_operativo/index.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/filters/CanonicalPeriodSelector.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/finanzas/FinanzasComprobaciones.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "bbva",
+              "netpay"
+            ],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/FinanzasControlIngresos.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/FinanzasCuentasPorPagar.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria",
+              "edarsa"
+            ],
+            "path": "frontend/src/components/finanzas/FinanzasDashboard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/FinanzasDecisionPago.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/FinanzasPresupuestos.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/cuentas-bancarias/CuentasBancariasPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/cuentas-bancarias/DetalleCuentaBancaria.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "bbva"
+            ],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/cuentas-bancarias/FormularioCuentaBancaria.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/cuentas-bancarias/ModalDesactivarCuenta.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/cuentas-bancarias/TablaCuentasBancarias.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria",
+              "edarsa"
+            ],
+            "path": "frontend/src/components/finanzas/cuentas-bancarias/hooks/useBancos.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/cuentas-bancarias/hooks/useCuentasBancarias.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/cuentas-bancarias/hooks/useSaldosBancarios.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/cuentas-bancarias/index.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/cuentas-bancarias/saldos/FormularioCapturaSaldo.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/cuentas-bancarias/saldos/FormularioCorreccionSaldo.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/cuentas-bancarias/saldos/HistorialSaldos.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/cuentas-bancarias/saldos/ModalCancelarSaldo.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/cuentas-bancarias/saldos/TarjetaSaldoTotal.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/propinas/PropinasConfigForm.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/finanzas/propinas/PropinasConfigList.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/finanzas/propinas/PropinasTable.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria",
+              "edarsa"
+            ],
+            "path": "frontend/src/components/ia/IAContextual.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsa",
+              "meta"
+            ],
+            "path": "frontend/src/components/ia/iaContextualData.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria",
+              "edarsa"
+            ],
+            "path": "frontend/src/components/navigation/EnterpriseNavigationMenu.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria",
+              "edarsa"
+            ],
+            "path": "frontend/src/components/navigation/EnterpriseSidebarMenu.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/navigation/TabbedModuleShell.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/recursos-humanos/RhAsistencia.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "aria",
+              "edarsa"
+            ],
+            "path": "frontend/src/components/recursos-humanos/RhCatalogos.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria",
+              "edarsa"
+            ],
+            "path": "frontend/src/components/recursos-humanos/RhColaboradores.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/recursos-humanos/RhDashboard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria",
+              "edarsa"
+            ],
+            "path": "frontend/src/components/recursos-humanos/RhIncidencias.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria",
+              "edarsa"
+            ],
+            "path": "frontend/src/components/recursos-humanos/RhNominas.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria",
+              "contacto",
+              "edarsa"
+            ],
+            "path": "frontend/src/components/recursos-humanos/RhReclutamiento.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/recursos-humanos/index.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsa"
+            ],
+            "path": "frontend/src/components/recursos-humanos/shared/RhSharedComponents.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/solicitudes-catalogo/SolicitudesComponents.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "bbva",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/tesoreria/TesoreriaCorteZComponents.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/ui/alert-dialog.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/ui/alert.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/ui/badge.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/ui/breadcrumb.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/ui/button.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/ui/calendar.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/ui/carousel.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/ui/form.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/ui/label.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "aria"
+            ],
+            "path": "frontend/src/components/ui/navigation-menu.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 100,
+          "scanned_files": 152,
+          "skipped_sensitive": 0
+        },
+        "truncated": true
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-19T10:56:34Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
