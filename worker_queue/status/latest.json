@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "LOCAL_AHEAD_ONLY",
   "development_sha": "537774dad3ca633541c65781c3316b62f751a20c",
-  "generated_at_utc": "2026-11-19T07:03:07Z",
+  "generated_at_utc": "2026-11-19T07:04:29Z",
   "history": {
     "done_total_local": 1767,
     "pending_total_local": 0,
@@ -16,37 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2471,
+      "age_seconds": 2553,
       "job_id": "SEM-COMERCIAL.PORTAL_INTELIGENCIA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7522DD9AD7871DE8880F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2428,
+      "age_seconds": 2509,
       "job_id": "SEM-COMERCIAL.PORTAL_INTELIGENCIA-WORKER_RESULT_SEMANTIC_EXTRACT-82F1F4764218893A5E6E",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3246,
+      "age_seconds": 3327,
       "job_id": "SEM-COMPRAS_SYNC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4816825B14C844542127",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3527,
-      "job_id": "SEM-RH_GLOBAL_HCM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-FBA7F790B71EDB8F94C7",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3464,
+      "age_seconds": 3545,
       "job_id": "SEM-WORKER.MCP-REPOSITORY_CONTRACT_AUDIT_BOUNDE-520EB9F3913D5207CC2C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2954,
+      "age_seconds": 3035,
       "job_id": "SEM-WORKER.MCP-REPOSITORY_CONTRACT_AUDIT_BOUNDE-60FAF7CB35700286B953",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,14 +54,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "remote_development_sha": "537774dad3ca633541c65781c3316b62f751a20c",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T07:03:07Z",
-    "last_receive_utc": "2026-11-19T07:03:02Z",
+    "last_cycle_utc": "2026-11-19T07:04:20Z",
+    "last_receive_utc": "2026-11-19T07:04:15Z",
     "last_terminal_utc": "2026-11-19T06:22:39Z",
     "pid": "85",
     "runtime_fingerprint": {
