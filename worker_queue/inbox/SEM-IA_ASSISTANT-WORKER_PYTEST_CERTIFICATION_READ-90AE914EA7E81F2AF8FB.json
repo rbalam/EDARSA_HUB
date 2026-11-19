@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_ia_global_rbac_data_scope_r14.py",
+        "backend/tests/test_ia_global_authorized_contract.py",
+        "backend/tests/test_ia_contextual_comercial_contract.py",
+        "backend/tests/test_comercial_analytics_tickets.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-IA_ASSISTANT-WORKER_PYTEST_CERTIFICATION_READ-90AE914EA7E81F2AF8FB",
+  "mode": "READ_ONLY",
+  "objective": "Knowledge Loop postintegracion IA Global RBAC R15. Ejecutar exclusivamente el preset canonico inmutable de cuatro suites pytest de IA_ASSISTANT via WORKER_PYTEST_CERTIFICATION_READONLY sobre la rama Desarrollo actual convergente. Producir evidencia nueva READ_ONLY_CERTIFIED sin alterar ni reintentar el Job historico bloqueado por READONLY_PYTEST_REVISION_MISMATCH. Sin modificaciones de archivos, SQL ni Produccion. Respetar acciones vacias y fail-closed.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "IA_ASSISTANT",
+    "conflict_domains": [
+      "IA_ASSISTANT"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
