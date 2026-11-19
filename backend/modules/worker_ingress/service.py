@@ -63,6 +63,9 @@ _SAFE_RESULT_KEYS = {
     "completed_at_utc",
     "summary_es",
     "result_detail_evidence",
+    "repository_contract_evidence",
+    "evidence_status",
+    "evidence_truncated",
 }
 
 
@@ -340,19 +343,57 @@ def _read_json_if_object(path: Path) -> dict[str, Any]:
 
 
 def _safe_terminal_fields(payload: Mapping[str, Any]) -> dict[str, Any]:
+    from tools.mirror_sync.universal_job_result_publisher import (
+        sanitize_repository_evidence,
+        sanitize_result_detail_evidence,
+    )
+    from tools.mirror_sync.worker_result_semantic_extract import (
+        sanitize_repository_contract_payload,
+    )
+
     fields = {
         key: payload.get(key)
         for key in _SAFE_RESULT_KEYS
         if key in payload
     }
-    if fields.get("result_detail_evidence") is None:
-        from tools.mirror_sync.universal_job_result_publisher import (
-            sanitize_result_detail_evidence,
-        )
+    payload_dict = dict(payload)
 
-        extracted = sanitize_result_detail_evidence(dict(payload))
+    if fields.get("result_detail_evidence") is None:
+        extracted = sanitize_result_detail_evidence(payload_dict)
         if extracted is not None:
             fields["result_detail_evidence"] = extracted
+
+    if fields.get("repository_contract_evidence") is not None:
+        validated_repo = sanitize_repository_contract_payload(
+            fields["repository_contract_evidence"]
+        )
+        if validated_repo is not None:
+            fields["repository_contract_evidence"] = validated_repo
+        else:
+            fields.pop("repository_contract_evidence", None)
+            fields["evidence_status"] = "REJECTED_UNSAFE_OR_OVERSIZED"
+    else:
+        extracted_repo = sanitize_repository_evidence(payload_dict)
+        if extracted_repo is not None:
+            fields["repository_contract_evidence"] = extracted_repo
+
+    repo_ev = fields.get("repository_contract_evidence")
+    if isinstance(repo_ev, dict):
+        is_trunc = any(
+            isinstance(item, dict) and item.get("truncated") is True
+            for item in (repo_ev.get("checks") or [])
+        )
+        fields.setdefault("evidence_truncated", is_trunc)
+        fields.setdefault("evidence_status", "TRUNCATED" if is_trunc else "COMPLETE")
+    elif isinstance(fields.get("result_detail_evidence"), dict):
+        detail_checks = fields["result_detail_evidence"].get("checks") or []
+        if detail_checks and isinstance(detail_checks[0], dict):
+            first = detail_checks[0]
+            if "evidence_status" in first:
+                fields.setdefault("evidence_status", first["evidence_status"])
+            if "evidence_truncated" in first:
+                fields.setdefault("evidence_truncated", first["evidence_truncated"])
+
     return fields
 
 

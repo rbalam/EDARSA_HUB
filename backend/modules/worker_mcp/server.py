@@ -603,6 +603,11 @@ def get_job_status_tool(
         "result_detail_evidence": result.get(
             "result_detail_evidence"
         ),
+        "repository_contract_evidence": result.get(
+            "repository_contract_evidence"
+        ),
+        "evidence_status": result.get("evidence_status"),
+        "evidence_truncated": result.get("evidence_truncated"),
     }
 
 

@@ -810,67 +810,150 @@ def sanitize_result_detail_evidence(
                 }
             )
 
-        safe_checks.append(
+        safe_item: dict[str, Any] = {
+            "source_job_id":
+                redact_sensitive_text(
+                    str(
+                        payload.get(
+                            "source_job_id"
+                        )
+                        or ""
+                    ),
+                    max_length=121,
+                ),
+            "result_status":
+                redact_sensitive_text(
+                    str(
+                        payload.get(
+                            "result_status"
+                        )
+                        or ""
+                    ),
+                    max_length=128,
+                ),
+            "quality_gate":
+                payload.get(
+                    "quality_gate"
+                ),
+            "tests":
+                payload.get(
+                    "tests"
+                ),
+            "certification":
+                payload.get(
+                    "certification"
+                ),
+            "percent_complete":
+                payload.get(
+                    "percent_complete"
+                ),
+            "blockers":
+                _sanitize_string_list(
+                    payload.get(
+                        "blockers"
+                    ),
+                    max_item_len=500,
+                ),
+            "files_changed":
+                _sanitize_string_list(
+                    payload.get(
+                        "files_changed"
+                    ),
+                    max_item_len=512,
+                ),
+            "failed_checks":
+                failed_checks,
+            "production_touched":
+                payload.get(
+                    "production_touched"
+                )
+                is True,
+        }
+
+        if isinstance(payload.get("source_terminal"), bool):
+            safe_item["source_terminal"] = payload["source_terminal"]
+            if payload["source_terminal"] is False:
+                safe_item["certification"] = "NOT_CERTIFIED"
+
+        if isinstance(payload.get("work_completion"), str) and payload["work_completion"].strip():
+            safe_item["work_completion"] = redact_sensitive_text(
+                payload["work_completion"].strip(),
+                max_length=128,
+            )
+
+        if isinstance(payload.get("source_completed_at_utc"), str) and payload["source_completed_at_utc"].strip():
+            safe_item["source_completed_at_utc"] = redact_sensitive_text(
+                payload["source_completed_at_utc"].strip(),
+                max_length=64,
+            )
+
+        allowed_evidence_statuses = frozenset(
             {
-                "source_job_id":
-                    redact_sensitive_text(
-                        str(
-                            payload.get(
-                                "source_job_id"
-                            )
-                            or ""
-                        ),
-                        max_length=121,
-                    ),
-                "result_status":
-                    redact_sensitive_text(
-                        str(
-                            payload.get(
-                                "result_status"
-                            )
-                            or ""
-                        ),
-                        max_length=128,
-                    ),
-                "quality_gate":
-                    payload.get(
-                        "quality_gate"
-                    ),
-                "tests":
-                    payload.get(
-                        "tests"
-                    ),
-                "certification":
-                    payload.get(
-                        "certification"
-                    ),
-                "percent_complete":
-                    payload.get(
-                        "percent_complete"
-                    ),
-                "blockers":
-                    _sanitize_string_list(
-                        payload.get(
-                            "blockers"
-                        ),
-                        max_item_len=500,
-                    ),
-                "files_changed":
-                    _sanitize_string_list(
-                        payload.get(
-                            "files_changed"
-                        ),
-                        max_item_len=512,
-                    ),
-                "failed_checks":
-                    failed_checks,
-                "production_touched":
-                    payload.get(
-                        "production_touched"
-                    )
-                    is True,
+                "COMPLETE",
+                "TRUNCATED",
+                "PARTIAL_WITH_FAILURES",
+                "FAILED_RESULT_NO_STRUCTURED_EVIDENCE",
+                "ABSENT",
+                "REJECTED_UNSAFE_OR_OVERSIZED",
+                "NON_TERMINAL_SOURCE",
             }
         )
+        raw_ev_status = str(payload.get("evidence_status") or "").strip().upper()
+        if raw_ev_status in allowed_evidence_statuses:
+            safe_item["evidence_status"] = raw_ev_status
+
+        if isinstance(payload.get("evidence_truncated"), bool):
+            safe_item["evidence_truncated"] = payload["evidence_truncated"]
+
+        raw_ev_summary = payload.get("evidence_summary")
+        if isinstance(raw_ev_summary, dict):
+            clean_summary: dict[str, int] = {}
+            for key in (
+                "check_count",
+                "scanned_files",
+                "matched_files",
+                "skipped_sensitive",
+                "entries_returned",
+            ):
+                val = raw_ev_summary.get(key)
+                if isinstance(val, int) and not isinstance(val, bool) and val >= 0:
+                    clean_summary[key] = val
+            if clean_summary:
+                safe_item["evidence_summary"] = clean_summary
+
+        raw_repo_ev = payload.get("repository_contract_evidence")
+        if raw_repo_ev is not None:
+            sanitized_repo = sanitize_repository_contract_payload(raw_repo_ev)
+            if sanitized_repo is not None:
+                safe_item["repository_contract_evidence"] = sanitized_repo
+                encoded = json.dumps(safe_item, ensure_ascii=False, sort_keys=True).encode("utf-8")
+                if len(encoded) > MAX_SERIALIZED_BYTES:
+                    for repo_chk in reversed(sanitized_repo.get("checks") or []):
+                        ev_list = repo_chk.get("evidence")
+                        if not isinstance(ev_list, list):
+                            continue
+                        while ev_list and len(encoded) > MAX_SERIALIZED_BYTES:
+                            ev_list.pop()
+                            repo_chk["truncated"] = True
+                            safe_item["evidence_truncated"] = True
+                            encoded = json.dumps(safe_item, ensure_ascii=False, sort_keys=True).encode("utf-8")
+                        if len(encoded) <= MAX_SERIALIZED_BYTES:
+                            break
+                    if isinstance(safe_item.get("evidence_summary"), dict):
+                        safe_item["evidence_summary"]["entries_returned"] = sum(
+                            len(c.get("evidence") or [])
+                            for c in (sanitized_repo.get("checks") or [])
+                            if isinstance(c, dict)
+                        )
+                    if safe_item.get("evidence_status") == "COMPLETE":
+                        safe_item["evidence_status"] = "TRUNCATED"
+                if len(json.dumps(safe_item, ensure_ascii=False, sort_keys=True).encode("utf-8")) > MAX_SERIALIZED_BYTES:
+                    safe_item.pop("repository_contract_evidence", None)
+                    safe_item["evidence_status"] = "REJECTED_UNSAFE_OR_OVERSIZED"
+            else:
+                safe_item["evidence_status"] = "REJECTED_UNSAFE_OR_OVERSIZED"
+
+        safe_checks.append(safe_item)
 
     if not safe_checks:
         return None

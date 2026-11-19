@@ -14,9 +14,22 @@ from pathlib import Path
 import re
 from typing import Any
 
+from tools.mirror_sync.worker_result_integrity import (
+    is_terminal_status,
+)
 from tools.mirror_sync.worker_result_semantic_extract import (
     has_sensitive_marker,
     redact_sensitive_text,
+    sanitize_repository_contract_payload,
+)
+
+_SUCCESS_TERMINAL_STATUSES = frozenset(
+    {
+        "READ_ONLY_COMPLETE",
+        "INTEGRATED",
+        "OPERATIONAL_COMPLETE",
+        "FRONTEND_BUILD_CERTIFIED",
+    }
 )
 
 
@@ -139,6 +152,85 @@ def _safe_string_list(
     return rows
 
 
+def _summarize_repository_evidence(
+    sanitized: dict[str, Any],
+) -> tuple[dict[str, int], bool]:
+    checks_list = sanitized.get("checks") or []
+    scanned = 0
+    matched = 0
+    skipped = 0
+    entries = 0
+    truncated = False
+    for item in checks_list:
+        if not isinstance(item, dict):
+            continue
+        summary = item.get("summary")
+        if isinstance(summary, dict):
+            scanned += int(summary.get("scanned_files") or 0)
+            matched += int(summary.get("matched_files") or 0)
+            skipped += int(summary.get("skipped_sensitive") or 0)
+        ev_list = item.get("evidence")
+        if isinstance(ev_list, list):
+            entries += len(ev_list)
+        if item.get("truncated") is True:
+            truncated = True
+    return (
+        {
+            "check_count": len(checks_list),
+            "scanned_files": scanned,
+            "matched_files": matched,
+            "skipped_sensitive": skipped,
+            "entries_returned": entries,
+        },
+        truncated,
+    )
+
+
+def _extract_repository_contract_evidence(
+    payload: dict[str, Any],
+    checks: list[Any],
+) -> tuple[dict[str, Any] | None, bool, dict[str, int] | None, bool]:
+    """Extract and sanitize repository audit evidence reusing the canonical sanitizer."""
+    candidates: list[Any] = []
+    for raw in checks:
+        if not isinstance(raw, dict):
+            continue
+        if raw.get("type") != "repository_contract_audit":
+            continue
+        for key in ("repository_evidence", "repository_contract_evidence"):
+            if raw.get(key) is not None:
+                candidates.append(raw.get(key))
+                break
+
+    if not candidates:
+        for key in ("repository_contract_evidence", "repository_evidence"):
+            if payload.get(key) is not None:
+                candidates.append(payload.get(key))
+                break
+
+    if not candidates:
+        return None, False, None, False
+
+    sanitized_checks: list[dict[str, Any]] = []
+    for candidate in candidates:
+        clean = sanitize_repository_contract_payload(candidate)
+        if clean is None:
+            continue
+        for item in clean.get("checks") or []:
+            if isinstance(item, dict):
+                sanitized_checks.append(item)
+
+    if not sanitized_checks:
+        return None, True, None, False
+
+    combined = sanitize_repository_contract_payload({"checks": sanitized_checks})
+    if combined is None:
+        return None, True, None, False
+
+    summary, truncated = _summarize_repository_evidence(combined)
+    return combined, True, summary, truncated
+
+
 def collect(job_id: str) -> dict[str, Any]:
     if not JOB_ID_RE.fullmatch(job_id):
         raise ValueError("RESULT_DETAIL_JOB_ID_INVALID")
@@ -249,6 +341,82 @@ def collect(job_id: str) -> dict[str, Any]:
     ):
         production_touched = None
 
+    raw_status = _safe_label(
+        payload.get("status"),
+    )
+    source_terminal = is_terminal_status(raw_status)
+    source_completed_at_utc = _safe_label(
+        payload.get("completed_at_utc"),
+        max_length=64,
+    )
+
+    if not source_terminal:
+        return {
+            "schema": (
+                "edarsahub.worker-result-detail-read.v1"
+            ),
+            "mode": "READ_ONLY",
+            "status": "PASS",
+            "source_job_id": job_id,
+            "source_terminal": False,
+            "source_completed_at_utc": source_completed_at_utc,
+            "result_status": raw_status,
+            "quality_gate": _safe_label(
+                payload.get("quality_gate"),
+            ),
+            "tests": _safe_label(
+                payload.get("tests"),
+            ),
+            "certification": "NOT_CERTIFIED",
+            "work_completion": "NON_TERMINAL",
+            "percent_complete": None,
+            "blockers": _safe_string_list(
+                payload.get("blockers"),
+                max_length=500,
+            ),
+            "files_changed": _safe_string_list(
+                payload.get("files_changed"),
+                max_length=512,
+            ),
+            "failed_checks": failed_checks,
+            "failed_check_count": len(
+                failed_checks
+            ),
+            "evidence_status": "NON_TERMINAL_SOURCE",
+            "evidence_truncated": False,
+            "evidence_summary": None,
+            "repository_contract_evidence": None,
+            "production_touched": (
+                production_touched
+            ),
+            "production_allowed": False,
+        }
+
+    (
+        repository_contract_evidence,
+        raw_repo_seen,
+        evidence_summary,
+        evidence_truncated,
+    ) = _extract_repository_contract_evidence(payload, checks)
+
+    source_failed = bool(failed_checks) or (
+        str(raw_status or "").strip().upper()
+        not in _SUCCESS_TERMINAL_STATUSES
+    )
+    if repository_contract_evidence is not None:
+        if source_failed:
+            evidence_status = "PARTIAL_WITH_FAILURES"
+        elif evidence_truncated:
+            evidence_status = "TRUNCATED"
+        else:
+            evidence_status = "COMPLETE"
+    elif raw_repo_seen:
+        evidence_status = "REJECTED_UNSAFE_OR_OVERSIZED"
+    elif source_failed:
+        evidence_status = "FAILED_RESULT_NO_STRUCTURED_EVIDENCE"
+    else:
+        evidence_status = "ABSENT"
+
     return {
         "schema": (
             "edarsahub.worker-result-detail-read.v1"
@@ -256,9 +424,9 @@ def collect(job_id: str) -> dict[str, Any]:
         "mode": "READ_ONLY",
         "status": "PASS",
         "source_job_id": job_id,
-        "result_status": _safe_label(
-            payload.get("status"),
-        ),
+        "source_terminal": True,
+        "source_completed_at_utc": source_completed_at_utc,
+        "result_status": raw_status,
         "quality_gate": _safe_label(
             payload.get("quality_gate"),
         ),
@@ -284,6 +452,10 @@ def collect(job_id: str) -> dict[str, Any]:
         "failed_check_count": len(
             failed_checks
         ),
+        "evidence_status": evidence_status,
+        "evidence_truncated": evidence_truncated,
+        "evidence_summary": evidence_summary,
+        "repository_contract_evidence": repository_contract_evidence,
         "production_touched": (
             production_touched
         ),
@@ -332,6 +504,11 @@ def main() -> int:
                     "mode": "READ_ONLY",
                     "status": "FAIL",
                     "error_code": type(exc).__name__,
+                    **(
+                        {"error_detail": str(exc)}
+                        if str(exc).startswith("RESULT_DETAIL_")
+                        else {}
+                    ),
                     "production_allowed": False,
                 },
                 sort_keys=True,
