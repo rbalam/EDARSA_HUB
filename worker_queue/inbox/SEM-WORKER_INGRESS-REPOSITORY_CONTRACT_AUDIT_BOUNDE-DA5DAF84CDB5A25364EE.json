@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/worker_ingress/",
+          "backend/tests/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "register_capability",
+          "READ_ONLY",
+          "repository_contract_audit",
+          "Supervisor",
+          "runtime",
+          "backend_core",
+          "server.py",
+          "WORKER_RESULT_DETAIL_READ"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_INGRESS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-DA5DAF84CDB5A25364EE",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY el Capability Registry y contratos del Universal Worker V4 para determinar si ya existe una capacidad canonica capaz de inspeccionar backend/core, backend/server.py y configuracion runtime/Supervisor sin mutacion. No crear ni modificar capacidades; no tocar Produccion. Identificar codigo de capability, bounded_context, constraints validos y blockers. Evitar duplicar capacidades existentes.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS",
+    "conflict_domains": [
+      "WORKER_INGRESS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
