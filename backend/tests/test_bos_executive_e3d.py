@@ -97,6 +97,19 @@ def test_e3d_action_must_be_declared_eligible():
     assert "ACTION_NOT_ELIGIBLE" in decision.reasons
 
 
+def test_e3d_stale_recommendation_is_denied():
+    decision = authorize_recommended_action(
+        _recommendation(stale=True),
+        _request(),
+        {"allowed": True, "permission": "COMPRAS_INVENTARIOS_VER"},
+        _context(),
+    )
+    assert decision.allowed is False
+    assert "RECOMMENDATION_STALE" in decision.reasons
+    assert decision.outcome_status == "DENIED"
+    assert decision.execution_channel is None
+
+
 def test_e3d_expired_recommendation_is_denied():
     decision = authorize_recommended_action(
         _recommendation(valid_until="2026-10-27T10:00:00+00:00"),

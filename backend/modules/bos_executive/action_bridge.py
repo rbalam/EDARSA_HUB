@@ -69,6 +69,8 @@ def _precondition_reasons(
     spec,
 ) -> tuple[str, ...]:
     reasons = []
+    if recommendation.stale:
+        reasons.append("RECOMMENDATION_STALE")
     if request.recommendation_id != recommendation.recommendation_id:
         reasons.append("RECOMMENDATION_ID_MISMATCH")
     if request.action_type not in recommendation.eligible_actions:
