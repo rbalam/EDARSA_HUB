@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 12,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "compras",
+          "requisicion",
+          "pedido",
+          "orden_compra",
+          "unidad_negocio_id",
+          "unidad_codigo",
+          "sucursal_origen_id",
+          "RBAC",
+          "voice",
+          "voz",
+          "transcripcion",
+          "transcription"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMPRAS_PEDIDOS_VOZ_BACKEND-REPOSITORY_CONTRACT_AUDIT_BOUNDE-A666E765413BFF1A6D60",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en READ_ONLY el backend de Compras para Pedidos por Voz, con evidencia acotada y publicable. Identificar rutas, servicios, modelos y contratos existentes de compras, requisiciones, pedidos, ordenes de compra, Unidad de Negocio canonica, sucursal_origen_id, RBAC y cualquier infraestructura de voz/transcripcion. No modificar archivos, no commit, no push, no SQL, no Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMPRAS_PEDIDOS_VOZ_BACKEND",
+    "conflict_domains": [
+      "COMPRAS_PEDIDOS_VOZ_BACKEND"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
