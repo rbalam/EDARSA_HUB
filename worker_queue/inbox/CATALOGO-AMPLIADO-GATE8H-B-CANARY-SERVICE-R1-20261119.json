@@ -1,0 +1,60 @@
+{
+  "actions": [
+    {
+      "content": "from __future__ import annotations\n\nfrom uuid import NAMESPACE_URL, uuid5\n\nfrom core.communications.dispatcher.dispatcher import NotificationDispatcher\nfrom modules.scheduler_runtime.policy import runtime_environment\n\nMODULE = \"catalogo_ampliado\"\nEVENT_CODE = \"DOCUMENTO_VENCIMIENTO\"\nTEMPLATE_CODE = \"catalogo_ampliado_documento_vencimiento\"\nALLOWED_ENVIRONMENTS = {\"DEVELOPMENT\", \"PREVIEW\"}\n\n\ndef _queue_id(canary_key: str, channel: str) -> str:\n    return str(uuid5(NAMESPACE_URL, f\"edarsahub:{MODULE}:gate8h-b:{canary_key}:{channel}\"))\n\n\ndef _validate_email(value: str) -> str:\n    email = str(value or \"\").strip()\n    if not email or \"@\" not in email or email.startswith(\"@\") or email.endswith(\"@\"):\n        raise ValueError(\"CANARY_EMAIL_INVALID\")\n    return email\n\n\ndef _validate_whatsapp(value: str) -> str:\n    phone = str(value or \"\").strip().replace(\" \", \"\")\n    if not phone.startswith(\"+\") or not phone[1:].isdigit() or len(phone) < 10:\n        raise ValueError(\"CANARY_WHATSAPP_INVALID\")\n    return phone\n\n\nasync def run_notification_canary(*, email: str, whatsapp: str, canary_key: str) -> dict:\n    environment = runtime_environment()\n    if environment not in ALLOWED_ENVIRONMENTS:\n        raise RuntimeError(f\"CATALOGO_CANARY_ENVIRONMENT_FORBIDDEN:{environment}\")\n\n    email = _validate_email(email)\n    whatsapp = _validate_whatsapp(whatsapp)\n    key = str(canary_key or \"\").strip()\n    if not key or len(key) > 120:\n        raise ValueError(\"CANARY_KEY_INVALID\")\n\n    dispatcher = NotificationDispatcher(None)\n    await dispatcher.initialize_providers()\n\n    providers = {\n        \"email\": (\"smtp\", email),\n        \"whatsapp\": (\"twilio\", whatsapp),\n    }\n    for channel, (provider_name, _recipient) in providers.items():\n        provider = dispatcher.get_provider(provider_name)\n        if provider is None:\n            raise RuntimeError(f\"CANARY_PROVIDER_UNAVAILABLE:{channel}:{provider_name}\")\n        if hasattr(provider, \"is_available\") and not provider.is_available():\n            raise RuntimeError(f\"CANARY_PROVIDER_NOT_READY:{channel}:{provider_name}\")\n\n    payload = {\n        \"titulo\": \"CANARY Gate 8H-B Catalogo Ampliado\",\n        \"fecha_objetivo\": \"2099-12-31\",\n    }\n    results = {}\n\n    for channel, (provider_name, recipient) in providers.items():\n        reference_id = f\"CANARY:{key}:{channel}\"\n        duplicate = await dispatcher.repository.check_duplicate(\n            destinatario=recipient,\n            evento=EVENT_CODE,\n            dedup_key=reference_id,\n            ventana_minutos=1440,\n        )\n        if duplicate:\n            results[channel] = {\n                \"status\": \"DUPLICATE_BLOCKED\",\n                \"provider\": provider_name,\n                \"queue_id\": _queue_id(key, channel),\n            }\n            continue\n\n        queue_id = _queue_id(key, channel)\n        destination = {\"user_id\": \"gate8h-b-canary\", \"tipo\": \"canary\"}\n        destination[\"email\" if channel == \"email\" else \"telefono\"] = recipient\n        item = {\n            \"id\": queue_id,\n            \"canal\": channel,\n            \"modulo\": MODULE,\n            \"evento_negocio\": EVENT_CODE,\n            \"referencia_id\": reference_id,\n            \"workflow_id\": key,\n            \"prioridad\": 1,\n            \"destinatarios\": [destination],\n            \"template_codigo\": TEMPLATE_CODE,\n            \"payload\": payload,\n            \"estado\": \"pendiente\",\n            \"intentos\": 0,\n        }\n\n        await dispatcher.repository.enqueue(item)\n        locked = await dispatcher.repository.lock_item(queue_id, dispatcher._worker_id)\n        if not locked:\n            raise RuntimeError(f\"CANARY_QUEUE_LOCK_FAILED:{channel}\")\n\n        outcome = await dispatcher._process_item(item)\n        if outcome.get(\"all_sent\"):\n            await dispatcher.repository.mark_sent(queue_id)\n            status = \"SENT\"\n        else:\n            error_code = str(outcome.get(\"error_code\") or \"CANARY_SEND_FAILED\")\n            await dispatcher.repository.mark_failed(queue_id, error_code)\n            status = \"FAILED\"\n\n        results[channel] = {\n            \"status\": status,\n            \"provider\": provider_name,\n            \"queue_id\": queue_id,\n            \"duplicates\": int(outcome.get(\"duplicates\") or 0),\n            \"error_code\": outcome.get(\"error_code\"),\n        }\n\n    return {\n        \"environment\": environment,\n        \"module\": MODULE,\n        \"event\": EVENT_CODE,\n        \"template\": TEMPLATE_CODE,\n        \"canary_key\": key,\n        \"results\": results,\n        \"production_touched\": False,\n    }\n",
+      "path": "backend/modules/catalogo_ampliado/canary_delivery.py",
+      "type": "write_file"
+    },
+    {
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nSERVICE = ROOT / \"backend/modules/catalogo_ampliado/canary_delivery.py\"\n\n\ndef test_gate8h_b_canary_service_is_bounded_and_fail_closed():\n    text = SERVICE.read_text(encoding=\"utf-8\")\n    assert 'ALLOWED_ENVIRONMENTS = {\"DEVELOPMENT\", \"PREVIEW\"}' in text\n    assert \"runtime_environment\" in text\n    assert \"process_queue(\" not in text\n    assert \"lock_item(queue_id\" in text\n    assert \"dispatcher._process_item(item)\" in text\n    assert '(\"smtp\", email)' in text\n    assert '(\"twilio\", whatsapp)' in text\n    assert \"check_duplicate\" in text\n    assert \"production_touched\" in text\n\n\ndef test_gate8h_b_canary_has_no_hardcoded_recipient():\n    text = SERVICE.read_text(encoding=\"utf-8\")\n    assert \"rbalam@edarsa.com.mx\" not in text\n    assert \"9999003386\" not in text\n",
+      "path": "backend/tests/test_catalogo_ampliado_gate8h_b_canary.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/catalogo_ampliado/canary_delivery.py",
+        "backend/tests/test_catalogo_ampliado_gate8h_b_canary.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_catalogo_ampliado_gate8h_b_canary.py",
+        "backend/tests/test_catalogo_ampliado_gate8f_external_delivery.py",
+        "backend/tests/test_notifications_dispatcher_fail_closed.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "CATALOGO-AMPLIADO-GATE8H-B-CANARY-SERVICE-R1-20261119",
+  "mode": "MUTATION",
+  "objective": "Gate 8H-B paso 1. Implementar en Desarrollo/Preview un servicio canario module-local para Catalogo Ampliado que reutiliza NotificationDispatcher y NotificationRepository SQL-first, procesa solo queue_id deterministas propios, valida providers smtp/twilio, respeta deduplicacion y falla cerrado fuera de Development/Preview. No tocar core, no hardcodear destinatarios, no enviar mensajes en esta mutacion y no tocar Produccion. Agregar pruebas de contrato.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CATALOGO_AMPLIADO_NOTIFICATIONS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "CATALOGO_AMPLIADO_NOTIFICATIONS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
