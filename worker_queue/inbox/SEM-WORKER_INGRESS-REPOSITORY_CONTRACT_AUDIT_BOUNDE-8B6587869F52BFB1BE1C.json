@@ -1,0 +1,46 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "development_mutation_bounded",
+          "DEVELOPMENT_MUTATION",
+          "mutation_bounded",
+          "production_allowed",
+          "SEMANTIC_CAPABILITY_MODE_MISMATCH"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_INGRESS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-8B6587869F52BFB1BE1C",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY las pruebas del Worker Ingress para identificar el codigo registrado, mode, bounded_context, constraints y guardrails exactos de la capacidad asociada a _development_mutation_bounded_builder. No ejecutar ni publicar ninguna mutacion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS",
+    "conflict_domains": [
+      "WORKER_INGRESS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
