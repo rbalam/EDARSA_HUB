@@ -913,6 +913,45 @@ def sanitize_frontend_build_evidence(result: dict[str, Any]) -> dict[str, Any] |
 GENERIC_READ_ONLY_CHECKS = frozenset({"py_compile", "pytest", "git_diff_check"})
 
 
+def sanitize_maintenance_history_evidence(
+    result: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Publish only bounded, already-sanitized Worker Maintenance history evidence."""
+    safe_checks: list[dict[str, Any]] = []
+    for check in result.get("checks") or []:
+        if (
+            not isinstance(check, dict)
+            or check.get("type") != "worker_maintenance_history_readonly"
+        ):
+            continue
+        payload = check.get("maintenance_history_evidence")
+        if not isinstance(payload, dict):
+            raw = check.get("output")
+            if isinstance(raw, str):
+                try:
+                    candidate = json.loads(raw.strip())
+                except (json.JSONDecodeError, TypeError):
+                    candidate = None
+                if isinstance(candidate, dict):
+                    payload = candidate
+        if (
+            not isinstance(payload, dict)
+            or payload.get("schema") != "edarsahub.worker-maintenance-history-readonly.v1"
+            or payload.get("status") != "PASS"
+            or payload.get("production_allowed") is not False
+        ):
+            continue
+        serialized = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+        if has_sensitive_marker(serialized):
+            continue
+        if len(serialized.encode("utf-8")) > MAX_SERIALIZED_BYTES:
+            continue
+        safe_checks.append(payload)
+    if not safe_checks:
+        return None
+    return {"checks": safe_checks}
+
+
 def generic_readonly_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
     checks = result.get("checks") or []
     if not isinstance(checks, list) or not checks:
@@ -997,6 +1036,7 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
         repository_evidence = sanitize_repository_evidence(result)
         semantic_evidence = sanitize_semantic_evidence(result)
         result_detail_evidence = sanitize_result_detail_evidence(result)
+        maintenance_evidence = sanitize_maintenance_history_evidence(result)
         generic_evidence = generic_readonly_evidence(result)
         base_pass = (
             str(result.get("tests", "")).upper() == "PASS"
@@ -1049,6 +1089,7 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
             or repository_evidence is not None
             or semantic_evidence is not None
             or result_detail_evidence is not None
+            or maintenance_evidence is not None
         ):
             if readonly_evidence is not None:
                 basis = "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE"
@@ -1056,6 +1097,8 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
                 basis = "READ_ONLY_SEMANTIC_EXTRACT_PASS_PLUS_SANITIZED_EVIDENCE"
             elif result_detail_evidence is not None:
                 basis = "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE"
+            elif maintenance_evidence is not None:
+                basis = "READ_ONLY_MAINTENANCE_HISTORY_PASS_PLUS_SANITIZED_EVIDENCE"
             else:
                 basis = "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE"
             return {
@@ -1338,6 +1381,10 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
     result_detail_evidence = sanitize_result_detail_evidence(result)
     if result_detail_evidence is not None:
         public["result_detail_evidence"] = result_detail_evidence
+
+    maintenance_evidence = sanitize_maintenance_history_evidence(result)
+    if maintenance_evidence is not None:
+        public["maintenance_history_evidence"] = maintenance_evidence
 
     evidence = certification_evidence(result)
 

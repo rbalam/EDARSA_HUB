@@ -326,3 +326,94 @@ def test_result_detail_is_safe_status_field():
         "result_detail_evidence"
         in ingress_service._SAFE_RESULT_KEYS
     )
+
+
+def test_get_job_status_promotes_nested_result_detail_evidence(tmp_path, monkeypatch):
+    import subprocess
+    from modules.worker_ingress import service as ingress_service
+
+    git_dir = tmp_path / ".git"
+    state_root = git_dir / "universal-worker-queue"
+    results_dir = state_root / "results"
+    results_dir.mkdir(parents=True)
+    (git_dir / "HEAD").write_text("ref: refs/heads/Edarsahub_Desarrollo\n", encoding="utf-8")
+
+    job_id = "SEM-CRM-WORKER_RESULT_DETAIL_READ-TEST123456"
+    payload = {
+        "schema": "edarsahub.worker-result.v2",
+        "job_id": job_id,
+        "status": "READ_ONLY_COMPLETE",
+        "certification": "CERTIFIED_READ_ONLY",
+        "work_completion": "COMPLETE",
+        "quality_gate": "PASS",
+        "tests": "PASS",
+        "percent_complete": 100,
+        "production_touched": False,
+        "completed_at_utc": "2026-11-19T08:00:00Z",
+        "files_changed": [],
+        "blockers": [],
+        "checks": [
+            {
+                "type": "worker_result_detail_read",
+                "status": "PASS",
+                "result_detail_evidence": {
+                    "schema": "edarsahub.worker-result-detail-read.v1",
+                    "mode": "READ_ONLY",
+                    "status": "PASS",
+                    "source_job_id": "SRC-JOB-1",
+                    "result_status": "BLOCKED",
+                    "quality_gate": "FAIL",
+                    "tests": "FAIL",
+                    "certification": "NOT_CERTIFIED",
+                    "percent_complete": 0,
+                    "blockers": ["check_failed:pytest"],
+                    "files_changed": [],
+                    "failed_checks": [],
+                    "production_touched": False,
+                },
+            }
+        ],
+    }
+    (results_dir / f"{job_id}.json").write_text(
+        json.dumps(payload), encoding="utf-8"
+    )
+    monkeypatch.setattr(ingress_service, "STATE_ROOT", state_root)
+
+    status = ingress_service.get_job_status(job_id)
+    assert status["lifecycle"] == "RESULT"
+    assert status["certification"] == "CERTIFIED_READ_ONLY"
+    assert status["result_detail_evidence"] is not None
+    assert status["result_detail_evidence"]["checks"][0]["source_job_id"] == "SRC-JOB-1"
+    assert status["production_touched"] is False
+
+    # Remote-only origin/worker/results fallback works read-only and preserves fail-closed on missing jobs
+    remote_job_id = "EDARSAHUB-REMOTE-ONLY-READ-TEST-20261119"
+    remote_payload = {
+        "schema": "edarsahub.worker-result.v2",
+        "job_id": remote_job_id,
+        "status": "READ_ONLY_COMPLETE",
+        "certification": "CERTIFIED_READ_ONLY",
+        "work_completion": "COMPLETE",
+        "quality_gate": "PASS",
+        "tests": "PASS",
+        "percent_complete": 100,
+        "production_touched": False,
+        "completed_at_utc": "2026-11-19T08:05:00Z",
+        "blockers": [],
+    }
+
+    def fake_run(cmd, **kwargs):
+        if remote_job_id in cmd[-1]:
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(remote_payload).encode("utf-8"), stderr=b"")
+        return subprocess.CompletedProcess(cmd, 128, stdout=b"", stderr=b"not found")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    remote_status = ingress_service.get_job_status(remote_job_id)
+    assert remote_status["lifecycle"] == "RESULT"
+    assert remote_status["certification"] == "CERTIFIED_READ_ONLY"
+    assert remote_status["reconciliation_status"] == "REMOTE_RESULTS_VERIFIED"
+    assert remote_status["production_touched"] is False
+
+    missing_status = ingress_service.get_job_status("EDARSAHUB-NONEXISTENT-JOB-99999")
+    assert missing_status["lifecycle"] == "NOT_FOUND"
+    assert missing_status["status"] == "NOT_FOUND"

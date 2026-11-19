@@ -358,7 +358,18 @@ def sanitize_repository_contract_payload(value: Any) -> dict[str, Any] | None:
     if result is not None:
         encoded = json.dumps(result, ensure_ascii=False, sort_keys=True).encode("utf-8")
         if len(encoded) > MAX_SERIALIZED_BYTES:
-            return None
+            for check_item in reversed(sanitized_checks):
+                ev_list = check_item.get("evidence")
+                if not isinstance(ev_list, list):
+                    continue
+                while ev_list and len(encoded) > MAX_SERIALIZED_BYTES:
+                    ev_list.pop()
+                    check_item["truncated"] = True
+                    encoded = json.dumps(result, ensure_ascii=False, sort_keys=True).encode("utf-8")
+                if len(encoded) <= MAX_SERIALIZED_BYTES:
+                    break
+            if len(encoded) > MAX_SERIALIZED_BYTES:
+                return None
     return result
 
 

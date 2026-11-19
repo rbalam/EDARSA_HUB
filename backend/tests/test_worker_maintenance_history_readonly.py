@@ -89,3 +89,72 @@ def test_g4_registered_in_canonical_dispatcher_and_publisher():
     source = dispatcher.read_text(encoding="utf-8")
     assert 'elif kind == "worker_maintenance_history_readonly":' in source
     assert 'response["maintenance_history_evidence"]' in source
+
+
+def test_publisher_certifies_maintenance_history_readonly_and_truncates_large_repo_evidence():
+    from tools.mirror_sync import universal_job_result_publisher as pub
+    from tools.mirror_sync import worker_result_semantic_extract as ex
+
+    maint_result = {
+        "schema": "edarsahub.worker-result.v2",
+        "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-MAINT-TEST1",
+        "status": "READ_ONLY_COMPLETE",
+        "quality_gate": "PASS",
+        "tests": "PASS",
+        "percent_complete": 100,
+        "production_touched": False,
+        "files_changed": [],
+        "blockers": [],
+        "checks": [
+            {
+                "type": "worker_maintenance_history_readonly",
+                "status": "PASS",
+                "maintenance_history_evidence": {
+                    "schema": "edarsahub.worker-maintenance-history-readonly.v1",
+                    "mode": "READ_ONLY",
+                    "status": "PASS",
+                    "incident_count": 3,
+                    "pending_total": 1,
+                    "production_allowed": False,
+                },
+            }
+        ],
+    }
+    cert = pub.certification_evidence(maint_result)
+    assert cert["certified"] is True
+    assert cert["certification"] == "CERTIFIED_READ_ONLY"
+    assert cert["percent_complete"] == 100
+    public = pub.sanitize(maint_result)
+    assert public["certification"] == "CERTIFIED_READ_ONLY"
+    assert "maintenance_history_evidence" in public
+
+    # Large valid repository_contract_audit (> 65536 bytes) truncates cleanly instead of returning None
+    large_entries = [
+        {
+            "path": f"backend/modules/mod_{i}/service.py",
+            "candidate_ownership": "backend",
+            "matched_terms": ["crm", "rbac"],
+            "symbols": [f"symbol_{i}_{j}_long_name_for_size_budget" for j in range(25)],
+        }
+        for i in range(95)
+    ]
+    raw_repo = {
+        "status": "PASS",
+        "mode": "READ_ONLY_REPOSITORY",
+        "summary": {"scanned_files": 95, "matched_files": 95, "skipped_sensitive": 0},
+        "truncated": False,
+        "evidence": large_entries,
+    }
+    assert len(json.dumps(raw_repo).encode("utf-8")) > ex.MAX_SERIALIZED_BYTES
+    sanitized = ex.sanitize_repository_contract_payload(raw_repo)
+    assert sanitized is not None
+    assert sanitized["checks"][0]["truncated"] is True
+    assert len(sanitized["checks"][0]["evidence"]) > 0
+    assert len(json.dumps(sanitized, ensure_ascii=False, sort_keys=True).encode("utf-8")) <= ex.MAX_SERIALIZED_BYTES
+
+    # Sensitive markers must still fail closed
+    bad_repo = {
+        **raw_repo,
+        "evidence": [{"path": "backend/modules/x.py", "matched_terms": ["password=LEAKED"]}],
+    }
+    assert ex.sanitize_repository_contract_payload(bad_repo) is None

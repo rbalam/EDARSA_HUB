@@ -340,11 +340,77 @@ def _read_json_if_object(path: Path) -> dict[str, Any]:
 
 
 def _safe_terminal_fields(payload: Mapping[str, Any]) -> dict[str, Any]:
-    return {
+    fields = {
         key: payload.get(key)
         for key in _SAFE_RESULT_KEYS
         if key in payload
     }
+    if fields.get("result_detail_evidence") is None:
+        from tools.mirror_sync.universal_job_result_publisher import (
+            sanitize_result_detail_evidence,
+        )
+
+        extracted = sanitize_result_detail_evidence(dict(payload))
+        if extracted is not None:
+            fields["result_detail_evidence"] = extracted
+    return fields
+
+
+def _read_remote_worker_result(job_id: str) -> dict[str, Any] | None:
+    """Read-only fallback to origin/worker/results when a certified job is absent locally."""
+    import subprocess
+    from tools.mirror_sync.worker_result_integrity import (
+        validate_terminal_result_payload,
+    )
+
+    git_dir = STATE_ROOT.parent
+    if not (git_dir / "HEAD").is_file():
+        return None
+    spec = f"origin/worker/results:worker_queue/results/{job_id}.json"
+    try:
+        proc = subprocess.run(
+            ["git", f"--git-dir={git_dir}", "cat-file", "-p", spec],
+            capture_output=True,
+            check=False,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if proc.returncode != 0 or not proc.stdout:
+        return None
+    try:
+        payload = json.loads(proc.stdout.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    try:
+        validate_terminal_result_payload(payload, expected_job_id=job_id)
+    except ValueError:
+        return None
+    if (
+        payload.get("invalid_result_artifact") is True
+        or str(payload.get("status") or "").strip().upper() == "INVALID_RESULT_ARTIFACT"
+    ):
+        return None
+    response: dict[str, Any] = {
+        "job_id": job_id,
+        "lifecycle": "RESULT",
+        "terminal_result_valid": True,
+        "result_state": "RESULT_TERMINAL_VALID",
+        "reconciliation_status": "REMOTE_RESULTS_VERIFIED",
+        "production_touched": bool(payload.get("production_touched", False)),
+    }
+    response.update(_safe_terminal_fields(payload))
+    if not response.get("commit_sha"):
+        commit_sha = (
+            payload.get("certified_source_sha")
+            or payload.get("development_sha")
+            or payload.get("integrated_commit")
+        )
+        if commit_sha:
+            response["commit_sha"] = commit_sha
+    return response
 
 
 def get_job_status(job_id: str) -> dict[str, Any]:
@@ -430,6 +496,10 @@ def get_job_status(job_id: str) -> dict[str, Any]:
             "production_touched": False,
             "summary_es": payload.get("summary_es"),
         }
+
+    remote_result = _read_remote_worker_result(value)
+    if remote_result is not None:
+        return remote_result
 
     return {
         "job_id": value,
