@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/SEM-COMERCIAL.PORTAL_INTELIGENCIA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7522DD9AD7871DE8880F.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMERCIAL.PORTAL_INTELIGENCIA-WORKER_RESULT_SEMANTIC_EXTRACT-82F1F4764218893A5E6E",
+  "mode": "READ_ONLY",
+  "objective": "Extraer y reconciliar semanticamente el JSON de resultado del Gate0 READ_ONLY certificado para el Portal Inteligencia Comercial, sin repetir auditoria y sin realizar cambios. Presentar hallazgos exactos, rutas, controles, errores, faltantes y prerequisitos del hostname inteligencia.edarsa.com.mx, distinguir PASS de auditoria y certificacion del deploy; no tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL.PORTAL_INTELIGENCIA",
+    "conflict_domains": [
+      "COMERCIAL.PORTAL_INTELIGENCIA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
