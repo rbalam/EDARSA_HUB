@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "9da27dd7b6c45c35d6762a3609c2c9b541cd5a99",
-  "generated_at_utc": "2026-11-19T09:26:04Z",
+  "generated_at_utc": "2026-11-19T09:27:39Z",
   "history": {
     "done_total_local": 1792,
     "pending_total_local": 0,
@@ -16,91 +16,91 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 956,
+      "age_seconds": 1052,
       "job_id": "EDARSAHUB-BOS-WORKER-DETAIL-READ-EVIDENCE-RECOVERY-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 829,
+      "age_seconds": 925,
       "job_id": "EDARSAHUB-BOS-WORKER-DETAIL-READ-EVIDENCE-RECOVERY-R2-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 631,
+      "age_seconds": 727,
       "job_id": "EDARSAHUB-PROD-DEV-R3B-PRODUCTION-TRIGGER-CONVERGENCE-R4-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 124,
+      "age_seconds": 219,
       "job_id": "SEM-CRM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-BEF1625A65B696C6B61C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 430,
+      "age_seconds": 526,
       "job_id": "SEM-INTEGRATIONS_TOAST-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7C97C26E54E5664895A7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1507,
+      "age_seconds": 1603,
       "job_id": "SEM-WORKER_AUTONOMOUS_EXECUTION_POLI-REPOSITORY_CONTRACT_AUDIT_BOUNDE-3114613653B8E89F106F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1315,
+      "age_seconds": 1410,
       "job_id": "SEM-WORKER_AUTONOMY_POLICY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4FDA7B5D5B7848911C71",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2052,
+      "age_seconds": 2147,
       "job_id": "SEM-WORKER_CONTRACT_COMPATIBILITY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-3A9CD7272D27DF658973",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1998,
+      "age_seconds": 2093,
       "job_id": "SEM-WORKER_CONTRACT_COMPATIBILITY-WORKER_RESULT_DETAIL_READ-B2D40882EF42FA6D81A3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 565,
+      "age_seconds": 661,
       "job_id": "SEM-WORKER_INGRESS-READ_ONLY_CANARY-36445425EDF37D40BDAF",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2741,
+      "age_seconds": 2836,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-3926C81AF27EC26DAFA8",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 548,
+      "age_seconds": 644,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-4347981AB61971D6EF38",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 448,
+      "age_seconds": 543,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_PYTEST_CERTIFICATION_READ-B9F6352189E72E9650E4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 592,
+      "age_seconds": 688,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-4CB79D0D4B412B9DA416",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 533,
+      "age_seconds": 628,
       "job_id": "SEM-WORKER_REPAIR_REGISTRY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-6365BF239206AC08AA4C",
       "reason": null,
       "state": "RESULT_READY"
@@ -120,8 +120,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T09:25:57Z",
-    "last_receive_utc": "2026-11-19T09:25:52Z",
+    "last_cycle_utc": "2026-11-19T09:27:26Z",
+    "last_receive_utc": "2026-11-19T09:27:21Z",
     "last_terminal_utc": "2026-11-19T09:24:00Z",
     "pid": "2782495",
     "runtime_fingerprint": {
