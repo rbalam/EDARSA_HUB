@@ -1,0 +1,55 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 90,
+        "paths": [
+          "backend/modules/ia_assistant/query_bridge.py",
+          "backend/modules/ia_assistant/service.py",
+          "backend/modules/comercial_analytics/routes.py",
+          "backend/modules/comercial_analytics/repository_tickets.py",
+          "backend/tests/test_ia_global_rbac_data_scope_r14.py",
+          "backend/tests/test_ia_global_authorized_contract.py",
+          "backend/tests/test_ia_contextual_comercial_contract.py",
+          "backend/tests/test_comercial_analytics_tickets.py"
+        ],
+        "search_terms": [
+          "list_discounts",
+          "allowed_unit_codes",
+          "descuentos",
+          "list_tickets",
+          "RBAC",
+          "query_bridge",
+          "data_scope"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-IA_ASSISTANT-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4BF3C71D41A269E32AC1",
+  "mode": "READ_ONLY",
+  "objective": "Knowledge Loop IA GLOBAL RBAC R15: verificar SOLO en READ_ONLY el contrato vigente de unidades autorizadas, list_discounts, /descuentos, servicios de IA y 4 suites originales, incluidos cambios posteriores de repository_tickets.py. Complementar la auditoria historica sin afirmar certificacion pytest ni mutacion. No modificar produccion, archivos o SQL. Obtener evidencia concreta para cierre post-integracion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "IA_ASSISTANT",
+    "conflict_domains": [
+      "IA_ASSISTANT"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
