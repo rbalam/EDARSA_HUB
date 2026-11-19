@@ -809,3 +809,167 @@ def capability_catalog() -> list[dict[str, Any]]:
             }
         )
     return items
+
+
+# COA Gate 6F - fixed Development SQL seed channel.
+# This capability does not accept SQL, paths, scripts, or generic changes from
+# the caller. It owns one certified COA seed and reuses the existing COA
+# Development migration workflow.
+_COA_GATE6F_CAPABILITY = "COA_FISCAL_STATUS_SEED_DEVELOPMENT"
+_COA_GATE6F_CONTEXT = "COA"
+_COA_GATE6F_AUTH_REF = "coa-gate6e-fiscal-status-seed-preflight-readonly-v1-20261027"
+_COA_GATE6F_WORKFLOW = ".github/workflows/coa-core-development-migration.yml"
+_COA_GATE6F_TRIGGER = "ops/migrations/requests/COA-FISCAL-STATUS-SEED-20261026.execute"
+_COA_GATE6F_SEED = "backend/database/migrations/20261026_coa_fiscal_documentos_emitidos_estatus_seed.sql"
+_COA_GATE6F_ROLLBACK = "backend/database/migrations/20261026_coa_fiscal_documentos_emitidos_estatus_seed_rollback.sql"
+_COA_GATE6F_SEED_SHA256 = "2c6658231f88d1de675d5e5855dd1d79b8c233da7e53f42d6573857cad6b141e"
+_COA_GATE6F_ROLLBACK_SHA256 = "4e795b35935b734e440da54c74a3a29bb343b401e0d09bd82272f13269a49489"
+
+
+def _coa_gate6f_status_seed_builder(request: Mapping[str, Any]) -> dict[str, Any]:
+    context = _g3_context(request)
+    if context != _COA_GATE6F_CONTEXT:
+        raise SemanticCapabilityError("SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED")
+
+    c = _g3_constraints(request, {"authorization_ref"})
+    if c.get("authorization_ref") != _COA_GATE6F_AUTH_REF:
+        raise SemanticCapabilityError("SEMANTIC_COA_GATE6F_AUTHORIZATION_REQUIRED")
+
+    seed_path = _DEV_REPO_ROOT / _COA_GATE6F_SEED
+    rollback_path = _DEV_REPO_ROOT / _COA_GATE6F_ROLLBACK
+    workflow_path = _DEV_REPO_ROOT / _COA_GATE6F_WORKFLOW
+    trigger_path = _DEV_REPO_ROOT / _COA_GATE6F_TRIGGER
+
+    for path, expected_sha, error in (
+        (seed_path, _COA_GATE6F_SEED_SHA256, "SEMANTIC_COA_GATE6F_SEED_DRIFT"),
+        (rollback_path, _COA_GATE6F_ROLLBACK_SHA256, "SEMANTIC_COA_GATE6F_ROLLBACK_DRIFT"),
+    ):
+        if not path.is_file():
+            raise SemanticCapabilityError("SEMANTIC_COA_GATE6F_SCRIPT_MISSING")
+        actual = _gate_b_hashlib.sha256(path.read_bytes()).hexdigest()
+        if actual != expected_sha:
+            raise SemanticCapabilityError(error)
+
+    if not workflow_path.is_file():
+        raise SemanticCapabilityError("SEMANTIC_COA_GATE6F_WORKFLOW_MISSING")
+    if trigger_path.exists():
+        raise SemanticCapabilityError("SEMANTIC_COA_GATE6F_ALREADY_TRIGGERED")
+
+    workflow = workflow_path.read_text(encoding="utf-8")
+    current_sha = _gate_b_hashlib.sha256(workflow.encode("utf-8")).hexdigest()
+
+    path_anchor = "      - ops/migrations/requests/COA-CFDI-EMITIDOS-20260910.execute\n"
+    if workflow.count(path_anchor) != 1:
+        raise SemanticCapabilityError("SEMANTIC_COA_GATE6F_WORKFLOW_PATH_ANCHOR_DRIFT")
+    workflow = workflow.replace(
+        path_anchor,
+        path_anchor + "      - ops/migrations/requests/COA-FISCAL-STATUS-SEED-20261026.execute\n",
+        1,
+    )
+
+    resolver_anchor = (
+        "          if echo \"${CHANGED}\" | grep -qx "
+        "'ops/migrations/requests/COA-CFDI-EMITIDOS-20260910.execute'; then\n"
+    )
+    if workflow.count(resolver_anchor) != 1:
+        raise SemanticCapabilityError("SEMANTIC_COA_GATE6F_RESOLVER_ANCHOR_DRIFT")
+    workflow = workflow.replace(
+        resolver_anchor,
+        (
+            "          if echo \"${CHANGED}\" | grep -qx "
+            "'ops/migrations/requests/COA-FISCAL-STATUS-SEED-20261026.execute'; then\n"
+            "            echo 'MIGRATION_KIND=CFDI_STATUS_SEED' >> \"$GITHUB_ENV\"\n"
+            "            echo 'MIGRATION_SCRIPT=backend/database/migrations/20261026_coa_fiscal_documentos_emitidos_estatus_seed.sql' >> \"$GITHUB_ENV\"\n"
+            "            echo 'ROLLBACK_SCRIPT=backend/database/migrations/20261026_coa_fiscal_documentos_emitidos_estatus_seed_rollback.sql' >> \"$GITHUB_ENV\"\n"
+            "          elif echo \"${CHANGED}\" | grep -qx "
+            "'ops/migrations/requests/COA-CFDI-EMITIDOS-20260910.execute'; then\n"
+        ),
+        1,
+    )
+
+    preflight_anchor = (
+        "          elif kind=='CFDI_EMITIDOS':\n"
+        "              cur.execute(\"SELECT COUNT(*) AS n FROM sys.tables WHERE name IN ('Fiscal_DocumentosEmitidosEstatus','Fiscal_DocumentosEmitidos')\")\n"
+    )
+    if workflow.count(preflight_anchor) != 1:
+        raise SemanticCapabilityError("SEMANTIC_COA_GATE6F_PREFLIGHT_ANCHOR_DRIFT")
+    preflight_block = (
+        "          elif kind=='CFDI_STATUS_SEED':\n"
+        "              cur.execute(\"SELECT COUNT(*) AS n FROM sys.tables WHERE name IN ('Fiscal_DocumentosEmitidosEstatus','Fiscal_DocumentosEmitidos')\")\n"
+        "              if int(cur.fetchone()['n'])!=2: raise SystemExit('COA_STATUS_SEED_TARGET_MISSING')\n"
+        "              cur.execute(\"SELECT EstatusDocumentoFiscalEmitidoID,Codigo,Nombre,Descripcion,EsFinal,Activo FROM dbo.Fiscal_DocumentosEmitidosEstatus WHERE EstatusDocumentoFiscalEmitidoID IN (1,2,3,4,5,6) OR Codigo IN ('BORRADOR','PENDIENTE_TIMBRADO','TIMBRADO','ERROR_TIMBRADO','CANCELACION_SOLICITADA','CANCELADO') ORDER BY EstatusDocumentoFiscalEmitidoID\")\n"
+        "              rows=cur.fetchall(); print({'existing_status_rows':rows})\n"
+        "              expected={1:'BORRADOR',2:'PENDIENTE_TIMBRADO',3:'TIMBRADO',4:'ERROR_TIMBRADO',5:'CANCELACION_SOLICITADA',6:'CANCELADO'}\n"
+        "              for row in rows:\n"
+        "                  rid=int(row['EstatusDocumentoFiscalEmitidoID']); code=row['Codigo']\n"
+        "                  if rid not in expected or expected[rid]!=code: raise SystemExit('COA_STATUS_SEED_COLLISION')\n"
+        "              cur.execute(\"SELECT COUNT(*) AS n FROM dbo.Fiscal_DocumentosEmitidos WHERE EstatusDocumentoFiscalEmitidoID IN (1,2,3,4,5,6)\")\n"
+        "              if int(cur.fetchone()['n'])!=0: raise SystemExit('COA_STATUS_SEED_REFERENCES_PRESENT')\n"
+        "              cur.execute(\"SELECT COALESCE(HAS_PERMS_BY_NAME('dbo.Fiscal_DocumentosEmitidosEstatus','OBJECT','INSERT'),0) can_insert,COALESCE(HAS_PERMS_BY_NAME('dbo.Fiscal_DocumentosEmitidosEstatus','OBJECT','DELETE'),0) can_delete\")\n"
+        "              perms=cur.fetchone(); print({'seed_permissions':perms})\n"
+        "              if int(perms['can_insert'])!=1 or int(perms['can_delete'])!=1: raise SystemExit('COA_STATUS_SEED_PERMISSION_NOT_CONFIRMED')\n"
+        "              refs=[]\n"
+    )
+    workflow = workflow.replace(preflight_anchor, preflight_block + preflight_anchor, 1)
+
+    postcheck_anchor = (
+        "          elif kind=='CFDI_EMITIDOS':\n"
+        "              cur.execute(\"SELECT COUNT(*) n FROM sys.tables WHERE name IN ('Fiscal_DocumentosEmitidosEstatus','Fiscal_DocumentosEmitidos')\"); tables=int(cur.fetchone()['n'])\n"
+    )
+    if workflow.count(postcheck_anchor) != 1:
+        raise SemanticCapabilityError("SEMANTIC_COA_GATE6F_POSTCHECK_ANCHOR_DRIFT")
+    postcheck_block = (
+        "          elif kind=='CFDI_STATUS_SEED':\n"
+        "              cur.execute(\"SELECT EstatusDocumentoFiscalEmitidoID,Codigo,Nombre,EsFinal,Activo FROM dbo.Fiscal_DocumentosEmitidosEstatus ORDER BY EstatusDocumentoFiscalEmitidoID\")\n"
+        "              rows=cur.fetchall(); print({'status_rows':rows})\n"
+        "              expected=[(1,'BORRADOR','Borrador',0,1),(2,'PENDIENTE_TIMBRADO','Pendiente de timbrado',0,1),(3,'TIMBRADO','Timbrado',0,1),(4,'ERROR_TIMBRADO','Error de timbrado',0,1),(5,'CANCELACION_SOLICITADA','Cancelacion solicitada',0,1),(6,'CANCELADO','Cancelado',1,1)]\n"
+        "              actual=[(int(r['EstatusDocumentoFiscalEmitidoID']),r['Codigo'],r['Nombre'],int(r['EsFinal']),int(r['Activo'])) for r in rows]\n"
+        "              if actual!=expected: raise SystemExit('COA_STATUS_SEED_POSTCHECK_ROWS_MISMATCH')\n"
+        "              cur.execute(\"SELECT COUNT(*) n FROM sys.foreign_keys WHERE parent_object_id=OBJECT_ID('dbo.Fiscal_DocumentosEmitidos') AND referenced_object_id=OBJECT_ID('dbo.Fiscal_DocumentosEmitidosEstatus') AND is_disabled=0 AND is_not_trusted=0\")\n"
+        "              if int(cur.fetchone()['n'])!=1: raise SystemExit('COA_STATUS_SEED_FK_NOT_TRUSTED')\n"
+    )
+    workflow = workflow.replace(postcheck_anchor, postcheck_block + postcheck_anchor, 1)
+
+    trigger_content = (
+        "GATE=6F\n"
+        "MIGRATION=COA_FISCAL_STATUS_SEED\n"
+        "SOURCE_GATE6D=823b425cff31f283b053854eb0db4b2b11b68ac2\n"
+        "PREFLIGHT=coa-gate6e-fiscal-status-seed-preflight-readonly-v1-20261027\n"
+        "PRODUCTION_ALLOWED=false\n"
+    )
+
+    return {
+        "actions": [
+            {
+                "type": "write_file",
+                "path": _COA_GATE6F_WORKFLOW,
+                "content": workflow,
+                "source_sha256": current_sha,
+            },
+            {
+                "type": "write_file",
+                "path": _COA_GATE6F_TRIGGER,
+                "content": trigger_content,
+            },
+        ],
+        "checks": [{"type": "git_diff_check"}],
+        "scheduling": {
+            **_g3_scheduling(context),
+            "conflict_domains": ["GLOBAL_GIT_WRITER", context],
+        },
+    }
+
+
+register_capability(
+    SemanticCapability(
+        code=_COA_GATE6F_CAPABILITY,
+        modes=("MUTATION",),
+        builder=_coa_gate6f_status_seed_builder,
+    )
+)
+
+_CAPABILITY_METADATA[_COA_GATE6F_CAPABILITY] = {
+    "bounded_context_rule": _COA_GATE6F_CONTEXT,
+    "allowed_constraints": ("authorization_ref",),
+    "allowed_path_roots": (),
+}
