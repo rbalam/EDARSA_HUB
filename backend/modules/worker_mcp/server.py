@@ -522,6 +522,10 @@ def submit_objective_tool(
     - WORKER_PYTEST_CERTIFICATION_READONLY (mode=READ_ONLY, bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP"): constraints={}
     - WORKER_REPAIR_BOUNDED (mode=MUTATION, bounded_context="WORKER_RUNTIME_CONVERGENCE"):
       constraints={"incident_id": "...", "capability_code": "..."}
+    - DEVELOPMENT_MUTATION_BOUNDED (mode=MUTATION, any valid domain bounded_context):
+      constraints={"change_spec": [...], "verification_tests": [...], "authorization_ref": "...", "job_id_override": "..."}
+      Allowed operations: replace_text, insert_before, insert_after, append_once, write_file (no delete_file, shell or SQL).
+      Requires live source_sha256 for existing files and authorized admin/worker:submit RBAC.
     """
     if constraints is not None and not isinstance(constraints, dict):
         raise ToolError("VALIDATION_ERROR_422:SEMANTIC_CONSTRAINTS_INVALID")

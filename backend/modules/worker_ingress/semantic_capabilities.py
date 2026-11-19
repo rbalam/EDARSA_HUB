@@ -460,6 +460,268 @@ register_capability(
 )
 
 
+# Gate B - Authorized declarative Development mutation semantic capability.
+# Distinct from WORKER_REPAIR_BOUNDED (which stays scoped strictly to Worker runtime repairs).
+# No shell commands, arbitrary SQL, delete_file, secrets, or Production paths are accepted.
+import hashlib as _gate_b_hashlib
+from pathlib import Path as _gate_b_Path
+
+_DEV_REPO_ROOT = _gate_b_Path(__file__).resolve().parents[3]
+_DEV_ALLOWED_OPERATIONS = frozenset(
+    {"replace_text", "insert_before", "insert_after", "append_once", "write_file"}
+)
+_DEV_FORBIDDEN_PATH_TOKENS = (
+    "production",
+    "supervisor",
+    "nginx",
+    "credential",
+    "secret",
+    "password",
+    "token",
+    "private_key",
+    "api_key",
+    ".env",
+)
+_DEV_TEST_ROOTS = ("backend/tests/", "tools/tests/")
+_DEV_SHA256_RE = _g3_re.compile(r"^[0-9a-f]{64}$")
+_DEV_AUTH_REF_RE = _g3_re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{2,120}$")
+_DEV_MAX_CHANGES = 15
+_DEV_MAX_TESTS = 15
+_DEV_MAX_TEXT_BYTES = 120_000
+
+
+def _dev_validate_path(raw_path: Any, *, allowed_roots: tuple[str, ...] = _G3_ROOTS) -> str:
+    if not isinstance(raw_path, str) or not _G3_PATH.fullmatch(raw_path):
+        raise SemanticCapabilityError("SEMANTIC_DEV_PATH_INVALID")
+    if raw_path.endswith("/"):
+        raise SemanticCapabilityError("SEMANTIC_DEV_PATH_INVALID")
+    parts = raw_path.split("/")
+    if (
+        not raw_path.startswith(allowed_roots)
+        or any(p in ("", ".", "..") for p in parts)
+        or any(p in _G3_DENIED for p in parts)
+        or any(
+            marker in p.lower()
+            for p in parts
+            for marker in _DEV_FORBIDDEN_PATH_TOKENS
+        )
+    ):
+        raise SemanticCapabilityError("SEMANTIC_DEV_PATH_FORBIDDEN")
+    return raw_path
+
+
+def _dev_apply_virtual_change(current_text: str, action: dict[str, Any]) -> str:
+    op = action["type"]
+    if op == "replace_text":
+        old = action["old_text"]
+        rep = action["replacement"]
+        expected = int(action.get("expected_occurrences", 1))
+        if current_text.count(old) != expected:
+            raise SemanticCapabilityError("SEMANTIC_DEV_OLD_TEXT_OCCURRENCE_MISMATCH")
+        return current_text.replace(old, rep)
+    if op == "insert_before":
+        anchor = action["anchor"]
+        if current_text.count(anchor) != 1:
+            raise SemanticCapabilityError("SEMANTIC_DEV_ANCHOR_MISMATCH")
+        return current_text.replace(anchor, action["replacement"] + anchor, 1)
+    if op == "insert_after":
+        anchor = action["anchor"]
+        if current_text.count(anchor) != 1:
+            raise SemanticCapabilityError("SEMANTIC_DEV_ANCHOR_MISMATCH")
+        return current_text.replace(anchor, anchor + action["replacement"], 1)
+    if op == "append_once":
+        rep = action["replacement"]
+        if rep in current_text:
+            return current_text
+        return current_text + rep
+    if op == "write_file":
+        return action["content"]
+    raise SemanticCapabilityError("SEMANTIC_DEV_OPERATION_FORBIDDEN")
+
+
+def _development_mutation_bounded_builder(request: Mapping[str, Any]) -> dict[str, Any]:
+    context = _g3_context(request)
+    c = _g3_constraints(
+        request,
+        {"change_spec", "verification_tests", "authorization_ref", "job_id_override"},
+    )
+
+    change_spec = c.get("change_spec")
+    if not isinstance(change_spec, list) or not 1 <= len(change_spec) <= _DEV_MAX_CHANGES:
+        raise SemanticCapabilityError("SEMANTIC_DEV_CHANGE_SPEC_INVALID")
+
+    auth_ref = c.get("authorization_ref")
+    if auth_ref is not None and (
+        not isinstance(auth_ref, str) or not _DEV_AUTH_REF_RE.fullmatch(auth_ref.strip())
+    ):
+        raise SemanticCapabilityError("SEMANTIC_DEV_AUTHORIZATION_REF_INVALID")
+
+    job_id_override = c.get("job_id_override")
+    if job_id_override is not None and (
+        not isinstance(job_id_override, str) or not _G3_JOB_ID.fullmatch(job_id_override.strip())
+    ):
+        raise SemanticCapabilityError("SEMANTIC_DEV_JOB_ID_OVERRIDE_INVALID")
+
+    raw_tests = c.get("verification_tests", [])
+    if not isinstance(raw_tests, list) or len(raw_tests) > _DEV_MAX_TESTS:
+        raise SemanticCapabilityError("SEMANTIC_DEV_VERIFICATION_TESTS_INVALID")
+    verified_tests: list[str] = []
+    for test_path in raw_tests:
+        clean_test = _dev_validate_path(test_path, allowed_roots=_DEV_TEST_ROOTS)
+        if not clean_test.endswith(".py"):
+            raise SemanticCapabilityError("SEMANTIC_DEV_VERIFICATION_TESTS_INVALID")
+        if clean_test not in verified_tests:
+            verified_tests.append(clean_test)
+
+    # Track virtual file state to support chained deterministic edits to the same file
+    virtual_files: dict[str, str] = {}
+    built_actions: list[dict[str, Any]] = []
+    touched_py_paths: list[str] = []
+
+    for item in change_spec:
+        if not isinstance(item, Mapping):
+            raise SemanticCapabilityError("SEMANTIC_DEV_CHANGE_ITEM_INVALID")
+        allowed_item_keys = {
+            "operation",
+            "path",
+            "source_sha256",
+            "old_text",
+            "replacement",
+            "anchor",
+            "content",
+            "expected_occurrences",
+            "overwrite",
+        }
+        if set(item.keys()) - allowed_item_keys:
+            raise SemanticCapabilityError("SEMANTIC_DEV_CHANGE_KEYS_UNSUPPORTED")
+
+        op = str(item.get("operation") or "").strip()
+        if op not in _DEV_ALLOWED_OPERATIONS:
+            raise SemanticCapabilityError("SEMANTIC_DEV_OPERATION_FORBIDDEN")
+
+        rel_path = _dev_validate_path(item.get("path"))
+        disk_path = _DEV_REPO_ROOT / rel_path
+
+        if rel_path in virtual_files:
+            live_text = virtual_files[rel_path]
+            file_exists = True
+        elif disk_path.is_file():
+            live_text = disk_path.read_text(encoding="utf-8")
+            file_exists = True
+        else:
+            live_text = ""
+            file_exists = False
+
+        supplied_sha = item.get("source_sha256")
+        if op == "write_file":
+            content = item.get("content")
+            if not isinstance(content, str) or not content:
+                raise SemanticCapabilityError("SEMANTIC_DEV_CONTENT_REQUIRED")
+            if len(content.encode("utf-8")) > _DEV_MAX_TEXT_BYTES:
+                raise SemanticCapabilityError("SEMANTIC_DEV_CONTENT_TOO_LARGE")
+            overwrite = bool(item.get("overwrite", False))
+            if file_exists:
+                if not overwrite:
+                    raise SemanticCapabilityError("SEMANTIC_DEV_FILE_ALREADY_EXISTS")
+                if not isinstance(supplied_sha, str) or not _DEV_SHA256_RE.fullmatch(supplied_sha.strip().lower()):
+                    raise SemanticCapabilityError("SEMANTIC_SOURCE_SHA256_REQUIRED")
+                actual_sha = _gate_b_hashlib.sha256(live_text.encode("utf-8")).hexdigest()
+                if supplied_sha.strip().lower() != actual_sha:
+                    raise SemanticCapabilityError("SEMANTIC_SOURCE_SHA256_MISMATCH")
+            action: dict[str, Any] = {
+                "type": "write_file",
+                "path": rel_path,
+                "content": content,
+            }
+            if file_exists and isinstance(supplied_sha, str):
+                action["source_sha256"] = supplied_sha.strip().lower()
+            virtual_files[rel_path] = content
+        else:
+            if not file_exists:
+                raise SemanticCapabilityError("SEMANTIC_SOURCE_FILE_MISSING")
+            if not isinstance(supplied_sha, str) or not _DEV_SHA256_RE.fullmatch(supplied_sha.strip().lower()):
+                raise SemanticCapabilityError("SEMANTIC_SOURCE_SHA256_REQUIRED")
+            actual_sha = _gate_b_hashlib.sha256(live_text.encode("utf-8")).hexdigest()
+            if supplied_sha.strip().lower() != actual_sha:
+                raise SemanticCapabilityError("SEMANTIC_SOURCE_SHA256_MISMATCH")
+
+            action = {
+                "type": op,
+                "path": rel_path,
+                "source_sha256": actual_sha,
+            }
+            if op == "replace_text":
+                old_text = item.get("old_text")
+                replacement = item.get("replacement")
+                expected_occ = item.get("expected_occurrences", 1)
+                if not isinstance(old_text, str) or not old_text or not isinstance(replacement, str):
+                    raise SemanticCapabilityError("SEMANTIC_DEV_REPLACE_FIELDS_INVALID")
+                if type(expected_occ) is not int or not 1 <= expected_occ <= 20:
+                    raise SemanticCapabilityError("SEMANTIC_DEV_EXPECTED_OCCURRENCES_INVALID")
+                if len(replacement.encode("utf-8")) > _DEV_MAX_TEXT_BYTES:
+                    raise SemanticCapabilityError("SEMANTIC_DEV_CONTENT_TOO_LARGE")
+                action["old_text"] = old_text
+                action["replacement"] = replacement
+                action["expected_occurrences"] = expected_occ
+            elif op in {"insert_before", "insert_after"}:
+                anchor = item.get("anchor")
+                replacement = item.get("replacement")
+                if not isinstance(anchor, str) or not anchor or not isinstance(replacement, str):
+                    raise SemanticCapabilityError("SEMANTIC_DEV_INSERT_FIELDS_INVALID")
+                if len(replacement.encode("utf-8")) > _DEV_MAX_TEXT_BYTES:
+                    raise SemanticCapabilityError("SEMANTIC_DEV_CONTENT_TOO_LARGE")
+                action["anchor"] = anchor
+                action["replacement"] = replacement
+            elif op == "append_once":
+                replacement = item.get("replacement")
+                if not isinstance(replacement, str) or not replacement:
+                    raise SemanticCapabilityError("SEMANTIC_DEV_APPEND_FIELDS_INVALID")
+                if len(replacement.encode("utf-8")) > _DEV_MAX_TEXT_BYTES:
+                    raise SemanticCapabilityError("SEMANTIC_DEV_CONTENT_TOO_LARGE")
+                action["replacement"] = replacement
+                action["expected_occurrences"] = 1
+
+            virtual_files[rel_path] = _dev_apply_virtual_change(live_text, action)
+
+        built_actions.append(action)
+        if rel_path.endswith(".py") and rel_path not in touched_py_paths:
+            touched_py_paths.append(rel_path)
+
+    checks: list[dict[str, Any]] = []
+    if touched_py_paths:
+        checks.append({"type": "py_compile", "paths": touched_py_paths})
+    if verified_tests:
+        checks.append({"type": "pytest", "paths": verified_tests})
+    checks.append({"type": "git_diff_check"})
+
+    scheduling = {
+        "project_id": "EDARSAHUB",
+        "bounded_context": context,
+        "priority_class": "NORMAL",
+        "fairness_weight": 1,
+        "max_parallelism": 1,
+        "resource_claims": [],
+        "conflict_domains": ["GLOBAL_GIT_WRITER", context],
+    }
+    expansion: dict[str, Any] = {
+        "actions": built_actions,
+        "checks": checks,
+        "scheduling": scheduling,
+    }
+    if job_id_override:
+        expansion["job_id_override"] = job_id_override.strip()
+    return expansion
+
+
+register_capability(
+    SemanticCapability(
+        code="DEVELOPMENT_MUTATION_BOUNDED",
+        modes=("MUTATION",),
+        builder=_development_mutation_bounded_builder,
+    )
+)
+
+
 RAW_WORKER_FIELDS_FORBIDDEN: tuple[str, ...] = (
     "actions",
     "checks",
@@ -509,6 +771,16 @@ _CAPABILITY_METADATA: dict[str, dict[str, Any]] = {
         "bounded_context_rule": _WORKER_REPAIR_CONTEXT,
         "allowed_constraints": ("capability_code", "incident_id"),
         "allowed_path_roots": (),
+    },
+    "DEVELOPMENT_MUTATION_BOUNDED": {
+        "bounded_context_rule": "ANY_VALID_TOKEN",
+        "allowed_constraints": (
+            "authorization_ref",
+            "change_spec",
+            "job_id_override",
+            "verification_tests",
+        ),
+        "allowed_path_roots": _G3_ROOTS,
     },
 }
 

@@ -89,6 +89,84 @@ def _assert_no_sensitive_keys(value: Any, path: str = "request") -> None:
             _assert_no_sensitive_keys(nested, f"{path}[{index}]")
 
 
+_ADMIN_MUTATION_ROLES = frozenset(
+    {"superadministrador", "administrador", "superadmin", "admin"}
+)
+
+
+def _assert_mutation_rbac(current_user: Mapping[str, Any]) -> None:
+    role = _clean(
+        current_user.get("role")
+        or current_user.get("rol")
+        or current_user.get("sec_perfil")
+    ).lower()
+    raw_roles = current_user.get("roles") or current_user.get("sec_roles") or ()
+    roles = {role} if role else set()
+    if isinstance(raw_roles, (list, tuple, set, frozenset)):
+        roles.update(_clean(r).lower() for r in raw_roles if _clean(r))
+    raw_perms = current_user.get("permissions") or current_user.get("permisos") or ()
+    perms = (
+        {_clean(p).lower() for p in raw_perms if _clean(p)}
+        if isinstance(raw_perms, (list, tuple, set, frozenset))
+        else set()
+    )
+    if not (roles & _ADMIN_MUTATION_ROLES) and not (
+        perms & {"worker:submit", "worker.mutation", "worker:mutation", "*"}
+    ):
+        raise WorkerIngressError("RBAC_MUTATION_FORBIDDEN")
+
+
+def _find_existing_job_state(job_id: str) -> str | None:
+    """Check local queue and remote worker refs to guarantee single publication."""
+    import subprocess
+
+    for state, directory in (
+        ("RESULT", "results"),
+        ("PROCESSING", "processing"),
+        ("PENDING", "pending"),
+        ("DONE", "done"),
+    ):
+        if (STATE_ROOT / directory / f"{job_id}.json").is_file():
+            return state
+
+    git_dir = STATE_ROOT.parent
+    if (git_dir / "HEAD").is_file():
+        for state, spec in (
+            ("REMOTE_RESULT", f"origin/worker/results:worker_queue/results/{job_id}.json"),
+            ("REMOTE_PENDING", f"origin/worker/requests:worker_queue/inbox/{job_id}.json"),
+        ):
+            try:
+                proc = subprocess.run(
+                    ["git", f"--git-dir={git_dir}", "cat-file", "-e", spec],
+                    capture_output=True,
+                    check=False,
+                    timeout=5,
+                )
+                if proc.returncode == 0:
+                    return state
+            except (OSError, subprocess.SubprocessError):
+                continue
+    return None
+
+
+def _submit_through_canonical_publisher(canonical_job: dict[str, Any]) -> dict[str, Any]:
+    import inspect
+
+    submit_fn = gate_chain_publisher.submit
+    try:
+        params = inspect.signature(submit_fn).parameters
+    except (TypeError, ValueError):
+        params = {}
+    if {"remote", "queue_branch", "require_convergence"}.issubset(params.keys()):
+        return submit_fn(
+            canonical_job,
+            remote="origin",
+            queue_branch="worker/requests",
+            require_convergence=False,
+        )
+    return submit_fn(canonical_job)
+
+
 def _requester_from_authenticated_user(
     current_user: Mapping[str, Any],
     *,
@@ -230,10 +308,15 @@ def build_semantic_job(
         project="EDARSAHUB",
     )
 
-    job_id = _semantic_job_id(
+    if requested_mode == "MUTATION":
+        _assert_mutation_rbac(current_user)
+
+    job_id = _clean(expansion.get("job_id_override")) or _semantic_job_id(
         payload,
         requester_email=requester["email"],
     )
+    if not JOB_ID_RE.fullmatch(job_id):
+        raise WorkerIngressError("JOB_ID_INVALID")
 
     raw_job = {
         "job_id": job_id,
@@ -244,7 +327,8 @@ def build_semantic_job(
         "scheduling": dict(expansion.get("scheduling") or {}),
         "requester": requester,
     }
-    return canonicalize_job(raw_job)
+    canonical = canonicalize_job(raw_job)
+    return gate_chain_publisher.validate_template(canonical)
 
 
 def submit_objective(
@@ -321,7 +405,19 @@ def submit_objective(
         payload,
         current_user=current_user,
     )
-    result = gate_chain_publisher.submit(canonical_job)
+    existing_state = _find_existing_job_state(canonical_job["job_id"])
+    if existing_state is not None:
+        return {
+            "status": "EXISTS",
+            "job_id": canonical_job["job_id"],
+            "existing_lifecycle": existing_state,
+            "duplicate_prevented": True,
+            "production_touched": False,
+            "capability": capability_code,
+            "bounded_context": _clean(payload.get("bounded_context")).upper(),
+        }
+
+    result = _submit_through_canonical_publisher(canonical_job)
     if not isinstance(result, dict):
         raise WorkerIngressError("CANONICAL_PUBLISHER_INVALID_RESPONSE")
 
