@@ -1,0 +1,82 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "        allowed_item_keys = {\n            \"operation\",\n            \"path\",\n            \"source_sha256\",\n            \"old_text\",\n            \"replacement\",\n            \"anchor\",\n            \"content\",\n            \"expected_occurrences\",\n            \"overwrite\",\n        }",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "        allowed_item_keys = {\n            \"operation\",\n            \"path\",\n            \"source_sha256\",\n            \"expected_sha256\",\n            \"old_text\",\n            \"replacement\",\n            \"anchor\",\n            \"content\",\n            \"expected_occurrences\",\n            \"overwrite\",\n        }",
+      "source_sha256": "c90a1c49b803275eec59e2eecc8278c869baee564dc561cadb7b1c4599a805ec",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "        supplied_sha = item.get(\"source_sha256\")\n        if op == \"write_file\":\n            content = item.get(\"content\")\n            if not isinstance(content, str) or not content:\n                raise SemanticCapabilityError(\"SEMANTIC_DEV_CONTENT_REQUIRED\")\n            if len(content.encode(\"utf-8\")) > _DEV_MAX_TEXT_BYTES:\n                raise SemanticCapabilityError(\"SEMANTIC_DEV_CONTENT_TOO_LARGE\")\n            overwrite = bool(item.get(\"overwrite\", False))\n            if file_exists:\n                if not overwrite:\n                    raise SemanticCapabilityError(\"SEMANTIC_DEV_FILE_ALREADY_EXISTS\")\n                if not isinstance(supplied_sha, str) or not _DEV_SHA256_RE.fullmatch(supplied_sha.strip().lower()):\n                    raise SemanticCapabilityError(\"SEMANTIC_SOURCE_SHA256_REQUIRED\")\n                actual_sha = _gate_b_hashlib.sha256(live_text.encode(\"utf-8\")).hexdigest()\n                if supplied_sha.strip().lower() != actual_sha:\n                    raise SemanticCapabilityError(\"SEMANTIC_SOURCE_SHA256_MISMATCH\")\n            action: dict[str, Any] = {\n                \"type\": \"write_file\",\n                \"path\": rel_path,\n                \"content\": content,\n            }\n            if file_exists and isinstance(supplied_sha, str):\n                action[\"source_sha256\"] = supplied_sha.strip().lower()\n            virtual_files[rel_path] = content",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "        raw_source_sha = item.get(\"source_sha256\")\n        raw_expected_sha = item.get(\"expected_sha256\")\n        if (\n            isinstance(raw_source_sha, str)\n            and isinstance(raw_expected_sha, str)\n            and raw_source_sha.strip().lower() != raw_expected_sha.strip().lower()\n        ):\n            raise SemanticCapabilityError(\"SEMANTIC_SOURCE_SHA256_MISMATCH\")\n        supplied_sha = raw_source_sha if raw_source_sha is not None else raw_expected_sha\n        if op == \"write_file\":\n            content = item.get(\"content\")\n            if not isinstance(content, str) or not content:\n                raise SemanticCapabilityError(\"SEMANTIC_DEV_CONTENT_REQUIRED\")\n            new_size = len(content.encode(\"utf-8\"))\n            if new_size > _DEV_MAX_TEXT_BYTES:\n                raise SemanticCapabilityError(\"SEMANTIC_DEV_CONTENT_TOO_LARGE\")\n            overwrite = bool(item.get(\"overwrite\", False))\n            actual_sha: str | None = None\n            if file_exists:\n                if not overwrite:\n                    raise SemanticCapabilityError(\"SEMANTIC_DEV_FILE_ALREADY_EXISTS\")\n                if not isinstance(supplied_sha, str) or not _DEV_SHA256_RE.fullmatch(supplied_sha.strip().lower()):\n                    raise SemanticCapabilityError(\"SEMANTIC_SOURCE_SHA256_REQUIRED\")\n                live_bytes = live_text.encode(\"utf-8\")\n                actual_sha = _gate_b_hashlib.sha256(live_bytes).hexdigest()\n                if supplied_sha.strip().lower() != actual_sha:\n                    raise SemanticCapabilityError(\"SEMANTIC_SOURCE_SHA256_MISMATCH\")\n                if len(live_bytes) >= 4096 and new_size < int(len(live_bytes) * 0.75):\n                    raise SemanticCapabilityError(\"SEMANTIC_DEV_WRITE_LARGE_SHRINK_BLOCKED\")\n            action: dict[str, Any] = {\n                \"type\": \"write_file\",\n                \"path\": rel_path,\n                \"content\": content,\n            }\n            if file_exists and actual_sha is not None:\n                action[\"source_sha256\"] = actual_sha\n                action[\"expected_sha256\"] = actual_sha\n            virtual_files[rel_path] = content",
+      "source_sha256": "fc4a15862d22155c0e4cdd91e07a017f48fc4d9116013b64925c925805e0c50a",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    elif code == \"SEMANTIC_DEV_OPERATION_FORBIDDEN\":\n        rejected_field = \"constraints.change_spec[].operation\"\n        allowed_correction = \"Use only declarative operations: replace_text, insert_before, insert_after, append_once, write_file.\"",
+      "path": "backend/modules/worker_ingress/service.py",
+      "replacement": "    elif code == \"SEMANTIC_DEV_OPERATION_FORBIDDEN\":\n        rejected_field = \"constraints.change_spec[].operation\"\n        allowed_correction = \"Use only declarative operations: replace_text, insert_before, insert_after, append_once, write_file.\"\n    elif code == \"SEMANTIC_DEV_WRITE_LARGE_SHRINK_BLOCKED\":\n        rejected_field = \"constraints.change_spec[].content\"\n        allowed_correction = (\n            \"Overwriting a >=4096-byte file with <75% of its size is blocked; \"\n            \"use targeted replace_text, insert_before, insert_after, or append_once instead.\"",
+      "source_sha256": "d90c5bc7ec267c850439cf1dd0f6faadd940151e8a005bdb361ce46cd4af47bd",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_mcp_dev_ingress_gate_b.py",
+      "replacement": "\n\ndef test_write_file_overwrite_emits_expected_sha256_for_dispatcher_and_guards_large_shrink(\n    tmp_path, monkeypatch\n):\n    from tools.mirror_sync import universal_job_dispatcher as dispatcher\n\n    repo = tmp_path / \"repo\"\n    target = repo / \"backend\" / \"modules\" / \"demo\" / \"existing.py\"\n    target.parent.mkdir(parents=True)\n    original = \"VALUE = 1\\n\"\n    target.write_text(original, encoding=\"utf-8\")\n    monkeypatch.setattr(sem_caps, \"_DEV_REPO_ROOT\", repo)\n\n    job = service.build_semantic_job(\n        {\n            \"objective\": \"Sobrescribir archivo existente con SHA-256 verificado.\",\n            \"bounded_context\": \"SQL_RBAC_019\",\n            \"mode\": \"MUTATION\",\n            \"capability\": \"DEVELOPMENT_MUTATION_BOUNDED\",\n            \"constraints\": {\n                \"change_spec\": [\n                    {\n                        \"operation\": \"write_file\",\n                        \"path\": \"backend/modules/demo/existing.py\",\n                        \"overwrite\": True,\n                        \"source_sha256\": _sha256(original),\n                        \"content\": \"VALUE = 2\\n\",\n                    }\n                ]\n            },\n        },\n        current_user=_admin(),\n    )\n    action = job[\"actions\"][0]\n    assert action[\"type\"] == \"write_file\"\n    assert action[\"source_sha256\"] == _sha256(original)\n    assert action[\"expected_sha256\"] == _sha256(original)\n\n    # Verify universal_job_dispatcher.apply_action accepts the built action without WRITE_EXISTING_REQUIRES_EXPECTED_SHA256\n    dispatcher.apply_action(repo, action)\n    assert target.read_text(encoding=\"utf-8\") == \"VALUE = 2\\n\"\n\n    # Large shrink on >=4096-byte existing file is caught cleanly at preflight with structured diagnostic\n    big_file = repo / \"backend\" / \"modules\" / \"demo\" / \"large.py\"\n    big_content = (\"# line\\n\" * 800)\n    big_file.write_text(big_content, encoding=\"utf-8\")\n    pf = service.preflight_semantic_objective(\n        {\n            \"objective\": \"Intento de encoger archivo grande\",\n            \"bounded_context\": \"SQL_RBAC_019\",\n            \"mode\": \"MUTATION\",\n            \"capability\": \"DEVELOPMENT_MUTATION_BOUNDED\",\n            \"constraints\": {\n                \"change_spec\": [\n                    {\n                        \"operation\": \"write_file\",\n                        \"path\": \"backend/modules/demo/large.py\",\n                        \"overwrite\": True,\n                        \"source_sha256\": _sha256(big_content),\n                        \"content\": \"# tiny\\n\",\n                    }\n                ]\n            },\n        },\n        current_user=_admin(),\n    )\n    assert pf[\"ok\"] is False\n    assert pf[\"error_code\"] == \"SEMANTIC_DEV_WRITE_LARGE_SHRINK_BLOCKED\"\n    assert pf[\"rejected_field\"] == \"constraints.change_spec[].content\"\n",
+      "source_sha256": "a1b0df4784f83befced905c1182f80a7105ffa49ac90d8a4efbc741f72c526b9",
+      "type": "append_once"
+    }
+  ],
+  "base_sha": "d71012628d67470d3bb7e9a97449b4ff352c07f1",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/modules/worker_ingress/service.py",
+        "backend/tests/test_worker_mcp_dev_ingress_gate_b.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_mcp_dev_ingress_gate_b.py",
+        "backend/tests/test_worker_contract_stabilization_preflight.py",
+        "backend/tests/test_worker_remote_semantic_ingress_gate2a.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-DEV-WRITE-EXPECTED-SHA256-FIX-R1-20261119",
+  "mode": "MUTATION",
+  "objective": "Corregir regresion real post-estabilizacion detectada en EDARSAHUB-BOS-WORKER-INGRESS-SQL8-CAPABILITY-R1-20261119: emitir expected_sha256 junto con source_sha256 en DEVELOPMENT_MUTATION_BOUNDED cuando write_file sobrescribe un archivo existente (requerido por universal_job_dispatcher.py) y prevalidar el candado WRITE_FILE_LARGE_SHRINK_BLOCKED.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "BOS-GLOBAL-GO-RECONCILIATION",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
