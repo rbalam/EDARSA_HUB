@@ -1,0 +1,78 @@
+{
+  "actions": [],
+  "base_sha": "621f89dc940c296bbf381b3a14bce0937e465167",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/ia_assistant/query_bridge.py",
+        "backend/modules/ia_assistant/service.py",
+        "backend/modules/comercial_analytics/routes.py",
+        "backend/modules/comercial_analytics/repository_tickets.py",
+        "backend/tests/test_comercial_analytics_tickets.py",
+        "backend/tests/test_ia_global_rbac_data_scope_r14.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_ia_global_rbac_data_scope_r14.py",
+        "backend/tests/test_ia_global_authorized_contract.py",
+        "backend/tests/test_ia_contextual_comercial_contract.py",
+        "backend/tests/test_comercial_analytics_tickets.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py"
+        ],
+        "max_results": 50,
+        "paths": [
+          "backend/modules/comercial_analytics/routes.py",
+          "backend/modules/comercial_analytics/repository_tickets.py",
+          "backend/modules/ia_assistant/query_bridge.py",
+          "backend/modules/ia_assistant/service.py"
+        ],
+        "search_terms": [
+          "list_discounts",
+          "allowed_unit_codes",
+          "/descuentos",
+          "catalog_for_prompt",
+          "EDARSAHUB_ONLY",
+          "UNIDADES_AUTORIZADAS"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-IA-GLOBAL-RBAC-DATA-SCOPE-POST-INTEGRATION-CERT-READONLY-20261119",
+  "mode": "READ_ONLY",
+  "objective": "Certificar en modo READ_ONLY post-integracion el alcance funcional y RBAC de IA Global / Comercial Analytics (commit f5ff431a639489bf539587b404138332641731a6 y evolucion posterior en repository_tickets.py): validar py_compile en los 6 archivos, ejecutar las 4 suites originales (25 pruebas) y verificar contrato de filtros RBAC, unidades autorizadas y /descuentos sin modificar codigo, permisos, SQL ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "BOS-GLOBAL-GO-RECONCILIATION",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "IA_ASSISTANT",
+    "conflict_domains": [
+      "IA_ASSISTANT"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
