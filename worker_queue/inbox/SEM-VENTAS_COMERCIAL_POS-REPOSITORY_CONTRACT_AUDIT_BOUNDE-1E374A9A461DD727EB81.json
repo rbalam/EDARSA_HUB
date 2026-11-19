@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "comandero",
+          "ventas",
+          "comercial",
+          "proveedores",
+          "POS",
+          "bonificacion",
+          "cancelacion",
+          "devolucion",
+          "clientes",
+          "precios"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-VENTAS_COMERCIAL_POS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-1E374A9A461DD727EB81",
+  "mode": "READ_ONLY",
+  "objective": "EDARSAHUB Ventas/Comercial y POS/Comandero satelite Gate 1: auditoria READ_ONLY de arquitectura existente. Inspeccionar menu/acceso tipo Portal de Proveedores, componentes frontend, endpoints backend, integracion SQL canonica, catalogos compartidos de clientes, productos, precios, cancelaciones, devoluciones y bonificaciones, RBAC y trazabilidad. Entregar evidencias verificables, brechas reales y siguientes gates; no modificar archivos, Produccion o servicios, no crear Worker ni colas alternas.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "VENTAS_COMERCIAL_POS",
+    "conflict_domains": [
+      "VENTAS_COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
