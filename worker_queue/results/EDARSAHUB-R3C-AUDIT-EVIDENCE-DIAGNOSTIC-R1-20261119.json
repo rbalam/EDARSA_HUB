@@ -1,0 +1,50 @@
+{
+  "base_sha": "f4aecf4030983cd8297d6b9695e4c89b12f33641",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-19T10:41:47Z",
+  "execution_base_sha": "f4aecf4030983cd8297d6b9695e4c89b12f33641",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-R3C-AUDIT-EVIDENCE-DIAGNOSTIC-R1-20261119",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-19T11:51:28Z",
+  "quality_gate": "PASS",
+  "requested_base_sha": "f4aecf4030983cd8297d6b9695e4c89b12f33641",
+  "result_detail_evidence": {
+    "checks": [
+      {
+        "blockers": [],
+        "certification": "PENDING_AUDIT_EVIDENCE",
+        "evidence_status": "ABSENT",
+        "evidence_truncated": false,
+        "failed_checks": [],
+        "files_changed": [
+          "backend/modules/scheduler_trigger/wake_loop.py",
+          "backend/server.py",
+          "backend/tests/test_scheduler_production_wake_contract.py"
+        ],
+        "percent_complete": 95,
+        "production_touched": false,
+        "quality_gate": "PASS",
+        "result_status": "INTEGRATED",
+        "source_completed_at_utc": "2026-11-19T10:33:58Z",
+        "source_job_id": "EDARSAHUB-PROD-DEV-R3C-PRODUCTION-WAKE-OWNERSHIP-R1-20261119",
+        "source_terminal": true,
+        "tests": "PASS"
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-19T10:41:46Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
