@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "tools/mirror_sync/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "Servidores_Conexiones",
+          "SistemaTipoID",
+          "APIExecutor",
+          "BrowserExecutor",
+          "ToastLocationId"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-INTEGRATIONS_TOAST-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7C97C26E54E5664895A7",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en solo lectura la preparacion del Gate 4 de integracion Toast POS. Reutilizar las auditorias certificadas R1 y R2 y el diseno docs/SERVIDORES/SERVIDORES_INTEGRACIONES_GATE3_PHYSICAL_DESIGN.md. Distinguir motor universal implementado frente a diseno; identificar contratos de conexiones, ejecutores API/browser, sync, mapeos y RBAC; entregar brechas verificables y criterios de aceptacion. No crear componentes, no repetir auditorias generales, no modificar archivos ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INTEGRATIONS_TOAST",
+    "conflict_domains": [
+      "INTEGRATIONS_TOAST"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
