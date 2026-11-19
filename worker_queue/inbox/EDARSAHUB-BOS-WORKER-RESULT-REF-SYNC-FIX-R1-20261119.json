@@ -1,0 +1,76 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "            create_attestation(public)\n\n            marker.write_text(\n                f\"published={now()}\\n\"\n                f\"commit={commit}\\n\"\n                f\"certification={public.get('certification')}\\n\",\n                encoding=\"utf-8\",\n            )",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "replacement": "            try:\n                subprocess.run(\n                    runtime_git_command(\n                        \"fetch\",\n                        \"--no-tags\",\n                        \"--quiet\",\n                        REMOTE,\n                        f\"+refs/heads/{RESULT_BRANCH}:refs/remotes/{REMOTE}/{RESULT_BRANCH}\",\n                    ),\n                    cwd=str(ROOT),\n                    env=runtime_git_env(),\n                    text=True,\n                    stdout=subprocess.PIPE,\n                    stderr=subprocess.STDOUT,\n                    timeout=min(GIT_TIMEOUT_SECONDS, 30),\n                    check=False,\n                )\n            except (OSError, subprocess.SubprocessError):\n                pass\n\n            create_attestation(public)\n\n            marker.write_text(\n                f\"published={now()}\\n\"\n                f\"commit={commit}\\n\"\n                f\"certification={public.get('certification')}\\n\",\n                encoding=\"utf-8\",\n            )",
+      "source_sha256": "81bb566d20514487dda631f1731fe321c7b276a6c67186df4142e3665639feae",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    if proc.returncode != 0:\n        return False, \"published_result_commit_blob_missing\", None\n\n    return True, \"PUBLISHED_RESULT_GIT_BLOB\", proc.stdout",
+      "path": "tools/mirror_sync/worker_result_reader.py",
+      "replacement": "    if proc.returncode != 0:\n        try:\n            remote_probe = subprocess.run(\n                [\n                    \"git\",\n                    f\"--git-dir={git_dir}\",\n                    \"config\",\n                    \"--get\",\n                    \"remote.origin.url\",\n                ],\n                capture_output=True,\n                check=False,\n                timeout=5,\n            )\n            if remote_probe.returncode == 0 and remote_probe.stdout.strip():\n                subprocess.run(\n                    [\n                        \"git\",\n                        f\"--git-dir={git_dir}\",\n                        \"fetch\",\n                        \"--no-tags\",\n                        \"--quiet\",\n                        \"origin\",\n                        \"+refs/heads/worker/results:refs/remotes/origin/worker/results\",\n                    ],\n                    capture_output=True,\n                    check=False,\n                    timeout=10,\n                )\n                proc = subprocess.run(\n                    [\n                        \"git\",\n                        f\"--git-dir={git_dir}\",\n                        \"cat-file\",\n                        \"-p\",\n                        blob_spec,\n                    ],\n                    capture_output=True,\n                    check=False,\n                    timeout=10,\n                )\n        except (OSError, subprocess.SubprocessError):\n            return False, \"published_result_git_read_failed\", None\n\n    if proc.returncode != 0:\n        return False, \"published_result_commit_blob_missing\", None\n\n    return True, \"PUBLISHED_RESULT_GIT_BLOB\", proc.stdout",
+      "source_sha256": "1de6ec5f1c9771b1c1bdb991b78190053a1add87569ec85221f0084f2b3fc25f",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_result_reader_status_contract.py",
+      "replacement": "\n\ndef test_published_result_blob_refreshes_stale_local_worker_results_ref(tmp_path):\n    import subprocess\n    from tools.mirror_sync.worker_result_reader import _read_published_result_bytes\n\n    bare_remote = tmp_path / \"remote.git\"\n    publisher_clone = tmp_path / \"publisher\"\n    local_repo = tmp_path / \"local\"\n\n    subprocess.run([\"git\", \"init\", \"--bare\", str(bare_remote)], check=True, capture_output=True)\n    subprocess.run([\"git\", \"clone\", str(bare_remote), str(local_repo)], check=True, capture_output=True)\n    subprocess.run([\"git\", \"clone\", str(bare_remote), str(publisher_clone)], check=True, capture_output=True)\n\n    subprocess.run(\n        [\"git\", \"-C\", str(publisher_clone), \"checkout\", \"--orphan\", \"worker/results\"],\n        check=True,\n        capture_output=True,\n    )\n    job_id = \"TEST-STALE-REF-SYNC-R1\"\n    rel = publisher_clone / \"worker_queue\" / \"results\" / f\"{job_id}.json\"\n    rel.parent.mkdir(parents=True, exist_ok=True)\n    payload_bytes = b'{\"job_id\":\"TEST-STALE-REF-SYNC-R1\",\"certification\":\"CERTIFIED\"}\\n'\n    rel.write_bytes(payload_bytes)\n    subprocess.run([\"git\", \"-C\", str(publisher_clone), \"add\", \"--\", str(rel.relative_to(publisher_clone))], check=True, capture_output=True)\n    subprocess.run(\n        [\n            \"git\", \"-C\", str(publisher_clone),\n            \"-c\", \"user.name=Test\", \"-c\", \"user.email=test@example.com\",\n            \"commit\", \"-m\", \"publish result\",\n        ],\n        check=True,\n        capture_output=True,\n    )\n    commit_sha = subprocess.run(\n        [\"git\", \"-C\", str(publisher_clone), \"rev-parse\", \"HEAD\"],\n        check=True, text=True, capture_output=True,\n    ).stdout.strip()\n    subprocess.run(\n        [\"git\", \"-C\", str(publisher_clone), \"push\", \"origin\", \"HEAD:refs/heads/worker/results\"],\n        check=True, capture_output=True,\n    )\n\n    state_root = local_repo / \".git\" / \"universal-worker-queue\"\n    state_root.mkdir(parents=True, exist_ok=True)\n\n    # Local repo does not yet have commit_sha; reader fetches origin/worker/results and verifies blob.\n    ok, reason, raw = _read_published_result_bytes(\n        state_root=state_root,\n        expected_job_id=job_id,\n        marker_commit=commit_sha,\n    )\n    assert ok is True\n    assert reason == \"PUBLISHED_RESULT_GIT_BLOB\"\n    assert raw == payload_bytes\n\n    # Non-existent commit still fails closed even after fetch.\n    missing_ok, missing_reason, missing_raw = _read_published_result_bytes(\n        state_root=state_root,\n        expected_job_id=job_id,\n        marker_commit=\"f\" * 40,\n    )\n    assert missing_ok is False\n    assert missing_reason == \"published_result_commit_blob_missing\"\n    assert missing_raw is None\n",
+      "source_sha256": "8963bb32fe57fad051f1b28883784391c8f381e15844b35a2e3a6c3b202b123f",
+      "type": "append_once"
+    }
+  ],
+  "base_sha": "7c1f7968b1a46df0213fc9894d068032a964ee05",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "tools/mirror_sync/worker_result_reader.py",
+        "backend/tests/test_worker_result_reader_status_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_result_reader_status_contract.py",
+        "backend/tests/test_worker_result_integrity_contract.py",
+        "backend/tests/test_universal_job_result_publisher_temp_isolation.py",
+        "backend/tests/test_universal_job_result_lineage_certification.py",
+        "backend/tests/test_worker_result_publisher_batch_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-RESULT-REF-SYNC-FIX-R1-20261119",
+  "mode": "MUTATION",
+  "objective": "Sincronizar el objeto Git local origin/worker/results tras publicar resultados desde el clone aislado y refrescar en solo lectura en worker_result_reader ante commit ausente localmente, eliminando falsos published_result_commit_blob_missing sin debilitar fail-closed.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "BOS-G3-R3-RESULT-REF-SYNC-FIX",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_RESULT_INTEGRITY",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
