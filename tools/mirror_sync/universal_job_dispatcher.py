@@ -50,7 +50,7 @@ from worker_slot_runtime import (
     update_slot_state,
 )
 from worker_slot_runtime import SlotRuntimeError
-from git_divergence_guard import (GitGuardError, acquire_writer_lock, compare_and_swap, inspect_repository, mutation_policy, post_push_verify, recover_authorized_local_ahead, release_writer_lock, requires_writer_lock, scoped_push_env, validate_commit_scope)
+from git_divergence_guard import (GitGuardError, _expected_platform_system_deps_drift, acquire_writer_lock, compare_and_swap, inspect_repository, mutation_policy, post_push_verify, recover_authorized_local_ahead, release_writer_lock, requires_writer_lock, scoped_push_env, validate_commit_scope)
 
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 STATE = ROOT / ".git" / "universal-worker-queue"
@@ -911,6 +911,13 @@ def release_agent_guard_claim(job_id: str) -> tuple[bool, str]:
 
 
 
+def _effective_readonly_tracked_status(repo: Path, raw_status: str) -> str:
+    lines = raw_status.splitlines()
+    if _expected_platform_system_deps_drift(repo):
+        lines = [line for line in lines if line != " M .emergent/system_deps.txt"]
+    return "\n".join(lines).strip()
+
+
 def _native_decision_contract_required(job):
     expected = job.get("expected_native_decision")
     return isinstance(expected, dict) and bool(expected)
@@ -1217,17 +1224,18 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
             readonly_head_before = git("rev-parse", "HEAD", cwd=ROOT).stdout.strip()
             tracked_before = git("status", "--porcelain=v1", "--untracked-files=no", cwd=ROOT).stdout
             readonly_tracked_before = tracked_before
+            effective_tracked_before = _effective_readonly_tracked_status(ROOT, tracked_before)
             check_results = []
             for check in checks:
                 # A READ_ONLY pytest result must certify the exact recorded revision.
                 # Never run it against a dirty or divergent shared checkout.
                 if check.get("type") == "pytest" and (
-                    readonly_head_before != base_sha or tracked_before.strip()
+                    readonly_head_before != base_sha or effective_tracked_before
                 ):
                     raise RuntimeError(
                         "READONLY_PYTEST_REVISION_MISMATCH:"
                         f"recorded={base_sha}:checkout={readonly_head_before}:"
-                        f"tracked_dirty={bool(tracked_before.strip())}"
+                        f"tracked_dirty={bool(effective_tracked_before)}"
                     )
                 check_result = run_check(ROOT, check, readonly=True)
                 check_results.append(check_result)

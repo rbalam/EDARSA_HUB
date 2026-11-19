@@ -160,3 +160,81 @@ def test_preview_entrypoints_use_managed_drift_contract():
     assert "edarsahub_expected_platform_system_deps_drift" in publisher
     assert "ABORT=UNEXPECTED_PLATFORM_MANAGED_SYSTEM_DEPS_DRIFT" in publisher
     assert "':(exclude).emergent/system_deps.txt'" in publisher
+
+
+def _load_dispatcher(monkeypatch):
+    monkeypatch.syspath_prepend(str(ROOT / "tools" / "mirror_sync"))
+    spec = importlib.util.spec_from_file_location(
+        "universal_job_dispatcher_managed_drift_test",
+        ROOT / "tools" / "mirror_sync" / "universal_job_dispatcher.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_dispatcher_readonly_pytest_guard_reuses_platform_managed_drift(
+    tmp_path,
+    monkeypatch,
+):
+    dispatcher = _load_dispatcher(monkeypatch)
+    repo = _repo(tmp_path)
+
+    # 1. Exact empty platform-managed .emergent/system_deps.txt drift is ignored
+    (repo / ".emergent" / "system_deps.txt").write_text("", encoding="utf-8")
+    raw_only_managed = _git(repo, "status", "--porcelain=v1", "--untracked-files=no")
+    raw_only_managed = " " + raw_only_managed.lstrip()
+    assert raw_only_managed == " M .emergent/system_deps.txt"
+    assert dispatcher._effective_readonly_tracked_status(repo, raw_only_managed) == ""
+
+    # 2. Any other dirty tracked file still fails closed
+    (repo / "keep.txt").write_text("changed\n", encoding="utf-8")
+    proc_both = subprocess.run(
+        ["git", "status", "--porcelain=v1", "--untracked-files=no"],
+        cwd=repo,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=True,
+    )
+    eff_both = dispatcher._effective_readonly_tracked_status(repo, proc_both.stdout)
+    assert "keep.txt" in eff_both
+    assert ".emergent/system_deps.txt" not in eff_both
+
+    # 3. Non-empty modification to .emergent/system_deps.txt fails closed
+    (repo / "keep.txt").write_text("ok\n", encoding="utf-8")
+    (repo / ".emergent" / "system_deps.txt").write_text("curl\n", encoding="utf-8")
+    proc_nonempty = subprocess.run(
+        ["git", "status", "--porcelain=v1", "--untracked-files=no"],
+        cwd=repo,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=True,
+    )
+    eff_nonempty = dispatcher._effective_readonly_tracked_status(repo, proc_nonempty.stdout)
+    assert ".emergent/system_deps.txt" in eff_nonempty
+
+    # 4. Staged .emergent/system_deps.txt fails closed
+    (repo / ".emergent" / "system_deps.txt").write_text("", encoding="utf-8")
+    _git(repo, "add", ".emergent/system_deps.txt")
+    proc_staged = subprocess.run(
+        ["git", "status", "--porcelain=v1", "--untracked-files=no"],
+        cwd=repo,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=True,
+    )
+    eff_staged = dispatcher._effective_readonly_tracked_status(repo, proc_staged.stdout)
+    assert ".emergent/system_deps.txt" in eff_staged
+
+    # 5. Contract check on universal_job_dispatcher.py source
+    src = (
+        ROOT / "tools" / "mirror_sync" / "universal_job_dispatcher.py"
+    ).read_text(encoding="utf-8")
+    assert "_expected_platform_system_deps_drift" in src
+    assert "_effective_readonly_tracked_status" in src
+    assert "READONLY_PYTEST_REVISION_MISMATCH:" in src
+    assert "if tracked_after != tracked_before:" in src
