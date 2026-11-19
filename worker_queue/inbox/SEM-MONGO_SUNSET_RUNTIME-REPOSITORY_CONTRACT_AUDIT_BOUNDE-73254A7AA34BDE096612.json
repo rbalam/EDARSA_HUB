@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 70,
+        "paths": [
+          "backend/core/"
+        ],
+        "search_terms": [
+          "mongo_stub",
+          "StubDatabase",
+          "MongoClient",
+          "pymongo",
+          "motor",
+          "MongoDB",
+          "get_stub_database",
+          "mongodb",
+          "mongo",
+          "auth",
+          "cache",
+          "locks",
+          "scheduler"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-MONGO_SUNSET_RUNTIME-REPOSITORY_CONTRACT_AUDIT_BOUNDE-73254A7AA34BDE096612",
+  "mode": "READ_ONLY",
+  "objective": "Mongo Sunset Runtime supplementary differential READ_ONLY audit specifically backend/core consumers not covered by previous certified partial audit. Detect core.mongo_stub, StubDatabase, pymongo/motor references, runtime auth RBAC cache locks scheduler, legacy compatibility and SQL-first. Collect static evidence only, do not claim mongod process status. No files, SQL, Production, or service changes.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "MONGO_SUNSET_RUNTIME",
+    "conflict_domains": [
+      "MONGO_SUNSET_RUNTIME"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
