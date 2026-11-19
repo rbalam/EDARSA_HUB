@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/rh/",
+          "backend/modules/worker_ingress/"
+        ],
+        "search_terms": [
+          "query_eliminar_vacante",
+          "query_eliminar_candidato",
+          "query_actualizar_candidato",
+          "get_current_user",
+          "RH_Candidatos",
+          "RH_Vacantes"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH_RECLUTAMIENTO-REPOSITORY_CONTRACT_AUDIT_BOUNDE-0D4DA965150689186669",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en modo READ_ONLY el dominio HCM Reclutamiento y Contratacion (Gate 08B), verificando controles efectivos RBAC y aislamiento multiempresa en rutas, dependencias, servicios y repositorios; eliminacion fisica de RH_Candidatos y RH_Vacantes, atomicidad SQL, y transiciones hacia Contratado. Contrastar hallazgos estaticos con controles canonicos existentes, sin asumir vulnerabilidades no probadas. No modificar codigo, SQL, Production ni integraciones; devolver hallazgos, evidencias, riesgos y plan atomico reversible para Gate 08C. Evitar duplicados y reutilizar resultados previos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH_RECLUTAMIENTO",
+    "conflict_domains": [
+      "RH_RECLUTAMIENTO"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
