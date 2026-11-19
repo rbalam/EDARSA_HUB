@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "10a44a391cd378a669d5951b6a87dc70b9931167",
-  "generated_at_utc": "2026-11-19T15:54:46Z",
+  "generated_at_utc": "2026-11-19T15:56:11Z",
   "history": {
     "done_total_local": 1876,
     "pending_total_local": 0,
@@ -16,115 +16,115 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1809,
+      "age_seconds": 1895,
       "job_id": "BOS-V1-GATE-E-E3D-STALE-SECURITY-FIX-R1-20261028",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2150,
+      "age_seconds": 2235,
       "job_id": "CATALOGO-AMPLIADO-GATE8H-B-CANARY-SERVICE-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2527,
+      "age_seconds": 2613,
       "job_id": "EDARSAHUB-BOS-DISPATCHER-READONLY-PYTEST-PLATFORM-DRIFT-FIX-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1346,
+      "age_seconds": 1432,
       "job_id": "EDARSAHUB-BOS-SEC-RBAC-GATE1B-SQLCAP-MUTATION-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 332,
+      "age_seconds": 417,
       "job_id": "EDARSAHUB-BOS-WORKER-INGRESS-SQL8-LEARNED-SEED-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2194,
+      "age_seconds": 2279,
       "job_id": "EDARSAHUB-PROD-DEV-R4-FINAL-EQUIVALENCE-READONLY-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2957,
+      "age_seconds": 3043,
       "job_id": "SEM-CAVAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-9333508277D66963D272",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1923,
+      "age_seconds": 2009,
       "job_id": "SEM-COA-COA_FISCAL_STATUS_SEED_DEVELOPME-DEA36F8D9A0C7AD23F4C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1431,
+      "age_seconds": 1517,
       "job_id": "SEM-COA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-0E23E4586F3078A98F1D",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1992,
+      "age_seconds": 2078,
       "job_id": "SEM-COMERCIAL_ANALYTICS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-3602373ECF532E0C0A3F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1780,
+      "age_seconds": 1865,
       "job_id": "SEM-CONNECTION_PROVIDER_AUDIT-REPOSITORY_CONTRACT_AUDIT_BOUNDE-543595CC82A30DA79707",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1592,
+      "age_seconds": 1678,
       "job_id": "SEM-HOSPITALITY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-0678282A08120157C870",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1959,
+      "age_seconds": 2044,
       "job_id": "SEM-IA_ASSISTANT-WORKER_PYTEST_CERTIFICATION_READ-EA45938248E4286EACEE",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1143,
+      "age_seconds": 1228,
       "job_id": "SEM-MONGO_SUNSET_RUNTIME-REPOSITORY_CONTRACT_AUDIT_BOUNDE-73254A7AA34BDE096612",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1823,
+      "age_seconds": 1908,
       "job_id": "SEM-SEC_RBAC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-D045BD2D398FCCBFB0A0",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1713,
+      "age_seconds": 1798,
       "job_id": "SEM-WORKER_INGRESS-READ_ONLY_CANARY-6A42F51CAEBA7C7EB25C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2850,
+      "age_seconds": 2935,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-6ED1C8E66D9892990734",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2915,
+      "age_seconds": 3000,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_PYTEST_CERTIFICATION_READ-50F64FDB0242CE0DEBD7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2147,
+      "age_seconds": 2233,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-88487B72CA1D5676617D",
       "reason": null,
       "state": "RESULT_READY"
@@ -144,8 +144,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T15:54:31Z",
-    "last_receive_utc": "2026-11-19T15:54:45Z",
+    "last_cycle_utc": "2026-11-19T15:55:56Z",
+    "last_receive_utc": "2026-11-19T15:56:10Z",
     "last_terminal_utc": "2026-11-19T15:49:13Z",
     "pid": "2059597",
     "runtime_fingerprint": {
