@@ -1,0 +1,80 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "_G3_ROOTS = (\n    \"backend/modules/\",\n    \"backend/tests/\",\n    \"frontend/src/\",\n    \"tools/mirror_sync/\",\n)",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "_G3_ROOTS = (\n    \"backend/modules/\",\n    \"backend/tests/\",\n    \"frontend/src/\",\n    \"tools/mirror_sync/\",\n)\n\n# READ_ONLY repository audits may inspect Core contracts, while mutation\n# capabilities intentionally remain restricted to _G3_ROOTS.\n_G3_AUDIT_ROOTS = _G3_ROOTS + (\"backend/core/\",)",
+      "source_sha256": "dc8873f32f06607251b405286992e32d0c8ed29c94802431ff0863d057ba167d",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "not value.startswith(_G3_ROOTS)",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "not value.startswith(_G3_AUDIT_ROOTS)",
+      "source_sha256": "fa4626423c5729922c452a4b56d8ac4545719a622031614bd9e044af95d6fe96",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "\"REPOSITORY_CONTRACT_AUDIT_BOUNDED\": {\n        \"bounded_context_rule\": \"ANY_VALID_TOKEN\",\n        \"allowed_constraints\": (\"max_results\", \"paths\", \"search_terms\"),\n        \"allowed_path_roots\": _G3_ROOTS,\n    },",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "\"REPOSITORY_CONTRACT_AUDIT_BOUNDED\": {\n        \"bounded_context_rule\": \"ANY_VALID_TOKEN\",\n        \"allowed_constraints\": (\"max_results\", \"paths\", \"search_terms\"),\n        \"allowed_path_roots\": _G3_AUDIT_ROOTS,\n    },",
+      "source_sha256": "fb6b4a709f51cb24622f6753ae1f5dd0ce3b1d7c7d576b6dbe37306d6919ba24",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_remote_semantic_ingress_gate2a.py",
+      "replacement": "\n\ndef test_g3_r2_bounded_audit_allows_core_without_expanding_mutation_roots():\n    from modules.worker_ingress.semantic_capabilities import capability_catalog\n\n    catalog = {item[\"code\"]: item for item in capability_catalog()}\n    audit = catalog[\"REPOSITORY_CONTRACT_AUDIT_BOUNDED\"]\n    mutation = catalog[\"DEVELOPMENT_MUTATION_BOUNDED\"]\n\n    assert \"backend/core/\" in audit[\"allowed_path_roots\"]\n    assert \"backend/core/\" not in mutation[\"allowed_path_roots\"]\n\n    job = service.build_semantic_job(\n        _objective(\n            bounded_context=\"CONNECTIONS_SCHEDULER_AUDIT\",\n            capability=\"REPOSITORY_CONTRACT_AUDIT_BOUNDED\",\n            constraints={\n                \"paths\": [\"backend/core/scheduler/\"],\n                \"search_terms\": [\"Scheduler_DistributedLocks\"],\n                \"max_results\": 10,\n            },\n        ),\n        current_user=_user(),\n    )\n\n    assert job[\"mode\"] == \"READ_ONLY\"\n    assert job[\"actions\"] == []\n    assert job[\"production_allowed\"] is False\n    assert job[\"checks\"][0][\"type\"] == \"repository_contract_audit\"\n    assert job[\"checks\"][0][\"request\"][\"paths\"] == [\"backend/core/scheduler/\"]\n",
+      "source_sha256": "e82dd1344f2422274c408168de17f06f7c8d14bdbdfa2adf349f8358cf5378ec",
+      "type": "append_once"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_remote_semantic_ingress_gate2a.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_remote_semantic_ingress_gate2a.py",
+        "backend/tests/test_worker_rh_repository_contract_semantic.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_INGRESS_CAPABILITY_REGIST-DEVELOPMENT_MUTATION_BOUNDED-890EE8D0DCAEC5067735",
+  "mode": "MUTATION",
+  "objective": "Ampliar de forma mínima y segura la capability READ_ONLY REPOSITORY_CONTRACT_AUDIT_BOUNDED para permitir auditoría de backend/core/ sin ampliar el alcance de DEVELOPMENT_MUTATION_BOUNDED. Separar roots de auditoría y mutación, mantener denegación de secretos/.env y agregar prueba de regresión. No tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS_CAPABILITY_REGISTRY",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_INGRESS_CAPABILITY_REGISTRY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
