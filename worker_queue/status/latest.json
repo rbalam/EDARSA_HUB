@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "LOCAL_AHEAD_ONLY",
   "development_sha": "537774dad3ca633541c65781c3316b62f751a20c",
-  "generated_at_utc": "2026-11-19T06:25:17Z",
+  "generated_at_utc": "2026-11-19T06:26:39Z",
   "history": {
     "done_total_local": 1767,
     "pending_total_local": 0,
@@ -16,91 +16,91 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 201,
+      "age_seconds": 284,
       "job_id": "SEM-COMERCIAL.PORTAL_INTELIGENCIA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7522DD9AD7871DE8880F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 158,
+      "age_seconds": 240,
       "job_id": "SEM-COMERCIAL.PORTAL_INTELIGENCIA-WORKER_RESULT_SEMANTIC_EXTRACT-82F1F4764218893A5E6E",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2358,
+      "age_seconds": 2441,
       "job_id": "SEM-COMPRAS_PEDIDOS_VOZ-REPOSITORY_CONTRACT_AUDIT_BOUNDE-C5F77092821A0929768E",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2265,
+      "age_seconds": 2347,
       "job_id": "SEM-COMPRAS_PEDIDOS_VOZ-WORKER_RESULT_SEMANTIC_EXTRACT-15219CC5E5311942B0BB",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2106,
+      "age_seconds": 2188,
       "job_id": "SEM-COMPRAS_PEDIDOS_VOZ_BACKEND-REPOSITORY_CONTRACT_AUDIT_BOUNDE-A666E765413BFF1A6D60",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2103,
+      "age_seconds": 2185,
       "job_id": "SEM-COMPRAS_PEDIDOS_VOZ_FRONTEND-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4EDB44EB7906D629D93D",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 976,
+      "age_seconds": 1058,
       "job_id": "SEM-COMPRAS_SYNC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4816825B14C844542127",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2018,
+      "age_seconds": 2100,
       "job_id": "SEM-CRM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-63863139D45CABFD627B",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1362,
+      "age_seconds": 1444,
       "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT_BOUNDE-14C56960060084CED5AE",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1257,
+      "age_seconds": 1339,
       "job_id": "SEM-RH_GLOBAL_HCM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-FBA7F790B71EDB8F94C7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1350,
+      "age_seconds": 1433,
       "job_id": "SEM-RH_RECLUTAMIENTO-REPOSITORY_CONTRACT_AUDIT_BOUNDE-0D4DA965150689186669",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2397,
+      "age_seconds": 2479,
       "job_id": "SEM-UNIDADES_NEGOCIO_CANONICAS-WORKER_RESULT_DETAIL_READ-925695F4C3CD40FBD88C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1194,
+      "age_seconds": 1276,
       "job_id": "SEM-WORKER.MCP-REPOSITORY_CONTRACT_AUDIT_BOUNDE-520EB9F3913D5207CC2C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 684,
+      "age_seconds": 766,
       "job_id": "SEM-WORKER.MCP-REPOSITORY_CONTRACT_AUDIT_BOUNDE-60FAF7CB35700286B953",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2235,
+      "age_seconds": 2317,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-5BA57B608682AE2BF01D",
       "reason": null,
       "state": "RESULT_READY"
@@ -120,8 +120,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T06:25:07Z",
-    "last_receive_utc": "2026-11-19T06:25:02Z",
+    "last_cycle_utc": "2026-11-19T06:26:27Z",
+    "last_receive_utc": "2026-11-19T06:26:22Z",
     "last_terminal_utc": "2026-11-19T06:22:39Z",
     "pid": "85",
     "runtime_fingerprint": {
