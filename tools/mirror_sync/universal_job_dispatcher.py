@@ -1219,6 +1219,16 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
             readonly_tracked_before = tracked_before
             check_results = []
             for check in checks:
+                # A READ_ONLY pytest result must certify the exact recorded revision.
+                # Never run it against a dirty or divergent shared checkout.
+                if check.get("type") == "pytest" and (
+                    readonly_head_before != base_sha or tracked_before.strip()
+                ):
+                    raise RuntimeError(
+                        "READONLY_PYTEST_REVISION_MISMATCH:"
+                        f"recorded={base_sha}:checkout={readonly_head_before}:"
+                        f"tracked_dirty={bool(tracked_before.strip())}"
+                    )
                 check_result = run_check(ROOT, check, readonly=True)
                 check_results.append(check_result)
                 if check_result["status"] != "PASS":
