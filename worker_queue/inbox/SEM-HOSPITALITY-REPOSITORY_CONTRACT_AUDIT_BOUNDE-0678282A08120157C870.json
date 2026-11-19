@@ -1,0 +1,67 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/hospitality/",
+          "frontend/src/modules/hospitality/",
+          "backend/modules/cavas_corporativas/",
+          "backend/modules/cava_socios/",
+          "backend/modules/comercial_analytics/",
+          "backend/modules/finanzas/",
+          "backend/modules/rrhh/"
+        ],
+        "search_terms": [
+          "hospitality",
+          "reserva",
+          "huesped",
+          "guest",
+          "revenue",
+          "tarifa",
+          "habitacion",
+          "room",
+          "housekeeping",
+          "mantenimiento",
+          "checkin",
+          "night",
+          "usali",
+          "concierge",
+          "whatsapp",
+          "lealtad",
+          "upsell",
+          "pms",
+          "billing",
+          "inventario"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-HOSPITALITY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-0678282A08120157C870",
+  "mode": "READ_ONLY",
+  "objective": "Auditoria diferencial unica Hospitality frente a R2 OS. READ_ONLY contractual en Desarrollo: inspeccionar backend/frontend operativo Hospitality, PMS y reservas, revenue management, CRM huesped, rooms/spaces, night audit, USALI, facturacion y conciliacion, WhatsApp concierge, housekeeping, mantenimiento, checkin, loyalty y upsell, y conexiones POS, inventarios, finanzas y RH. Identificar funciones y rutas, clasificar EXISTENTE/PARCIAL/AUSENTE/NO_VERIFICABLE, distinguir STUB de implementacion. No afirmar R2 OS externo evaluado sin fuente. No escribir codigo, SQL, credenciales ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "HOSPITALITY",
+    "conflict_domains": [
+      "HOSPITALITY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
