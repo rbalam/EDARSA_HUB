@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "E3A",
+          "E3B",
+          "E3C",
+          "E3D",
+          "E3E",
+          "E3F"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-BOS_V1_GATE_E-REPOSITORY_CONTRACT_AUDIT_BOUNDE-2700A218F64224A48ED2",
+  "mode": "READ_ONLY",
+  "objective": "Auditar cierre de BOS V1 Gate E de forma READ_ONLY sin repetir implementaciones: localizar evidencia en Desarrollo para E3A explicacion causal, E3B prioridades ejecutivas, E3C recomendaciones deterministicas, E3D puente de acciones autorizadas, E3E integracion Tablero Ejecutivo y E3F pruebas/certificacion. Clasificar hallazgos y brechas sin cambios; respetar limites de evidencia y no declarar certificacion funcional sin pruebas.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "BOS_V1_GATE_E",
+    "conflict_domains": [
+      "BOS_V1_GATE_E"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
