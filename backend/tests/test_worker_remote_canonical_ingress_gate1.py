@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import json
 from pathlib import Path
 
@@ -128,12 +129,33 @@ def test_routes_use_existing_rbac_and_no_custom_auth_system():
     assert "JWT_SECRET" not in ROUTES
 
 
-def test_ingress_does_not_implement_git_or_shell_transport():
+def test_ingress_uses_read_only_git_metadata_and_canonical_transport():
     assert "create_file" not in SERVICE
-    assert "subprocess" not in SERVICE
     assert "git push" not in SERVICE
     assert "force push" not in SERVICE.lower()
     assert "gate_chain_publisher.submit" in SERVICE
+
+    tree = ast.parse(SERVICE)
+    calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "subprocess"
+    ]
+    assert len(calls) == 2
+    for call in calls:
+        assert call.func.attr == "run"
+        command = call.args[0]
+        assert isinstance(command, ast.List)
+        assert ast.literal_eval(command.elts[0]) == "git"
+        assert ast.literal_eval(command.elts[2]) == "cat-file"
+        assert ast.literal_eval(command.elts[3]) in {"-e", "-p"}
+        assert not any(
+            keyword.arg == "shell" and ast.literal_eval(keyword.value) is True
+            for keyword in call.keywords
+        )
 
 
 def test_router_is_mounted_once_under_api():

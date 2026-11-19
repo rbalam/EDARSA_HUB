@@ -18,6 +18,28 @@ def _operator():
     return {"id": "2", "email": "op@edarsa.com.mx", "role": "Operador"}
 
 
+def test_rejected_preflight_keeps_reserved_fields_over_diagnostics(monkeypatch):
+    diagnostics = {
+        "error_code": "OBJECTIVE_REQUIRED",
+        "rejected_field": "objective",
+        "classification": "CONTRACT_VALIDATION_ERROR",
+        "allowed_correction": "Provide an objective",
+        "schema": "diagnostic-schema",
+        "ok": True,
+        "status": "PREFLIGHT_READY",
+    }
+    monkeypatch.setattr(service, "build_semantic_diagnostic", lambda *args, **kwargs: diagnostics)
+
+    result = service.preflight_semantic_objective({}, current_user=_admin())
+
+    assert result == {
+        **diagnostics,
+        "schema": "edarsahub.worker-semantic-preflight.v1",
+        "ok": False,
+        "status": "PREFLIGHT_REJECTED",
+    }
+
+
 def test_cavas_constraints_and_bounded_context_diagnostics():
     # Cavas: passing raw actions/sql in constraints -> structured CONTRACT_VALIDATION_ERROR
     r1 = service.preflight_semantic_objective(

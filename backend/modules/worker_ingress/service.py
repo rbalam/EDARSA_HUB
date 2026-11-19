@@ -1198,8 +1198,8 @@ def preflight_semantic_objective(
             loaded_capabilities=loaded_capabilities,
         )
         return {
+            **diag,
             "schema": "edarsahub.worker-semantic-preflight.v1",
             "ok": False,
             "status": "PREFLIGHT_REJECTED",
-            **diag,
         }
