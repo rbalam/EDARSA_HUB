@@ -424,33 +424,36 @@ register_capability(
 )
 
 
-# Independent, fixed-target READ_ONLY pytest certification.
-# No arbitrary paths, commands, actions or checks are accepted.
+# Fixed-target READ_ONLY pytest certification, owned by the capability.
+# Each context has a reviewed immutable suite; callers cannot supply paths,
+# commands, checks, actions, or arbitrary test selections.
 _WORKER_PYTEST_CONTEXT = "WORKER_REPAIR_KNOWLEDGE_LOOP"
 _WORKER_PYTEST_TARGET = (
     "backend/tests/"
     "test_worker_repair_planner_canonical_ingress_capability.py"
 )
+_WORKER_PYTEST_FIXED_SUITES = {
+    _WORKER_PYTEST_CONTEXT: (_WORKER_PYTEST_TARGET,),
+    "IA_ASSISTANT": (
+        "backend/tests/test_ia_global_rbac_data_scope_r14.py",
+        "backend/tests/test_ia_global_authorized_contract.py",
+        "backend/tests/test_ia_contextual_comercial_contract.py",
+        "backend/tests/test_comercial_analytics_tickets.py",
+    ),
+}
 
 
 def _worker_pytest_certification_readonly_builder(request):
     context = str(request.get("bounded_context") or "").strip().upper()
-
-    if context != _WORKER_PYTEST_CONTEXT:
+    paths = _WORKER_PYTEST_FIXED_SUITES.get(context)
+    if paths is None:
         raise SemanticCapabilityError(
             "SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED"
         )
-
     _g3_constraints(request, set())
-
     return {
         "actions": [],
-        "checks": [
-            {
-                "type": "pytest",
-                "paths": [_WORKER_PYTEST_TARGET],
-            }
-        ],
+        "checks": [{"type": "pytest", "paths": list(paths)}],
         "scheduling": _g3_scheduling(context),
     }
 

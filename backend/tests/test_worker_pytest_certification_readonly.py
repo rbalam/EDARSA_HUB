@@ -84,3 +84,30 @@ def test_scheduling_is_bounded():
 def test_no_mutation_mode():
     capability = resolve_capability(CAPABILITY)
     assert "MUTATION" not in capability.modes
+
+
+def test_ia_global_rbac_readonly_fixed_suite():
+    result = expand(bounded_context="IA_ASSISTANT")
+    assert result["actions"] == []
+    assert result["checks"] == [{
+        "type": "pytest",
+        "paths": [
+            "backend/tests/test_ia_global_rbac_data_scope_r14.py",
+            "backend/tests/test_ia_global_authorized_contract.py",
+            "backend/tests/test_ia_contextual_comercial_contract.py",
+            "backend/tests/test_comercial_analytics_tickets.py",
+        ],
+    }]
+    assert result["scheduling"]["bounded_context"] == "IA_ASSISTANT"
+
+
+@pytest.mark.parametrize("unsafe", [
+    {"paths": ["backend/tests/test_anything.py"]},
+    {"checks": [{"type": "pytest", "paths": ["backend/tests/test_anything.py"]}]},
+    {"commands": ["python -m pytest"]},
+    {"actions": []},
+    {"production_allowed": True},
+])
+def test_ia_global_rbac_rejects_caller_controlled_checks(unsafe):
+    with pytest.raises(SemanticCapabilityError):
+        expand(bounded_context="IA_ASSISTANT", constraints=unsafe)
