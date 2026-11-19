@@ -1,0 +1,59 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/core/config/",
+          "backend/core/sql_first/",
+          "backend/core/connections/",
+          "backend/core/scheduler/",
+          "backend/modules/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "get_edarsahub_sql_config",
+          "get_sql_connection",
+          "pyodbc",
+          "pymssql",
+          "load_dotenv",
+          "EDARSAHUB_SQL_HOST",
+          "EDARSAHUB_SQL_SERVER",
+          "Scheduler_DistributedLocks",
+          "Scheduler_BitacoraJobs",
+          "Scheduler_InventariosProcesados",
+          "Scheduler_PedidosProcesados",
+          "Sys_Scheduler_JobConfig",
+          "Sys_Scheduler_Jobs"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CONNECTIONS_SCHEDULER_AUDIT-REPOSITORY_CONTRACT_AUDIT_BOUNDE-67C6903CA70148C2E6DB",
+  "mode": "READ_ONLY",
+  "objective": "Auditar de forma READ_ONLY la arquitectura existente de conexiones SQL EDARSAHUB y el runtime del scheduler para seleccionar, sin duplicaciones, qué componente existente debe consolidarse como proveedor canónico y determinar si las tablas scheduler ya referenciadas cubren correctamente distributed locks. Identificar import-time config, loaders .env, conexiones directas, EDARSAHUB_SQL_HOST vs EDARSAHUB_SQL_SERVER, factories/helpers existentes, referencias a Scheduler_DistributedLocks y a tablas scheduler existentes. No modificar archivos, no DDL/DML, no Producción, no secretos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONNECTIONS_SCHEDULER_AUDIT",
+    "conflict_domains": [
+      "CONNECTIONS_SCHEDULER_AUDIT"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
