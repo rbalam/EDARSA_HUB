@@ -1,0 +1,85 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "from git_divergence_guard import (GitGuardError, acquire_writer_lock, compare_and_swap, inspect_repository, mutation_policy, post_push_verify, recover_authorized_local_ahead, release_writer_lock, requires_writer_lock, scoped_push_env, validate_commit_scope)",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "replacement": "from git_divergence_guard import (GitGuardError, _expected_platform_system_deps_drift, acquire_writer_lock, compare_and_swap, inspect_repository, mutation_policy, post_push_verify, recover_authorized_local_ahead, release_writer_lock, requires_writer_lock, scoped_push_env, validate_commit_scope)",
+      "source_sha256": "f4524668cebfbf952f6149b353ca7b740f24ecb874055451b0d1777e6ca8f34f",
+      "type": "replace_text"
+    },
+    {
+      "anchor": "def _native_decision_contract_required(job):",
+      "expected_occurrences": 1,
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "replacement": "def _effective_readonly_tracked_status(repo: Path, raw_status: str) -> str:\n    lines = raw_status.splitlines()\n    if _expected_platform_system_deps_drift(repo):\n        lines = [line for line in lines if line != \" M .emergent/system_deps.txt\"]\n    return \"\\n\".join(lines).strip()\n\n\n",
+      "source_sha256": "51e2c81bb85019ab40015a89512b97a74c151d270200da848a3ad81a84544ffb",
+      "type": "insert_before"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "            readonly_head_before = git(\"rev-parse\", \"HEAD\", cwd=ROOT).stdout.strip()\n            tracked_before = git(\"status\", \"--porcelain=v1\", \"--untracked-files=no\", cwd=ROOT).stdout\n            readonly_tracked_before = tracked_before\n            check_results = []\n            for check in checks:\n                # A READ_ONLY pytest result must certify the exact recorded revision.\n                # Never run it against a dirty or divergent shared checkout.\n                if check.get(\"type\") == \"pytest\" and (\n                    readonly_head_before != base_sha or tracked_before.strip()\n                ):\n                    raise RuntimeError(\n                        \"READONLY_PYTEST_REVISION_MISMATCH:\"\n                        f\"recorded={base_sha}:checkout={readonly_head_before}:\"\n                        f\"tracked_dirty={bool(tracked_before.strip())}\"\n                    )",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "replacement": "            readonly_head_before = git(\"rev-parse\", \"HEAD\", cwd=ROOT).stdout.strip()\n            tracked_before = git(\"status\", \"--porcelain=v1\", \"--untracked-files=no\", cwd=ROOT).stdout\n            readonly_tracked_before = tracked_before\n            effective_tracked_before = _effective_readonly_tracked_status(ROOT, tracked_before)\n            check_results = []\n            for check in checks:\n                # A READ_ONLY pytest result must certify the exact recorded revision.\n                # Never run it against a dirty or divergent shared checkout.\n                if check.get(\"type\") == \"pytest\" and (\n                    readonly_head_before != base_sha or effective_tracked_before\n                ):\n                    raise RuntimeError(\n                        \"READONLY_PYTEST_REVISION_MISMATCH:\"\n                        f\"recorded={base_sha}:checkout={readonly_head_before}:\"\n                        f\"tracked_dirty={bool(effective_tracked_before)}\"\n                    )",
+      "source_sha256": "509c893e3a0899c35fddd7c5b383435176bac049ca8e65263400682a23718b4c",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_preview_platform_managed_system_deps_drift.py",
+      "replacement": "\n\ndef _load_dispatcher(monkeypatch):\n    monkeypatch.syspath_prepend(str(ROOT / \"tools\" / \"mirror_sync\"))\n    spec = importlib.util.spec_from_file_location(\n        \"universal_job_dispatcher_managed_drift_test\",\n        ROOT / \"tools\" / \"mirror_sync\" / \"universal_job_dispatcher.py\",\n    )\n    module = importlib.util.module_from_spec(spec)\n    assert spec.loader is not None\n    spec.loader.exec_module(module)\n    return module\n\n\ndef test_dispatcher_readonly_pytest_guard_reuses_platform_managed_drift(\n    tmp_path,\n    monkeypatch,\n):\n    dispatcher = _load_dispatcher(monkeypatch)\n    repo = _repo(tmp_path)\n\n    # 1. Exact empty platform-managed .emergent/system_deps.txt drift is ignored\n    (repo / \".emergent\" / \"system_deps.txt\").write_text(\"\", encoding=\"utf-8\")\n    raw_only_managed = _git(repo, \"status\", \"--porcelain=v1\", \"--untracked-files=no\")\n    raw_only_managed = \" \" + raw_only_managed.lstrip()\n    assert raw_only_managed == \" M .emergent/system_deps.txt\"\n    assert dispatcher._effective_readonly_tracked_status(repo, raw_only_managed) == \"\"\n\n    # 2. Any other dirty tracked file still fails closed\n    (repo / \"keep.txt\").write_text(\"changed\\n\", encoding=\"utf-8\")\n    proc_both = subprocess.run(\n        [\"git\", \"status\", \"--porcelain=v1\", \"--untracked-files=no\"],\n        cwd=repo,\n        text=True,\n        stdout=subprocess.PIPE,\n        stderr=subprocess.STDOUT,\n        check=True,\n    )\n    eff_both = dispatcher._effective_readonly_tracked_status(repo, proc_both.stdout)\n    assert \"keep.txt\" in eff_both\n    assert \".emergent/system_deps.txt\" not in eff_both\n\n    # 3. Non-empty modification to .emergent/system_deps.txt fails closed\n    (repo / \"keep.txt\").write_text(\"ok\\n\", encoding=\"utf-8\")\n    (repo / \".emergent\" / \"system_deps.txt\").write_text(\"curl\\n\", encoding=\"utf-8\")\n    proc_nonempty = subprocess.run(\n        [\"git\", \"status\", \"--porcelain=v1\", \"--untracked-files=no\"],\n        cwd=repo,\n        text=True,\n        stdout=subprocess.PIPE,\n        stderr=subprocess.STDOUT,\n        check=True,\n    )\n    eff_nonempty = dispatcher._effective_readonly_tracked_status(repo, proc_nonempty.stdout)\n    assert \".emergent/system_deps.txt\" in eff_nonempty\n\n    # 4. Staged .emergent/system_deps.txt fails closed\n    (repo / \".emergent\" / \"system_deps.txt\").write_text(\"\", encoding=\"utf-8\")\n    _git(repo, \"add\", \".emergent/system_deps.txt\")\n    proc_staged = subprocess.run(\n        [\"git\", \"status\", \"--porcelain=v1\", \"--untracked-files=no\"],\n        cwd=repo,\n        text=True,\n        stdout=subprocess.PIPE,\n        stderr=subprocess.STDOUT,\n        check=True,\n    )\n    eff_staged = dispatcher._effective_readonly_tracked_status(repo, proc_staged.stdout)\n    assert \".emergent/system_deps.txt\" in eff_staged\n\n    # 5. Contract check on universal_job_dispatcher.py source\n    src = (\n        ROOT / \"tools\" / \"mirror_sync\" / \"universal_job_dispatcher.py\"\n    ).read_text(encoding=\"utf-8\")\n    assert \"_expected_platform_system_deps_drift\" in src\n    assert \"_effective_readonly_tracked_status\" in src\n    assert \"READONLY_PYTEST_REVISION_MISMATCH:\" in src\n    assert \"if tracked_after != tracked_before:\" in src\n",
+      "source_sha256": "04f40c2e0933bb59b498ec206616a7f1a57636195761a4de3cc230ebc7d66c0c",
+      "type": "append_once"
+    }
+  ],
+  "base_sha": "31f569964460cfde7f2921d98b36724c9f2101b1",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "backend/tests/test_preview_platform_managed_system_deps_drift.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_preview_platform_managed_system_deps_drift.py",
+        "backend/tests/test_worker_pytest_certification_readonly.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "commit_message": "fix(worker): reuse platform-managed system_deps drift guard in READ_ONLY pytest check",
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-DISPATCHER-READONLY-PYTEST-PLATFORM-DRIFT-FIX-R1-20261119",
+  "mode": "MUTATION",
+  "objective": "Reutilizar _expected_platform_system_deps_drift en el guard READ_ONLY pytest de universal_job_dispatcher.py para evitar falso positivo READONLY_PYTEST_REVISION_MISMATCH por drift vacio gestionado por plataforma en .emergent/system_deps.txt, manteniendo fail-closed para cualquier otro cambio tracked o mutacion durante ejecucion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "BOS-GLOBAL-GO-RECONCILIATION",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "write_scope": [
+    "tools/mirror_sync/universal_job_dispatcher.py",
+    "backend/tests/test_preview_platform_managed_system_deps_drift.py"
+  ]
+}
