@@ -1,0 +1,484 @@
+{
+  "base_sha": "537774dad3ca633541c65781c3316b62f751a20c",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-19T05:50:11Z",
+  "execution_base_sha": "537774dad3ca633541c65781c3316b62f751a20c",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-COMPRAS_PEDIDOS_VOZ_BACKEND-REPOSITORY_CONTRACT_AUDIT_BOUNDE-A666E765413BFF1A6D60",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-19T05:51:37Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.admin_sql",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.connections.edarsahub_readonly_repository",
+              "core.connections.hrlectura_connection_factory",
+              "core.rbac_helper_sql",
+              "core.security",
+              "core.sql_first.connection_factory",
+              "datetime",
+              "fastapi",
+              "fastapi.encoders",
+              "hashlib",
+              "json",
+              "logging",
+              "pathlib",
+              "re",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/admin_sql/rbac_audit_routes.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "get_current_user"
+            ],
+            "routes": [
+              "/schema/execute",
+              "/schema/sections/{section_number}/execute",
+              "/users/execute"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_build_connection_factory",
+              "_execute_batches",
+              "_execute_schema_resultsets",
+              "_open_readonly_connection",
+              "_require_effective_superadmin",
+              "_split_batches",
+              "_strip_sql_comments",
+              "_validate_fixed_sql",
+              "_validate_schema_sql",
+              "_write_report",
+              "_write_schema_report",
+              "_write_schema_section_report",
+              "execute_all_users_rbac_audit",
+              "execute_schema_convergence_audit",
+              "execute_schema_section_audit"
+            ],
+            "tables_referenced": [
+              "Usuario_Catalogo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.admin_sql",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.sql_first.db",
+              "fastapi",
+              "json",
+              "logging",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/admin_sql/rbac_pilot_service.py",
+            "rbac_contracts": [
+              "Sistema_RBAC"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_connect",
+              "_get_perfil",
+              "_map_evento",
+              "_resolve_usuario_id",
+              "asignar_perfil",
+              "get_bitacora",
+              "get_bitacora_evento",
+              "get_perfiles_catalogo",
+              "get_rbac_map",
+              "registrar_bitacora",
+              "retirar_perfil",
+              "toggle_asignacion"
+            ],
+            "tables_referenced": [
+              "Sistema_RBAC_PerfilCatalogo",
+              "Usuario_Catalogo",
+              "Usuario_RBAC_Asignacion",
+              "Usuario_RBAC_Bitacora"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.admin_sql",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.auth.sql_user_identity",
+              "core.config.edarsahub_sql",
+              "core.corporate_filters.service",
+              "core.rbac.middleware",
+              "core.rbac_helper_sql",
+              "core.security",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "fastapi",
+              "json",
+              "logging",
+              "modules.admin_sql",
+              "re",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac",
+              "unidad_negocio_id"
+            ],
+            "path": "backend/modules/admin_sql/routes.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto",
+              "get_current_user"
+            ],
+            "routes": [
+              "/catalogos-disponibles",
+              "/permisos-catalogos",
+              "/roles",
+              "/roles/modulos",
+              "/roles/{role_id}",
+              "/servers",
+              "/users",
+              "/users/{user_id}/toggle-activo",
+              "/usuarios-asignables"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_has_explicit_users_menu_permission",
+              "_require_global_role_admin",
+              "create_role_sql",
+              "delete_role_sql",
+              "execute_query",
+              "execute_write",
+              "get_catalogos_disponibles",
+              "get_modulos",
+              "get_roles",
+              "get_servers",
+              "get_users",
+              "get_usuarios_asignables",
+              "is_admin",
+              "require_admin",
+              "require_users_menu_access",
+              "save_permisos_catalogos",
+              "toggle_user_activo",
+              "update_role_sql"
+            ],
+            "tables_referenced": [
+              "Sesiones",
+              "Sistema_CatalogosConfig",
+              "Sistema_CatalogosPermisos",
+              "Sistema_Modulos",
+              "Sistema_ModulosMenus",
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_EmpresasAsignacion",
+              "Usuario_Modulos",
+              "Usuario_PermisosCatalogosFlujo",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion",
+              "Usuario_RolesContexto"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "registry"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/agent_harness/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "dataclasses",
+              "modules.agent_harness.transversal_capability_registry",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/agent_harness/coa_communications_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "COACommunicationRequest",
+              "COACommunicationsAdapterError",
+              "__post_init__",
+              "_authorization",
+              "authorize_coa_communication"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "dataclasses",
+              "modules.agent_harness.transversal_capability_registry",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/agent_harness/commercial_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CommercialAdapterError",
+              "CommercialAgentRequest",
+              "__post_init__",
+              "_authorization",
+              "authorize_commercial_agent"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "dataclasses",
+              "modules.agent_harness.transversal_capability_registry",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/agent_harness/crm_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CRMAdapterError",
+              "CRMAgentRequest",
+              "__post_init__",
+              "_authorization",
+              "authorize_crm_agent"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "dataclasses",
+              "modules.agent_harness.transversal_capability_registry",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/agent_harness/finance_reconciliation_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FinanceReconciliationAdapterError",
+              "FinanceReconciliationRequest",
+              "__post_init__",
+              "_authorization",
+              "authorize_finance_reconciliation"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "dataclasses",
+              "modules.agent_harness.transversal_capability_registry",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/agent_harness/hr_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "HRAgentAdapterError",
+              "HRAgentRequest",
+              "__post_init__",
+              "_authorization",
+              "authorize_hr_agent"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "dataclasses",
+              "modules.agent_harness.transversal_capability_registry",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/agent_harness/inventory_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "InventoryAdapterError",
+              "InventoryAgentRequest",
+              "__post_init__",
+              "_authorization",
+              "authorize_inventory_agent"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "dataclasses",
+              "modules.agent_harness.transversal_capability_registry",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "compras",
+              "rbac"
+            ],
+            "path": "backend/modules/agent_harness/purchases_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "PurchaseAgentRequest",
+              "PurchasesAdapterError",
+              "__post_init__",
+              "_authorization",
+              "authorize_purchase_agent"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "compras"
+            ],
+            "path": "backend/modules/agent_harness/transversal_capability_registry.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CapabilityRegistryError",
+              "DomainCapabilitySpec",
+              "__post_init__",
+              "accepted_permissions",
+              "get_domain_capability",
+              "list_domain_capabilities"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 12,
+          "scanned_files": 29,
+          "skipped_sensitive": 5
+        },
+        "truncated": true
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-19T05:50:11Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
