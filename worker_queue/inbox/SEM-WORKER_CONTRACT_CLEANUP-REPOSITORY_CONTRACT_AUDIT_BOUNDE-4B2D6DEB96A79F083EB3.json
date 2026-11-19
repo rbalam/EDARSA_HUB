@@ -1,0 +1,46 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "tools/mirror_sync/",
+          "backend/modules/worker_ingress/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "CODE_CHANGE",
+          "repository_change",
+          "job-v1.example.json"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_CONTRACT_CLEANUP-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4B2D6DEB96A79F083EB3",
+  "mode": "READ_ONLY",
+  "objective": "Cerrar exclusivamente evidencia residual de drift contractual Worker V4 mediante auditoria READ_ONLY focalizada. Buscar usos operativos indebidos de CODE_CHANGE como mode, repository_change como action y referencias a job-v1.example.json; clasificar coincidencias contextuales e historicas. No alterar codigo, ni solicitar mutaciones. Si no hay drift demostrar NO_CHANGE_REQUIRED con evidencia no truncada.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTRACT_CLEANUP",
+    "conflict_domains": [
+      "WORKER_CONTRACT_CLEANUP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
