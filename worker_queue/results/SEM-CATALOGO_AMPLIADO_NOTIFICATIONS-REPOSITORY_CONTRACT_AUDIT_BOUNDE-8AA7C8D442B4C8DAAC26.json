@@ -1,0 +1,147 @@
+{
+  "base_sha": "8cf09428fee55a7ba6f0efcd3cc0e98a967229ee",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-19T10:29:40Z",
+  "execution_base_sha": "8cf09428fee55a7ba6f0efcd3cc0e98a967229ee",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-CATALOGO_AMPLIADO_NOTIFICATIONS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-8AA7C8D442B4C8DAAC26",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-19T10:31:16Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.catalogo_ampliado",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "asyncio",
+              "core.communications.notifications.repository",
+              "core.sql_first.db",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "blocked_no_canonical_push_provider",
+              "notificationrepository",
+              "operativo_notificaciones_queue",
+              "recibeemailnotificaciones",
+              "recibewhatsappnotificaciones"
+            ],
+            "path": "backend/modules/catalogo_ampliado/external_delivery.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_mark_generated",
+              "_queue_exists",
+              "_queue_id",
+              "_target",
+              "dispatch_external_alert"
+            ],
+            "tables_referenced": [
+              "Gobierno_AlertaEvento",
+              "Operativo_Notificaciones_Queue",
+              "Usuario_Catalogo",
+              "Usuario_PortalConfiguracion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "blocked_no_canonical_push_provider",
+              "emailsmtpprovider",
+              "notificationrepository",
+              "operativo_notificaciones_queue",
+              "real_provider_unavailable",
+              "recibeemailnotificaciones",
+              "recibewhatsappnotificaciones"
+            ],
+            "path": "backend/tests/test_catalogo_ampliado_gate8f_external_delivery.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_adapter_uses_canonical_queue_and_preferences_and_blocks_app",
+              "test_dispatcher_real_mode_has_no_mock_fallback_and_routes_email_contact",
+              "test_migration_is_idempotent_and_has_only_canonical_email_whatsapp_config"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.scheduler.config",
+              "core.scheduler.jobs.notifications_job",
+              "inspect",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "operativo_notificaciones_queue",
+              "scheduler_notifications_enabled"
+            ],
+            "path": "backend/tests/test_notifications_dispatcher_fail_closed.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_job",
+              "_job_config",
+              "test_canonical_queue_name_is_explicit",
+              "test_notifications_can_be_enabled_explicitly",
+              "test_notifications_disabled_by_default",
+              "test_notifications_job_fails_closed_without_sql_queue",
+              "test_notifications_job_has_no_mongo_count_documents",
+              "test_queue_is_checked_before_allowed_hours"
+            ],
+            "tables_referenced": [
+              "Operativo_Notificaciones_Queue"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 3,
+          "scanned_files": 8,
+          "skipped_sensitive": 6
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-19T10:29:39Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
