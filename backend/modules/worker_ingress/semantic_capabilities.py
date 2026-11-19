@@ -964,6 +964,7 @@ def _coa_gate6f_status_seed_builder(request: Mapping[str, Any]) -> dict[str, Any
                 "path": _COA_GATE6F_WORKFLOW,
                 "content": workflow,
                 "source_sha256": current_sha,
+                "expected_sha256": current_sha,
             },
             {
                 "type": "write_file",
