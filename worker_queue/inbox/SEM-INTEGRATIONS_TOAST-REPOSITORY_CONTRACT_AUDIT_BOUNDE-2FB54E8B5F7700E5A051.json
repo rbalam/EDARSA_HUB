@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/api_connections/",
+          "backend/modules/integrations_runtime/",
+          "backend/modules/integrations_center/"
+        ],
+        "search_terms": [
+          "is_encrypted_secret",
+          "decrypt_secret",
+          "sync_all_to_mongo_cache",
+          "get_current_user",
+          "execute_api_local_readonly",
+          "ensure_external_identifier",
+          "enrich_sync_start"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-INTEGRATIONS_TOAST-REPOSITORY_CONTRACT_AUDIT_BOUNDE-2FB54E8B5F7700E5A051",
+  "mode": "READ_ONLY",
+  "objective": "Toast Gate 4: auditoria READ_ONLY focalizada de seguridad y contratos de integracion API existentes, sin repetir discovery Toast R1/R2 ni readiness R1. Determinar con evidencia riesgos de secretos en texto plano, autorizacion RBAC antes de descifrado, compatibilidad legacy Mongo sin dependencia operativa, contratos de lectura API, idempotencia y alcance de sincronizacion; identificar pruebas offline existentes y brechas minimas para implementar Toast en motor universal. No modificar archivos ni Produccion; no conectarse LIVE a Toast; entregar evidencia y criterios de aceptacion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INTEGRATIONS_TOAST",
+    "conflict_domains": [
+      "INTEGRATIONS_TOAST"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
