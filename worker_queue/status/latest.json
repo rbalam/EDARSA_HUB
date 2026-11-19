@@ -4,31 +4,37 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "81510bfa5806ad69f3f5f43586747d5c2e7addbf",
-  "generated_at_utc": "2026-11-19T12:47:47Z",
+  "generated_at_utc": "2026-11-19T12:49:14Z",
   "history": {
     "done_total_local": 1849,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1362,
-    "results_total_local": 2973
+    "rejected_total_local": 1363,
+    "results_total_local": 2974
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1657,
+      "age_seconds": 23,
+      "job_id": "EDARSAHUB-BOS-WORKER-RELIABILITY-GATE-R2-RESERVED-PREFLIGHT-FIELDS-20261119",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1743,
       "job_id": "SEM-COMUNICACIONES_CFDI-WORKER_RESULT_SEMANTIC_EXTRACT-A82D8F349D0F7E324056",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1697,
+      "age_seconds": 1783,
       "job_id": "SEM-CONNECTIONS_SCHEDULER_AUDIT-REPOSITORY_CONTRACT_AUDIT_BOUNDE-67C6903CA70148C2E6DB",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 394,
+      "age_seconds": 480,
       "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT-0DDCE7DF4129DAC1CD82",
       "reason": null,
       "state": "RESULT_READY"
@@ -42,15 +48,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "remote_development_sha": "81510bfa5806ad69f3f5f43586747d5c2e7addbf",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T12:47:47Z",
-    "last_receive_utc": "2026-11-19T12:47:42Z",
-    "last_terminal_utc": "2026-11-19T12:41:13Z",
+    "last_cycle_utc": "2026-11-19T12:48:59Z",
+    "last_receive_utc": "2026-11-19T12:48:54Z",
+    "last_terminal_utc": "2026-11-19T12:48:50Z",
     "pid": "88",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "394b2d8abf4a98e08b2b88bb471167db4800e8dd",
