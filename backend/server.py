@@ -17324,6 +17324,22 @@ async def startup_scheduler():
         )
 
     try:
+        from modules.scheduler_trigger.wake_loop import (
+            start_production_sales_wake,
+        )
+
+        production_sales_wake_state = start_production_sales_wake(db)
+        logger.warning(
+            "Production Ventas del Dia wake state=%s",
+            production_sales_wake_state,
+        )
+    except Exception as e:
+        logger.error(
+            "Production Ventas del Dia wake no disponible: %s",
+            e,
+        )
+
+    try:
         from modules.scheduler_runtime.preview_scoped_scheduler import (
             start_preview_scoped_scheduler,
         )
@@ -17395,6 +17411,18 @@ async def shutdown_scheduler():
     except Exception as e:
         logger.error(
             "Error deteniendo Preview Ventas Cerradas wake: %s",
+            e,
+        )
+
+    try:
+        from modules.scheduler_trigger.wake_loop import (
+            stop_production_sales_wake,
+        )
+
+        await stop_production_sales_wake()
+    except Exception as e:
+        logger.error(
+            "Error deteniendo Production Ventas del Dia wake: %s",
             e,
         )
 
