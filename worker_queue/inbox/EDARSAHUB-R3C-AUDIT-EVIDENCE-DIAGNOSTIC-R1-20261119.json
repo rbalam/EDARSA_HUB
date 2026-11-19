@@ -1,0 +1,26 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-R3C-AUDIT-EVIDENCE-DIAGNOSTIC-R1-20261119",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "base_sha": "f4aecf4030983cd8297d6b9695e4c89b12f33641",
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar de forma READ_ONLY por qué EDARSAHUB-PROD-DEV-R3C-PRODUCTION-WAKE-OWNERSHIP-R1-20261119 permanece en PENDING_AUDIT_EVIDENCE aunque Development y mirror/emergent-live convergen al SHA f4aecf4030983cd8297d6b9695e4c89b12f33641. Recuperar evidencia local sanitizada del resultado y del ciclo de certificación. No mutar repositorio, runtime, SQL ni Producción.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "worker_result_detail_read",
+      "request": {
+        "job_id": "EDARSAHUB-PROD-DEV-R3C-PRODUCTION-WAKE-OWNERSHIP-R1-20261119"
+      }
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Production divergence reconciliation R3C certification"
+  }
+}
