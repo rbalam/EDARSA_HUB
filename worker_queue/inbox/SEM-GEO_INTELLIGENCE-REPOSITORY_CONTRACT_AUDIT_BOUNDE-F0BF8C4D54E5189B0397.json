@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "geofence",
+          "telematics",
+          "geolocation",
+          "location",
+          "logistics",
+          "route",
+          "weather",
+          "traffic",
+          "gps",
+          "map"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-GEO_INTELLIGENCE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-F0BF8C4D54E5189B0397",
+  "mode": "READ_ONLY",
+  "objective": "Gate 0 READ_ONLY: inventariar contratos existentes de geolocalizacion, mapas, GPS, rutas, telematica, geocercas, clima y trafico para integracion de Geo Intelligence con EDARSA Logistics y Explorar. No modificar archivos ni Produccion. Respetar concurrencia y checkpoint; no autorizar implementacion. Entregar evidencia de reutilizacion y brechas.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "GEO_INTELLIGENCE",
+    "conflict_domains": [
+      "GEO_INTELLIGENCE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
