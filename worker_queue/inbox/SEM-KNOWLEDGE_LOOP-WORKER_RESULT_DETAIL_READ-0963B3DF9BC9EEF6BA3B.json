@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "EDARSAHUB-IA-GLOBAL-RBAC-DATA-SCOPE-R15-CARLOS-20261009T1334"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-0963B3DF9BC9EEF6BA3B",
+  "mode": "READ_ONLY",
+  "objective": "Knowledge Loop reconciliacion 83 atestaciones: inspeccionar evidencia READ_ONLY de EDARSAHUB-IA-GLOBAL-RBAC-DATA-SCOPE-R15-CARLOS-20261009T1334.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "KNOWLEDGE_LOOP",
+    "conflict_domains": [
+      "KNOWLEDGE_LOOP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
