@@ -1,0 +1,982 @@
+{
+  "base_sha": "cecb42b1c76f2e8db777fb69cce9b2fecfb39890",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-19T15:25:05Z",
+  "execution_base_sha": "cecb42b1c76f2e8db777fb69cce9b2fecfb39890",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-CONNECTION_PROVIDER_AUDIT-REPOSITORY_CONTRACT_AUDIT_BOUNDE-543595CC82A30DA79707",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-19T15:32:43Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.config",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "edarsahub_config"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_edarsahub_sql_config"
+            ],
+            "path": "backend/core/config/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.config",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "dataclasses",
+              "os"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_edarsahub_sql_config"
+            ],
+            "path": "backend/core/config/edarsahub_config.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EdarsaHubSQLConfig",
+              "_base_connection_fields",
+              "_required",
+              "get_edarsahub_sql_config"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.config",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "edarsahub_config",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_edarsahub_sql_config",
+              "get_sql_connection"
+            ],
+            "path": "backend/core/config/edarsahub_sql.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "execute_edarsahub_query",
+              "get_edarsahub_connection",
+              "get_edarsahub_sql_config_safe"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.sql_first",
+            "connections": [
+              "get_sql_connection"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "db",
+              "no_mongo"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_sql_connection"
+            ],
+            "path": "backend/core/sql_first/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.sql_first",
+            "connections": [
+              "pyodbc",
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.db",
+              "pymssql",
+              "pyodbc"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_edarsahub_sql_config"
+            ],
+            "path": "backend/core/sql_first/connection_factory.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_connect_edarsahub_pymssql",
+              "get_edarsahub_connection",
+              "get_edarsahub_pymssql_connection",
+              "get_external_sql_connection"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.sql_first",
+            "connections": [
+              "get_sql_connection",
+              "readonly_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection",
+              "readonly_sql_connection"
+            ],
+            "imports": [
+              "contextlib",
+              "core.connections.edarsahub_readonly_repository",
+              "core.connections.hrlectura_connection_factory",
+              "core.sql_first.connection_factory"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_sql_connection",
+              "hrlectura"
+            ],
+            "path": "backend/core/sql_first/db.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_rows_to_dicts",
+              "execute_sql",
+              "fetch_all_dict",
+              "fetch_all_dict_readonly",
+              "fetch_one_dict",
+              "fetch_one_dict_readonly",
+              "get_sql_connection",
+              "readonly_sql_connection",
+              "sql_connection"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.connections",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "collections.abc",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "hrlectura"
+            ],
+            "path": "backend/core/connections/edarsahub_readonly_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "DatabaseIdentityMismatch",
+              "InvalidConnectionFactory",
+              "ReadOnlyRepositoryError",
+              "UnitCodeRequired",
+              "UnitServerMappingNotFound",
+              "_normalize_text",
+              "_row_to_dict",
+              "_validate_identity",
+              "get_unit_scope_metadata_readonly",
+              "get_unit_server_metadata_readonly",
+              "validate_readonly_identity"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.connections",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.config.edarsahub_config",
+              "core.sql_first.connection_factory",
+              "dataclasses"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_edarsahub_sql_config"
+            ],
+            "path": "backend/core/connections/edarsahub_writer_connection.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "SQLWriterIdentity",
+              "_normalized",
+              "_read_identity",
+              "open_validated_writer_connection",
+              "validate_writer_config",
+              "validate_writer_identity"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.connections",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "collections.abc",
+              "core.config.edarsahub_config",
+              "core.sql_first.db",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_edarsahub_sql_config",
+              "get_sql_connection",
+              "hrlectura"
+            ],
+            "path": "backend/core/connections/hrlectura_connection_factory.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConfiguredLoginMismatch",
+              "ConnectionNotCreated",
+              "HRLecturaFactoryError",
+              "_configured_user",
+              "_load_default_config",
+              "_open_default_connection",
+              "build_hrlectura_connection_factory",
+              "connection_factory"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.sql_first.db",
+              "datetime",
+              "json",
+              "logging",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_sql_connection"
+            ],
+            "path": "backend/core/scheduler/job_logger.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "Config",
+              "JobExecutionLog",
+              "JobLogger",
+              "__init__",
+              "_ensure_indexes_noop",
+              "_insert_bitacora",
+              "_is_success_status",
+              "_log_execution_compat",
+              "cleanup_old_logs",
+              "finish_execution",
+              "get_job_logger",
+              "get_last_execution",
+              "get_logs",
+              "get_stats",
+              "log_skipped",
+              "start_execution"
+            ],
+            "tables_referenced": [
+              "Scheduler_BitacoraJobs"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.sql_first.db",
+              "datetime",
+              "logging",
+              "modules.crm.automation_service",
+              "modules.crm.trigger_service",
+              "os",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [
+              "vtiger"
+            ],
+            "matched_terms": [
+              "get_edarsahub_sql_config",
+              "get_sql_connection"
+            ],
+            "path": "backend/core/scheduler/jobs/crm_sync_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_connection",
+              "_is_missing_schema_error",
+              "_skip_result",
+              "execute_crm_actividades_vencidas",
+              "execute_crm_sla_check",
+              "execute_crm_sync"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "core.scheduler.jobs.inteligencia_comercial_sync_job",
+              "core.sql_first.db",
+              "datetime",
+              "hashlib",
+              "logging",
+              "modules.finanzas.repository_mpro",
+              "modules.finanzas.repository_softrestaurant",
+              "time"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "get_sql_connection"
+            ],
+            "path": "backend/core/scheduler/jobs/cxp_sync_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_extract",
+              "_fecha",
+              "_hash",
+              "_mpro_code_to_canonical",
+              "_persist",
+              "_tipo_mpro",
+              "run_cxp_sync",
+              "run_cxp_sync_async"
+            ],
+            "tables_referenced": [
+              "Finanzas_CxP_Sync",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.config.edarsahub_config",
+              "core.db",
+              "core.secret_manager",
+              "core.sql_first.connection_factory",
+              "datetime",
+              "logging",
+              "modules.compras.eventos_compras",
+              "modules.integrations_runtime.sync_ledger",
+              "os",
+              "platform",
+              "pymssql",
+              "signal",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "get_edarsahub_sql_config"
+            ],
+            "path": "backend/core/scheduler/jobs/detect_nuevos_compras_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "APScheduler",
+              "scheduler"
+            ],
+            "symbols": [
+              "_acquire_detect_lock",
+              "_execute_with_timeout",
+              "_get_servers_for_detection",
+              "_release_detect_lock",
+              "execute_detect_nuevos",
+              "get_job_config",
+              "run_detect_nuevos_job",
+              "timeout_handler"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "pyodbc",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.connections.pos_runtime_resolver",
+              "core.scheduler.jobs.inteligencia_comercial_sync_job",
+              "core.sql_first.connection_factory",
+              "core.sql_first.db",
+              "datetime",
+              "hashlib",
+              "json",
+              "logging",
+              "time"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "get_sql_connection"
+            ],
+            "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_bulk_insert",
+              "_connect_pos",
+              "_cursor_as_dict",
+              "_extract_mpro",
+              "_extract_softrestaurant",
+              "_fetchall_dicts",
+              "_hash_pago",
+              "_write_enrichment",
+              "_write_payments_only",
+              "enrich_unidad",
+              "resync_pagos_unidad"
+            ],
+            "tables_referenced": [
+              "Finanzas_CortesCaja_DetallePagos",
+              "Sync_Sales",
+              "tiposervicio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "base_job",
+              "core.config.edarsahub_config",
+              "datetime",
+              "decimal",
+              "logging",
+              "os",
+              "pytds",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_edarsahub_sql_config"
+            ],
+            "path": "backend/core/scheduler/jobs/inteligencia_comercial_status_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "InteligenciaComercialStatusJob",
+              "_get_edarsahub_sql_connection",
+              "_json_safe",
+              "_rows_to_dicts",
+              "create_inteligencia_comercial_status_job",
+              "execute"
+            ],
+            "tables_referenced": [
+              "Comercial_KPIs_Diarios_v2",
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "Sync_PAX_Detalle",
+              "Sync_Sales"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.scheduler.jobs.inteligencia_comercial_enrich",
+              "core.sql_first.connection_factory",
+              "core.sql_first.db",
+              "datetime",
+              "json",
+              "logging",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "os",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "get_edarsahub_sql_config",
+              "get_sql_connection"
+            ],
+            "path": "backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_syncpos_literal",
+              "actualizar_syncpos_config_estado",
+              "audit_syncpos_canonical_configs",
+              "detectar_faltantes_syncpos",
+              "extract_sales_from_pos",
+              "get_edarsahub_connection",
+              "get_mpro_query",
+              "get_pos_config_for_unidad",
+              "get_pos_connection",
+              "get_softrestaurant_query",
+              "get_syncpos_config",
+              "get_unidades_negocio_pos",
+              "insert_into_sync_sales",
+              "job_inteligencia_comercial_sync",
+              "registrar_syncpos_bitacora",
+              "should_run_syncpos_now",
+              "update_job_status",
+              "update_kpis_diarios"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_SyncPOS_Bitacora",
+              "Sistema_SyncPOS_Config",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "core.empresa_resolver",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "core.utils.operational_window",
+              "datetime",
+              "decimal",
+              "logging",
+              "modules.comercial_v2.repository_comercial_edarsahub",
+              "modules.comercial_v2.schemas",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "modules.comercial_v2.ticket_snapshot",
+              "modules.integrations_runtime.sync_ledger",
+              "os",
+              "pytz",
+              "requests",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "get_sql_connection",
+              "hrlectura"
+            ],
+            "path": "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_acquire_sync_lock_sync",
+              "_coerce_mx_datetime",
+              "_execute_query_via_api_local",
+              "_get_api_local_config",
+              "_get_existing_ventas_dia",
+              "_get_unidades_from_edarsahub",
+              "_merge_mpro_summary_detail_rows",
+              "_prefer_real_mpro_detail_rows",
+              "_release_sync_lock_sync",
+              "_summarize_mpro_ticket_rows",
+              "execute_sync_comercial_abiertas_v2",
+              "is_real",
+              "run_sync_comercial_abiertas_v2_manual",
+              "select_mpro_closed_sales",
+              "totals"
+            ],
+            "tables_referenced": [
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "Servidores_Conexiones",
+              "Sync_Control_Ejecuciones",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "config",
+              "core.connections.pos_runtime_resolver",
+              "core.sql_first.db",
+              "datetime",
+              "hashlib",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "edarsahub_sql_host",
+              "get_sql_connection"
+            ],
+            "path": "backend/core/scheduler/jobs/sync_comercial_endpoints_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "SyncComercialEndpointsJob",
+              "__init__",
+              "_close_connection",
+              "_get_edarsahub_connection",
+              "_sync_mesas",
+              "_sync_metas_comerciales",
+              "_sync_pax_detalle",
+              "_sync_ticket_perfecto",
+              "execute",
+              "get_sync_comercial_endpoints_job",
+              "run"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "core.config.edarsahub_config",
+              "core.secret_manager",
+              "core.sql_first.connection_factory",
+              "core.sql_first.db",
+              "datetime",
+              "json",
+              "logging",
+              "modules.compras.sync_service",
+              "modules.integrations_runtime.sync_ledger",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "get_edarsahub_sql_config",
+              "get_sql_connection"
+            ],
+            "path": "backend/core/scheduler/jobs/sync_compras_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "APScheduler",
+              "scheduler"
+            ],
+            "symbols": [
+              "_acquire_sync_lock",
+              "_coerce_mx_datetime",
+              "_core_inventory_sync_steps",
+              "_execute_inventory_sql_with_timeout",
+              "_execute_sql_with_timeout",
+              "_extended_sync_steps",
+              "_get_servers_to_sync",
+              "_inventory_movements_only_scope",
+              "_inventory_query_timeout_seconds",
+              "_is_sync_compras_execution_enabled",
+              "_release_sync_lock",
+              "_sync_compras_extended_enabled",
+              "_sync_compras_lock_timeout_minutes",
+              "_sync_compras_scope",
+              "_sync_compras_system_filter",
+              "_system_allowed_by_sync_filter",
+              "execute_sync_compras",
+              "get_job_config",
+              "run_sync_compras_job"
+            ],
+            "tables_referenced": [
+              "Sync_Control_Ejecuciones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.sql_first.db",
+              "datetime",
+              "json",
+              "logging",
+              "modules.crm.vtiger_client",
+              "os",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [
+              "vtiger"
+            ],
+            "matched_terms": [
+              "get_edarsahub_sql_config",
+              "get_sql_connection"
+            ],
+            "path": "backend/core/scheduler/jobs/vtiger_sync_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_sql_connection",
+              "_safe_decimal",
+              "_safe_int",
+              "_safe_str",
+              "execute_vtiger_sync",
+              "get_vtiger_sync_status",
+              "sync_accounts_to_sql",
+              "sync_contacts_to_sql",
+              "sync_leads_to_sql",
+              "sync_opportunities_to_sql"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "core.sql_first.db",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_sql_connection",
+              "hrlectura",
+              "scheduler_distributedlocks"
+            ],
+            "path": "backend/core/scheduler/locks/sql_lock_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "SQLLockRepository",
+              "__init__",
+              "_affected_rows",
+              "_default_connection_factory",
+              "_open_connection",
+              "acquire",
+              "cleanup_expired",
+              "ensure_table_exists",
+              "force_release",
+              "get_all_locks",
+              "get_lock_info",
+              "heartbeat",
+              "is_locked",
+              "release"
+            ],
+            "tables_referenced": [
+              "Scheduler_DistributedLocks"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "concurrent.futures",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "edarsahub_sql_host",
+              "get_sql_connection"
+            ],
+            "path": "backend/core/scheduler/sql_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_decrypt_password_for_internal_use",
+              "_execute_sql",
+              "_execute_sql_async",
+              "actualizar_inventario_completado",
+              "actualizar_inventario_error",
+              "get_active_servers",
+              "get_empresas_activas",
+              "get_inventario_error_by_id",
+              "get_inventarios_pendientes_reintento",
+              "get_server_by_id",
+              "inventario_existe",
+              "pedido_existe",
+              "registrar_bitacora_job",
+              "registrar_inventario_procesando",
+              "registrar_pedido_detectado"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 22,
+          "scanned_files": 57,
+          "skipped_sensitive": 48
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-19T15:25:05Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
