@@ -1,0 +1,59 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "frontend/src/App.js",
+          "frontend/src/portal-inteligencia/",
+          "frontend/src/lib/api.js",
+          "backend/modules/comercial/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "inteligencia-comercial",
+          "portal-inteligencia",
+          "PortalInteligenciaApp",
+          "hostname",
+          "REACT_APP_BACKEND_URL",
+          "withCredentials",
+          "CORS_ORIGINS",
+          "portal-intel",
+          "getMeIntel",
+          "authEstado",
+          "LoginInteligencia",
+          "unidadSeleccionada",
+          "comercial",
+          "cookie"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMERCIAL.PORTAL_INTELIGENCIA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7522DD9AD7871DE8880F",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente en READ_ONLY, sin cambios ni escritura, el acceso al Portal Inteligencia Comercial por /inteligencia-comercial/* y futura raiz de inteligencia.edarsa.com.mx en el mismo deployment de EDARSAHUB. Revisar enrutamiento frontend, login propio y sesiones/roles, cliente API coherente con canonical, SQL-first filtros/unidades, CORS y cookies, compatibilidad con /portal-proveedores/*, /comercial y /tablero-ejecutivo. Devolver hallazgos con evidencia y cambios minimos reversibles recomendados. No tocar Produccion, DNS ni deploy. No duplicar auditorias existentes ni Gate1 ya certificado.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL.PORTAL_INTELIGENCIA",
+    "conflict_domains": [
+      "COMERCIAL.PORTAL_INTELIGENCIA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
