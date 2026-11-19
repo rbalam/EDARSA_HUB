@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "AdminPAQ",
+          "ADINPAQ",
+          "CONTPAQi",
+          "adminpaq",
+          "contpaqi"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-INTEGRACIONES-REPOSITORY_CONTRACT_AUDIT_BOUNDE-E04D8EF8F537069B9613",
+  "mode": "READ_ONLY",
+  "objective": "Gate 0 READ_ONLY AdminPAQ: auditar referencias existentes a AdminPAQ, ADINPAQ, CONTPAQi Comercial en modulos de EDARSAHUB, sin confundir CONTPAQi Nominas; obtener evidencia de conectores y sincronizacion existente para evitar duplicacion. No modificar produccion ni archivos. Devolver evidencia verificable del repositorio, riesgos y siguientes pasos. Si existe trabajo equivalente, reutilizarlo y no duplicar.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INTEGRACIONES",
+    "conflict_domains": [
+      "INTEGRACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
