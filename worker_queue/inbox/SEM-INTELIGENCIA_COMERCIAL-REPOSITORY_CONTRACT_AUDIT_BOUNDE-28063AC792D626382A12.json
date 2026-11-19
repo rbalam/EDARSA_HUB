@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/inteligencia_comercial/routes.py",
+          "frontend/src/portal-inteligencia/App.jsx",
+          "frontend/src/portal-inteligencia/pages/DashboardIA.jsx"
+        ],
+        "search_terms": [
+          "except",
+          "_kpi_cero_portal",
+          "KPIS_CANONICOS_SERVICE",
+          "UnidadesService",
+          "CorporateFilterService",
+          "success"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-INTELIGENCIA_COMERCIAL-REPOSITORY_CONTRACT_AUDIT_BOUNDE-28063AC792D626382A12",
+  "mode": "READ_ONLY",
+  "objective": "Auditoría READ_ONLY acotada del Portal Inteligencia Comercial existente. Revisar código y contratos de manejo de errores SQL y KPIs cero, fuentes SQL canónicas, unidades/filtros RBAC, resultados comerciales reales y riesgos de dependencias Mongo/LIVE. Entregar evidencia de checks sin cambios de archivos ni producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INTELIGENCIA_COMERCIAL",
+    "conflict_domains": [
+      "INTELIGENCIA_COMERCIAL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
