@@ -1,0 +1,47 @@
+{
+  "base_sha": "6ce4bf289d9d3a862405b11044d1b6a45aa2a2f7",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-19T15:18:58Z",
+  "execution_base_sha": "6ce4bf289d9d3a862405b11044d1b6a45aa2a2f7",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-88487B72CA1D5676617D",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-19T15:20:24Z",
+  "quality_gate": "PASS",
+  "result_detail_evidence": {
+    "checks": [
+      {
+        "blockers": [
+          "dispatcher_exception:RuntimeError:READONLY_PYTEST_REVISION_MISMATCH:recorded=31f569964460cfde7f2921d98b36724c9f2101b1:checkout=31f569964460cfde7f2921d98b36724c9f2101b1:tracked_dirty=True"
+        ],
+        "certification": "NOT_CERTIFIED",
+        "evidence_status": "FAILED_RESULT_NO_STRUCTURED_EVIDENCE",
+        "evidence_truncated": false,
+        "failed_checks": [],
+        "files_changed": [],
+        "percent_complete": 0,
+        "production_touched": false,
+        "quality_gate": "FAIL",
+        "result_status": "BLOCKED",
+        "source_completed_at_utc": "2026-11-19T15:06:10Z",
+        "source_job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_PYTEST_CERTIFICATION_READ-50F64FDB0242CE0DEBD7",
+        "source_terminal": true,
+        "tests": null
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-19T15:18:58Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
