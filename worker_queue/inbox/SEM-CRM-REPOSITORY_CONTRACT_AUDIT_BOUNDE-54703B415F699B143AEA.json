@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/crm/",
+          "backend/modules/agent_harness/crm_adapter.py",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "Cliente_Catalogo",
+          "CRM_Leads",
+          "CRM_Oportunidades",
+          "get_current_user",
+          "RBAC_ADMIN",
+          "get_sql_connection",
+          "clientes",
+          "lead",
+          "oportunidad",
+          "permiso",
+          "crm"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CRM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-54703B415F699B143AEA",
+  "mode": "READ_ONLY",
+  "objective": "CRM-G1 READ_ONLY, análisis específico de contratos existentes SQL Server, RBAC y unicidad de clientes en CRM EDARSAHUB BOS. Reutilizar auditoría CRM previa certificada como referencia, sin repetirla: identificar rutas y consultas de CRM, Cliente_Catalogo, CRM_Leads, CRM_Oportunidades, tablas/migraciones, autorización efectiva en endpoints, relaciones con clientes canónicos y riesgo de duplicados. Entregar evidencia sanitizada de rutas, símbolos, tablas, contratos y brechas comprobables; proponer implementación posterior por Gates, sin realizar mutaciones ni tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CRM",
+    "conflict_domains": [
+      "CRM"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
