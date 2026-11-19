@@ -1,7 +1,8 @@
 {
   "base_sha": "46f0ebce62b40a10249f378af71ee155dc3a1426",
   "blockers": [],
-  "certification": "NOT_CERTIFIED",
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
   "completed_at_utc": "2026-11-11T02:20:35Z",
   "execution_base_sha": "46f0ebce62b40a10249f378af71ee155dc3a1426",
   "executor": "chatgpt-deterministic",
@@ -9,10 +10,3447 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "SEM-PRODUCCION_TABLAJERIA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-A9EA45C4A9152C8269C6",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-11-11T02:21:33Z",
+  "published_at_utc": "2026-11-19T08:58:14Z",
   "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.__init__.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.activos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/activos/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.activos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/activos/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ActivosRepository",
+              "__init__"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.activos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "fastapi"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/activos/routes.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.activos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/activos/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.activos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/activos/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ActivosService",
+              "__init__"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.admin_sql",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/admin_sql/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.admin_sql",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.connections.edarsahub_readonly_repository",
+              "core.connections.hrlectura_connection_factory",
+              "core.rbac_helper_sql",
+              "core.security",
+              "core.sql_first.connection_factory",
+              "datetime",
+              "fastapi",
+              "fastapi.encoders",
+              "hashlib",
+              "json",
+              "logging",
+              "pathlib",
+              "re",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/admin_sql/rbac_audit_routes.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "get_current_user"
+            ],
+            "routes": [
+              "/schema/execute",
+              "/schema/sections/{section_number}/execute",
+              "/users/execute"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_build_connection_factory",
+              "_execute_batches",
+              "_execute_schema_resultsets",
+              "_open_readonly_connection",
+              "_require_effective_superadmin",
+              "_split_batches",
+              "_strip_sql_comments",
+              "_validate_fixed_sql",
+              "_validate_schema_sql",
+              "_write_report",
+              "_write_schema_report",
+              "_write_schema_section_report",
+              "execute_all_users_rbac_audit",
+              "execute_schema_convergence_audit",
+              "execute_schema_section_audit"
+            ],
+            "tables_referenced": [
+              "Usuario_Catalogo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.admin_sql",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.sql_first.db",
+              "fastapi",
+              "json",
+              "logging",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "almacen",
+              "rbac"
+            ],
+            "path": "backend/modules/admin_sql/rbac_pilot_service.py",
+            "rbac_contracts": [
+              "Sistema_RBAC"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_connect",
+              "_get_perfil",
+              "_map_evento",
+              "_resolve_usuario_id",
+              "asignar_perfil",
+              "get_bitacora",
+              "get_bitacora_evento",
+              "get_perfiles_catalogo",
+              "get_rbac_map",
+              "registrar_bitacora",
+              "retirar_perfil",
+              "toggle_asignacion"
+            ],
+            "tables_referenced": [
+              "Sistema_RBAC_PerfilCatalogo",
+              "Usuario_Catalogo",
+              "Usuario_RBAC_Asignacion",
+              "Usuario_RBAC_Bitacora"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.admin_sql",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.auth.sql_user_identity",
+              "core.config.edarsahub_sql",
+              "core.corporate_filters.service",
+              "core.rbac.middleware",
+              "core.rbac_helper_sql",
+              "core.security",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "fastapi",
+              "json",
+              "logging",
+              "modules.admin_sql",
+              "re",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/admin_sql/routes.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto",
+              "get_current_user"
+            ],
+            "routes": [
+              "/catalogos-disponibles",
+              "/permisos-catalogos",
+              "/roles",
+              "/roles/modulos",
+              "/roles/{role_id}",
+              "/servers",
+              "/users",
+              "/users/{user_id}/toggle-activo",
+              "/usuarios-asignables"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_has_explicit_users_menu_permission",
+              "_require_global_role_admin",
+              "create_role_sql",
+              "delete_role_sql",
+              "execute_query",
+              "execute_write",
+              "get_catalogos_disponibles",
+              "get_modulos",
+              "get_roles",
+              "get_servers",
+              "get_users",
+              "get_usuarios_asignables",
+              "is_admin",
+              "require_admin",
+              "require_users_menu_access",
+              "save_permisos_catalogos",
+              "toggle_user_activo",
+              "update_role_sql"
+            ],
+            "tables_referenced": [
+              "Sesiones",
+              "Sistema_CatalogosConfig",
+              "Sistema_CatalogosPermisos",
+              "Sistema_Modulos",
+              "Sistema_ModulosMenus",
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_EmpresasAsignacion",
+              "Usuario_Modulos",
+              "Usuario_PermisosCatalogosFlujo",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion",
+              "Usuario_RolesContexto"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "registry"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/agent_harness/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "dataclasses",
+              "modules.agent_harness.transversal_capability_registry",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/agent_harness/coa_communications_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "COACommunicationRequest",
+              "COACommunicationsAdapterError",
+              "__post_init__",
+              "_authorization",
+              "authorize_coa_communication"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "dataclasses",
+              "modules.agent_harness.transversal_capability_registry",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/agent_harness/commercial_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CommercialAdapterError",
+              "CommercialAgentRequest",
+              "__post_init__",
+              "_authorization",
+              "authorize_commercial_agent"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "dataclasses",
+              "modules.agent_harness.transversal_capability_registry",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/agent_harness/crm_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CRMAdapterError",
+              "CRMAgentRequest",
+              "__post_init__",
+              "_authorization",
+              "authorize_crm_agent"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "dataclasses",
+              "modules.agent_harness.transversal_capability_registry",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/agent_harness/finance_reconciliation_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FinanceReconciliationAdapterError",
+              "FinanceReconciliationRequest",
+              "__post_init__",
+              "_authorization",
+              "authorize_finance_reconciliation"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "dataclasses",
+              "modules.agent_harness.transversal_capability_registry",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/agent_harness/hr_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "HRAgentAdapterError",
+              "HRAgentRequest",
+              "__post_init__",
+              "_authorization",
+              "authorize_hr_agent"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "dataclasses",
+              "modules.agent_harness.transversal_capability_registry",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "inventario",
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/agent_harness/inventory_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "InventoryAdapterError",
+              "InventoryAgentRequest",
+              "__post_init__",
+              "_authorization",
+              "authorize_inventory_agent"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "movimiento",
+              "unidad"
+            ],
+            "path": "backend/modules/agent_harness/marketing_cx.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "Customer360Request",
+              "MarketingActivationRequest",
+              "MarketingPolicyError",
+              "__post_init__",
+              "_required",
+              "to_envelope",
+              "view_contract"
+            ],
+            "tables_referenced": [
+              "CRM_Cuentas",
+              "CRM_PostventaEncuestas",
+              "Cliente_Catalogo",
+              "Cliente_Contactos",
+              "Cliente_Direcciones",
+              "Cliente_UsuariosPortal",
+              "RRR_Eventos",
+              "RRR_LedgerMovimientos",
+              "RRR_RankingHistorial",
+              "RRR_ScoreHistorial"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "re"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/agent_harness/mobile.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "MobileContractError",
+              "MobileOperationEnvelope",
+              "MobileOperationResult",
+              "__post_init__",
+              "_required",
+              "to_contract"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "dataclasses",
+              "modules.agent_harness.transversal_capability_registry",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "compras",
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/agent_harness/purchases_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "PurchaseAgentRequest",
+              "PurchasesAdapterError",
+              "__post_init__",
+              "_authorization",
+              "authorize_purchase_agent"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "compras",
+              "inventario"
+            ],
+            "path": "backend/modules/agent_harness/transversal_capability_registry.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CapabilityRegistryError",
+              "DomainCapabilitySpec",
+              "__post_init__",
+              "accepted_permissions",
+              "get_domain_capability",
+              "list_domain_capabilities"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "pathlib",
+              "planner",
+              "re",
+              "router",
+              "tools.mirror_sync.universal_job_bridge",
+              "tools.mirror_sync.worker_job_factory",
+              "tools.mirror_sync.worker_requester_rbac",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/agent_harness/worker_compiler.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "WorkerCompileError",
+              "WorkerCompileRequest",
+              "WorkerCompiler",
+              "__init__",
+              "__post_init__",
+              "_canonicalize_with_factory",
+              "_contains_forbidden_key",
+              "_default_rbac_authorizer",
+              "_plain_mapping",
+              "_safe_repo_path",
+              "_validate_action",
+              "_validate_check",
+              "_validate_with_worker_bridge",
+              "compile",
+              "compile_for_publication",
+              "derive_authorized_requester"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.alertas_estrategicas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/alertas_estrategicas/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.alertas_estrategicas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.auth.sql_user_identity",
+              "core.config.edarsahub_sql",
+              "core.connections.edarsahub_readonly_repository",
+              "core.connections.hrlectura_connection_factory",
+              "core.rbac_sql.runtime",
+              "core.unidades_service",
+              "fastapi"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "compras",
+              "inventario",
+              "rbac",
+              "receta",
+              "unidad"
+            ],
+            "path": "backend/modules/alertas_estrategicas/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "obtener_resumen_alertas",
+              "q"
+            ],
+            "tables_referenced": [
+              "Compras_Inventarios_Fisicos_Sync"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.api_connections",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "modules.integrations_center",
+              "repository",
+              "routes",
+              "universal_test_routes"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/api_connections/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.api_connections",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.connections.edarsahub_writer_connection",
+              "core.sql_first.db",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/api_connections/assignment_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_uuid_text",
+              "deactivate_api_operational_assignment",
+              "list_api_operational_assignments",
+              "upsert_api_operational_assignment"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_Empresas",
+              "Sistema_EmpresasServidores"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.api_connections",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.cerebro",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.secret_manager",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "modules.consultas_sql.validator",
+              "modules.integrations_runtime.api_local_sync",
+              "modules.integrations_runtime.health",
+              "os",
+              "re",
+              "requests",
+              "time",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "inventario",
+              "movimiento",
+              "unidad"
+            ],
+            "path": "backend/modules/api_connections/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_default_api_replication_policy",
+              "_escape_sql",
+              "_log_operation",
+              "_sql_row_to_api_dict",
+              "check_duplicate_api",
+              "create_api_connection",
+              "delete_api_connection",
+              "execute_test_query",
+              "get_api_connection",
+              "get_api_connection_by_id_full",
+              "get_api_connection_sql",
+              "get_api_connection_with_decrypted_key",
+              "get_api_connections_for_adapters",
+              "get_api_replication_policy",
+              "get_decrypted_api_key",
+              "init_api_connections_repository",
+              "list_api_connections",
+              "list_api_connections_sql",
+              "normalize_api_replication_policy",
+              "parse_json",
+              "sync_all_to_mongo_cache",
+              "test_api_connection_health",
+              "update_api_connection",
+              "update_api_replication_policy"
+            ],
+            "tables_referenced": [
+              "Sistema_EmpresasServidores"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.api_connections",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "assignment_repository",
+              "core.corporate_filters.service",
+              "core.rbac.middleware",
+              "core.unidades_service",
+              "fastapi",
+              "fastapi.security",
+              "logging",
+              "modules.consultas_sql.validator",
+              "pydantic",
+              "repository",
+              "requests",
+              "time",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "compras",
+              "inventario",
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/api_connections/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/check-duplicate",
+              "/sync-cache",
+              "/test",
+              "/test-query-draft",
+              "/{api_id}",
+              "/{api_id}/assignments",
+              "/{api_id}/assignments/{empresa_id}/{rol_conexion}",
+              "/{api_id}/replication-policy",
+              "/{api_id}/test",
+              "/{api_id}/test-query"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ApiConnectionCreate",
+              "ApiConnectionUpdate",
+              "ApiOperationalAssignmentRequest",
+              "ApiReplicationPolicyRequest",
+              "TestConnectionRequest",
+              "TestQueryDraftRequest",
+              "TestQueryRequest",
+              "check_dup",
+              "create_api",
+              "create_or_reactivate_api_assignment",
+              "delete_api",
+              "get_api",
+              "get_current_user",
+              "get_replication_policy",
+              "list_api_assignments",
+              "list_apis",
+              "put_replication_policy",
+              "remove_api_assignment",
+              "set_verify_token",
+              "sync_to_mongo",
+              "test_connection",
+              "test_connection_by_id",
+              "test_query_by_connection",
+              "test_query_draft",
+              "update_api"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.api_connections",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.auth.sql_user_identity",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.rbac_sql.runtime",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "fastapi",
+              "fastapi.security",
+              "httpx",
+              "logging",
+              "os",
+              "pydantic",
+              "pymssql",
+              "re",
+              "time",
+              "typing",
+              "urllib.parse"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "compras",
+              "inventario",
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/api_connections/universal_test_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/api-connections/{connection_id}/test-connection",
+              "/api-connections/{connection_id}/test-connectivity",
+              "/api-connections/{connection_id}/universal-query-test"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "APIConnectionTestRequest",
+              "_build_safe_url",
+              "_filter_response_headers",
+              "_mask_headers",
+              "_mask_params",
+              "_mask_url_if_sensitive",
+              "_validate_no_sql_in_endpoint_path",
+              "_validate_no_sql_params",
+              "execute_api_connection_test",
+              "get_api_connection_access_result",
+              "get_api_connection_raw_for_auth",
+              "get_api_connection_with_secret",
+              "get_current_user",
+              "set_verify_token",
+              "test_api_connection_secure",
+              "test_api_connectivity_simple",
+              "validate_api_connection_access"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "modules.auth.repository",
+              "modules.auth.routes",
+              "modules.auth.schemas"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/auth/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "get_router",
+              "init_auth_module"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [
+              "get_sql_connection"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/auth/context_service.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_all_empresas_sql",
+              "_get_empresa_by_uuid_sql",
+              "_get_sql_connection",
+              "_get_sucursales_by_empresa_sql",
+              "_get_user_allowed_servers_sql",
+              "_get_user_allowed_sucursales_sql",
+              "_get_user_by_public_uuid",
+              "_get_user_empresas_sql",
+              "_get_user_role_sql",
+              "get_empresas_disponibles",
+              "get_user_context",
+              "get_user_context_for_empresa"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "bcrypt",
+              "core.sql_first.db",
+              "datetime",
+              "email.mime.multipart",
+              "email.mime.text",
+              "hashlib",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "re",
+              "secrets",
+              "smtplib",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "almacen"
+            ],
+            "path": "backend/modules/auth/password_reset.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_coerce_aware_dt",
+              "_find_user_by_email_sql",
+              "_find_user_by_id_sql",
+              "_find_valid_token_sql",
+              "_get_sql_connection",
+              "_invalidate_previous_tokens_sql",
+              "_mark_token_used_sql",
+              "_save_token_sql",
+              "_update_password_sql",
+              "audit_log_sql",
+              "check_rate_limit_sql",
+              "generate_token",
+              "hash_password",
+              "hash_token",
+              "increment_rate_limit_sql",
+              "request_password_reset",
+              "reset_password",
+              "send_reset_email",
+              "validate_password_strength"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.sql_first.db",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/auth/repository.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AuthRepository",
+              "_normalize_role",
+              "_normalize_user",
+              "_row_as_dict",
+              "_rows_as_dicts",
+              "build_user_response",
+              "count_users_with_role",
+              "create_default_roles",
+              "create_role",
+              "create_user",
+              "deactivate_user",
+              "delete_role",
+              "delete_user",
+              "find_role_by_id",
+              "find_role_by_name",
+              "find_user_by_email",
+              "find_user_by_id",
+              "get_all_roles",
+              "get_all_users",
+              "get_db",
+              "get_user_by_email",
+              "get_user_by_id",
+              "get_users_by_empresas",
+              "init_auth_repository",
+              "update_role",
+              "update_user"
+            ],
+            "tables_referenced": [
+              "Usuario_Catalogo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion",
+              "Usuario_RolesContexto"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.corporate_filters.service",
+              "core.rbac.service",
+              "core.rbac_sql.service",
+              "core.refresh_tokens",
+              "core.security",
+              "core.unidades_service",
+              "core.user_access_context",
+              "fastapi",
+              "logging",
+              "modules.auth",
+              "modules.auth.password_reset",
+              "modules.auth.schemas",
+              "modules.auth.service",
+              "modules.rbac_context_sql.context_service",
+              "os",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "almacen",
+              "compras",
+              "inventario",
+              "produccion",
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/auth/routes.py",
+            "rbac_contracts": [
+              "get_current_user",
+              "menu-permissions"
+            ],
+            "routes": [
+              "/auth/context",
+              "/auth/empresas",
+              "/auth/forgot-password",
+              "/auth/login",
+              "/auth/logout",
+              "/auth/logout-all",
+              "/auth/me",
+              "/auth/me/access-context",
+              "/auth/me/context",
+              "/auth/me/effective-permissions",
+              "/auth/me/menu-permissions",
+              "/auth/refresh",
+              "/auth/register",
+              "/auth/reset-password",
+              "/roles",
+              "/roles/modulos",
+              "/roles/{role_id}",
+              "/users",
+              "/users/{user_id}",
+              "/users/{user_id}/permissions"
+            ],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "ForgotPasswordRequest",
+              "ResetPasswordRequest",
+              "_build_effective_permissions_payload",
+              "_build_menu_permissions",
+              "_group_permissions_by_module",
+              "_normalize_permission_codes",
+              "_p5_extract_usuario_id_from_payload",
+              "change_context",
+              "create_role",
+              "create_user_admin",
+              "delete_role",
+              "delete_user",
+              "forgot_password",
+              "get_me",
+              "get_modulos_disponibles",
+              "get_my_access_context",
+              "get_my_context",
+              "get_my_effective_permissions",
+              "get_my_empresas",
+              "get_my_menu_permissions",
+              "get_roles",
+              "get_user_dual",
+              "get_users",
+              "login",
+              "logout",
+              "logout_all_sessions",
+              "refresh_tokens",
+              "register",
+              "reset_password_endpoint",
+              "update_role",
+              "update_user",
+              "update_user_permissions"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "almacen",
+              "compras",
+              "inventario",
+              "produccion",
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/auth/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "Role",
+              "RoleCreate",
+              "RoleUpdate",
+              "User",
+              "UserCreate",
+              "UserLogin",
+              "UserPermissions",
+              "UserRole",
+              "UserUpdate"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.alcance_helper",
+              "core.corporate_filters.service",
+              "core.rbac_helper",
+              "core.security",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.auth",
+              "modules.auth.password_reset",
+              "modules.auth.schemas",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "almacen",
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/auth/service.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_can_manage_user",
+              "_get_role_level",
+              "_p5_extract_usuario_id_from_payload",
+              "create_role",
+              "create_user_admin",
+              "delete_role",
+              "delete_user",
+              "get_roles",
+              "get_user_by_id",
+              "get_users",
+              "login_user",
+              "register_user",
+              "update_role",
+              "update_user",
+              "update_user_permissions"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.automatizacion",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "inventario",
+              "unidad"
+            ],
+            "path": "backend/modules/automatizacion/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.automatizacion",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [
+              "mpro",
+              "sap",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "inventario",
+              "unidad"
+            ],
+            "path": "backend/modules/automatizacion/feature_flags.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "get_all_flags",
+              "is_enabled",
+              "is_module_active"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.automatizacion",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "almacen",
+              "inventario",
+              "unidad"
+            ],
+            "path": "backend/modules/automatizacion/queries_mpro.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.automatizacion",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "almacen",
+              "inventario",
+              "unidad"
+            ],
+            "path": "backend/modules/automatizacion/queries_soft.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.automatizacion",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.source_resolver",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "hashlib",
+              "logging",
+              "pymssql",
+              "time",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "almacen",
+              "inventario",
+              "unidad"
+            ],
+            "path": "backend/modules/automatizacion/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "actualizar_ultimo_folio_conocido",
+              "construir_clave_cab003",
+              "contar_registros_por_identificador",
+              "execute_sql_parametrized",
+              "generar_hash_verificacion",
+              "generar_identificador_ejecucion",
+              "get_configuracion_activa",
+              "get_folios_ya_procesados",
+              "insertar_folio_procesado",
+              "leer_configuracion_con_estado",
+              "leer_folios_procesados_con_estado",
+              "registrar_folio_procesado",
+              "rollback_por_identificador",
+              "verificar_duplicado_en_bd",
+              "verificar_ya_procesado"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.automatizacion",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "sap",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "almacen",
+              "inventario",
+              "unidad"
+            ],
+            "path": "backend/modules/automatizacion/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "AutomatizacionConfigBase",
+              "AutomatizacionConfigCreate",
+              "AutomatizacionConfigResponse",
+              "Config",
+              "DestinatarioBase",
+              "DestinatarioCreate",
+              "DestinatarioResponse",
+              "EjecucionBase",
+              "EjecucionCreate",
+              "EjecucionResponse",
+              "EnvioBase",
+              "EnvioCreate",
+              "EnvioResponse",
+              "FolioProcesadoBase",
+              "FolioProcesadoCreate",
+              "FolioProcesadoResponse",
+              "UltimoFolioBase",
+              "UltimoFolioCreate",
+              "UltimoFolioResponse"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.backfill_corporativo",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.config.edarsahub_sql",
+              "core.sql_first.connection_factory",
+              "datetime",
+              "logging",
+              "pymssql",
+              "traceback",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "compras",
+              "inventario",
+              "receta"
+            ],
+            "path": "backend/modules/backfill_corporativo/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_backfill_compras",
+              "_backfill_generico",
+              "_backfill_inventarios",
+              "_backfill_precios",
+              "_backfill_productos",
+              "_backfill_recetas",
+              "_backfill_ventas",
+              "_backfill_ventas_hora",
+              "_backfill_ventas_real",
+              "_count_existing_table_records",
+              "_count_table",
+              "_get_columns",
+              "_get_missing_or_zero_sales_days",
+              "_get_server",
+              "_get_source_connection_config",
+              "_get_table_columns",
+              "_log_backfill",
+              "_pick_col",
+              "_table_exists",
+              "ejecutar_backfill"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.bos_executive",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "action_bridge_contracts",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "core.agent_procedure_policy",
+              "datetime",
+              "hashlib",
+              "modules.agent_harness.transversal_capability_registry",
+              "recommendation_contracts",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/bos_executive/action_bridge.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_audit_ref",
+              "_deny",
+              "_parse_time",
+              "_precondition_reasons",
+              "_requester_reasons",
+              "_unique",
+              "authorize_recommended_action"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.bos_executive",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "contracts"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidencia"
+            ],
+            "path": "backend/modules/bos_executive/causal_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_claim",
+              "_classify",
+              "_unique",
+              "explain_causal_finding"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.bos_executive",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "collections.abc",
+              "priority_contracts",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/bos_executive/priority_adapters.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_first",
+              "_permissions",
+              "_priority_from_text",
+              "_text",
+              "_unique",
+              "adapt_crm_opportunity",
+              "adapt_operational_task"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.request_resolver",
+              "core.db",
+              "core.security",
+              "fastapi",
+              "modules.costos_margenes.repository",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/catalogo/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/clasificacion"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_build_server_filter",
+              "obtener_clasificacion"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogo_ampliado",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.db",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "kardex",
+              "movimiento"
+            ],
+            "path": "backend/modules/catalogo_ampliado/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_insert_one",
+              "create_alerta_regla",
+              "create_documento",
+              "create_documento_version",
+              "create_empresa_rol",
+              "create_persona",
+              "create_vinculo",
+              "empresa_existe",
+              "ensure_canonical_task_for_alert",
+              "get_empresa_configuracion",
+              "get_kardex",
+              "list_alerta_eventos",
+              "list_alerta_reglas",
+              "list_documentos",
+              "list_due_alert_events",
+              "list_personas",
+              "list_roles_catalogo",
+              "list_tipos_documento",
+              "list_vencimientos",
+              "plan_alerta_eventos",
+              "upsert_empresa_configuracion"
+            ],
+            "tables_referenced": [
+              "Gobierno_AlertaEvento",
+              "Gobierno_AlertaRegla",
+              "Gobierno_Documento",
+              "Gobierno_DocumentoMovimiento",
+              "Gobierno_DocumentoVersion",
+              "Gobierno_EmpresaConfiguracion",
+              "Gobierno_Persona",
+              "Gobierno_PersonaEmpresaRol",
+              "Gobierno_PersonaVinculo",
+              "Gobierno_RolCorporativoCatalogo",
+              "Gobierno_TipoDocumento",
+              "Sistema_Empresas",
+              "Sistema_Tareas"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogo_ampliado",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.rbac_helper_sql",
+              "core.security",
+              "fastapi",
+              "schemas"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "kardex",
+              "rbac"
+            ],
+            "path": "backend/modules/catalogo_ampliado/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/documentos/{documento_id}/kardex",
+              "/documentos/{documento_id}/versiones",
+              "/empresas/{empresa_id}/alertas/eventos",
+              "/empresas/{empresa_id}/alertas/reglas",
+              "/empresas/{empresa_id}/configuracion",
+              "/empresas/{empresa_id}/documentos",
+              "/empresas/{empresa_id}/roles",
+              "/empresas/{empresa_id}/vencimientos",
+              "/personas",
+              "/personas/{persona_id}/vinculos",
+              "/roles-corporativos",
+              "/tipos-documento"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_assert_empresa",
+              "_gobierno_admin",
+              "_usuario_id",
+              "actualizar_configuracion",
+              "asignar_rol",
+              "crear_documento",
+              "crear_persona",
+              "crear_regla_alerta",
+              "crear_version",
+              "crear_vinculo",
+              "documentos",
+              "empresa_configuracion",
+              "eventos_alerta",
+              "kardex",
+              "personas",
+              "reglas_alerta",
+              "roles",
+              "tipos_documento",
+              "vencimientos"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "modules.catalogos.routes",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "compras",
+              "inventario",
+              "movimiento",
+              "unidad"
+            ],
+            "path": "backend/modules/catalogos/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "get_db",
+              "get_router",
+              "init_catalogos_module"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "modules.catalogos.schemas",
+              "typing"
+            ],
+            "integrations": [
+              "banorte",
+              "bbva"
+            ],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/catalogos/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "activar_registro_catalogo",
+              "actualizar_registro_catalogo",
+              "contar_registros_tabla",
+              "crear_registro_catalogo",
+              "desactivar_registro_catalogo",
+              "ejecutar_ddl_tablas_nuevas",
+              "escape_sql_string",
+              "execute_edarsa_query",
+              "get_edarsa_hub_connection",
+              "listar_registros_catalogo",
+              "obtener_conteos_tablas",
+              "obtener_estructura_tabla",
+              "obtener_registro_catalogo",
+              "verificar_tablas_nuevas"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.connections.hrlectura_connection_factory",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.rbac.middleware",
+              "core.rbac_helper_sql",
+              "core.security",
+              "core.unidades_service",
+              "fastapi",
+              "modules.catalogos.schemas",
+              "modules.catalogos.service",
+              "os",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "compras",
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/catalogos/routes.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto",
+              "get_current_user"
+            ],
+            "routes": [
+              "/admin/crear-tablas",
+              "/admin/script-ddl",
+              "/admin/verificar-tablas",
+              "/autorizaciones/catalogos",
+              "/autorizaciones/matriz/{matriz_autorizacion_id}",
+              "/autorizaciones/tipos/{tipo_autorizacion_id}/matriz",
+              "/dominios",
+              "/estructura/{tabla}",
+              "/sistemas",
+              "/sistemas/activos",
+              "/sistemas/solicitar",
+              "/sistemas/{sistema_id}",
+              "/sistemas/{sistema_id}/autorizar",
+              "/sistemas/{sistema_id}/rechazar",
+              "/sistemas/{sistema_id}/toggle-activo",
+              "/tabla/{tabla}",
+              "/tabla/{tabla}/{id}",
+              "/tabla/{tabla}/{id}/activar",
+              "/tabla/{tabla}/{id}/desactivar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_tiene_permiso_sistemas",
+              "activar_registro",
+              "actualizar_fila_matriz_autorizacion",
+              "actualizar_registro",
+              "actualizar_sistema",
+              "autorizar_sistema",
+              "crear_fila_matriz_autorizacion",
+              "crear_registro",
+              "crear_sistema",
+              "crear_tablas_nuevas",
+              "desactivar_registro",
+              "listar_catalogo",
+              "listar_dominios",
+              "listar_sistemas",
+              "listar_sistemas_activos",
+              "obtener_catalogos_matriz_autorizacion",
+              "obtener_estructura",
+              "obtener_matriz_autorizacion",
+              "obtener_registro",
+              "obtener_script_ddl",
+              "rechazar_sistema",
+              "solicitar_sistema",
+              "toggle_sistema_activo",
+              "verificar_tablas_nuevas"
+            ],
+            "tables_referenced": [
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_MatrizAutorizacion",
+              "Usuario_Modulos",
+              "Usuario_Roles",
+              "Usuario_RolesContexto",
+              "Usuario_TiposAutorizacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "compras",
+              "inventario",
+              "movimiento",
+              "unidad"
+            ],
+            "path": "backend/modules/catalogos/schemas.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CatalogoListResponse",
+              "CatalogoRegistroCreate",
+              "CatalogoRegistroResponse",
+              "CatalogoRegistroUpdate",
+              "DominiosResponse",
+              "EstructuraTablaResponse"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "fastapi",
+              "logging",
+              "modules.catalogos",
+              "modules.catalogos.schemas",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/catalogos/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CatalogosService",
+              "__init__",
+              "activar_registro",
+              "actualizar_registro",
+              "crear_registro",
+              "crear_tablas_nuevas",
+              "desactivar_registro",
+              "get_catalogos_service",
+              "init_catalogos_service",
+              "listar_catalogo",
+              "obtener_dominios",
+              "obtener_estructura_tabla",
+              "obtener_registro",
+              "obtener_script_ddl",
+              "verificar_tablas_nuevas"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogos_workflow_sql",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "decimal",
+              "json",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/catalogos_workflow_sql/fecha_operativa_service.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_json_default",
+              "apply_fecha_operativa",
+              "can_authorize_fecha_operativa",
+              "can_release_fecha_operativa",
+              "current_user_email",
+              "ensure_sql_user_id",
+              "get_fecha_operativa_record",
+              "get_flow_permissions",
+              "get_target_from_payload",
+              "has_any_rbac_action",
+              "has_rbac_action",
+              "insert_rbac_bitacora",
+              "is_fecha_operativa_payload",
+              "json_dumps",
+              "json_loads",
+              "normalize_fecha_operativa_request"
+            ],
+            "tables_referenced": [
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_Modulos",
+              "Usuario_PermisosCatalogosFlujo",
+              "Usuario_PermisosRolModulo",
+              "Usuario_RBAC_Bitacora",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogos_workflow_sql",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.sql_first.db",
+              "modules.catalogos_workflow_sql.fecha_operativa_service"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/catalogos_workflow_sql/repository.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CatalogosWorkflowSQLRepository",
+              "aprobar_solicitud",
+              "corregir_solicitud",
+              "crear_solicitud_catalogo",
+              "crear_tarea",
+              "get_catalogos_disponibles",
+              "get_historial_solicitud_catalogo",
+              "get_mis_permisos_catalogos",
+              "get_permisos_catalogo_usuario",
+              "get_solicitud_catalogo",
+              "liberar_solicitud",
+              "listar_mis_tareas",
+              "listar_solicitudes_catalogo",
+              "listar_solicitudes_fecha_operativa_autorizables",
+              "listar_solicitudes_workflow",
+              "listar_tareas",
+              "listar_usuarios_asignables",
+              "rechazar_solicitud",
+              "upsert_niveles_catalogo",
+              "upsert_permisos_catalogo"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "routes",
+              "service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "inventario",
+              "unidad"
+            ],
+            "path": "backend/modules/cava_socios/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "blind_audit",
+              "hashlib",
+              "json",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "inventario",
+              "movimiento"
+            ],
+            "path": "backend/modules/cava_socios/blind_audit_operational_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CavaBlindAuditOperationalService",
+              "get_cava_blind_audit_operational_service",
+              "reconcile"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "adapter_sdk",
+              "datetime",
+              "decimal",
+              "migration_engine",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidencia",
+              "rbac"
+            ],
+            "path": "backend/modules/cava_socios/cienfuegos_legacy_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CienfuegosLegacyAdapter",
+              "_clean",
+              "_require",
+              "_require_aware",
+              "adapter_code",
+              "adapter_version",
+              "capabilities",
+              "discover",
+              "entity_disposition",
+              "external_record",
+              "extract_delta",
+              "extract_full",
+              "health",
+              "normalize_attendance",
+              "normalize_bottle",
+              "normalize_bottle_log",
+              "normalize_capacity_ml",
+              "normalize_cellar",
+              "normalize_cellar_client",
+              "normalize_client",
+              "normalize_email",
+              "normalize_phone",
+              "source_identity",
+              "validate_context"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "enum",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidencia",
+              "unidad"
+            ],
+            "path": "backend/modules/cava_socios/domain.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BottleOrigin",
+              "BottleOriginEvidence",
+              "IntelligenceConsumptionSource",
+              "ProductReferenceKind",
+              "contributes_commercial_sale",
+              "intelligence_source_for_origin",
+              "validate_origin_evidence"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "datetime",
+              "enum",
+              "hashlib",
+              "json",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "almacen",
+              "evidencia"
+            ],
+            "path": "backend/modules/cava_socios/evidence_chain.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EvidenceKind",
+              "EvidenceReference",
+              "__post_init__",
+              "_require_aware",
+              "build_evidence",
+              "chain_hash",
+              "historical_evidence_metadata",
+              "sha256_bytes",
+              "verify_chain",
+              "verify_content"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "email.mime.application",
+              "email.mime.multipart",
+              "email.mime.text",
+              "logging",
+              "os",
+              "smtplib",
+              "ssl",
+              "twilio.rest",
+              "typing"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/cava_socios/notification_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "NotificationService",
+              "__init__",
+              "enviar_email",
+              "enviar_reporte_email",
+              "enviar_reporte_multicanal",
+              "enviar_reporte_whatsapp",
+              "enviar_whatsapp",
+              "get_notification_service",
+              "twilio_client"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "io",
+              "logging",
+              "reportlab.lib",
+              "reportlab.lib.enums",
+              "reportlab.lib.pagesizes",
+              "reportlab.lib.styles",
+              "reportlab.lib.units",
+              "reportlab.platypus",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "movimiento",
+              "unidad"
+            ],
+            "path": "backend/modules/cava_socios/report_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CavaSociosReportService",
+              "__init__",
+              "_create_info_table",
+              "_format_currency",
+              "_format_date",
+              "_get_footer_text",
+              "_get_header",
+              "_setup_custom_styles",
+              "generar_estado_cuenta",
+              "generar_ficha_socio",
+              "generar_historial_consumos",
+              "get_cava_report_service"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "blind_audit_operational_service",
+              "core.auth.sql_user_identity",
+              "core.rbac",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "logging",
+              "modules.rbac_context_sql.context_service",
+              "notification_service",
+              "persona_link_service",
+              "pydantic",
+              "report_service",
+              "service",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "evidencia",
+              "inventario",
+              "kardex",
+              "movimiento",
+              "rbac",
+              "unidad"
+            ],
+            "path": "backend/modules/cava_socios/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/auditorias-ciegas/reconciliar",
+              "/botellas/{botella_id}/consumo",
+              "/botellas/{botella_id}/etiqueta",
+              "/clientes-canonicos",
+              "/clientes-canonicos/sync",
+              "/consumos",
+              "/dashboard",
+              "/inventario",
+              "/inventario-fisico/aplicar",
+              "/inventario-fisico/hoja",
+              "/inventario-inicial",
+              "/kardex",
+              "/personas-canonicas",
+              "/reportes/socio/{socio_id}/consumos",
+              "/reportes/socio/{socio_id}/estado-cuenta",
+              "/reportes/socio/{socio_id}/ficha",
+              "/socios",
+              "/socios/promover-cliente",
+              "/socios/{socio_id}",
+              "/socios/{socio_id}/botellas",
+              "/socios/{socio_id}/enviar-reporte",
+              "/socios/{socio_id}/enviar-todos-reportes",
+              "/socios/{socio_id}/persona-link",
+              "/socios/{socio_id}/persona-link/crear-persona"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BlindAuditObservationInput",
+              "BlindAuditReconcileRequest",
+              "BotellaCreate",
+              "ConsumoCreate",
+              "EnvioReporteRequest",
+              "InventarioFisicoAplicarRequest",
+              "InventarioFisicoItem",
+              "InventarioInicialBotellaItem",
+              "InventarioInicialCreate",
+              "PersonaCreateLinkRequest",
+              "PersonaExistingLinkRequest",
+              "PromoverClienteCreate",
+              "SincronizarClientesRequest",
+              "SocioCreate",
+              "SocioUpdate",
+              "_resolve_cava_actor",
+              "_resolve_cava_scope",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_persona_y_vincular",
+              "crear_socio",
+              "descargar_estado_cuenta",
+              "descargar_ficha_socio",
+              "descargar_historial_consumos",
+              "desvincular_persona",
+              "enviar_reporte_socio",
+              "enviar_todos_reportes_socio",
+              "get_dashboard",
+              "listar_clientes_canonicos",
+              "listar_personas_canonicas",
+              "listar_socios",
+              "obtener_consumos",
+              "obtener_etiqueta_botella",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario",
+              "obtener_kardex",
+              "obtener_persona_link",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "reconciliar_auditoria_ciega",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos",
+              "vincular_persona_existente"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.connection_factory",
+              "datetime",
+              "logging",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidencia",
+              "inventario",
+              "kardex",
+              "movimiento"
+            ],
+            "path": "backend/modules/cava_socios/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CavaSociosService",
+              "_crear_cargo",
+              "_generar_numero_socio",
+              "_get_connection",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_socio",
+              "get_cava_socios_service",
+              "listar_clientes_canonicos",
+              "listar_socios",
+              "obtener_cargos_socio",
+              "obtener_dashboard",
+              "obtener_etiqueta_botella",
+              "obtener_historial_consumos_global",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario_global",
+              "obtener_kardex",
+              "obtener_movimientos_socio",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos"
+            ],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Cliente_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.cavas_corporativas",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.sql_first.connection_factory",
+              "dataclasses",
+              "datetime",
+              "decimal",
+              "domain",
+              "json",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/cavas_corporativas/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ApplicationRecord",
+              "AuthorizedReference",
+              "CavasCorporativasRepository",
+              "__init__",
+              "_default_connection_factory",
+              "_parse_time",
+              "_policy_from_json",
+              "application_exists",
+              "find_active_authorized",
+              "load_benefit_rules",
+              "record_application"
+            ],
+            "tables_referenced": [
+              "CavasCorporativas_",
+              "CavasCorporativas_AplicacionesBeneficio",
+              "CavasCorporativas_Autorizados",
+              "CavasCorporativas_BeneficioAlcances",
+              "CavasCorporativas_Beneficios",
+              "CavasCorporativas_Convenios",
+              "CavasCorporativas_Politicas"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.cavas_corporativas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.rbac.middleware",
+              "datetime",
+              "decimal",
+              "domain",
+              "fastapi",
+              "pydantic",
+              "service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/cavas_corporativas/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/aplicar",
+              "/evaluar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ApplyRequest",
+              "EvaluateRequest",
+              "_context",
+              "_serialize_evaluation",
+              "apply_corporate_benefit",
+              "evaluate_corporate_benefits",
+              "get_cavas_corporativas_service"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cavas_corporativas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "decimal",
+              "domain",
+              "repository",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/cavas_corporativas/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BenefitEvaluation",
+              "CavasCorporativasService",
+              "__init__",
+              "applicable",
+              "evaluate_for_identity",
+              "record_applied_benefit"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/comercial/LEGACY_NO_LIVE_MIGRATION.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VW_KPIsEjecutivos",
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "Sync_PAX_Detalle",
+              "Sync_Sales",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/comercial/README_BLINDAJE.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.cerebro",
+              "core.corporate_filters.service",
+              "core.empresa_resolver",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "modules.api_connections.repository",
+              "os",
+              "requests",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/comercial/adapters.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_default_replication_policy",
+              "_normalize_runtime_replication_policy",
+              "_obtener_api_local_por_empresa_id",
+              "_replication_cutoff_reached",
+              "_resolver_empresa_id_desde_alias",
+              "obtener_ventas_dia_api_local",
+              "query_api_mpro_local",
+              "sumar_ventas_api_local_a_sucursal"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.system_type_utils",
+              "core.unidades_service",
+              "datetime",
+              "hashlib",
+              "json",
+              "logging",
+              "modules.compras.sync_service",
+              "os",
+              "sys",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "compras",
+              "unidad"
+            ],
+            "path": "backend/modules/comercial/cache_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "SourceStatus",
+              "_check_has_data",
+              "_get_default_message",
+              "_json_dumps",
+              "_json_loads",
+              "_sql_cache_hash",
+              "_sql_conn",
+              "_sql_next_cache_id",
+              "build_cache_key",
+              "build_envelope_response",
+              "cleanup_expired_cache",
+              "ensure_cache_indexes",
+              "execute_with_cache_fallback",
+              "get_cache_stats",
+              "get_cached_response",
+              "get_db",
+              "init_cache_service",
+              "save_to_cache"
+            ],
+            "tables_referenced": [
+              "Sync_Response_Cache"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "datetime",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/comercial/canonical_detail.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CanonicalDailyDuplicateError",
+              "CanonicalUnit",
+              "CanonicalUnitAccessError",
+              "CanonicalUnitResolutionError",
+              "SqlQuery",
+              "_clean",
+              "_is_generic_selector",
+              "assert_canonical_unit_access",
+              "assert_one_row_per_operation_date",
+              "build_canonical_unit_query",
+              "build_daily_folio",
+              "build_daily_kpi_detail_query",
+              "build_daily_kpi_total_query",
+              "resolve_allowed_canonical_unit_pks",
+              "resolve_canonical_unit"
+            ],
+            "tables_referenced": [
+              "Unidades_Negocio",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "calendar",
+              "core.config.edarsahub_config",
+              "core.context_resolver",
+              "core.db",
+              "core.security",
+              "core.unidades_service",
+              "core.user_access_context",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.comercial.canonical_detail",
+              "modules.comercial.repository",
+              "modules.comercial.routes",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "movimiento",
+              "unidad"
+            ],
+            "path": "backend/modules/comercial/canonical_detail_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/comercial/detalle-movimientos/{server_id}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_execute_edarsahub_parameterized",
+              "_resolve_period",
+              "_validate_server_scope",
+              "comercial_detalle_movimientos_canonical"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.pool",
+              "core.unidades_service",
+              "fastapi",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "contabilidad",
+              "unidad"
+            ],
+            "path": "backend/modules/comercial/crm_router.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/actividades",
+              "/actividades/{actividad_id}/estatus",
+              "/clientes/solicitudes",
+              "/cotizaciones",
+              "/cuentas",
+              "/ia/forecast/{oportunidad_id}",
+              "/ia/salud-comercial",
+              "/implementaciones",
+              "/implementaciones/entregables/{entregable_id}/estatus",
+              "/implementaciones/{implementacion_id}/entregables",
+              "/integraciones/erp/backlog",
+              "/integraciones/erp/transmitir",
+              "/kpis",
+              "/pedidos-venta",
+              "/pedidos-venta/convertir"
+            ],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "ActividadCreate",
+              "ActividadEstatusUpdate",
+              "ConvertirPedidoCreate",
+              "CotizacionCreate",
+              "CotizacionLineaCreate",
+              "CuentaCreate",
+              "ERPSyncRequest",
+              "EntregableEstatusUpdate",
+              "IAForecastResponse",
+              "IASeguimientoSalud",
+              "KPISummaryResponse",
+              "ProyectoCreate",
+              "SolicitudCreate",
+              "actualizar_estatus_actividad",
+              "actualizar_estatus_entregable",
+              "agente_forecast_prediccion_cierre",
+              "agente_seguimiento_salud_ventas",
+              "aperturar_proyecto_implementacion",
+              "convertir_cotizacion_a_pedido",
+              "crear_cotizacion_enterprise",
+              "crear_cuenta",
+              "crear_solicitud",
+              "encolar_transaccion_erp_staging",
+              "obtener_actividades_propias",
+              "obtener_backlog_erp_pendiente",
+              "obtener_cotizaciones_cuenta",
+              "obtener_cuentas",
+              "obtener_entregables_proyecto",
+              "obtener_metricas_kpi_comercial",
+              "obtener_pedidos_activos",
+              "obtener_proyectos_activos",
+              "obtener_solicitudes",
+              "registrar_actividad"
+            ],
+            "tables_referenced": [
+              "CRM_Actividades",
+              "CRM_ActividadesHistorial",
+              "CRM_ERPSyncLog",
+              "CRM_Implementaciones",
+              "CRM_ImplementacionesEntregables",
+              "CRM_Leads",
+              "CRM_Oportunidades",
+              "CRM_PostventaEncuestas",
+              "Comercial_Metas",
+              "Venta_Cotizaciones",
+              "Venta_CotizacionesDetalle",
+              "Venta_Pedidos",
+              "Venta_PedidosDetalle"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "datetime",
+              "dotenv",
+              "hashlib",
+              "json",
+              "logging",
+              "os",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/comercial/historical_kpis_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_escape_sql_string",
+              "_execute_edarsahub_query",
+              "_get_edarsahub_credentials",
+              "_get_edarsahub_credentials_sync",
+              "bulk_upsert_comercial_kpis_historico",
+              "compute_source_hash",
+              "count_kpis_by_run_id",
+              "detect_duplicates",
+              "ensure_historical_kpis_table_exists",
+              "get_existing_kpi_keys",
+              "migrate_staging_mongo_kpis_to_sql",
+              "upsert_comercial_kpi_historico"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.config.edarsahub_config",
+              "core.kpis_canonicos",
+              "core.security",
+              "datetime",
+              "decimal",
+              "fastapi",
+              "logging",
+              "os",
+              "pytds",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "rbac",
+              "sincronizacion",
+              "unidad"
+            ],
+            "path": "backend/modules/comercial/inteligencia_comercial_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/kpis",
+              "/kpis-por-unidad",
+              "/pax",
+              "/sync-status",
+              "/tendencia",
+              "/unidades",
+              "/ventas-comparativo"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_exec_sp",
+              "_fecha_iso",
+              "_filtrar_resumen_por_unidad",
+              "_get_edarsahub_config_dict",
+              "_get_edarsahub_sql_connection",
+              "_hasta_exclusivo",
+              "_json_safe",
+              "_query",
+              "_rango_default",
+              "_require_permission",
+              "_rows_to_dicts",
+              "_where_kpis",
+              "get_inteligencia_kpis",
+              "get_kpis_por_unidad",
+              "get_pax_inteligencia",
+              "get_sync_status_inteligencia",
+              "get_tendencia_diaria",
+              "get_unidades_inteligencia",
+              "get_ventas_comparativo"
+            ],
+            "tables_referenced": [
+              "Comercial_KPIs_Diarios_v2",
+              "Sp_Validar_Inteligencia_Comercial_Status",
+              "Sync_PAX_Detalle",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "sqlalchemy",
+              "sqlalchemy.orm",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sincronizacion",
+              "unidad"
+            ],
+            "path": "backend/modules/comercial/inteligencia_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "InteligenciaComercialRepository",
+              "__init__",
+              "get_comparativo_periodos",
+              "get_kpis",
+              "get_kpis_por_unidad",
+              "get_sync_status",
+              "get_tendencia_diaria",
+              "get_unidades_activas"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VW_KPIsEjecutivos",
+              "Sp_Validar_Inteligencia_Comercial_Status"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "json",
+              "logging",
+              "modules.comercial_v2.repository_comercial_edarsahub",
+              "modules.comercial_v2.schemas",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/comercial/kpis_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_build_filter_key",
+              "_calculate_diff",
+              "_detect_kpi_changes",
+              "_get_utc_now",
+              "_sql_build_hash",
+              "_sql_decimal",
+              "_sql_int",
+              "_sql_parse_date",
+              "_sql_resolve_sistema",
+              "_sql_resolve_unidad_pk",
+              "cambiar_estado_periodo",
+              "cerrar_periodos_anteriores",
+              "get_db",
+              "get_kpi_comercial",
+              "get_kpis_by_empresa_rango",
+              "get_kpis_by_server_rango",
+              "get_pendientes_reconciliacion",
+              "init_kpis_repository",
+              "upsert_kpi_comercial"
+            ],
+            "tables_referenced": [
+              "Comercial_KPIs_Diarios_v2",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "mpro",
+              "softrestaurant"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/comercial/queries/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad"
+            ],
+            "path": "backend/modules/comercial/queries/hub.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_build_kpi_filter",
+              "_calculate_source_status"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.empresa_resolver",
+              "core.system_type_utils",
+              "core.unidades_service",
+              "dataclasses",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "almacen",
+              "inventario",
+              "unidad"
+            ],
+            "path": "backend/modules/comercial/queries/mpro.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "VentasPeriodoResult",
+              "VentasPorSucursalResult",
+              "__post_init__",
+              "_build_sucursal_filter_mpro",
+              "_build_sucursal_filter_mpro_flexible",
+              "_format_fecha_mpro",
+              "_resolver_codigo_sucursal_mpro",
+              "query_ventas_periodo_mpro",
+              "query_ventas_periodo_mpro_con_filtro_flexible",
+              "query_ventas_por_sucursal_mpro"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.system_type_utils",
+              "core.unidades_service",
+              "dataclasses",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "almacen",
+              "compras",
+              "inventario",
+              "unidad"
+            ],
+            "path": "backend/modules/comercial/queries/softrestaurant.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "VentasPeriodoResult",
+              "_build_sucursal_filter_sr",
+              "_format_fecha_sr",
+              "query_ventas_periodo_sr"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.pool",
+              "core.unidades_service",
+              "fastapi",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "compras",
+              "inventario",
+              "unidad"
+            ],
+            "path": "backend/modules/comercial/rentabilidad.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "evaluar_margen_pedido"
+            ],
+            "tables_referenced": [
+              "Compras_Inventarios_Fisicos_Sync",
+              "Venta_PedidosDetalle"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 100,
+          "scanned_files": 139,
+          "skipped_sensitive": 95
+        },
+        "truncated": true
+      }
+    ]
+  },
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
   "source_repo": "rbalam/EDARSA_HUB",
@@ -20,5 +3458,5 @@
   "status": "READ_ONLY_COMPLETE",
   "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
   "tests": "PASS",
-  "work_completion": "NOT_CERTIFIED"
+  "work_completion": "COMPLETE"
 }
