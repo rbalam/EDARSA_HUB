@@ -54,7 +54,7 @@
       "paths": [
         "backend/tests/test_worker_sql_connections_bootstrap_semantic.py",
         "backend/tests/test_worker_remote_semantic_ingress_gate2a.py",
-        "tools/tests/test_worker_mcp_gate2b.py"
+        "backend/tests/test_worker_mcp_dev_ingress_gate_b.py"
       ]
     },
     {

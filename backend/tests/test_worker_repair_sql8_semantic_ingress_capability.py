@@ -10,7 +10,7 @@ def test_sql8_learned_capability_seed_is_valid_and_bounded():
         for cap in registry.iter_learned_capabilities()
     }
     cap = rows["SQL_CONNECTIONS_8OF10_SEMANTIC_INGRESS"]
-    assert cap.production_allowed if False else True
+    assert all(action["path"] in cap.required_paths for action in cap.actions)
     assert cap.problem_signature == "SQL8_SEMANTIC_CAPABILITY_MISSING"
     assert cap.incident_ids == (
         "EDARSAHUB-BOS-WORKER-INGRESS-SQL8-CAPABILITY-REPAIR-R1-20261119",

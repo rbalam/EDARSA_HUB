@@ -744,6 +744,65 @@ register_capability(
 )
 
 
+# SQL connections 8/10 - fixed non-secret repository contract audit.
+_SQL_CONNECTIONS_BOOTSTRAP_CONTEXT = "SQL_CONNECTIONS_8OF10"
+_SQL_CONNECTIONS_BOOTSTRAP_REQUEST = {
+    "paths": [
+        "backend/core/centro_control/routes.py",
+        "backend/core/config/edarsahub_config.py",
+        "backend/core/sql_first/connection_factory.py",
+        "backend/core/sql_first/db.py",
+        "backend/core/connections/hrlectura_connection_factory.py",
+        "backend/server.py",
+    ],
+    "search_terms": [
+        "get_edarsahub_pymssql_connection",
+        "EDARSAHUB_SQL_HOST",
+        "EDARSAHUB_SQL_PORT",
+        "EDARSAHUB_SQL_DATABASE",
+        "EDARSAHUB_SQL_USER",
+        "EDARSAHUB_SQL_PASSWORD",
+        "_cc_sql_connection",
+        "_cc_sql_env",
+        "pymssql",
+        "get_sql_connection",
+    ],
+    "max_results": 200,
+}
+
+
+def _sql_connections_bootstrap_readonly_builder(request: Mapping[str, Any]) -> dict[str, Any]:
+    context = _g3_context(request)
+    if context != _SQL_CONNECTIONS_BOOTSTRAP_CONTEXT:
+        raise SemanticCapabilityError("SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED")
+    constraints = request.get("constraints")
+    if constraints is not None and (
+        not isinstance(constraints, Mapping) or bool(constraints)
+    ):
+        raise SemanticCapabilityError("SEMANTIC_CONSTRAINTS_UNSUPPORTED")
+    return {
+        "actions": [],
+        "checks": [{
+            "type": "repository_contract_audit",
+            "request": {
+                **_SQL_CONNECTIONS_BOOTSTRAP_REQUEST,
+                "paths": list(_SQL_CONNECTIONS_BOOTSTRAP_REQUEST["paths"]),
+                "search_terms": list(_SQL_CONNECTIONS_BOOTSTRAP_REQUEST["search_terms"]),
+            },
+        }],
+        "scheduling": _g3_scheduling(context),
+    }
+
+
+register_capability(
+    SemanticCapability(
+        code="SQL_CONNECTIONS_BOOTSTRAP_READONLY",
+        modes=("READ_ONLY",),
+        builder=_sql_connections_bootstrap_readonly_builder,
+    )
+)
+
+
 RAW_WORKER_FIELDS_FORBIDDEN: tuple[str, ...] = (
     "actions",
     "checks",
@@ -793,6 +852,11 @@ _CAPABILITY_METADATA: dict[str, dict[str, Any]] = {
         "bounded_context_rule": _WORKER_REPAIR_CONTEXT,
         "allowed_constraints": ("capability_code", "incident_id"),
         "allowed_path_roots": (),
+    },
+    "SQL_CONNECTIONS_BOOTSTRAP_READONLY": {
+        "bounded_context_rule": _SQL_CONNECTIONS_BOOTSTRAP_CONTEXT,
+        "allowed_constraints": (),
+        "allowed_path_roots": ("backend/core", "backend/server.py"),
     },
     "DEVELOPMENT_MUTATION_BOUNDED": {
         "bounded_context_rule": "ANY_VALID_TOKEN",

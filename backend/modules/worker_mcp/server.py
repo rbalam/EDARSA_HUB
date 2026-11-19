@@ -524,6 +524,7 @@ def submit_objective_tool(
       constraints={"paths": [...], "search_terms": [...], "max_results": 1..100};
       paths must start with backend/modules/, backend/tests/, frontend/src/, or tools/mirror_sync/.
     - REPOSITORY_CONTRACT_AUDIT (mode=READ_ONLY, bounded_context="RH" only): constraints={}
+    - SQL_CONNECTIONS_BOOTSTRAP_READONLY (mode=READ_ONLY, bounded_context="SQL_CONNECTIONS_8OF10"): constraints={}
     - WORKER_RESULT_SEMANTIC_EXTRACT (mode=READ_ONLY): constraints={"source_job_id": "..."}
     - WORKER_RESULT_DETAIL_READ (mode=READ_ONLY): constraints={"source_job_id": "..."}
     - WORKER_MAINTENANCE_HISTORY_READONLY (mode=READ_ONLY, bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP"): constraints={}
