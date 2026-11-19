@@ -4,74 +4,80 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "97d6316c945fa2f7f27441c3ed00f8313d9249cf",
-  "generated_at_utc": "2026-11-19T08:39:34Z",
+  "generated_at_utc": "2026-11-19T08:41:10Z",
   "history": {
-    "done_total_local": 1778,
+    "done_total_local": 1779,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1353,
-    "results_total_local": 2893
+    "results_total_local": 2894
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1307,
+      "age_seconds": 1403,
       "job_id": "EDARSAHUB-BOS-WORKER-GLOBAL-READBACK-EVIDENCE-ALIGNMENT-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 857,
+      "age_seconds": 952,
       "job_id": "EDARSAHUB-BOS-WORKER-GLOBAL-READBACK-EVIDENCE-ALIGNMENT-R2-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2645,
+      "age_seconds": 2740,
       "job_id": "SEM-CRM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-35F18B68A52EFC1A56B4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2306,
+      "age_seconds": 2402,
       "job_id": "SEM-CRM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-54703B415F699B143AEA",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2383,
+      "age_seconds": 2478,
       "job_id": "SEM-CRM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-DFD1F9FB085A9CD3C19B",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2233,
+      "age_seconds": 2329,
       "job_id": "SEM-CRM-WORKER_RESULT_DETAIL_READ-7B1F8B95887E610B51E9",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2547,
+      "age_seconds": 2642,
       "job_id": "SEM-CRM-WORKER_RESULT_DETAIL_READ-944C8E1E359A3CF738DE",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1510,
+      "age_seconds": 1606,
       "job_id": "SEM-WORKER_AUTONOMY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-05C6D18D323931E3E62D",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2416,
+      "age_seconds": 2512,
       "job_id": "SEM-WORKER_AUTONOMY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-98F592E88A3F256C6380",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1467,
+      "age_seconds": 1563,
       "job_id": "SEM-WORKER_AUTONOMY-WORKER_RESULT_DETAIL_READ-06CE182A0D764969EA06",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 47,
+      "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-3926C81AF27EC26DAFA8",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -84,18 +90,18 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 10,
+  "queue_result_ready_recent": 11,
   "queue_running": 0,
   "remote_development_sha": "97d6316c945fa2f7f27441c3ed00f8313d9249cf",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T08:39:23Z",
-    "last_receive_utc": "2026-11-19T08:39:18Z",
-    "last_terminal_utc": "2026-11-19T08:25:17Z",
-    "pid": "2472931",
+    "last_cycle_utc": "2026-11-19T08:40:56Z",
+    "last_receive_utc": "2026-11-19T08:40:51Z",
+    "last_terminal_utc": "2026-11-19T08:40:22Z",
+    "pid": "2562283",
     "runtime_fingerprint": {
-      "active_worker_code_tree_sha": "22ed6630578e9bbbc0aebba65ed5965513551657",
+      "active_worker_code_tree_sha": "d7b031e99baab6c063f005c270327d30864d12d9",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
       "branch": "Edarsahub_Desarrollo",
       "development_sha": "97d6316c945fa2f7f27441c3ed00f8313d9249cf",
@@ -112,7 +118,7 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": false,
+      "worker_code_tree_aligned": true,
       "worker_code_tree_sha": "d7b031e99baab6c063f005c270327d30864d12d9"
     }
   },
