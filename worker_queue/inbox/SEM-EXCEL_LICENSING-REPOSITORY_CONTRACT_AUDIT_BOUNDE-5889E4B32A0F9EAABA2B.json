@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "licencia",
+          "licensing",
+          "contrato",
+          "cliente",
+          "RBAC",
+          "cuentas_por_pagar",
+          "softrestaurant",
+          "mpro",
+          "excel",
+          "sincronizacion"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-EXCEL_LICENSING-REPOSITORY_CONTRACT_AUDIT_BOUNDE-5889E4B32A0F9EAABA2B",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY arquitectura de licencias para Excel locales y migracion web EDARSAHUB. Inventariar contratos clientes RBAC cuentas por pagar pagos SoftRestaurant MPRO y sincronizacion; entregar evidencia de reutilizacion, riesgos y plan Gate 1. Sin cambios, sin Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "EXCEL_LICENSING",
+    "conflict_domains": [
+      "EXCEL_LICENSING"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
