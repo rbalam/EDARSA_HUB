@@ -1,7 +1,8 @@
 {
   "base_sha": "46f0ebce62b40a10249f378af71ee155dc3a1426",
   "blockers": [],
-  "certification": "NOT_CERTIFIED",
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_MAINTENANCE_HISTORY_PASS_PLUS_SANITIZED_EVIDENCE",
   "completed_at_utc": "2026-11-11T01:57:52Z",
   "execution_base_sha": "46f0ebce62b40a10249f378af71ee155dc3a1426",
   "executor": "chatgpt-deterministic",
@@ -9,9 +10,279 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-5B522B0B725283AA4B99",
-  "percent_complete": 95,
+  "maintenance_history_evidence": {
+    "checks": [
+      {
+        "attempts": {
+          "0": 92,
+          "1": 7,
+          "2": 6
+        },
+        "certification": "EVIDENCE_ONLY_NOT_G4_CERTIFIED",
+        "duplicate_repair_refs": 0,
+        "duplicate_source_refs": 1,
+        "incident_count": 105,
+        "limitations": [
+          "SUPERSEDED does not prove a certified repair",
+          "Missing repair_job_id does not prove that a repair was never attempted",
+          "This inventory does not read or mutate repair result files",
+          "Only hashes of incident and job identifiers are exported"
+        ],
+        "missing_fields": {
+          "capability_code": 98,
+          "problem_signature": 98,
+          "repair_job_id": 101,
+          "source_job_id": 13
+        },
+        "mode": "READ_ONLY",
+        "pending_sample": [
+          {
+            "attempts": 2,
+            "capability": "MUTATION_LIFECYCLE_SLOT_HEARTBEAT_V2",
+            "capability_registered": true,
+            "incident_fingerprint": "d4f0aa871eacb29818a8",
+            "repair_job_fingerprint": null,
+            "signature": "SIG:e4119050bf8dba1b46f4",
+            "source_job_fingerprint": "c4731d9d984d71ed5bd3",
+            "state": "REJECTED"
+          },
+          {
+            "attempts": 0,
+            "capability": "CANONICAL_JOB_INGRESS",
+            "capability_registered": true,
+            "incident_fingerprint": "347be4c51bcac86eed0b",
+            "repair_job_fingerprint": null,
+            "signature": "SIG:85acd2635cbab337e92d",
+            "source_job_fingerprint": "a131d34828107af63d80",
+            "state": "REPAIR_REQUIRED"
+          },
+          {
+            "attempts": 2,
+            "capability": "MUTATION_LIFECYCLE_SLOT_HEARTBEAT_V2",
+            "capability_registered": true,
+            "incident_fingerprint": "19062836b8ca2c01fc97",
+            "repair_job_fingerprint": null,
+            "signature": "SIG:e4119050bf8dba1b46f4",
+            "source_job_fingerprint": "296f812485b9f80c4f32",
+            "state": "REJECTED"
+          },
+          {
+            "attempts": 2,
+            "capability": "MUTATION_LIFECYCLE_SLOT_HEARTBEAT_V2",
+            "capability_registered": true,
+            "incident_fingerprint": "647a1fa3fb34453ae3a9",
+            "repair_job_fingerprint": null,
+            "signature": "SIG:e4119050bf8dba1b46f4",
+            "source_job_fingerprint": "ab54931fbe50ffdb1fdb",
+            "state": "REJECTED"
+          },
+          {
+            "attempts": 0,
+            "capability": null,
+            "capability_registered": false,
+            "incident_fingerprint": "9f161a2ddf6ef8d71337",
+            "repair_job_fingerprint": null,
+            "signature": null,
+            "source_job_fingerprint": "8fcb629266aac17a6f8c",
+            "state": "REPAIR_REQUIRED"
+          },
+          {
+            "attempts": 0,
+            "capability": null,
+            "capability_registered": false,
+            "incident_fingerprint": "48d04418a323d6306fde",
+            "repair_job_fingerprint": null,
+            "signature": null,
+            "source_job_fingerprint": "37d4d346ac534bb5e39b",
+            "state": "REPAIR_REQUIRED"
+          },
+          {
+            "attempts": 2,
+            "capability": "MUTATION_LIFECYCLE_SLOT_HEARTBEAT_V2",
+            "capability_registered": true,
+            "incident_fingerprint": "8f4ed60eb3c2ec006d72",
+            "repair_job_fingerprint": null,
+            "signature": "SIG:e4119050bf8dba1b46f4",
+            "source_job_fingerprint": "4a51ce6ffc1d55929aca",
+            "state": "REJECTED"
+          },
+          {
+            "attempts": 0,
+            "capability": "MUTATION_LIFECYCLE_SLOT_HEARTBEAT_V2",
+            "capability_registered": true,
+            "incident_fingerprint": "a227a5dc19a8a180e1f7",
+            "repair_job_fingerprint": null,
+            "signature": "SIG:e4119050bf8dba1b46f4",
+            "source_job_fingerprint": "ddea78cb59b542b79262",
+            "state": "REPAIR_REQUIRED"
+          },
+          {
+            "attempts": 0,
+            "capability": null,
+            "capability_registered": false,
+            "incident_fingerprint": "32c40bf5cd05646082ff",
+            "repair_job_fingerprint": null,
+            "signature": null,
+            "source_job_fingerprint": null,
+            "state": "REPAIR_REQUIRED"
+          },
+          {
+            "attempts": 0,
+            "capability": null,
+            "capability_registered": false,
+            "incident_fingerprint": "fe37aa73d9eff0b27997",
+            "repair_job_fingerprint": null,
+            "signature": null,
+            "source_job_fingerprint": "c05644f0b6175a5692bd",
+            "state": "REPAIR_REQUIRED"
+          },
+          {
+            "attempts": 0,
+            "capability": null,
+            "capability_registered": false,
+            "incident_fingerprint": "9cfffc9ecc3f7f5f05b9",
+            "repair_job_fingerprint": null,
+            "signature": null,
+            "source_job_fingerprint": null,
+            "state": "REPAIR_REQUIRED"
+          },
+          {
+            "attempts": 0,
+            "capability": null,
+            "capability_registered": false,
+            "incident_fingerprint": "f133589508b681f00e1d",
+            "repair_job_fingerprint": null,
+            "signature": null,
+            "source_job_fingerprint": "1a8dcf198be41ae91192",
+            "state": "REPAIR_REQUIRED"
+          },
+          {
+            "attempts": 0,
+            "capability": null,
+            "capability_registered": false,
+            "incident_fingerprint": "e25fa9c7c3f2d3564e49",
+            "repair_job_fingerprint": null,
+            "signature": null,
+            "source_job_fingerprint": "342e2ba6d937db3a066b",
+            "state": "REPAIR_REQUIRED"
+          },
+          {
+            "attempts": 2,
+            "capability": "MUTATION_LIFECYCLE_SLOT_HEARTBEAT_V2",
+            "capability_registered": true,
+            "incident_fingerprint": "928c83572d54b35ba62d",
+            "repair_job_fingerprint": null,
+            "signature": "SIG:e4119050bf8dba1b46f4",
+            "source_job_fingerprint": "71839ffb40ff86358776",
+            "state": "REJECTED"
+          },
+          {
+            "attempts": 0,
+            "capability": null,
+            "capability_registered": false,
+            "incident_fingerprint": "fa789bb48c087be29995",
+            "repair_job_fingerprint": null,
+            "signature": null,
+            "source_job_fingerprint": "151d68c01e12c93143e1",
+            "state": "REPAIR_REQUIRED"
+          },
+          {
+            "attempts": 0,
+            "capability": null,
+            "capability_registered": false,
+            "incident_fingerprint": "615b1406ad20f0a4d435",
+            "repair_job_fingerprint": null,
+            "signature": null,
+            "source_job_fingerprint": null,
+            "state": "REPAIR_REQUIRED"
+          },
+          {
+            "attempts": 0,
+            "capability": null,
+            "capability_registered": false,
+            "incident_fingerprint": "2fd137455493309e77ca",
+            "repair_job_fingerprint": null,
+            "signature": null,
+            "source_job_fingerprint": "5a577dd702c034722906",
+            "state": "REPAIR_REQUIRED"
+          },
+          {
+            "attempts": 0,
+            "capability": null,
+            "capability_registered": false,
+            "incident_fingerprint": "14d93e0874ddf39de977",
+            "repair_job_fingerprint": null,
+            "signature": null,
+            "source_job_fingerprint": null,
+            "state": "REPAIR_REQUIRED"
+          },
+          {
+            "attempts": 0,
+            "capability": null,
+            "capability_registered": false,
+            "incident_fingerprint": "5b707085bfb631b5769e",
+            "repair_job_fingerprint": null,
+            "signature": null,
+            "source_job_fingerprint": "811736361d08c3176e2c",
+            "state": "REPAIR_REQUIRED"
+          },
+          {
+            "attempts": 0,
+            "capability": null,
+            "capability_registered": false,
+            "incident_fingerprint": "04efc39edfd615e0c485",
+            "repair_job_fingerprint": null,
+            "signature": null,
+            "source_job_fingerprint": "43c45c94dacf7e451ca5",
+            "state": "REPAIR_REQUIRED"
+          },
+          {
+            "attempts": 0,
+            "capability": null,
+            "capability_registered": false,
+            "incident_fingerprint": "000d0b3b651f2dc9893d",
+            "repair_job_fingerprint": null,
+            "signature": null,
+            "source_job_fingerprint": "c0390bc856bb67dd17df",
+            "state": "REPAIR_REQUIRED"
+          },
+          {
+            "attempts": 0,
+            "capability": null,
+            "capability_registered": false,
+            "incident_fingerprint": "a5729273e66fd2fafe5a",
+            "repair_job_fingerprint": null,
+            "signature": null,
+            "source_job_fingerprint": "65432df0bcdc81064d59",
+            "state": "REPAIR_REQUIRED"
+          }
+        ],
+        "pending_total": 22,
+        "production_allowed": false,
+        "production_touched_records": 0,
+        "recurring_signatures": [
+          {
+            "count": 6,
+            "signature": "SIG:e4119050bf8dba1b46f4"
+          }
+        ],
+        "registry_builtin_count": 2,
+        "registry_learned_count": 2,
+        "schema": "edarsahub.worker-maintenance-history-readonly.v1",
+        "states": {
+          "CERTIFIED": 4,
+          "REJECTED": 5,
+          "REPAIR_REQUIRED": 17,
+          "SUPERSEDED": 79
+        },
+        "status": "PASS",
+        "unregistered_referenced_capabilities": []
+      }
+    ]
+  },
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-11-11T01:58:35Z",
+  "published_at_utc": "2026-11-19T09:01:26Z",
   "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
@@ -20,5 +291,5 @@
   "status": "READ_ONLY_COMPLETE",
   "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
   "tests": "PASS",
-  "work_completion": "NOT_CERTIFIED"
+  "work_completion": "COMPLETE"
 }
