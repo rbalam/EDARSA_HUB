@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/worker_ingress/",
+          "backend/tests/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "sqlglot",
+          "repository_contract_audit",
+          "REPOSITORY_CONTRACT_AUDIT_BOUNDED",
+          "sql_readonly_audit",
+          "READ_ONLY",
+          "ALLOWED_CHECKS",
+          "semantic_capabilities",
+          "SQL_GOVERNANCE"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-SQL_GOVERNANCE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-8BE292D031AAD8173F75",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY la preparación contractual del Universal Worker y sus guardrails para una futura integración de SQLGlot. Verificar capacidades semánticas registradas, restricciones de repository_contract_audit, checks SQL READ_ONLY disponibles, contratos de publicación y tests asociados. Determinar si el Worker puede auditar de forma canónica backend/core/sql_first y los guardrails SQL o si existe un gap de capability que deba resolverse antes del Gate de integración. No modificar archivos, no instalar dependencias, no abrir conexiones SQL, no ejecutar migraciones y no tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SQL_GOVERNANCE",
+    "conflict_domains": [
+      "SQL_GOVERNANCE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
