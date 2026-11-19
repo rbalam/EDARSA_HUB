@@ -246,3 +246,26 @@ def list_worker_semantic_capabilities(
         "raw_worker_fields_forbidden": list(RAW_WORKER_FIELDS_FORBIDDEN),
         "capabilities": capability_catalog(),
     }
+
+
+
+@router.get("/runtime-convergence")
+def read_worker_runtime_convergence(
+    current_user: dict = Depends(WORKER_ADMIN_DEPENDENCY),
+    authorization: str | None = Header(default=None, alias="Authorization"),
+):
+    """Read-only convergence report across Git HEAD, Worker runtime, and MCP capability catalog."""
+    _require_ingress_mcp_scope(
+        authorization=authorization,
+        required_scope="worker:status",
+        current_user=current_user,
+    )
+    del current_user
+    from tools.mirror_sync.worker_runtime_fingerprint import (
+        build_mcp_runtime_convergence_report,
+    )
+    from .semantic_capabilities import capability_catalog
+
+    report = build_mcp_runtime_convergence_report()
+    report["capability_catalog"] = capability_catalog()
+    return report
