@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "backend/modules/worker_ingress/",
+          "backend/modules/worker_mcp/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "Capability",
+          "Repair",
+          "Knowledge",
+          "agent",
+          "RBAC"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-BOS_ARCHITECTURE_KNOWLEDGE_LOOP-REPOSITORY_CONTRACT_AUDIT_BOUNDE-276197184569A1632A18",
+  "mode": "READ_ONLY",
+  "objective": "Auditoria READ_ONLY arquitectura de agentes IA EDARSAHUB BOS. Inventariar capacidades existentes de Universal Worker, Capability Registry, Repair Planner, Execution Bridge, Knowledge Loop y RBAC. Entregar evidencia de brechas y perfiles IA minimos sin duplicaciones ni cambios de Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "BOS_ARCHITECTURE_KNOWLEDGE_LOOP",
+    "conflict_domains": [
+      "BOS_ARCHITECTURE_KNOWLEDGE_LOOP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
