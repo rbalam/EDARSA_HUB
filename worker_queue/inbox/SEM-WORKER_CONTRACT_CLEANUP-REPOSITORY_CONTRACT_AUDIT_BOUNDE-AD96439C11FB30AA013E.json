@@ -1,0 +1,47 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "tools/mirror_sync/",
+          "backend/modules/worker_ingress/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "job-v1.example.json",
+          "CODE_CHANGE",
+          "repository_change",
+          "worker"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_CONTRACT_CLEANUP-REPOSITORY_CONTRACT_AUDIT_BOUNDE-AD96439C11FB30AA013E",
+  "mode": "READ_ONLY",
+  "objective": "Auditoria READ_ONLY acotada de drift contractual activo Worker V4: job-v1.example.json, CODE_CHANGE como modo, repository_change como accion, publicadores paralelos. Distinguir artefactos historicos y coincidencias incidentales; NO modificar codigo ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTRACT_CLEANUP",
+    "conflict_domains": [
+      "WORKER_CONTRACT_CLEANUP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
