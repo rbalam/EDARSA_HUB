@@ -303,6 +303,50 @@ def _read_published_result_bytes(
         return False, "published_result_git_read_failed", None
 
     if proc.returncode != 0:
+        try:
+            remote_probe = subprocess.run(
+                [
+                    "git",
+                    f"--git-dir={git_dir}",
+                    "config",
+                    "--get",
+                    "remote.origin.url",
+                ],
+                capture_output=True,
+                check=False,
+                timeout=5,
+            )
+            if remote_probe.returncode == 0 and remote_probe.stdout.strip():
+                subprocess.run(
+                    [
+                        "git",
+                        f"--git-dir={git_dir}",
+                        "fetch",
+                        "--no-tags",
+                        "--quiet",
+                        "origin",
+                        "+refs/heads/worker/results:refs/remotes/origin/worker/results",
+                    ],
+                    capture_output=True,
+                    check=False,
+                    timeout=10,
+                )
+                proc = subprocess.run(
+                    [
+                        "git",
+                        f"--git-dir={git_dir}",
+                        "cat-file",
+                        "-p",
+                        blob_spec,
+                    ],
+                    capture_output=True,
+                    check=False,
+                    timeout=10,
+                )
+        except (OSError, subprocess.SubprocessError):
+            return False, "published_result_git_read_failed", None
+
+    if proc.returncode != 0:
         return False, "published_result_commit_blob_missing", None
 
     return True, "PUBLISHED_RESULT_GIT_BLOB", proc.stdout

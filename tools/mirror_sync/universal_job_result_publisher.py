@@ -1742,6 +1742,26 @@ def publish_one(path: Path) -> bool:
                     + output
                 )
 
+            try:
+                subprocess.run(
+                    runtime_git_command(
+                        "fetch",
+                        "--no-tags",
+                        "--quiet",
+                        REMOTE,
+                        f"+refs/heads/{RESULT_BRANCH}:refs/remotes/{REMOTE}/{RESULT_BRANCH}",
+                    ),
+                    cwd=str(ROOT),
+                    env=runtime_git_env(),
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    timeout=min(GIT_TIMEOUT_SECONDS, 30),
+                    check=False,
+                )
+            except (OSError, subprocess.SubprocessError):
+                pass
+
             create_attestation(public)
 
             marker.write_text(

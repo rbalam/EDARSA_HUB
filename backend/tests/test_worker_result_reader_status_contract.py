@@ -601,3 +601,68 @@ def test_mcp_get_job_status_tool_exposes_reconciled_certification_fields(
     assert mcp_response["terminal_result_valid"] is True
     assert mcp_response["result_state"] == "RESULT_TERMINAL_VALID"
     assert mcp_response["production_touched"] is False
+
+
+def test_published_result_blob_refreshes_stale_local_worker_results_ref(tmp_path):
+    import subprocess
+    from tools.mirror_sync.worker_result_reader import _read_published_result_bytes
+
+    bare_remote = tmp_path / "remote.git"
+    publisher_clone = tmp_path / "publisher"
+    local_repo = tmp_path / "local"
+
+    subprocess.run(["git", "init", "--bare", str(bare_remote)], check=True, capture_output=True)
+    subprocess.run(["git", "clone", str(bare_remote), str(local_repo)], check=True, capture_output=True)
+    subprocess.run(["git", "clone", str(bare_remote), str(publisher_clone)], check=True, capture_output=True)
+
+    subprocess.run(
+        ["git", "-C", str(publisher_clone), "checkout", "--orphan", "worker/results"],
+        check=True,
+        capture_output=True,
+    )
+    job_id = "TEST-STALE-REF-SYNC-R1"
+    rel = publisher_clone / "worker_queue" / "results" / f"{job_id}.json"
+    rel.parent.mkdir(parents=True, exist_ok=True)
+    payload_bytes = b'{"job_id":"TEST-STALE-REF-SYNC-R1","certification":"CERTIFIED"}\n'
+    rel.write_bytes(payload_bytes)
+    subprocess.run(["git", "-C", str(publisher_clone), "add", "--", str(rel.relative_to(publisher_clone))], check=True, capture_output=True)
+    subprocess.run(
+        [
+            "git", "-C", str(publisher_clone),
+            "-c", "user.name=Test", "-c", "user.email=test@example.com",
+            "commit", "-m", "publish result",
+        ],
+        check=True,
+        capture_output=True,
+    )
+    commit_sha = subprocess.run(
+        ["git", "-C", str(publisher_clone), "rev-parse", "HEAD"],
+        check=True, text=True, capture_output=True,
+    ).stdout.strip()
+    subprocess.run(
+        ["git", "-C", str(publisher_clone), "push", "origin", "HEAD:refs/heads/worker/results"],
+        check=True, capture_output=True,
+    )
+
+    state_root = local_repo / ".git" / "universal-worker-queue"
+    state_root.mkdir(parents=True, exist_ok=True)
+
+    # Local repo does not yet have commit_sha; reader fetches origin/worker/results and verifies blob.
+    ok, reason, raw = _read_published_result_bytes(
+        state_root=state_root,
+        expected_job_id=job_id,
+        marker_commit=commit_sha,
+    )
+    assert ok is True
+    assert reason == "PUBLISHED_RESULT_GIT_BLOB"
+    assert raw == payload_bytes
+
+    # Non-existent commit still fails closed even after fetch.
+    missing_ok, missing_reason, missing_raw = _read_published_result_bytes(
+        state_root=state_root,
+        expected_job_id=job_id,
+        marker_commit="f" * 40,
+    )
+    assert missing_ok is False
+    assert missing_reason == "published_result_commit_blob_missing"
+    assert missing_raw is None
