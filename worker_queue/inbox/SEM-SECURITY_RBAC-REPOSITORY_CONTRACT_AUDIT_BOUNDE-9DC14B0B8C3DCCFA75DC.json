@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/fase2_operativo/services/cargos_service.py",
+          "backend/modules/fase2_operativo/services/responsabilidad_service.py",
+          "backend/modules/fase2_operativo/routes/responsabilidad_routes.py",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "SUPERADMIN",
+          "usuario_id",
+          "JERARQUIA_ROLES",
+          "_validar_permiso_por_monto",
+          "require_explicit_permission"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-SECURITY_RBAC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-9DC14B0B8C3DCCFA75DC",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY, sin cambios, los contratos RBAC de Desarrollo: jerarquias de SUPERADMIN en autorizacion por monto para Cargos y Responsabilidad; identidad de actor en calculo de responsabilidad; controles explicitos en rutas; pruebas existentes. Devolver evidencia y siguiente Gate atomico; no escribir SQL, no tocar Produccion, ni repetir migraciones 016/017/018.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SECURITY_RBAC",
+    "conflict_domains": [
+      "SECURITY_RBAC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
