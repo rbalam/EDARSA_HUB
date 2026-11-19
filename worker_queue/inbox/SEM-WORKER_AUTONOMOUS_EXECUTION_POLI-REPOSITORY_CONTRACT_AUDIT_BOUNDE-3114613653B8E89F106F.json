@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "tools/mirror_sync/",
+          "backend/modules/worker_ingress/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "repair_attempt_allowed",
+          "advance_repair_automation",
+          "automatic_repair_orchestration",
+          "authorize_requester",
+          "capability_catalog",
+          "production_allowed",
+          "idempotency",
+          "certification",
+          "retry",
+          "autonomous"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_AUTONOMOUS_EXECUTION_POLI-REPOSITORY_CONTRACT_AUDIT_BOUNDE-3114613653B8E89F106F",
+  "mode": "READ_ONLY",
+  "objective": "Auditar integralmente y sin cambios la integración de Autonomous Execution Policy en Universal Worker v4: identificar controles existentes de autorización, continuación automática, Repair Planner, Execution Bridge, Capability Registry, deduplicación, reintentos, certificación por objetivo y pruebas. Entregar matriz de brechas para política versionada compatible con edarsahub.worker-job.v2; no modificar Producción ni publicar reparaciones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_AUTONOMOUS_EXECUTION_POLICY",
+    "conflict_domains": [
+      "WORKER_AUTONOMOUS_EXECUTION_POLICY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
