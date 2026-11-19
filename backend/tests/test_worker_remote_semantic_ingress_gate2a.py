@@ -524,3 +524,33 @@ def test_g3_r2_capabilities_discovery_route_is_registered_and_status_scoped():
 
     assert "/capabilities" in routes
     assert 'required_scope="worker:status"' in ROUTES
+
+
+def test_g3_r2_bounded_audit_allows_core_without_expanding_mutation_roots():
+    from modules.worker_ingress.semantic_capabilities import capability_catalog
+
+    catalog = {item["code"]: item for item in capability_catalog()}
+    audit = catalog["REPOSITORY_CONTRACT_AUDIT_BOUNDED"]
+    mutation = catalog["DEVELOPMENT_MUTATION_BOUNDED"]
+
+    assert "backend/core/" in audit["allowed_path_roots"]
+    assert "backend/core/" not in mutation["allowed_path_roots"]
+
+    job = service.build_semantic_job(
+        _objective(
+            bounded_context="CONNECTIONS_SCHEDULER_AUDIT",
+            capability="REPOSITORY_CONTRACT_AUDIT_BOUNDED",
+            constraints={
+                "paths": ["backend/core/scheduler/"],
+                "search_terms": ["Scheduler_DistributedLocks"],
+                "max_results": 10,
+            },
+        ),
+        current_user=_user(),
+    )
+
+    assert job["mode"] == "READ_ONLY"
+    assert job["actions"] == []
+    assert job["production_allowed"] is False
+    assert job["checks"][0]["type"] == "repository_contract_audit"
+    assert job["checks"][0]["request"]["paths"] == ["backend/core/scheduler/"]

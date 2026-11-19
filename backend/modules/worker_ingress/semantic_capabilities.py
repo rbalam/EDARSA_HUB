@@ -152,6 +152,10 @@ _G3_ROOTS = (
     "frontend/src/",
     "tools/mirror_sync/",
 )
+
+# READ_ONLY repository audits may inspect Core contracts, while mutation
+# capabilities intentionally remain restricted to _G3_ROOTS.
+_G3_AUDIT_ROOTS = _G3_ROOTS + ("backend/core/",)
 _G3_DENIED = {
     ".git", ".env", ".venv", "venv",
     "node_modules", "__pycache__", "dist", "build",
@@ -210,7 +214,7 @@ def _g3_repository_builder(request):
         parts = value.rstrip("/").split("/")
 
         if (
-            not value.startswith(_G3_ROOTS)
+            not value.startswith(_G3_AUDIT_ROOTS)
             or any(p in ("", ".", "..") for p in parts)
             or any(p in _G3_DENIED for p in parts)
             or any(
@@ -745,7 +749,7 @@ _CAPABILITY_METADATA: dict[str, dict[str, Any]] = {
     "REPOSITORY_CONTRACT_AUDIT_BOUNDED": {
         "bounded_context_rule": "ANY_VALID_TOKEN",
         "allowed_constraints": ("max_results", "paths", "search_terms"),
-        "allowed_path_roots": _G3_ROOTS,
+        "allowed_path_roots": _G3_AUDIT_ROOTS,
     },
     "WORKER_RESULT_SEMANTIC_EXTRACT": {
         "bounded_context_rule": "ANY_VALID_TOKEN",
