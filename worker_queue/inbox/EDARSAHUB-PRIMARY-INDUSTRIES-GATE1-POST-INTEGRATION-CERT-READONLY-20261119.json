@@ -1,0 +1,55 @@
+{
+  "actions": [],
+  "base_sha": "621f89dc940c296bbf381b3a14bce0937e465167",
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "PRIMARY_INDUSTRIES_GATE1_CANONICAL_DOMAIN_DESIGN.md"
+        ],
+        "max_results": 50,
+        "paths": [
+          "docs/ARCHITECTURE/PRIMARY_INDUSTRIES_GATE1_CANONICAL_DOMAIN_DESIGN.md"
+        ],
+        "search_terms": [
+          "Primary Industries Gate 1 Canonical Domain Design",
+          "CANONICAL DESIGN",
+          "Primary Reproduction & Genetics",
+          "Primary Partnerships & Contracts",
+          "HUECO_REAL",
+          "Gate 2"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-PRIMARY-INDUSTRIES-GATE1-POST-INTEGRATION-CERT-READONLY-20261119",
+  "mode": "READ_ONLY",
+  "objective": "Certificar en modo READ_ONLY post-integracion el documento canonico de Gate 1 de Primary Industries (commit 432e3409ffc43f92dc89f8bc10a832b6024891c5), verificando integridad, presencia y secciones canonicas sin implementar Gate 2, sin generar codigo ni SQL, sin alterar resultados historicos y sin tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "BOS-GLOBAL-GO-RECONCILIATION",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "PRIMARY_INDUSTRIES",
+    "conflict_domains": [
+      "PRIMARY_INDUSTRIES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
