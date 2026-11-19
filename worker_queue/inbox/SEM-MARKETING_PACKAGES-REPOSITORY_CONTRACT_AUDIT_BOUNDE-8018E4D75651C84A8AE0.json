@@ -1,0 +1,61 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "marketing",
+          "paquetes",
+          "recetas",
+          "comercial",
+          "precio",
+          "margen",
+          "familia",
+          "grupo",
+          "reservaciones",
+          "comandero",
+          "rbac",
+          "postre",
+          "eventos",
+          "costos",
+          "softrestaurant",
+          "mpro",
+          "porciones",
+          "menu"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-MARKETING_PACKAGES-REPOSITORY_CONTRACT_AUDIT_BOUNDE-8018E4D75651C84A8AE0",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 READ_ONLY: auditar contratos existentes de EDARSAHUB BOS MKT Paquetes para reutilizar productos/recetas, grupos/familias, precios de carta, ventas unidades/porciones, costos, márgenes, RBAC, eventos/reservas, flujos Chef-Finanzas-Direccion y POS comandero. Identificar brechas para Family Style y por persona, postres, niveles configurables, precio ponderado y protección comercial, rentabilidad y brochure por unidad. No modificar repositorio ni Produccion, no conexiones LIVE ni Mongo operativo, no duplicar módulos ni infraestructura. Comprobar duplicados y máximas, entregar hallazgos verificables y siguiente Gate.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "MARKETING_PACKAGES",
+    "conflict_domains": [
+      "MARKETING_PACKAGES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
