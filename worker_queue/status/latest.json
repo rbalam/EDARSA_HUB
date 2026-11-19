@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "0244ed0b3d0de27df734436bc4f600b5d4424fe8",
-  "generated_at_utc": "2026-11-19T15:12:44Z",
+  "generated_at_utc": "2026-11-19T15:14:18Z",
   "history": {
     "done_total_local": 1861,
     "pending_total_local": 0,
@@ -16,55 +16,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 6,
+      "age_seconds": 100,
       "job_id": "EDARSAHUB-BOS-DISPATCHER-READONLY-PYTEST-PLATFORM-DRIFT-FIX-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1550,
+      "age_seconds": 1644,
       "job_id": "EDARSAHUB-BOS-KL-IA-RBAC-R15-FIXED-PYTEST-PRESET-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1822,
+      "age_seconds": 1915,
       "job_id": "EDARSAHUB-IA-GLOBAL-RBAC-DATA-SCOPE-POST-INTEGRATION-CERT-READONLY-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2008,
+      "age_seconds": 2102,
       "job_id": "EDARSAHUB-PRIMARY-INDUSTRIES-GATE1-POST-INTEGRATION-CERT-READONLY-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 435,
+      "age_seconds": 529,
       "job_id": "SEM-CAVAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-9333508277D66963D272",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1915,
+      "age_seconds": 2009,
       "job_id": "SEM-IA_ASSISTANT-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4BF3C71D41A269E32AC1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1271,
+      "age_seconds": 1364,
       "job_id": "SEM-IA_ASSISTANT-WORKER_PYTEST_CERTIFICATION_READ-90AE914EA7E81F2AF8FB",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 328,
+      "age_seconds": 422,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-6ED1C8E66D9892990734",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 393,
+      "age_seconds": 487,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_PYTEST_CERTIFICATION_READ-50F64FDB0242CE0DEBD7",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,10 +84,10 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T15:12:41Z",
-    "last_receive_utc": "2026-11-19T15:12:36Z",
+    "last_cycle_utc": "2026-11-19T15:14:18Z",
+    "last_receive_utc": "2026-11-19T15:14:12Z",
     "last_terminal_utc": "2026-11-19T15:12:38Z",
-    "pid": "471544",
+    "pid": "1734893",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "394b2d8abf4a98e08b2b88bb471167db4800e8dd",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
