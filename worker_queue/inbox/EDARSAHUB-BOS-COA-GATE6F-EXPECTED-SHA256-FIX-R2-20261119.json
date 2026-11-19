@@ -1,0 +1,67 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "        \"actions\": [\n            {\n                \"type\": \"write_file\",\n                \"path\": _COA_GATE6F_WORKFLOW,\n                \"content\": workflow,\n                \"source_sha256\": current_sha,\n            },\n",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "        \"actions\": [\n            {\n                \"type\": \"write_file\",\n                \"path\": _COA_GATE6F_WORKFLOW,\n                \"content\": workflow,\n                \"source_sha256\": current_sha,\n                \"expected_sha256\": current_sha,\n            },\n",
+      "source_sha256": "3fec98249ba2c90dcc30325107049a9b9e8eb300a25bfba8c48b9c615ca9de22",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_coa_gate6f_semantic_capability.py",
+      "replacement": "\n\ndef test_coa_gate6f_workflow_write_file_emits_matching_source_and_expected_sha256(\n    tmp_path, monkeypatch\n):\n    import hashlib\n    from pathlib import Path\n    from modules.worker_ingress import semantic_capabilities as sem_caps\n\n    monkeypatch.syspath_prepend(\n        str(Path(__file__).resolve().parents[2] / \"tools\" / \"mirror_sync\")\n    )\n    import universal_job_dispatcher as dispatcher\n\n    workflow_path = sem_caps._DEV_REPO_ROOT / sem_caps._COA_GATE6F_WORKFLOW\n    expected_digest = hashlib.sha256(workflow_path.read_bytes()).hexdigest()\n\n    job = service.build_semantic_job(_payload(), current_user=_user())\n    workflow_action, trigger_action = job[\"actions\"]\n\n    assert workflow_action[\"type\"] == \"write_file\"\n    assert workflow_action[\"path\"] == sem_caps._COA_GATE6F_WORKFLOW\n    assert workflow_action[\"source_sha256\"] == expected_digest\n    assert workflow_action[\"expected_sha256\"] == expected_digest\n    assert workflow_action[\"source_sha256\"] == workflow_action[\"expected_sha256\"]\n\n    assert trigger_action[\"type\"] == \"write_file\"\n    assert trigger_action[\"path\"] == sem_caps._COA_GATE6F_TRIGGER\n    assert \"expected_sha256\" not in trigger_action\n    assert not (sem_caps._DEV_REPO_ROOT / sem_caps._COA_GATE6F_TRIGGER).exists()\n\n    isolated_repo = tmp_path / \"repo\"\n    isolated_wf = isolated_repo / sem_caps._COA_GATE6F_WORKFLOW\n    isolated_wf.parent.mkdir(parents=True)\n    isolated_wf.write_bytes(workflow_path.read_bytes())\n\n    dispatcher.apply_action(isolated_repo, workflow_action)\n    assert isolated_wf.read_text(encoding=\"utf-8\") == workflow_action[\"content\"]\n",
+      "source_sha256": "edf67ae14d17ab806a3993c8e29199fcdbfa7a5d2700682383d746884cf9758f",
+      "type": "append_once"
+    }
+  ],
+  "base_sha": "c86542ce762f8c206019209851296255774c5214",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_coa_gate6f_semantic_capability.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_coa_gate6f_semantic_capability.py",
+        "backend/tests/test_worker_mcp_dev_ingress_gate_b.py",
+        "backend/tests/test_worker_contract_stabilization_preflight.py",
+        "backend/tests/test_worker_remote_canonical_ingress_gate1.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-COA-GATE6F-EXPECTED-SHA256-FIX-R2-20261119",
+  "mode": "MUTATION",
+  "objective": "COA Gate 6F correccion preventiva de contrato SHA: mantener source_sha256 y emitir expected_sha256 con el mismo digest verificado en la accion write_file de _COA_GATE6F_WORKFLOW en _coa_gate6f_status_seed_builder, agregar prueba de regresion que verifique ambos hashes y su igualdad, sin ejecutar Gate fiscal, sin generar trigger de migracion y sin tocar SQL, credenciales ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "BOS-GLOBAL-GO-RECONCILIATION",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
