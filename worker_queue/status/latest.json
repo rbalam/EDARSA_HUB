@@ -4,25 +4,31 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "58f6aec65f4ce244000740c14825f3ee46b19531",
-  "generated_at_utc": "2026-11-19T07:16:43Z",
+  "generated_at_utc": "2026-11-19T07:18:07Z",
   "history": {
     "done_total_local": 1767,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1351,
-    "results_total_local": 2880
+    "rejected_total_local": 1352,
+    "results_total_local": 2881
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3287,
+      "age_seconds": 36,
+      "job_id": "EDARSAHUB-BOS-GLOBAL-WORKER-ALIGNMENT-G3-MCP-SEMANTIC-INGRESS-R2-20261119",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3371,
       "job_id": "SEM-COMERCIAL.PORTAL_INTELIGENCIA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7522DD9AD7871DE8880F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3243,
+      "age_seconds": 3328,
       "job_id": "SEM-COMERCIAL.PORTAL_INTELIGENCIA-WORKER_RESULT_SEMANTIC_EXTRACT-82F1F4764218893A5E6E",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,18 +42,18 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "remote_development_sha": "58f6aec65f4ce244000740c14825f3ee46b19531",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T07:16:29Z",
-    "last_receive_utc": "2026-11-19T07:16:41Z",
-    "last_terminal_utc": "2026-11-19T06:22:39Z",
-    "pid": "85",
+    "last_cycle_utc": "2026-11-19T07:17:58Z",
+    "last_receive_utc": "2026-11-19T07:17:53Z",
+    "last_terminal_utc": "2026-11-19T07:17:30Z",
+    "pid": "1959817",
     "runtime_fingerprint": {
-      "active_worker_code_tree_sha": "9400711a6cd0e352847b81ad85bdf5b0e94b4b7b",
+      "active_worker_code_tree_sha": "93b9df6a2135687af40cb8416188bc76a59b6906",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
       "branch": "Edarsahub_Desarrollo",
       "development_sha": "58f6aec65f4ce244000740c14825f3ee46b19531",
@@ -64,7 +70,7 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": false,
+      "worker_code_tree_aligned": true,
       "worker_code_tree_sha": "93b9df6a2135687af40cb8416188bc76a59b6906"
     }
   },
