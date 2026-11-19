@@ -1,0 +1,794 @@
+{
+  "base_sha": "cecb42b1c76f2e8db777fb69cce9b2fecfb39890",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-19T15:28:13Z",
+  "execution_base_sha": "cecb42b1c76f2e8db777fb69cce9b2fecfb39890",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-HOSPITALITY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-0678282A08120157C870",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-19T15:30:17Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.hospitality",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "hospitality"
+            ],
+            "path": "backend/modules/hospitality/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.hospitality",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "hospitality"
+            ],
+            "path": "backend/modules/hospitality/routes/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.hospitality",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "fastapi"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "hospitality"
+            ],
+            "path": "backend/modules/hospitality/routes/health.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/health"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "hospitality_health"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.hospitality",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "hospitality"
+            ],
+            "path": "backend/modules/hospitality/schemas/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.hospitality",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "hospitality"
+            ],
+            "path": "backend/modules/hospitality/services/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.hospitality",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "hospitality"
+            ],
+            "path": "backend/modules/hospitality/services/hospitality_rules.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "guest",
+              "hospitality",
+              "inventario",
+              "pms",
+              "room"
+            ],
+            "path": "frontend/src/modules/hospitality/pages/HospitalityDashboard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cavas_corporativas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "datetime",
+              "enum",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "guest",
+              "reserva",
+              "room"
+            ],
+            "path": "backend/modules/cavas_corporativas/domain.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BenefitKind",
+              "BenefitRule",
+              "BenefitScope",
+              "EvaluationContext",
+              "EvaluationDecision",
+              "PolicyRestrictions",
+              "ScopeKind",
+              "_scope_matches",
+              "_within_time_window",
+              "evaluate_benefit"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cavas_corporativas",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.sql_first.connection_factory",
+              "dataclasses",
+              "datetime",
+              "decimal",
+              "domain",
+              "json",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "guest",
+              "reserva"
+            ],
+            "path": "backend/modules/cavas_corporativas/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ApplicationRecord",
+              "AuthorizedReference",
+              "CavasCorporativasRepository",
+              "__init__",
+              "_default_connection_factory",
+              "_parse_time",
+              "_policy_from_json",
+              "application_exists",
+              "find_active_authorized",
+              "load_benefit_rules",
+              "record_application"
+            ],
+            "tables_referenced": [
+              "CavasCorporativas_",
+              "CavasCorporativas_AplicacionesBeneficio",
+              "CavasCorporativas_Autorizados",
+              "CavasCorporativas_BeneficioAlcances",
+              "CavasCorporativas_Beneficios",
+              "CavasCorporativas_Convenios",
+              "CavasCorporativas_Politicas"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.cavas_corporativas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.rbac.middleware",
+              "datetime",
+              "decimal",
+              "domain",
+              "fastapi",
+              "pydantic",
+              "service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "guest",
+              "reserva"
+            ],
+            "path": "backend/modules/cavas_corporativas/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/aplicar",
+              "/evaluar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ApplyRequest",
+              "EvaluateRequest",
+              "_context",
+              "_serialize_evaluation",
+              "apply_corporate_benefit",
+              "evaluate_corporate_benefits",
+              "get_cavas_corporativas_service"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cavas_corporativas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "decimal",
+              "domain",
+              "repository",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "guest",
+              "reserva"
+            ],
+            "path": "backend/modules/cavas_corporativas/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BenefitEvaluation",
+              "CavasCorporativasService",
+              "__init__",
+              "applicable",
+              "evaluate_for_identity",
+              "record_applied_benefit"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "routes",
+              "service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "inventario"
+            ],
+            "path": "backend/modules/cava_socios/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "blind_audit",
+              "hashlib",
+              "json",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "inventario"
+            ],
+            "path": "backend/modules/cava_socios/blind_audit_operational_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CavaBlindAuditOperationalService",
+              "get_cava_blind_audit_operational_service",
+              "reconcile"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "adapter_sdk",
+              "datetime",
+              "decimal",
+              "migration_engine",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "reserva"
+            ],
+            "path": "backend/modules/cava_socios/cienfuegos_legacy_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CienfuegosLegacyAdapter",
+              "_clean",
+              "_require",
+              "_require_aware",
+              "adapter_code",
+              "adapter_version",
+              "capabilities",
+              "discover",
+              "entity_disposition",
+              "external_record",
+              "extract_delta",
+              "extract_full",
+              "health",
+              "normalize_attendance",
+              "normalize_bottle",
+              "normalize_bottle_log",
+              "normalize_capacity_ml",
+              "normalize_cellar",
+              "normalize_cellar_client",
+              "normalize_client",
+              "normalize_email",
+              "normalize_phone",
+              "source_identity",
+              "validate_context"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "email.mime.application",
+              "email.mime.multipart",
+              "email.mime.text",
+              "logging",
+              "os",
+              "smtplib",
+              "ssl",
+              "twilio.rest",
+              "typing"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/modules/cava_socios/notification_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "NotificationService",
+              "__init__",
+              "enviar_email",
+              "enviar_reporte_email",
+              "enviar_reporte_multicanal",
+              "enviar_reporte_whatsapp",
+              "enviar_whatsapp",
+              "get_notification_service",
+              "twilio_client"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "blind_audit_operational_service",
+              "core.auth.sql_user_identity",
+              "core.rbac",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "logging",
+              "modules.rbac_context_sql.context_service",
+              "notification_service",
+              "persona_link_service",
+              "pydantic",
+              "report_service",
+              "service",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "inventario",
+              "reserva",
+              "whatsapp"
+            ],
+            "path": "backend/modules/cava_socios/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/auditorias-ciegas/reconciliar",
+              "/botellas/{botella_id}/consumo",
+              "/botellas/{botella_id}/etiqueta",
+              "/clientes-canonicos",
+              "/clientes-canonicos/sync",
+              "/consumos",
+              "/dashboard",
+              "/inventario",
+              "/inventario-fisico/aplicar",
+              "/inventario-fisico/hoja",
+              "/inventario-inicial",
+              "/kardex",
+              "/personas-canonicas",
+              "/reportes/socio/{socio_id}/consumos",
+              "/reportes/socio/{socio_id}/estado-cuenta",
+              "/reportes/socio/{socio_id}/ficha",
+              "/socios",
+              "/socios/promover-cliente",
+              "/socios/{socio_id}",
+              "/socios/{socio_id}/botellas",
+              "/socios/{socio_id}/enviar-reporte",
+              "/socios/{socio_id}/enviar-todos-reportes",
+              "/socios/{socio_id}/persona-link",
+              "/socios/{socio_id}/persona-link/crear-persona"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BlindAuditObservationInput",
+              "BlindAuditReconcileRequest",
+              "BotellaCreate",
+              "ConsumoCreate",
+              "EnvioReporteRequest",
+              "InventarioFisicoAplicarRequest",
+              "InventarioFisicoItem",
+              "InventarioInicialBotellaItem",
+              "InventarioInicialCreate",
+              "PersonaCreateLinkRequest",
+              "PersonaExistingLinkRequest",
+              "PromoverClienteCreate",
+              "SincronizarClientesRequest",
+              "SocioCreate",
+              "SocioUpdate",
+              "_resolve_cava_actor",
+              "_resolve_cava_scope",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_persona_y_vincular",
+              "crear_socio",
+              "descargar_estado_cuenta",
+              "descargar_ficha_socio",
+              "descargar_historial_consumos",
+              "desvincular_persona",
+              "enviar_reporte_socio",
+              "enviar_todos_reportes_socio",
+              "get_dashboard",
+              "listar_clientes_canonicos",
+              "listar_personas_canonicas",
+              "listar_socios",
+              "obtener_consumos",
+              "obtener_etiqueta_botella",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario",
+              "obtener_kardex",
+              "obtener_persona_link",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "reconciliar_auditoria_ciega",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos",
+              "vincular_persona_existente"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.connection_factory",
+              "datetime",
+              "logging",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "inventario",
+              "reserva"
+            ],
+            "path": "backend/modules/cava_socios/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CavaSociosService",
+              "_crear_cargo",
+              "_generar_numero_socio",
+              "_get_connection",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_socio",
+              "get_cava_socios_service",
+              "listar_clientes_canonicos",
+              "listar_socios",
+              "obtener_cargos_socio",
+              "obtener_dashboard",
+              "obtener_etiqueta_botella",
+              "obtener_historial_consumos_global",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario_global",
+              "obtener_kardex",
+              "obtener_movimientos_socio",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos"
+            ],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Cliente_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "reserva"
+            ],
+            "path": "backend/modules/finanzas/canonical_sync_units.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FinanzasCanonicalUnitError",
+              "_clean",
+              "_effective_system_type",
+              "get_canonical_finance_sync_unit_names",
+              "get_canonical_finance_sync_units"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.security",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "server",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "checkin"
+            ],
+            "path": "backend/modules/finanzas/health.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/quick",
+              "/servers/{server_id}",
+              "/tables"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "check_edarsahub_tables",
+              "check_server_connectivity",
+              "get_finanzas_health",
+              "get_finanzas_health_quick",
+              "get_server_health",
+              "get_tables_status"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "modules.finanzas.sql_subprocess_helper",
+              "schema_detector",
+              "schema_detector_subprocess",
+              "typing"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "reserva"
+            ],
+            "path": "backend/modules/finanzas/propinas_tpv/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "PropinasTPVRepository",
+              "__init__",
+              "actualizar_config",
+              "contar_propinas",
+              "crear_config",
+              "crear_indices",
+              "crear_o_actualizar_propina",
+              "detectar_esquema_servidor",
+              "get_propinas_cortes_defensivo",
+              "get_propinas_cortes_softrestaurant",
+              "get_propinas_cortes_subprocess",
+              "listar_configs",
+              "obtener_config_vigente",
+              "obtener_propina_por_id",
+              "obtener_propinas",
+              "obtener_resumen",
+              "registrar_pago"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.db",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "logging",
+              "modules.finanzas.canonical_sync_units",
+              "os",
+              "pymssql",
+              "pytds",
+              "sys",
+              "typing"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "reserva"
+            ],
+            "path": "backend/modules/finanzas/sync_cortes_softrestaurant.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "calcular_hash_origen",
+              "execute_sr_query",
+              "extraer_turnos_softrestaurant",
+              "get_edarsahub_connection",
+              "get_softrestaurant_connection",
+              "get_unidad_connection_info",
+              "parse_sql_server_host",
+              "registrar_sync_log",
+              "sincronizar_a_edarsahub",
+              "sincronizar_todas_unidades_softrestaurant",
+              "sincronizar_unidad_softrestaurant"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 21,
+          "scanned_files": 84,
+          "skipped_sensitive": 52
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-19T15:28:13Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
