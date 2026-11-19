@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "81510bfa5806ad69f3f5f43586747d5c2e7addbf",
-  "generated_at_utc": "2026-11-19T12:11:05Z",
+  "generated_at_utc": "2026-11-19T12:12:27Z",
   "history": {
     "done_total_local": 1846,
     "pending_total_local": 0,
@@ -16,61 +16,49 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2837,
+      "age_seconds": 2919,
       "job_id": "EDARSAHUB-BOS-WORKER-DEV-WRITE-EXPECTED-SHA256-FIX-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2295,
+      "age_seconds": 2377,
       "job_id": "EDARSAHUB-BOS-WORKER-DEV-WRITE-EXPECTED-SHA256-FIX-R2-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2083,
+      "age_seconds": 2165,
       "job_id": "EDARSAHUB-BOS-WORKER-DEV-WRITE-EXPECTED-SHA256-FIX-R3-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3177,
+      "age_seconds": 3259,
       "job_id": "EDARSAHUB-BOS-WORKER-INGRESS-SQL8-CAPABILITY-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3396,
+      "age_seconds": 3478,
       "job_id": "SEM-COMUNICACIONES_CFDI-WORKER_RESULT_DETAIL_READ-775419957D110EE89B4D",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3293,
+      "age_seconds": 3375,
       "job_id": "SEM-CONEXIONES_COMUNICACIONES-WORKER_RESULT_DETAIL_READ-60AC2DAF358B0ABF0775",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3588,
-      "job_id": "SEM-FINANZAS_BBVA_COMPROBANTES-REPOSITORY_CONTRACT_AUDIT_BOUNDE-BFFD27B4334BEDC18633",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3600,
-      "job_id": "SEM-UNIVERSAL_BANKING-WORKER_RESULT_SEMANTIC_EXTRACT-87B312239A30001EA2C8",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3186,
+      "age_seconds": 3269,
       "job_id": "SEM-WORKER_INGRESS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-8B6587869F52BFB1BE1C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3152,
+      "age_seconds": 3235,
       "job_id": "SEM-WORKER_INGRESS_CAPABILITY_REGIST-DEVELOPMENT_MUTATION_BOUNDED-890EE8D0DCAEC5067735",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,14 +72,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 10,
+  "queue_result_ready_recent": 8,
   "queue_running": 0,
   "remote_development_sha": "81510bfa5806ad69f3f5f43586747d5c2e7addbf",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T12:10:51Z",
-    "last_receive_utc": "2026-11-19T12:11:01Z",
+    "last_cycle_utc": "2026-11-19T12:12:13Z",
+    "last_receive_utc": "2026-11-19T12:12:27Z",
     "last_terminal_utc": "2026-11-19T11:36:22Z",
     "pid": "306",
     "runtime_fingerprint": {
