@@ -221,3 +221,28 @@ def read_worker_job_status(
             detail=result,
         )
     return result
+
+
+@router.get("/capabilities")
+def list_worker_semantic_capabilities(
+    current_user: dict = Depends(WORKER_ADMIN_DEPENDENCY),
+    authorization: str | None = Header(default=None, alias="Authorization"),
+):
+    """Read-only discovery of registered semantic capabilities and allowed constraints."""
+    _require_ingress_mcp_scope(
+        authorization=authorization,
+        required_scope="worker:status",
+        current_user=current_user,
+    )
+    del current_user
+    from .semantic_capabilities import (
+        RAW_WORKER_FIELDS_FORBIDDEN,
+        capability_catalog,
+    )
+
+    return {
+        "schema": "edarsahub.worker-semantic-capabilities.v1",
+        "production_allowed": False,
+        "raw_worker_fields_forbidden": list(RAW_WORKER_FIELDS_FORBIDDEN),
+        "capabilities": capability_catalog(),
+    }

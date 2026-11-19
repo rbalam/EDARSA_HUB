@@ -971,3 +971,35 @@ def test_client_differentiates_http_403_auth_from_http_422_validation(
     assert exc_422.value.code == "SEMANTIC_VALIDATION_FAILED"
     assert exc_422.value.reason_code == "SEMANTIC_CONSTRAINTS_UNSUPPORTED"
     assert "caller_input_ignored" not in exc_422.value.reason_code
+
+
+@pytest.mark.asyncio
+async def test_g3_r2_submit_objective_tool_advertises_capability_contract_and_keeps_two_tools():
+    mcp = server.build_mcp_server(_config())
+
+    async with Client(mcp) as mcp_client:
+        result = await mcp_client.list_tools()
+
+    by_name = {tool.name: tool for tool in result.tools}
+    assert set(by_name) == {"submit_objective", "get_job_status"}
+    description = by_name["submit_objective"].description or ""
+    assert "REPOSITORY_CONTRACT_AUDIT_BOUNDED" in description
+    assert "paths" in description
+    assert "search_terms" in description
+    assert "SEMANTIC_CONSTRAINTS_UNSUPPORTED" in description
+    assert "production_allowed" in description
+
+
+def test_g3_r2_submit_objective_tool_rejects_non_dict_constraints():
+    server.build_mcp_server(_config())
+    with pytest.raises(
+        server.ToolError,
+        match="VALIDATION_ERROR_422:SEMANTIC_CONSTRAINTS_INVALID",
+    ):
+        server.submit_objective_tool(
+            objective="Auditar contratos MCP en modo READ_ONLY.",
+            bounded_context="WORKER_INGRESS",
+            mode="READ_ONLY",
+            capability="READ_ONLY_CANARY",
+            constraints=["invalid"],  # type: ignore[arg-type]
+        )

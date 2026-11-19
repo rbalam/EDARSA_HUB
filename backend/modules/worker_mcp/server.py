@@ -503,7 +503,28 @@ def submit_objective_tool(
     request_key: str | None = None,
     constraints: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Submit one approved semantic objective to the EDARSAHUB Universal Worker."""
+    """Submit one approved semantic objective to the EDARSAHUB Universal Worker.
+
+    Raw edarsahub.worker-job.v2 fields (actions, checks, production_allowed,
+    requester, target_repo, target_branch) are backend-owned and MUST NEVER be
+    passed inside constraints (doing so returns
+    VALIDATION_ERROR_422:SEMANTIC_CONSTRAINTS_UNSUPPORTED).
+
+    Registered capabilities and exact allowed constraint keys:
+    - READ_ONLY_CANARY (mode=READ_ONLY): constraints={}
+    - REPOSITORY_CONTRACT_AUDIT_BOUNDED (mode=READ_ONLY, any valid bounded_context):
+      constraints={"paths": [...], "search_terms": [...], "max_results": 1..100};
+      paths must start with backend/modules/, backend/tests/, frontend/src/, or tools/mirror_sync/.
+    - REPOSITORY_CONTRACT_AUDIT (mode=READ_ONLY, bounded_context="RH" only): constraints={}
+    - WORKER_RESULT_SEMANTIC_EXTRACT (mode=READ_ONLY): constraints={"source_job_id": "..."}
+    - WORKER_RESULT_DETAIL_READ (mode=READ_ONLY): constraints={"source_job_id": "..."}
+    - WORKER_MAINTENANCE_HISTORY_READONLY (mode=READ_ONLY, bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP"): constraints={}
+    - WORKER_PYTEST_CERTIFICATION_READONLY (mode=READ_ONLY, bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP"): constraints={}
+    - WORKER_REPAIR_BOUNDED (mode=MUTATION, bounded_context="WORKER_RUNTIME_CONVERGENCE"):
+      constraints={"incident_id": "...", "capability_code": "..."}
+    """
+    if constraints is not None and not isinstance(constraints, dict):
+        raise ToolError("VALIDATION_ERROR_422:SEMANTIC_CONSTRAINTS_INVALID")
     payload: dict[str, Any] = {
         "objective": objective,
         "bounded_context": bounded_context,

@@ -458,3 +458,82 @@ register_capability(
         builder=_worker_pytest_certification_readonly_builder,
     )
 )
+
+
+RAW_WORKER_FIELDS_FORBIDDEN: tuple[str, ...] = (
+    "actions",
+    "checks",
+    "production_allowed",
+    "requester",
+    "target_repo",
+    "target_branch",
+)
+
+_CAPABILITY_METADATA: dict[str, dict[str, Any]] = {
+    "READ_ONLY_CANARY": {
+        "bounded_context_rule": "ANY_VALID_TOKEN",
+        "allowed_constraints": (),
+        "allowed_path_roots": (),
+    },
+    "REPOSITORY_CONTRACT_AUDIT": {
+        "bounded_context_rule": "RH",
+        "allowed_constraints": (),
+        "allowed_path_roots": ("backend/modules", "frontend/src", "tools/mirror_sync"),
+    },
+    "REPOSITORY_CONTRACT_AUDIT_BOUNDED": {
+        "bounded_context_rule": "ANY_VALID_TOKEN",
+        "allowed_constraints": ("max_results", "paths", "search_terms"),
+        "allowed_path_roots": _G3_ROOTS,
+    },
+    "WORKER_RESULT_SEMANTIC_EXTRACT": {
+        "bounded_context_rule": "ANY_VALID_TOKEN",
+        "allowed_constraints": ("source_job_id",),
+        "allowed_path_roots": (),
+    },
+    "WORKER_RESULT_DETAIL_READ": {
+        "bounded_context_rule": "ANY_VALID_TOKEN",
+        "allowed_constraints": ("source_job_id",),
+        "allowed_path_roots": (),
+    },
+    "WORKER_MAINTENANCE_HISTORY_READONLY": {
+        "bounded_context_rule": "WORKER_REPAIR_KNOWLEDGE_LOOP",
+        "allowed_constraints": (),
+        "allowed_path_roots": (),
+    },
+    "WORKER_PYTEST_CERTIFICATION_READONLY": {
+        "bounded_context_rule": "WORKER_REPAIR_KNOWLEDGE_LOOP",
+        "allowed_constraints": (),
+        "allowed_path_roots": (),
+    },
+    "WORKER_REPAIR_BOUNDED": {
+        "bounded_context_rule": _WORKER_REPAIR_CONTEXT,
+        "allowed_constraints": ("capability_code", "incident_id"),
+        "allowed_path_roots": (),
+    },
+}
+
+
+def capability_catalog() -> list[dict[str, Any]]:
+    """Return read-only declarative metadata for all registered semantic capabilities."""
+    items: list[dict[str, Any]] = []
+    for code in registered_capabilities():
+        cap = _CAPABILITIES[code]
+        meta = _CAPABILITY_METADATA.get(code, {})
+        items.append(
+            {
+                "code": cap.code,
+                "modes": list(cap.modes),
+                "bounded_context_rule": meta.get(
+                    "bounded_context_rule",
+                    "CAPABILITY_OWNED",
+                ),
+                "allowed_constraints": list(
+                    meta.get("allowed_constraints", ())
+                ),
+                "allowed_path_roots": list(
+                    meta.get("allowed_path_roots", ())
+                ),
+                "raw_worker_fields_forbidden": True,
+            }
+        )
+    return items

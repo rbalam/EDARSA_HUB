@@ -474,3 +474,53 @@ def test_g4_semantic_schema_rejects_raw_job_fields():
     ):
         with pytest.raises(ValidationError):
             WorkerObjectiveRequest.model_validate({**payload, field: value})
+
+
+def test_g3_r2_capability_catalog_exposes_all_registered_capabilities_and_constraints():
+    from modules.worker_ingress.semantic_capabilities import (
+        RAW_WORKER_FIELDS_FORBIDDEN,
+        capability_catalog,
+    )
+
+    catalog = capability_catalog()
+    by_code = {item["code"]: item for item in catalog}
+    assert tuple(sorted(by_code)) == registered_capabilities()
+    assert "actions" in RAW_WORKER_FIELDS_FORBIDDEN
+    assert "checks" in RAW_WORKER_FIELDS_FORBIDDEN
+    assert "production_allowed" in RAW_WORKER_FIELDS_FORBIDDEN
+
+    bounded = by_code["REPOSITORY_CONTRACT_AUDIT_BOUNDED"]
+    assert bounded["modes"] == ["READ_ONLY"]
+    assert bounded["allowed_constraints"] == ["max_results", "paths", "search_terms"]
+    assert bounded["raw_worker_fields_forbidden"] is True
+    assert "tools/mirror_sync/" in bounded["allowed_path_roots"]
+
+    canary = by_code["READ_ONLY_CANARY"]
+    assert canary["allowed_constraints"] == []
+
+    rh_audit = by_code["REPOSITORY_CONTRACT_AUDIT"]
+    assert rh_audit["bounded_context_rule"] == "RH"
+    assert rh_audit["allowed_constraints"] == []
+
+
+def test_g3_r2_capabilities_discovery_route_is_registered_and_status_scoped():
+    import ast
+
+    routes = set()
+    for node in ast.walk(ast.parse(ROUTES)):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        for decorator in node.decorator_list:
+            if not isinstance(decorator, ast.Call):
+                continue
+            if not isinstance(decorator.func, ast.Attribute):
+                continue
+            if not isinstance(decorator.func.value, ast.Name) or decorator.func.value.id != "router":
+                continue
+            if decorator.func.attr == "get" and decorator.args:
+                route = decorator.args[0]
+                if isinstance(route, ast.Constant) and isinstance(route.value, str):
+                    routes.add(route.value)
+
+    assert "/capabilities" in routes
+    assert 'required_scope="worker:status"' in ROUTES
