@@ -1,0 +1,24 @@
+{
+  "base_sha": "204b6f6598801e64399abcd44e8e3b2c7142c78d",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:WRITE_EXISTING_REQUIRES_EXPECTED_SHA256:backend/modules/worker_ingress/semantic_capabilities.py"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-11-19T11:18:08Z",
+  "execution_base_sha": "204b6f6598801e64399abcd44e8e3b2c7142c78d",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-WORKER-INGRESS-SQL8-CAPABILITY-R1-20261119",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-11-19T11:23:37Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-19T11:18:05Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
