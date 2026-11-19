@@ -1,0 +1,346 @@
+{
+  "base_sha": "621f89dc940c296bbf381b3a14bce0937e465167",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-19T14:40:48Z",
+  "execution_base_sha": "621f89dc940c296bbf381b3a14bce0937e465167",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-IA_ASSISTANT-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4BF3C71D41A269E32AC1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-19T14:42:22Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.ia_assistant",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "httpx",
+              "re",
+              "typing",
+              "urllib.parse"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "query_bridge"
+            ],
+            "path": "backend/modules/ia_assistant/query_bridge.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_is_sensitive_key",
+              "_normalize_marker",
+              "_operation_map",
+              "_parameter_rows",
+              "_path_allowed",
+              "_safe_param_value",
+              "_search_words",
+              "build_readonly_catalog",
+              "catalog_for_prompt",
+              "execute_catalog_operation",
+              "execute_planned_queries",
+              "sanitize_payload"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.ia_assistant",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "asyncio",
+              "emergentintegrations.llm.chat",
+              "json",
+              "logging",
+              "modules.ia_assistant",
+              "os",
+              "re",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "descuentos",
+              "rbac"
+            ],
+            "path": "backend/modules/ia_assistant/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "LLMProviderError",
+              "LLMTimeoutError",
+              "SessionNotFoundError",
+              "_api_key",
+              "_dataset_candidates",
+              "_dataset_cell",
+              "_parse_planner_response",
+              "_sanitize_assistant_visual_markup",
+              "_send_llm",
+              "build_response_datasets",
+              "crear_sesion",
+              "eliminar_sesion",
+              "enviar_mensaje",
+              "health",
+              "listar_sesiones",
+              "obtener_mensajes",
+              "plan_contextual_actions",
+              "plan_system_queries"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial_analytics",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.comercial_temporal_availability",
+              "core.security",
+              "fastapi",
+              "modules.comercial_v2.repository_readonly",
+              "modules.comercial_v2.routes",
+              "repository_operational",
+              "repository_tickets",
+              "schemas",
+              "service",
+              "temporal_selection",
+              "ticket_identity"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "allowed_unit_codes",
+              "descuentos",
+              "list_discounts",
+              "list_tickets",
+              "rbac"
+            ],
+            "path": "backend/modules/comercial_analytics/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/descuentos",
+              "/drilldown",
+              "/operacion-en-curso",
+              "/temporal/resolve",
+              "/tickets",
+              "/tickets/{ticket_pk}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "commercial_current_operation",
+              "commercial_discounts",
+              "commercial_drilldown",
+              "commercial_temporal_resolve",
+              "commercial_ticket_detail",
+              "commercial_tickets"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial_analytics",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.db",
+              "core.server_registry",
+              "datetime",
+              "modules.comercial.ticket_service",
+              "modules.comercial_v2.ticket_contract",
+              "ticket_identity",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "allowed_unit_codes",
+              "descuentos",
+              "list_discounts",
+              "list_tickets",
+              "rbac"
+            ],
+            "path": "backend/modules/comercial_analytics/repository_tickets.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_date_string",
+              "_ensure_unit_allowed",
+              "_execute",
+              "_execute_readonly_query_params",
+              "_fallback_ticket_from_comercial",
+              "_latest_snapshot_operation_date",
+              "_list_current_day_with_comercial_merge",
+              "_normalize_allowed_units",
+              "_required",
+              "get_ticket_detail",
+              "list_discounts",
+              "list_tickets",
+              "summarize_current_day_tickets"
+            ],
+            "tables_referenced": [
+              "Comercial_Ventas_Dia_Abiertas_v2"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.comercial_analytics.repository_tickets",
+              "modules.ia_assistant",
+              "pathlib",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "allowed_unit_codes",
+              "data_scope",
+              "descuentos",
+              "list_discounts",
+              "query_bridge",
+              "rbac"
+            ],
+            "path": "backend/tests/test_ia_global_rbac_data_scope_r14.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "fake",
+              "test_catalog_prioritizes_user_intent_over_current_view",
+              "test_discount_repository_rejects_unit_outside_profile_scope",
+              "test_discount_repository_returns_edarsahub_dataset",
+              "test_planner_declares_view_is_not_authorization_boundary"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "modules.ia_assistant",
+              "os",
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "query_bridge",
+              "rbac"
+            ],
+            "path": "backend/tests/test_ia_global_authorized_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_access_context_is_sql_rbac_and_fail_closed",
+              "test_contextual_actions_accept_backend_dataset_and_exports",
+              "test_frontend_supports_popup_and_xlsx_txt_pdf",
+              "test_ia_data_source_is_edarsahub_only",
+              "test_planner_receives_view_and_rbac_context",
+              "test_service_extracts_authorized_datasets"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.ia_assistant.contextual",
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "query_bridge"
+            ],
+            "path": "backend/tests/test_ia_contextual_comercial_contract.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/chat"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_context_normalization_is_whitelist_and_drops_secrets",
+              "test_existing_chat_contract_is_extended_not_replaced",
+              "test_frontend_reuses_existing_assistant_client_and_has_no_worker_key",
+              "test_query_bridge_remains_get_only_and_no_generated_sql",
+              "test_ui_actions_are_fail_closed"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "modules.comercial_analytics.repository_tickets",
+              "modules.comercial_analytics.ticket_identity",
+              "os",
+              "pathlib",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "allowed_unit_codes",
+              "list_tickets",
+              "rbac"
+            ],
+            "path": "backend/tests/test_comercial_analytics_tickets.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "executor",
+              "fake_execute",
+              "fake_execute_sql_query_params",
+              "fallback",
+              "test_default_executor_uses_parameterized_edarsahub_query",
+              "test_executive_ticket_visual_contract_matches_comercial",
+              "test_historical_range_replaces_active_day_with_atomic_snapshot",
+              "test_list_tickets_filters_by_rbac_units",
+              "test_list_tickets_paginates_and_emits_ticket_pk",
+              "test_rejects_requested_unit_outside_rbac",
+              "test_ticket_detail_falls_back_to_certified_comercial_ticket",
+              "test_ticket_detail_rejects_unit_outside_rbac",
+              "test_ticket_detail_returns_not_found",
+              "test_ticket_detail_uses_identity_fields"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 8,
+          "scanned_files": 8,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-19T14:40:48Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
