@@ -1057,3 +1057,254 @@ def advance_repair_automation(
         "incidents": rows,
         "production_touched": False,
     }
+
+
+# Gate D - Canonical Failure Taxonomy, Persistent Circuit Breaker & Knowledge Loop Cycle.
+CIRCUIT_BREAKER_DIR = maintenance.STATE_DIR / "circuit_breakers"
+_SAFE_CIRCUIT_KEY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{1,120}$")
+
+FAILURE_TAXONOMY_RULES: tuple[tuple[str, str, tuple[str, ...], bool, bool, str, int], ...] = (
+    ("PRODUCTION_POLICY_VIOLATION", "SECURITY", ("PRODUCTION_FORBIDDEN", "PRODUCTION_TOUCHED", "PRODUCTION_POLICY"), False, True, "FAIL_CLOSED_HUMAN_REQUIRED", 0),
+    ("SENSITIVE_DATA_EXPOSURE_RISK", "SECURITY", ("SENSITIVE", "SECRET", "PASSWORD", "CREDENTIAL", "REJECTED_UNSAFE", "TOKEN_LEAK"), False, True, "FAIL_CLOSED_HUMAN_REQUIRED", 0),
+    ("EMPRESA_OR_SUCURSAL_AUTH_FAILURE", "SECURITY", ("SCOPE_AUTHORIZATION_DENIED", "SUCURSAL_FORBIDDEN", "EMPRESA_FORBIDDEN"), False, True, "FAIL_CLOSED_HUMAN_REQUIRED", 0),
+    ("INSUFFICIENT_PERMISSIONS", "SECURITY", ("RBAC_", "INSUFFICIENT_SCOPE", "FORBIDDEN", "UNAUTHORIZED", "ACCESS_DENIED", "AUTHORIZATION_REQUIRED", "AUTHORIZATION_EXPIRED", "AUTHORIZATION_REVOKED"), False, True, "FAIL_CLOSED_HUMAN_REQUIRED", 0),
+    ("DATE_OR_TIMEZONE_ERROR", "BUSINESS", ("TIMEZONE", "TZINFO", "INVALID_DATE", "DATETIME", "NAIVE_DATETIME"), False, True, "FAIL_CLOSED_BUSINESS_REVIEW", 0),
+    ("STORAGE_OR_RESOURCE_LIMIT", "INFRASTRUCTURE", ("ENOSPC", "NO SPACE LEFT", "MEMORYERROR", "OUT OF MEMORY", "INODE", "POLICY_MAX_"), False, True, "FAIL_CLOSED_INFRA_CAPACITY", 0),
+    ("DIRTY_WORKTREE", "INFRASTRUCTURE", ("GIT_WORKTREE_NOT_CLEAN", "WORKTREE_DIRTY", "LOCAL_DIRTY"), False, True, "FAIL_CLOSED_PRESERVE_LOCAL_WORK", 0),
+    ("CONTRADICTORY_RESULT", "INFRASTRUCTURE", ("CONTRADICTORY_RESULT_ARTIFACT", "READ_SOURCE_MISMATCH", "RESULT_SHA_MISMATCH"), False, True, "FAIL_CLOSED_FORENSIC_RECONCILE", 0),
+    ("MISSING_DEPENDENCY", "INFRASTRUCTURE", ("MODULENOTFOUNDERROR", "IMPORTERROR", "COMMAND NOT FOUND", "VENV_MISSING"), False, True, "FAIL_CLOSED_DEPENDENCY_CHECK", 0),
+    ("UNKNOWN_MCP_CAPABILITY", "CONTRACT", ("SEMANTIC_CAPABILITY_UNKNOWN", "CAPABILITY_UNKNOWN", "CAPABILITY_NOT_LOADED"), False, False, "CHECK_CATALOG_AND_RUNTIME_CONVERGENCE", 1),
+    ("INVALID_CONTRACT", "CONTRACT", ("INVALID_JOB_TEMPLATE_SCHEMA", "SEMANTIC_CONSTRAINTS_UNSUPPORTED", "SEMANTIC_CAPABILITY_MODE_MISMATCH", "UNSUPPORTED_ACTION", "UNSUPPORTED_CHECK", "FORBIDDEN_TEMPLATE_KEY", "INVALID_SCHEMA"), False, False, "FIX_CONTRACT_SPEC", 0),
+    ("DUPLICATE_JOB", "CONTRACT", ("ALREADY_EXISTS", "DUPLICATE", "EXISTS"), False, False, "RECONCILE_EXISTING_JOB", 0),
+    ("STALE_SOURCE_SHA256", "CONTRACT", ("SOURCE_SHA256_MISMATCH", "SHA256_MISMATCH", "STALE_SHA"), True, False, "REFRESH_SHA_AND_REPLAN", 2),
+    ("TEST_FAILURE", "CONTRACT", ("GIT_TESTS_FAILED", "CHECK_FAILED:PYTEST", "ASSERTIONERROR"), False, False, "DIAGNOSE_CAUSAL_AND_REPAIR", 2),
+    ("ABSENT_OR_TRUNCATED_EVIDENCE", "CONTRACT", ("EVIDENCE_ABSENT", "EVIDENCE_TRUNCATED", "RESULT_ABSENT"), False, False, "BOUNDED_REQUERY", 1),
+    ("GIT_MIRROR_DIVERGENCE", "INFRASTRUCTURE", ("GIT_DIVERGENCE_BLOCKED", "DIVERGENCE", "NON_FAST_FORWARD"), True, False, "CANONICAL_DIVERGENCE_GUARD", 2),
+    ("CONTRADICTORY_NOT_FOUND", "INFRASTRUCTURE", ("NOT_FOUND", "BLOB_MISSING", "RESULT_REF_MISSING"), True, False, "RECONCILE_REMOTE_RESULTS", 1),
+    ("INCOMPLETE_PUBLICATION", "TRANSIENT", ("PUBLICATION_INCOMPLETE", "PUSH_FAILED", "GIT_PUSH_FAILED"), True, False, "RECONCILE_AND_REPUBLISH", 2),
+    ("PENDING_ATTESTATION", "TRANSIENT", ("PENDING_AUDIT_EVIDENCE", "ATTESTATION_MISSING", "PENDING_CERTIFICATION"), True, False, "WAIT_ATTESTATION_CYCLE", 2),
+    ("CONCURRENCY_CONFLICT", "TRANSIENT", ("CONCURRENT_SCOPE_CONFLICT", "GIT_LOCK_BUSY", "INDEX.LOCK", "WRITER_LOCK"), True, False, "BOUNDED_RETRY", 2),
+    ("STUCK_OR_EXPIRED_JOB", "TRANSIENT", ("SLOT_EXPIRED", "STUCK", "HEARTBEAT_EXPIRED", "TIMED_OUT", "POLICY_TIMEOUT_EXCEEDED"), True, False, "RECOVER_EXPIRED_SLOT", 2),
+    ("CONNECTION_LOSS", "INTEGRATION", ("CONNECTIONREFUSED", "CONNECTIONRESET", "NETWORK", "UNREACHABLE", "DNS", "502", "503", "504"), True, False, "BOUNDED_RETRY", 2),
+    ("RUNTIME_RESTART_OR_TRANSIENT", "TRANSIENT", ("RESTART", "TRANSIENT", "TEMPORARY", "RETRY"), True, False, "BOUNDED_RETRY", 2),
+)
+
+
+def classify_failure_taxonomy(
+    *,
+    status: str = "",
+    blockers: list[str] | tuple[str, ...] = (),
+    error_code: str = "",
+    causal_evidence: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Classify a Worker/MCP failure into the canonical taxonomy without blind string-only mutation."""
+    tokens = " | ".join(
+        [
+            str(status or "").strip().upper(),
+            str(error_code or "").strip().upper(),
+            *(str(b or "").strip().upper() for b in (blockers or ())),
+        ]
+    )
+    has_causal_evidence = isinstance(causal_evidence, dict) and bool(causal_evidence)
+
+    for (
+        failure_class,
+        domain_category,
+        patterns,
+        recoverable_auto,
+        approval_required,
+        strategy,
+        max_attempts,
+    ) in FAILURE_TAXONOMY_RULES:
+        if any(pat in tokens for pat in patterns):
+            auto_repair_allowed = bool(
+                recoverable_auto
+                and not approval_required
+                and domain_category not in {"SECURITY", "BUSINESS"}
+                and has_causal_evidence
+            )
+            return {
+                "failure_class": failure_class,
+                "category": domain_category,
+                "recoverable_automatically": recoverable_auto,
+                "human_approval_required": approval_required,
+                "requires_causal_evidence": True,
+                "has_causal_evidence": has_causal_evidence,
+                "auto_repair_allowed": auto_repair_allowed,
+                "recovery_strategy": strategy,
+                "max_attempts": max_attempts,
+                "production_touched": False,
+            }
+
+    return {
+        "failure_class": "UNCLASSIFIED_NON_RECOVERABLE",
+        "category": "NON_RECOVERABLE",
+        "recoverable_automatically": False,
+        "human_approval_required": True,
+        "requires_causal_evidence": True,
+        "has_causal_evidence": has_causal_evidence,
+        "auto_repair_allowed": False,
+        "recovery_strategy": "FAIL_CLOSED_HUMAN_REQUIRED",
+        "max_attempts": 0,
+        "production_touched": False,
+    }
+
+
+def _circuit_path(signature_key: str, *, state_dir: Path | None = None) -> Path:
+    clean = str(signature_key or "").strip()
+    if not _SAFE_CIRCUIT_KEY_RE.fullmatch(clean):
+        raise ValueError("CIRCUIT_KEY_INVALID")
+    safe_name = re.sub(r"[^A-Za-z0-9._-]", "_", clean)
+    root = state_dir or CIRCUIT_BREAKER_DIR
+    return root / f"{safe_name}.json"
+
+
+def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
+    import tempfile
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", dir=path.parent, delete=False
+    ) as handle:
+        json.dump(payload, handle, ensure_ascii=False, indent=2, sort_keys=True)
+        handle.write("\n")
+        temp_name = handle.name
+    os.replace(temp_name, path)
+
+
+def evaluate_circuit_breaker(
+    signature_key: str,
+    *,
+    max_failures: int = 3,
+    cooldown_seconds: int = 900,
+    now_epoch: float | None = None,
+    state_dir: Path | None = None,
+) -> dict[str, Any]:
+    """Fail-closed persistent circuit breaker preventing infinite repair retries."""
+    import time
+
+    now_ts = float(now_epoch if now_epoch is not None else time.time())
+    path = _circuit_path(signature_key, state_dir=state_dir)
+    data = _load_json(path) or {}
+    failures = int(data.get("consecutive_failures") or 0)
+    last_failure_epoch = float(data.get("last_failure_epoch") or 0.0)
+
+    if failures >= max_failures:
+        elapsed = now_ts - last_failure_epoch
+        if elapsed < cooldown_seconds:
+            return {
+                "signature_key": signature_key,
+                "state": "OPEN",
+                "allow_attempt": False,
+                "consecutive_failures": failures,
+                "cooldown_remaining_seconds": max(0, int(cooldown_seconds - elapsed)),
+                "reason": "CIRCUIT_OPEN_MAX_FAILURES",
+                "production_touched": False,
+            }
+        return {
+            "signature_key": signature_key,
+            "state": "HALF_OPEN",
+            "allow_attempt": True,
+            "consecutive_failures": failures,
+            "cooldown_remaining_seconds": 0,
+            "reason": "CIRCUIT_HALF_OPEN_PROBE",
+            "production_touched": False,
+        }
+
+    return {
+        "signature_key": signature_key,
+        "state": "CLOSED",
+        "allow_attempt": True,
+        "consecutive_failures": failures,
+        "cooldown_remaining_seconds": 0,
+        "reason": "CIRCUIT_CLOSED",
+        "production_touched": False,
+    }
+
+
+def record_circuit_outcome(
+    signature_key: str,
+    *,
+    certified_success: bool,
+    failure_class: str = "",
+    now_epoch: float | None = None,
+    state_dir: Path | None = None,
+) -> dict[str, Any]:
+    """Record failure or certified recovery without storing any secrets."""
+    import time
+
+    now_ts = float(now_epoch if now_epoch is not None else time.time())
+    path = _circuit_path(signature_key, state_dir=state_dir)
+    prior = _load_json(path) or {}
+
+    if certified_success:
+        record = {
+            "schema": "edarsahub.worker-circuit-breaker.v1",
+            "signature_key": signature_key,
+            "consecutive_failures": 0,
+            "last_failure_epoch": 0.0,
+            "last_certified_epoch": now_ts,
+            "last_failure_class": "",
+            "production_touched": False,
+        }
+    else:
+        record = {
+            "schema": "edarsahub.worker-circuit-breaker.v1",
+            "signature_key": signature_key,
+            "consecutive_failures": int(prior.get("consecutive_failures") or 0) + 1,
+            "last_failure_epoch": now_ts,
+            "last_certified_epoch": float(prior.get("last_certified_epoch") or 0.0),
+            "last_failure_class": str(failure_class or "UNKNOWN")[:120],
+            "production_touched": False,
+        }
+    _atomic_write_json(path, record)
+    return record
+
+
+def assess_knowledge_loop_cycle(
+    *,
+    incident_id: str,
+    status: str = "",
+    blockers: list[str] | tuple[str, ...] = (),
+    error_code: str = "",
+    causal_evidence: dict[str, Any] | None = None,
+    max_failures: int = 3,
+    cooldown_seconds: int = 900,
+    now_epoch: float | None = None,
+    state_dir: Path | None = None,
+) -> dict[str, Any]:
+    """Evaluate Detect -> Classify -> Diagnose -> Circuit Breaker -> Authorize for one incident."""
+    classification = classify_failure_taxonomy(
+        status=status,
+        blockers=blockers,
+        error_code=error_code,
+        causal_evidence=causal_evidence,
+    )
+    circuit = evaluate_circuit_breaker(
+        incident_id,
+        max_failures=max_failures,
+        cooldown_seconds=cooldown_seconds,
+        now_epoch=now_epoch,
+        state_dir=state_dir,
+    )
+
+    if not circuit["allow_attempt"]:
+        next_step = "CIRCUIT_OPEN_STOP"
+    elif classification["human_approval_required"] or classification["category"] in {"SECURITY", "BUSINESS"}:
+        next_step = "HUMAN_APPROVAL_REQUIRED"
+    elif not classification["has_causal_evidence"]:
+        next_step = "COLLECT_CAUSAL_EVIDENCE_FIRST"
+    elif classification["auto_repair_allowed"]:
+        next_step = "AUTO_REPAIR_ELIGIBLE"
+    else:
+        next_step = classification["recovery_strategy"]
+
+    return {
+        "schema": "edarsahub.worker-knowledge-loop-assessment.v1",
+        "incident_id": incident_id,
+        "classification": classification,
+        "circuit_breaker": circuit,
+        "next_step": next_step,
+        "learning_allowed_only_if_certified": True,
+        "production_touched": False,
+    }
