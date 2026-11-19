@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "mongod",
+          "mongo_stub",
+          "StubDatabase",
+          "MONGO_URL",
+          "MONGODB",
+          "pymongo",
+          "motor",
+          "MongoClient"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_INGRESS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-E3019BC5C8B0820BBCCA",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY residuos MongoDB dentro de las raices permitidas por el Capability Registry v4. Buscar dependencias, imports, stubs, variables y consumidores Mongo en backend/modules, backend/tests, frontend/src y tools/mirror_sync. No modificar nada ni tocar Produccion. Reportar evidencia, limites de alcance y blockers.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS",
+    "conflict_domains": [
+      "WORKER_INGRESS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
