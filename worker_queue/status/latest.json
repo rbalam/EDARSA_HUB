@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "0aa2d543b259844a20b51e0a5526b16856825df5",
-  "generated_at_utc": "2026-11-19T16:44:05Z",
+  "generated_at_utc": "2026-11-19T16:45:33Z",
   "history": {
     "done_total_local": 1879,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1570,
+      "age_seconds": 1657,
       "job_id": "EDARSAHUB-BOS-SQL8-SEMANTIC-BOOTSTRAP-DEV-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 707,
+      "age_seconds": 795,
       "job_id": "EDARSAHUB-BOS-SQL8-SEMANTIC-BOOTSTRAP-DEV-R2-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3291,
+      "age_seconds": 3379,
       "job_id": "EDARSAHUB-BOS-WORKER-INGRESS-SQL8-LEARNED-SEED-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1225,
+      "age_seconds": 1313,
       "job_id": "SEM-CAVAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4DD2801E1A0F6B3AB91D",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1307,
+      "age_seconds": 1395,
       "job_id": "SEM-SQL_CONNECTIONS_8OF10-WORKER_RESULT_DETAIL_READ-A206EC4F5A7936C429A1",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T16:44:02Z",
-    "last_receive_utc": "2026-11-19T16:43:56Z",
+    "last_cycle_utc": "2026-11-19T16:45:14Z",
+    "last_receive_utc": "2026-11-19T16:45:32Z",
     "last_terminal_utc": "2026-11-19T16:32:18Z",
     "pid": "2409912",
     "runtime_fingerprint": {
