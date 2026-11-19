@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "capacitacion",
+          "training",
+          "learning",
+          "evaluacion",
+          "certificacion",
+          "empleado",
+          "RBAC",
+          "notification",
+          "course",
+          "onboarding"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT_BOUNDE-14C56960060084CED5AE",
+  "mode": "READ_ONLY",
+  "objective": "READ_ONLY Gate 0 EDARSA GUEST: auditar contratos y capacidades existentes de capacitacion SaaS, evaluaciones, certificaciones, onboarding, RRHH/HCM, RBAC, notificaciones, frontend y Worker; identificar reutilizacion, dependencias, brechas y criterios de aceptacion sin cambios a codigo o Produccion. Verificar duplicados y devolver evidencia y resultado JSON.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH",
+    "conflict_domains": [
+      "RH"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
