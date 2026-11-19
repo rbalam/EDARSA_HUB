@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/compras/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "Compras_Requisiciones_Sync",
+          "Compras_Inventarios_Fisicos_Sync",
+          "sync_status",
+          "server_id",
+          "sucursal_origen_id",
+          "get_sql_connection",
+          "get_edarsahub_connection"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMPRAS_SYNC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4816825B14C844542127",
+  "mode": "READ_ONLY",
+  "objective": "READ_ONLY estricto para EDARSAHUB BOS. production_allowed=false. Auditar el contrato de sincronización de Compras en el repositorio canónico para Compras_Requisiciones_Sync y Compras_Inventarios_Fisicos_Sync. Confirmar el patrón de write amplification y no-idempotencia relacionado con sync_status, server_id y re-INSERT bajo restricciones UNIQUE; localizar el uso de sucursal_origen_id y las funciones/conexiones canónicas existentes para que cualquier corrección futura reutilice exclusivamente la infraestructura establecida, sin crear conexiones, factories, resolvers, credenciales, perfiles ni fuentes paralelas. No modificar archivos, no ejecutar DDL/DML, no tocar Producción. Entregar evidencia exacta, riesgos, archivos afectados y requisitos de pruebas para una corrección mínima e idempotente.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMPRAS_SYNC",
+    "conflict_domains": [
+      "COMPRAS_SYNC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
