@@ -1,0 +1,79 @@
+{
+  "acceptance": [
+    "stale=True retorna DENIED/RECOMMENDATION_STALE.",
+    "La recomendacion stale no obtiene canal de ejecucion.",
+    "Las seis pruebas E3D pasan.",
+    "No Produccion, SQL ni ejecucion de acciones."
+  ],
+  "actions": [
+    {
+      "expected_count": 1,
+      "expected_sha256": "b40500dc2bc22665f8c580da79994ede1274e96afa8e8c4ffa5b10534b6cc56d",
+      "new": "    reasons = []\n    if recommendation.stale:\n        reasons.append(\"RECOMMENDATION_STALE\")\n    if request.recommendation_id != recommendation.recommendation_id:\n",
+      "old": "    reasons = []\n    if request.recommendation_id != recommendation.recommendation_id:\n",
+      "path": "backend/modules/bos_executive/action_bridge.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "expected_sha256": "616a78aeafe5a4a6b55b15677c98caeb9855a3592d40abdb657880146465f9be",
+      "new": "def test_e3d_stale_recommendation_is_denied():\n    decision = authorize_recommended_action(\n        _recommendation(stale=True),\n        _request(),\n        {\"allowed\": True, \"permission\": \"COMPRAS_INVENTARIOS_VER\"},\n        _context(),\n    )\n    assert decision.allowed is False\n    assert \"RECOMMENDATION_STALE\" in decision.reasons\n    assert decision.outcome_status == \"DENIED\"\n    assert decision.execution_channel is None\n\n\ndef test_e3d_expired_recommendation_is_denied():\n",
+      "old": "def test_e3d_expired_recommendation_is_denied():\n",
+      "path": "backend/tests/test_bos_executive_e3d.py",
+      "type": "replace_text"
+    }
+  ],
+  "base_sha": "da6495339f54925487a929d93d7aed93db4fe624",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/bos_executive/action_bridge.py",
+        "backend/tests/test_bos_executive_e3d.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_bos_executive_e3d.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Solo dos archivos E3D.",
+    "No Produccion.",
+    "No SQL.",
+    "No nuevos ejecutores.",
+    "No E3E/E3F.",
+    "Preservar modificaciones concurrentes."
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-V1-GATE-E-E3D-STALE-SECURITY-FIX-R1-20261028",
+  "objective": "E3D: rechazar recomendaciones obsoletas y agregar regresion fail-closed al Authorized Action Bridge.",
+  "production_allowed": false,
+  "requested_by": "chatgpt",
+  "requester": {
+    "chat": "bos-executive-e3d",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "V1.0",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "V1.0",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "V1.0",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
