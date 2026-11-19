@@ -1,0 +1,25 @@
+{
+  "base_sha": "621f89dc940c296bbf381b3a14bce0937e465167",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:READONLY_PYTEST_REVISION_MISMATCH:recorded=621f89dc940c296bbf381b3a14bce0937e465167:checkout=621f89dc940c296bbf381b3a14bce0937e465167:tracked_dirty=True"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-11-19T14:42:22Z",
+  "execution_base_sha": "621f89dc940c296bbf381b3a14bce0937e465167",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-IA-GLOBAL-RBAC-DATA-SCOPE-POST-INTEGRATION-CERT-READONLY-20261119",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-11-19T14:43:50Z",
+  "quality_gate": "FAIL",
+  "requested_base_sha": "621f89dc940c296bbf381b3a14bce0937e465167",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-19T14:42:21Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
