@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/rrr/",
+          "backend/modules/edge/comandero_local_core.py",
+          "backend/modules/edge/gestor_sincronizacion_rafagas.py"
+        ],
+        "search_terms": [
+          "_resolve_org",
+          "source_transaction_uuid",
+          "native_folio",
+          "RRR_Eventos",
+          "idempotency",
+          "cancelado_origen"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RRR-REPOSITORY_CONTRACT_AUDIT_BOUNDE-0C8C929A8CBB4D060ACA",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY el contrato del adapter RRR G4E antes del canario R11: resolver organizacional, vinculo UUID Comandero con acknowledgement POS, correlacion exacta con hecho comercial, riesgos de folios repetidos entre unidades, validacion cliente, cancelaciones, concurrencia e idempotencia. No modificar archivos ni SQL ni Produccion. Entregar evidencia y riesgos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RRR",
+    "conflict_domains": [
+      "RRR"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
