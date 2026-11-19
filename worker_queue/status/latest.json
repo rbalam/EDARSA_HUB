@@ -4,17 +4,24 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "LOCAL_AHEAD_ONLY",
   "development_sha": "537774dad3ca633541c65781c3316b62f751a20c",
-  "generated_at_utc": "2026-11-19T05:44:26Z",
+  "generated_at_utc": "2026-11-19T05:45:46Z",
   "history": {
-    "done_total_local": 1753,
+    "done_total_local": 1754,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1350,
-    "results_total_local": 2865
+    "results_total_local": 2866
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [],
+  "jobs": [
+    {
+      "age_seconds": 26,
+      "job_id": "SEM-UNIDADES_NEGOCIO_CANONICAS-WORKER_RESULT_DETAIL_READ-925695F4C3CD40FBD88C",
+      "reason": null,
+      "state": "RESULT_READY"
+    }
+  ],
   "local_development_sha": "0f6faffa26064d560bad42a6a2018b22fd95590f",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
@@ -23,15 +30,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 0,
+  "queue_result_ready_recent": 1,
   "queue_running": 0,
   "remote_development_sha": "537774dad3ca633541c65781c3316b62f751a20c",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T05:44:21Z",
-    "last_receive_utc": "2026-11-19T05:44:16Z",
-    "last_terminal_utc": "2026-11-19T04:20:58Z",
+    "last_cycle_utc": "2026-11-19T05:45:34Z",
+    "last_receive_utc": "2026-11-19T05:45:29Z",
+    "last_terminal_utc": "2026-11-19T05:45:20Z",
     "pid": "85",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "9400711a6cd0e352847b81ad85bdf5b0e94b4b7b",
