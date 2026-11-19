@@ -1,14 +1,14 @@
 {
   "ahead_count": 0,
-  "behind_count": 1,
+  "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "REMOTE_AHEAD_ONLY",
-  "development_sha": "1f1e56c26847564feed8f62e3100185e10079455",
-  "generated_at_utc": "2026-11-19T09:52:59Z",
+  "convergence_status": "SYNC",
+  "development_sha": "c8ab676c12b0e90a7ea7d09f13b91f6446d22a77",
+  "generated_at_utc": "2026-11-19T09:54:27Z",
   "history": {
     "done_total_local": 1794,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 1356,
     "results_total_local": 2912
   },
@@ -16,103 +16,103 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1112,
+      "age_seconds": 1200,
       "job_id": "EDARSAHUB-BOS-AUTON-POLICY-GATE-A-AUTH-SECURITY-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 990,
+      "age_seconds": 1078,
       "job_id": "EDARSAHUB-BOS-AUTON-POLICY-GATE-A-AUTH-SECURITY-R2-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 273,
+      "age_seconds": 360,
       "job_id": "EDARSAHUB-BOS-AUTON-POLICY-GATE-B-MCP-DEV-INGRESS-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 147,
+      "age_seconds": 235,
       "job_id": "EDARSAHUB-BOS-AUTON-POLICY-GATE-B1-RUNTIME-CONVERGENCE-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2572,
+      "age_seconds": 2660,
       "job_id": "EDARSAHUB-BOS-WORKER-DETAIL-READ-EVIDENCE-RECOVERY-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2445,
+      "age_seconds": 2532,
       "job_id": "EDARSAHUB-BOS-WORKER-DETAIL-READ-EVIDENCE-RECOVERY-R2-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2247,
+      "age_seconds": 2335,
       "job_id": "EDARSAHUB-PROD-DEV-R3B-PRODUCTION-TRIGGER-CONVERGENCE-R4-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1739,
+      "age_seconds": 1827,
       "job_id": "SEM-CRM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-BEF1625A65B696C6B61C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2046,
+      "age_seconds": 2133,
       "job_id": "SEM-INTEGRATIONS_TOAST-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7C97C26E54E5664895A7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3123,
+      "age_seconds": 3211,
       "job_id": "SEM-WORKER_AUTONOMOUS_EXECUTION_POLI-REPOSITORY_CONTRACT_AUDIT_BOUNDE-3114613653B8E89F106F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2930,
+      "age_seconds": 3018,
       "job_id": "SEM-WORKER_AUTONOMY_POLICY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4FDA7B5D5B7848911C71",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2181,
+      "age_seconds": 2269,
       "job_id": "SEM-WORKER_INGRESS-READ_ONLY_CANARY-36445425EDF37D40BDAF",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2163,
+      "age_seconds": 2251,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-4347981AB61971D6EF38",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2063,
+      "age_seconds": 2151,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_PYTEST_CERTIFICATION_READ-B9F6352189E72E9650E4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2208,
+      "age_seconds": 2295,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-4CB79D0D4B412B9DA416",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2148,
+      "age_seconds": 2236,
       "job_id": "SEM-WORKER_REPAIR_REGISTRY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-6365BF239206AC08AA4C",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "29f6974539cc2bb73481865886424129d2b86f8e",
+  "local_development_sha": "c8ab676c12b0e90a7ea7d09f13b91f6446d22a77",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -122,19 +122,19 @@
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 16,
   "queue_running": 0,
-  "remote_development_sha": "1f1e56c26847564feed8f62e3100185e10079455",
+  "remote_development_sha": "c8ab676c12b0e90a7ea7d09f13b91f6446d22a77",
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-BOS-AUTON-POLICY-GATE-B1-RUNTIME-CONVERGENCE-R1-20261119",
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T09:52:48Z",
-    "last_receive_utc": "2026-11-19T09:52:43Z",
+    "last_cycle_utc": "2026-11-19T09:54:23Z",
+    "last_receive_utc": "2026-11-19T09:54:17Z",
     "last_terminal_utc": "2026-11-19T09:50:32Z",
-    "pid": "2782495",
+    "pid": "3058143",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "00d58b0c368f0be74f8b77f81983733c39efd6c4",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "29f6974539cc2bb73481865886424129d2b86f8e",
+      "development_sha": "c8ab676c12b0e90a7ea7d09f13b91f6446d22a77",
       "expected_generation": "20261117-universal-job-worker-lifecycle-v4",
       "generation_aligned": true,
       "production_touched": false,
