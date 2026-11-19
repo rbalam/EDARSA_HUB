@@ -1,0 +1,111 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "\n\nRAW_WORKER_FIELDS_FORBIDDEN: tuple[str, ...] = (\n    \"actions\",\n    \"checks\",\n    \"production_allowed\",\n    \"requester\",\n    \"target_repo\",\n    \"target_branch\",\n)\n\n_CAPABILITY_METADATA: dict[str, dict[str, Any]] = {\n    \"READ_ONLY_CANARY\": {\n        \"bounded_context_rule\": \"ANY_VALID_TOKEN\",\n        \"allowed_constraints\": (),\n        \"allowed_path_roots\": (),\n    },\n    \"REPOSITORY_CONTRACT_AUDIT\": {\n        \"bounded_context_rule\": \"RH\",\n        \"allowed_constraints\": (),\n        \"allowed_path_roots\": (\"backend/modules\", \"frontend/src\", \"tools/mirror_sync\"),\n    },\n    \"REPOSITORY_CONTRACT_AUDIT_BOUNDED\": {\n        \"bounded_context_rule\": \"ANY_VALID_TOKEN\",\n        \"allowed_constraints\": (\"max_results\", \"paths\", \"search_terms\"),\n        \"allowed_path_roots\": _G3_ROOTS,\n    },\n    \"WORKER_RESULT_SEMANTIC_EXTRACT\": {\n        \"bounded_context_rule\": \"ANY_VALID_TOKEN\",\n        \"allowed_constraints\": (\"source_job_id\",),\n        \"allowed_path_roots\": (),\n    },\n    \"WORKER_RESULT_DETAIL_READ\": {\n        \"bounded_context_rule\": \"ANY_VALID_TOKEN\",\n        \"allowed_constraints\": (\"source_job_id\",),\n        \"allowed_path_roots\": (),\n    },\n    \"WORKER_MAINTENANCE_HISTORY_READONLY\": {\n        \"bounded_context_rule\": \"WORKER_REPAIR_KNOWLEDGE_LOOP\",\n        \"allowed_constraints\": (),\n        \"allowed_path_roots\": (),\n    },\n    \"WORKER_PYTEST_CERTIFICATION_READONLY\": {\n        \"bounded_context_rule\": \"WORKER_REPAIR_KNOWLEDGE_LOOP\",\n        \"allowed_constraints\": (),\n        \"allowed_path_roots\": (),\n    },\n    \"WORKER_REPAIR_BOUNDED\": {\n        \"bounded_context_rule\": _WORKER_REPAIR_CONTEXT,\n        \"allowed_constraints\": (\"capability_code\", \"incident_id\"),\n        \"allowed_path_roots\": (),\n    },\n}\n\n\ndef capability_catalog() -> list[dict[str, Any]]:\n    \"\"\"Return read-only declarative metadata for all registered semantic capabilities.\"\"\"\n    items: list[dict[str, Any]] = []\n    for code in registered_capabilities():\n        cap = _CAPABILITIES[code]\n        meta = _CAPABILITY_METADATA.get(code, {})\n        items.append(\n            {\n                \"code\": cap.code,\n                \"modes\": list(cap.modes),\n                \"bounded_context_rule\": meta.get(\n                    \"bounded_context_rule\",\n                    \"CAPABILITY_OWNED\",\n                ),\n                \"allowed_constraints\": list(\n                    meta.get(\"allowed_constraints\", ())\n                ),\n                \"allowed_path_roots\": list(\n                    meta.get(\"allowed_path_roots\", ())\n                ),\n                \"raw_worker_fields_forbidden\": True,\n            }\n        )\n    return items\n",
+      "source_sha256": "6f3b857de8b2af05d52a0d233a44fe0e4592b3678447ea109ea8fc145155b668",
+      "type": "append_once"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/modules/worker_ingress/routes.py",
+      "replacement": "\n\n@router.get(\"/capabilities\")\ndef list_worker_semantic_capabilities(\n    current_user: dict = Depends(WORKER_ADMIN_DEPENDENCY),\n    authorization: str | None = Header(default=None, alias=\"Authorization\"),\n):\n    \"\"\"Read-only discovery of registered semantic capabilities and allowed constraints.\"\"\"\n    _require_ingress_mcp_scope(\n        authorization=authorization,\n        required_scope=\"worker:status\",\n        current_user=current_user,\n    )\n    del current_user\n    from .semantic_capabilities import (\n        RAW_WORKER_FIELDS_FORBIDDEN,\n        capability_catalog,\n    )\n\n    return {\n        \"schema\": \"edarsahub.worker-semantic-capabilities.v1\",\n        \"production_allowed\": False,\n        \"raw_worker_fields_forbidden\": list(RAW_WORKER_FIELDS_FORBIDDEN),\n        \"capabilities\": capability_catalog(),\n    }\n",
+      "source_sha256": "bb23ab01ce1149ed5b87e2309616c82444e3b819fc3bd267d4b741d9c8239ef7",
+      "type": "append_once"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "def submit_objective_tool(\n    objective: str,\n    bounded_context: str,\n    mode: str,\n    capability: str,\n    request_key: str | None = None,\n    constraints: dict[str, Any] | None = None,\n) -> dict[str, Any]:\n    \"\"\"Submit one approved semantic objective to the EDARSAHUB Universal Worker.\"\"\"\n    payload: dict[str, Any] = {\n        \"objective\": objective,\n        \"bounded_context\": bounded_context,\n        \"mode\": mode,\n        \"capability\": capability,\n        \"constraints\": constraints or {},\n    }",
+      "path": "backend/modules/worker_mcp/server.py",
+      "replacement": "def submit_objective_tool(\n    objective: str,\n    bounded_context: str,\n    mode: str,\n    capability: str,\n    request_key: str | None = None,\n    constraints: dict[str, Any] | None = None,\n) -> dict[str, Any]:\n    \"\"\"Submit one approved semantic objective to the EDARSAHUB Universal Worker.\n\n    Raw edarsahub.worker-job.v2 fields (actions, checks, production_allowed,\n    requester, target_repo, target_branch) are backend-owned and MUST NEVER be\n    passed inside constraints (doing so returns\n    VALIDATION_ERROR_422:SEMANTIC_CONSTRAINTS_UNSUPPORTED).\n\n    Registered capabilities and exact allowed constraint keys:\n    - READ_ONLY_CANARY (mode=READ_ONLY): constraints={}\n    - REPOSITORY_CONTRACT_AUDIT_BOUNDED (mode=READ_ONLY, any valid bounded_context):\n      constraints={\"paths\": [...], \"search_terms\": [...], \"max_results\": 1..100};\n      paths must start with backend/modules/, backend/tests/, frontend/src/, or tools/mirror_sync/.\n    - REPOSITORY_CONTRACT_AUDIT (mode=READ_ONLY, bounded_context=\"RH\" only): constraints={}\n    - WORKER_RESULT_SEMANTIC_EXTRACT (mode=READ_ONLY): constraints={\"source_job_id\": \"...\"}\n    - WORKER_RESULT_DETAIL_READ (mode=READ_ONLY): constraints={\"source_job_id\": \"...\"}\n    - WORKER_MAINTENANCE_HISTORY_READONLY (mode=READ_ONLY, bounded_context=\"WORKER_REPAIR_KNOWLEDGE_LOOP\"): constraints={}\n    - WORKER_PYTEST_CERTIFICATION_READONLY (mode=READ_ONLY, bounded_context=\"WORKER_REPAIR_KNOWLEDGE_LOOP\"): constraints={}\n    - WORKER_REPAIR_BOUNDED (mode=MUTATION, bounded_context=\"WORKER_RUNTIME_CONVERGENCE\"):\n      constraints={\"incident_id\": \"...\", \"capability_code\": \"...\"}\n    \"\"\"\n    if constraints is not None and not isinstance(constraints, dict):\n        raise ToolError(\"VALIDATION_ERROR_422:SEMANTIC_CONSTRAINTS_INVALID\")\n    payload: dict[str, Any] = {\n        \"objective\": objective,\n        \"bounded_context\": bounded_context,\n        \"mode\": mode,\n        \"capability\": capability,\n        \"constraints\": constraints or {},\n    }",
+      "source_sha256": "3bf604c6b1235851bb58fb8147d5aa9cb85a6a938fbf866f0c2b0bcf0d2c06a9",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_remote_semantic_ingress_gate2a.py",
+      "replacement": "\n\ndef test_g3_r2_capability_catalog_exposes_all_registered_capabilities_and_constraints():\n    from modules.worker_ingress.semantic_capabilities import (\n        RAW_WORKER_FIELDS_FORBIDDEN,\n        capability_catalog,\n    )\n\n    catalog = capability_catalog()\n    by_code = {item[\"code\"]: item for item in catalog}\n    assert tuple(sorted(by_code)) == registered_capabilities()\n    assert \"actions\" in RAW_WORKER_FIELDS_FORBIDDEN\n    assert \"checks\" in RAW_WORKER_FIELDS_FORBIDDEN\n    assert \"production_allowed\" in RAW_WORKER_FIELDS_FORBIDDEN\n\n    bounded = by_code[\"REPOSITORY_CONTRACT_AUDIT_BOUNDED\"]\n    assert bounded[\"modes\"] == [\"READ_ONLY\"]\n    assert bounded[\"allowed_constraints\"] == [\"max_results\", \"paths\", \"search_terms\"]\n    assert bounded[\"raw_worker_fields_forbidden\"] is True\n    assert \"tools/mirror_sync/\" in bounded[\"allowed_path_roots\"]\n\n    canary = by_code[\"READ_ONLY_CANARY\"]\n    assert canary[\"allowed_constraints\"] == []\n\n    rh_audit = by_code[\"REPOSITORY_CONTRACT_AUDIT\"]\n    assert rh_audit[\"bounded_context_rule\"] == \"RH\"\n    assert rh_audit[\"allowed_constraints\"] == []\n\n\ndef test_g3_r2_capabilities_discovery_route_is_registered_and_status_scoped():\n    import ast\n\n    routes = set()\n    for node in ast.walk(ast.parse(ROUTES)):\n        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):\n            continue\n        for decorator in node.decorator_list:\n            if not isinstance(decorator, ast.Call):\n                continue\n            if not isinstance(decorator.func, ast.Attribute):\n                continue\n            if not isinstance(decorator.func.value, ast.Name) or decorator.func.value.id != \"router\":\n                continue\n            if decorator.func.attr == \"get\" and decorator.args:\n                route = decorator.args[0]\n                if isinstance(route, ast.Constant) and isinstance(route.value, str):\n                    routes.add(route.value)\n\n    assert \"/capabilities\" in routes\n    assert 'required_scope=\"worker:status\"' in ROUTES\n",
+      "source_sha256": "f3b3bd80cfb185d3a421bcafb5033bf84e9a33d4c7c649198958901556d9ab52",
+      "type": "append_once"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "tools/tests/test_worker_mcp_gate2b.py",
+      "replacement": "\n\n@pytest.mark.asyncio\nasync def test_g3_r2_submit_objective_tool_advertises_capability_contract_and_keeps_two_tools():\n    mcp = server.build_mcp_server(_config())\n\n    async with Client(mcp) as mcp_client:\n        result = await mcp_client.list_tools()\n\n    by_name = {tool.name: tool for tool in result.tools}\n    assert set(by_name) == {\"submit_objective\", \"get_job_status\"}\n    description = by_name[\"submit_objective\"].description or \"\"\n    assert \"REPOSITORY_CONTRACT_AUDIT_BOUNDED\" in description\n    assert \"paths\" in description\n    assert \"search_terms\" in description\n    assert \"SEMANTIC_CONSTRAINTS_UNSUPPORTED\" in description\n    assert \"production_allowed\" in description\n\n\ndef test_g3_r2_submit_objective_tool_rejects_non_dict_constraints():\n    server.build_mcp_server(_config())\n    with pytest.raises(\n        server.ToolError,\n        match=\"VALIDATION_ERROR_422:SEMANTIC_CONSTRAINTS_INVALID\",\n    ):\n        server.submit_objective_tool(\n            objective=\"Auditar contratos MCP en modo READ_ONLY.\",\n            bounded_context=\"WORKER_INGRESS\",\n            mode=\"READ_ONLY\",\n            capability=\"READ_ONLY_CANARY\",\n            constraints=[\"invalid\"],  # type: ignore[arg-type]\n        )\n",
+      "source_sha256": "15ba954c552f793a997198df2721ec8784131888b23900eaeeae025501747be7",
+      "type": "append_once"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "docs/agent-governance/decisions/ACTIVE_DECISIONS.md",
+      "replacement": "\n- Autorizacion acotada EDARSAHUB BOS Gate G3 R2 (2026-11-19, GO explicito de autoridad humana sobre Edarsahub_Desarrollo tras merge PR #147 58f6aec65f4ce244000740c14825f3ee46b19531 y convergencia SYNC verificada, conforme a AGENT_POLICY.md): normalizacion del contrato semantico MCP v4 mediante catalogo declarativo de solo lectura (`capability_catalog()` en `semantic_capabilities.py` y `GET /api/internal/worker/capabilities` con `RBAC_ADMIN` + `worker:status`), documentacion explicita del contrato de capacidades y constraints permitidos en `submit_objective` (`worker_mcp/server.py`, preservando exactamente las dos herramientas publicas MCP y la sanitizacion fail-closed de errores 422), y pruebas positivas/negativas en backend y MCP Gate2B. Preserva CURRENT.md y NEXT de CxP intactos, OAuth 2.1, PKCE S256, RBAC_ADMIN + SUPERADMIN, dbo.Sesiones, fail-closed, worktree Codex intacto, respaldos comerciales SHA256 intactos, EDARSAHUB_MCP_INPROCESS=0 y Edarsahub_Produccion intacta; al concluir Gate G3 R2, IMPLEMENTATION_AUTHORIZED retorna a NO.\n",
+      "source_sha256": "c876c544b46d805701d9d4bd87123993af9b025bae10b44700ee7511c27982ac",
+      "type": "append_once"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "STATUS=GATE_OAUTH_DISCOVERY_CANONICAL_V2_INTEGRATED_DESARROLLO",
+      "path": "docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md",
+      "replacement": "STATUS=GATE_G3_MCP_SEMANTIC_INGRESS_R2_INTEGRATED_DESARROLLO\nGATE_G3_R2_AUTHORIZED_BY=HUMAN_GO_EXPLICIT_AUTHORIZATION\nGATE_G3_R2_AUTHORIZED_AT=2026-11-19\nGATE_G3_R2_BASE_HEAD=58f6aec65f4ce244000740c14825f3ee46b19531\nGATE_G3_R2_SCOPE=BOUNDED_MCP_SEMANTIC_CAPABILITY_DISCOVERY_AND_CONTRACT_ALIGNMENT_DESARROLLO_ONLY",
+      "source_sha256": "14a0f9ce2c1c9957a8c6040f59d61600284955397fa20846f2879ce25d74fe9f",
+      "type": "replace_text"
+    }
+  ],
+  "base_sha": "58f6aec65f4ce244000740c14825f3ee46b19531",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/modules/worker_ingress/routes.py",
+        "backend/modules/worker_mcp/server.py",
+        "backend/tests/test_worker_remote_semantic_ingress_gate2a.py",
+        "tools/tests/test_worker_mcp_gate2b.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_remote_semantic_ingress_gate2a.py",
+        "backend/tests/test_worker_mcp_oauth_scope_enforcement_gate3i.py",
+        "backend/tests/test_worker_mcp_oauth_stepup_gate3l.py",
+        "backend/tests/test_worker_mcp_oauth_discovery_canonical_v2.py",
+        "backend/tests/test_worker_mcp_gateway_400_observability.py",
+        "backend/tests/test_worker_rh_repository_contract_semantic.py",
+        "backend/tests/test_worker_result_detail_read.py",
+        "backend/tests/test_worker_pytest_certification_readonly.py",
+        "backend/tests/test_worker_requester_rbac_contract.py",
+        "backend/tests/test_worker_canonical_job_factory_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-GLOBAL-WORKER-ALIGNMENT-G3-MCP-SEMANTIC-INGRESS-R2-20261119",
+  "mode": "MUTATION",
+  "objective": "Gate G3 R2: alinear el contrato semantico del ingreso MCP v4 exponiendo el catalogo declarativo de capacidades y claves permitidas en constraints (GET /api/internal/worker/capabilities con RBAC_ADMIN + worker:status y descripcion explicita en submit_objective preservando exactamente las 2 herramientas MCP, OAuth/RBAC fail-closed y pruebas de contrato), y registrar el cierre acotado en gobernanza.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "BOS-G3-R2-GLOBAL-WORKER-ALIGNMENT",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_MCP_INGRESS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
