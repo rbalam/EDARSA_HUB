@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "SEM-PRODUCCION_TABLAJERIA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-A9EA45C4A9152C8269C6"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-PRODUCCION_TABLAJERIA-WORKER_RESULT_DETAIL_READ-5B06E3ED4D6606BC3FBF",
+  "mode": "READ_ONLY",
+  "objective": "READ_ONLY: extraer exclusivamente metadatos saneados del resultado local preexistente de Gate0 Tablajeria, para diagnosticar discrepancia de certificacion frente al published marker. No repetir auditoria, no modificar resultado, marcador, archivos, Worker, Produccion ni publicar Gate1. Devolver status/certification/checks sin secretos; conservar evidencia en el canal canonico.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "PRODUCCION_TABLAJERIA",
+    "conflict_domains": [
+      "PRODUCCION_TABLAJERIA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
