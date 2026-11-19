@@ -1,0 +1,140 @@
+{
+  "base_sha": "14859b188eb7b7ff398f4a945fa721211c52272c",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-19T08:14:24Z",
+  "execution_base_sha": "14859b188eb7b7ff398f4a945fa721211c52272c",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-WORKER_AUTONOMY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-05C6D18D323931E3E62D",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-19T08:15:19Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "json",
+              "os",
+              "pathlib",
+              "subprocess",
+              "tempfile",
+              "time",
+              "tools.mirror_sync.worker_maintenance_controller",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "read_runtime_incident",
+              "repair_attempt_allowed"
+            ],
+            "path": "tools/mirror_sync/worker_maintenance_runtime.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RuntimeIncidentState",
+              "_archive_rejected_attempt",
+              "_atomic_json",
+              "_build_runtime_state",
+              "_canonical_git_common_dir",
+              "_incident_path",
+              "_load_state",
+              "_merge_incident_metadata",
+              "_normalize_optional_requester",
+              "audit_runtime_incident",
+              "declare_runtime_incident",
+              "read_runtime_incident",
+              "record_runtime_incident_metadata",
+              "register_published_repair_attempt",
+              "register_repair_attempt",
+              "register_repair_result",
+              "repair_attempt_allowed",
+              "supersede_runtime_incident"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "hashlib",
+              "json",
+              "os",
+              "pathlib",
+              "subprocess",
+              "tempfile",
+              "tools.mirror_sync",
+              "tools.mirror_sync.git_divergence_guard",
+              "tools.mirror_sync.universal_job_bridge",
+              "tools.mirror_sync.worker_job_factory",
+              "tools.mirror_sync.worker_repair_execution",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "read_runtime_incident",
+              "repair_attempt_allowed"
+            ],
+            "path": "tools/mirror_sync/worker_repair_planner.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "RepairCapability",
+              "_canonical_job_ingress_recipe",
+              "_canonical_requester",
+              "_d2_2_runtime_artifact_recipe",
+              "_git",
+              "_learned_as_runtime_capability",
+              "_persist_spec",
+              "_preview_watchdog_transient_recovery_recipe",
+              "_resolve_capability",
+              "_validate_scope",
+              "build_deterministic_repair_job",
+              "builder",
+              "convergence_state",
+              "declare_registered_incident",
+              "publish_planned_repair",
+              "register_capability",
+              "registered_capabilities"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 8,
+          "skipped_sensitive": 6
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-19T08:14:23Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
