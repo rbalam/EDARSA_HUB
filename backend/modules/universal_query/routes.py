@@ -17,6 +17,8 @@ AGNÓSTICO:
 """
 
 from fastapi import APIRouter, HTTPException, Depends
+from core.security import get_current_user
+from core.rbac_helper_sql import es_admin
 from typing import Dict, Optional, Any, List
 from pydantic import BaseModel
 import time
@@ -203,7 +205,8 @@ async def execute_api_request(config: APIConfig) -> Dict:
 @router.post("/servers/{server_id}/universal-query-test")
 async def execute_universal_query_test(
     server_id: str,
-    request: UniversalQueryRequest
+    request: UniversalQueryRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     """
     Ejecuta una prueba universal SQL o API contra un servidor.
@@ -218,9 +221,12 @@ async def execute_universal_query_test(
     
     FASE P1.3 (Dic 2025): Migrado de MongoDB a EDARSAHUB SQL via server_registry.
     """
-    from server import decrypt_server_secrets, get_current_user
+    from server import decrypt_server_secrets
     from core.server_registry import get_server_connection_info_with_secrets
-    
+
+    if not es_admin(current_user):
+        raise HTTPException(status_code=403, detail="Permiso insuficiente")
+
     start_time = time.time()
     
     # Obtener servidor desde EDARSAHUB SQL (NO MongoDB)
@@ -263,7 +269,7 @@ async def execute_universal_query_test(
             "execution": {
                 "status": "error",
                 "response_time_ms": int((time.time() - start_time) * 1000),
-                "error_message": str(e),
+                "error_message": "Error ejecutando la prueba",
                 "error_code": "EXECUTION_ERROR"
             }
         }
@@ -296,7 +302,20 @@ async def _execute_sql_test(server: Dict, request: UniversalQueryRequest, start_
     
     # Sustituir parámetros
     sql_final = substitute_parameters(sql_with_limit, request.parameters or {})
-    
+    # Re-validate after substitution: parameters must not inject extra statements
+    is_valid, error = validate_sql_query(sql_final)
+    if not is_valid:
+        return {
+            **response_base,
+            "success": False,
+            "execution": {
+                "status": "blocked",
+                "response_time_ms": 0,
+                "error_message": error,
+                "error_code": "BLOCKED_OPERATION"
+            }
+        }
+
     # Ejecutar consulta
     rows, columns = execute_sql_on_server(server, sql_final, timeout)
     
