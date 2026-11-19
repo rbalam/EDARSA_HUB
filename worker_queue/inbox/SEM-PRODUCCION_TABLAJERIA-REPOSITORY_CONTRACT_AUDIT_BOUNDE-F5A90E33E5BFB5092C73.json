@@ -1,0 +1,59 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/tablajeria/",
+          "frontend/src/pages/tablajeria/"
+        ],
+        "search_terms": [
+          "Tablajeria_MovimientosInventario",
+          "Tablajeria_PolizasContables",
+          "Operaciones_Tablaje_Ordenes",
+          "Operaciones_Tablaje_EventosContables",
+          "Tablajeria_LonjasDisponibles",
+          "prorrateo",
+          "FechaOperacion",
+          "PlantillaID",
+          "Rendimientos",
+          "Mermas",
+          "Lote",
+          "KG",
+          "PZ",
+          "piezas",
+          "RBAC",
+          "get_external_sql_connection",
+          "reproceso"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-PRODUCCION_TABLAJERIA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-F5A90E33E5BFB5092C73",
+  "mode": "READ_ONLY",
+  "objective": "EDARSAHUB BOS Tablajeria G1A - auditoria COMPLEMENTARIA READ_ONLY del codigo de dominio existente, no repetir G0 certificado ni ejecutar mutaciones.\nExaminar exclusivamente el backend de Tablajeria y sus pantallas frontend para preparar alineacion Diseño Tecnico Canónico V2 con lo que ya existe. Obtener rutas, tablas referenciadas, integraciones, RBAC, fechas, unidades, contratos de inventario y costeo, sin asumir despliegue físico de SQL.\nRiesgos a revisar con evidencia: posible Kardex paralelo Tablajeria_MovimientosInventario, polizas paralelas Tablajeria_PolizasContables, integracion real de movimientos canonicos, campos SKU kg/pieza vs un SKU doble medicion, lonjas individuales, remanentes, diferencias vs mermas, reprocesos, pools y autorizaciones; distinguir codigo implementado de servicios certificados.\nEntregar evidencia estructurada: archivos y símbolos existentes, tabla/endpoint y su dueño canónico, brechas de G1, decisiones REUTILIZAR/EXTENDER/BLOQUEAR, sin DDL ni SQL LIVE, sin crear nuevas tablas, no modificar backend/frontend/Produccion.\nEste trabajo es adenda de cobertura focalizada porque G0 global estuvo truncado y omitió por completo backend/modules/tablajeria; NO equivale a G1 certificado ni habilita G2. Bitacora: Tablajeria 3.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "PRODUCCION_TABLAJERIA",
+    "conflict_domains": [
+      "PRODUCCION_TABLAJERIA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
