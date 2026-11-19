@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/core/config/",
+          "backend/core/sql_first/",
+          "backend/core/connections/",
+          "backend/core/scheduler/"
+        ],
+        "search_terms": [
+          "get_edarsahub_sql_config",
+          "get_sql_connection",
+          "EDARSAHUB_SQL_HOST",
+          "EDARSAHUB_SQL_SERVER",
+          "HRLectura",
+          "Scheduler_DistributedLocks"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CONNECTION_PROVIDER_AUDIT-REPOSITORY_CONTRACT_AUDIT_BOUNDE-543595CC82A30DA79707",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY la arquitectura canónica de conexión SQL EDARSAHUB y el repositorio de distributed locks del scheduler. Determinar qué componentes existentes deben consolidarse y cuáles son wrappers, sin crear proveedores paralelos. No modificar archivos ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONNECTION_PROVIDER_AUDIT",
+    "conflict_domains": [
+      "CONNECTION_PROVIDER_AUDIT"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
