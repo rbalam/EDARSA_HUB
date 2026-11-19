@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/SEM-UNIVERSAL_BANKING-REPOSITORY_CONTRACT_AUDIT_BOUNDE-6F934E425FBBE581D418.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-UNIVERSAL_BANKING-WORKER_RESULT_SEMANTIC_EXTRACT-87B312239A30001EA2C8",
+  "mode": "READ_ONLY",
+  "objective": "Extraer y resumir semanticamente la evidencia terminal del Gate 1 de Universal Banking, preservando rutas, simbolos, tablas, ownership, conexiones, RBAC, scheduler e integraciones relevantes para cerrar el dossier canonico. No modificar archivos, datos, schema ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "UNIVERSAL_BANKING",
+    "conflict_domains": [
+      "UNIVERSAL_BANKING"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
