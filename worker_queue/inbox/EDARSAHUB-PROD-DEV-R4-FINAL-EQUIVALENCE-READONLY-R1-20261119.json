@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PROD-DEV-R4-FINAL-EQUIVALENCE-READONLY-R1-20261119",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "base_sha": "31f569964460cfde7f2921d98b36724c9f2101b1",
+  "mode": "READ_ONLY",
+  "objective": "R4 final de equivalencia funcional de los 38 commits exclusivos de Edarsahub_Produccion frente al HEAD actual de Edarsahub_Desarrollo. Auditar si Development ya contiene capacidades equivalentes o superiores para: root /health, ownership de Scheduler, trigger HTTP productivo protegido, wake productivo con single-owner por replicas, frontend Node/ESLint/navigation build, y ausencia del fingerprint temporal de secreto. No mutar archivos, no tocar Produccion, no reconciliar topologia. Emitir evidencia suficiente para decidir si P4 puede reabrirse.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/server.py",
+          "backend/modules/scheduler_runtime/",
+          "backend/modules/scheduler_trigger/",
+          "backend/tests/",
+          "frontend/package.json",
+          "frontend/scripts/",
+          "frontend/yarn.lock"
+        ],
+        "search_terms": [
+          "health",
+          "PRODUCTION_WEB",
+          "sync_comercial_abiertas_v2",
+          "EDARSA_SCHEDULER_TRIGGER_ENABLED",
+          "sync_comercial_abiertas_v2_wake_owner",
+          "start_heartbeat_loop",
+          "SCHEDULER_TRIGGER_SECRET_DIAG",
+          "_log_trigger_secret_fingerprint",
+          "@eslint/js",
+          "enterpriseNavigation"
+        ],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Production divergence reconciliation R4"
+  }
+}
