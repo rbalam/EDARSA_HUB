@@ -1,0 +1,46 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "backend/modules/worker_mcp/",
+          "backend/modules/worker_ingress/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "SEMANTIC_CONSTRAINTS_UNSUPPORTED",
+          "submit_objective",
+          "REPOSITORY_CONTRACT_AUDIT_BOUNDED"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER.MCP-REPOSITORY_CONTRACT_AUDIT_BOUNDE-60FAF7CB35700286B953",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en solo lectura el contrato del ingreso MCP y sus capacidades semanticas, preservando controles RBAC, Git Mirror y Worker v4; identificar hallazgos ya reportados sin duplicar mutaciones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER.MCP",
+    "conflict_domains": [
+      "WORKER.MCP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
