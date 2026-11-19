@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "SEM-COMUNICACIONES_CFDI-WORKER_RESULT_SEMANTIC_EXTRACT-40365C5E81603B8A25C5"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMUNICACIONES_CFDI-WORKER_RESULT_DETAIL_READ-775419957D110EE89B4D",
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar en READ_ONLY el fallo terminal check_failed:worker_result_semantic_extract del job de extracción CFDI. Recuperar detalle de ejecución y causa raíz verificable sin repetir auditoría ni extracción y sin modificar archivos ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMUNICACIONES_CFDI",
+    "conflict_domains": [
+      "COMUNICACIONES_CFDI"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
