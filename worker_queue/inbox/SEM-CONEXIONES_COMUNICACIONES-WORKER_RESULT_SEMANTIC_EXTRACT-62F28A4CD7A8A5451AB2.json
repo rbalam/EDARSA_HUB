@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D2-RBAC-MATERIALIZATION-R1.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CONEXIONES_COMUNICACIONES-WORKER_RESULT_SEMANTIC_EXTRACT-62F28A4CD7A8A5451AB2",
+  "mode": "READ_ONLY",
+  "objective": "Extraer exclusivamente la evidencia semantica ya existente del resultado certificado de materializacion RBAC Gate5D2 y determinar si contiene filas o referencias recuperables de los nueve batches de la auditoria 019. No reejecutar SQL ni auditorias, no mutar repositorio ni Produccion. Si no contiene filas originales, declarar evidencia insuficiente y no inferir divergencias.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONEXIONES_COMUNICACIONES",
+    "conflict_domains": [
+      "CONEXIONES_COMUNICACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
