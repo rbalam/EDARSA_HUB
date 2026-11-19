@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "EDARSAHUB-PROD-DEV-R3C-PRODUCTION-WAKE-OWNERSHIP-R1-20261119"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_RESULT_DIAGNOSTIC-WORKER_RESULT_DETAIL_READ-A4A96B87527A633423F8",
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar de forma READ_ONLY por qué el job integrado EDARSAHUB-PROD-DEV-R3C-PRODUCTION-WAKE-OWNERSHIP-R1-20261119 permanece en PENDING_AUDIT_EVIDENCE aunque Development y mirror/emergent-live convergen al SHA f4aecf4030983cd8297d6b9695e4c89b12f33641. Recuperar evidencia local sanitizada del resultado y del ciclo de certificación. No mutar repositorio, runtime, SQL ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_RESULT_DIAGNOSTIC",
+    "conflict_domains": [
+      "WORKER_RESULT_DIAGNOSTIC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
