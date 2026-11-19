@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/crm/",
+          "backend/modules/comercial/",
+          "backend/modules/worker_ingress/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "CRM",
+          "VTiger",
+          "lead",
+          "oportunidad",
+          "RBAC",
+          "WhatsApp",
+          "scheduler",
+          "cliente",
+          "agent"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CRM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-63863139D45CABFD627B",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY brechas y reutilización del CRM e IA comercial de EDARSAHUB BOS. No repetir Gate1 Knowledge, consultar previos; inspeccionar implementaciones y permisos de CRM, ventas, Scheduler e integraciones. Entregar evidencia, matriz de riesgos y propuestas de Gates; sin cambios, sin Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CRM",
+    "conflict_domains": [
+      "CRM"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
