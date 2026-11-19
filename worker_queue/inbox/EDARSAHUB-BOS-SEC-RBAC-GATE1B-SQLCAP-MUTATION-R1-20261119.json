@@ -1,0 +1,61 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "\n\n# SEC_RBAC Gate 1B: sealed audit of effective role permissions and JWT identity\n# cardinality. No externally selected SQL, paths, users or write actions.\n_SEC_RBAC_GATE1B_QUERIES = (\n    {\n        \"name\": \"sensitive_role_permissions\",\n        \"sql\": (\n            \"SELECT r.CodigoRol, \"\n            \"UPPER(CONCAT(m.CodigoModulo,'_',a.CodigoAccion)) AS PermissionCode, \"\n            \"MAX(CASE WHEN ISNULL(r.Activo,1)=1 \"\n            \"AND ISNULL(prm.Activo,1)=1 AND ISNULL(prm.Permitido,0)=1 \"\n            \"AND ISNULL(m.Activo,1)=1 AND ISNULL(a.Activo,1)=1 \"\n            \"THEN 1 ELSE 0 END) AS PermisoActivo \"\n            \"FROM dbo.Usuario_Roles AS r \"\n            \"INNER JOIN dbo.Usuario_PermisosRolModulo AS prm ON prm.RolID=r.RolID \"\n            \"INNER JOIN dbo.Usuario_Modulos AS m ON m.ModuloID=prm.ModuloID \"\n            \"INNER JOIN dbo.Usuario_Acciones AS a ON a.AccionID=prm.AccionID \"\n            \"WHERE UPPER(r.CodigoRol) IN \"\n            \"('SUPERADMIN','SUPERADMINISTRADOR','ADMIN','DIRECCION',\"\n            \"'GERENTE_OPS','SUPERVISOR','OPERADOR') \"\n            \"AND UPPER(CONCAT(m.CodigoModulo,'_',a.CodigoAccion)) IN \"\n            \"('CARGOS_CREAR','CARGOS_AUTORIZAR','CARGOS_APLICAR',\"\n            \"'CARGOS_RECHAZAR','CARGOS_REVERTIR','CARGOS_CANCELAR',\"\n            \"'RESPONSABILIDAD_CALCULAR','RESPONSABILIDAD_PROPONER',\"\n            \"'RESPONSABILIDAD_APROBAR','RESPONSABILIDAD_GESTIONAR',\"\n            \"'NOTIFICACIONES_ENVIAR','NOTIFICACIONES_CONFIGURAR','RBAC_ADMIN') \"\n            \"GROUP BY r.CodigoRol, \"\n            \"UPPER(CONCAT(m.CodigoModulo,'_',a.CodigoAccion)) \"\n            \"ORDER BY r.CodigoRol, PermissionCode\"\n        ),\n    },\n    {\n        \"name\": \"role_hierarchy_and_assignments\",\n        \"sql\": (\n            \"SELECT r.CodigoRol, r.NivelJerarquia, \"\n            \"COUNT_BIG(DISTINCT CASE WHEN ISNULL(ura.Activo,1)=1 \"\n            \"AND ISNULL(u.Activo,1)=1 THEN u.UsuarioID \"\n            \"ELSE NULL END) AS UsuariosAsignadosActivos \"\n            \"FROM dbo.Usuario_Roles AS r \"\n            \"LEFT JOIN dbo.Usuario_RolesAsignacion AS ura ON ura.RolID=r.RolID \"\n            \"LEFT JOIN dbo.Usuario_Catalogo AS u ON u.UsuarioID=ura.UsuarioID \"\n            \"WHERE UPPER(r.CodigoRol) IN \"\n            \"('SUPERADMIN','SUPERADMINISTRADOR','ADMIN','DIRECCION',\"\n            \"'GERENTE_OPS','SUPERVISOR','OPERADOR') \"\n            \"GROUP BY r.CodigoRol,r.NivelJerarquia \"\n            \"ORDER BY r.NivelJerarquia DESC,r.CodigoRol\"\n        ),\n    },\n    {\n        \"name\": \"active_user_public_identity_aggregates\",\n        \"sql\": (\n            \"SELECT COUNT_BIG(*) AS UsuariosActivos, \"\n            \"COALESCE(SUM(CASE WHEN PublicUUID IS NULL \"\n            \"THEN 1 ELSE 0 END),0) AS SinPublicUUID, \"\n            \"COUNT_BIG(DISTINCT PublicUUID) AS PublicUUIDUnicos \"\n            \"FROM dbo.Usuario_Catalogo WHERE Activo=1\"\n        ),\n    },\n)\n\n\ndef _sec_rbac_gate1b_sql_builder(request: Mapping[str, Any]) -> dict[str, Any]:\n    context = _g3_context(request)\n    if context != \"SEC_RBAC\":\n        raise SemanticCapabilityError(\"SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED\")\n    _g3_constraints(request, set())\n    return {\n        \"actions\": [],\n        \"checks\": [{\n            \"type\": \"sql_readonly_audit\",\n            \"source\": \"EDARSAHUB\",\n            \"queries\": [dict(q) for q in _SEC_RBAC_GATE1B_QUERIES],\n        }],\n        \"scheduling\": _g3_scheduling(context),\n    }\n\n\nregister_capability(\n    SemanticCapability(\n        code=\"SEC_RBAC_SQL_PERMISSION_MATRIX_READONLY\",\n        modes=(\"READ_ONLY_SQL\",),\n        builder=_sec_rbac_gate1b_sql_builder,\n    )\n)\n_CAPABILITY_METADATA[\"SEC_RBAC_SQL_PERMISSION_MATRIX_READONLY\"] = {\n    \"bounded_context_rule\": \"SEC_RBAC\",\n    \"allowed_constraints\": (),\n    \"allowed_path_roots\": (),\n}\n",
+      "source_sha256": "4c64b138a8dfc809c00561c760b976bbb4ad986780bc46e4811b563fd7cc35c0",
+      "type": "append_once"
+    },
+    {
+      "content": "\"\"\"Bounded, fail-closed SEC_RBAC Gate 1B SQL audit capability.\"\"\"\nimport pytest\n\nfrom modules.integrations_runtime.read_only_sql import validate_readonly_sql\nfrom modules.worker_ingress import service\nfrom modules.worker_ingress.semantic_capabilities import capability_catalog\nfrom tools.mirror_sync.gate_chain_publisher import validate_template\n\nUSER = {\"id\": \"1\", \"email\": \"test-admin@example.invalid\", \"role\": \"SuperAdministrador\"}\n\n\ndef req(**changes):\n    p = {\n        \"objective\": \"Auditar permisos SQL Seguridad RBAC sin modificaciones.\",\n        \"bounded_context\": \"SEC_RBAC\",\n        \"capability\": \"SEC_RBAC_SQL_PERMISSION_MATRIX_READONLY\",\n        \"mode\": \"READ_ONLY_SQL\",\n        \"constraints\": {},\n    }\n    p.update(changes)\n    return p\n\n\ndef test_gate1b_validated_envelope():\n    job = service.build_semantic_job(req(), current_user=USER)\n    assert validate_template(job)[\"schema\"] == \"edarsahub.worker-job.v2\"\n    assert job[\"mode\"] == \"READ_ONLY_SQL\"\n    assert job[\"actions\"] == []\n    assert job[\"production_allowed\"] is False\n    assert job[\"checks\"][0][\"source\"] == \"EDARSAHUB\"\n    assert job[\"checks\"][0][\"type\"] == \"sql_readonly_audit\"\n    assert len(job[\"checks\"][0][\"queries\"]) == 3\n\n\ndef test_gate1b_sql_is_sealed_and_select_only():\n    queries = service.build_semantic_job(req(), current_user=USER)[\"checks\"][0][\"queries\"]\n    for query in queries:\n        sql = query[\"sql\"]\n        assert sql.startswith(\"SELECT \")\n        assert validate_readonly_sql(sql) == sql\n        assert not any(token in sql.lower() for token in (\n            \"email\", \"password\", \"api_key\", \"jwt_secret\", \"refresh_token\"\n        ))\n\n\n@pytest.mark.parametrize(\"changes\", [\n    {\"mode\": \"MUTATION\"}, {\"mode\": \"READ_ONLY\"},\n])\ndef test_gate1b_rejects_mode_changes(changes):\n    with pytest.raises(service.WorkerIngressError, match=\"SEMANTIC_CAPABILITY_MODE_MISMATCH\"):\n        service.build_semantic_job(req(**changes), current_user=USER)\n\n\n@pytest.mark.parametrize(\"changes\", [\n    {\"bounded_context\": \"OTHER\"},\n    {\"constraints\": {\"paths\": [\"backend/.env\"]}},\n    {\"constraints\": {\"queries\": [{\"name\": \"a\", \"sql\": \"SELECT 1\"}]}},\n    {\"constraints\": {\"sql\": \"SELECT 1\"}},\n    {\"constraints\": {\"user_id\": \"1\"}},\n    {\"constraints\": {\"actions\": []}},\n    {\"constraints\": {\"source\": \"SERVER\"}},\n])\ndef test_gate1b_rejects_external_query_and_selectors(changes):\n    with pytest.raises(service.WorkerIngressError, match=\"SEMANTIC_\"):\n        service.build_semantic_job(req(**changes), current_user=USER)\n\n\ndef test_gate1b_registry_isolated_from_existing_repo_audit():\n    catalog = {c[\"code\"]: c for c in capability_catalog()}\n    item = catalog[\"SEC_RBAC_SQL_PERMISSION_MATRIX_READONLY\"]\n    assert item[\"modes\"] == [\"READ_ONLY_SQL\"]\n    assert item[\"bounded_context_rule\"] == \"SEC_RBAC\"\n    assert item[\"allowed_constraints\"] == []\n    assert item[\"allowed_path_roots\"] == []\n    assert \"backend/core/\" in catalog[\"REPOSITORY_CONTRACT_AUDIT_BOUNDED\"][\"allowed_path_roots\"]\n\n\ndef test_gate1b_submit_goes_through_canonical_publisher(monkeypatch):\n    jobs = []\n    def submit(job):\n        jobs.append(job)\n        return {\"status\": \"SUBMITTED\", \"job_id\": job[\"job_id\"], \"production_touched\": False}\n    monkeypatch.setattr(service.gate_chain_publisher, \"submit\", submit)\n    result = service.submit_objective(req(), current_user=USER)\n    assert result[\"status\"] == \"SUBMITTED\"\n    assert len(jobs) == 1\n    assert jobs[0][\"actions\"] == []\n    assert jobs[0][\"mode\"] == \"READ_ONLY_SQL\"\n",
+      "path": "backend/tests/test_worker_sec_rbac_gate1b_sql_capability.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_sec_rbac_gate1b_sql_capability.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_sec_rbac_gate1b_sql_capability.py",
+        "backend/tests/test_worker_remote_semantic_ingress_gate2a.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-SEC-RBAC-GATE1B-SQLCAP-MUTATION-R1-20261119",
+  "mode": "MUTATION",
+  "objective": "Seguridad RBAC Gate 1B: registrar una unica capacidad SQL READ_ONLY_SQL con tres consultas SELECT predefinidas, exclusivamente HRLectura, resultados agregados sin identidad personal, en Capability Registry existente y pruebas fail-closed. Integrar solo en Edarsahub_Desarrollo mediante Universal Worker V4; sin nueva infraestructura, SQL DML/DDL, migraciones 016 017 018 ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SEC_RBAC",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "SEC_RBAC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
