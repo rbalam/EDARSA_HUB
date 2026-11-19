@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "tools/mirror_sync/",
+          "backend/modules/worker_ingress/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "repair_attempt_allowed",
+          "advance_repair_automation",
+          "authorize_requester",
+          "capability_catalog",
+          "production_allowed",
+          "idempotency",
+          "certification",
+          "retry",
+          "autonomous"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_AUTONOMY_POLICY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4FDA7B5D5B7848911C71",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY los contratos existentes de autonomía del Worker v4, Repair Planner, Execution Bridge, control de autorización, continuidad, recuperación y certificación. Entregar evidencia de brechas sin modificar archivos ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_AUTONOMY_POLICY",
+    "conflict_domains": [
+      "WORKER_AUTONOMY_POLICY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
