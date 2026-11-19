@@ -1,0 +1,80 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "RAW_WORKER_FIELDS_FORBIDDEN: tuple[str, ...] = (",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "# SQL connections 8/10 - fixed non-secret repository contract audit.\n_SQL_CONNECTIONS_BOOTSTRAP_CONTEXT = \"SQL_CONNECTIONS_8OF10\"\n_SQL_CONNECTIONS_BOOTSTRAP_REQUEST = {\n    \"paths\": [\n        \"backend/core/centro_control/routes.py\",\n        \"backend/core/config/edarsahub_config.py\",\n        \"backend/core/sql_first/connection_factory.py\",\n        \"backend/core/sql_first/db.py\",\n        \"backend/core/connections/hrlectura_connection_factory.py\",\n        \"backend/server.py\",\n    ],\n    \"search_terms\": [\n        \"get_edarsahub_pymssql_connection\",\n        \"EDARSAHUB_SQL_HOST\",\n        \"EDARSAHUB_SQL_PORT\",\n        \"EDARSAHUB_SQL_DATABASE\",\n        \"EDARSAHUB_SQL_USER\",\n        \"EDARSAHUB_SQL_PASSWORD\",\n        \"_cc_sql_connection\",\n        \"_cc_sql_env\",\n        \"pymssql\",\n        \"get_sql_connection\",\n    ],\n    \"max_results\": 200,\n}\n\n\ndef _sql_connections_bootstrap_readonly_builder(request: Mapping[str, Any]) -> dict[str, Any]:\n    context = _g3_context(request)\n    if context != _SQL_CONNECTIONS_BOOTSTRAP_CONTEXT:\n        raise SemanticCapabilityError(\"SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED\")\n    constraints = request.get(\"constraints\")\n    if constraints is not None and (\n        not isinstance(constraints, Mapping) or bool(constraints)\n    ):\n        raise SemanticCapabilityError(\"SEMANTIC_CONSTRAINTS_UNSUPPORTED\")\n    return {\n        \"actions\": [],\n        \"checks\": [{\n            \"type\": \"repository_contract_audit\",\n            \"request\": {\n                **_SQL_CONNECTIONS_BOOTSTRAP_REQUEST,\n                \"paths\": list(_SQL_CONNECTIONS_BOOTSTRAP_REQUEST[\"paths\"]),\n                \"search_terms\": list(_SQL_CONNECTIONS_BOOTSTRAP_REQUEST[\"search_terms\"]),\n            },\n        }],\n        \"scheduling\": _g3_scheduling(context),\n    }\n\n\nregister_capability(\n    SemanticCapability(\n        code=\"SQL_CONNECTIONS_BOOTSTRAP_READONLY\",\n        modes=(\"READ_ONLY\",),\n        builder=_sql_connections_bootstrap_readonly_builder,\n    )\n)\n\n\nRAW_WORKER_FIELDS_FORBIDDEN: tuple[str, ...] = (",
+      "source_sha256": "2869a557389685f435ad3e746054d88aa1c9e272e622548e94a53d4c8362aee5",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    \"DEVELOPMENT_MUTATION_BOUNDED\": {",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "    \"SQL_CONNECTIONS_BOOTSTRAP_READONLY\": {\n        \"bounded_context_rule\": _SQL_CONNECTIONS_BOOTSTRAP_CONTEXT,\n        \"allowed_constraints\": (),\n        \"allowed_path_roots\": (\"backend/core\", \"backend/server.py\"),\n    },\n    \"DEVELOPMENT_MUTATION_BOUNDED\": {",
+      "source_sha256": "5f2ef64831d5a0f9b5096bb2e7c46daddc06cdc2c2ce96367a95c22f41004aea",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    - REPOSITORY_CONTRACT_AUDIT (mode=READ_ONLY, bounded_context=\"RH\" only): constraints={}",
+      "path": "backend/modules/worker_mcp/server.py",
+      "replacement": "    - REPOSITORY_CONTRACT_AUDIT (mode=READ_ONLY, bounded_context=\"RH\" only): constraints={}\n    - SQL_CONNECTIONS_BOOTSTRAP_READONLY (mode=READ_ONLY, bounded_context=\"SQL_CONNECTIONS_8OF10\"): constraints={}",
+      "source_sha256": "e39839f9a47b632581ad09d34a336c8805f2b0fce83a9372c8c98c2acc351348",
+      "type": "replace_text"
+    },
+    {
+      "content": "\"\"\"Contract tests for SQL connections 8/10 semantic READ_ONLY ingress.\"\"\"\nfrom __future__ import annotations\n\nimport pytest\n\nfrom modules.worker_ingress import semantic_capabilities as caps\nfrom modules.worker_ingress import service\n\n\nUSER = {\n    \"id\": \"1\",\n    \"email\": \"ricardo@edarsa.com.mx\",\n    \"role\": \"SuperAdministrador\",\n}\n\nEXPECTED_PATHS = [\n    \"backend/core/centro_control/routes.py\",\n    \"backend/core/config/edarsahub_config.py\",\n    \"backend/core/sql_first/connection_factory.py\",\n    \"backend/core/sql_first/db.py\",\n    \"backend/core/connections/hrlectura_connection_factory.py\",\n    \"backend/server.py\",\n]\n\n\ndef request(**overrides):\n    payload = {\n        \"objective\": \"Auditar conexiones SQL 8/10.\",\n        \"bounded_context\": \"SQL_CONNECTIONS_8OF10\",\n        \"mode\": \"READ_ONLY\",\n        \"capability\": \"SQL_CONNECTIONS_BOOTSTRAP_READONLY\",\n        \"constraints\": {},\n    }\n    payload.update(overrides)\n    return payload\n\n\ndef test_capability_registered_and_readonly():\n    assert \"SQL_CONNECTIONS_BOOTSTRAP_READONLY\" in caps.registered_capabilities()\n    catalog = {row[\"code\"]: row for row in caps.capability_catalog()}\n    entry = catalog[\"SQL_CONNECTIONS_BOOTSTRAP_READONLY\"]\n    assert entry[\"modes\"] == [\"READ_ONLY\"]\n    assert entry[\"bounded_context_rule\"] == \"SQL_CONNECTIONS_8OF10\"\n    assert entry[\"allowed_constraints\"] == []\n    assert entry[\"raw_worker_fields_forbidden\"] is True\n\n\ndef test_fixed_readonly_contract():\n    job = service.build_semantic_job(request(), current_user=USER)\n    assert job[\"mode\"] == \"READ_ONLY\"\n    assert job[\"production_allowed\"] is False\n    assert job[\"actions\"] == []\n    assert len(job[\"checks\"]) == 1\n    check = job[\"checks\"][0]\n    assert check[\"type\"] == \"repository_contract_audit\"\n    assert check[\"request\"][\"paths\"] == EXPECTED_PATHS\n    assert check[\"request\"][\"max_results\"] == 200\n\n\ndef test_rejects_wrong_context():\n    with pytest.raises(\n        service.WorkerIngressError,\n        match=\"SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED\",\n    ):\n        service.build_semantic_job(\n            request(bounded_context=\"OTHER\"),\n            current_user=USER,\n        )\n\n\n@pytest.mark.parametrize(\n    \"constraints\",\n    [\n        {\"paths\": [\"backend/core\"]},\n        {\"actions\": []},\n        {\"checks\": [{\"type\": \"git_diff_check\"}]},\n        {\"production_allowed\": False},\n    ],\n)\ndef test_rejects_caller_constraints(constraints):\n    with pytest.raises(\n        service.WorkerIngressError,\n        match=\"SEMANTIC_CONSTRAINTS_UNSUPPORTED\",\n    ):\n        service.build_semantic_job(\n            request(constraints=constraints),\n            current_user=USER,\n        )\n",
+      "path": "backend/tests/test_worker_sql_connections_bootstrap_semantic.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/modules/worker_mcp/server.py",
+        "backend/tests/test_worker_sql_connections_bootstrap_semantic.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_sql_connections_bootstrap_semantic.py",
+        "backend/tests/test_worker_remote_semantic_ingress_gate2a.py",
+        "tools/tests/test_worker_mcp_gate2b.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-SQL8-SEMANTIC-BOOTSTRAP-DEV-R1-20261119",
+  "mode": "MUTATION",
+  "objective": "SQL Connections 8/10: registrar una sola capacidad SQL_CONNECTIONS_BOOTSTRAP_READONLY usando receta aprendida certificada, con tres modificaciones de texto SHA-bound, test nuevo, validacion read-only, RBAC fail-closed y checks canonicos. Solo Desarrollo y sin SQL LIVE ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SQL_CONNECTIONS_8OF10",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "SQL_CONNECTIONS_8OF10"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
