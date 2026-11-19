@@ -1,9 +1,9 @@
 {
   "requested_by": "ChatGPT",
-  "reason": "retry SHA-bound audit attestation/final certification only for existing integrated EDARSAHUB-PROD-DEV-R3C-PRODUCTION-WAKE-OWNERSHIP-R1-20261119; do not reexecute mutation; no duplicate; no Production",
+  "reason": "wake canonical Universal Worker to consume existing EDARSAHUB-R3C-AUDIT-EVIDENCE-DIAGNOSTIC-R1-20261119 READ_ONLY request; no duplicate; no Production",
   "target_branch": "Edarsahub_Desarrollo",
   "target_sha": "f4aecf4030983cd8297d6b9695e4c89b12f33641",
   "production_allowed": false,
-  "preferred_job_id": "EDARSAHUB-PROD-DEV-R3C-PRODUCTION-WAKE-OWNERSHIP-R1-20261119",
-  "attempt": 3
+  "preferred_job_id": "EDARSAHUB-R3C-AUDIT-EVIDENCE-DIAGNOSTIC-R1-20261119",
+  "attempt": 1
 }
