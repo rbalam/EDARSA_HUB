@@ -70,7 +70,9 @@ _SAFE_RESULT_KEYS = {
 
 
 class WorkerIngressError(ValueError):
-    pass
+    def __init__(self, message: str, *, diagnostic: Mapping[str, Any] | None = None):
+        super().__init__(message)
+        self.diagnostic = dict(diagnostic) if isinstance(diagnostic, Mapping) else None
 
 
 def _clean(value: Any) -> str:
@@ -900,3 +902,298 @@ def resolve_go_context(
         "missing_fields": missing_fields,
         "production_touched": False,
     }
+
+
+_SECURITY_ERROR_PREFIXES = (
+    "RBAC_",
+    "SCOPE_",
+    "SENSITIVE_FIELD_FORBIDDEN",
+    "AUTHENTICATED_REQUESTER_EMAIL_REQUIRED",
+    "PRODUCTION_FORBIDDEN",
+    "SEMANTIC_PATH_FORBIDDEN",
+    "SEMANTIC_DEV_PATH_FORBIDDEN",
+    "SEMANTIC_DEV_OPERATION_FORBIDDEN",
+    "SEMANTIC_REPAIR_PRODUCTION_POLICY_VIOLATION",
+)
+
+
+def _normalize_error_code(raw: str) -> str:
+    head = str(raw or "").strip().split(":", 1)[0].strip().upper()
+    return head or "VALIDATION_ERROR"
+
+
+def build_semantic_diagnostic(
+    error_code: str,
+    *,
+    request_payload: Mapping[str, Any] | None = None,
+    loaded_capabilities: tuple[str, ...] | list[str] | None = None,
+) -> dict[str, Any]:
+    """Build a secret-free structured diagnostic explaining why a semantic request was rejected."""
+    from .semantic_capabilities import (
+        RAW_WORKER_FIELDS_FORBIDDEN,
+        capability_catalog,
+        registered_capabilities,
+    )
+    from tools.mirror_sync.worker_runtime_fingerprint import diagnose_capability_failure
+
+    code = _normalize_error_code(error_code)
+    payload = dict(request_payload) if isinstance(request_payload, Mapping) else {}
+    capability = _clean(payload.get("capability")).upper()
+    bounded_context = _clean(payload.get("bounded_context")).upper()
+    mode = _clean(payload.get("mode")).upper()
+
+    reg_caps = registered_capabilities()
+    loaded = tuple(loaded_capabilities) if loaded_capabilities is not None else reg_caps
+    catalog_map = {item["code"]: item for item in capability_catalog()}
+    cap_meta = catalog_map.get(capability)
+
+    is_security = any(code.startswith(pref) for pref in _SECURITY_ERROR_PREFIXES)
+    runtime_diag = diagnose_capability_failure(
+        capability_code=capability,
+        registered_capabilities=reg_caps,
+        loaded_capabilities=loaded,
+        runtime_aligned=True,
+        error_code=code,
+    )
+
+    if runtime_diag["classification"] == "CAPABILITY_NOT_LOADED_STALE_RUNTIME":
+        classification = "RUNTIME_DRIFT_ERROR"
+    elif is_security:
+        classification = "SECURITY_DENIAL_EXPECTED"
+    else:
+        classification = "CONTRACT_VALIDATION_ERROR"
+
+    rejected_field = "request"
+    allowed_correction = "Consult GET /api/internal/worker/capabilities for registered contracts."
+
+    if code == "SEMANTIC_CAPABILITY_UNKNOWN":
+        rejected_field = "capability"
+        if runtime_diag["classification"] == "CAPABILITY_NOT_LOADED_STALE_RUNTIME":
+            allowed_correction = (
+                "Capability exists in code but is missing in active runtime; verify "
+                "GET /api/internal/worker/runtime-convergence before retrying."
+            )
+        else:
+            allowed_correction = (
+                "Use a registered capability from GET /api/internal/worker/capabilities "
+                f"(registered: {', '.join(reg_caps)})."
+            )
+    elif code == "SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED" or code == "SEMANTIC_CONTEXT_INVALID":
+        rejected_field = "bounded_context"
+        expected_ctx = cap_meta.get("bounded_context_rule") if cap_meta else "VALID_DOMAIN_TOKEN"
+        allowed_correction = f"Set bounded_context to satisfy rule: {expected_ctx}."
+    elif code == "SEMANTIC_CAPABILITY_MODE_MISMATCH":
+        rejected_field = "mode"
+        modes = ", ".join(cap_meta.get("modes", [])) if cap_meta else "READ_ONLY"
+        allowed_correction = f"Use an allowed mode for {capability or 'capability'}: {modes}."
+    elif code in {"SEMANTIC_CONSTRAINTS_UNSUPPORTED", "SEMANTIC_CONSTRAINTS_INVALID"}:
+        rejected_field = "constraints"
+        allowed_keys = cap_meta.get("allowed_constraints", []) if cap_meta else []
+        keys_str = ", ".join(allowed_keys) if allowed_keys else "(none - pass {})"
+        allowed_correction = (
+            f"Pass constraints as a JSON object with only allowed keys: {keys_str}. "
+            f"Never pass raw Worker fields: {', '.join(RAW_WORKER_FIELDS_FORBIDDEN)}."
+        )
+    elif code in {"SEMANTIC_SOURCE_SHA256_MISMATCH", "SEMANTIC_SOURCE_SHA256_REQUIRED"}:
+        rejected_field = "constraints.change_spec[].source_sha256"
+        allowed_correction = (
+            "Refresh the live 64-hex SHA-256 of the target file in Edarsahub_Desarrollo "
+            "before re-submitting; never reuse stale hashes."
+        )
+    elif code in {"SEMANTIC_PATH_FORBIDDEN", "SEMANTIC_PATH_INVALID", "SEMANTIC_DEV_PATH_FORBIDDEN", "SEMANTIC_DEV_PATH_INVALID"}:
+        rejected_field = "constraints.paths" if "DEV" not in code else "constraints.change_spec[].path"
+        roots = ", ".join(cap_meta.get("allowed_path_roots", [])) if cap_meta else "backend/modules/, backend/tests/, frontend/src/, tools/mirror_sync/"
+        allowed_correction = f"Use only relative non-sensitive paths under allowed roots: {roots}."
+    elif code == "SEMANTIC_DEV_OPERATION_FORBIDDEN":
+        rejected_field = "constraints.change_spec[].operation"
+        allowed_correction = "Use only declarative operations: replace_text, insert_before, insert_after, append_once, write_file."
+    elif code in {"RBAC_MUTATION_FORBIDDEN", "AUTHENTICATED_REQUESTER_EMAIL_REQUIRED"}:
+        rejected_field = "rbac"
+        allowed_correction = "Authenticated admin/worker:submit RBAC identity is required for MUTATION mode."
+    elif code == "SCOPE_AUTHORIZATION_DENIED":
+        rejected_field = "authorization_scope"
+        allowed_correction = "Target domain, empresa_id, or unidad_negocio_pk is outside the caller's authorized scope."
+    elif code == "SENSITIVE_FIELD_FORBIDDEN":
+        rejected_field = "request"
+        allowed_correction = "Remove sensitive credential/secret/token keys from the request payload."
+    elif code == "SCHEMA_VALIDATION_ERROR":
+        rejected_field = "request_schema"
+        allowed_correction = (
+            "Send required WorkerObjectiveRequest fields (objective, bounded_context, mode, capability, optional request_key, constraints) "
+            "with valid types and no extra top-level keys."
+        )
+
+    return {
+        "schema": "edarsahub.worker-semantic-diagnostic.v1",
+        "error_code": code,
+        "status": code,
+        "classification": classification,
+        "runtime_diagnosis": runtime_diag["classification"],
+        "rejected_field": rejected_field,
+        "capability": capability or None,
+        "bounded_context": bounded_context or None,
+        "mode": mode or None,
+        "allowed_modes": list(cap_meta.get("modes", [])) if cap_meta else [],
+        "allowed_constraints": list(cap_meta.get("allowed_constraints", [])) if cap_meta else [],
+        "allowed_bounded_context": cap_meta.get("bounded_context_rule") if cap_meta else None,
+        "allowed_path_roots": list(cap_meta.get("allowed_path_roots", [])) if cap_meta else [],
+        "registered_capabilities": list(reg_caps),
+        "allowed_correction": allowed_correction,
+        "production_touched": False,
+    }
+
+
+def _verify_authorization_scope(
+    *,
+    bounded_context: str,
+    authorization_scope: Mapping[str, Any] | None,
+) -> None:
+    if not isinstance(authorization_scope, Mapping) or not authorization_scope:
+        return
+    req_domain = bounded_context.strip().lower()
+    for field, target in (
+        ("domains", req_domain),
+        ("domain", req_domain),
+    ):
+        allowed = authorization_scope.get(field)
+        if allowed is None:
+            continue
+        vals = (
+            {str(v).strip().lower() for v in allowed if str(v).strip()}
+            if isinstance(allowed, (list, tuple, set, frozenset))
+            else {str(allowed).strip().lower()}
+        )
+        if vals and "*" not in vals and target not in vals:
+            raise WorkerIngressError("SCOPE_AUTHORIZATION_DENIED")
+
+    for req_key, granted_key in (
+        ("requested_empresa_id", "allowed_empresa_ids"),
+        ("requested_unidad_negocio_pk", "allowed_unidad_negocio_pks"),
+    ):
+        req_val = _clean(authorization_scope.get(req_key)).lower()
+        if not req_val:
+            continue
+        raw_granted = authorization_scope.get(granted_key)
+        granted = (
+            {str(v).strip().lower() for v in raw_granted if str(v).strip()}
+            if isinstance(raw_granted, (list, tuple, set, frozenset))
+            else set()
+        )
+        if "*" not in granted and req_val not in granted:
+            raise WorkerIngressError("SCOPE_AUTHORIZATION_DENIED")
+
+
+def preflight_semantic_objective(
+    request_payload: Mapping[str, Any],
+    *,
+    current_user: Mapping[str, Any],
+    authorization_scope: Mapping[str, Any] | None = None,
+    loaded_capabilities: tuple[str, ...] | list[str] | None = None,
+) -> dict[str, Any]:
+    """Canonical pre-publication semantic preflight validating contract, RBAC, scope, SHA-256, and duplicates."""
+    payload = dict(request_payload) if isinstance(request_payload, Mapping) else {}
+    try:
+        _assert_no_sensitive_keys(payload)
+        objective = _clean(payload.get("objective"))
+        bounded_context = _clean(payload.get("bounded_context")).upper()
+        capability_code = _clean(payload.get("capability")).upper()
+        requested_mode = _clean(payload.get("mode")).upper()
+
+        if not objective:
+            raise WorkerIngressError("OBJECTIVE_REQUIRED")
+        if not bounded_context:
+            raise WorkerIngressError("BOUNDED_CONTEXT_REQUIRED")
+
+        _verify_authorization_scope(
+            bounded_context=bounded_context,
+            authorization_scope=authorization_scope,
+        )
+
+        try:
+            capability = resolve_capability(capability_code)
+        except SemanticCapabilityError as exc:
+            raise WorkerIngressError(str(exc)) from exc
+
+        if loaded_capabilities is not None:
+            loaded_set = {str(c).strip().upper() for c in loaded_capabilities if str(c).strip()}
+            if capability.code not in loaded_set:
+                raise WorkerIngressError("SEMANTIC_CAPABILITY_UNKNOWN")
+
+        allowed_modes = tuple(str(m).upper() for m in capability.modes)
+        if requested_mode not in allowed_modes:
+            raise WorkerIngressError("SEMANTIC_CAPABILITY_MODE_MISMATCH")
+
+        _requester_from_authenticated_user(current_user, project="EDARSAHUB")
+        if requested_mode == "MUTATION":
+            _assert_mutation_rbac(current_user)
+
+        if capability.submitter is not None:
+            # Direct-submitter capability (e.g. WORKER_REPAIR_BOUNDED): validate context & constraints without mutating
+            constraints = payload.get("constraints")
+            if not isinstance(constraints, Mapping):
+                raise WorkerIngressError("SEMANTIC_CONSTRAINTS_INVALID")
+            from .semantic_capabilities import capability_catalog
+
+            meta = {item["code"]: item for item in capability_catalog()}.get(capability.code, {})
+            ctx_rule = meta.get("bounded_context_rule")
+            if ctx_rule and ctx_rule != "ANY_VALID_TOKEN" and bounded_context != ctx_rule:
+                raise WorkerIngressError("SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED")
+            allowed_keys = set(meta.get("allowed_constraints", ()))
+            if set(constraints.keys()) - allowed_keys:
+                raise WorkerIngressError("SEMANTIC_CONSTRAINTS_UNSUPPORTED")
+            return {
+                "schema": "edarsahub.worker-semantic-preflight.v1",
+                "ok": True,
+                "status": "PREFLIGHT_READY",
+                "capability": capability.code,
+                "bounded_context": bounded_context,
+                "mode": requested_mode,
+                "duplicate_detected": False,
+                "production_allowed": False,
+                "production_touched": False,
+            }
+
+        canonical_job = build_semantic_job(payload, current_user=current_user)
+        existing_state = _find_existing_job_state(canonical_job["job_id"])
+        if existing_state is not None:
+            return {
+                "schema": "edarsahub.worker-semantic-preflight.v1",
+                "ok": True,
+                "status": "EXISTS",
+                "job_id": canonical_job["job_id"],
+                "existing_lifecycle": existing_state,
+                "duplicate_detected": True,
+                "duplicate_prevented": True,
+                "capability": capability.code,
+                "bounded_context": bounded_context,
+                "mode": requested_mode,
+                "production_allowed": False,
+                "production_touched": False,
+            }
+
+        return {
+            "schema": "edarsahub.worker-semantic-preflight.v1",
+            "ok": True,
+            "status": "PREFLIGHT_READY",
+            "job_id": canonical_job["job_id"],
+            "capability": capability.code,
+            "bounded_context": bounded_context,
+            "mode": requested_mode,
+            "action_count": len(canonical_job.get("actions") or []),
+            "check_types": [c.get("type") for c in (canonical_job.get("checks") or []) if isinstance(c, dict)],
+            "duplicate_detected": False,
+            "production_allowed": False,
+            "production_touched": False,
+        }
+    except WorkerIngressError as exc:
+        diag = build_semantic_diagnostic(
+            str(exc),
+            request_payload=payload,
+            loaded_capabilities=loaded_capabilities,
+        )
+        return {
+            "schema": "edarsahub.worker-semantic-preflight.v1",
+            "ok": False,
+            "status": "PREFLIGHT_REJECTED",
+            **diag,
+        }

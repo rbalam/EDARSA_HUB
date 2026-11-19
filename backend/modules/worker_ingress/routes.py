@@ -182,13 +182,19 @@ def submit_worker_objective(
             current_user=current_user,
         )
     except WorkerIngressError as exc:
+        from .service import build_semantic_diagnostic
+
         message = str(exc)
         code = (
             status.HTTP_422_UNPROCESSABLE_ENTITY
             if message.startswith("SEMANTIC_")
             else status.HTTP_400_BAD_REQUEST
         )
-        raise HTTPException(status_code=code, detail=message) from exc
+        diagnostic = exc.diagnostic or build_semantic_diagnostic(
+            message,
+            request_payload=request.model_dump(exclude_none=True),
+        )
+        raise HTTPException(status_code=code, detail=diagnostic) from exc
 
     _raise_for_submit_status(result)
     return result
@@ -295,4 +301,25 @@ def read_worker_go_context(
         project=project,
         chain_id=chain_id,
         objective_hint=objective_hint,
+    )
+
+
+
+@router.post("/objectives/preflight")
+def preflight_worker_objective(
+    request: WorkerObjectiveRequest,
+    current_user: dict = Depends(WORKER_ADMIN_DEPENDENCY),
+    authorization: str | None = Header(default=None, alias="Authorization"),
+):
+    """Read-only canonical semantic preflight before publication."""
+    _require_ingress_mcp_scope(
+        authorization=authorization,
+        required_scope="worker:status",
+        current_user=current_user,
+    )
+    from .service import preflight_semantic_objective
+
+    return preflight_semantic_objective(
+        request.model_dump(exclude_none=True),
+        current_user=current_user,
     )

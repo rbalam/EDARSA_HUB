@@ -74,12 +74,40 @@ def _extract_validation_reason(payload: Mapping[str, Any]) -> str:
         if _SAFE_REASON_CODE_RE.fullmatch(candidate):
             return candidate
     if isinstance(detail, Mapping):
-        state = str(detail.get("status") or "").strip().upper()
+        state = str(detail.get("error_code") or detail.get("status") or "").strip().upper()
         if _SAFE_REASON_CODE_RE.fullmatch(state):
             return state
     if isinstance(detail, list):
         return "SCHEMA_VALIDATION_ERROR"
     return "VALIDATION_ERROR"
+
+
+def extract_safe_validation_diagnostic(payload: Mapping[str, Any]) -> dict[str, str]:
+    """Extract bounded secret-free field/correction hints from FastAPI 422/400 error payloads."""
+    detail = payload.get("detail")
+    out: dict[str, str] = {}
+    if isinstance(detail, Mapping):
+        for key in ("rejected_field", "capability", "classification", "allowed_correction"):
+            val = detail.get(key)
+            if isinstance(val, str) and val.strip():
+                out[key] = val.strip()[:240]
+    elif isinstance(detail, list) and detail:
+        fields: list[str] = []
+        for item in detail[:5]:
+            if not isinstance(item, Mapping):
+                continue
+            loc = item.get("loc")
+            if isinstance(loc, (list, tuple)) and loc:
+                field_path = ".".join(str(part) for part in loc if str(part) != "body")
+                if field_path and re.fullmatch(r"[A-Za-z0-9_.-]{1,120}", field_path):
+                    fields.append(field_path)
+        if fields:
+            out["rejected_field"] = ",".join(fields)
+        out["allowed_correction"] = (
+            "Provide required WorkerObjectiveRequest fields (objective, bounded_context, mode, capability, constraints) "
+            "without extra top-level keys."
+        )
+    return out
 
 
 def _extract_auth_error(

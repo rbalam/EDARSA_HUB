@@ -459,10 +459,18 @@ def _raise_mapped_upstream_error(
     tool_name: str,
 ) -> None:
     if isinstance(exc, WorkerMcpValidationError):
+        from .client import extract_safe_validation_diagnostic
+
         status_num = int(exc.status_code or 422)
-        raise ToolError(
-            f"VALIDATION_ERROR_{status_num}:{exc.reason_code}"
-        ) from exc
+        diag = extract_safe_validation_diagnostic(exc.payload)
+        parts = [f"VALIDATION_ERROR_{status_num}:{exc.reason_code}"]
+        if diag.get("rejected_field"):
+            parts.append(f"field={diag['rejected_field']}")
+        if diag.get("capability"):
+            parts.append(f"capability={diag['capability']}")
+        if diag.get("allowed_correction"):
+            parts.append(f"hint={diag['allowed_correction']}")
+        raise ToolError(" | ".join(parts)) from exc
 
     if exc.status_code == 401 or exc.code == "AUTHENTICATION_REQUIRED":
         _PENDING_HTTP_AUTH_CHALLENGE.set(
@@ -528,7 +536,10 @@ def submit_objective_tool(
       Requires live source_sha256 for existing files and authorized admin/worker:submit RBAC.
     """
     if constraints is not None and not isinstance(constraints, dict):
-        raise ToolError("VALIDATION_ERROR_422:SEMANTIC_CONSTRAINTS_INVALID")
+        raise ToolError(
+            "VALIDATION_ERROR_422:SEMANTIC_CONSTRAINTS_INVALID | field=constraints | "
+            "hint=Pass constraints as a JSON object matching GET /api/internal/worker/capabilities."
+        )
     payload: dict[str, Any] = {
         "objective": objective,
         "bounded_context": bounded_context,
