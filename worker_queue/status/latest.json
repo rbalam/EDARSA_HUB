@@ -4,115 +4,121 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "REMOTE_AHEAD_ONLY",
   "development_sha": "1f1e56c26847564feed8f62e3100185e10079455",
-  "generated_at_utc": "2026-11-19T09:50:06Z",
+  "generated_at_utc": "2026-11-19T09:51:37Z",
   "history": {
     "done_total_local": 1794,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1355,
-    "results_total_local": 2911
+    "rejected_total_local": 1356,
+    "results_total_local": 2912
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 939,
+      "age_seconds": 1029,
       "job_id": "EDARSAHUB-BOS-AUTON-POLICY-GATE-A-AUTH-SECURITY-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 817,
+      "age_seconds": 907,
       "job_id": "EDARSAHUB-BOS-AUTON-POLICY-GATE-A-AUTH-SECURITY-R2-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 100,
+      "age_seconds": 190,
       "job_id": "EDARSAHUB-BOS-AUTON-POLICY-GATE-B-MCP-DEV-INGRESS-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2399,
+      "age_seconds": 64,
+      "job_id": "EDARSAHUB-BOS-AUTON-POLICY-GATE-B1-RUNTIME-CONVERGENCE-R1-20261119",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2489,
       "job_id": "EDARSAHUB-BOS-WORKER-DETAIL-READ-EVIDENCE-RECOVERY-R1-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2272,
+      "age_seconds": 2362,
       "job_id": "EDARSAHUB-BOS-WORKER-DETAIL-READ-EVIDENCE-RECOVERY-R2-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2074,
+      "age_seconds": 2164,
       "job_id": "EDARSAHUB-PROD-DEV-R3B-PRODUCTION-TRIGGER-CONVERGENCE-R4-20261119",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1566,
+      "age_seconds": 1657,
       "job_id": "SEM-CRM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-BEF1625A65B696C6B61C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1872,
+      "age_seconds": 1963,
       "job_id": "SEM-INTEGRATIONS_TOAST-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7C97C26E54E5664895A7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2950,
+      "age_seconds": 3040,
       "job_id": "SEM-WORKER_AUTONOMOUS_EXECUTION_POLI-REPOSITORY_CONTRACT_AUDIT_BOUNDE-3114613653B8E89F106F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2757,
+      "age_seconds": 2848,
       "job_id": "SEM-WORKER_AUTONOMY_POLICY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4FDA7B5D5B7848911C71",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3494,
+      "age_seconds": 3585,
       "job_id": "SEM-WORKER_CONTRACT_COMPATIBILITY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-3A9CD7272D27DF658973",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3440,
+      "age_seconds": 3531,
       "job_id": "SEM-WORKER_CONTRACT_COMPATIBILITY-WORKER_RESULT_DETAIL_READ-B2D40882EF42FA6D81A3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2008,
+      "age_seconds": 2098,
       "job_id": "SEM-WORKER_INGRESS-READ_ONLY_CANARY-36445425EDF37D40BDAF",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1990,
+      "age_seconds": 2081,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-4347981AB61971D6EF38",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1890,
+      "age_seconds": 1981,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_PYTEST_CERTIFICATION_READ-B9F6352189E72E9650E4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2035,
+      "age_seconds": 2125,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-4CB79D0D4B412B9DA416",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1975,
+      "age_seconds": 2066,
       "job_id": "SEM-WORKER_REPAIR_REGISTRY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-6365BF239206AC08AA4C",
       "reason": null,
       "state": "RESULT_READY"
@@ -126,15 +132,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 17,
+  "queue_result_ready_recent": 18,
   "queue_running": 0,
   "remote_development_sha": "1f1e56c26847564feed8f62e3100185e10079455",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T09:49:51Z",
-    "last_receive_utc": "2026-11-19T09:49:46Z",
-    "last_terminal_utc": "2026-11-19T09:48:26Z",
+    "last_cycle_utc": "2026-11-19T09:51:32Z",
+    "last_receive_utc": "2026-11-19T09:51:27Z",
+    "last_terminal_utc": "2026-11-19T09:50:32Z",
     "pid": "2782495",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "00d58b0c368f0be74f8b77f81983733c39efd6c4",
