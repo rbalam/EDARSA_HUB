@@ -644,3 +644,259 @@ def get_job_status(job_id: str) -> dict[str, Any]:
         "status": "NOT_FOUND",
         "production_touched": False,
     }
+
+
+_AMBIGUOUS_DOMAINS = frozenset({"", "*", "ALL", "ANY", "GENERAL", "GLOBAL", "UNKNOWN", "DEFAULT", "MISC"})
+_DOMAIN_TOKEN_RE = re.compile(r"^[A-Z0-9][A-Z0-9._-]{1,119}$")
+
+
+def _job_matches_domain(job_id: str, payload: Mapping[str, Any], domain_upper: str) -> bool:
+    """Strictly isolate jobs by domain so RRHH, CRM, Finanzas, etc. are never mixed."""
+    scheduling = payload.get("scheduling")
+    if isinstance(scheduling, Mapping):
+        bc = _clean(scheduling.get("bounded_context")).upper()
+        if bc == domain_upper:
+            return True
+    jid_upper = job_id.upper()
+    tokens = [tok for tok in re.split(r"[^A-Z0-9]+", jid_upper) if tok]
+    if f"SEM-{domain_upper}-" in jid_upper:
+        return True
+    if f"-{domain_upper}-" in jid_upper or jid_upper.startswith(f"{domain_upper}-"):
+        return True
+    return domain_upper in tokens
+
+
+def resolve_go_context(
+    *,
+    domain: str,
+    current_user: Mapping[str, Any],
+    project: str = "EDARSAHUB",
+    chain_id: str | None = None,
+    objective_hint: str | None = None,
+    authorization_context: Mapping[str, Any] | None = None,
+    config_dir: Path | None = None,
+) -> dict[str, Any]:
+    """Canonical GO context resolver across chats using only existing queue & gate-chain registries.
+
+    Never creates per-chat databases or parallel operational memory.
+    Fails closed (mutation_allowed=False) when context is ambiguous or authorization is unverified.
+    """
+    from tools.mirror_sync.gate_chain_controller import (
+        classify_policy_tier,
+        evaluate_gate_authorization,
+    )
+    from tools.mirror_sync.gate_chain_reconciler import reconcile_chain
+
+    domain_upper = _clean(domain).upper()
+    project_clean = _clean(project) or "EDARSAHUB"
+    hint_clean = _clean(objective_hint)
+    chain_clean = _clean(chain_id)
+
+    try:
+        requester = _requester_from_authenticated_user(current_user, project=project_clean)
+        identity_verified = True
+    except WorkerIngressError:
+        requester = {"email": "", "source": "edarsahub-worker-ingress", "project": project_clean}
+        identity_verified = False
+
+    try:
+        _assert_mutation_rbac(current_user)
+        rbac_mutation_ok = True
+    except WorkerIngressError:
+        rbac_mutation_ok = False
+
+    if (
+        not domain_upper
+        or domain_upper in _AMBIGUOUS_DOMAINS
+        or not _DOMAIN_TOKEN_RE.fullmatch(domain_upper)
+    ):
+        return {
+            "schema": "edarsahub.worker-go-context.v1",
+            "project": project_clean,
+            "domain": domain_upper or None,
+            "active_objective": hint_clean or None,
+            "chain_id": chain_clean or None,
+            "last_certified_gate": None,
+            "pending_jobs": [],
+            "active_authorizations": {
+                "identity_verified": identity_verified,
+                "actor_email": requester.get("email") or None,
+                "rbac_mutation_authorized": rbac_mutation_ok,
+            },
+            "gate_dependencies": [],
+            "policy_tier": "HUMAN_APPROVAL_REQUIRED",
+            "mutation_allowed": False,
+            "next_allowed_action": "REQUEST_MINIMUM_INFO",
+            "reason": "AMBIGUOUS_DOMAIN_CONTEXT",
+            "missing_fields": ["domain"],
+            "production_touched": False,
+        }
+
+    # Discover domain-scoped in-flight jobs (PENDING / PROCESSING)
+    pending_jobs: list[dict[str, Any]] = []
+    for lifecycle, dirname in (("PROCESSING", "processing"), ("PENDING", "pending")):
+        folder = STATE_ROOT / dirname
+        if not folder.is_dir():
+            continue
+        for path in sorted(folder.glob("*.json")):
+            payload = _read_json_if_object(path)
+            jid = _clean(payload.get("job_id")) or path.stem
+            if jid and _job_matches_domain(jid, payload, domain_upper):
+                pending_jobs.append({"job_id": jid, "lifecycle": lifecycle})
+
+    # Discover latest certified gate strictly within this domain
+    last_certified: dict[str, Any] | None = None
+    results_dir = STATE_ROOT / "results"
+    if results_dir.is_dir():
+        candidates = sorted(
+            results_dir.glob("*.json"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        for path in candidates:
+            jid = path.stem
+            # Fast pre-check by filename or lightweight JSON read
+            raw = _read_json_if_object(path)
+            if not raw or not _job_matches_domain(jid, raw, domain_upper):
+                continue
+            read = read_canonical_result(path, expected_job_id=jid)
+            if not read.terminal_result_valid or not isinstance(read.payload, dict):
+                continue
+            cert = _clean(read.payload.get("certification")).upper()
+            if cert in {"CERTIFIED", "CERTIFIED_READ_ONLY", "CERTIFIED_OPERATIONAL", "CERTIFIED_FRONTEND_BUILD"}:
+                last_certified = {
+                    "job_id": jid,
+                    "status": read.payload.get("status"),
+                    "certification": cert,
+                    "commit_sha": (
+                        read.payload.get("certified_source_sha")
+                        or read.payload.get("development_sha")
+                        or read.payload.get("commit_sha")
+                    ),
+                    "completed_at_utc": read.payload.get("completed_at_utc"),
+                }
+                break
+
+    # Optional registered gate-chain reconciliation (read-only)
+    chains_root = config_dir or (REPO_ROOT / "worker_queue" / "config" / "gate_chains")
+    matched_chain: dict[str, Any] | None = None
+    chain_reconcile: dict[str, Any] | None = None
+    gate_dependencies: list[dict[str, Any]] = []
+    policy_tier = "READ_ONLY"
+    chain_auth_reason = "AUTHORIZED"
+
+    if chains_root.is_dir():
+        for cpath in sorted(chains_root.glob("*.json")):
+            cfg = _read_json_if_object(cpath)
+            if not cfg or cfg.get("schema") != "edarsahub.gate-chain.v1":
+                continue
+            cid = _clean(cfg.get("chain_id"))
+            cfg_domain = _clean(cfg.get("domain") or cfg.get("bounded_context")).upper()
+            if chain_clean:
+                if cid == chain_clean:
+                    matched_chain = cfg
+                    break
+            elif cfg_domain == domain_upper and cfg.get("enabled") is True:
+                matched_chain = cfg
+                break
+
+    active_objective = hint_clean or None
+    if matched_chain is not None:
+        chain_clean = _clean(matched_chain.get("chain_id"))
+        active_objective = active_objective or _clean(matched_chain.get("objective")) or None
+        chain_reconcile = reconcile_chain(matched_chain, STATE_ROOT)
+        next_gid = _clean(chain_reconcile.get("next_gate_id"))
+        cur_gid = _clean(chain_reconcile.get("current_gate_id"))
+        if next_gid:
+            gate_dependencies.append({"requires_certified_gate": cur_gid or None, "next_gate_id": next_gid})
+            target_gate = next(
+                (g for g in matched_chain.get("gates") or [] if _clean(g.get("gate_id")) == next_gid),
+                None,
+            )
+            if isinstance(target_gate, Mapping):
+                policy_tier, _ = classify_policy_tier(target_gate)
+                auth_ok, chain_auth_reason = evaluate_gate_authorization(
+                    target_gate,
+                    authorization_classes=matched_chain.get("authorization_classes") or (),
+                    authorization_context=authorization_context or matched_chain.get("authorization_context"),
+                )
+                if not auth_ok:
+                    policy_tier = "HUMAN_APPROVAL_REQUIRED"
+    elif rbac_mutation_ok and active_objective:
+        policy_tier = "DEVELOPMENT_MUTATION"
+
+    # Decide next_allowed_action fail-closed
+    missing_fields: list[str] = []
+    if pending_jobs:
+        next_action = "WAIT_FOR_IN_FLIGHT_JOB"
+        reason = "DOMAIN_HAS_IN_FLIGHT_JOB"
+        mutation_allowed = False
+    elif not identity_verified:
+        next_action = "HUMAN_APPROVAL_REQUIRED"
+        reason = "AUTHENTICATED_IDENTITY_UNVERIFIED"
+        missing_fields.append("authenticated_user")
+        mutation_allowed = False
+    elif chain_reconcile is not None:
+        cstate = _clean(chain_reconcile.get("state")).upper()
+        if cstate == "COMPLETE":
+            next_action = "COMPLETE"
+            reason = "CHAIN_COMPLETE"
+            mutation_allowed = False
+        elif cstate == "WAIT":
+            next_action = "WAIT_FOR_IN_FLIGHT_JOB"
+            reason = _clean(chain_reconcile.get("reason")) or "CHAIN_WAITING"
+            mutation_allowed = False
+        elif cstate == "STOP" or policy_tier == "HUMAN_APPROVAL_REQUIRED" or chain_auth_reason != "AUTHORIZED":
+            next_action = "HUMAN_APPROVAL_REQUIRED"
+            reason = chain_auth_reason if chain_auth_reason != "AUTHORIZED" else (_clean(chain_reconcile.get("reason")) or "CHAIN_STOPPED")
+            mutation_allowed = False
+        elif cstate == "READY":
+            if policy_tier == "DEVELOPMENT_MUTATION" and not rbac_mutation_ok:
+                next_action = "HUMAN_APPROVAL_REQUIRED"
+                reason = "RBAC_MUTATION_FORBIDDEN"
+                mutation_allowed = False
+            else:
+                next_action = "CONTINUE_AUTONOMOUS"
+                reason = "CHAIN_TRANSITION_READY"
+                mutation_allowed = policy_tier == "DEVELOPMENT_MUTATION" and rbac_mutation_ok
+        else:
+            next_action = "REQUEST_MINIMUM_INFO"
+            reason = f"CHAIN_STATE_{cstate or 'UNKNOWN'}"
+            mutation_allowed = False
+    elif not active_objective and last_certified is None:
+        next_action = "REQUEST_MINIMUM_INFO"
+        reason = "NO_ACTIVE_OBJECTIVE_OR_PRIOR_GATE"
+        missing_fields.append("objective_hint")
+        mutation_allowed = False
+    elif not rbac_mutation_ok:
+        next_action = "CONTINUE_AUTONOMOUS"
+        policy_tier = "READ_ONLY"
+        reason = "READ_ONLY_ONLY_WITHOUT_MUTATION_RBAC"
+        mutation_allowed = False
+    else:
+        next_action = "CONTINUE_AUTONOMOUS"
+        reason = "AUTHORIZED_CONTEXT_RESOLVED"
+        mutation_allowed = True
+
+    return {
+        "schema": "edarsahub.worker-go-context.v1",
+        "project": project_clean,
+        "domain": domain_upper,
+        "active_objective": active_objective,
+        "chain_id": chain_clean or None,
+        "last_certified_gate": last_certified,
+        "pending_jobs": pending_jobs,
+        "active_authorizations": {
+            "identity_verified": identity_verified,
+            "actor_email": requester.get("email") or None,
+            "rbac_mutation_authorized": rbac_mutation_ok,
+            "chain_authorization_status": chain_auth_reason,
+        },
+        "gate_dependencies": gate_dependencies,
+        "policy_tier": policy_tier,
+        "mutation_allowed": mutation_allowed,
+        "next_allowed_action": next_action,
+        "reason": reason,
+        "missing_fields": missing_fields,
+        "production_touched": False,
+    }

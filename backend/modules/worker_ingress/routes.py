@@ -269,3 +269,30 @@ def read_worker_runtime_convergence(
     report = build_mcp_runtime_convergence_report()
     report["capability_catalog"] = capability_catalog()
     return report
+
+
+
+@router.get("/context")
+def read_worker_go_context(
+    domain: str,
+    project: str = "EDARSAHUB",
+    chain_id: str | None = None,
+    objective_hint: str | None = None,
+    current_user: dict = Depends(WORKER_ADMIN_DEPENDENCY),
+    authorization: str | None = Header(default=None, alias="Authorization"),
+):
+    """Read-only canonical GO context resolution for cross-chat continuity."""
+    _require_ingress_mcp_scope(
+        authorization=authorization,
+        required_scope="worker:status",
+        current_user=current_user,
+    )
+    from .service import resolve_go_context
+
+    return resolve_go_context(
+        domain=domain,
+        current_user=current_user,
+        project=project,
+        chain_id=chain_id,
+        objective_hint=objective_hint,
+    )
