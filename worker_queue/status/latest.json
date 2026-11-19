@@ -4,26 +4,44 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "LOCAL_AHEAD_ONLY",
   "development_sha": "537774dad3ca633541c65781c3316b62f751a20c",
-  "generated_at_utc": "2026-11-19T00:34:49Z",
+  "generated_at_utc": "2026-11-19T00:36:10Z",
   "history": {
-    "done_total_local": 1742,
+    "done_total_local": 1744,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1348,
-    "results_total_local": 2852
+    "rejected_total_local": 1349,
+    "results_total_local": 2855
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 10,
+      "age_seconds": 91,
       "job_id": "SEM-CONNECTIONS_SCHEDULER_CAPABILITY-WORKER_RESULT_SEMANTIC_EXTRACT-2D8BA8A244FE7685B16F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 632,
+      "age_seconds": 69,
+      "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-4C67756B0F704B740A93",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 714,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-6539735A398188F62788",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 47,
+      "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-40763E26C01DF4EBE392",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 20,
+      "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_SEMANTIC_EXTRACT-E70481DC12BF3313F330",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -36,15 +54,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "remote_development_sha": "537774dad3ca633541c65781c3316b62f751a20c",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-19T00:34:42Z",
-    "last_receive_utc": "2026-11-19T00:34:37Z",
-    "last_terminal_utc": "2026-11-19T00:34:38Z",
+    "last_cycle_utc": "2026-11-19T00:36:10Z",
+    "last_receive_utc": "2026-11-19T00:36:05Z",
+    "last_terminal_utc": "2026-11-19T00:35:50Z",
     "pid": "82",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "9400711a6cd0e352847b81ad85bdf5b0e94b4b7b",
