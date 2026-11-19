@@ -1,0 +1,64 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/comercial_analytics/",
+          "backend/modules/comercial_v2/",
+          "backend/modules/ia_assistant/",
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "fecha_operativa",
+          "unidad_negocio_id",
+          "empresa_id",
+          "ventas_sin_propina",
+          "RBAC",
+          "drilldown",
+          "export",
+          "inegi",
+          "capacidad_instalada",
+          "backtesting",
+          "proyeccion",
+          "calendario",
+          "evento",
+          "comparativo",
+          "fecha_discontinua",
+          "comercial",
+          "inteligencia",
+          "ejecutivo"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMERCIAL_ANALYTICS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-3602373ECF532E0C0A3F",
+  "mode": "READ_ONLY",
+  "objective": "G0 auditoria diferencial READ_ONLY de KPI Comerciales Fechas 5 en Desarrollo. Identificar evidencia contractual sobre fecha operativa/discontinua, filtros multiempresa multiunidad RBAC, paridad KPIs Ejecutivo Comercial IA, eventos, comparativos, capacidad, Economia/INEGI, proyecciones/backtesting, drilldowns, exportaciones y pruebas existentes. Clasificar probado/no encontrado/no evaluable, sin afirmar ejecucion de pruebas ni rendimiento. No editar ningun archivo, ni SQL, ni Produccion. Reutilizar contrato canonico y entregar evidencias por ruta.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_ANALYTICS",
+    "conflict_domains": [
+      "COMERCIAL_ANALYTICS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
