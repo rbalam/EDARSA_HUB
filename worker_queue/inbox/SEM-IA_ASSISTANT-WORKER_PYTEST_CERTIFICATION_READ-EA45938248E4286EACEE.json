@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_ia_global_rbac_data_scope_r14.py",
+        "backend/tests/test_ia_global_authorized_contract.py",
+        "backend/tests/test_ia_contextual_comercial_contract.py",
+        "backend/tests/test_comercial_analytics_tickets.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-IA_ASSISTANT-WORKER_PYTEST_CERTIFICATION_READ-EA45938248E4286EACEE",
+  "mode": "READ_ONLY",
+  "objective": "Certificar en modo READ_ONLY las 4 suites (25 pruebas) de IA Global / RBAC R15 mediante preset fijo IA_ASSISTANT tras correccion de drift de plataforma en universal_job_dispatcher.py.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "IA_ASSISTANT",
+    "conflict_domains": [
+      "IA_ASSISTANT"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
