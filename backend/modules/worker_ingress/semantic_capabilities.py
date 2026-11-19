@@ -996,3 +996,93 @@ _CAPABILITY_METADATA[_COA_GATE6F_CAPABILITY] = {
     "allowed_constraints": ("authorization_ref",),
     "allowed_path_roots": (),
 }
+
+
+# SEC_RBAC Gate 1B: sealed audit of effective role permissions and JWT identity
+# cardinality. No externally selected SQL, paths, users or write actions.
+_SEC_RBAC_GATE1B_QUERIES = (
+    {
+        "name": "sensitive_role_permissions",
+        "sql": (
+            "SELECT r.CodigoRol, "
+            "UPPER(CONCAT(m.CodigoModulo,'_',a.CodigoAccion)) AS PermissionCode, "
+            "MAX(CASE WHEN ISNULL(r.Activo,1)=1 "
+            "AND ISNULL(prm.Activo,1)=1 AND ISNULL(prm.Permitido,0)=1 "
+            "AND ISNULL(m.Activo,1)=1 AND ISNULL(a.Activo,1)=1 "
+            "THEN 1 ELSE 0 END) AS PermisoActivo "
+            "FROM dbo.Usuario_Roles AS r "
+            "INNER JOIN dbo.Usuario_PermisosRolModulo AS prm ON prm.RolID=r.RolID "
+            "INNER JOIN dbo.Usuario_Modulos AS m ON m.ModuloID=prm.ModuloID "
+            "INNER JOIN dbo.Usuario_Acciones AS a ON a.AccionID=prm.AccionID "
+            "WHERE UPPER(r.CodigoRol) IN "
+            "('SUPERADMIN','SUPERADMINISTRADOR','ADMIN','DIRECCION',"
+            "'GERENTE_OPS','SUPERVISOR','OPERADOR') "
+            "AND UPPER(CONCAT(m.CodigoModulo,'_',a.CodigoAccion)) IN "
+            "('CARGOS_CREAR','CARGOS_AUTORIZAR','CARGOS_APLICAR',"
+            "'CARGOS_RECHAZAR','CARGOS_REVERTIR','CARGOS_CANCELAR',"
+            "'RESPONSABILIDAD_CALCULAR','RESPONSABILIDAD_PROPONER',"
+            "'RESPONSABILIDAD_APROBAR','RESPONSABILIDAD_GESTIONAR',"
+            "'NOTIFICACIONES_ENVIAR','NOTIFICACIONES_CONFIGURAR','RBAC_ADMIN') "
+            "GROUP BY r.CodigoRol, "
+            "UPPER(CONCAT(m.CodigoModulo,'_',a.CodigoAccion)) "
+            "ORDER BY r.CodigoRol, PermissionCode"
+        ),
+    },
+    {
+        "name": "role_hierarchy_and_assignments",
+        "sql": (
+            "SELECT r.CodigoRol, r.NivelJerarquia, "
+            "COUNT_BIG(DISTINCT CASE WHEN ISNULL(ura.Activo,1)=1 "
+            "AND ISNULL(u.Activo,1)=1 THEN u.UsuarioID "
+            "ELSE NULL END) AS UsuariosAsignadosActivos "
+            "FROM dbo.Usuario_Roles AS r "
+            "LEFT JOIN dbo.Usuario_RolesAsignacion AS ura ON ura.RolID=r.RolID "
+            "LEFT JOIN dbo.Usuario_Catalogo AS u ON u.UsuarioID=ura.UsuarioID "
+            "WHERE UPPER(r.CodigoRol) IN "
+            "('SUPERADMIN','SUPERADMINISTRADOR','ADMIN','DIRECCION',"
+            "'GERENTE_OPS','SUPERVISOR','OPERADOR') "
+            "GROUP BY r.CodigoRol,r.NivelJerarquia "
+            "ORDER BY r.NivelJerarquia DESC,r.CodigoRol"
+        ),
+    },
+    {
+        "name": "active_user_public_identity_aggregates",
+        "sql": (
+            "SELECT COUNT_BIG(*) AS UsuariosActivos, "
+            "COALESCE(SUM(CASE WHEN PublicUUID IS NULL "
+            "THEN 1 ELSE 0 END),0) AS SinPublicUUID, "
+            "COUNT_BIG(DISTINCT PublicUUID) AS PublicUUIDUnicos "
+            "FROM dbo.Usuario_Catalogo WHERE Activo=1"
+        ),
+    },
+)
+
+
+def _sec_rbac_gate1b_sql_builder(request: Mapping[str, Any]) -> dict[str, Any]:
+    context = _g3_context(request)
+    if context != "SEC_RBAC":
+        raise SemanticCapabilityError("SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED")
+    _g3_constraints(request, set())
+    return {
+        "actions": [],
+        "checks": [{
+            "type": "sql_readonly_audit",
+            "source": "EDARSAHUB",
+            "queries": [dict(q) for q in _SEC_RBAC_GATE1B_QUERIES],
+        }],
+        "scheduling": _g3_scheduling(context),
+    }
+
+
+register_capability(
+    SemanticCapability(
+        code="SEC_RBAC_SQL_PERMISSION_MATRIX_READONLY",
+        modes=("READ_ONLY_SQL",),
+        builder=_sec_rbac_gate1b_sql_builder,
+    )
+)
+_CAPABILITY_METADATA["SEC_RBAC_SQL_PERMISSION_MATRIX_READONLY"] = {
+    "bounded_context_rule": "SEC_RBAC",
+    "allowed_constraints": (),
+    "allowed_path_roots": (),
+}
