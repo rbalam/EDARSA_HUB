@@ -419,3 +419,42 @@ register_capability(
     )
 )
 
+
+# Independent, fixed-target READ_ONLY pytest certification.
+# No arbitrary paths, commands, actions or checks are accepted.
+_WORKER_PYTEST_CONTEXT = "WORKER_REPAIR_KNOWLEDGE_LOOP"
+_WORKER_PYTEST_TARGET = (
+    "backend/tests/"
+    "test_worker_repair_planner_canonical_ingress_capability.py"
+)
+
+
+def _worker_pytest_certification_readonly_builder(request):
+    context = str(request.get("bounded_context") or "").strip().upper()
+
+    if context != _WORKER_PYTEST_CONTEXT:
+        raise SemanticCapabilityError(
+            "SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED"
+        )
+
+    _g3_constraints(request, set())
+
+    return {
+        "actions": [],
+        "checks": [
+            {
+                "type": "pytest",
+                "paths": [_WORKER_PYTEST_TARGET],
+            }
+        ],
+        "scheduling": _g3_scheduling(context),
+    }
+
+
+register_capability(
+    SemanticCapability(
+        code="WORKER_PYTEST_CERTIFICATION_READONLY",
+        modes=("READ_ONLY",),
+        builder=_worker_pytest_certification_readonly_builder,
+    )
+)

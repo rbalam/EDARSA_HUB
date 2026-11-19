@@ -140,9 +140,28 @@ def test_submit_objective_reuses_canonical_publisher(monkeypatch):
 
 
 def test_objective_route_is_exposed_and_jobs_route_remains_internal():
-    assert '@router.post("/objectives"' in ROUTES
-    assert '@router.post("/jobs"' in ROUTES
-    assert '@router.get("/jobs/{job_id}")' in ROUTES
+    import ast
+
+    routes = set()
+    for node in ast.walk(ast.parse(ROUTES)):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        for decorator in node.decorator_list:
+            if not isinstance(decorator, ast.Call):
+                continue
+            if not isinstance(decorator.func, ast.Attribute):
+                continue
+            if not isinstance(decorator.func.value, ast.Name) or decorator.func.value.id != "router":
+                continue
+            if decorator.func.attr not in {"post", "get"} or not decorator.args:
+                continue
+            route = decorator.args[0]
+            if isinstance(route, ast.Constant) and isinstance(route.value, str):
+                routes.add((decorator.func.attr, route.value))
+
+    assert ("post", "/objectives") in routes
+    assert ("post", "/jobs") in routes
+    assert ("get", "/jobs/{job_id}") in routes
 
 
 def _repair_objective(**overrides):
