@@ -1,0 +1,63 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "compras",
+          "requisicion",
+          "requisiciones",
+          "pedido",
+          "pedidos",
+          "orden_compra",
+          "presupuesto",
+          "inventario",
+          "unidad_negocio_id",
+          "unidad_codigo",
+          "sucursal_origen_id",
+          "voice",
+          "voz",
+          "speech",
+          "audio",
+          "microphone",
+          "transcripcion",
+          "transcription",
+          "RBAC"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMPRAS_PEDIDOS_VOZ-REPOSITORY_CONTRACT_AUDIT_BOUNDE-C5F77092821A0929768E",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en READ_ONLY la arquitectura existente de Compras para incorporar Pedidos por Voz sin crear flujos paralelos. Identificar frontend, rutas, servicios, modelos, permisos y contratos existentes de requisiciones, pedidos, ordenes de compra, presupuestos, inventarios y Unidades de Negocio canonicas. Detectar infraestructura reutilizable de voz, audio, transcripcion o asistentes ya existente. Verificar que una futura orden por voz pueda resolverse a unidad_negocio_id/unidad_codigo y, para MPRO shared-server, preservar server_id+sucursal_origen_id; que reutilice el mismo flujo canonico de Compras; que IA solo interprete y las reglas de negocio decidan; que ambiguedades fallen cerradas; y que enviar/aprobar/cancelar/exceder presupuesto requiera RBAC y confirmacion explicita. No modificar archivos, no commit, no push, no SQL, no Produccion. Entregar evidencia para definir un Gate de implementacion minimo y reversible.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMPRAS_PEDIDOS_VOZ",
+    "conflict_domains": [
+      "COMPRAS_PEDIDOS_VOZ"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
