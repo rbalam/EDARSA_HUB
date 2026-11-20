@@ -83,6 +83,7 @@ ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
 SERVER_REGISTRY_METADATA_UPDATE_MODE = "SERVER_REGISTRY_METADATA_UPDATE"
 API_LOCAL_HEALTH_TEST_MODE = "API_LOCAL_HEALTH_TEST"
 SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
+WORKER_SQL_BACKFILL_DEVELOPMENT_MODE = "WORKER_SQL_BACKFILL_DEVELOPMENT"
 FRONTEND_BUILD_CERTIFICATION_MODE = "FRONTEND_BUILD_CERTIFICATION"
 SYNC_HISTORICAL_PARENT_MODE = "SYNC_HISTORICAL_PARENT"
 SYNC_HISTORICAL_ATOMIC_MODE = "SYNC_HISTORICAL_ATOMIC"
@@ -2164,6 +2165,119 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                 result["percent_complete"] = 100
                 result["certification"] = "CERTIFIED_OPERATIONAL"
                 result["summary_es"] = "El Worker probo exclusivamente conexiones API_LOCAL canonicas por connection_id, persistio health en la tabla existente y certifico el estado con auditorias de solo lectura. No ejecuto sync, no expuso secretos y no toco Produccion."
+            else:
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
+
+        if mode == WORKER_SQL_BACKFILL_DEVELOPMENT_MODE:
+            if expected_base and expected_base != current_head:
+                raise RuntimeError(f"BASE_SHA_MISMATCH_OPERATIONAL_MODE:expected={expected_base}:actual={current_head}")
+            if job.get("actions") not in (None, []):
+                raise RuntimeError("WORKER_SQL_BACKFILL_ACTIONS_FORBIDDEN")
+            for forbidden_field in ("sql", "command", "shell", "script", "path"):
+                if job.get(forbidden_field) is not None:
+                    raise RuntimeError(f"WORKER_SQL_BACKFILL_FORBIDDEN_FIELD:{forbidden_field}")
+            if job.get("confirm_sql_backfill") is not True:
+                raise RuntimeError("WORKER_SQL_BACKFILL_CONFIRMATION_REQUIRED")
+            batch_size = job.get("batch_size", 200)
+            if not isinstance(batch_size, int) or isinstance(batch_size, bool) or batch_size < 1 or batch_size > 1000:
+                raise RuntimeError("WORKER_SQL_BACKFILL_BATCH_SIZE_INVALID")
+            preflight_profile = str(job.get("preflight_audit_profile") or "").strip()
+            post_profile = str(job.get("post_audit_profile") or "").strip()
+            if not preflight_profile or not is_allowed_readonly_audit_profile(preflight_profile):
+                raise RuntimeError("WORKER_SQL_BACKFILL_PREFLIGHT_PROFILE_REQUIRED")
+            if not post_profile or not is_allowed_readonly_audit_profile(post_profile):
+                raise RuntimeError("WORKER_SQL_BACKFILL_POST_PROFILE_REQUIRED")
+            if job.get("preflight_checks") not in (None, []) or job.get("checks") not in (None, []):
+                raise RuntimeError("WORKER_SQL_BACKFILL_INLINE_SQL_FORBIDDEN")
+            preflight_checks = build_readonly_audit_checks(preflight_profile)
+            checks = build_readonly_audit_checks(post_profile)
+            preflight_results = []
+            for check in preflight_checks:
+                check_result = run_check(ROOT, check)
+                preflight_results.append(check_result)
+                if check_result["status"] != "PASS":
+                    result["blockers"].append("check_failed:worker_sql_backfill_preflight")
+                    break
+            result["preflight_checks"] = preflight_results
+            result["operation"] = WORKER_SQL_BACKFILL_DEVELOPMENT_MODE
+            result["canonical_sql_mutation"] = True
+            result["files_changed"] = []
+            if result["blockers"]:
+                result["checks"] = []
+                result["tests"] = "FAIL"
+                result["quality_gate"] = "FAIL"
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+                return 0
+            helper = ROOT / "tools" / "mirror_sync" / "worker_sql_projection.py"
+            if not helper.is_file():
+                raise RuntimeError("WORKER_SQL_PROJECTION_HELPER_NOT_FOUND")
+            backend = ROOT / "backend"
+            backfill_cmd = [
+                PYTHON_BIN,
+                str(helper),
+                "--confirm",
+                "--batch-size",
+                str(batch_size),
+                "--verify-idempotency",
+            ]
+            execution = run(
+                backfill_cmd,
+                cwd=ROOT,
+                timeout=MAX_SECONDS,
+                env_extra={**load_backend_runtime_env(), "PYTHONPATH": f"{ROOT}:{backend}"},
+            )
+            raw_backfill_output = execution.stdout or ""
+            result["operation_output"] = raw_backfill_output[-12000:]
+            safe_backfill_summary = {"returncode": execution.returncode}
+            for raw_line in reversed(raw_backfill_output.splitlines()):
+                try:
+                    payload = json.loads(raw_line)
+                except (json.JSONDecodeError, TypeError):
+                    continue
+                if isinstance(payload, dict) and payload.get("status") in {"PASS", "FAIL"}:
+                    for safe_key in (
+                        "status",
+                        "mode",
+                        "database",
+                        "server_name",
+                        "login_name",
+                        "batch_size",
+                        "counts_before",
+                        "counts_after_pass1",
+                        "counts_after_pass2",
+                        "jobs_reconciled",
+                        "incidents_reconciled",
+                        "capabilities_reconciled",
+                        "rejected_count",
+                        "inconsistent_count",
+                        "idempotency_verified",
+                        "idempotency_delta",
+                    ):
+                        if safe_key in payload:
+                            safe_backfill_summary[safe_key] = payload[safe_key]
+                    break
+            result["operation_summary"] = safe_backfill_summary
+            if execution.returncode != 0 or safe_backfill_summary.get("status") != "PASS":
+                result["blockers"].append(f"worker_sql_backfill_failed:rc={execution.returncode}")
+            check_results = []
+            if not result["blockers"]:
+                for check in checks:
+                    check_result = run_check(ROOT, check)
+                    check_results.append(check_result)
+                    if check_result["status"] != "PASS":
+                        result["blockers"].append("check_failed:worker_sql_backfill_post_audit")
+                        break
+            result["checks"] = check_results
+            result["tests"] = "PASS" if (preflight_results and check_results and all(x["status"] == "PASS" for x in preflight_results + check_results)) else "FAIL"
+            result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+            if not result["blockers"]:
+                result["status"] = "OPERATIONAL_COMPLETE"
+                result["percent_complete"] = 100
+                result["certification"] = "CERTIFIED_OPERATIONAL"
+                result["summary_es"] = "El Worker ejecuto preflight SQL HRLectura, backfill historico por lotes e idempotente via SPs estrechos en Desarrollo y post-audit SQL HRLectura. Produccion no fue tocada."
             else:
                 result["percent_complete"] = 0
                 result["certification"] = "NOT_CERTIFIED"

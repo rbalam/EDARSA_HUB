@@ -14,6 +14,7 @@ CHAPUR_NORTE_OPERATIONAL_VISIBILITY_V1 = "chapur_norte_operational_visibility_v1
 API_FACTORY_PERSISTENCE_STATE_V1 = "api_factory_persistence_state_v1"
 CHAPUR_EXTERNAL_INTEGRATION_READINESS_V1 = "chapur_external_integration_readiness_v1"
 SQL_RUNTIME_PRINCIPAL_PERMISSIONS_V1 = "sql_runtime_principal_permissions_v1"
+WORKER_OPERATIONS_SQL_STATE_V1 = "worker_operations_sql_state_v1"
 
 _ALLOWED = {
     CHAPUR_CONNECTION_DISCOVERY_V1,
@@ -21,6 +22,7 @@ _ALLOWED = {
     API_FACTORY_PERSISTENCE_STATE_V1,
     CHAPUR_EXTERNAL_INTEGRATION_READINESS_V1,
     SQL_RUNTIME_PRINCIPAL_PERMISSIONS_V1,
+    WORKER_OPERATIONS_SQL_STATE_V1,
 }
 
 
@@ -30,6 +32,73 @@ def is_allowed_readonly_audit_profile(value: str) -> bool:
 
 def build_readonly_audit_checks(profile: str) -> List[Dict[str, Any]]:
     name = str(profile or "").strip()
+    if name == WORKER_OPERATIONS_SQL_STATE_V1:
+        return [
+            {
+                "type": "sql_readonly_audit",
+                "source": "EDARSAHUB",
+                "max_rows": 100,
+                "queries": [
+                    {
+                        "name": "worker_sql_identity",
+                        "sql": (
+                            "SELECT @@SERVERNAME AS server_name,DB_NAME() AS db_name,"
+                            "SUSER_SNAME() AS login_name,USER_NAME() AS db_user"
+                        ),
+                    },
+                    {
+                        "name": "worker_sql_tables",
+                        "sql": (
+                            "SELECT s.name AS schema_name,t.name AS table_name "
+                            "FROM sys.tables t "
+                            "INNER JOIN sys.schemas s ON s.schema_id=t.schema_id "
+                            "WHERE s.name='dbo' AND t.name IN ("
+                            "'Sys_Worker_Jobs','Sys_Worker_Incidents',"
+                            "'Sys_Worker_RecoveryEvents','Sys_Worker_Capabilities'"
+                            ") ORDER BY t.name"
+                        ),
+                    },
+                    {
+                        "name": "worker_sql_procedures",
+                        "sql": (
+                            "SELECT s.name AS schema_name,p.name AS procedure_name "
+                            "FROM sys.procedures p "
+                            "INNER JOIN sys.schemas s ON s.schema_id=p.schema_id "
+                            "WHERE s.name='dbo' AND p.name IN ("
+                            "'sp_Worker_UpsertJobState','sp_Worker_UpsertIncident',"
+                            "'sp_Worker_RecordRecoveryEvent','sp_Worker_UpsertCapability'"
+                            ") ORDER BY p.name"
+                        ),
+                    },
+                    {
+                        "name": "worker_sql_hrlectura_permissions",
+                        "sql": (
+                            "SELECT p.name AS procedure_name,"
+                            "HAS_PERMS_BY_NAME('dbo.'+p.name,'OBJECT','EXECUTE') AS can_execute "
+                            "FROM sys.procedures p "
+                            "INNER JOIN sys.schemas s ON s.schema_id=p.schema_id "
+                            "WHERE s.name='dbo' AND p.name IN ("
+                            "'sp_Worker_UpsertJobState','sp_Worker_UpsertIncident',"
+                            "'sp_Worker_RecordRecoveryEvent','sp_Worker_UpsertCapability'"
+                            ") ORDER BY p.name"
+                        ),
+                    },
+                    {
+                        "name": "worker_sql_row_counts",
+                        "sql": (
+                            "SELECT t.name AS table_name,SUM(pt.rows) AS row_count "
+                            "FROM sys.tables t "
+                            "INNER JOIN sys.schemas s ON s.schema_id=t.schema_id "
+                            "INNER JOIN sys.partitions pt ON pt.object_id=t.object_id AND pt.index_id IN (0,1) "
+                            "WHERE s.name='dbo' AND t.name IN ("
+                            "'Sys_Worker_Jobs','Sys_Worker_Incidents',"
+                            "'Sys_Worker_RecoveryEvents','Sys_Worker_Capabilities'"
+                            ") GROUP BY t.name ORDER BY t.name"
+                        ),
+                    },
+                ],
+            }
+        ]
     if name == SQL_RUNTIME_PRINCIPAL_PERMISSIONS_V1:
         return [
             {

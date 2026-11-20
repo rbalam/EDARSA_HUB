@@ -71,6 +71,7 @@ ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
 SERVER_REGISTRY_METADATA_UPDATE_MODE = "SERVER_REGISTRY_METADATA_UPDATE"
 API_LOCAL_HEALTH_TEST_MODE = "API_LOCAL_HEALTH_TEST"
 SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
+WORKER_SQL_BACKFILL_DEVELOPMENT_MODE = "WORKER_SQL_BACKFILL_DEVELOPMENT"
 FRONTEND_BUILD_CERTIFICATION_MODE = "FRONTEND_BUILD_CERTIFICATION"
 SYNC_HISTORICAL_PARENT_MODE = "SYNC_HISTORICAL_PARENT"
 SYNC_HISTORICAL_ATOMIC_MODE = "SYNC_HISTORICAL_ATOMIC"
@@ -558,6 +559,25 @@ def validate(job: Any, *, repo_root: Path | None = None) -> list[str]:
             errors.append("API_LOCAL_HEALTH_TEST_POST_PROFILE_REQUIRED")
         if job.get("preflight_checks") not in (None, []) or job.get("checks") not in (None, []):
             errors.append("API_LOCAL_HEALTH_TEST_INLINE_SQL_FORBIDDEN")
+    elif mode == WORKER_SQL_BACKFILL_DEVELOPMENT_MODE:
+        if actions not in (None, []):
+            errors.append("WORKER_SQL_BACKFILL_ACTIONS_FORBIDDEN")
+        for forbidden_field in ("sql", "command", "shell", "script", "path"):
+            if job.get(forbidden_field) is not None:
+                errors.append(f"WORKER_SQL_BACKFILL_FORBIDDEN_FIELD:{forbidden_field}")
+        if job.get("confirm_sql_backfill") is not True:
+            errors.append("WORKER_SQL_BACKFILL_CONFIRMATION_REQUIRED")
+        batch_size = job.get("batch_size", 200)
+        if not isinstance(batch_size, int) or isinstance(batch_size, bool) or batch_size < 1 or batch_size > 1000:
+            errors.append("WORKER_SQL_BACKFILL_BATCH_SIZE_INVALID")
+        preflight_profile = str(job.get("preflight_audit_profile") or "").strip()
+        post_profile = str(job.get("post_audit_profile") or "").strip()
+        if not preflight_profile or not is_allowed_readonly_audit_profile(preflight_profile):
+            errors.append("WORKER_SQL_BACKFILL_PREFLIGHT_PROFILE_REQUIRED")
+        if not post_profile or not is_allowed_readonly_audit_profile(post_profile):
+            errors.append("WORKER_SQL_BACKFILL_POST_PROFILE_REQUIRED")
+        if job.get("preflight_checks") not in (None, []) or job.get("checks") not in (None, []):
+            errors.append("WORKER_SQL_BACKFILL_INLINE_SQL_FORBIDDEN")
     elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:
         if actions not in (None, []):
             errors.append("SQL_MIGRATION_ACTIONS_FORBIDDEN")
@@ -702,6 +722,8 @@ def validate(job: Any, *, repo_root: Path | None = None) -> list[str]:
     elif mode == SERVER_REGISTRY_METADATA_UPDATE_MODE:
         # Pre/post SQL audits are materialized exclusively from named profiles
         # in the mode-specific validation above; inline checks are forbidden.
+        checks = []
+    elif mode == WORKER_SQL_BACKFILL_DEVELOPMENT_MODE:
         checks = []
     elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:
         # Pre/post SQL audits are materialized exclusively from named profiles
