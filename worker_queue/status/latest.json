@@ -4,53 +4,53 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "ed67dd97995cc887a78768309e81c7be103d530f",
-  "generated_at_utc": "2026-11-20T17:39:39Z",
+  "generated_at_utc": "2026-11-20T17:41:14Z",
   "history": {
-    "done_total_local": 1919,
+    "done_total_local": 1920,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 1372,
-    "results_total_local": 3051
+    "results_total_local": 3052
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 944,
+      "age_seconds": 55,
+      "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M1-SQL-BACKFILL-R1-20261120",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1038,
       "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M1-SQL-CANONICAL-SCHEMA-R1-20261120",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 327,
+      "age_seconds": 422,
       "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M1-SQL-DDL-EXEC-R1-20261120",
       "reason": null,
       "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 89,
-      "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M1-SQL-BACKFILL-R1-20261120",
-      "reason": null,
-      "state": "RUNNING"
     }
   ],
   "local_development_sha": "ed67dd97995cc887a78768309e81c7be103d530f",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
-  "queue_running": 1,
+  "queue_result_ready_recent": 3,
+  "queue_running": 0,
   "remote_development_sha": "ed67dd97995cc887a78768309e81c7be103d530f",
   "runtime": {
-    "current_job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M1-SQL-BACKFILL-R1-20261120",
+    "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-20T17:39:25Z",
-    "last_receive_utc": "2026-11-20T17:39:20Z",
-    "last_terminal_utc": "2026-11-20T17:34:12Z",
+    "last_cycle_utc": "2026-11-20T17:41:02Z",
+    "last_receive_utc": "2026-11-20T17:40:56Z",
+    "last_terminal_utc": "2026-11-20T17:40:18Z",
     "pid": "2751978",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "971365236fa1e05226bc9b4fe39fe6e94b2251d8",
