@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 200,
+        "paths": [
+          "backend/core/centro_control/routes.py",
+          "backend/core/config/edarsahub_config.py",
+          "backend/core/sql_first/connection_factory.py",
+          "backend/core/sql_first/db.py",
+          "backend/core/connections/hrlectura_connection_factory.py",
+          "backend/server.py"
+        ],
+        "search_terms": [
+          "get_edarsahub_pymssql_connection",
+          "EDARSAHUB_SQL_HOST",
+          "EDARSAHUB_SQL_PORT",
+          "EDARSAHUB_SQL_DATABASE",
+          "EDARSAHUB_SQL_USER",
+          "EDARSAHUB_SQL_PASSWORD",
+          "_cc_sql_connection",
+          "_cc_sql_env",
+          "pymssql",
+          "get_sql_connection"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-SQL_CONNECTIONS_8OF10-SQL_CONNECTIONS_BOOTSTRAP_READON-4CE087B7A0E2FC5C5C87",
+  "mode": "READ_ONLY",
+  "objective": "Auditar contrato SQL Connections 8/10 existente: bootstrap SQL-first, reutilizacion de connection_factory y HRLectura, configuracion sin exponer secretos, importaciones y consumidores en seis rutas permitidas. Identificar brechas y riesgos sin ejecutar SQL ni modificar codigo o Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SQL_CONNECTIONS_8OF10",
+    "conflict_domains": [
+      "SQL_CONNECTIONS_8OF10"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
