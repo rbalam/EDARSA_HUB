@@ -1,0 +1,62 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/core/mongo_stub.py",
+          "backend/core/db.py",
+          "backend/core/health_checker.py",
+          "backend/core/communications/dispatcher/dispatcher.py",
+          "backend/core/communications/audit/audit_service.py",
+          "backend/core/communications/notifications/repository.py",
+          "backend/core/communications/notifications/repository_sql.py",
+          "backend/core/rbac/repository.py",
+          "backend/core/rbac/repository_sql.py",
+          "backend/core/auth/user_repository_sql.py",
+          "backend/core/scheduler/",
+          "backend/modules/worker_ingress/"
+        ],
+        "search_terms": [
+          "mongo",
+          "mongodb",
+          "mongo_stub",
+          "pymongo",
+          "motor",
+          "StubDatabase",
+          "get_sync_mongo_db",
+          "get_stub_database",
+          "get_mongo_client",
+          "mongod"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-MONGO_SUNSET_RUNTIME-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7CE42B94F152CCE541E0",
+  "mode": "READ_ONLY",
+  "objective": "MongoDB Sunset: completar la auditoria READ_ONLY de consumidores residuales que la auditoria historica truncada no cerro. Inspeccionar contratos de mongo_stub, autenticacion SQL/RBAC, notificaciones y Scheduler; distinguir menciones legacy de dependencia Mongo operativa. No modificar codigo, bases, procesos, secretos ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "MONGO_SUNSET_RUNTIME",
+    "conflict_domains": [
+      "MONGO_SUNSET_RUNTIME"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
