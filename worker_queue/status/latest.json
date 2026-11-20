@@ -1,56 +1,56 @@
 {
   "ahead_count": 0,
-  "behind_count": 1,
+  "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "REMOTE_AHEAD_ONLY",
+  "convergence_status": "SYNC",
   "development_sha": "ed67dd97995cc887a78768309e81c7be103d530f",
-  "generated_at_utc": "2026-11-20T17:23:55Z",
+  "generated_at_utc": "2026-11-20T17:25:25Z",
   "history": {
-    "done_total_local": 1917,
+    "done_total_local": 1918,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 1372,
-    "results_total_local": 3049
+    "results_total_local": 3050
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3416,
-      "job_id": "EDARSAHUB-BOS-WORKER-OPS-OPERATIONAL-PARITY-AND-KNOWLEDGE-R1-20261120",
+      "age_seconds": 89,
+      "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M1-SQL-CANONICAL-SCHEMA-R1-20261120",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 27,
-      "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M1-SQL-CANONICAL-SCHEMA-R1-20261120",
+      "age_seconds": 3506,
+      "job_id": "EDARSAHUB-BOS-WORKER-OPS-OPERATIONAL-PARITY-AND-KNOWLEDGE-R1-20261120",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "8c22f46640379acffc141a385ec4100fbd251a3d",
+  "local_development_sha": "ed67dd97995cc887a78768309e81c7be103d530f",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
-  "queue_running": 1,
+  "queue_result_ready_recent": 2,
+  "queue_running": 0,
   "remote_development_sha": "ed67dd97995cc887a78768309e81c7be103d530f",
   "runtime": {
-    "current_job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M1-SQL-CANONICAL-SCHEMA-R1-20261120",
+    "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-20T17:23:50Z",
-    "last_receive_utc": "2026-11-20T17:23:45Z",
-    "last_terminal_utc": "2026-11-20T16:26:58Z",
-    "pid": "1315864",
+    "last_cycle_utc": "2026-11-20T17:25:07Z",
+    "last_receive_utc": "2026-11-20T17:25:25Z",
+    "last_terminal_utc": "2026-11-20T17:23:55Z",
+    "pid": "2614150",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "ea0ab8791c8bcf438f01604d7b5bb86239a6fe83",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "8c22f46640379acffc141a385ec4100fbd251a3d",
+      "development_sha": "ed67dd97995cc887a78768309e81c7be103d530f",
       "expected_generation": "20261117-universal-job-worker-lifecycle-v4",
       "generation_aligned": true,
       "production_touched": false,
@@ -65,7 +65,7 @@
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
       "worker_code_tree_aligned": false,
-      "worker_code_tree_sha": "23ced05a73279b35b23cfc1a9cffd91e3fdb6b8b"
+      "worker_code_tree_sha": "971365236fa1e05226bc9b4fe39fe6e94b2251d8"
     }
   },
   "schema": "edarsahub.worker-health.v3",
