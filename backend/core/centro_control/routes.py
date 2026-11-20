@@ -1192,32 +1192,173 @@ async def obtener_modulos_blindados(current_user: Dict = Depends(require_explici
 # ENDPOINTS: WEBSOCKET PARA NOTIFICACIONES EN TIEMPO REAL
 # ============================================================================
 
+def _allowed_ws_origins() -> set:
+    """Obtiene los origenes permitidos para WebSocket usando la misma fuente CORS_ORIGINS."""
+    raw = os.environ.get("CORS_ORIGINS", "http://localhost:3000")
+    origins = {
+        origin.strip().rstrip("/").lower()
+        for origin in raw.split(",")
+        if origin.strip() and origin.strip() != "*"
+    }
+    return origins or {"http://localhost:3000"}
+
+
+def _is_ws_origin_allowed(websocket: WebSocket, auth_source: str) -> bool:
+    """Valida Origin en handshake WebSocket de forma fail-closed contra CSWSH."""
+    origin = (websocket.headers.get("origin") or "").strip().rstrip("/").lower()
+    if not origin:
+        # Clientes no-navegador con Bearer explicito no sufren CSWSH por cookie;
+        # sesiones por cookie siempre requieren Origin valido.
+        return auth_source == "bearer"
+
+    if origin in _allowed_ws_origins():
+        return True
+
+    host = (websocket.headers.get("host") or "").strip().lower()
+    if host and origin in {f"https://{host}", f"http://{host}"}:
+        return True
+
+    return False
+
+
+def _extract_ws_credential(websocket: WebSocket) -> tuple:
+    """Extrae JWT de Authorization: Bearer o cookie HttpOnly (nunca de query string)."""
+    from core.security import AUTH_COOKIE_NAME
+
+    auth_header = (websocket.headers.get("authorization") or "").strip()
+    if auth_header.startswith("Bearer "):
+        candidate = auth_header[7:].strip()
+        if candidate and candidate not in ("null", "undefined"):
+            return candidate, "bearer"
+
+    cookie_val = (websocket.cookies.get(AUTH_COOKIE_NAME) or "").strip()
+    if cookie_val and cookie_val not in ("null", "undefined"):
+        return cookie_val, "cookie"
+
+    return None, "none"
+
+
+def _has_explicit_ws_permission_sql(email: str, permiso: str) -> bool:
+    """Verifica permiso SQL explicito (sin bypass admin legacy), fail-closed."""
+    from core.sql_first.db import get_sql_connection
+
+    conn = get_sql_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT TOP 1 1
+            FROM dbo.Usuario_Catalogo u
+            INNER JOIN dbo.Usuario_RolesAsignacion ura
+                ON ura.UsuarioID = u.UsuarioID
+                AND ura.Activo = 1
+            INNER JOIN dbo.Usuario_Roles r
+                ON r.RolID = ura.RolID
+                AND r.Activo = 1
+            INNER JOIN dbo.Usuario_PermisosRolModulo prm
+                ON prm.RolID = r.RolID
+                AND prm.Activo = 1
+                AND prm.Permitido = 1
+            INNER JOIN dbo.Usuario_Modulos m
+                ON m.ModuloID = prm.ModuloID
+                AND m.Activo = 1
+            INNER JOIN dbo.Usuario_Acciones a
+                ON a.AccionID = prm.AccionID
+                AND a.Activo = 1
+            WHERE u.Activo = 1
+              AND LOWER(u.Email) = LOWER(%s)
+              AND (
+                    UPPER(CONCAT(m.CodigoModulo, '_', a.CodigoAccion)) = UPPER(%s)
+                 OR LOWER(CONCAT(m.CodigoModulo, '.', a.CodigoAccion)) = LOWER(%s)
+              )
+            """,
+            (email, permiso, permiso),
+        )
+        return cur.fetchone() is not None
+    finally:
+        conn.close()
+
+
+async def _authenticate_ws_connection(websocket: WebSocket) -> Optional[Dict[str, Any]]:
+    """Autentica y autoriza el handshake WebSocket fail-closed antes de accept()."""
+    from core.security import verify_token, _get_user_sql_only
+
+    jwt_value, auth_source = _extract_ws_credential(websocket)
+    if not jwt_value:
+        logger.warning("[WS] Conexion rechazada: sin credencial autenticada")
+        return None
+
+    if not _is_ws_origin_allowed(websocket, auth_source=auth_source):
+        logger.warning(
+            "[WS] Conexion rechazada: Origin no permitido (%s)",
+            websocket.headers.get("origin", "<missing>"),
+        )
+        return None
+
+    try:
+        payload = verify_token(jwt_value)
+    except Exception:
+        logger.warning("[WS] Conexion rechazada: JWT invalido o expirado")
+        return None
+
+    email = (payload.get("email") or "").strip()
+    user_id_from_jwt = (
+        payload.get("public_uuid")
+        or payload.get("user_id")
+        or payload.get("usuario_id")
+        or payload.get("sub")
+    )
+
+    try:
+        user, _auth_source = await _get_user_sql_only(email, user_id_from_jwt)
+    except Exception as exc:
+        logger.error("[WS] Error SQL resolviendo usuario (fail-closed): %s", exc)
+        return None
+
+    if not user or not user.get("active", True):
+        logger.warning("[WS] Conexion rechazada: usuario inexistente o inactivo (%s)", email or "unknown")
+        return None
+
+    resolved_email = (user.get("email") or email or "").strip()
+    if not resolved_email:
+        logger.warning("[WS] Conexion rechazada: usuario sin email canonico")
+        return None
+
+    try:
+        has_perm = await asyncio.to_thread(
+            _has_explicit_ws_permission_sql,
+            resolved_email,
+            "CENTRO_CONTROL_VER",
+        )
+    except Exception as exc:
+        logger.error("[WS] Error verificando RBAC SQL (fail-closed): %s", exc)
+        return None
+
+    if not has_perm:
+        logger.warning("[WS] Conexion rechazada: sin permiso CENTRO_CONTROL_VER (%s)", resolved_email)
+        return None
+
+    user["email"] = resolved_email
+    return user
+
+
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """
     WebSocket para notificaciones en tiempo real del Centro de Control.
-    
-    Mensajes que puede recibir el cliente:
-    - conexion_establecida: Confirmación de conexión
-    - heartbeat: Ping cada 30 segundos
-    - alerta_critica: Alerta de severidad crítica (con sonido)
-    - alerta_nueva: Nueva alerta de cualquier severidad
-    - estado_cambio: Cambio en el estado general del sistema
-    - fuente_caida: Una fuente de datos dejó de responder
-    
-    Ejemplo de mensaje:
-    {
-        "tipo": "alerta_critica",
-        "data": {
-            "alerta": {...},
-            "timestamp": "2026-04-19T16:45:00Z",
-            "prioridad": "alta",
-            "sonido": true
-        }
-    }
+
+    Seguridad (P1-1):
+    - Valida JWT (cookie HttpOnly edarsa_access_token o Authorization: Bearer), nunca query string.
+    - Valida Origin permitido (proteccion CSWSH).
+    - Valida usuario activo en SQL y permiso explicito CENTRO_CONTROL_VER (fail-closed, codigo 1008).
     """
+    user = await _authenticate_ws_connection(websocket)
+    if not user:
+        await websocket.close(code=1008)
+        return
+
     manager = get_notification_manager()
-    connection_id = await manager.connect(websocket)
+    connection_id = await manager.connect(websocket, user_email=user["email"])
     
     try:
         while True:
