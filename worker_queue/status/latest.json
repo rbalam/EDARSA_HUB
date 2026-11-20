@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "0aa2d543b259844a20b51e0a5526b16856825df5",
-  "generated_at_utc": "2026-11-20T02:50:43Z",
+  "generated_at_utc": "2026-11-20T02:52:07Z",
   "history": {
     "done_total_local": 1899,
     "pending_total_local": 0,
@@ -16,61 +16,61 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3252,
+      "age_seconds": 3336,
       "job_id": "RRHH-CUSTODIA-GATE3B-SEMANTIC-SQL-CAPABILITY-MUTATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 460,
+      "age_seconds": 544,
       "job_id": "SEM-COA-WORKER_RESULT_SEMANTIC_EXTRACT-77C0E7D3B4C582BDB4DF",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 568,
+      "age_seconds": 652,
       "job_id": "SEM-COMUNICACIONES_CFDI-REPOSITORY_CONTRACT_AUDIT_BOUNDE-8432E5214EA8EEE58EA7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 384,
+      "age_seconds": 467,
       "job_id": "SEM-HOSPITALITY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-585BCD38DE28CCB9A560",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3107,
+      "age_seconds": 3190,
       "job_id": "SEM-PORTAL_PROVEEDORES-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B5262EEDF55F0F2FC5DA",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3384,
+      "age_seconds": 3468,
       "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT-F8958A1CD707377D82C5",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3311,
+      "age_seconds": 3395,
       "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT_BOUNDE-EC3DC6DDD322434F9CDD",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3187,
+      "age_seconds": 3271,
       "job_id": "SEM-RH_HCM_ENV_CLASSIFICATION-REPOSITORY_CONTRACT_AUDIT_BOUNDE-A92026CF3CD94728321B",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2562,
+      "age_seconds": 2646,
       "job_id": "SEM-RH_RECLUTAMIENTO-REPOSITORY_CONTRACT_AUDIT_BOUNDE-82AA70E8812A4C79E76E",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1015,
+      "age_seconds": 1099,
       "job_id": "SEM-WORKER_OPERATIONS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-0A1FB36976F31CDB06A1",
       "reason": null,
       "state": "RESULT_READY"
@@ -90,8 +90,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-20T02:50:10Z",
-    "last_receive_utc": "2026-11-20T02:50:42Z",
+    "last_cycle_utc": "2026-11-20T02:51:45Z",
+    "last_receive_utc": "2026-11-20T02:51:39Z",
     "last_terminal_utc": "2026-11-20T02:44:19Z",
     "pid": "87",
     "runtime_fingerprint": {
