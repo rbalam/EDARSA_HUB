@@ -4,26 +4,32 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "653a8663b839b4e9e36b24ab0ee831a3db8089a7",
-  "generated_at_utc": "2026-11-20T13:37:29Z",
+  "generated_at_utc": "2026-11-20T13:38:59Z",
   "history": {
-    "done_total_local": 1905,
+    "done_total_local": 1906,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1372,
-    "results_total_local": 3037
+    "results_total_local": 3038
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 223,
+      "age_seconds": 312,
       "job_id": "EDARSAHUB-BOS-SEC-P1-2-WEBSOCKET-TESTS-CERT-R1-20261120",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 20,
+      "age_seconds": 110,
       "job_id": "EDARSAHUB-BOS-SEC-P1-SESSION-REVOCATION-R4-20261120",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 71,
+      "job_id": "SEM-CENTRO_CONTROL-WORKER_RESULT_DETAIL_READ-E8C01AD5E74A3375EB95",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -36,15 +42,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "remote_development_sha": "653a8663b839b4e9e36b24ab0ee831a3db8089a7",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-20T13:37:20Z",
-    "last_receive_utc": "2026-11-20T13:37:15Z",
-    "last_terminal_utc": "2026-11-20T13:37:08Z",
+    "last_cycle_utc": "2026-11-20T13:38:58Z",
+    "last_receive_utc": "2026-11-20T13:38:53Z",
+    "last_terminal_utc": "2026-11-20T13:37:47Z",
     "pid": "90",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "3f565905bbf41208ce59b143ead5de9ed16a94f1",
