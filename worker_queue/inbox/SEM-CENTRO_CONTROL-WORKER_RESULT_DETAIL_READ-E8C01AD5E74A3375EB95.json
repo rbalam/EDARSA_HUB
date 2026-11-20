@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "EDARSAHUB-BOS-SEC-P1-2-WEBSOCKET-TESTS-CERT-R1-20261120"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CENTRO_CONTROL-WORKER_RESULT_DETAIL_READ-E8C01AD5E74A3375EB95",
+  "mode": "READ_ONLY",
+  "objective": "P1-2 (READ_ONLY): recuperar el detalle del resultado del job EDARSAHUB-BOS-SEC-P1-2-WEBSOCKET-TESTS-CERT-R1-20261120: salida de pytest (passed/xfailed/xpassed/failed por archivo), checks, Quality Gate, evidencia de auditoria pendiente y archivos modificados.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CENTRO_CONTROL",
+    "conflict_domains": [
+      "CENTRO_CONTROL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
