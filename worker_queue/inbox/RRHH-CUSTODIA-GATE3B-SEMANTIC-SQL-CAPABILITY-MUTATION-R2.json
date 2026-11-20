@@ -1,0 +1,61 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "\n# RRHH Custodia Gate3B - fixed bounded SQL preflight.\ndef _rrhh_custodia_gate3b_sql_preflight_builder(request):\n    context = _g3_context(request)\n    if context != \"RRHH_CUSTODIA\":\n        raise SemanticCapabilityError(\"SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED\")\n    _g3_constraints(request, set())\n    q = [\n      {\"name\":\"tables\",\"sql\":\"SELECT name FROM sys.tables WHERE name IN ('Custodia_Recurso','Custodia_Resguardo','Custodia_Movimiento','Custodia_Devolucion','Custodia_Incidencia','Custodia_CargoPropuesto','RH_UniformePolitica','RH_UniformePoliticaDetalle') ORDER BY name\"},\n      {\"name\":\"constraints\",\"sql\":\"SELECT name,type_desc FROM sys.objects WHERE name LIKE 'PK_Custodia_%' OR name LIKE 'FK_Custodia_%' OR name LIKE 'UQ_Custodia_%' OR name LIKE 'CK_Custodia_%' OR name LIKE 'PK_RH_Uniforme%' OR name LIKE 'FK_RH_Uniforme%' OR name LIKE 'UQ_RH_Uniforme%' OR name LIKE 'CK_RH_Uniforme%' ORDER BY name\"},\n      {\"name\":\"indexes\",\"sql\":\"SELECT name,OBJECT_NAME(object_id) table_name FROM sys.indexes WHERE name LIKE 'IX_Custodia_%' OR name LIKE 'UX_Custodia_%' ORDER BY name\"},\n      {\"name\":\"types\",\"sql\":\"SELECT t.name table_name,c.name column_name,ty.name data_type,c.max_length,c.precision,c.scale FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (t.name='RH_Colaboradores_Expediente' AND c.name='ColaboradorID') OR (t.name='RH_Cat_Puestos' AND c.name='PuestoID') OR (t.name='Producto_Catalogo' AND c.name='ProductoID') OR (t.name='ActivoFijo_Activos' AND c.name='ActivoID') OR (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Sistema_Sucursales' AND c.name='SucursalID') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') OR (t.name='Gobierno_Documento' AND c.name='DocumentoID') OR (t.name='RH_Nomina_Detalle' AND c.name='NominaDetalleID') ORDER BY t.name,c.name\"},\n      {\"name\":\"keys\",\"sql\":\"SELECT t.name table_name,c.name column_name,i.name index_name,i.is_unique,i.is_primary_key FROM sys.tables t JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE (i.is_unique=1 OR i.is_primary_key=1) AND t.name IN ('RH_Colaboradores_Expediente','RH_Cat_Puestos','Producto_Catalogo','ActivoFijo_Activos','Sistema_Empresas','Unidades_Negocio','Sistema_Sucursales','Usuario_Catalogo','Gobierno_Documento','RH_Nomina_Detalle') ORDER BY t.name,c.name\"},\n      {\"name\":\"permissions\",\"sql\":\"SELECT DB_NAME() database_name,ORIGINAL_LOGIN() original_login,SUSER_SNAME() effective_login,HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE TABLE') can_create_table,HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER') can_alter_dbo,HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','VIEW DEFINITION') can_view_definition\"},\n      {\"name\":\"scope\",\"sql\":\"SELECT t.name table_name,c.name column_name,ty.name data_type FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Sistema_Sucursales' AND c.name='SucursalID') ORDER BY t.name\"}\n    ]\n    return {\"actions\": [], \"checks\": [{\"type\":\"sql_readonly_audit\",\"queries\":q}], \"scheduling\": _g3_scheduling(context)}\n\nregister_capability(SemanticCapability(code=\"RRHH_CUSTODIA_GATE3B_SQL_PREFLIGHT\",modes=(\"READ_ONLY\",),builder=_rrhh_custodia_gate3b_sql_preflight_builder))\n",
+      "source_sha256": "6cef16e380814f052d02b58ce02483ba171104e3365a456aa7c8b7f4202f0cb2",
+      "type": "append_once"
+    },
+    {
+      "content": "from modules.worker_ingress import service\nfrom modules.worker_ingress.semantic_capabilities import registered_capabilities\n\nREQ={\"objective\":\"Gate3B\",\"bounded_context\":\"RRHH_CUSTODIA\",\"mode\":\"READ_ONLY\",\"capability\":\"RRHH_CUSTODIA_GATE3B_SQL_PREFLIGHT\",\"constraints\":{}}\n\ndef test_rrhh_custodia_gate3b_capability():\n    assert \"RRHH_CUSTODIA_GATE3B_SQL_PREFLIGHT\" in registered_capabilities()\n    job=service.build_semantic_job(REQ,current_user={\"email\":\"admin@example.com\"})\n    assert job[\"mode\"]==\"READ_ONLY\"\n    assert job[\"production_allowed\"] is False\n    assert job[\"actions\"]==[]\n    assert len(job[\"checks\"])==1\n    assert job[\"checks\"][0][\"type\"]==\"sql_readonly_audit\"\n    assert len(job[\"checks\"][0][\"queries\"])==7\n",
+      "path": "backend/tests/test_worker_rrhh_custodia_sql_preflight_semantic.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_rrhh_custodia_sql_preflight_semantic.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_rrhh_custodia_sql_preflight_semantic.py",
+        "backend/tests/test_worker_sql_readonly_audit.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "RRHH-CUSTODIA-GATE3B-SEMANTIC-SQL-CAPABILITY-MUTATION-R2",
+  "mode": "MUTATION",
+  "objective": "Registrar en Desarrollo la capability fija RRHH_CUSTODIA_GATE3B_SQL_PREFLIGHT para ejecutar únicamente un preflight SQL READ_ONLY de Custodia. Debe aceptar solo constraints vacíos, emitir actions=[], un único sql_readonly_audit con 7 consultas fijas y no tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RRHH_CUSTODIA",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "RRHH_CUSTODIA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
