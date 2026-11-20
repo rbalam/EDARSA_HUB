@@ -1,0 +1,105 @@
+{
+  "actions": [
+    {
+      "anchor": "def build_mcp_runtime_convergence_report(",
+      "path": "tools/mirror_sync/worker_runtime_fingerprint.py",
+      "replacement": "def _load_registered_capabilities() -> tuple[tuple[str, ...], str | None]:\n    \"\"\"Load registered semantic capabilities fail-closed without requiring SQL bootstrap.\"\"\"\n    import importlib.util\n    import sys\n\n    try:\n        from modules.worker_ingress.semantic_capabilities import (\n            registered_capabilities as _reg_caps,\n        )\n\n        caps = tuple(sorted(str(c).strip().upper() for c in _reg_caps() if str(c).strip()))\n        if caps:\n            return caps, None\n        return (), \"CAPABILITY_CATALOG_EMPTY\"\n    except Exception as primary_exc:\n        cap_file = ROOT / \"backend\" / \"modules\" / \"worker_ingress\" / \"semantic_capabilities.py\"\n        if not cap_file.is_file():\n            return (), f\"CAPABILITY_CATALOG_MISSING:{type(primary_exc).__name__}\"\n        try:\n            spec = importlib.util.spec_from_file_location(\n                \"_edarsahub_standalone_semantic_capabilities\",\n                cap_file,\n            )\n            if spec is None or spec.loader is None:\n                return (), \"CAPABILITY_CATALOG_SPEC_INVALID\"\n            mod = importlib.util.module_from_spec(spec)\n            sys.modules[spec.name] = mod\n            spec.loader.exec_module(mod)\n            caps = tuple(\n                sorted(\n                    str(c).strip().upper()\n                    for c in mod.registered_capabilities()\n                    if str(c).strip()\n                )\n            )\n            if not caps:\n                return (), \"CAPABILITY_CATALOG_EMPTY\"\n            return caps, None\n        except Exception as fallback_exc:\n            return (), f\"CAPABILITY_CATALOG_LOAD_FAILED:{type(fallback_exc).__name__}\"\n\n\n",
+      "source_sha256": "bc907c40c7eec3a4a90f0ef4b2229a9dd46f03742ae074e10aff9254f43936bf",
+      "type": "insert_before"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    try:\n        from modules.worker_ingress.semantic_capabilities import registered_capabilities as _reg_caps\n\n        registered = tuple(sorted(_reg_caps()))\n    except Exception:\n        registered = ()\n\n    loaded = (\n        tuple(sorted({str(c).strip().upper() for c in loaded_capabilities if str(c).strip()}))\n        if loaded_capabilities is not None\n        else registered\n    )\n    missing_in_runtime = sorted(set(registered) - set(loaded))\n    catalog_aligned = len(missing_in_runtime) == 0",
+      "path": "tools/mirror_sync/worker_runtime_fingerprint.py",
+      "replacement": "    registered, catalog_load_error = _load_registered_capabilities()\n\n    loaded = (\n        tuple(sorted({str(c).strip().upper() for c in loaded_capabilities if str(c).strip()}))\n        if loaded_capabilities is not None\n        else registered\n    )\n    missing_in_runtime = sorted(set(registered) - set(loaded))\n    catalog_loaded = catalog_load_error is None and len(registered) > 0\n    catalog_aligned = catalog_loaded and len(missing_in_runtime) == 0",
+      "source_sha256": "cace1f55907342ac05b7f6fb9a513e90175a7989f7178bbea0020fab74144129",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "        \"missing_in_runtime\": missing_in_runtime,\n        \"catalog_aligned\": catalog_aligned,",
+      "path": "tools/mirror_sync/worker_runtime_fingerprint.py",
+      "replacement": "        \"missing_in_runtime\": missing_in_runtime,\n        \"catalog_load_error\": catalog_load_error,\n        \"catalog_aligned\": catalog_aligned,",
+      "source_sha256": "e959e6949b7af6bf4834c60f9fef98e7b5d49d955d308580e2fe6b367b9b35f0",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    \"WORKER_PYTEST_CERTIFICATION_READONLY\": {\n        \"bounded_context_rule\": \"WORKER_REPAIR_KNOWLEDGE_LOOP\",\n        \"allowed_constraints\": (),\n        \"allowed_path_roots\": (),\n    },",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "    \"WORKER_PYTEST_CERTIFICATION_READONLY\": {\n        \"bounded_context_rule\": \"|\".join(sorted(_WORKER_PYTEST_FIXED_SUITES)),\n        \"allowed_constraints\": (),\n        \"allowed_path_roots\": (),\n    },",
+      "source_sha256": "6cef16e380814f052d02b58ce02483ba171104e3365a456aa7c8b7f4202f0cb2",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    Registered capabilities and exact allowed constraint keys:\n    - READ_ONLY_CANARY (mode=READ_ONLY): constraints={}\n    - REPOSITORY_CONTRACT_AUDIT_BOUNDED (mode=READ_ONLY, any valid bounded_context):\n      constraints={\"paths\": [...], \"search_terms\": [...], \"max_results\": 1..100};\n      paths must start with backend/modules/, backend/tests/, frontend/src/, or tools/mirror_sync/.\n    - REPOSITORY_CONTRACT_AUDIT (mode=READ_ONLY, bounded_context=\"RH\" only): constraints={}\n    - SQL_CONNECTIONS_BOOTSTRAP_READONLY (mode=READ_ONLY, bounded_context=\"SQL_CONNECTIONS_8OF10\"): constraints={}\n    - WORKER_RESULT_SEMANTIC_EXTRACT (mode=READ_ONLY): constraints={\"source_job_id\": \"...\"}\n    - WORKER_RESULT_DETAIL_READ (mode=READ_ONLY): constraints={\"source_job_id\": \"...\"}\n    - WORKER_MAINTENANCE_HISTORY_READONLY (mode=READ_ONLY, bounded_context=\"WORKER_REPAIR_KNOWLEDGE_LOOP\"): constraints={}\n    - WORKER_PYTEST_CERTIFICATION_READONLY (mode=READ_ONLY, bounded_context=\"WORKER_REPAIR_KNOWLEDGE_LOOP\"): constraints={}\n    - WORKER_REPAIR_BOUNDED (mode=MUTATION, bounded_context=\"WORKER_RUNTIME_CONVERGENCE\"):\n      constraints={\"incident_id\": \"...\", \"capability_code\": \"...\"}\n    - DEVELOPMENT_MUTATION_BOUNDED (mode=MUTATION, any valid domain bounded_context):\n      constraints={\"change_spec\": [...], \"verification_tests\": [...], \"authorization_ref\": \"...\", \"job_id_override\": \"...\"}\n      Allowed operations: replace_text, insert_before, insert_after, append_once, write_file (no delete_file, shell or SQL).\n      Requires live source_sha256 for existing files and authorized admin/worker:submit RBAC.",
+      "path": "backend/modules/worker_mcp/server.py",
+      "replacement": "    Registered capabilities and exact allowed constraint keys:\n    - READ_ONLY_CANARY (mode=READ_ONLY): constraints={}\n    - REPOSITORY_CONTRACT_AUDIT_BOUNDED (mode=READ_ONLY, any valid bounded_context):\n      constraints={\"paths\": [...], \"search_terms\": [...], \"max_results\": 1..100};\n      paths must start with backend/modules/, backend/tests/, frontend/src/, tools/mirror_sync/, or backend/core/.\n    - REPOSITORY_CONTRACT_AUDIT (mode=READ_ONLY, bounded_context=\"RH\" only): constraints={}\n    - SQL_CONNECTIONS_BOOTSTRAP_READONLY (mode=READ_ONLY, bounded_context=\"SQL_CONNECTIONS_8OF10\"): constraints={}\n    - SEC_RBAC_SQL_PERMISSION_MATRIX_READONLY (mode=READ_ONLY_SQL, bounded_context=\"SEC_RBAC\"): constraints={}\n    - WORKER_RESULT_SEMANTIC_EXTRACT (mode=READ_ONLY): constraints={\"source_job_id\": \"...\"}\n    - WORKER_RESULT_DETAIL_READ (mode=READ_ONLY): constraints={\"source_job_id\": \"...\"}\n    - WORKER_MAINTENANCE_HISTORY_READONLY (mode=READ_ONLY, bounded_context=\"WORKER_REPAIR_KNOWLEDGE_LOOP\"): constraints={}\n    - WORKER_PYTEST_CERTIFICATION_READONLY (mode=READ_ONLY, bounded_context=\"IA_ASSISTANT|WORKER_REPAIR_KNOWLEDGE_LOOP\"): constraints={}\n    - WORKER_REPAIR_BOUNDED (mode=MUTATION, bounded_context=\"WORKER_RUNTIME_CONVERGENCE\"):\n      constraints={\"incident_id\": \"...\", \"capability_code\": \"...\"}\n    - COA_FISCAL_STATUS_SEED_DEVELOPMENT (mode=MUTATION, bounded_context=\"COA\"):\n      constraints={\"authorization_ref\": \"...\"}\n    - DEVELOPMENT_MUTATION_BOUNDED (mode=MUTATION, any valid domain bounded_context):\n      constraints={\"change_spec\": [...], \"verification_tests\": [...], \"authorization_ref\": \"...\", \"job_id_override\": \"...\"}\n      Allowed operations: replace_text, insert_before, insert_after, append_once, write_file (no delete_file, shell or SQL).\n      Requires live source_sha256 for existing files and authorized admin/worker:submit RBAC.",
+      "source_sha256": "fe6af964cc5fa9d5176f786cf2e1b05cde40171302644492f492121c5520588e",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_runtime_convergence_gate_b1.py",
+      "replacement": "\n\ndef test_gate_m4_convergence_report_fails_closed_when_catalog_unavailable(monkeypatch):\n    sha = \"a\" * 40\n    monkeypatch.setattr(\n        fp,\n        \"build_runtime_fingerprint\",\n        lambda: {\n            \"schema\": \"edarsahub.worker-runtime-fingerprint.v1\",\n            \"branch\": \"Edarsahub_Desarrollo\",\n            \"development_sha\": sha,\n            \"worker_code_tree_sha\": \"b\" * 40,\n            \"active_worker_code_tree_sha\": \"b\" * 40,\n            \"worker_code_tree_aligned\": True,\n            \"expected_generation\": \"v4\",\n            \"actual_generation\": \"v4\",\n            \"generation_aligned\": True,\n            \"required_capabilities\": [],\n            \"production_touched\": False,\n        },\n    )\n    monkeypatch.setattr(fp, \"_git\", lambda *args: sha)\n    monkeypatch.setattr(\n        fp,\n        \"_load_registered_capabilities\",\n        lambda: ((), \"CAPABILITY_CATALOG_LOAD_FAILED:RuntimeError\"),\n    )\n\n    report = fp.build_mcp_runtime_convergence_report()\n    assert report[\"registered_capabilities\"] == []\n    assert report[\"catalog_load_error\"] == \"CAPABILITY_CATALOG_LOAD_FAILED:RuntimeError\"\n    assert report[\"catalog_aligned\"] is False\n    assert report[\"overall_converged\"] is False\n    assert report[\"recommended_action\"] == \"RECOVER_PREVIEW_RUNTIME\"\n    assert report[\"production_touched\"] is False\n\n\ndef test_gate_m4_convergence_report_loads_catalog_standalone(monkeypatch):\n    sha = \"a\" * 40\n    monkeypatch.setattr(\n        fp,\n        \"build_runtime_fingerprint\",\n        lambda: {\n            \"schema\": \"edarsahub.worker-runtime-fingerprint.v1\",\n            \"branch\": \"Edarsahub_Desarrollo\",\n            \"development_sha\": sha,\n            \"worker_code_tree_sha\": \"b\" * 40,\n            \"active_worker_code_tree_sha\": \"b\" * 40,\n            \"worker_code_tree_aligned\": True,\n            \"expected_generation\": \"v4\",\n            \"actual_generation\": \"v4\",\n            \"generation_aligned\": True,\n            \"required_capabilities\": [],\n            \"production_touched\": False,\n        },\n    )\n    monkeypatch.setattr(fp, \"_git\", lambda *args: sha)\n\n    report = fp.build_mcp_runtime_convergence_report()\n    assert report[\"catalog_load_error\"] is None\n    assert len(report[\"registered_capabilities\"]) >= 12\n    assert \"REPOSITORY_CONTRACT_AUDIT_BOUNDED\" in report[\"registered_capabilities\"]\n    assert \"SEC_RBAC_SQL_PERMISSION_MATRIX_READONLY\" in report[\"registered_capabilities\"]\n    assert report[\"catalog_aligned\"] is True\n    assert report[\"overall_converged\"] is True\n\n\ndef test_gate_m4_capability_catalog_and_mcp_docstring_full_parity():\n    import ast\n    from pathlib import Path\n    from modules.worker_ingress import semantic_capabilities as sem_caps\n\n    catalog = {item[\"code\"]: item for item in sem_caps.capability_catalog()}\n    registered = set(sem_caps.registered_capabilities())\n    assert set(catalog) == registered\n\n    # WORKER_PYTEST_CERTIFICATION_READONLY metadata must reflect every allowed suite context\n    pytest_meta = catalog[\"WORKER_PYTEST_CERTIFICATION_READONLY\"]\n    for ctx in sem_caps._WORKER_PYTEST_FIXED_SUITES:\n        assert ctx in pytest_meta[\"bounded_context_rule\"].split(\"|\")\n\n    # REPOSITORY_CONTRACT_AUDIT must remain strictly restricted to RH\n    assert catalog[\"REPOSITORY_CONTRACT_AUDIT\"][\"bounded_context_rule\"] == \"RH\"\n    # REPOSITORY_CONTRACT_AUDIT_BOUNDED includes backend/core/, mutation does not\n    assert \"backend/core/\" in catalog[\"REPOSITORY_CONTRACT_AUDIT_BOUNDED\"][\"allowed_path_roots\"]\n    assert \"backend/core/\" not in catalog[\"DEVELOPMENT_MUTATION_BOUNDED\"][\"allowed_path_roots\"]\n\n    # Extract submit_objective_tool docstring and tool registrations via AST (no mcp venv needed)\n    server_path = Path(__file__).resolve().parents[1] / \"modules\" / \"worker_mcp\" / \"server.py\"\n    tree = ast.parse(server_path.read_text(encoding=\"utf-8\"))\n    submit_doc = \"\"\n    for node in ast.walk(tree):\n        if isinstance(node, ast.FunctionDef) and node.name == \"submit_objective_tool\":\n            submit_doc = ast.get_docstring(node) or \"\"\n            break\n    assert submit_doc\n    for code in registered:\n        assert code in submit_doc, f\"MCP submit_objective docstring missing capability: {code}\"\n    assert \"backend/core/\" in submit_doc\n    assert \"IA_ASSISTANT\" in submit_doc\n\n\ndef test_gate_m4_preserves_capability_restrictions_fail_closed():\n    from modules.worker_ingress import semantic_capabilities as sem_caps\n\n    with pytest.raises(sem_caps.SemanticCapabilityError, match=\"SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED\"):\n        sem_caps.resolve_capability(\"REPOSITORY_CONTRACT_AUDIT\").builder(\n            {\"bounded_context\": \"WORKER_OPERATIONS\", \"constraints\": {}}\n        )\n\n    with pytest.raises(sem_caps.SemanticCapabilityError, match=\"SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED\"):\n        sem_caps.resolve_capability(\"WORKER_PYTEST_CERTIFICATION_READONLY\").builder(\n            {\"bounded_context\": \"RH\", \"constraints\": {}}\n        )\n",
+      "source_sha256": "399a158a95ca061890181d16e8db562a41606fe8b8ff275ea73c909bdadf03ef",
+      "type": "append_once"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_runtime_fingerprint.py",
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/modules/worker_mcp/server.py",
+        "backend/tests/test_worker_runtime_convergence_gate_b1.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_runtime_convergence_gate_b1.py",
+        "backend/tests/test_worker_remote_semantic_ingress_gate2a.py",
+        "backend/tests/test_worker_pytest_certification_readonly.py",
+        "backend/tests/test_worker_sec_rbac_gate1b_sql_capability.py",
+        "backend/tests/test_worker_sql_connections_bootstrap_semantic.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M4-FINGERPRINT-MCP-PARITY-20261120",
+  "mode": "MUTATION",
+  "objective": "GATE-M4 (Master Worker Operations): Corregir fail-open en worker_runtime_fingerprint cuando falla la carga del catalogo semantico y alinear 1:1 Capability Registry, _CAPABILITY_METADATA y el contrato documentado de submit_objective en worker_mcp/server.py, preservando exactamente las 2 herramientas publicas MCP, RBAC y restricciones de capacidades.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "MASTER-WORKER-OPERATIONS-AGY",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_OPERATIONS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_OPERATIONS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "P1",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": [
+      "tools/mirror_sync/worker_runtime_fingerprint.py",
+      "backend/modules/worker_ingress/semantic_capabilities.py",
+      "backend/modules/worker_mcp/server.py",
+      "backend/tests/test_worker_runtime_convergence_gate_b1.py"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
