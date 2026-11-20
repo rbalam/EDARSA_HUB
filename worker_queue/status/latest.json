@@ -4,10 +4,10 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "b56ad3689d79108e002ce9da19214551b85dfea5",
-  "generated_at_utc": "2026-11-20T05:33:26Z",
+  "generated_at_utc": "2026-11-20T05:35:08Z",
   "history": {
     "done_total_local": 1900,
-    "pending_total_local": 0,
+    "pending_total_local": 1,
     "processing_total_local": 0,
     "rejected_total_local": 1369,
     "results_total_local": 3029
@@ -16,19 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 652,
+      "age_seconds": 14,
+      "job_id": "EDARSAHUB-BOS-SEC-P1-WEBSOCKET-AUTH-RBAC-R1-20261120",
+      "reason": null,
+      "state": "PENDING"
+    },
+    {
+      "age_seconds": 754,
       "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M4-FINGERPRINT-MCP-PARITY-20261120",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
   "local_development_sha": "b56ad3689d79108e002ce9da19214551b85dfea5",
-  "oldest_pending_age_seconds": 0,
+  "oldest_pending_age_seconds": 14,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
-  "queue_pending": 0,
+  "queue_pending": 1,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 1,
   "queue_running": 0,
@@ -36,8 +42,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-20T05:33:05Z",
-    "last_receive_utc": "2026-11-20T05:33:22Z",
+    "last_cycle_utc": "2026-11-20T05:34:44Z",
+    "last_receive_utc": "2026-11-20T05:34:39Z",
     "last_terminal_utc": "2026-11-20T05:22:33Z",
     "pid": "574838",
     "runtime_fingerprint": {
