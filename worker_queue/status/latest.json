@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "4926c7d5dc94f35c2ea1433b6d929d188c247bf6",
-  "generated_at_utc": "2026-11-20T14:24:26Z",
+  "generated_at_utc": "2026-11-20T14:26:00Z",
   "history": {
     "done_total_local": 1908,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3040,
+      "age_seconds": 3134,
       "job_id": "EDARSAHUB-BOS-SEC-P1-2-WEBSOCKET-TESTS-CERT-R1-20261120",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2837,
+      "age_seconds": 2931,
       "job_id": "EDARSAHUB-BOS-SEC-P1-SESSION-REVOCATION-R4-20261120",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 41,
+      "age_seconds": 136,
       "job_id": "EDARSAHUB-BOS-WORKER-OPS-GUARD-LOCK-FINALIZE-PARITY-R1-20261120",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2798,
+      "age_seconds": 2893,
       "job_id": "SEM-CENTRO_CONTROL-WORKER_RESULT_DETAIL_READ-E8C01AD5E74A3375EB95",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 344,
+      "age_seconds": 438,
       "job_id": "SEM-SEC_RBAC-SEC_RBAC_SQL_PERMISSION_MATRIX_R-B0621AC6CEE627EF9CF5",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-20T14:24:06Z",
-    "last_receive_utc": "2026-11-20T14:24:01Z",
+    "last_cycle_utc": "2026-11-20T14:25:59Z",
+    "last_receive_utc": "2026-11-20T14:25:54Z",
     "last_terminal_utc": "2026-11-20T14:23:44Z",
     "pid": "90",
     "runtime_fingerprint": {
