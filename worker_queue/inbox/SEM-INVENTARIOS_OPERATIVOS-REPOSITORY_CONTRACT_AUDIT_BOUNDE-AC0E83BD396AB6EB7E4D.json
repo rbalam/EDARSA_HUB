@@ -1,0 +1,76 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/automatizacion/queries_mpro.py",
+          "backend/modules/automatizacion/repository.py",
+          "backend/core/scheduler/jobs/inventarios_detector_job.py",
+          "backend/core/scheduler/jobs/sla_job.py",
+          "backend/modules/fase2_operativo/services/orquestador_service.py",
+          "backend/modules/fase2_operativo/services/sla_service.py",
+          "backend/modules/fase2_operativo/services/responsabilidad_service.py",
+          "backend/modules/fase2_operativo/services/workflow_service.py",
+          "backend/modules/fase2_operativo/services/configuracion_service.py",
+          "backend/modules/fase2_operativo/services/justificacion_service.py",
+          "backend/modules/fase2_operativo/services/auditoria_service.py",
+          "backend/modules/fase2_operativo/repositories/asignacion_repository.py",
+          "backend/modules/fase2_operativo/repositories/responsabilidad_repository.py",
+          "backend/modules/fase2_operativo/sql_repository.py",
+          "backend/core/inventarios/sync_movimientos_canonico.py",
+          "backend/core/inventarios/resolver_canonico.py",
+          "backend/modules/compras/sync_service.py",
+          "backend/modules/compras/sql_first_repository.py",
+          "backend/core/scheduler/jobs/auditorias_job.py",
+          "backend/modules/automatizacion/feature_flags.py"
+        ],
+        "search_terms": [
+          "inventario",
+          "consolidado",
+          "consumo",
+          "ventas",
+          "descarga",
+          "ajuste",
+          "folio",
+          "sla",
+          "responsabilidad",
+          "asignacion",
+          "workflow",
+          "notificacion",
+          "almacen",
+          "fecha",
+          "mpro",
+          "sync"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-INVENTARIOS_OPERATIVOS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-AC0E83BD396AB6EB7E4D",
+  "mode": "READ_ONLY",
+  "objective": "Auditoria canónica READ_ONLY de INVENTARIOS_OPERATIVOS / MPro, sin duplicar la certificación RH histórica: mapear las ocho etapas del cierre periódico (verificación existencias vs ventas, entradas por diferencias, descarga pendientes, comparativo, consolidación, fecha operativa, comparativo físico y ajustes finales), e identificar duplicidades con SLA, asignación de responsables, workflows, alertas, responsabilidad económica y catálogos de almacén. Describir evidencia de código, trazabilidad, idempotencia, RBAC, permisos, fechas, sync y límites de automatización. No ejecutar ningún paso de cierre o SQL LIVE; no escritura externa, DDL, DML ni Producción. Conservar módulos actuales.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INVENTARIOS_OPERATIVOS",
+    "conflict_domains": [
+      "INVENTARIOS_OPERATIVOS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
