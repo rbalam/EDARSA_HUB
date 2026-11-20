@@ -1,0 +1,40 @@
+{
+  "actions": [],
+  "base_sha": "ed67dd97995cc887a78768309e81c7be103d530f",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M1-SQL-DDL-EXEC-R1-20261120",
+  "migration_path": "backend/database/migrations/20261120_001_worker_operations_canonical_state.sql",
+  "migration_sha256": "ec2c654d37adc0aec2c8d8b1c1a465ad59a8024b26b6f7f0c5a6d0deda7ec1dc",
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "objective": "Ejecutar la migracion DDL aditiva SHA-bound 20261120_001_worker_operations_canonical_state.sql en EDARSAHUB Desarrollo con preflight y post-audit HRLectura (worker_operations_sql_state_v1).",
+  "post_audit_profile": "worker_operations_sql_state_v1",
+  "preflight_audit_profile": "worker_operations_sql_state_v1",
+  "production_allowed": false,
+  "requester": {
+    "chat": "WORKER-OPS-GATE-M1-DDL-AGY",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_OPERATIONS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_OPERATIONS",
+      "EDARSAHUB_SQL_DEV"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "P0",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": [
+      "backend/database/migrations/20261120_001_worker_operations_canonical_state.sql"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "title": "GATE-M1 Step 2: Ejecutar migracion DDL aditiva dbo.Sys_Worker_* en EDARSAHUB Desarrollo"
+}
