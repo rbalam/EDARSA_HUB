@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "709bba11d09a18c5e7fe3285a466d3bb2e5564f2",
-  "generated_at_utc": "2026-11-20T16:13:22Z",
+  "generated_at_utc": "2026-11-20T16:14:54Z",
   "history": {
     "done_total_local": 1916,
     "pending_total_local": 0,
@@ -16,43 +16,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 995,
+      "age_seconds": 1087,
       "job_id": "EDARSAHUB-BOS-BACKEND-SQL-AS-DICT-FAIL-CLOSED-GUARD-R1-20261120",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3307,
+      "age_seconds": 3399,
       "job_id": "EDARSAHUB-BOS-WORKER-OPS-MIRROR-POST-DISCONNECT-RECOVERY-R1-20261120",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2303,
+      "age_seconds": 2396,
       "job_id": "SEM-CENTRO_CONTROL-REPOSITORY_CONTRACT_AUDIT_BOUNDE-9F8016D3BC73982E4017",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2355,
+      "age_seconds": 2447,
       "job_id": "SEM-SEC_RBAC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-D7629B5B6FB62B80A662",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2859,
+      "age_seconds": 2951,
       "job_id": "SEM-SEC_RBAC-SEC_RBAC_SQL_PERMISSION_MATRIX_R-00090FD68CB84D5B6EDF",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3519,
-      "job_id": "SEM-SEC_RBAC-WORKER_RESULT_DETAIL_READ-F0E04AB4B5E9C3CA74A9",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3090,
+      "age_seconds": 3182,
       "job_id": "SEM-SEC_RBAC-WORKER_RESULT_SEMANTIC_EXTRACT-D888DAA4231703726473",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,14 +60,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 7,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
   "remote_development_sha": "709bba11d09a18c5e7fe3285a466d3bb2e5564f2",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-20T16:13:08Z",
-    "last_receive_utc": "2026-11-20T16:13:03Z",
+    "last_cycle_utc": "2026-11-20T16:14:33Z",
+    "last_receive_utc": "2026-11-20T16:14:28Z",
     "last_terminal_utc": "2026-11-20T15:56:46Z",
     "pid": "1315864",
     "runtime_fingerprint": {
