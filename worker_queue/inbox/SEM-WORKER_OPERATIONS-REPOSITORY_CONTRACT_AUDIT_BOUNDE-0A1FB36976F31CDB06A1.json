@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/worker_ingress/",
+          "backend/modules/worker_mcp/",
+          "tools/mirror_sync/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "CapabilityRegistry",
+          "RepairPlanner",
+          "ExecutionBridge",
+          "Scheduler",
+          "queue",
+          "incident",
+          "reconcile",
+          "duplicate",
+          "CERTIFIED",
+          "SUBMITTED",
+          "idempotency",
+          "maintenance"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_OPERATIONS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-0A1FB36976F31CDB06A1",
+  "mode": "READ_ONLY",
+  "objective": "EDARSAHUB BOS GLOBAL WORKER OPERATIONS GATE01. Bounded READ_ONLY review of existing Worker architecture for cross-project supervision, scheduler, incidents, queue/result reconciliation, certification and recovery. Reuse canonical capabilities; return evidence and gaps; do not change code, data, or Production.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_OPERATIONS",
+    "conflict_domains": [
+      "WORKER_OPERATIONS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
