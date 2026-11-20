@@ -1,0 +1,38 @@
+{
+  "actions": [],
+  "base_sha": "ed67dd97995cc887a78768309e81c7be103d530f",
+  "batch_size": 200,
+  "confirm_sql_backfill": true,
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M1-SQL-BACKFILL-R1-20261120",
+  "mode": "WORKER_SQL_BACKFILL_DEVELOPMENT",
+  "objective": "Conciliar de forma idempotente y por lotes el historico de trabajos, incidentes y capacidades del Universal Worker V4 hacia dbo.Sys_Worker_* en EDARSAHUB Desarrollo via SPs estrechos con verificacion de idempotencia y pre/post audit HRLectura.",
+  "post_audit_profile": "worker_operations_sql_state_v1",
+  "preflight_audit_profile": "worker_operations_sql_state_v1",
+  "production_allowed": false,
+  "requester": {
+    "chat": "WORKER-OPS-GATE-M1-BACKFILL-AGY",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_OPERATIONS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_OPERATIONS",
+      "EDARSAHUB_SQL_DEV"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "P0",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": [
+      "tools/mirror_sync/worker_sql_projection.py"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "title": "GATE-M1 Step 3: Backfill historico por lotes e idempotente hacia dbo.Sys_Worker_* (Desarrollo)"
+}
