@@ -1,0 +1,71 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "backend/modules/proveedores/",
+          "backend/modules/finanzas/cuentas_por_pagar.py",
+          "backend/modules/finanzas/tesoreria.py",
+          "backend/modules/compras/sync_service.py",
+          "backend/modules/compras/sql_first_repository.py",
+          "backend/modules/compras/repository_pedidos_sql.py",
+          "backend/core/rbac/",
+          "backend/core/communications/",
+          "frontend/src/portal/",
+          "frontend/src/App.js",
+          "frontend/src/HostRouter.jsx"
+        ],
+        "search_terms": [
+          "proveedor",
+          "portal",
+          "cfdi",
+          "xml",
+          "ppd",
+          "pue",
+          "complemento",
+          "factura",
+          "uuid",
+          "rfc",
+          "pago",
+          "recepcion",
+          "orden",
+          "compras",
+          "autorizacion",
+          "concilia",
+          "responsable",
+          "documento",
+          "notificacion",
+          "tesoreria"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-PORTAL_PROVEEDORES-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B5262EEDF55F0F2FC5DA",
+  "mode": "READ_ONLY",
+  "objective": "Portal de Proveedores Gate 0A READ_ONLY: comprobar contratos de frontend, seguridad RBAC, compras, finanzas CxP, tesoreria, PPD/PUE y CFDI solo en rutas autorizadas; inspeccionar reutilizacion y registrar brechas de conciliacion OC-entrada-CFDI-pago. Este Gate no cubre backend/routes fuera del allowlist. No SQL LIVE, no CFDI transaccional, no escribir, no modificar Produccion ni desplegar DNS.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "PORTAL_PROVEEDORES",
+    "conflict_domains": [
+      "PORTAL_PROVEEDORES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
