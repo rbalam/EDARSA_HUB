@@ -1012,6 +1012,58 @@ def advance_repair_automation(
             requester=requester,
         )
 
+        dup_guard = prevent_duplicate_historical_repair(
+            incident_id=incident_id,
+            source_job_id=source_job_id,
+            problem_signature=(
+                learned.problem_signature
+                if learned is not None
+                else getattr(state, "problem_signature", None)
+            ),
+            blockers=list((source or {}).get("blockers") or []),
+            target_paths=list(getattr(state, "target_paths", ()) or ()),
+        )
+        if dup_guard.get("duplicate_prevented") is True:
+            rows.append(
+                {
+                    "incident_id": incident_id,
+                    "source_job_id": source_job_id,
+                    "action": "PREVENTED_DUPLICATE_HISTORICAL_REPAIR",
+                    "reason": dup_guard.get("reason"),
+                    "matched_lesson_id": dup_guard.get("matched_lesson_id"),
+                    "matched_repair_job_id": dup_guard.get("matched_repair_job_id"),
+                    "production_touched": False,
+                }
+            )
+            continue
+
+        if execution._repair_rbac_env_enforced():
+            try:
+                auth_result = execution._default_rbac_authorizer(requester)
+            except Exception:
+                auth_result = {
+                    "allowed": False,
+                    "reason": "REQUESTER_RBAC_RUNTIME_ERROR",
+                }
+            if not isinstance(auth_result, dict) or auth_result.get("allowed") is not True:
+                rows.append(
+                    {
+                        "incident_id": incident_id,
+                        "source_job_id": source_job_id,
+                        "action": "BLOCKED_RBAC",
+                        "reason": (
+                            "REPAIR_RBAC_DENIED:"
+                            + str(
+                                (auth_result or {}).get("reason")
+                                if isinstance(auth_result, dict)
+                                else "INVALID_RBAC_RESPONSE"
+                            )
+                        ),
+                        "production_touched": False,
+                    }
+                )
+                continue
+
         try:
             publication = planner.publish_planned_repair(
                 incident_id,
@@ -1076,10 +1128,16 @@ FAILURE_TAXONOMY_RULES: tuple[tuple[str, str, tuple[str, ...], bool, bool, str, 
     ("UNKNOWN_MCP_CAPABILITY", "CONTRACT", ("SEMANTIC_CAPABILITY_UNKNOWN", "CAPABILITY_UNKNOWN", "CAPABILITY_NOT_LOADED"), False, False, "CHECK_CATALOG_AND_RUNTIME_CONVERGENCE", 1),
     ("INVALID_CONTRACT", "CONTRACT", ("INVALID_JOB_TEMPLATE_SCHEMA", "SEMANTIC_CONSTRAINTS_UNSUPPORTED", "SEMANTIC_CAPABILITY_MODE_MISMATCH", "UNSUPPORTED_ACTION", "UNSUPPORTED_CHECK", "FORBIDDEN_TEMPLATE_KEY", "INVALID_SCHEMA"), False, False, "FIX_CONTRACT_SPEC", 0),
     ("DUPLICATE_JOB", "CONTRACT", ("ALREADY_EXISTS", "DUPLICATE", "EXISTS"), False, False, "RECONCILE_EXISTING_JOB", 0),
+    ("REVOKED_SESSION_ACCEPTED", "SECURITY", ("REVOKED_SESSION_ACCEPTED", "SESSION_REVOCATION_FAIL_OPEN", "STALE_SID_ACCEPTED"), False, True, "FAIL_CLOSED_HUMAN_REQUIRED", 0),
+    ("MISSING_EXPECTED_SHA256", "CONTRACT", ("WRITE_EXISTING_REQUIRES_EXPECTED_SHA256", "EXPECTED_SHA256_REQUIRED", "MISSING_EXPECTED_SHA256"), False, False, "PREPUBLISH_CONTRACT_PARITY_AND_REFRESH_SHA", 0),
+    ("SQL_AS_DICT_UNNAMED_COLUMN", "CONTRACT", ("PYMSSQL_AS_DICT_UNNAMED_COLUMN", "COLUMNS WITH NO NAMES", "AS_DICT_UNNAMED_COLUMN"), False, False, "ADD_EXPLICIT_SQL_ALIAS_AND_FAIL_CLOSED", 0),
+    ("EXECUTABLE_MODE_STRIP", "INFRASTRUCTURE", ("ATOMIC_WRITE_MODE_STRIP", "EXECUTABLE_BIT_LOST", "PERMISSION_MODE_DRIFT"), False, False, "PRESERVE_POSIX_MODE_IN_MATERIALIZER", 1),
+    ("MIRROR_SYNC_STOPPED", "INFRASTRUCTURE", ("MIRROR_SYNC_STOPPED", "MIRROR_NOT_STARTED", "MIRROR_POST_DISCONNECT_STOPPED"), True, False, "RECOVER_AUTHORIZED_MIRROR_SYNC", 2),
+    ("CODE_CERTIFIED_WITHOUT_OPERATIONAL_VALIDATION", "INFRASTRUCTURE", ("UNVERIFIED_IN_PREVIEW", "PREVIEW_VALIDATION_MISSING", "CERTIFIED_WITHOUT_PREVIEW_EVIDENCE"), False, False, "RUN_PREVIEW_OPERATIONAL_VALIDATION", 1),
     ("STALE_SOURCE_SHA256", "CONTRACT", ("SOURCE_SHA256_MISMATCH", "SHA256_MISMATCH", "STALE_SHA"), True, False, "REFRESH_SHA_AND_REPLAN", 2),
     ("TEST_FAILURE", "CONTRACT", ("GIT_TESTS_FAILED", "CHECK_FAILED:PYTEST", "ASSERTIONERROR"), False, False, "DIAGNOSE_CAUSAL_AND_REPAIR", 2),
     ("ABSENT_OR_TRUNCATED_EVIDENCE", "CONTRACT", ("EVIDENCE_ABSENT", "EVIDENCE_TRUNCATED", "RESULT_ABSENT"), False, False, "BOUNDED_REQUERY", 1),
-    ("GIT_MIRROR_DIVERGENCE", "INFRASTRUCTURE", ("GIT_DIVERGENCE_BLOCKED", "DIVERGENCE", "NON_FAST_FORWARD"), True, False, "CANONICAL_DIVERGENCE_GUARD", 2),
+    ("GIT_MIRROR_DIVERGENCE", "INFRASTRUCTURE", ("GIT_DIVERGENCE_BLOCKED", "DIVERGENCE", "NON_FAST_FORWARD", "GUARD_CLI_EXIT_MISMATCH", "FINALIZE_SYSTEM_DEPS_DRIFT"), True, False, "CANONICAL_DIVERGENCE_GUARD", 2),
     ("CONTRADICTORY_NOT_FOUND", "INFRASTRUCTURE", ("NOT_FOUND", "BLOB_MISSING", "RESULT_REF_MISSING"), True, False, "RECONCILE_REMOTE_RESULTS", 1),
     ("INCOMPLETE_PUBLICATION", "TRANSIENT", ("PUBLICATION_INCOMPLETE", "PUSH_FAILED", "GIT_PUSH_FAILED"), True, False, "RECONCILE_AND_REPUBLISH", 2),
     ("PENDING_ATTESTATION", "TRANSIENT", ("PENDING_AUDIT_EVIDENCE", "ATTESTATION_MISSING", "PENDING_CERTIFICATION"), True, False, "WAIT_ATTESTATION_CYCLE", 2),
@@ -1261,24 +1319,240 @@ def record_circuit_outcome(
     return record
 
 
+CANONICAL_KNOWLEDGE_LESSONS: tuple[dict[str, Any], ...] = (
+    {
+        "lesson_id": "LESSON-MISSING-EXPECTED-SHA256",
+        "failure_class": "MISSING_EXPECTED_SHA256",
+        "problem_signature": "WRITE_EXISTING_REQUIRES_EXPECTED_SHA256",
+        "root_cause": "write_file sobre archivo existente sin expected_sha256 ni validacion previa contra base_sha.",
+        "source_job_id": "EDARSAHUB-BOS-SEC-P1-SESSION-REVOCATION-R3-20261120",
+        "certified_repair_job_id": "EDARSAHUB-BOS-WORKER-OPS-PREPUBLISH-CONTRACT-PARITY-R1-20261120",
+        "certified_commit_sha": "26f90b3bd07b6a6e0c2b79c0f0c2b8333d2cb27d",
+        "certification": "CERTIFIED",
+        "operational_validation": "NOT_APPLICABLE",
+        "reusable_guardrail": "universal_job_bridge.validate_prepublish_contract",
+        "prevention_rule": "Rechazar pre-publicacion todo write_file sobre archivo existente sin expected_sha256 coincidente con HEAD.",
+        "production_touched": False,
+    },
+    {
+        "lesson_id": "LESSON-EXECUTABLE-MODE-STRIP",
+        "failure_class": "EXECUTABLE_MODE_STRIP",
+        "problem_signature": "ATOMIC_WRITE_MODE_STRIP",
+        "root_cause": "worker_mutation_materializer._atomic_write reemplazaba scripts ejecutables con modo temporal 0644 perdiendo +x.",
+        "source_job_id": "EDARSAHUB-BOS-WORKER-OPS-GUARD-LOCK-FINALIZE-PARITY-R1-20261120",
+        "certified_repair_job_id": "EDARSAHUB-BOS-WORKER-OPS-PREPUBLISH-CONTRACT-PARITY-R1-20261120",
+        "certified_commit_sha": "26f90b3bd07b6a6e0c2b79c0f0c2b8333d2cb27d",
+        "certification": "CERTIFIED",
+        "operational_validation": "NOT_APPLICABLE",
+        "reusable_guardrail": "worker_mutation_materializer._atomic_write",
+        "prevention_rule": "Preservar stat.S_IMODE(target.stat().st_mode) mediante os.chmod antes de os.replace.",
+        "production_touched": False,
+    },
+    {
+        "lesson_id": "LESSON-GIT-DIVERGENCE-GUARD-PARITY",
+        "failure_class": "GIT_MIRROR_DIVERGENCE",
+        "problem_signature": "GUARD_CLI_EXIT_MISMATCH",
+        "root_cause": "git_divergence_guard CLI devolvia exit 1 en comandos exitosos y finalize_local_snapshot no excluia deriva esperada de system_deps.txt.",
+        "source_job_id": "EDARSAHUB-BOS-WORKER-OPS-GUARD-LOCK-FINALIZE-PARITY-R1-20261120",
+        "certified_repair_job_id": "EDARSAHUB-BOS-WORKER-OPS-GUARD-LOCK-FINALIZE-PARITY-R1-20261120",
+        "certified_commit_sha": "4926c7d5dc94f35c2ea1433b6d929d188c247bf6",
+        "certification": "CERTIFIED",
+        "operational_validation": "NOT_APPLICABLE",
+        "reusable_guardrail": "git_divergence_guard.main+finalize_local_snapshot.sh",
+        "prevention_rule": "Exigir paridad de exit codes fail-closed y exclusion compartida de .emergent/system_deps.txt.",
+        "production_touched": False,
+    },
+    {
+        "lesson_id": "LESSON-MIRROR-SYNC-POST-DISCONNECT",
+        "failure_class": "MIRROR_SYNC_STOPPED",
+        "problem_signature": "MIRROR_POST_DISCONNECT_STOPPED",
+        "root_cause": "edarsahub-mirror-sync permanecia STOPPED tras reinicio de contenedor aun estando autorizado con ENABLED.",
+        "source_job_id": "EDARSAHUB-BOS-WORKER-OPS-MIRROR-POST-DISCONNECT-RECOVERY-R1-20261120",
+        "certified_repair_job_id": "EDARSAHUB-BOS-WORKER-OPS-MIRROR-POST-DISCONNECT-RECOVERY-R1-20261120",
+        "certified_commit_sha": "163458aefa9bd29ea05af9930572c34c027cef39",
+        "certification": "CERTIFIED",
+        "operational_validation": "ACTIVE_IN_PREVIEW",
+        "reusable_guardrail": "edarsahub_bootstrap_watchdog.maybe_recover_mirror_sync",
+        "prevention_rule": "Recuperar automaticamente Mirror Sync solo cuando ENABLED este activo, sin STOP/PAUSED ni parada administrativa.",
+        "production_touched": False,
+    },
+    {
+        "lesson_id": "LESSON-SQL-AS-DICT-UNNAMED-COLUMN",
+        "failure_class": "SQL_AS_DICT_UNNAMED_COLUMN",
+        "problem_signature": "PYMSSQL_AS_DICT_UNNAMED_COLUMN",
+        "root_cause": "Consultas SELECT 1 sin alias bajo pymssql cursor(as_dict=True) fallaban y execute_sql_query* silenciaba errores en [].",
+        "source_job_id": "EDARSAHUB-BOS-SEC-P1-SESSION-REVOCATION-R2-20261120",
+        "certified_repair_job_id": "EDARSAHUB-BOS-BACKEND-SQL-AS-DICT-FAIL-CLOSED-GUARD-R1-20261120",
+        "certified_commit_sha": "709bba11d09a18c5e7fe3285a466d3bb2e5564f2",
+        "certification": "CERTIFIED",
+        "operational_validation": "NOT_APPLICABLE",
+        "reusable_guardrail": "backend/tests/test_sql_as_dict_fail_closed_guard_r1.py",
+        "prevention_rule": "Exigir alias explicitos en proyecciones externas as_dict=True y propagacion raise_on_error=True en rutas criticas.",
+        "production_touched": False,
+    },
+    {
+        "lesson_id": "LESSON-REVOKED-SESSION-ACCEPTED",
+        "failure_class": "REVOKED_SESSION_ACCEPTED",
+        "problem_signature": "SESSION_REVOCATION_FAIL_OPEN",
+        "root_cause": "Validacion de sesion activa fallaba abierto cuando fetch_one=True devolvia [] o cuando SELECT sin alias fallaba en pymssql.",
+        "source_job_id": "EDARSAHUB-BOS-SEC-P1-SESSION-REVOCATION-R2-20261120",
+        "certified_repair_job_id": "EDARSAHUB-BOS-SEC-P1-SESSION-REVOCATION-R4-20261120",
+        "certified_commit_sha": "653a8663b839b4e9e36b24ab0ee831a3db8089a7",
+        "certification": "CERTIFIED",
+        "operational_validation": "ACTIVE_IN_PREVIEW",
+        "reusable_guardrail": "backend/tests/test_auth_session_revocation_p1_2.py",
+        "prevention_rule": "Consultar columna nombrada SesionID, normalizar 0 filas a None y fallar cerrado ante error SQL.",
+        "production_touched": False,
+    },
+    {
+        "lesson_id": "LESSON-CODE-CERTIFIED-WITHOUT-PREVIEW-VALIDATION",
+        "failure_class": "CODE_CERTIFIED_WITHOUT_OPERATIONAL_VALIDATION",
+        "problem_signature": "CERTIFIED_WITHOUT_PREVIEW_EVIDENCE",
+        "root_cause": "La certificacion tecnica de codigo (CERTIFIED) no diferenciaba si el comportamiento operativo ya habia sido validado en Preview.",
+        "source_job_id": "EDARSAHUB-BOS-SEC-P1-SESSION-REVOCATION-R2-20261120",
+        "certified_repair_job_id": "EDARSAHUB-BOS-WORKER-OPS-OPERATIONAL-PARITY-AND-KNOWLEDGE-R1-20261120",
+        "certified_commit_sha": None,
+        "certification": "PENDING_CERTIFICATION",
+        "operational_validation": "PENDING_PREVIEW_VALIDATION",
+        "reusable_guardrail": "worker_result_status.build_differentiated_evidence",
+        "prevention_rule": "Separar SUBMITTED, INTEGRATED, CERTIFIED y ACTIVE_IN_PREVIEW exigiendo evidencia operativa SHA-bound para Preview.",
+        "production_touched": False,
+    },
+)
+
+
+def lookup_canonical_lesson(
+    *,
+    failure_class: str = "",
+    problem_signature: str = "",
+    source_job_id: str = "",
+) -> dict[str, Any] | None:
+    fc = str(failure_class or "").strip().upper()
+    ps = str(problem_signature or "").strip().upper()
+    sj = str(source_job_id or "").strip()
+
+    for lesson in CANONICAL_KNOWLEDGE_LESSONS:
+        if ps and str(lesson["problem_signature"]).upper() == ps:
+            return dict(lesson)
+        if fc and str(lesson["failure_class"]).upper() == fc:
+            return dict(lesson)
+    if sj:
+        for lesson in CANONICAL_KNOWLEDGE_LESSONS:
+            if str(lesson["source_job_id"]) == sj:
+                return dict(lesson)
+    return None
+
+
+def prevent_duplicate_historical_repair(
+    *,
+    incident_id: str,
+    source_job_id: str = "",
+    problem_signature: str | None = None,
+    blockers: list[str] | tuple[str, ...] = (),
+    target_paths: list[str] | tuple[str, ...] = (),
+) -> dict[str, Any]:
+    """Prevent re-executing a repair already resolved and certified in historical knowledge."""
+    clean_source = str(source_job_id or "").strip()
+    clean_sig = str(problem_signature or "").strip().upper()
+    classification = classify_failure_taxonomy(
+        blockers=blockers,
+        error_code=clean_sig,
+        causal_evidence={"incident_id": incident_id} if incident_id else None,
+    )
+    lesson = lookup_canonical_lesson(
+        failure_class=classification.get("failure_class") or "",
+        problem_signature=clean_sig,
+        source_job_id="",
+    )
+    if (
+        lesson is not None
+        and lesson.get("certification") == "CERTIFIED"
+        and lesson.get("production_touched") is False
+        and (
+            (clean_source and clean_source == lesson.get("source_job_id"))
+            or (clean_sig and clean_sig == str(lesson.get("problem_signature") or "").upper())
+        )
+    ):
+        return {
+            "duplicate_prevented": True,
+            "reason": f"HISTORICAL_CERTIFIED_LESSON:{lesson['lesson_id']}",
+            "matched_lesson_id": lesson["lesson_id"],
+            "matched_repair_job_id": lesson["certified_repair_job_id"],
+            "matched_commit_sha": lesson["certified_commit_sha"],
+            "production_touched": False,
+        }
+
+    if maintenance.INCIDENT_DIR.is_dir():
+        clean_paths = {str(p).strip() for p in (target_paths or ()) if str(p).strip()}
+        for path in sorted(maintenance.INCIDENT_DIR.glob("*.json")):
+            payload = _load_json(path)
+            if not isinstance(payload, dict):
+                continue
+            if payload.get("state") != "CERTIFIED" or payload.get("production_touched") is not False:
+                continue
+            existing_id = str(payload.get("incident_id") or path.stem).strip()
+            if existing_id == incident_id:
+                continue
+            existing_source = str(payload.get("source_job_id") or "").strip()
+            existing_paths = {
+                str(p).strip()
+                for p in (payload.get("target_paths") or [])
+                if isinstance(p, str) and str(p).strip()
+            }
+            if (clean_source and existing_source == clean_source) or (
+                clean_paths and existing_paths and clean_paths.issubset(existing_paths)
+            ):
+                return {
+                    "duplicate_prevented": True,
+                    "reason": f"HISTORICAL_CERTIFIED_INCIDENT:{existing_id}",
+                    "matched_lesson_id": None,
+                    "matched_repair_job_id": payload.get("repair_job_id"),
+                    "matched_commit_sha": payload.get("repair_commit_sha"),
+                    "production_touched": False,
+                }
+
+    return {
+        "duplicate_prevented": False,
+        "reason": "NO_CERTIFIED_DUPLICATE_FOUND",
+        "matched_lesson_id": lesson["lesson_id"] if lesson else None,
+        "matched_repair_job_id": None,
+        "matched_commit_sha": None,
+        "production_touched": False,
+    }
+
+
 def assess_knowledge_loop_cycle(
     *,
     incident_id: str,
     status: str = "",
     blockers: list[str] | tuple[str, ...] = (),
     error_code: str = "",
+    source_job_id: str = "",
+    target_paths: list[str] | tuple[str, ...] = (),
     causal_evidence: dict[str, Any] | None = None,
     max_failures: int = 3,
     cooldown_seconds: int = 900,
     now_epoch: float | None = None,
     state_dir: Path | None = None,
 ) -> dict[str, Any]:
-    """Evaluate Detect -> Classify -> Diagnose -> Circuit Breaker -> Authorize for one incident."""
+    """Evaluate Detect -> Classify -> Diagnose -> Circuit Breaker -> Duplicate Guard -> Authorize."""
     classification = classify_failure_taxonomy(
         status=status,
         blockers=blockers,
         error_code=error_code,
         causal_evidence=causal_evidence,
+    )
+    lesson = lookup_canonical_lesson(
+        failure_class=classification.get("failure_class") or "",
+        problem_signature=error_code,
+        source_job_id=source_job_id,
+    )
+    duplicate_guard = prevent_duplicate_historical_repair(
+        incident_id=incident_id,
+        source_job_id=source_job_id,
+        problem_signature=error_code,
+        blockers=blockers,
+        target_paths=target_paths,
     )
     circuit = evaluate_circuit_breaker(
         incident_id,
@@ -1288,7 +1562,9 @@ def assess_knowledge_loop_cycle(
         state_dir=state_dir,
     )
 
-    if not circuit["allow_attempt"]:
+    if duplicate_guard["duplicate_prevented"]:
+        next_step = "DUPLICATE_HISTORICAL_REPAIR_PREVENTED"
+    elif not circuit["allow_attempt"]:
         next_step = "CIRCUIT_OPEN_STOP"
     elif classification["human_approval_required"] or classification["category"] in {"SECURITY", "BUSINESS"}:
         next_step = "HUMAN_APPROVAL_REQUIRED"
@@ -1303,6 +1579,8 @@ def assess_knowledge_loop_cycle(
         "schema": "edarsahub.worker-knowledge-loop-assessment.v1",
         "incident_id": incident_id,
         "classification": classification,
+        "matched_lesson": lesson,
+        "duplicate_repair_check": duplicate_guard,
         "circuit_breaker": circuit,
         "next_step": next_step,
         "learning_allowed_only_if_certified": True,

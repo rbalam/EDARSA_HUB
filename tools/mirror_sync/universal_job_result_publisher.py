@@ -1469,6 +1469,26 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
     if maintenance_evidence is not None:
         public["maintenance_history_evidence"] = maintenance_evidence
 
+    raw_op_val = result.get("operational_validation")
+    if raw_op_val is not None:
+        try:
+            from tools.mirror_sync.worker_result_status import (
+                validate_operational_preview_evidence,
+            )
+        except ModuleNotFoundError:
+            from worker_result_status import validate_operational_preview_evidence
+        op_eval = validate_operational_preview_evidence(
+            raw_op_val,
+            expected_job_id=str(public.get("job_id") or ""),
+            expected_commit_sha=str(
+                public.get("development_sha")
+                or public.get("candidate_sha")
+                or ""
+            ) or None,
+        )
+        if op_eval.get("valid") and isinstance(op_eval.get("sanitized"), dict):
+            public["operational_validation"] = op_eval["sanitized"]
+
     evidence = certification_evidence(result)
 
     public["certification"] = evidence["certification"]

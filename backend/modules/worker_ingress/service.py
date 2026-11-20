@@ -66,6 +66,12 @@ _SAFE_RESULT_KEYS = {
     "repository_contract_evidence",
     "evidence_status",
     "evidence_truncated",
+    "operational_validation",
+    "lifecycle_stage",
+    "code_certified",
+    "operational_validated",
+    "operational_validation_status",
+    "evidence_breakdown",
 }
 
 
@@ -557,13 +563,23 @@ def get_job_status(job_id: str) -> dict[str, Any]:
     if not JOB_ID_RE.fullmatch(value):
         raise WorkerIngressError("JOB_ID_INVALID")
 
+    preview_path = STATE_ROOT / "preview_validations" / f"{value}.json"
+    preview_evidence = (
+        _read_json_if_object(preview_path)
+        if preview_path.is_file()
+        else None
+    )
+
     result_path = STATE_ROOT / "results" / f"{value}.json"
     if result_path.is_file():
         result_read = read_canonical_result(
             result_path,
             expected_job_id=value,
         )
-        status = build_job_status(result_read=result_read)
+        status = build_job_status(
+            result_read=result_read,
+            preview_evidence=preview_evidence,
+        )
         if result_read.terminal_result_valid and isinstance(
             result_read.payload, dict
         ):
@@ -626,8 +642,12 @@ def get_job_status(job_id: str) -> dict[str, Any]:
         return {
             "job_id": value,
             "lifecycle": lifecycle,
+            "lifecycle_stage": "SUBMITTED",
             "status": lifecycle,
             "certification": "NOT_CERTIFIED",
+            "code_certified": False,
+            "operational_validated": False,
+            "operational_validation_status": "PENDING_PREVIEW_VALIDATION",
             "work_completion": lifecycle,
             "percent_complete": 0,
             "terminal_result_valid": False,

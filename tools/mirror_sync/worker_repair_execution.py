@@ -16,11 +16,13 @@ Repository mutation remains exclusively the responsibility of Universal Worker.
 from __future__ import annotations
 
 import hashlib
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from tools.mirror_sync import gate_chain_publisher
+from tools.mirror_sync import worker_maintenance_contract as maintenance_contract
 from tools.mirror_sync import worker_maintenance_runtime as maintenance
 from tools.mirror_sync.worker_result_reader import read_canonical_result
 
@@ -96,9 +98,116 @@ def _action_paths(
     return tuple(sorted(paths))
 
 
+def _repair_rbac_env_enforced() -> bool:
+    return (
+        os.environ.get("EDARSAHUB_WORKER_REPAIR_ENFORCE_RBAC", "0") == "1"
+        or os.environ.get("EDARSAHUB_WORKER_REQUIRE_REQUESTER", "0") == "1"
+    )
+
+
+def _default_rbac_authorizer(requester: Any) -> dict[str, Any]:
+    from tools.mirror_sync.worker_requester_rbac import authorize_requester
+
+    return authorize_requester(requester)
+
+
+def authorize_repair_execution(
+    worker_job: dict[str, Any],
+    *,
+    incident: Any = None,
+    authorizer: Any = None,
+) -> dict[str, Any]:
+    """Fail-closed pre-mutation authorization reusing worker_requester_rbac and maintenance contract.
+
+    Validates requester identity, environment target, READ_ONLY vs MUTATION separation,
+    bounded-context path scope, and canonical SQL SUPERADMIN RBAC before any repair mutation.
+    """
+    if not isinstance(worker_job, dict):
+        raise ValueError("REPAIR_JOB_NOT_OBJECT")
+
+    if worker_job.get("production_allowed") is not False:
+        raise ValueError("REPAIR_PRODUCTION_FORBIDDEN")
+
+    if str(worker_job.get("target_repo") or TARGET_REPO).strip() != TARGET_REPO:
+        raise ValueError("REPAIR_TARGET_REPO_INVALID")
+
+    if str(worker_job.get("target_branch") or TARGET_BRANCH).strip() != TARGET_BRANCH:
+        raise ValueError("REPAIR_TARGET_BRANCH_INVALID")
+
+    mode = str(worker_job.get("mode") or "MUTATION").strip().upper()
+    actions = worker_job.get("actions")
+
+    if mode == "READ_ONLY":
+        if isinstance(actions, list) and len(actions) > 0:
+            raise ValueError("REPAIR_READ_ONLY_MUTATION_FORBIDDEN")
+        if actions not in (None, []):
+            raise ValueError("REPAIR_READ_ONLY_MUTATION_FORBIDDEN")
+        requester = worker_job.get("requester")
+        if not isinstance(requester, dict):
+            raise ValueError("REPAIR_RBAC_DENIED:REQUESTER_REQUIRED")
+        email = str(requester.get("email") or "").strip().lower()
+        source = str(requester.get("source") or "").strip()
+        if not email or "@" not in email:
+            raise ValueError("REPAIR_RBAC_DENIED:REQUESTER_EMAIL_INVALID")
+        if not source:
+            raise ValueError("REPAIR_RBAC_DENIED:REQUESTER_SOURCE_REQUIRED")
+        return {
+            "allowed": True,
+            "mode": "READ_ONLY",
+            "reason": "READ_ONLY_NON_MUTATING",
+            "requester_email": email,
+            "production_touched": False,
+        }
+
+    if mode != "MUTATION":
+        raise ValueError("REPAIR_MODE_MUST_BE_MUTATION")
+
+    if not isinstance(actions, list) or not actions:
+        raise ValueError("REPAIR_ACTIONS_REQUIRED")
+
+    action_paths = _action_paths(worker_job)
+    incident_id = getattr(incident, "incident_id", None) if incident is not None else None
+    capability_code = getattr(incident, "capability_code", None) if incident is not None else None
+    if not maintenance_contract.repair_scope_allowed(
+        action_paths,
+        incident_id=incident_id,
+        capability_code=capability_code,
+    ):
+        raise ValueError("REPAIR_BOUNDED_CONTEXT_FORBIDDEN")
+
+    requester = worker_job.get("requester")
+    if not isinstance(requester, dict):
+        raise ValueError("REPAIR_RBAC_DENIED:REQUESTER_REQUIRED")
+
+    auth_fn = authorizer or _default_rbac_authorizer
+    try:
+        auth_result = auth_fn(requester)
+    except Exception as exc:
+        raise ValueError("REPAIR_RBAC_DENIED:REQUESTER_RBAC_RUNTIME_ERROR") from exc
+
+    if not isinstance(auth_result, dict) or auth_result.get("allowed") is not True:
+        reason = (
+            str(auth_result.get("reason") or "UNKNOWN").strip()
+            if isinstance(auth_result, dict)
+            else "INVALID_RBAC_RESPONSE"
+        )
+        raise ValueError(f"REPAIR_RBAC_DENIED:{reason}")
+
+    return {
+        "allowed": True,
+        "mode": "MUTATION",
+        "reason": str(auth_result.get("reason") or "SUPERADMIN_CANONICAL"),
+        "authorization": dict(auth_result),
+        "production_touched": False,
+    }
+
+
 def validate_repair_worker_job(
     incident_id: str,
     worker_job: dict[str, Any],
+    *,
+    enforce_rbac: bool | None = None,
+    rbac_authorizer: Any = None,
 ) -> dict[str, Any]:
     incident = maintenance.read_runtime_incident(
         incident_id
@@ -129,10 +238,16 @@ def validate_repair_worker_job(
     if template.get("production_allowed") is not False:
         raise ValueError("REPAIR_PRODUCTION_FORBIDDEN")
 
-    if str(template.get("mode") or "MUTATION") != "MUTATION":
+    mode = str(template.get("mode") or "MUTATION").strip().upper()
+    actions = template.get("actions")
+
+    if mode == "READ_ONLY":
+        if actions not in (None, []):
+            raise ValueError("REPAIR_READ_ONLY_MUTATION_FORBIDDEN")
         raise ValueError("REPAIR_MODE_MUST_BE_MUTATION")
 
-    actions = template.get("actions")
+    if mode != "MUTATION":
+        raise ValueError("REPAIR_MODE_MUST_BE_MUTATION")
 
     if not isinstance(actions, list) or not actions:
         raise ValueError("REPAIR_ACTIONS_REQUIRED")
@@ -145,6 +260,13 @@ def validate_repair_worker_job(
 
     if not set(action_paths).issubset(incident_paths):
         raise ValueError("REPAIR_ACTION_SCOPE_MISMATCH")
+
+    if not maintenance_contract.repair_scope_allowed(
+        action_paths,
+        incident_id=incident.incident_id,
+        capability_code=getattr(incident, "capability_code", None),
+    ):
+        raise ValueError("REPAIR_BOUNDED_CONTEXT_FORBIDDEN")
 
     next_attempt = incident.attempts + 1
 
@@ -163,6 +285,18 @@ def validate_repair_worker_job(
     if actual_job_id != expected_job_id:
         raise ValueError("REPAIR_JOB_ID_NOT_DETERMINISTIC")
 
+    effective_rbac = (
+        bool(enforce_rbac)
+        if enforce_rbac is not None
+        else (rbac_authorizer is not None or _repair_rbac_env_enforced())
+    )
+    if effective_rbac:
+        authorize_repair_execution(
+            template,
+            incident=incident,
+            authorizer=rbac_authorizer,
+        )
+
     return template
 
 
@@ -172,10 +306,14 @@ def publish_repair_job(
     *,
     remote: str = "origin",
     queue_branch: str = "worker/requests",
+    enforce_rbac: bool | None = None,
+    rbac_authorizer: Any = None,
 ) -> dict[str, Any]:
     template = validate_repair_worker_job(
         incident_id,
         worker_job,
+        enforce_rbac=enforce_rbac,
+        rbac_authorizer=rbac_authorizer,
     )
 
     plan = {
