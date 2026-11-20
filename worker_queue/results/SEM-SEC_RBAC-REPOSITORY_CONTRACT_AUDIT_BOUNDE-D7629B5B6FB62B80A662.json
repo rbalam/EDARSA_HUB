@@ -1,0 +1,107 @@
+{
+  "base_sha": "163458aefa9bd29ea05af9930572c34c027cef39",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-20T15:34:07Z",
+  "execution_base_sha": "163458aefa9bd29ea05af9930572c34c027cef39",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-SEC_RBAC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-D7629B5B6FB62B80A662",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-20T15:35:19Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.worker_ingress",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "hashlib",
+              "pathlib",
+              "re",
+              "tools.mirror_sync",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sec_rbac_gate1b_queries",
+              "sec_rbac_sql_permission_matrix_readonly",
+              "semantic_paths_invalid"
+            ],
+            "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "SemanticCapability",
+              "SemanticCapabilityError",
+              "_coa_gate6f_status_seed_builder",
+              "_dev_apply_virtual_change",
+              "_dev_validate_path",
+              "_development_mutation_bounded_builder",
+              "_g3_constraints",
+              "_g3_context",
+              "_g3_repository_builder",
+              "_g3_result_builder",
+              "_g3_scheduling",
+              "_maintenance_history_readonly_builder",
+              "_read_only_canary_builder",
+              "_repository_contract_audit_builder",
+              "_sec_rbac_gate1b_sql_builder",
+              "_sql_connections_bootstrap_readonly_builder",
+              "_worker_pytest_certification_readonly_builder",
+              "_worker_repair_bounded_submitter",
+              "_worker_result_detail_builder",
+              "capability_catalog",
+              "register_capability",
+              "registered_capabilities",
+              "resolve_capability"
+            ],
+            "tables_referenced": [
+              "Fiscal_DocumentosEmitidos",
+              "Fiscal_DocumentosEmitidosEstatus",
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 1,
+          "scanned_files": 2,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-20T15:34:07Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
