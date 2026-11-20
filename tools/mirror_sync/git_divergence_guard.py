@@ -1414,6 +1414,7 @@ def main() -> int:
     args = p.parse_args()
     repo = Path(args.repo).resolve()
 
+    guard_error = False
     try:
         if args.command == "inspect":
             payload = inspect_repository(
@@ -1477,6 +1478,7 @@ def main() -> int:
             )
 
     except GitGuardError as exc:
+        guard_error = True
         payload = {
             "status": exc.code,
             "evidence": exc.evidence,
@@ -1491,9 +1493,22 @@ def main() -> int:
         )
     )
 
+    if guard_error:
+        return 1
+
+    if args.command == "acquire-lock":
+        return 0 if bool(payload.get("lock_dir") and payload.get("job_id")) else 1
+
+    if args.command == "release-lock":
+        return 0 if payload.get("released") is True else 1
+
+    if args.command in {"inspect", "refresh"}:
+        return 0 if bool(payload.get("local_head")) else 1
+
     return 0 if payload.get("status") in {
         "CONVERGED_PASS",
         "FAST_FORWARDED_PASS",
+        "MERGED_CONVERGED_PASS",
     } else 1
 
 
