@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "163458aefa9bd29ea05af9930572c34c027cef39",
-  "generated_at_utc": "2026-11-20T15:48:44Z",
+  "generated_at_utc": "2026-11-20T15:50:11Z",
   "history": {
     "done_total_local": 1915,
     "pending_total_local": 0,
@@ -16,43 +16,43 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1829,
+      "age_seconds": 1916,
       "job_id": "EDARSAHUB-BOS-WORKER-OPS-MIRROR-POST-DISCONNECT-RECOVERY-R1-20261120",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2947,
+      "age_seconds": 3035,
       "job_id": "EDARSAHUB-BOS-WORKER-OPS-PREPUBLISH-CONTRACT-PARITY-R1-20261120",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 825,
+      "age_seconds": 912,
       "job_id": "SEM-CENTRO_CONTROL-REPOSITORY_CONTRACT_AUDIT_BOUNDE-9F8016D3BC73982E4017",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 877,
+      "age_seconds": 964,
       "job_id": "SEM-SEC_RBAC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-D7629B5B6FB62B80A662",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1381,
+      "age_seconds": 1468,
       "job_id": "SEM-SEC_RBAC-SEC_RBAC_SQL_PERMISSION_MATRIX_R-00090FD68CB84D5B6EDF",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2041,
+      "age_seconds": 2128,
       "job_id": "SEM-SEC_RBAC-WORKER_RESULT_DETAIL_READ-F0E04AB4B5E9C3CA74A9",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1611,
+      "age_seconds": 1699,
       "job_id": "SEM-SEC_RBAC-WORKER_RESULT_SEMANTIC_EXTRACT-D888DAA4231703726473",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,8 +72,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-20T15:48:33Z",
-    "last_receive_utc": "2026-11-20T15:48:28Z",
+    "last_cycle_utc": "2026-11-20T15:50:10Z",
+    "last_receive_utc": "2026-11-20T15:50:05Z",
     "last_terminal_utc": "2026-11-20T15:34:58Z",
     "pid": "1315864",
     "runtime_fingerprint": {
