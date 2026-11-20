@@ -844,7 +844,7 @@ _CAPABILITY_METADATA: dict[str, dict[str, Any]] = {
         "allowed_path_roots": (),
     },
     "WORKER_PYTEST_CERTIFICATION_READONLY": {
-        "bounded_context_rule": "WORKER_REPAIR_KNOWLEDGE_LOOP",
+        "bounded_context_rule": "|".join(sorted(_WORKER_PYTEST_FIXED_SUITES)),
         "allowed_constraints": (),
         "allowed_path_roots": (),
     },

@@ -522,15 +522,18 @@ def submit_objective_tool(
     - READ_ONLY_CANARY (mode=READ_ONLY): constraints={}
     - REPOSITORY_CONTRACT_AUDIT_BOUNDED (mode=READ_ONLY, any valid bounded_context):
       constraints={"paths": [...], "search_terms": [...], "max_results": 1..100};
-      paths must start with backend/modules/, backend/tests/, frontend/src/, or tools/mirror_sync/.
+      paths must start with backend/modules/, backend/tests/, frontend/src/, tools/mirror_sync/, or backend/core/.
     - REPOSITORY_CONTRACT_AUDIT (mode=READ_ONLY, bounded_context="RH" only): constraints={}
     - SQL_CONNECTIONS_BOOTSTRAP_READONLY (mode=READ_ONLY, bounded_context="SQL_CONNECTIONS_8OF10"): constraints={}
+    - SEC_RBAC_SQL_PERMISSION_MATRIX_READONLY (mode=READ_ONLY_SQL, bounded_context="SEC_RBAC"): constraints={}
     - WORKER_RESULT_SEMANTIC_EXTRACT (mode=READ_ONLY): constraints={"source_job_id": "..."}
     - WORKER_RESULT_DETAIL_READ (mode=READ_ONLY): constraints={"source_job_id": "..."}
     - WORKER_MAINTENANCE_HISTORY_READONLY (mode=READ_ONLY, bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP"): constraints={}
-    - WORKER_PYTEST_CERTIFICATION_READONLY (mode=READ_ONLY, bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP"): constraints={}
+    - WORKER_PYTEST_CERTIFICATION_READONLY (mode=READ_ONLY, bounded_context="IA_ASSISTANT|WORKER_REPAIR_KNOWLEDGE_LOOP"): constraints={}
     - WORKER_REPAIR_BOUNDED (mode=MUTATION, bounded_context="WORKER_RUNTIME_CONVERGENCE"):
       constraints={"incident_id": "...", "capability_code": "..."}
+    - COA_FISCAL_STATUS_SEED_DEVELOPMENT (mode=MUTATION, bounded_context="COA"):
+      constraints={"authorization_ref": "..."}
     - DEVELOPMENT_MUTATION_BOUNDED (mode=MUTATION, any valid domain bounded_context):
       constraints={"change_spec": [...], "verification_tests": [...], "authorization_ref": "...", "job_id_override": "..."}
       Allowed operations: replace_text, insert_before, insert_after, append_once, write_file (no delete_file, shell or SQL).

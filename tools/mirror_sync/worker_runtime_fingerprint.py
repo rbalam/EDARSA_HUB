@@ -159,6 +159,48 @@ def diagnose_capability_failure(
     }
 
 
+def _load_registered_capabilities() -> tuple[tuple[str, ...], str | None]:
+    """Load registered semantic capabilities fail-closed without requiring SQL bootstrap."""
+    import importlib.util
+    import sys
+
+    try:
+        from modules.worker_ingress.semantic_capabilities import (
+            registered_capabilities as _reg_caps,
+        )
+
+        caps = tuple(sorted(str(c).strip().upper() for c in _reg_caps() if str(c).strip()))
+        if caps:
+            return caps, None
+        return (), "CAPABILITY_CATALOG_EMPTY"
+    except Exception as primary_exc:
+        cap_file = ROOT / "backend" / "modules" / "worker_ingress" / "semantic_capabilities.py"
+        if not cap_file.is_file():
+            return (), f"CAPABILITY_CATALOG_MISSING:{type(primary_exc).__name__}"
+        try:
+            spec = importlib.util.spec_from_file_location(
+                "_edarsahub_standalone_semantic_capabilities",
+                cap_file,
+            )
+            if spec is None or spec.loader is None:
+                return (), "CAPABILITY_CATALOG_SPEC_INVALID"
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = mod
+            spec.loader.exec_module(mod)
+            caps = tuple(
+                sorted(
+                    str(c).strip().upper()
+                    for c in mod.registered_capabilities()
+                    if str(c).strip()
+                )
+            )
+            if not caps:
+                return (), "CAPABILITY_CATALOG_EMPTY"
+            return caps, None
+        except Exception as fallback_exc:
+            return (), f"CAPABILITY_CATALOG_LOAD_FAILED:{type(fallback_exc).__name__}"
+
+
 def build_mcp_runtime_convergence_report(
     *,
     loaded_capabilities: tuple[str, ...] | list[str] | set[str] | None = None,
@@ -179,12 +221,7 @@ def build_mcp_runtime_convergence_report(
     worker_health_sha = _safe_rev("origin/worker/health")
     head_aligned = bool(remote_dev_sha and fp["development_sha"] == remote_dev_sha)
 
-    try:
-        from modules.worker_ingress.semantic_capabilities import registered_capabilities as _reg_caps
-
-        registered = tuple(sorted(_reg_caps()))
-    except Exception:
-        registered = ()
+    registered, catalog_load_error = _load_registered_capabilities()
 
     loaded = (
         tuple(sorted({str(c).strip().upper() for c in loaded_capabilities if str(c).strip()}))
@@ -192,7 +229,8 @@ def build_mcp_runtime_convergence_report(
         else registered
     )
     missing_in_runtime = sorted(set(registered) - set(loaded))
-    catalog_aligned = len(missing_in_runtime) == 0
+    catalog_loaded = catalog_load_error is None and len(registered) > 0
+    catalog_aligned = catalog_loaded and len(missing_in_runtime) == 0
 
     overall_converged = bool(
         head_aligned
@@ -227,6 +265,7 @@ def build_mcp_runtime_convergence_report(
         "registered_capabilities": list(registered),
         "loaded_capabilities": list(loaded),
         "missing_in_runtime": missing_in_runtime,
+        "catalog_load_error": catalog_load_error,
         "catalog_aligned": catalog_aligned,
         "overall_converged": overall_converged,
         "recommended_action": recommended_action,
