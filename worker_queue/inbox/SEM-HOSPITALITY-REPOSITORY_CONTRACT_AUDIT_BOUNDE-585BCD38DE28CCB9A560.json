@@ -1,0 +1,55 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/hospitality/",
+          "frontend/src/modules/hospitality/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "hospitality",
+          "reservation",
+          "booking",
+          "guest",
+          "housekeeping",
+          "revenue",
+          "room",
+          "pms",
+          "checkin",
+          "checkout",
+          "folio",
+          "usali"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-HOSPITALITY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-585BCD38DE28CCB9A560",
+  "mode": "READ_ONLY",
+  "objective": "Gate G0 READ_ONLY: auditar diferencialmente el bounded context Hospitality de EDARSAHUB BOS ya existente frente al alcance R2 OS propuesto; identificar contratos, backend/frontend, pruebas, reservas, habitaciones, recursos, huespedes, housekeeping, revenue, cargos y conectores, sin asumir implementacion ni crear funcionalidades. Respetar Architecture Book y Blueprint existentes, sin modificar codigo ni Produccion. Entregar evidencia verificable y clasificacion de brechas; no repetir Gates certificados.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "HOSPITALITY",
+    "conflict_domains": [
+      "HOSPITALITY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
