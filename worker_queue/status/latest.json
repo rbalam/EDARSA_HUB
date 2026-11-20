@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "8c22f46640379acffc141a385ec4100fbd251a3d",
-  "generated_at_utc": "2026-11-20T16:30:14Z",
+  "generated_at_utc": "2026-11-20T16:31:41Z",
   "history": {
     "done_total_local": 1917,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2006,
+      "age_seconds": 2094,
       "job_id": "EDARSAHUB-BOS-BACKEND-SQL-AS-DICT-FAIL-CLOSED-GUARD-R1-20261120",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 195,
+      "age_seconds": 282,
       "job_id": "EDARSAHUB-BOS-WORKER-OPS-OPERATIONAL-PARITY-AND-KNOWLEDGE-R1-20261120",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3315,
+      "age_seconds": 3402,
       "job_id": "SEM-CENTRO_CONTROL-REPOSITORY_CONTRACT_AUDIT_BOUNDE-9F8016D3BC73982E4017",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3366,
+      "age_seconds": 3454,
       "job_id": "SEM-SEC_RBAC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-D7629B5B6FB62B80A662",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,8 +54,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-20T16:30:03Z",
-    "last_receive_utc": "2026-11-20T16:29:58Z",
+    "last_cycle_utc": "2026-11-20T16:31:38Z",
+    "last_receive_utc": "2026-11-20T16:31:33Z",
     "last_terminal_utc": "2026-11-20T16:26:58Z",
     "pid": "1315864",
     "runtime_fingerprint": {
