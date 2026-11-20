@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import re
+import stat
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +13,15 @@ V2_ACTIONS = {
     "insert_after",
     "append_once",
 }
+
+
+def is_v2_mutation_action(action: dict[str, Any]) -> bool:
+    kind = str(action.get("type") or "")
+    return kind in V2_ACTIONS and (
+        kind != "replace_text"
+        or "source_sha256" in action
+        or "old_text" in action
+    )
 
 
 def _sha(raw: bytes) -> str:
@@ -26,23 +37,28 @@ def _valid_sha(value: Any) -> bool:
 
 def _atomic_write(target: Path, raw: bytes) -> None:
     tmp = target.with_name(target.name + ".mutation-v2.tmp")
+    existing_mode: int | None = None
+    if target.exists():
+        existing_mode = stat.S_IMODE(target.stat().st_mode)
     try:
         tmp.write_bytes(raw)
+        if existing_mode is not None:
+            os.chmod(tmp, existing_mode)
         tmp.replace(target)
     finally:
         if tmp.exists():
             tmp.unlink()
 
 
-def apply_mutation(target: Path, action: dict[str, Any]) -> dict[str, Any]:
+def preview_mutation(
+    raw_before: bytes,
+    action: dict[str, Any],
+) -> tuple[bytes, dict[str, Any]]:
+    """Simulate a V2 deterministic mutation in memory with exact Dispatcher semantics."""
     kind = str(action.get("type") or "")
     if kind not in V2_ACTIONS:
         raise RuntimeError("UNSUPPORTED_V2_ACTION")
 
-    if not target.is_file():
-        raise RuntimeError("MUTATION_TARGET_MISSING")
-
-    raw_before = target.read_bytes()
     text_before = raw_before.decode("utf-8")
 
     source_actual = _sha(raw_before)
@@ -78,7 +94,7 @@ def apply_mutation(target: Path, action: dict[str, Any]) -> dict[str, Any]:
         )
 
     if already_applied:
-        return {
+        return raw_before, {
             "operation": kind,
             "state": "ALREADY_APPLIED",
             "source_sha256_expected": source_expected,
@@ -141,9 +157,7 @@ def apply_mutation(target: Path, action: dict[str, Any]) -> dict[str, Any]:
         text_after = text_before.replace(old_text, replacement)
 
     raw_after = text_after.encode("utf-8")
-    _atomic_write(target, raw_after)
-
-    return {
+    return raw_after, {
         "operation": kind,
         "state": "APPLIED",
         "source_sha256_expected": source_expected,
@@ -157,3 +171,20 @@ def apply_mutation(target: Path, action: dict[str, Any]) -> dict[str, Any]:
         "bytes_before": len(raw_before),
         "bytes_after": len(raw_after),
     }
+
+
+def apply_mutation(target: Path, action: dict[str, Any]) -> dict[str, Any]:
+    kind = str(action.get("type") or "")
+    if kind not in V2_ACTIONS:
+        raise RuntimeError("UNSUPPORTED_V2_ACTION")
+
+    if not target.is_file():
+        raise RuntimeError("MUTATION_TARGET_MISSING")
+
+    raw_before = target.read_bytes()
+    raw_after, evidence = preview_mutation(raw_before, action)
+
+    if evidence["state"] == "APPLIED":
+        _atomic_write(target, raw_after)
+
+    return evidence

@@ -1078,10 +1078,10 @@ def submit(
         )
 
         from tools.mirror_sync.universal_job_bridge import (
-            validate as validate_worker_job,
+            validate_prepublish_contract,
         )
 
-        errors = validate_worker_job(
+        errors = validate_prepublish_contract(
             template
         )
 

@@ -12,11 +12,14 @@ from __future__ import annotations
 # WORKER_DELIVERABLE_IMPORT_COMPAT_V1
 try:
     from tools.mirror_sync.worker_deliverable_contract import normalize_deliverable_specs, normalize_required_deliverables
-    from tools.mirror_sync.worker_mutation_materializer import V2_ACTIONS
+    from tools.mirror_sync.worker_mutation_materializer import V2_ACTIONS, is_v2_mutation_action, preview_mutation
 except ModuleNotFoundError:
     from worker_deliverable_contract import normalize_deliverable_specs, normalize_required_deliverables
-    from worker_mutation_materializer import V2_ACTIONS
+    from worker_mutation_materializer import V2_ACTIONS, is_v2_mutation_action, preview_mutation
 
+import ast
+import difflib
+import hashlib
 import json
 import os
 import re
@@ -122,7 +125,7 @@ def safe_repo_path(value: Any) -> bool:
     return True
 
 
-def validate_action(action: Any, index: int) -> list[str]:
+def validate_action(action: Any, index: int, *, repo_root: Path | None = None) -> list[str]:
     errors: list[str] = []
     prefix = f"ACTION_{index}"
     if not isinstance(action, dict):
@@ -134,14 +137,7 @@ def validate_action(action: Any, index: int) -> list[str]:
     if not safe_repo_path(action.get("path")):
         errors.append(f"{prefix}_INVALID_PATH")
 
-    is_v2 = (
-        kind in V2_ACTIONS
-        and (
-            kind != "replace_text"
-            or "source_sha256" in action
-            or "old_text" in action
-        )
-    )
+    is_v2 = is_v2_mutation_action(action)
 
     if is_v2:
         source_sha = action.get("source_sha256")
@@ -173,10 +169,11 @@ def validate_action(action: Any, index: int) -> list[str]:
         return errors
     relative = str(action.get("path") or "")
     repo_path = Path(relative)
+    effective_root = Path(repo_root).resolve() if repo_root is not None else ROOT
     if (
         kind == "write_file"
         and repo_path.parts[:2] == ("backend", "core")
-        and not (ROOT / repo_path).exists()
+        and not (effective_root / repo_path).exists()
     ):
         errors.append(f"{prefix}_CORE_GROWTH_FORBIDDEN")
     if kind == "replace_text":
@@ -314,7 +311,7 @@ def _has_worker_result_semantic_extract(checks):
         for check in (checks or [])
     )
 
-def validate(job: Any) -> list[str]:
+def validate(job: Any, *, repo_root: Path | None = None) -> list[str]:
     errors: list[str] = []
     if not isinstance(job, dict):
         return ["JOB_NOT_OBJECT"]
@@ -647,7 +644,7 @@ def validate(job: Any) -> list[str]:
             errors.append("TOO_MANY_ACTIONS")
         else:
             for index, action in enumerate(actions, 1):
-                errors.extend(validate_action(action, index))
+                errors.extend(validate_action(action, index, repo_root=repo_root))
     checks = job.get("checks", [{"type": "git_diff_check"}])
     if mode == "READ_ONLY_SQL":
         audit_profile = str(job.get("audit_profile") or "").strip()
@@ -746,6 +743,224 @@ def validate(job: Any) -> list[str]:
     else:
         for index, check in enumerate(checks, 1):
             errors.extend(validate_check(check, index))
+    return errors
+
+
+def _git_read_blob(repo_root: Path, ref: str, relative: str) -> bytes | None:
+    exists = subprocess.run(
+        ["git", "-C", str(repo_root), "cat-file", "-e", f"{ref}:{relative}"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if exists.returncode != 0:
+        return None
+    blob = subprocess.run(
+        ["git", "-C", str(repo_root), "cat-file", "-p", f"{ref}:{relative}"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if blob.returncode != 0:
+        raise RuntimeError(f"GIT_BLOB_READ_FAILED:{relative}")
+    return blob.stdout
+
+
+def _check_added_whitespace(relative: str, before_raw: bytes | None, after_raw: bytes) -> list[str]:
+    errors: list[str] = []
+    before_text = before_raw.decode("utf-8", errors="replace") if before_raw is not None else ""
+    after_text = after_raw.decode("utf-8", errors="replace")
+    if before_raw is not None and before_text == after_text:
+        return errors
+
+    before_lines = before_text.splitlines(keepends=True)
+    after_lines = after_text.splitlines(keepends=True)
+    diff = list(
+        difflib.unified_diff(
+            before_lines,
+            after_lines,
+            fromfile=f"a/{relative}",
+            tofile=f"b/{relative}",
+            n=0,
+        )
+    )
+    new_line_no = 0
+    for line in diff:
+        if line.startswith("@@"):
+            m = re.search(r"\+(\d+)", line)
+            if m:
+                new_line_no = int(m.group(1))
+            continue
+        if line.startswith("+++") or line.startswith("---") or line.startswith("-"):
+            continue
+        if line.startswith("+"):
+            body = line[1:].rstrip("\r\n")
+            if body.endswith(" ") or body.endswith("\t"):
+                errors.append(f"PREFLIGHT_WHITESPACE_ERROR:{relative}:L{new_line_no}:TRAILING_WHITESPACE")
+            elif re.match(r"^ +\t", body):
+                errors.append(f"PREFLIGHT_WHITESPACE_ERROR:{relative}:L{new_line_no}:SPACE_BEFORE_TAB")
+            elif body.startswith("<<<<<<< ") or body.startswith(">>>>>>> ") or body == "=======":
+                errors.append(f"PREFLIGHT_WHITESPACE_ERROR:{relative}:L{new_line_no}:CONFLICT_MARKER")
+            new_line_no += 1
+
+    if after_text.endswith("\n\n") and not before_text.endswith("\n\n"):
+        errors.append(f"PREFLIGHT_WHITESPACE_ERROR:{relative}:EOF:NEW_BLANK_LINE_AT_EOF")
+
+    return errors
+
+
+def _check_file_syntax(relative: str, after_raw: bytes) -> list[str]:
+    suffix = Path(relative).suffix.lower()
+    if suffix == ".py":
+        try:
+            ast.parse(after_raw.decode("utf-8"), filename=relative)
+        except (SyntaxError, UnicodeDecodeError) as exc:
+            lineno = getattr(exc, "lineno", 0) or 0
+            return [f"PREFLIGHT_PYTHON_SYNTAX_ERROR:{relative}:L{lineno}"]
+    elif suffix == ".sh":
+        chk = subprocess.run(
+            ["bash", "-n"],
+            input=after_raw,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if chk.returncode != 0:
+            return [f"PREFLIGHT_BASH_SYNTAX_ERROR:{relative}"]
+    return []
+
+
+def validate_prepublish_contract(
+    job: Any,
+    *,
+    repo_root: Path | None = None,
+    base_ref: str | None = None,
+) -> list[str]:
+    """Canonical pre-publication validator with full Dispatcher contract parity.
+
+    Runs stateless schema/action validation plus read-only base_sha/HEAD verification
+    (expected_sha256, source_sha256, CORE_GROWTH, large shrink, exact replacement counts,
+    whitespace parity, and Python/Bash syntax) before any request is enqueued.
+    """
+    root = Path(repo_root).resolve() if repo_root is not None else ROOT
+    errors = validate(job, repo_root=root)
+    if errors or not isinstance(job, dict):
+        return errors
+
+    actions = job.get("actions")
+    if not isinstance(actions, list) or not actions:
+        return errors
+
+    ref = str(base_ref or job.get("base_sha") or "HEAD").strip()
+
+    commit_check = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if commit_check.returncode != 0:
+        return [f"BASE_SHA_NOT_FOUND:{ref}"]
+
+    original_blobs: dict[str, bytes | None] = {}
+    virtual_blobs: dict[str, bytes | None] = {}
+
+    def _current_blob(relative: str) -> bytes | None:
+        if relative not in virtual_blobs:
+            blob = _git_read_blob(root, ref, relative)
+            original_blobs[relative] = blob
+            virtual_blobs[relative] = blob
+        return virtual_blobs[relative]
+
+    for index, action in enumerate(actions, 1):
+        prefix = f"ACTION_{index}"
+        kind = str(action.get("type") or "")
+        relative = str(action.get("path") or "")
+        repo_path = Path(relative)
+
+        try:
+            current = _current_blob(relative)
+        except Exception:
+            errors.append(f"{prefix}_BASE_BLOB_READ_FAILED:{relative}")
+            continue
+
+        if (
+            kind == "write_file"
+            and repo_path.parts[:2] == ("backend", "core")
+            and current is None
+        ):
+            errors.append(f"{prefix}_CORE_GROWTH_FORBIDDEN:{relative}")
+            continue
+
+        if is_v2_mutation_action(action):
+            if current is None:
+                errors.append(f"{prefix}_MUTATION_TARGET_MISSING:{relative}")
+                continue
+            try:
+                new_raw, _ = preview_mutation(current, action)
+                virtual_blobs[relative] = new_raw
+            except Exception as exc:
+                errors.append(f"{prefix}_{exc}:{relative}")
+            continue
+
+        expected_sha = action.get("expected_sha256")
+        if expected_sha is not None:
+            if current is None:
+                errors.append(f"{prefix}_EXPECTED_FILE_MISSING:{relative}")
+                continue
+            actual_sha = hashlib.sha256(current).hexdigest()
+            if actual_sha != expected_sha:
+                errors.append(f"{prefix}_EXPECTED_SHA256_MISMATCH:{relative}")
+                continue
+
+        if kind == "replace_text":
+            if current is None:
+                errors.append(f"{prefix}_REPLACE_TARGET_MISSING:{relative}")
+                continue
+            old = action["old"]
+            new = action["new"]
+            expected_count = int(action.get("expected_count", 1))
+            text = current.decode("utf-8")
+            actual_count = text.count(old)
+            if actual_count != expected_count:
+                errors.append(
+                    f"{prefix}_REPLACE_COUNT_MISMATCH:{relative}:expected={expected_count}:actual={actual_count}"
+                )
+                continue
+            virtual_blobs[relative] = text.replace(old, new).encode("utf-8")
+        elif kind == "write_file":
+            content = action["content"]
+            new_raw = content.encode("utf-8")
+            if current is not None:
+                if "expected_sha256" not in action:
+                    errors.append(f"{prefix}_WRITE_EXISTING_REQUIRES_EXPECTED_SHA256:{relative}")
+                    continue
+                current_size = len(current)
+                new_size = len(new_raw)
+                if current_size >= 4096 and new_size < int(current_size * 0.75):
+                    errors.append(
+                        f"{prefix}_WRITE_FILE_LARGE_SHRINK_BLOCKED:{relative}:current={current_size}:new={new_size}"
+                    )
+                    continue
+            virtual_blobs[relative] = new_raw
+        elif kind == "delete_file":
+            if current is None:
+                errors.append(f"{prefix}_DELETE_TARGET_MISSING:{relative}")
+                continue
+            virtual_blobs[relative] = None
+
+    if errors:
+        return errors
+
+    for relative, after_raw in virtual_blobs.items():
+        if after_raw is None:
+            continue
+        before_raw = original_blobs.get(relative)
+        if before_raw == after_raw:
+            continue
+        errors.extend(_check_added_whitespace(relative, before_raw, after_raw))
+        errors.extend(_check_file_syntax(relative, after_raw))
+
     return errors
 
 

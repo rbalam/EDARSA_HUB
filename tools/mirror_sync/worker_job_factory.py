@@ -9,7 +9,10 @@ This module performs no Git, SQL, network, service, or Production mutation.
 from __future__ import annotations
 
 from copy import deepcopy
+import re
 from typing import Any
+
+BASE_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
 WORKER_JOB_SCHEMA = "edarsahub.worker-job.v2"
 CANONICAL_TARGET_REPO = "rbalam/EDARSA_HUB"
@@ -99,6 +102,12 @@ def canonicalize_job(template: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("JOB_ID_REQUIRED")
     if not _clean(job.get("objective")):
         raise ValueError("OBJECTIVE_REQUIRED")
+
+    if "base_sha" in job and job.get("base_sha") is not None:
+        base_sha = _clean(job.get("base_sha"))
+        if not BASE_SHA_RE.fullmatch(base_sha):
+            raise ValueError("INVALID_BASE_SHA")
+        job["base_sha"] = base_sha
 
     requester = _require_requester(job)
     job["requester"] = requester

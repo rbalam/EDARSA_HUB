@@ -15,10 +15,10 @@ from __future__ import annotations
 # WORKER_DELIVERABLE_IMPORT_COMPAT_V1
 try:
     from tools.mirror_sync.worker_deliverable_contract import evaluate_deliverables, materialize_deliverables, normalize_deliverable_specs, normalize_required_deliverables
-    from tools.mirror_sync.worker_mutation_materializer import V2_ACTIONS, apply_mutation
+    from tools.mirror_sync.worker_mutation_materializer import V2_ACTIONS, apply_mutation, is_v2_mutation_action
 except ModuleNotFoundError:
     from worker_deliverable_contract import evaluate_deliverables, materialize_deliverables, normalize_deliverable_specs, normalize_required_deliverables
-    from worker_mutation_materializer import V2_ACTIONS, apply_mutation
+    from worker_mutation_materializer import V2_ACTIONS, apply_mutation, is_v2_mutation_action
 
 import fcntl
 import hashlib
@@ -521,14 +521,7 @@ def apply_action(worktree: Path, action: dict[str, Any]) -> str:
         and not target.exists()
     ):
         raise RuntimeError(f"CORE_GROWTH_FORBIDDEN:{relative}")
-    is_v2 = (
-        kind in V2_ACTIONS
-        and (
-            kind != "replace_text"
-            or "source_sha256" in action
-            or "old_text" in action
-        )
-    )
+    is_v2 = is_v2_mutation_action(action)
 
     if is_v2:
         evidence = apply_mutation(target, action)
