@@ -150,7 +150,7 @@ class SyncHistoricosRepository:
             self._execute(ddl_ventas_historicas)
             # Verificar si fue creada
             check = self._execute(
-                "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Sync_Ventas_Historicas'"
+                "SELECT 1 AS existe FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Sync_Ventas_Historicas'"
             )
             results['Sync_Ventas_Historicas'] = len(check) > 0
             logger.info("[SYNC-DDL] Tabla Sync_Ventas_Historicas verificada")
@@ -212,7 +212,7 @@ class SyncHistoricosRepository:
         try:
             self._execute(ddl_ventas_por_hora)
             check = self._execute(
-                "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Sync_Ventas_PorHora'"
+                "SELECT 1 AS existe FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Sync_Ventas_PorHora'"
             )
             results['Sync_Ventas_PorHora'] = len(check) > 0
             logger.info("[SYNC-DDL] Tabla Sync_Ventas_PorHora verificada")
@@ -272,7 +272,7 @@ class SyncHistoricosRepository:
         try:
             self._execute(ddl_ventas_por_dia)
             check = self._execute(
-                "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Sync_Ventas_PorDiaSemana'"
+                "SELECT 1 AS existe FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Sync_Ventas_PorDiaSemana'"
             )
             results['Sync_Ventas_PorDiaSemana'] = len(check) > 0
             logger.info("[SYNC-DDL] Tabla Sync_Ventas_PorDiaSemana verificada")
@@ -334,7 +334,7 @@ class SyncHistoricosRepository:
         try:
             self._execute(ddl_control)
             check = self._execute(
-                "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Sync_Control_Ejecuciones'"
+                "SELECT 1 AS existe FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Sync_Control_Ejecuciones'"
             )
             results['Sync_Control_Ejecuciones'] = len(check) > 0
             logger.info("[SYNC-DDL] Tabla Sync_Control_Ejecuciones verificada")
