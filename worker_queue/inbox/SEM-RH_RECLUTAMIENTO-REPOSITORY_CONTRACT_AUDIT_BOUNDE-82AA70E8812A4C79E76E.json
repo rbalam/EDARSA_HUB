@@ -1,0 +1,63 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "backend/core/security.py",
+          "backend/core/corporate_filters/service.py",
+          "backend/core/rbac_sql/service.py",
+          "backend/modules/rh/schemas.py",
+          "backend/modules/rh/solicitudes_catalogo.py",
+          "frontend/src/components/recursos-humanos/RhReclutamiento.jsx",
+          "backend/tests/test_rh_modular.py",
+          "backend/modules/catalogo_ampliado/repository.py"
+        ],
+        "search_terms": [
+          "reclutamiento",
+          "VacanteID",
+          "CandidatoID",
+          "Contratado",
+          "delete",
+          "get_current_user",
+          "require_permission",
+          "RBAC",
+          "PersonaID",
+          "Gobierno_Persona",
+          "EmpresaID",
+          "SucursalID",
+          "permisos",
+          "scope",
+          "RH_Candidatos"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH_RECLUTAMIENTO-REPOSITORY_CONTRACT_AUDIT_BOUNDE-82AA70E8812A4C79E76E",
+  "mode": "READ_ONLY",
+  "objective": "HCM Reclutamiento Gate 08C: auditoria READ_ONLY incremental posterior al Gate 08B certificado. Revisar controles transversales RBAC/autenticacion, filtros multiempresa, schemas, contrato frontend, PersonaID/HCM y pruebas existentes; contrastar con evidencia 08B sin repetir su auditoria de rutas/service/repository. Investigar riesgo de borrado fisico y transicion Contratado, pero no ejecutar eliminaciones, SQL, DDL, DML ni modificar Produccion. Entregar brechas confirmables y criterios para correcciones atomicas.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH_RECLUTAMIENTO",
+    "conflict_domains": [
+      "RH_RECLUTAMIENTO"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
