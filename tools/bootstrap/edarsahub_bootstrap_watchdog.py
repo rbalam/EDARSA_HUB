@@ -34,6 +34,18 @@ RUNTIME = APP / ".git" / "universal-worker-queue" / "runtime"
 MIRROR_STATE = APP / ".git" / "mirror-sync"
 MIRROR_ENABLE = MIRROR_STATE / "ENABLED"
 MIRROR_STOP = MIRROR_STATE / "STOP"
+MIRROR_TEMP_STOP = Path(
+    os.environ.get("EDARSAHUB_MIRROR_TEMP_STOP", "/tmp/edarsahub-mirror-sync/STOP")
+)
+MIRROR_START_SCRIPT = APP / "tools" / "mirror_sync" / "mirror_sync_start.sh"
+MIRROR_RECOVERY_STATE = STATE / "mirror_recovery_state.json"
+MIRROR_RECOVERY_COOLDOWN = int(
+    os.environ.get("EDARSAHUB_MIRROR_RECOVERY_COOLDOWN", "120")
+)
+MIRROR_RECOVERY_MAX_ATTEMPTS = max(
+    1,
+    int(os.environ.get("EDARSAHUB_MIRROR_RECOVERY_MAX_ATTEMPTS", "3")),
+)
 SYNC_PAUSE = APP / ".git" / "EDARSAHUB_SYNC_PAUSED"
 STATUS = STATE / "status.json"
 AUDIT = STATE / "audit.jsonl"
@@ -274,9 +286,11 @@ def backend_supervisor_status(service: str = BACKEND_SERVICE) -> dict:
                 break
 
     confirmed_stopped = parsed_state in STOPPED_SUPERVISOR_STATES
+    not_started = parsed_state == "STOPPED" and ("NOT STARTED" in raw.upper())
     return {
         "state": parsed_state,
         "confirmed_stopped": confirmed_stopped,
+        "not_started": not_started,
         "running": parsed_state == "RUNNING",
         "returncode": result.returncode,
     }
@@ -489,6 +503,8 @@ def mirror_authorization() -> dict:
         return {"authorized": False, "state": "SYNC_PAUSED"}
     if MIRROR_STOP.exists():
         return {"authorized": False, "state": "PERSISTENT_KILL_SWITCH"}
+    if MIRROR_TEMP_STOP.exists():
+        return {"authorized": False, "state": "TEMPORARY_KILL_SWITCH"}
     if not MIRROR_ENABLE.exists():
         return {"authorized": False, "state": "EXPLICIT_ENABLE_REQUIRED"}
     effective_dirty = effective_git_status()
@@ -869,6 +885,198 @@ def safe_fast_forward() -> dict:
     return {"state": "FF_APPLIED", "from": local, "to": new_head}
 
 
+def _read_mirror_recovery_state() -> dict:
+    payload = read_json(MIRROR_RECOVERY_STATE)
+    if not isinstance(payload, dict):
+        return {"attempts": 0, "cooldown_until_epoch": 0.0}
+    try:
+        attempts = max(0, int(payload.get("attempts") or 0))
+    except (TypeError, ValueError):
+        attempts = 0
+    try:
+        cooldown_until = float(payload.get("cooldown_until_epoch") or 0.0)
+    except (TypeError, ValueError):
+        cooldown_until = 0.0
+    return {**payload, "attempts": attempts, "cooldown_until_epoch": cooldown_until}
+
+
+def _write_mirror_recovery_state(payload: dict) -> None:
+    record = {
+        "schema": "edarsahub.mirror-recovery-state.v1",
+        **payload,
+        "updated_at_utc": now(),
+        "production_touched": False,
+    }
+    _write_atomic_text(
+        MIRROR_RECOVERY_STATE,
+        json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+    )
+
+
+def maybe_recover_mirror_sync(auth: dict) -> dict:
+    """Recover edarsahub-mirror-sync after Preview disconnect ONLY when authorized and Not started."""
+    if is_production_environment():
+        audit("MIRROR_RECOVERY_BLOCKED_PRODUCTION_ENV", service=SERVICE)
+        return {"state": "BLOCKED_PRODUCTION_ENV", "started": False, "production_touched": False}
+
+    if not auth.get("authorized"):
+        return {
+            "state": "NOT_AUTHORIZED",
+            "reason": auth.get("state"),
+            "started": False,
+            "production_touched": False,
+        }
+
+    sup = backend_supervisor_status(SERVICE)
+    sup_state = str(sup.get("state") or "UNKNOWN")
+
+    if sup_state in {"RUNNING", "STARTING"}:
+        prev = _read_mirror_recovery_state()
+        if prev.get("attempts", 0) > 0:
+            _write_mirror_recovery_state(
+                {
+                    "attempts": 0,
+                    "cooldown_until_epoch": 0.0,
+                    "last_running_at_utc": now(),
+                }
+            )
+        return {
+            "state": "ALREADY_RUNNING",
+            "supervisor_state": sup_state,
+            "started": False,
+            "production_touched": False,
+        }
+
+    if sup_state == "STOPPED" and not sup.get("not_started"):
+        audit(
+            "MIRROR_RECOVERY_ADMINISTRATIVE_STOP_RESPECTED",
+            service=SERVICE,
+            supervisor_state=sup_state,
+        )
+        return {
+            "state": "ADMINISTRATIVE_STOP_RESPECTED",
+            "supervisor_state": sup_state,
+            "started": False,
+            "production_touched": False,
+        }
+
+    if sup_state != "STOPPED":
+        return {
+            "state": "DEFERRED_SUPERVISOR_STATE",
+            "supervisor_state": sup_state,
+            "started": False,
+            "production_touched": False,
+        }
+
+    prev = _read_mirror_recovery_state()
+    attempts = int(prev.get("attempts") or 0)
+    cooldown_until = float(prev.get("cooldown_until_epoch") or 0.0)
+    now_epoch = time.time()
+
+    if now_epoch < cooldown_until:
+        return {
+            "state": "COOLDOWN",
+            "attempts": attempts,
+            "cooldown_until_epoch": cooldown_until,
+            "started": False,
+            "production_touched": False,
+        }
+
+    if attempts >= MIRROR_RECOVERY_MAX_ATTEMPTS:
+        audit(
+            "MIRROR_RECOVERY_ATTEMPTS_EXHAUSTED",
+            service=SERVICE,
+            attempts=attempts,
+        )
+        return {
+            "state": "ATTEMPTS_EXHAUSTED",
+            "attempts": attempts,
+            "started": False,
+            "production_touched": False,
+        }
+
+    if not MIRROR_START_SCRIPT.is_file():
+        return {
+            "state": "START_SCRIPT_MISSING",
+            "started": False,
+            "production_touched": False,
+        }
+
+    try:
+        proc = run(
+            ["/bin/bash", str(MIRROR_START_SCRIPT), "--recover-authorized"],
+            cwd=APP,
+            timeout=90,
+        )
+    except subprocess.TimeoutExpired:
+        _write_mirror_recovery_state(
+            {
+                "attempts": attempts + 1,
+                "cooldown_until_epoch": now_epoch + MIRROR_RECOVERY_COOLDOWN,
+                "last_failure_reason": "RECOVERY_TIMEOUT",
+            }
+        )
+        audit("MIRROR_POST_DISCONNECT_RECOVERY_TIMEOUT", service=SERVICE, attempts=attempts + 1)
+        return {
+            "state": "RECOVERY_TIMEOUT",
+            "attempts": attempts + 1,
+            "started": False,
+            "production_touched": False,
+        }
+
+    post_sup = backend_supervisor_status(SERVICE)
+    post_state = str(post_sup.get("state") or "UNKNOWN")
+    started = bool(proc.returncode == 0 and post_state in {"RUNNING", "STARTING"})
+
+    if started:
+        _write_mirror_recovery_state(
+            {
+                "attempts": 0,
+                "cooldown_until_epoch": 0.0,
+                "last_recovered_at_utc": now(),
+                "supervisor_state": post_state,
+            }
+        )
+        audit(
+            "MIRROR_POST_DISCONNECT_RECOVERY",
+            service=SERVICE,
+            supervisor_state=post_state,
+            started=True,
+            output=(proc.stdout or "")[-600:],
+        )
+        return {
+            "state": "RECOVERED",
+            "supervisor_state": post_state,
+            "started": True,
+            "production_touched": False,
+        }
+
+    _write_mirror_recovery_state(
+        {
+            "attempts": attempts + 1,
+            "cooldown_until_epoch": now_epoch + MIRROR_RECOVERY_COOLDOWN,
+            "last_failure_returncode": proc.returncode,
+            "supervisor_state": post_state,
+        }
+    )
+    audit(
+        "MIRROR_POST_DISCONNECT_RECOVERY_FAILED",
+        service=SERVICE,
+        returncode=proc.returncode,
+        supervisor_state=post_state,
+        attempts=attempts + 1,
+        output=(proc.stdout or "")[-600:],
+    )
+    return {
+        "state": "RECOVERY_FAILED",
+        "returncode": proc.returncode,
+        "supervisor_state": post_state,
+        "attempts": attempts + 1,
+        "started": False,
+        "production_touched": False,
+    }
+
+
 def cycle() -> dict:
     STATE.mkdir(parents=True, exist_ok=True)
     auth = mirror_authorization()
@@ -897,6 +1105,16 @@ def cycle() -> dict:
             restarted=worker_restarted,
             reason="FAST_FORWARD_APPLIED",
         )
+        mirror_recovery = {
+            "state": "HANDLED_BY_FF_RELOAD",
+            "started": mirror_restarted,
+            "production_touched": False,
+        }
+    else:
+        mirror_recovery = maybe_recover_mirror_sync(auth)
+        if mirror_recovery.get("started"):
+            restarted = True
+
     if stale:
         restarted = supervisor_restart("WORKER_HEARTBEAT_STALE", WORKER_SERVICE) or restarted
         audit(
@@ -912,6 +1130,7 @@ def cycle() -> dict:
         "schema": "edarsahub.bootstrap-watchdog.v2",
         "at_utc": now(),
         "mirror_authorization": auth,
+        "mirror_recovery": mirror_recovery,
         "ff": ff,
         "backend_recovery": backend,
         "control_plane_runtime": control_plane_runtime,
