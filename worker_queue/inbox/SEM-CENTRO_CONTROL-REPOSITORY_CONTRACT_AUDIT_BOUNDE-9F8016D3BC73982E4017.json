@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "backend/tests/test_centro_control_websocket_p1_2_residual_validation.py",
+          "backend/tests/test_centro_control_websocket_auth_rbac_p1.py",
+          "backend/tests/test_auth_session_revocation_p1_2.py"
+        ],
+        "search_terms": [
+          "verify_token_session_active",
+          "CENTRO_CONTROL_VER",
+          "WebSocketDisconnect",
+          "xfail",
+          "1008",
+          "sid"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CENTRO_CONTROL-REPOSITORY_CONTRACT_AUDIT_BOUNDE-9F8016D3BC73982E4017",
+  "mode": "READ_ONLY",
+  "objective": "R3-H04 PREFLIGHT (READ_ONLY): recuperar desde /app la evidencia de las pruebas certificadas P1-2 y Session Revocation relevantes a H04 (revalidacion de sesiones WebSocket abiertas): simbolos, imports y contratos RBAC de las pruebas de caracterizacion y aceptacion del WebSocket del Centro de Control y de revocacion de sesion. Sin mutaciones, sin Produccion, sin SQL.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CENTRO_CONTROL",
+    "conflict_domains": [
+      "CENTRO_CONTROL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
