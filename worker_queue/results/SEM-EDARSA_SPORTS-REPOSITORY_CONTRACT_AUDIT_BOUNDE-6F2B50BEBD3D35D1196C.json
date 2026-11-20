@@ -1,0 +1,178 @@
+{
+  "base_sha": "0aa2d543b259844a20b51e0a5526b16856825df5",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-20T01:14:21Z",
+  "execution_base_sha": "0aa2d543b259844a20b51e0a5526b16856825df5",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-EDARSA_SPORTS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-6F2B50BEBD3D35D1196C",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-20T01:18:24Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.arbitroa",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "arbitroa"
+            ],
+            "path": "backend/modules/arbitroa/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "arbitroa",
+              "arbitroa_geo",
+              "gobierno_persona",
+              "personaid"
+            ],
+            "path": "backend/tests/test_arbitroa_a3_domain_data_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_a3_contract_exists_and_is_non_executable",
+              "test_a3_core_slimming_and_production_guard",
+              "test_a3_defers_real_payment_to_finance_contract",
+              "test_a3_defines_minimum_gate_foundation",
+              "test_a3_forbids_duplicate_identity_and_mongo",
+              "test_a3_keeps_geo_non_authoritative_for_attendance",
+              "test_a3_reuses_canonical_bos_masters",
+              "text"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "pathlib",
+              "re"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "arbitroa",
+              "arbitroa_geo",
+              "arbitroa_safe",
+              "gobierno_persona",
+              "sistema_modulosmenus"
+            ],
+            "path": "backend/tests/test_arbitroa_a4_foundation_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "sql",
+              "test_a4_exactly_seven_domain_tables",
+              "test_backend_namespace_is_bounded_context",
+              "test_no_later_gate_tables_are_created",
+              "test_rbac_menu_is_canonical_and_satellite",
+              "test_seeds_resolve_by_code_not_ids",
+              "test_sql_first_and_transactional_contract"
+            ],
+            "tables_referenced": [
+              "Gobierno_Documento",
+              "Gobierno_Persona",
+              "Sistema_Modulos",
+              "Sistema_ModulosMenus",
+              "Sistema_ModulosPermisos",
+              "Usuario_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "personaid"
+            ],
+            "path": "frontend/src/pages/catalogo-ampliado/CatalogoAmpliadoDashboard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "gobierno_persona",
+              "personaid"
+            ],
+            "path": "frontend/src/pages/cava-socios/PersonaLinkCard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "personaid"
+            ],
+            "path": "frontend/src/services/catalogoAmpliadoApi.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 6,
+          "scanned_files": 351,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-20T01:14:19Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
