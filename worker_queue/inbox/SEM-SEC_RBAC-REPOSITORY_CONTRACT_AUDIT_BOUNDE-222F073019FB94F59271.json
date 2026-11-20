@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/catalogos_workflow_compat/routes.py",
+          "backend/modules/catalogos_workflow_sql/routes.py",
+          "backend/modules/catalogos_workflow_sql/repository.py",
+          "backend/modules/admin_sql/routes.py"
+        ],
+        "search_terms": [
+          "permisos_catalogo",
+          "upsert_permisos_catalogo",
+          "RBAC_ADMIN",
+          "require_explicit_permission"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-SEC_RBAC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-222F073019FB94F59271",
+  "mode": "READ_ONLY",
+  "objective": "SEC_RBAC Gate 1C. Auditar en modo estricto READ_ONLY las rutas que guardan permisos de catalogos: backend/modules/catalogos_workflow_compat/routes.py, backend/modules/catalogos_workflow_sql/routes.py y repository.py, comparando con backend/modules/admin_sql/routes.py. Determinar si existe escritura autenticada sin autorizacion RBAC_ADMIN y sin alcance corporativo de actor/objetivo, asi como duplicacion de rutas/contratos. No modificar archivos, SQL, datos ni Produccion. Entregar evidencias verificables, recomendaciones atomicas, pruebas propuestas y riesgos; no repetir Gate1B ni jobs certificados.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SEC_RBAC",
+    "conflict_domains": [
+      "SEC_RBAC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
