@@ -86,7 +86,7 @@ class InMemorySesionesDB:
                 self.history.append({"params": p})
                 return []
 
-            if q.startswith("SELECT TOP 1 1 FROM Sesiones WHERE SesionID = %s"):
+            if q.startswith("SELECT TOP 1 SesionID FROM Sesiones WHERE SesionID = %s"):
                 if self.raise_on_is_active:
                     raise RuntimeError("SQL_DOWN_IS_ACTIVE")
                 sid = str(p[0])
@@ -99,7 +99,7 @@ class InMemorySesionesDB:
                     and row["FechaExpiracion"] > self._now()
                     and (utype is None or row["TipoUsuario"].strip().lower() == utype)
                 ):
-                    return (1,) if fetch_one else [(1,)]
+                    return (row["SesionID"],) if fetch_one else [(row["SesionID"],)]
                 return None if fetch_one else []
 
             if "FROM Sesiones WHERE RefreshTokenHash = %s AND EstaActiva = 1" in q:
@@ -653,3 +653,39 @@ def test_frontend_auth_clients_compatibility_contract():
     assert "serverUser.token" in auth_ctx
     assert "/auth/refresh" in api_js
     assert "resp.data?.token" in api_js
+
+
+@pytest.mark.asyncio
+async def test_execute_sql_async_fetch_one_empty_returns_none_and_is_session_active_fail_closed(monkeypatch):
+    """Regresion R3: pymssql as_dict=True exige columna nombrada y fetch_one=True vacio debe retornar None (nunca [])."""
+    monkeypatch.setattr(rt, "_sql_config", {
+        "host": "127.0.0.1",
+        "port": 1433,
+        "database": "EDARSAHUB",
+        "username": "HRLectura",
+        "password": "unit-test-only-placeholder",
+    })
+    seen_queries = []
+
+    def _fake_exec(**kwargs):
+        q = kwargs.get("query", "")
+        seen_queries.append(" ".join(q.split()))
+        # Simular comportamiento real de pymssql as_dict=True: columna sin nombre falla
+        assert "SELECT TOP 1 1 " not in " ".join(q.split()), "Columna sin nombre prohibida con pymssql as_dict=True"
+        return []
+
+    monkeypatch.setattr("core.db.execute_sql_query_params", _fake_exec)
+
+    raw = await rt._execute_sql_async("SELECT TOP 1 SesionID FROM Sesiones WHERE SesionID = %s", ("missing-sid",), fetch_one=True)
+    assert raw is None, f"fetch_one=True con 0 filas debe retornar None, no {raw!r}"
+
+    active = await rt.is_session_active("missing-sid", expected_user_type="interno")
+    assert active is False
+    assert any("SELECT TOP 1 SesionID FROM Sesiones" in q for q in seen_queries)
+
+    # Incluso si un stub devolviera [] directamente, is_session_active debe fallar cerrado (False)
+    async def _returns_empty_list(*args, **kwargs):
+        return []
+
+    monkeypatch.setattr(rt, "_execute_sql_async", _returns_empty_list)
+    assert await rt.is_session_active("missing-sid", expected_user_type="interno") is False

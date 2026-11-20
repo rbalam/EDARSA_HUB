@@ -245,7 +245,9 @@ async def _execute_sql_async(query: str, params: tuple = None, fetch_one: bool =
                 timeout_seconds=5
             )
 
-            if fetch_one and results:
+            if fetch_one:
+                if not results:
+                    return None
                 if isinstance(results[0], dict):
                     return tuple(results[0].values())
                 return results[0]
@@ -267,13 +269,14 @@ async def is_session_active(
 ) -> bool:
     """
     Verifica fail-closed en dbo.Sesiones si un SesionID sigue activo y no revocado.
+    Usa columna nombrada (SesionID) para compatibilidad estricta con pymssql as_dict=True.
     """
     sid = str(session_id or "").strip()
     if not sid:
         return False
 
     query = """
-        SELECT TOP 1 1
+        SELECT TOP 1 SesionID
         FROM Sesiones
         WHERE
             SesionID = %s
@@ -290,7 +293,10 @@ async def is_session_active(
         params.append(expected_user_type)
 
     result = await _execute_sql_async(query, tuple(params), fetch_one=True)
-    return result is not None
+    if not result:
+        return False
+    first_val = result[0] if isinstance(result, (tuple, list)) else result
+    return str(first_val or "").strip().lower() == sid.lower()
 
 
 async def create_session(
