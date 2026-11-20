@@ -3,26 +3,32 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "b0c4aabf4f718c54dd52e7e924ac0eb2fa873fd5",
-  "generated_at_utc": "2026-11-20T13:36:08Z",
+  "development_sha": "653a8663b839b4e9e36b24ab0ee831a3db8089a7",
+  "generated_at_utc": "2026-11-20T13:37:29Z",
   "history": {
-    "done_total_local": 1904,
+    "done_total_local": 1905,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1372,
-    "results_total_local": 3036
+    "results_total_local": 3037
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 142,
+      "age_seconds": 223,
       "job_id": "EDARSAHUB-BOS-SEC-P1-2-WEBSOCKET-TESTS-CERT-R1-20261120",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 20,
+      "job_id": "EDARSAHUB-BOS-SEC-P1-SESSION-REVOCATION-R4-20261120",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "b0c4aabf4f718c54dd52e7e924ac0eb2fa873fd5",
+  "local_development_sha": "653a8663b839b4e9e36b24ab0ee831a3db8089a7",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -30,21 +36,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
-  "remote_development_sha": "b0c4aabf4f718c54dd52e7e924ac0eb2fa873fd5",
+  "remote_development_sha": "653a8663b839b4e9e36b24ab0ee831a3db8089a7",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-20T13:36:00Z",
-    "last_receive_utc": "2026-11-20T13:35:55Z",
-    "last_terminal_utc": "2026-11-20T13:33:46Z",
+    "last_cycle_utc": "2026-11-20T13:37:20Z",
+    "last_receive_utc": "2026-11-20T13:37:15Z",
+    "last_terminal_utc": "2026-11-20T13:37:08Z",
     "pid": "90",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "3f565905bbf41208ce59b143ead5de9ed16a94f1",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "b0c4aabf4f718c54dd52e7e924ac0eb2fa873fd5",
+      "development_sha": "653a8663b839b4e9e36b24ab0ee831a3db8089a7",
       "expected_generation": "20261117-universal-job-worker-lifecycle-v4",
       "generation_aligned": true,
       "production_touched": false,
