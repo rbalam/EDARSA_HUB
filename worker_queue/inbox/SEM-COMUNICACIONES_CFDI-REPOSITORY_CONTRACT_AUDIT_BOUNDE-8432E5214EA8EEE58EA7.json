@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "portal_proveedores",
+          "DocumentosFiscales",
+          "CFDI",
+          "comprobaciones",
+          "correo"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMUNICACIONES_CFDI-REPOSITORY_CONTRACT_AUDIT_BOUNDE-8432E5214EA8EEE58EA7",
+  "mode": "READ_ONLY",
+  "objective": "Gate diferencial READ_ONLY específico de Portal de Proveedores, CFDI XML PDF y correo universal: verificar implementación real en módulos canónicos, endpoints, SQL-first, deduplicación UUID, órdenes de compra, recepción y CxP; distinguir implementado, placeholder, no probado y bloqueos, sin repetir Gate 0 certificado ni modificar Producción. Entregar evidencia acotada y siguiente Gate autorizado.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMUNICACIONES_CFDI",
+    "conflict_domains": [
+      "COMUNICACIONES_CFDI"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
