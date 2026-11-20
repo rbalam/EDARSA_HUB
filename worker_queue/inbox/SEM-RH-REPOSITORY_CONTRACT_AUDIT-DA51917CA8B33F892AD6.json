@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 200,
+        "paths": [
+          "backend/modules",
+          "frontend/src",
+          "tools/mirror_sync"
+        ],
+        "search_terms": [
+          "finiquito",
+          "liquidacion",
+          "liquidación",
+          "baja",
+          "offboarding",
+          "nomina",
+          "nómina",
+          "payroll",
+          "clearance",
+          "entrega de equipo",
+          "desvinculacion",
+          "desvinculación",
+          "prestaciones"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT-DA51917CA8B33F892AD6",
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar exclusivamente en READ_ONLY el rechazo SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED de REPOSITORY_CONTRACT_AUDIT para Inventarios Operativos y SLA. Revisar Capability Registry y reglas de validacion semantica para determinar causa y documentar una propuesta de normalizacion minima que permita futura auditoria de duplicidades sin asignar falsamente el dominio RH. No modificar archivos, permisos, produccion ni crear infraestructura. Comprobar duplicados y devolver evidencia de resultado.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH",
+    "conflict_domains": [
+      "RH"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
