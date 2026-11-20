@@ -1,0 +1,1027 @@
+{
+  "base_sha": "0aa2d543b259844a20b51e0a5526b16856825df5",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-20T01:34:08Z",
+  "execution_base_sha": "0aa2d543b259844a20b51e0a5526b16856825df5",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-INVENTARIOS_OPERATIVOS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-AC0E83BD396AB6EB7E4D",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-20T01:35:56Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.automatizacion",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "almacen",
+              "consolidado",
+              "fecha",
+              "folio",
+              "inventario",
+              "mpro"
+            ],
+            "path": "backend/modules/automatizacion/queries_mpro.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.automatizacion",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.source_resolver",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "hashlib",
+              "logging",
+              "pymssql",
+              "time",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "almacen",
+              "fecha",
+              "folio",
+              "inventario",
+              "mpro"
+            ],
+            "path": "backend/modules/automatizacion/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "actualizar_ultimo_folio_conocido",
+              "construir_clave_cab003",
+              "contar_registros_por_identificador",
+              "execute_sql_parametrized",
+              "generar_hash_verificacion",
+              "generar_identificador_ejecucion",
+              "get_configuracion_activa",
+              "get_folios_ya_procesados",
+              "insertar_folio_procesado",
+              "leer_configuracion_con_estado",
+              "leer_folios_procesados_con_estado",
+              "registrar_folio_procesado",
+              "rollback_por_identificador",
+              "verificar_duplicado_en_bd",
+              "verificar_ya_procesado"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.centro_control.email_notifications",
+              "core.inventory_analysis_core",
+              "core.mongo_stub",
+              "core.system_type_utils",
+              "dataclasses",
+              "datetime",
+              "io",
+              "job_logger",
+              "json",
+              "logging",
+              "modules.compras.sync_service",
+              "modules.fase2_operativo.services.orquestador_service",
+              "openpyxl",
+              "os",
+              "sql_repository",
+              "traceback",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "almacen",
+              "consolidado",
+              "fecha",
+              "folio",
+              "inventario",
+              "mpro",
+              "sla",
+              "sync",
+              "workflow"
+            ],
+            "path": "backend/core/scheduler/jobs/inventarios_detector_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "ClaveIdempotencia",
+              "InventarioDetectado",
+              "InventariosDetectorJob",
+              "__init__",
+              "_detectar_desde_sync",
+              "_detectar_mpro",
+              "_detectar_soft",
+              "_ejecutar_analisis",
+              "_ejecutar_orquestacion",
+              "_ensure_index",
+              "_enviar_reporte_analisis_email",
+              "_es_consolidado",
+              "_escanear_servidor",
+              "_fecha_key",
+              "_generar_excel_analisis",
+              "_generar_resumen",
+              "_is_stub_db",
+              "_marcar_error",
+              "_normalizar_system_type",
+              "_obtener_servidores",
+              "_preferir_inventario_fecha",
+              "_procesar_inventario",
+              "_procesar_inventario_desde_registro",
+              "_procesar_reintentos",
+              "_rehidratar_registro_reintento",
+              "create_inventarios_detector_job",
+              "retry_error_by_id",
+              "run",
+              "to_dict",
+              "to_query"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "base_job",
+              "config",
+              "datetime",
+              "logging",
+              "modules.fase2_operativo.services.sla_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "notificacion",
+              "sla",
+              "sync"
+            ],
+            "path": "backend/core/scheduler/jobs/sla_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "SLAProcessorJob",
+              "create_sla_job",
+              "execute"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "notification_service",
+              "sql_repository",
+              "traceback",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "almacen",
+              "asignacion",
+              "fecha",
+              "folio",
+              "inventario",
+              "notificacion",
+              "sla",
+              "sync",
+              "workflow"
+            ],
+            "path": "backend/modules/fase2_operativo/services/orquestador_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "OrquestadorService",
+              "__init__",
+              "_crear_tarea_inicial_sql",
+              "_enviar_notificaciones",
+              "_obtener_usuario_responsable_sql",
+              "get_orquestador_service",
+              "procesar_analisis"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.communications.notifications.service",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "enum",
+              "logging",
+              "sql_repository",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "fecha",
+              "folio",
+              "inventario",
+              "notificacion",
+              "sla",
+              "sync",
+              "workflow"
+            ],
+            "path": "backend/modules/fase2_operativo/services/sla_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EstadoSLA",
+              "SLAService",
+              "__init__",
+              "_cargar_configuracion_async",
+              "_get_configuracion",
+              "_get_notification_service",
+              "_obtener_limite_horas",
+              "_parsear_fecha",
+              "actualizar_configuracion",
+              "actualizar_estados_sla",
+              "calcular_estado_sla",
+              "get_sla_service",
+              "invalidar_cache_config",
+              "notify_sla_escalated",
+              "notify_sla_expired",
+              "notify_sla_warning",
+              "obtener_configuracion",
+              "obtener_metricas_globales",
+              "obtener_tareas_proximas_vencer",
+              "obtener_tareas_vencidas"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "repositories.configuracion_repository",
+              "repositories.detalle_diferencias_repository",
+              "repositories.historial_responsabilidad_repository",
+              "repositories.responsabilidad_repository",
+              "repositories.workflow_repository",
+              "schemas.enums",
+              "schemas.responsabilidad_schemas",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "fecha",
+              "inventario",
+              "responsabilidad",
+              "sync",
+              "workflow"
+            ],
+            "path": "backend/modules/fase2_operativo/services/responsabilidad_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AprobacionesDesactivadasError",
+              "CalculoYaExisteError",
+              "ModuloDesactivadoError",
+              "PermisoInsuficienteError",
+              "ResponsabilidadNoEncontradaError",
+              "ResponsabilidadService",
+              "ResponsabilidadServiceError",
+              "SinDiferenciasError",
+              "TransicionInvalidaError",
+              "WorkflowNoEncontradoError",
+              "__init__",
+              "_actualizar_estado_responsabilidad",
+              "_actualizar_estado_workflow_si_corresponde",
+              "_actualizar_workflow_por_uuid",
+              "_buscar_workflow_por_uuid",
+              "_calcular_impacto",
+              "_esta_dentro_tolerancia",
+              "_extraer_sucursal",
+              "_generar_mensaje_resumen",
+              "_mapear_a_response",
+              "_obtener_responsabilidad",
+              "_obtener_top_sucursales",
+              "_registrar_transicion",
+              "_validar_permiso_por_monto",
+              "_validar_transicion",
+              "_verificar_aprobaciones_habilitadas",
+              "actualizar_configuracion",
+              "aprobar",
+              "calcular_responsabilidad",
+              "disputar",
+              "exonerar",
+              "inicializar_configuracion",
+              "listar",
+              "obtener_configuracion",
+              "obtener_en_disputa",
+              "obtener_historial",
+              "obtener_metricas_dashboard",
+              "obtener_pendientes_aprobacion",
+              "obtener_por_workflow",
+              "proponer",
+              "rechazar",
+              "resolver_disputa"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "repositories.detalle_diferencias_repository",
+              "repositories.workflow_repository",
+              "schemas.enums",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "asignacion",
+              "folio",
+              "inventario",
+              "mpro",
+              "sync",
+              "workflow"
+            ],
+            "path": "backend/modules/fase2_operativo/services/workflow_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TransicionInvalidaError",
+              "WorkflowNoEncontradoError",
+              "WorkflowService",
+              "WorkflowServiceError",
+              "WorkflowYaExisteError",
+              "__init__",
+              "_validar_transicion",
+              "cambiar_estado",
+              "crear_workflow",
+              "crear_workflow_si_no_existe",
+              "get_uuids_by_servers",
+              "incrementar_ciclo",
+              "listar_en_auditoria",
+              "listar_en_revision",
+              "listar_escalados",
+              "listar_pendientes_asignacion",
+              "listar_pendientes_justificacion",
+              "listar_workflows",
+              "obtener_workflow_completo",
+              "obtener_workflow_por_id",
+              "obtener_workflow_por_procesado_id",
+              "resumen_por_estado"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "repositories.configuracion_repository",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "asignacion",
+              "sync"
+            ],
+            "path": "backend/modules/fase2_operativo/services/configuracion_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConfiguracionNoEncontradaError",
+              "ConfiguracionService",
+              "ConfiguracionServiceError",
+              "ValorInvalidoError",
+              "__init__",
+              "actualizar_dias_limite_tarea",
+              "actualizar_max_ciclos_reasignacion",
+              "actualizar_umbral_justificacion",
+              "actualizar_valor",
+              "listar_todas",
+              "obtener_configuracion",
+              "obtener_dias_limite_tarea",
+              "obtener_max_ciclos_reasignacion",
+              "obtener_parametros_operativos",
+              "obtener_umbral_justificacion",
+              "obtener_valor",
+              "obtener_valor_float",
+              "obtener_valor_int"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "repositories.configuracion_repository",
+              "repositories.detalle_diferencias_repository",
+              "repositories.justificacion_repository",
+              "schemas.enums",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "fecha",
+              "inventario",
+              "sync",
+              "workflow"
+            ],
+            "path": "backend/modules/fase2_operativo/services/justificacion_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EvidenciaRequeridaError",
+              "JustificacionInvalidaError",
+              "JustificacionService",
+              "JustificacionServiceError",
+              "JustificacionYaExisteError",
+              "__init__",
+              "determinar_tipo_justificacion",
+              "listar_por_tipo",
+              "listar_por_usuario",
+              "obtener_justificacion",
+              "obtener_justificaciones_diferencia",
+              "obtener_justificaciones_workflow",
+              "obtener_umbral_actual",
+              "registrar_justificacion",
+              "validar_si_existe_justificacion",
+              "verificar_workflow_completamente_justificado"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "repositories.auditoria_repository",
+              "repositories.workflow_repository",
+              "schemas.enums",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "fecha",
+              "inventario",
+              "responsabilidad",
+              "sync",
+              "workflow"
+            ],
+            "path": "backend/modules/fase2_operativo/services/auditoria_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AuditoriaService",
+              "AuditoriaServiceError",
+              "DecisionInvalidaError",
+              "WorkflowNoEnAuditoriaError",
+              "__init__",
+              "listar_por_auditor",
+              "listar_por_decision",
+              "obtener_decision",
+              "obtener_decisiones_workflow",
+              "obtener_ultima_decision",
+              "obtener_workflows_pendientes_auditoria",
+              "registrar_decision",
+              "resumen_por_decision",
+              "validar_si_workflow_tiene_decision"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "sql_base_repository",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "almacen",
+              "asignacion",
+              "fecha",
+              "sync"
+            ],
+            "path": "backend/modules/fase2_operativo/repositories/asignacion_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AsignacionRepository",
+              "__init__",
+              "get_todas_asignaciones",
+              "get_usuario_responsable",
+              "set_usuario_responsable"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "base_repository",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "fecha",
+              "responsabilidad",
+              "sync",
+              "workflow"
+            ],
+            "path": "backend/modules/fase2_operativo/repositories/responsabilidad_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ResponsabilidadRepository",
+              "__init__",
+              "_serialize_id",
+              "_serialize_list",
+              "actualizar_calculo",
+              "aprobar",
+              "crear_calculo",
+              "eliminar_por_workflow",
+              "existe_calculo",
+              "get_by_responsable",
+              "get_by_workflow",
+              "get_pendientes_revision",
+              "listar_con_filtros",
+              "listar_por_estado",
+              "listar_por_sucursal",
+              "obtener_metricas_globales",
+              "rechazar"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "concurrent.futures",
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "almacen",
+              "asignacion",
+              "fecha",
+              "folio",
+              "inventario",
+              "notificacion",
+              "sla",
+              "sync",
+              "ventas",
+              "workflow"
+            ],
+            "path": "backend/modules/fase2_operativo/sql_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_execute_sql",
+              "_execute_sql_async",
+              "_get_connection",
+              "actualizar_configuracion_sla",
+              "actualizar_tarea_estado_sla",
+              "actualizar_workflow_estado",
+              "crear_alerta_sistema",
+              "crear_detalles_diferencias",
+              "crear_tarea",
+              "crear_workflow",
+              "marcar_notificacion_enviada",
+              "obtener_config_asignacion",
+              "obtener_configuracion_sla",
+              "obtener_tareas_activas",
+              "obtener_tareas_completadas",
+              "obtener_usuario_por_id",
+              "obtener_workflow",
+              "registrar_inventario_sin_asignar",
+              "workflow_existe"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.inventarios",
+            "connections": [],
+            "helpers": [
+              "resolver_canonico"
+            ],
+            "imports": [
+              "__future__",
+              "core.inventarios.movement_filter_config",
+              "core.inventarios.resolver_canonico",
+              "logging",
+              "modules.compras.sync_service",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "almacen",
+              "fecha",
+              "folio",
+              "inventario",
+              "mpro",
+              "sync"
+            ],
+            "path": "backend/core/inventarios/sync_movimientos_canonico.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_FallbackTipo",
+              "_merge_soft_movement_sources",
+              "_query_origen",
+              "_query_origen_soft_movsinv",
+              "_query_origen_soft_presentaciones",
+              "_soft_dedupe_key",
+              "sync_movimientos_canonico"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.inventarios",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "corporate_identity_resolver",
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "core.corporate_identity_resolver",
+              "core.server_registry",
+              "core.sql_first.db",
+              "dataclasses",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "almacen",
+              "inventario",
+              "mpro",
+              "sync"
+            ],
+            "path": "backend/core/inventarios/resolver_canonico.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ResultadoResolucion",
+              "_fetchall",
+              "_get_conn",
+              "_server_id_de_unidad",
+              "_tabla_existe",
+              "clear_resolver_caches",
+              "ok",
+              "pendiente",
+              "precargar_productos_mapeo",
+              "resolver_almacen_id",
+              "resolver_empresa_id",
+              "resolver_producto_id",
+              "resolver_sucursal_id",
+              "resolver_tipo_movimiento_desde_concepto",
+              "resolver_tipo_movimiento_por_codigo"
+            ],
+            "tables_referenced": [
+              "Sistema_Empresas",
+              "Sistema_Sucursales",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection",
+              "resolver_canonico"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.inventarios.resolver_canonico",
+              "core.inventarios.sync_movimientos_canonico",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "logging",
+              "os",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "ajuste",
+              "almacen",
+              "consumo",
+              "fecha",
+              "folio",
+              "inventario",
+              "mpro",
+              "sync",
+              "ventas"
+            ],
+            "path": "backend/modules/compras/sync_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_as_float",
+              "_as_text",
+              "_bulk_insert_detail_values",
+              "_bulk_update_detail_values",
+              "_bulk_upsert_detail_values",
+              "_collapse_detail_values_by_key",
+              "_detail_insert_parts",
+              "_detail_insert_statement",
+              "_detail_update_statement",
+              "_detail_values",
+              "_fetch_existing_detail_keys",
+              "_fetch_table_columns",
+              "_filter_inventory_headers_with_detail",
+              "_folio_in_filter",
+              "_get_edarsahub_context",
+              "_insert_detail_row",
+              "_inventarios_fisicos_detalle_query",
+              "_inventory_detail_batch_size",
+              "_inventory_detail_key",
+              "_inventory_header_detail_key",
+              "_inventory_history_filter",
+              "_sql_identifier",
+              "_sql_literal",
+              "_sync_inventarios_fisicos_detalle",
+              "_unique_folio_batches",
+              "_update_detail_row",
+              "get_compras_adapter",
+              "get_edarsahub_connection",
+              "get_edarsahub_writer_connection",
+              "get_last_sync_info",
+              "log_sync_operation",
+              "map_tipo_movimiento_softrestaurant",
+              "obtener_inventarios_fisicos_sync",
+              "obtener_requisiciones_sync",
+              "registrar_concepto_movimiento_no_mapeado",
+              "resolver_proveedor_edarsahub",
+              "sync_almacenes_from_server",
+              "sync_existencias_from_server",
+              "sync_inventarios_fisicos_from_server",
+              "sync_movimientos_from_server",
+              "sync_ordenes_from_server",
+              "sync_pedidos_from_server",
+              "sync_recepciones_from_server",
+              "sync_requisiciones_from_server"
+            ],
+            "tables_referenced": [
+              "Compras_Inventarios_Fisicos_Detalle_Sync",
+              "Proveedor_Catalogo",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "almacen",
+              "fecha",
+              "folio",
+              "inventario",
+              "mpro",
+              "sync"
+            ],
+            "path": "backend/modules/compras/sql_first_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ComprasSQLFirstRepository",
+              "__init__",
+              "_fetch_all",
+              "detalle_movimientos",
+              "productos_para_captura",
+              "table_counts"
+            ],
+            "tables_referenced": [
+              "Compras_Ordenes",
+              "Compras_OrdenesDetalle",
+              "Compras_Pedidos",
+              "Compras_PedidosDetalle",
+              "Compras_Recepciones",
+              "Compras_RecepcionesDetalle",
+              "Compras_Requisiciones_Sync",
+              "Inventario_Almacenes",
+              "Inventario_Existencias",
+              "Inventario_Movimientos",
+              "Inventario_MovimientosDetalle"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "job_logger",
+              "logging",
+              "modules.fase2_operativo.repositories.auditoria_programada_repository",
+              "modules.fase2_operativo.services.auditoria_programada_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "fecha",
+              "sync",
+              "workflow"
+            ],
+            "path": "backend/core/scheduler/jobs/auditorias_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "AuditoriasSchedulerJob",
+              "__init__",
+              "create_auditorias_job",
+              "run"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.automatizacion",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [
+              "mpro",
+              "sap",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "folio",
+              "inventario",
+              "mpro"
+            ],
+            "path": "backend/modules/automatizacion/feature_flags.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "get_all_flags",
+              "is_enabled",
+              "is_module_active"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 20,
+          "scanned_files": 20,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-20T01:34:02Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
