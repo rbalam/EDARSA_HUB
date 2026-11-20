@@ -1,22 +1,31 @@
 {
-  "blockers": [
-    "dispatcher_exception:RuntimeError:GIT_WORKTREE_NOT_CLEAN"
-  ],
-  "certification": "NOT_CERTIFIED",
-  "completed_at_utc": "2026-11-20T02:59:03Z",
+  "base_sha": "aaf99b36930d1287e0069af6c9aab2a13ee030c6",
+  "blockers": [],
+  "candidate_sha": "b56ad3689d79108e002ce9da19214551b85dfea5",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-11-20T05:22:33Z",
+  "development_sha": "b56ad3689d79108e002ce9da19214551b85dfea5",
+  "execution_base_sha": "aaf99b36930d1287e0069af6c9aab2a13ee030c6",
   "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/worker_ingress/semantic_capabilities.py",
+    "backend/modules/worker_mcp/server.py",
+    "backend/tests/test_worker_runtime_convergence_gate_b1.py",
+    "tools/mirror_sync/worker_runtime_fingerprint.py"
+  ],
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M4-FINGERPRINT-MCP-PARITY-20261120",
-  "percent_complete": 0,
+  "percent_complete": 95,
   "production_touched": false,
-  "published_at_utc": "2026-11-20T03:00:04Z",
-  "quality_gate": "FAIL",
+  "published_at_utc": "2026-11-20T05:23:58Z",
+  "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
   "source_repo": "rbalam/EDARSA_HUB",
-  "started_at_utc": "2026-11-20T02:58:59Z",
-  "status": "GIT_WORKTREE_NOT_CLEAN",
-  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
-  "work_completion": "NOT_CERTIFIED"
+  "started_at_utc": "2026-11-20T05:22:20Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
 }
