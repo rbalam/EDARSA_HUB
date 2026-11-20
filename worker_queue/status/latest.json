@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "163458aefa9bd29ea05af9930572c34c027cef39",
-  "generated_at_utc": "2026-11-20T15:23:41Z",
+  "generated_at_utc": "2026-11-20T15:25:20Z",
   "history": {
     "done_total_local": 1912,
     "pending_total_local": 0,
@@ -16,31 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3597,
-      "job_id": "EDARSAHUB-BOS-WORKER-OPS-GUARD-LOCK-FINALIZE-PARITY-R1-20261120",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 326,
+      "age_seconds": 425,
       "job_id": "EDARSAHUB-BOS-WORKER-OPS-MIRROR-POST-DISCONNECT-RECOVERY-R1-20261120",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1445,
+      "age_seconds": 1544,
       "job_id": "EDARSAHUB-BOS-WORKER-OPS-PREPUBLISH-CONTRACT-PARITY-R1-20261120",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 538,
+      "age_seconds": 637,
       "job_id": "SEM-SEC_RBAC-WORKER_RESULT_DETAIL_READ-F0E04AB4B5E9C3CA74A9",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 109,
+      "age_seconds": 208,
       "job_id": "SEM-SEC_RBAC-WORKER_RESULT_SEMANTIC_EXTRACT-D888DAA4231703726473",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,14 +48,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "remote_development_sha": "163458aefa9bd29ea05af9930572c34c027cef39",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-20T15:23:27Z",
-    "last_receive_utc": "2026-11-20T15:23:22Z",
+    "last_cycle_utc": "2026-11-20T15:25:05Z",
+    "last_receive_utc": "2026-11-20T15:25:00Z",
     "last_terminal_utc": "2026-11-20T15:21:52Z",
     "pid": "1315864",
     "runtime_fingerprint": {
