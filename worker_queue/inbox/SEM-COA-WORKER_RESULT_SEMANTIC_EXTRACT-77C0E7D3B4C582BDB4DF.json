@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/SEM-COA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-0E23E4586F3078A98F1D.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COA-WORKER_RESULT_SEMANTIC_EXTRACT-77C0E7D3B4C582BDB4DF",
+  "mode": "READ_ONLY",
+  "objective": "Extraer semánticamente el resultado ya certificado de COA Gate 6G para identificar exclusivamente: componentes backend canónicos a reutilizar, rutas/servicios/repositorios/modelos/RBAC relevantes, tablas canónicas referenciadas, brechas mínimas para implementar lectura/escritura de Fiscal_DocumentosEmitidos y COA_ExpedienteReferencias, y riesgos de duplicación. No modificar archivos ni base de datos y no tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COA",
+    "conflict_domains": [
+      "COA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
