@@ -4,103 +4,103 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "0aa2d543b259844a20b51e0a5526b16856825df5",
-  "generated_at_utc": "2026-11-20T01:57:57Z",
+  "generated_at_utc": "2026-11-20T01:59:28Z",
   "history": {
-    "done_total_local": 1893,
+    "done_total_local": 1894,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1368,
-    "results_total_local": 3022
+    "results_total_local": 3023
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 86,
+      "age_seconds": 177,
       "job_id": "RRHH-CUSTODIA-GATE3B-SEMANTIC-SQL-CAPABILITY-MUTATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2615,
+      "age_seconds": 2706,
       "job_id": "SEM-EDARSA_SPORTS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-6F2B50BEBD3D35D1196C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2265,
+      "age_seconds": 2355,
       "job_id": "SEM-INTEGRACIONES_EXTERNAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7B173612AFBD31F5C09F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1429,
+      "age_seconds": 1520,
       "job_id": "SEM-INVENTARIOS_OPERATIVOS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-AC0E83BD396AB6EB7E4D",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3348,
+      "age_seconds": 3439,
       "job_id": "SEM-MONGO_SUNSET_RUNTIME-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7CE42B94F152CCE541E0",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2610,
+      "age_seconds": 31,
+      "job_id": "SEM-PORTAL_PROVEEDORES-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B5262EEDF55F0F2FC5DA",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2701,
       "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT-0C7862EAD1B59EA761D7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2567,
+      "age_seconds": 2658,
       "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT-5F5201AD99F153D1892A",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2260,
+      "age_seconds": 2351,
       "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT-DA51917CA8B33F892AD6",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 218,
+      "age_seconds": 309,
       "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT-F8958A1CD707377D82C5",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 145,
+      "age_seconds": 236,
       "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT_BOUNDE-EC3DC6DDD322434F9CDD",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 21,
+      "age_seconds": 112,
       "job_id": "SEM-RH_HCM_ENV_CLASSIFICATION-REPOSITORY_CONTRACT_AUDIT_BOUNDE-A92026CF3CD94728321B",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1147,
+      "age_seconds": 1238,
       "job_id": "SEM-SEC_RBAC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-222F073019FB94F59271",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3345,
+      "age_seconds": 3436,
       "job_id": "SEM-SQL_CONNECTIONS_8OF10-REPOSITORY_CONTRACT_AUDIT_BOUNDE-A6C497B6EECA78D70035",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3511,
-      "job_id": "SEM-SQL_CONNECTIONS_8OF10-SQL_CONNECTIONS_BOOTSTRAP_READON-4CE087B7A0E2FC5C5C87",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3431,
+      "age_seconds": 3522,
       "job_id": "SEM-SQL_CONNECTIONS_8OF10-WORKER_RESULT_DETAIL_READ-206803BADD2687661E5F",
       "reason": null,
       "state": "RESULT_READY"
@@ -120,9 +120,9 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-20T01:57:41Z",
-    "last_receive_utc": "2026-11-20T01:57:36Z",
-    "last_terminal_utc": "2026-11-20T01:57:35Z",
+    "last_cycle_utc": "2026-11-20T01:59:01Z",
+    "last_receive_utc": "2026-11-20T01:58:56Z",
+    "last_terminal_utc": "2026-11-20T01:58:56Z",
     "pid": "87",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "3f5095b67e75faa328ab88d20d4871a4637a15e7",
