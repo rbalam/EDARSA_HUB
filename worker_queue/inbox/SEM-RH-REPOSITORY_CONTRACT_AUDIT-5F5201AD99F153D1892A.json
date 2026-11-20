@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 200,
+        "paths": [
+          "backend/modules",
+          "frontend/src",
+          "tools/mirror_sync"
+        ],
+        "search_terms": [
+          "finiquito",
+          "liquidacion",
+          "liquidación",
+          "baja",
+          "offboarding",
+          "nomina",
+          "nómina",
+          "payroll",
+          "clearance",
+          "entrega de equipo",
+          "desvinculacion",
+          "desvinculación",
+          "prestaciones"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT-5F5201AD99F153D1892A",
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar y reparar exclusivamente en Desarrollo el Capability Registry canonico: REPOSITORY_CONTRACT_AUDIT rechaza INTEGRACIONES por regla RH. Comprobar reglas y documentacion, RBAC, duplicados y compatibilidad; habilitar bounded context de integraciones Soft Restaurant y MPro mediante cambio minimo reversible y pruebas, sin ampliar privilegios ni alterar RH. No tocar Produccion, no crear workers/colas/publicadores alternativos. Tras reparar, permitir auditoria READ_ONLY Gate 0 existente con mismo request key, una sola vez, y entregar resultado verificable. Si capability no permite reparacion, devolver bloqueo preciso sin ejecutar cambios.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH",
+    "conflict_domains": [
+      "RH"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
