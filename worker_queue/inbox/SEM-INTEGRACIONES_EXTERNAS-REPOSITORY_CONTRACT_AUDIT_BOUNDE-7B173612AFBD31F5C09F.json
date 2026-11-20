@@ -1,0 +1,67 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/compras/adapters/mpro_adapter.py",
+          "backend/modules/compras/adapters/softrestaurant_pro_adapter.py",
+          "backend/modules/compras/sync_service.py",
+          "backend/modules/compras/sql_first_repository.py",
+          "backend/modules/compras/repository_compras_sql.py",
+          "backend/modules/compras/service.py",
+          "backend/modules/compras/routes.py",
+          "backend/modules/compras/repository_pedidos_sql.py",
+          "backend/core/inventarios/sync_movimientos_canonico.py",
+          "backend/core/inventarios/resolver_canonico.py",
+          "backend/core/inventarios/mpro_movement_policy.py"
+        ],
+        "search_terms": [
+          "ENTRADA_COMPRA",
+          "EPC",
+          "Movimiento",
+          "compras",
+          "folio",
+          "trigger",
+          "procedimiento",
+          "consecutivo",
+          "Sync",
+          "documento",
+          "proveedor",
+          "almacen",
+          "auditoria",
+          "kardex",
+          "Costo",
+          "CxP"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-INTEGRACIONES_EXTERNAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7B173612AFBD31F5C09F",
+  "mode": "READ_ONLY",
+  "objective": "EDARSAHUB BOS P1: diagnostico READ_ONLY del contrato de integraciones externas MPRO, SoftRestaurant y SoftRestaurant Enterprise en artefactos sincronizados de Desarrollo, priorizando ENTRADA_COMPRA. Inventariar mapeos, folios, estados, identificadores de movimiento, almacenes, proveedores, reglas y dependencias con compras, inventarios, kardex, costos y CxP. Identificar candidatos a SP, triggers y secuencias solamente si aparecen documentados en repositorio; NO afirmar metadata DB, NO conectar LIVE, NO ejecutar SQL, DDL o DML, NO tocar Produccion. Reutilizar contrato SQL-first y RBAC canonicos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INTEGRACIONES_EXTERNAS",
+    "conflict_domains": [
+      "INTEGRACIONES_EXTERNAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
