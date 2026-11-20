@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 200,
+        "paths": [
+          "backend/modules",
+          "frontend/src",
+          "tools/mirror_sync"
+        ],
+        "search_terms": [
+          "finiquito",
+          "liquidacion",
+          "liquidación",
+          "baja",
+          "offboarding",
+          "nomina",
+          "nómina",
+          "payroll",
+          "clearance",
+          "entrega de equipo",
+          "desvinculacion",
+          "desvinculación",
+          "prestaciones"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT-F8958A1CD707377D82C5",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en READ_ONLY el gobierno de clasificación de Desarrollo/Producción en HCM Gate 4 para SQL ns559627 / 54.39.104.176 / EDARSAHUB. Reutilizar evidencia del job certificado EDARSAHUB-RH-HCM-GATE4-ENV-CLASSIFICATION-READONLY-R1-20261114 sin repetir auditorías. Inspeccionar docs/CLASIFICACION_SERVIDORES_CORE_VS_DATASOURCE.md, docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md, docs/HITO_CONTROL_CAB003_FASE0.md y .github/workflows/hcm-identity-link-development-migration.yml; identificar clasificación administrativa verificable, bases Development aisladas, riesgo de ejecución sobre Producción y controles de seguridad. Entregar evidencia y conclusión o BLOCKED_ENVIRONMENT_CLASSIFICATION. NO SQL writes, NO DDL, NO migración PersonaID, NO triggers, NO workflows, NO modificaciones en Producción, NO secretos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH",
+    "conflict_domains": [
+      "RH"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
