@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "backend/core/config/edarsahub_config.py",
+          "backend/core/server_registry.py",
+          "backend/core/sql_first/connection_factory.py",
+          "backend/core/connections/hrlectura_connection_factory.py"
+        ],
+        "search_terms": [
+          "environment",
+          "production",
+          "development",
+          "EDARSAHUB_SQL_HOST",
+          "EDARSAHUB_SQL_DATABASE",
+          "server_registry",
+          "get_sql_connection",
+          "classification",
+          "is_production"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH_HCM_ENV_CLASSIFICATION-REPOSITORY_CONTRACT_AUDIT_BOUNDE-A92026CF3CD94728321B",
+  "mode": "READ_ONLY",
+  "objective": "HCM PersonaID Gate4: verificar solamente contratos existentes en backend/core para resolver si el código distingue de forma fail-closed SQL Development versus Production y si el catálogo canónico de servidores implementa clasificación verificada. Reutilizar resultados certificados anteriores sin repetir auditoría general. Reportar coincidencias y ausencias trazables; si no hay prueba de aislamiento físico declarar BLOCKED_ENVIRONMENT_CLASSIFICATION. No SQL en vivo, no credenciales, no DDL, no migraciones, no alteraciones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH_HCM_ENV_CLASSIFICATION",
+    "conflict_domains": [
+      "RH_HCM_ENV_CLASSIFICATION"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
