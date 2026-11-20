@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 200,
+        "paths": [
+          "backend/modules",
+          "frontend/src",
+          "tools/mirror_sync"
+        ],
+        "search_terms": [
+          "finiquito",
+          "liquidacion",
+          "liquidación",
+          "baja",
+          "offboarding",
+          "nomina",
+          "nómina",
+          "payroll",
+          "clearance",
+          "entrega de equipo",
+          "desvinculacion",
+          "desvinculación",
+          "prestaciones"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT-0C7862EAD1B59EA761D7",
+  "mode": "READ_ONLY",
+  "objective": "Auditoría estrictamente READ_ONLY de contratos existentes para Portal de Proveedores, Compras y Auditoría Operativa en EDARSAHUB BOS: presupuesto, consumo teórico por ventas y recetas, existencias por almacén, cobertura, días fijos de surtido, fletes y recepción. Comprobar duplicados y documentación; devolver evidencias y gaps, sin mutaciones ni producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH",
+    "conflict_domains": [
+      "RH"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
