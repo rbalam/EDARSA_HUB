@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/rh",
+          "backend/core/user_access_context.py",
+          "backend/modules/hcm"
+        ],
+        "search_terms": [
+          "PersonaID",
+          "Gobierno_Persona",
+          "RH_Colaboradores_Expediente",
+          "RBAC",
+          "identity_link"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT_BOUNDE-EC3DC6DDD322434F9CDD",
+  "mode": "READ_ONLY",
+  "objective": "READ_ONLY HCM Global: Gate 4 clasificación entorno ya CERTIFIED_READ_ONLY, no repetir. Examinar integración PersonaID en código RH y contratos RBAC SQL: identificar implementación actual, dependencias, pruebas y brechas para certificación funcional; no cambios, sin Producción. Diferenciar implementación de integración/certificación y entregar evidencia y siguientes Gates.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH",
+    "conflict_domains": [
+      "RH"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
