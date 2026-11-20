@@ -3,32 +3,38 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "4926c7d5dc94f35c2ea1433b6d929d188c247bf6",
-  "generated_at_utc": "2026-11-20T14:58:57Z",
+  "development_sha": "26f90b3bd07b6a6e0c2b79c0f0c2b8333d2cb27d",
+  "generated_at_utc": "2026-11-20T15:00:47Z",
   "history": {
-    "done_total_local": 1908,
+    "done_total_local": 1909,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1372,
-    "results_total_local": 3040
+    "results_total_local": 3041
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2112,
+      "age_seconds": 2223,
       "job_id": "EDARSAHUB-BOS-WORKER-OPS-GUARD-LOCK-FINALIZE-PARITY-R1-20261120",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2415,
+      "age_seconds": 71,
+      "job_id": "EDARSAHUB-BOS-WORKER-OPS-PREPUBLISH-CONTRACT-PARITY-R1-20261120",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2525,
       "job_id": "SEM-SEC_RBAC-SEC_RBAC_SQL_PERMISSION_MATRIX_R-B0621AC6CEE627EF9CF5",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "4926c7d5dc94f35c2ea1433b6d929d188c247bf6",
+  "local_development_sha": "26f90b3bd07b6a6e0c2b79c0f0c2b8333d2cb27d",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -36,21 +42,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
-  "remote_development_sha": "4926c7d5dc94f35c2ea1433b6d929d188c247bf6",
+  "remote_development_sha": "26f90b3bd07b6a6e0c2b79c0f0c2b8333d2cb27d",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-20T14:58:38Z",
-    "last_receive_utc": "2026-11-20T14:58:33Z",
-    "last_terminal_utc": "2026-11-20T14:23:44Z",
-    "pid": "90",
+    "last_cycle_utc": "2026-11-20T15:00:34Z",
+    "last_receive_utc": "2026-11-20T15:00:29Z",
+    "last_terminal_utc": "2026-11-20T14:59:36Z",
+    "pid": "1090488",
     "runtime_fingerprint": {
-      "active_worker_code_tree_sha": "3f565905bbf41208ce59b143ead5de9ed16a94f1",
+      "active_worker_code_tree_sha": "571ce75463ef4dd7ebd03cd598e84bdf28bc423b",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "4926c7d5dc94f35c2ea1433b6d929d188c247bf6",
+      "development_sha": "26f90b3bd07b6a6e0c2b79c0f0c2b8333d2cb27d",
       "expected_generation": "20261117-universal-job-worker-lifecycle-v4",
       "generation_aligned": true,
       "production_touched": false,
@@ -65,7 +71,7 @@
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
       "worker_code_tree_aligned": false,
-      "worker_code_tree_sha": "571ce75463ef4dd7ebd03cd598e84bdf28bc423b"
+      "worker_code_tree_sha": "cb76bc2248a322595e5085d54f85000974a5f66c"
     }
   },
   "schema": "edarsahub.worker-health.v3",
