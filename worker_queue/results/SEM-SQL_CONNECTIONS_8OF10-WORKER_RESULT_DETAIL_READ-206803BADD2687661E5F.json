@@ -1,0 +1,46 @@
+{
+  "base_sha": "0aa2d543b259844a20b51e0a5526b16856825df5",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-20T01:00:45Z",
+  "execution_base_sha": "0aa2d543b259844a20b51e0a5526b16856825df5",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-SQL_CONNECTIONS_8OF10-WORKER_RESULT_DETAIL_READ-206803BADD2687661E5F",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-20T01:02:20Z",
+  "quality_gate": "PASS",
+  "result_detail_evidence": {
+    "checks": [
+      {
+        "blockers": [],
+        "certification": "CERTIFIED_READ_ONLY",
+        "evidence_status": "REJECTED_UNSAFE_OR_OVERSIZED",
+        "evidence_truncated": false,
+        "failed_checks": [],
+        "files_changed": [],
+        "percent_complete": 100,
+        "production_touched": false,
+        "quality_gate": "PASS",
+        "result_status": "READ_ONLY_COMPLETE",
+        "source_completed_at_utc": "2026-11-20T00:59:25Z",
+        "source_job_id": "SEM-SQL_CONNECTIONS_8OF10-SQL_CONNECTIONS_BOOTSTRAP_READON-4CE087B7A0E2FC5C5C87",
+        "source_terminal": true,
+        "tests": "PASS",
+        "work_completion": "COMPLETE"
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-20T01:00:42Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
