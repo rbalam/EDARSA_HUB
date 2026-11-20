@@ -4,25 +4,31 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "33838460da695bb406449cdb4ef25dcc108567c6",
-  "generated_at_utc": "2026-11-20T06:26:19Z",
+  "generated_at_utc": "2026-11-20T06:27:46Z",
   "history": {
     "done_total_local": 1901,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1370,
-    "results_total_local": 3031
+    "rejected_total_local": 1371,
+    "results_total_local": 3032
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3057,
+      "age_seconds": 66,
+      "job_id": "EDARSAHUB-BOS-SEC-P1-SESSION-REVOCATION-R1-20261120",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3145,
       "job_id": "EDARSAHUB-BOS-SEC-P1-WEBSOCKET-AUTH-RBAC-R1-20261120",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2480,
+      "age_seconds": 2568,
       "job_id": "EDARSAHUB-BOS-SEC-P1-WEBSOCKET-AUTH-RBAC-R2-20261120",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,15 +42,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "remote_development_sha": "33838460da695bb406449cdb4ef25dcc108567c6",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-20T06:25:59Z",
-    "last_receive_utc": "2026-11-20T06:25:54Z",
-    "last_terminal_utc": "2026-11-20T05:44:58Z",
+    "last_cycle_utc": "2026-11-20T06:27:43Z",
+    "last_receive_utc": "2026-11-20T06:27:38Z",
+    "last_terminal_utc": "2026-11-20T06:26:40Z",
     "pid": "812015",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "3f565905bbf41208ce59b143ead5de9ed16a94f1",
