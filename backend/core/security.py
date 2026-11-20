@@ -220,20 +220,11 @@ def create_access_token(
     token_type: str = "internal",
     usuario_id: Optional[int] = None,
     public_uuid: Optional[str] = None,
+    session_id: Optional[str] = None,
 ) -> str:
     """
-    FASE A P1-REFRESH-TOKENS: Crea un access token JWT de corta duración.
-    
-    Args:
-        user_id: ID del usuario
-        email: Email del usuario
-        role: Rol del usuario
-        token_type: Tipo de token ('internal' o 'portal_supplier')
-        usuario_id: UsuarioID entero canónico de dbo.Usuario_Catalogo
-        public_uuid: PublicUUID canónico de dbo.Usuario_Catalogo
-        
-    Returns:
-        Token JWT firmado (duración: ACCESS_TOKEN_MINUTES)
+    FASE A P1-REFRESH-TOKENS / P1-2: Crea un access token JWT de corta duración,
+    opcionalmente vinculado a un SesionID (claim 'sid') para revocación inmediata.
     """
     resolved_usuario_id, resolved_public_uuid = _normalize_jwt_identity_claims(
         user_id, usuario_id=usuario_id, public_uuid=public_uuid
@@ -248,19 +239,44 @@ def create_access_token(
         'type': token_type,  # Para separación interno/portal
         'exp': datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_MINUTES)
     }
+    if session_id and str(session_id).strip():
+        payload['sid'] = str(session_id).strip()
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+async def verify_token_session_active(
+    payload: Dict[str, Any],
+    expected_user_type: Optional[str] = None,
+) -> bool:
+    """
+    Valida fail-closed en dbo.Sesiones que la sesion vinculada al JWT ('sid')
+    permanezca activa, vigente y no revocada.
+
+    Tokens tecnicos o heredados sin claim 'sid' conservan compatibilidad y retornan True.
+    """
+    if not isinstance(payload, dict):
+        return False
+    sid = str(payload.get("sid") or "").strip()
+    if not sid:
+        return True
+    try:
+        from core.refresh_tokens import is_session_active
+        return bool(await is_session_active(sid, expected_user_type=expected_user_type))
+    except Exception as exc:
+        logging.error(f"[AUTH] Error validando sesion activa sid={sid[:8]}... (fail-closed): {exc}")
+        return False
 
 
 def verify_token(token: str) -> Dict[str, Any]:
     """
     Verifica y decodifica un token JWT.
-    
+
     Args:
         token: Token JWT a verificar
-        
+
     Returns:
         Payload decodificado como diccionario
-        
+
     Raises:
         HTTPException 401: Si el token es inválido o expirado
     """
@@ -288,10 +304,10 @@ AUTH_COOKIE_MAX_AGE_SHORT = ACCESS_TOKEN_MINUTES * 60
 def set_auth_cookie(response, token: str, short_lived: bool = False) -> None:
     """
     Establece la cookie de autenticación httpOnly.
-    
+
     FASE AUTH-SECURITY-01: Implementación de cookies seguras.
     FASE A P1-REFRESH-TOKENS: Soporte para access tokens cortos.
-    
+
     Args:
         response: FastAPI Response object
         token: JWT token a guardar en cookie
@@ -300,10 +316,10 @@ def set_auth_cookie(response, token: str, short_lived: bool = False) -> None:
     # En producción: secure=True (solo HTTPS)
     # En desarrollo: secure=False para localhost
     is_production = os.environ.get("ENV", "production").lower() == "production"
-    
+
     # Determinar max_age según el tipo de token
     max_age = AUTH_COOKIE_MAX_AGE_SHORT if short_lived else AUTH_COOKIE_MAX_AGE
-    
+
     response.set_cookie(
         key=AUTH_COOKIE_NAME,
         value=token,
@@ -318,9 +334,9 @@ def set_auth_cookie(response, token: str, short_lived: bool = False) -> None:
 def clear_auth_cookie(response) -> None:
     """
     Elimina la cookie de autenticación.
-    
+
     FASE AUTH-SECURITY-01: Logout con cookies.
-    
+
     Args:
         response: FastAPI Response object
     """
@@ -335,25 +351,32 @@ async def get_current_user(
 ) -> Dict[str, Any]:
     """
     FastAPI Dependency para obtener el usuario actual desde el token JWT.
-    
+
     FASE 2-G: SQL-only (sin fallback MongoDB).
-    
+
     Flujo:
     1. Verificar token JWT
     2. Buscar usuario en EDARSAHUB SQL
     3. Si no existe en SQL, rechazar con 401
-    
+
     Args:
         credentials: Credenciales HTTP Bearer extraídas automáticamente por FastAPI
-        
+
     Returns:
         Diccionario con datos del usuario (sin _id ni password)
-        
+
     Raises:
         HTTPException 401: Token inválido, expirado o usuario no encontrado
     """
     token = credentials.credentials
     payload = verify_token(token)
+    expected_session_type = "interno" if payload.get("type") == "internal" else None
+    if not await verify_token_session_active(payload, expected_user_type=expected_session_type):
+        logging.warning(f"[AUTH] Sesión revocada o expirada: email={payload.get('email')}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Sesión revocada o expirada"
+        )
     email = payload.get('email')
     user_id_from_token = (
         payload.get('public_uuid')
@@ -361,17 +384,17 @@ async def get_current_user(
         or payload.get('usuario_id')
         or payload.get('sub')
     )
-    
+
     # FASE 2-G: SQL-only (sin fallback MongoDB)
     user, auth_source = await _get_user_sql_only(email, user_id_from_token)
-    
+
     if not user:
         logging.warning(f"[AUTH] Usuario no encontrado en SQL: {email}")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, 
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario no autorizado"
         )
-    
+
     # Verificar si usuario está activo
     if not user.get('active', True):
         logging.warning(f"[AUTH] Usuario inactivo: {email}")
@@ -379,7 +402,7 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario desactivado"
         )
-    
+
     resolved_uid, resolved_puuid = _normalize_jwt_identity_claims(
         str(user.get("id") or user_id_from_token or ""),
         usuario_id=user.get("usuario_id") or user.get("UsuarioID") or payload.get("usuario_id"),
@@ -392,9 +415,12 @@ async def get_current_user(
         user["public_uuid"] = resolved_puuid
         user.setdefault("PublicUUID", resolved_puuid)
 
+    if payload.get("sid"):
+        user["_session_id"] = str(payload["sid"]).strip()
+
     # Log de auditoría seguro (sin secretos)
     logging.info(f"[AUTH] auth_source={auth_source}, email={email}, role={user.get('role', 'N/A')}")
-    
+
     return user
 
 
@@ -402,36 +428,36 @@ async def _get_user_sql_only(email: str, user_id_from_token: str = None) -> tupl
     """
     P5-07: Obtiene usuario SOLO de SQL (Usuario_Catalogo).
     Sin fallback a MongoDB.
-    
+
     Args:
         email: Email del usuario
         user_id_from_token: user_id del JWT (PublicUUID o MongoLegacyID)
-        
+
     Returns:
         tuple: (user_dict, auth_source)
     """
     from modules.auth.repository import AuthRepository
-    
+
     user = None
     auth_source = "SQL_NOT_FOUND"
-    
+
     try:
         # Primero intentar por user_id si existe
         if user_id_from_token:
             user = AuthRepository.get_user_by_id(user_id_from_token)
-        
+
         # Si no encontró por ID, intentar por email
         if not user and email:
             user = AuthRepository.get_user_by_email(email)
-        
+
         if user:
             auth_source = user.get("auth_source", "SQL_USUARIO_CATALOGO")
             logging.debug(f"[AUTH-SQL] Usuario resuelto desde SQL: {email}")
             return user, auth_source
-        
+
         logging.info(f"[AUTH-SQL] Usuario no encontrado en SQL: {email}")
         return None, "SQL_NOT_FOUND"
-            
+
     except Exception as e:
         logging.error(f"[AUTH-SQL] Error SQL: {str(e)[:200]}")
         return None, "SQL_ERROR"
@@ -440,56 +466,56 @@ async def _get_user_sql_only(email: str, user_id_from_token: str = None) -> tupl
 def _validate_sql_user_structure(user: Dict[str, Any]) -> bool:
     """
     Valida que el usuario SQL tiene la estructura mínima requerida.
-    
+
     Args:
         user: Dict del usuario de SQL
-        
+
     Returns:
         True si la estructura es válida
     """
     if not user:
         return False
-    
+
     # Campos obligatorios
     required_fields = ['id', 'email', 'role']
-    
+
     for field in required_fields:  # noqa: F402
         if not user.get(field):
             logging.warning(f"[AUTH-SQL] Usuario SQL sin campo obligatorio: {field}")
             return False
-    
+
     # Validar que 'id' parece un UUID (no un int)
     user_id = user.get('id', '')
     if isinstance(user_id, int) or (isinstance(user_id, str) and user_id.isdigit()):
         logging.warning(f"[AUTH-SQL] user['id'] no es UUID: {user_id}")
         return False
-    
+
     return True
 
 
 async def get_current_user_dual(request) -> Dict[str, Any]:
     """
     FastAPI Dependency DUAL para obtener el usuario desde Header O Cookie.
-    
+
     FASE AUTH-SECURITY-01: Soporte dual para transición gradual.
-    
+
     Prioridad de lectura:
     1. Header Authorization: Bearer <token> (si existe)
     2. Cookie edarsa_access_token (si existe)
     3. 401 Unauthorized (si ninguno existe)
-    
+
     Args:
         request: FastAPI Request object
-        
+
     Returns:
         Diccionario con datos del usuario (sin _id ni password)
-        
+
     Raises:
         HTTPException 401: Sin autenticación o token inválido
         HTTPException 404: Usuario no encontrado en BD
     """
     token = None
-    
+
     # Prioridad 1: Header Authorization
     auth_header = request.headers.get("authorization", "")
     if auth_header.startswith("Bearer "):
@@ -498,24 +524,32 @@ async def get_current_user_dual(request) -> Dict[str, Any]:
         # que envían "null", "undefined" o string vacío
         if extracted_token and extracted_token not in ("null", "undefined", ""):
             token = extracted_token
-    
+
     # Prioridad 2: Cookie (si no hay header válido)
     if not token:
         token = request.cookies.get(AUTH_COOKIE_NAME)
-    
+
     # Sin autenticación
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated"
         )
-    
+
     # Verificar token
     try:
         payload = verify_token(token)
     except HTTPException:
         raise  # Re-lanzar 401 de verify_token
-    
+
+    expected_session_type = "interno" if payload.get("type") == "internal" else None
+    if not await verify_token_session_active(payload, expected_user_type=expected_session_type):
+        logging.warning(f"[AUTH-DUAL] Sesión revocada o expirada: email={payload.get('email')}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Sesión revocada o expirada"
+        )
+
     email = payload.get('email')
     user_id_from_token = (
         payload.get('public_uuid')
@@ -523,17 +557,17 @@ async def get_current_user_dual(request) -> Dict[str, Any]:
         or payload.get('usuario_id')
         or payload.get('sub')
     )
-    
+
     # FASE 2-G: SQL-only (sin fallback MongoDB)
     user, auth_source = await _get_user_sql_only(email, user_id_from_token)
-    
+
     if not user:
         logging.warning(f"[AUTH-DUAL] Usuario no encontrado en SQL: {email}")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, 
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario no autorizado"
         )
-    
+
     # Verificar si usuario está activo
     if not user.get('active', True):
         logging.warning(f"[AUTH-DUAL] Usuario inactivo: {email}")
@@ -541,7 +575,7 @@ async def get_current_user_dual(request) -> Dict[str, Any]:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario desactivado"
         )
-    
+
     resolved_uid, resolved_puuid = _normalize_jwt_identity_claims(
         str(user.get("id") or user_id_from_token or ""),
         usuario_id=user.get("usuario_id") or user.get("UsuarioID") or payload.get("usuario_id"),
@@ -554,9 +588,12 @@ async def get_current_user_dual(request) -> Dict[str, Any]:
         user["public_uuid"] = resolved_puuid
         user.setdefault("PublicUUID", resolved_puuid)
 
+    if payload.get("sid"):
+        user["_session_id"] = str(payload["sid"]).strip()
+
     # Log de auditoría seguro
     logging.info(f"[AUTH-DUAL] auth_source={auth_source}, email={email}")
-    
+
     return user
 
 

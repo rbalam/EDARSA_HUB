@@ -1281,7 +1281,7 @@ def _has_explicit_ws_permission_sql(email: str, permiso: str) -> bool:
 
 async def _authenticate_ws_connection(websocket: WebSocket) -> Optional[Dict[str, Any]]:
     """Autentica y autoriza el handshake WebSocket fail-closed antes de accept()."""
-    from core.security import verify_token, _get_user_sql_only
+    from core.security import verify_token, verify_token_session_active, _get_user_sql_only
 
     jwt_value, auth_source = _extract_ws_credential(websocket)
     if not jwt_value:
@@ -1299,6 +1299,11 @@ async def _authenticate_ws_connection(websocket: WebSocket) -> Optional[Dict[str
         payload = verify_token(jwt_value)
     except Exception:
         logger.warning("[WS] Conexion rechazada: JWT invalido o expirado")
+        return None
+
+    expected_ws_session_type = "interno" if payload.get("type") == "internal" else None
+    if not await verify_token_session_active(payload, expected_user_type=expected_ws_session_type):
+        logger.warning("[WS] Conexion rechazada: sesion revocada o expirada")
         return None
 
     email = (payload.get("email") or "").strip()
