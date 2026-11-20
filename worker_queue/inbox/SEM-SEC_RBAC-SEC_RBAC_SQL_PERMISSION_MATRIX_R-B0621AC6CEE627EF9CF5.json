@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "queries": [
+        {
+          "name": "sensitive_role_permissions",
+          "sql": "SELECT r.CodigoRol, UPPER(CONCAT(m.CodigoModulo,'_',a.CodigoAccion)) AS PermissionCode, MAX(CASE WHEN ISNULL(r.Activo,1)=1 AND ISNULL(prm.Activo,1)=1 AND ISNULL(prm.Permitido,0)=1 AND ISNULL(m.Activo,1)=1 AND ISNULL(a.Activo,1)=1 THEN 1 ELSE 0 END) AS PermisoActivo FROM dbo.Usuario_Roles AS r INNER JOIN dbo.Usuario_PermisosRolModulo AS prm ON prm.RolID=r.RolID INNER JOIN dbo.Usuario_Modulos AS m ON m.ModuloID=prm.ModuloID INNER JOIN dbo.Usuario_Acciones AS a ON a.AccionID=prm.AccionID WHERE UPPER(r.CodigoRol) IN ('SUPERADMIN','SUPERADMINISTRADOR','ADMIN','DIRECCION','GERENTE_OPS','SUPERVISOR','OPERADOR') AND UPPER(CONCAT(m.CodigoModulo,'_',a.CodigoAccion)) IN ('CARGOS_CREAR','CARGOS_AUTORIZAR','CARGOS_APLICAR','CARGOS_RECHAZAR','CARGOS_REVERTIR','CARGOS_CANCELAR','RESPONSABILIDAD_CALCULAR','RESPONSABILIDAD_PROPONER','RESPONSABILIDAD_APROBAR','RESPONSABILIDAD_GESTIONAR','NOTIFICACIONES_ENVIAR','NOTIFICACIONES_CONFIGURAR','RBAC_ADMIN') GROUP BY r.CodigoRol, UPPER(CONCAT(m.CodigoModulo,'_',a.CodigoAccion)) ORDER BY r.CodigoRol, PermissionCode"
+        },
+        {
+          "name": "role_hierarchy_and_assignments",
+          "sql": "SELECT r.CodigoRol, r.NivelJerarquia, COUNT_BIG(DISTINCT CASE WHEN ISNULL(ura.Activo,1)=1 AND ISNULL(u.Activo,1)=1 THEN u.UsuarioID ELSE NULL END) AS UsuariosAsignadosActivos FROM dbo.Usuario_Roles AS r LEFT JOIN dbo.Usuario_RolesAsignacion AS ura ON ura.RolID=r.RolID LEFT JOIN dbo.Usuario_Catalogo AS u ON u.UsuarioID=ura.UsuarioID WHERE UPPER(r.CodigoRol) IN ('SUPERADMIN','SUPERADMINISTRADOR','ADMIN','DIRECCION','GERENTE_OPS','SUPERVISOR','OPERADOR') GROUP BY r.CodigoRol,r.NivelJerarquia ORDER BY r.NivelJerarquia DESC,r.CodigoRol"
+        },
+        {
+          "name": "active_user_public_identity_aggregates",
+          "sql": "SELECT COUNT_BIG(*) AS UsuariosActivos, COALESCE(SUM(CASE WHEN PublicUUID IS NULL THEN 1 ELSE 0 END),0) AS SinPublicUUID, COUNT_BIG(DISTINCT PublicUUID) AS PublicUUIDUnicos FROM dbo.Usuario_Catalogo WHERE Activo=1"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-SEC_RBAC-SEC_RBAC_SQL_PERMISSION_MATRIX_R-B0621AC6CEE627EF9CF5",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 0 READ_ONLY_SQL de auditoria RBAC: verificar contra SQL Server canonico matriz de roles y permisos efectivos de Centro de Control, Scheduler y Notificaciones (centro_control.VER, SCHEDULER_ADMIN, SCHEDULER_GESTIONAR, NOTIFICACIONES_CONFIGURAR, NOTIFICACIONES_ENVIAR), documentar impacto sobre los 14 endpoints mutantes y contrato P5-R4. Solo lectura, sin DML, DDL, cambios Git, permisos o Produccion; verificar evidencia sin duplicaciones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SEC_RBAC",
+    "conflict_domains": [
+      "SEC_RBAC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
