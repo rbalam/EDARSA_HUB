@@ -1,0 +1,1694 @@
+{
+  "base_sha": "0aa2d543b259844a20b51e0a5526b16856825df5",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-20T01:58:56Z",
+  "execution_base_sha": "0aa2d543b259844a20b51e0a5526b16856825df5",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-PORTAL_PROVEEDORES-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B5262EEDF55F0F2FC5DA",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-20T02:00:14Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.proveedores",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "factura",
+              "pago",
+              "portal",
+              "proveedor"
+            ],
+            "path": "backend/modules/proveedores/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.proveedores",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "proveedor"
+            ],
+            "path": "backend/modules/proveedores/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ProveedoresRepository",
+              "__init__"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.proveedores",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "fastapi"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "portal",
+              "proveedor"
+            ],
+            "path": "backend/modules/proveedores/routes.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.proveedores",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "portal",
+              "proveedor"
+            ],
+            "path": "backend/modules/proveedores/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.proveedores",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "proveedor"
+            ],
+            "path": "backend/modules/proveedores/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ProveedoresService",
+              "__init__"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.auditoria_helpers",
+              "core.security",
+              "core.sql_first.db",
+              "datetime",
+              "decimal",
+              "fastapi",
+              "modules.finanzas.access",
+              "pydantic",
+              "typing",
+              "urllib.parse"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "autorizacion",
+              "compras",
+              "documento",
+              "factura",
+              "pago",
+              "proveedor",
+              "pue",
+              "recepcion",
+              "rfc"
+            ],
+            "path": "backend/modules/finanzas/cuentas_por_pagar.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/decision-dashboard",
+              "/decision-dashboard/drilldown",
+              "/decision-pago-masivo",
+              "/proveedores",
+              "/resumen",
+              "/sucursales",
+              "/{factura_id}",
+              "/{factura_id}/decision-pago",
+              "/{factura_id}/decision-pago/autorizacion"
+            ],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "ActualizarDecisionPago",
+              "ActualizarDecisionPagoMasivo",
+              "AutorizarDecisionPago",
+              "_cxp_authorization_entity_id",
+              "_cxp_authorization_visibility",
+              "_cxp_block_if_pago_origen_locked",
+              "_cxp_cancel_queue_pendiente",
+              "_cxp_create_canonical_authorization",
+              "_cxp_decision_projection",
+              "_cxp_decision_row_for_hash",
+              "_cxp_decisiones_schema_ready",
+              "_cxp_enqueue_pago_origen",
+              "_cxp_factura_dict",
+              "_cxp_get_canonical_authorization",
+              "_cxp_listar_canonico",
+              "_cxp_project_authorization_state",
+              "_cxp_proveedores_canonico",
+              "_cxp_queue_estados_for_decision",
+              "_cxp_queue_schema_ready",
+              "_cxp_require_decisiones_schema",
+              "_cxp_require_queue_schema",
+              "_cxp_resolve_canonical_authorization",
+              "_cxp_resumen_canonico",
+              "_cxp_row_for_ref",
+              "_cxp_rows_canonico",
+              "_cxp_rows_for_refs",
+              "_cxp_sucursales_canonico",
+              "_cxp_update_autorizacion",
+              "_cxp_upsert_decision",
+              "_decision_dashboard_canonico",
+              "_decision_dashboard_compras",
+              "_decision_dashboard_drilldown",
+              "_decision_dashboard_period",
+              "_get_cxp_usuario_id",
+              "_month_span_inclusive",
+              "_normalizar_importe_decision",
+              "_parse_cxp_factura_ref",
+              "_validar_fecha_corte",
+              "actualizar_decision_pago",
+              "actualizar_decision_pago_masivo",
+              "autorizar_decision_pago",
+              "get_decision_dashboard",
+              "get_decision_dashboard_drilldown",
+              "get_factura_detalle",
+              "get_resumen_cuentas_por_pagar",
+              "listar_facturas_pendientes",
+              "listar_proveedores_con_saldo",
+              "listar_sucursales_cxp",
+              "set_finanzas_repository",
+              "set_mpro_repository",
+              "set_softrestaurant_repository"
+            ],
+            "tables_referenced": [
+              "Compras_Recepciones",
+              "Finanzas_CxP_DecisionesPago",
+              "Finanzas_CxP_PagosOrigenQueue",
+              "Finanzas_CxP_Sync",
+              "Proveedor_Catalogo",
+              "Unidades_Negocio",
+              "Usuario_Autorizaciones",
+              "Usuario_AutorizacionesDetalle",
+              "Usuario_TiposAutorizacion",
+              "sp_Usuario_CrearAutorizacion",
+              "sp_Usuario_ResolverAutorizacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "base64",
+              "core.auditoria_helpers",
+              "core.security",
+              "datetime",
+              "fastapi",
+              "logging",
+              "os",
+              "repository_cortes_caja_edarsahub",
+              "repository_cortes_z",
+              "repository_cuadres_z_edarsahub",
+              "tesoreria_access",
+              "tesoreria_models",
+              "typing"
+            ],
+            "integrations": [
+              "bbva"
+            ],
+            "matched_terms": [
+              "tesoreria",
+              "uuid"
+            ],
+            "path": "backend/modules/finanzas/tesoreria.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/cortes-z",
+              "/cortes-z/{sucursal}/{folio}",
+              "/cuadres",
+              "/cuadres/resumen",
+              "/cuadres/{cuadre_id}",
+              "/cuadres/{cuadre_id}/ficha-deposito",
+              "/cuadres/{cuadre_id}/validar-ficha",
+              "/sucursales"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "actualizar_cuadre",
+              "crear_cuadre",
+              "eliminar_cuadre",
+              "listar_cortes_z",
+              "listar_cuadres",
+              "listar_sucursales",
+              "obtener_corte_z",
+              "obtener_cuadre",
+              "obtener_resumen_cuadres",
+              "subir_ficha_deposito",
+              "validar_ficha_deposito"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection",
+              "resolver_canonico"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.inventarios.resolver_canonico",
+              "core.inventarios.sync_movimientos_canonico",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "logging",
+              "os",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "compras",
+              "documento",
+              "orden",
+              "proveedor",
+              "pue",
+              "recepcion",
+              "rfc"
+            ],
+            "path": "backend/modules/compras/sync_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_as_float",
+              "_as_text",
+              "_bulk_insert_detail_values",
+              "_bulk_update_detail_values",
+              "_bulk_upsert_detail_values",
+              "_collapse_detail_values_by_key",
+              "_detail_insert_parts",
+              "_detail_insert_statement",
+              "_detail_update_statement",
+              "_detail_values",
+              "_fetch_existing_detail_keys",
+              "_fetch_table_columns",
+              "_filter_inventory_headers_with_detail",
+              "_folio_in_filter",
+              "_get_edarsahub_context",
+              "_insert_detail_row",
+              "_inventarios_fisicos_detalle_query",
+              "_inventory_detail_batch_size",
+              "_inventory_detail_key",
+              "_inventory_header_detail_key",
+              "_inventory_history_filter",
+              "_sql_identifier",
+              "_sql_literal",
+              "_sync_inventarios_fisicos_detalle",
+              "_unique_folio_batches",
+              "_update_detail_row",
+              "get_compras_adapter",
+              "get_edarsahub_connection",
+              "get_edarsahub_writer_connection",
+              "get_last_sync_info",
+              "log_sync_operation",
+              "map_tipo_movimiento_softrestaurant",
+              "obtener_inventarios_fisicos_sync",
+              "obtener_requisiciones_sync",
+              "registrar_concepto_movimiento_no_mapeado",
+              "resolver_proveedor_edarsahub",
+              "sync_almacenes_from_server",
+              "sync_existencias_from_server",
+              "sync_inventarios_fisicos_from_server",
+              "sync_movimientos_from_server",
+              "sync_ordenes_from_server",
+              "sync_pedidos_from_server",
+              "sync_recepciones_from_server",
+              "sync_requisiciones_from_server"
+            ],
+            "tables_referenced": [
+              "Compras_Inventarios_Fisicos_Detalle_Sync",
+              "Proveedor_Catalogo",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "compras",
+              "orden",
+              "pue",
+              "recepcion"
+            ],
+            "path": "backend/modules/compras/sql_first_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ComprasSQLFirstRepository",
+              "__init__",
+              "_fetch_all",
+              "detalle_movimientos",
+              "productos_para_captura",
+              "table_counts"
+            ],
+            "tables_referenced": [
+              "Compras_Ordenes",
+              "Compras_OrdenesDetalle",
+              "Compras_Pedidos",
+              "Compras_PedidosDetalle",
+              "Compras_Recepciones",
+              "Compras_RecepcionesDetalle",
+              "Compras_Requisiciones_Sync",
+              "Inventario_Almacenes",
+              "Inventario_Existencias",
+              "Inventario_Movimientos",
+              "Inventario_MovimientosDetalle"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "compras",
+              "documento",
+              "pue",
+              "uuid"
+            ],
+            "path": "backend/modules/compras/repository_pedidos_sql.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_execute_edarsahub_insert",
+              "_execute_edarsahub_query",
+              "crear_tarea_operativa_sql",
+              "marcar_pedido_procesado_sql",
+              "obtener_pedidos_procesados_sql",
+              "obtener_tareas_pendientes_sql",
+              "pedido_ya_procesado_sql",
+              "registrar_bitacora_pedidos_sql"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "repository_sql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "uuid"
+            ],
+            "path": "backend/core/rbac/repository.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACRepository",
+              "__init__",
+              "_ensure_indexes",
+              "asignar_rol",
+              "create_permiso",
+              "create_rol",
+              "delete_rol",
+              "get_all_permisos",
+              "get_all_roles",
+              "get_audit_logs",
+              "get_nivel_jerarquia_usuario",
+              "get_permiso_by_codigo",
+              "get_permisos_usuario",
+              "get_rol_by_id",
+              "get_rol_by_nombre",
+              "get_roles_usuario",
+              "log_verificacion",
+              "revocar_rol",
+              "seed_permisos",
+              "seed_roles",
+              "update_rol"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "autorizacion",
+              "pue",
+              "uuid"
+            ],
+            "path": "backend/core/rbac/repository_sql.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACRepositorySQL",
+              "__init__",
+              "_get_connection",
+              "_invalidate_cache",
+              "_is_cache_valid",
+              "asignar_rol",
+              "create_rol",
+              "delete_rol",
+              "get_all_permisos",
+              "get_all_roles",
+              "get_audit_logs",
+              "get_nivel_jerarquia_usuario",
+              "get_permiso_by_codigo",
+              "get_permisos_usuario",
+              "get_rbac_repository_sql",
+              "get_rol_by_id",
+              "get_rol_by_nombre",
+              "get_roles_usuario",
+              "log_verificacion",
+              "revocar_rol",
+              "seed_permisos",
+              "seed_roles",
+              "update_rol"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "fastapi",
+              "fastapi.security",
+              "logging",
+              "middleware",
+              "os",
+              "schemas",
+              "service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "pue"
+            ],
+            "path": "backend/core/rbac/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/asignar",
+              "/audit",
+              "/mis-permisos",
+              "/permisos",
+              "/revocar",
+              "/roles",
+              "/roles/{rol_id}",
+              "/usuario/{user_id}/permisos",
+              "/verificar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_db",
+              "actualizar_rol",
+              "asignar_rol",
+              "crear_rol",
+              "eliminar_rol",
+              "get_current_user",
+              "get_rbac_service",
+              "listar_permisos",
+              "listar_roles",
+              "obtener_audit_logs",
+              "obtener_mis_permisos",
+              "obtener_permisos_usuario",
+              "obtener_rol",
+              "revocar_rol",
+              "verificar_permiso"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "enum",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "notificacion",
+              "pue",
+              "uuid"
+            ],
+            "path": "backend/core/rbac/schemas.py",
+            "rbac_contracts": [
+              "RBAC_Permisos"
+            ],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "AccionPermiso",
+              "AsignacionRol",
+              "AsignacionRolCreate",
+              "AsignacionRolResponse",
+              "ModuloSistema",
+              "Permiso",
+              "PermisoCreate",
+              "PermisoResponse",
+              "PermisoUsuarioResponse",
+              "RBACAuditLog",
+              "RolRBAC",
+              "RolRBACCreate",
+              "RolRBACResponse",
+              "RolRBACUpdate",
+              "VerificacionPermisoResponse"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "audit.audit_service",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "dispatcher.dispatcher",
+              "notifications.schemas",
+              "notifications.service",
+              "providers.base",
+              "providers.mock_provider",
+              "providers.whatsapp_provider"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "notificacion"
+            ],
+            "path": "backend/core/communications/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.mongo_stub",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "modules.compras.sync_service",
+              "notifications.repository",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "compras",
+              "notificacion",
+              "orden"
+            ],
+            "path": "backend/core/communications/audit/audit_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "NotificationAuditService",
+              "__init__",
+              "_check_is_stub",
+              "get_audit_service",
+              "get_failed_notifications",
+              "get_logs",
+              "get_notification_history",
+              "get_queue_status",
+              "get_stats",
+              "reset_audit_service"
+            ],
+            "tables_referenced": [
+              "Operativo_Notificaciones_Log"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.mongo_stub",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "notifications.dedup",
+              "notifications.repository",
+              "notifications.schemas",
+              "providers.base",
+              "providers.email_smtp_provider",
+              "providers.mock_provider",
+              "providers.twilio_provider",
+              "templates.template_service",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "notificacion",
+              "orden",
+              "uuid"
+            ],
+            "path": "backend/core/communications/dispatcher/dispatcher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "NotificationDispatcher",
+              "__init__",
+              "_check_is_stub",
+              "_log_notification",
+              "_process_item",
+              "_schedule_retry",
+              "enqueue",
+              "get_dispatcher",
+              "get_provider",
+              "get_providers_status",
+              "initialize_providers",
+              "process_queue",
+              "reset_dispatcher",
+              "send_immediate"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "hashlib",
+              "logging",
+              "modules.compras.sync_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "compras",
+              "notificacion"
+            ],
+            "path": "backend/core/communications/notifications/dedup.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "DeduplicationService",
+              "__init__",
+              "_generate_dedup_key",
+              "get_dedup_service",
+              "get_recent_sends",
+              "is_duplicate",
+              "reset_dedup_service",
+              "should_send"
+            ],
+            "tables_referenced": [
+              "Operativo_Notificaciones_Log"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "json",
+              "modules.compras.sync_service",
+              "repository_sql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "compras",
+              "notificacion",
+              "uuid"
+            ],
+            "path": "backend/core/communications/notifications/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "NotificationRepository",
+              "__init__",
+              "_conn",
+              "_doc",
+              "_exec",
+              "_next_id",
+              "_one",
+              "_rows",
+              "check_duplicate",
+              "count_logs",
+              "create_config",
+              "create_log",
+              "create_provider_config",
+              "create_template",
+              "delete_config",
+              "delete_template",
+              "enqueue",
+              "get_active_provider",
+              "get_all_configs",
+              "get_all_templates",
+              "get_config",
+              "get_log_stats",
+              "get_logs",
+              "get_notification_repository_legacy",
+              "get_pending_items",
+              "get_provider_config",
+              "get_queue_stats",
+              "get_template",
+              "get_template_by_id",
+              "lock_item",
+              "mark_failed",
+              "mark_sent",
+              "update_config",
+              "update_provider_config",
+              "update_queue_item",
+              "update_template"
+            ],
+            "tables_referenced": [
+              "Operativo_Notificaciones_Log"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.sql_first.connection_factory",
+              "json",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "notificacion",
+              "uuid"
+            ],
+            "path": "backend/core/communications/notifications/repository_sql.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "NotificationRepository",
+              "__init__",
+              "_all_config_rows",
+              "_conn",
+              "_deactivate_document",
+              "_decode_config",
+              "_doc",
+              "_documents",
+              "_find_document",
+              "_insert_document",
+              "_json",
+              "_kind",
+              "_queue_doc",
+              "_rows",
+              "_update_document",
+              "_value",
+              "check_duplicate",
+              "count_logs",
+              "create_config",
+              "create_log",
+              "create_provider_config",
+              "create_template",
+              "delete_config",
+              "delete_template",
+              "enqueue",
+              "get_active_provider",
+              "get_all_configs",
+              "get_all_provider_configs",
+              "get_all_templates",
+              "get_config",
+              "get_log_stats",
+              "get_logs",
+              "get_notification_repository",
+              "get_pending_items",
+              "get_provider_config",
+              "get_queue_stats",
+              "get_template",
+              "get_template_by_id",
+              "loads",
+              "lock_item",
+              "mark_failed",
+              "mark_sent",
+              "update_config",
+              "update_provider_config",
+              "update_queue_item",
+              "update_template"
+            ],
+            "tables_referenced": [
+              "Operativo_Notificaciones_Log",
+              "Operativo_Notificaciones_Queue",
+              "Sistema_NotificacionesConfig"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "enum",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "compras",
+              "notificacion",
+              "proveedor",
+              "pue",
+              "responsable",
+              "uuid"
+            ],
+            "path": "backend/core/communications/notifications/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ChannelType",
+              "Config",
+              "EventType",
+              "NotificationConfig",
+              "NotificationConfigCreate",
+              "NotificationConfigUpdate",
+              "NotificationEvent",
+              "NotificationLog",
+              "NotificationQueue",
+              "NotificationResult",
+              "NotificationStatus",
+              "NotificationTemplate",
+              "NotificationTemplateCreate",
+              "NotificationTemplateUpdate",
+              "NotificationTestRequest",
+              "ProviderConfig",
+              "RecipientType",
+              "SendMode"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.mongo_stub",
+              "core.unidades_service",
+              "dedup",
+              "dispatcher.dispatcher",
+              "logging",
+              "modules.compras.sync_service",
+              "modules.fase2_operativo.sql_repository",
+              "repository",
+              "schemas",
+              "templates.template_service",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "compras",
+              "notificacion",
+              "responsable",
+              "uuid"
+            ],
+            "path": "backend/core/communications/notifications/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "NotificationOrchestratorService",
+              "__init__",
+              "_check_is_stub",
+              "_get_dispatcher",
+              "_get_user_contact",
+              "_resolve_recipients",
+              "get_notification_orchestrator",
+              "notify",
+              "notify_audit_decision",
+              "notify_justification_rejected",
+              "notify_sla_escalated",
+              "notify_sla_expired",
+              "notify_sla_warning",
+              "notify_task_assigned",
+              "notify_workflow_closed",
+              "reset_notification_orchestrator"
+            ],
+            "tables_referenced": [
+              "Usuario_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "abc",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "dataclasses",
+              "datetime",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "proveedor",
+              "pue"
+            ],
+            "path": "backend/core/communications/providers/base.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BaseProvider",
+              "ProviderFactory",
+              "ProviderResponse",
+              "__init__",
+              "_get_provider_name",
+              "create",
+              "get_config_value",
+              "get_message_status",
+              "initialize",
+              "is_initialized",
+              "list_providers",
+              "register",
+              "send_bulk",
+              "send_message",
+              "to_dict",
+              "validate_recipient"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "base",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "email.mime.multipart",
+              "email.mime.text",
+              "logging",
+              "os",
+              "re",
+              "smtplib",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "notificacion",
+              "pue"
+            ],
+            "path": "backend/core/communications/providers/email_smtp_provider.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EmailSMTPProvider",
+              "__init__",
+              "_get_provider_name",
+              "_html_to_text",
+              "get_status",
+              "initialize",
+              "is_available",
+              "send_email",
+              "send_message",
+              "validate_recipient"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "base",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "re",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "proveedor",
+              "uuid"
+            ],
+            "path": "backend/core/communications/providers/mock_provider.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "MockProvider",
+              "_get_provider_name",
+              "clear_sent_messages",
+              "get_message_count",
+              "get_message_status",
+              "get_messages_to",
+              "get_sent_messages",
+              "initialize",
+              "send_message",
+              "validate_recipient"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "base",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "logging",
+              "os",
+              "re",
+              "twilio.rest",
+              "typing"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "pue"
+            ],
+            "path": "backend/core/communications/providers/twilio_provider.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TwilioWhatsAppProvider",
+              "__init__",
+              "_format_whatsapp_number",
+              "_get_provider_name",
+              "get_message_status",
+              "get_status",
+              "initialize",
+              "is_available",
+              "send_message",
+              "validate_recipient"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "base",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "httpx",
+              "logging",
+              "os",
+              "re",
+              "typing"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "proveedor"
+            ],
+            "path": "backend/core/communications/providers/whatsapp_provider.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "WhatsAppProvider",
+              "__init__",
+              "_get_provider_name",
+              "_get_twilio_status",
+              "_send_via_meta",
+              "_send_via_twilio",
+              "close",
+              "get_message_status",
+              "initialize",
+              "send_message",
+              "validate_recipient"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.communications.audit.audit_service",
+              "core.communications.dispatcher.dispatcher",
+              "core.communications.notifications.repository",
+              "core.communications.notifications.schemas",
+              "core.communications.scripts",
+              "core.communications.templates.template_service",
+              "core.corporate_filters.service",
+              "core.rbac.middleware",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "notificacion",
+              "pue",
+              "responsable"
+            ],
+            "path": "backend/core/communications/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/config",
+              "/config/set-twilio",
+              "/config/{config_id}",
+              "/config/{config_id}/set-provider",
+              "/inicializar",
+              "/log",
+              "/provider-status",
+              "/providers",
+              "/providers/{provider_id}",
+              "/queue-status",
+              "/reprocesar",
+              "/stats",
+              "/templates",
+              "/templates/{template_id}",
+              "/test",
+              "/test-real"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConfigCreateRequest",
+              "ConfigUpdateRequest",
+              "TemplateCreateRequest",
+              "TemplateUpdateRequest",
+              "TestNotificationRequest",
+              "TestRealNotificationRequest",
+              "configure_twilio_provider",
+              "create_config",
+              "create_template",
+              "get_config",
+              "get_db",
+              "get_notification_logs",
+              "get_notification_stats",
+              "get_provider",
+              "get_provider_runtime_status",
+              "get_queue_status",
+              "get_template",
+              "init_notifications_routes",
+              "initialize_notification_system",
+              "is_mongo_available",
+              "list_configs",
+              "list_providers",
+              "list_templates",
+              "reprocess_queue",
+              "test_notification",
+              "test_real_notification",
+              "update_config",
+              "update_event_provider",
+              "update_template"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "os"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "notificacion",
+              "pue",
+              "responsable"
+            ],
+            "path": "backend/core/communications/scripts/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "create_indexes",
+              "init_notification_system",
+              "main",
+              "seed_default_data"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "notifications.repository",
+              "re",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "pue"
+            ],
+            "path": "backend/core/communications/templates/template_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TemplateService",
+              "__init__",
+              "get_template",
+              "get_template_service",
+              "invalidate_cache",
+              "render",
+              "render_template",
+              "reset_template_service",
+              "seed_default_templates",
+              "validate_variables"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "factura",
+              "pago",
+              "portal",
+              "proveedor",
+              "pue",
+              "rfc"
+            ],
+            "path": "frontend/src/portal/App.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "concilia",
+              "factura",
+              "portal",
+              "proveedor",
+              "rfc"
+            ],
+            "path": "frontend/src/portal/pages/AccountStatusPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "cfdi",
+              "factura",
+              "portal",
+              "pue",
+              "rfc",
+              "xml"
+            ],
+            "path": "frontend/src/portal/pages/BatchUploadPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "concilia",
+              "documento",
+              "factura",
+              "pago",
+              "portal",
+              "proveedor",
+              "rfc",
+              "uuid"
+            ],
+            "path": "frontend/src/portal/pages/DashboardPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "concilia",
+              "factura",
+              "portal",
+              "proveedor",
+              "rfc",
+              "uuid"
+            ],
+            "path": "frontend/src/portal/pages/InvoicesPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "documento",
+              "factura",
+              "pago",
+              "portal",
+              "proveedor",
+              "rfc"
+            ],
+            "path": "frontend/src/portal/pages/LoginPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "factura",
+              "pago",
+              "portal"
+            ],
+            "path": "frontend/src/portal/pages/PaymentsPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "bbva"
+            ],
+            "matched_terms": [
+              "pago",
+              "portal",
+              "proveedor",
+              "rfc"
+            ],
+            "path": "frontend/src/portal/pages/RegisterPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "cfdi",
+              "factura",
+              "portal",
+              "proveedor",
+              "rfc",
+              "uuid",
+              "xml"
+            ],
+            "path": "frontend/src/portal/pages/UploadInvoicePage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "compras",
+              "orden",
+              "pago",
+              "portal",
+              "proveedor"
+            ],
+            "path": "frontend/src/App.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 40,
+          "scanned_files": 48,
+          "skipped_sensitive": 27
+        },
+        "truncated": true
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-20T01:58:54Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
