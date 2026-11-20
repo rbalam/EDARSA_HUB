@@ -1,0 +1,536 @@
+{
+  "base_sha": "0aa2d543b259844a20b51e0a5526b16856825df5",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-20T01:20:12Z",
+  "execution_base_sha": "0aa2d543b259844a20b51e0a5526b16856825df5",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-INTEGRACIONES_EXTERNAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7B173612AFBD31F5C09F",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-20T01:21:07Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "almacen",
+              "compras",
+              "movimiento",
+              "proveedor"
+            ],
+            "path": "backend/modules/compras/adapters/mpro_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "query_almacenes",
+              "query_requisiciones",
+              "query_requisiciones_detalle"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "almacen",
+              "compras",
+              "costo",
+              "epc",
+              "folio",
+              "movimiento",
+              "proveedor",
+              "sync"
+            ],
+            "path": "backend/modules/compras/adapters/softrestaurant_pro_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "query_almacenes",
+              "query_inventarios_fisicos",
+              "query_inventarios_fisicos_detalle",
+              "query_movimientos_almacen",
+              "query_ordenes",
+              "query_ordenes_detalle",
+              "query_pedidos",
+              "query_pedidos_detalle",
+              "query_recepciones",
+              "query_recepciones_detalle"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection",
+              "resolver_canonico"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.inventarios.resolver_canonico",
+              "core.inventarios.sync_movimientos_canonico",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "logging",
+              "os",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "almacen",
+              "compras",
+              "costo",
+              "documento",
+              "entrada_compra",
+              "epc",
+              "folio",
+              "movimiento",
+              "proveedor",
+              "sync"
+            ],
+            "path": "backend/modules/compras/sync_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_as_float",
+              "_as_text",
+              "_bulk_insert_detail_values",
+              "_bulk_update_detail_values",
+              "_bulk_upsert_detail_values",
+              "_collapse_detail_values_by_key",
+              "_detail_insert_parts",
+              "_detail_insert_statement",
+              "_detail_update_statement",
+              "_detail_values",
+              "_fetch_existing_detail_keys",
+              "_fetch_table_columns",
+              "_filter_inventory_headers_with_detail",
+              "_folio_in_filter",
+              "_get_edarsahub_context",
+              "_insert_detail_row",
+              "_inventarios_fisicos_detalle_query",
+              "_inventory_detail_batch_size",
+              "_inventory_detail_key",
+              "_inventory_header_detail_key",
+              "_inventory_history_filter",
+              "_sql_identifier",
+              "_sql_literal",
+              "_sync_inventarios_fisicos_detalle",
+              "_unique_folio_batches",
+              "_update_detail_row",
+              "get_compras_adapter",
+              "get_edarsahub_connection",
+              "get_edarsahub_writer_connection",
+              "get_last_sync_info",
+              "log_sync_operation",
+              "map_tipo_movimiento_softrestaurant",
+              "obtener_inventarios_fisicos_sync",
+              "obtener_requisiciones_sync",
+              "registrar_concepto_movimiento_no_mapeado",
+              "resolver_proveedor_edarsahub",
+              "sync_almacenes_from_server",
+              "sync_existencias_from_server",
+              "sync_inventarios_fisicos_from_server",
+              "sync_movimientos_from_server",
+              "sync_ordenes_from_server",
+              "sync_pedidos_from_server",
+              "sync_recepciones_from_server",
+              "sync_requisiciones_from_server"
+            ],
+            "tables_referenced": [
+              "Compras_Inventarios_Fisicos_Detalle_Sync",
+              "Proveedor_Catalogo",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "almacen",
+              "compras",
+              "costo",
+              "epc",
+              "folio",
+              "movimiento",
+              "sync"
+            ],
+            "path": "backend/modules/compras/sql_first_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ComprasSQLFirstRepository",
+              "__init__",
+              "_fetch_all",
+              "detalle_movimientos",
+              "productos_para_captura",
+              "table_counts"
+            ],
+            "tables_referenced": [
+              "Compras_Ordenes",
+              "Compras_OrdenesDetalle",
+              "Compras_Pedidos",
+              "Compras_PedidosDetalle",
+              "Compras_Recepciones",
+              "Compras_RecepcionesDetalle",
+              "Compras_Requisiciones_Sync",
+              "Inventario_Almacenes",
+              "Inventario_Existencias",
+              "Inventario_Movimientos",
+              "Inventario_MovimientosDetalle"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "almacen",
+              "compras",
+              "proveedor"
+            ],
+            "path": "backend/modules/compras/repository_compras_sql.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_edarsahub_connection",
+              "delete_compras_params_sql",
+              "ensure_table_exists",
+              "get_all_compras_params_sql",
+              "get_compras_params_sql",
+              "save_compras_params_sql"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "fastapi",
+              "logging",
+              "modules.compras",
+              "modules.compras.system_type_utils",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "almacen",
+              "compras",
+              "costo",
+              "folio",
+              "proveedor",
+              "sync"
+            ],
+            "path": "backend/modules/compras/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "guardar_parametros",
+              "obtener_detalle_factura",
+              "obtener_facturas_proveedor",
+              "obtener_inventarios_fisicos",
+              "obtener_parametros",
+              "obtener_pedidos_vigentes"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "fastapi",
+              "fastapi.security",
+              "modules.compras",
+              "modules.compras.schemas",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "auditoria",
+              "compras",
+              "folio",
+              "movimiento",
+              "proveedor",
+              "sync"
+            ],
+            "path": "backend/modules/compras/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/compras/parametros",
+              "/compras/parametros/{server_id}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "almacen",
+              "auditoria",
+              "compras",
+              "documento",
+              "folio",
+              "sync"
+            ],
+            "path": "backend/modules/compras/repository_pedidos_sql.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_execute_edarsahub_insert",
+              "_execute_edarsahub_query",
+              "crear_tarea_operativa_sql",
+              "marcar_pedido_procesado_sql",
+              "obtener_pedidos_procesados_sql",
+              "obtener_tareas_pendientes_sql",
+              "pedido_ya_procesado_sql",
+              "registrar_bitacora_pedidos_sql"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.inventarios",
+            "connections": [],
+            "helpers": [
+              "resolver_canonico"
+            ],
+            "imports": [
+              "__future__",
+              "core.inventarios.movement_filter_config",
+              "core.inventarios.resolver_canonico",
+              "logging",
+              "modules.compras.sync_service",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "almacen",
+              "compras",
+              "costo",
+              "documento",
+              "folio",
+              "movimiento",
+              "sync"
+            ],
+            "path": "backend/core/inventarios/sync_movimientos_canonico.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_FallbackTipo",
+              "_merge_soft_movement_sources",
+              "_query_origen",
+              "_query_origen_soft_movsinv",
+              "_query_origen_soft_presentaciones",
+              "_soft_dedupe_key",
+              "sync_movimientos_canonico"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.inventarios",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "corporate_identity_resolver",
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "core.corporate_identity_resolver",
+              "core.server_registry",
+              "core.sql_first.db",
+              "dataclasses",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "almacen",
+              "entrada_compra",
+              "epc",
+              "movimiento",
+              "sync"
+            ],
+            "path": "backend/core/inventarios/resolver_canonico.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ResultadoResolucion",
+              "_fetchall",
+              "_get_conn",
+              "_server_id_de_unidad",
+              "_tabla_existe",
+              "clear_resolver_caches",
+              "ok",
+              "pendiente",
+              "precargar_productos_mapeo",
+              "resolver_almacen_id",
+              "resolver_empresa_id",
+              "resolver_producto_id",
+              "resolver_sucursal_id",
+              "resolver_tipo_movimiento_desde_concepto",
+              "resolver_tipo_movimiento_por_codigo"
+            ],
+            "tables_referenced": [
+              "Sistema_Empresas",
+              "Sistema_Sucursales",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.inventarios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "movimiento"
+            ],
+            "path": "backend/core/inventarios/mpro_movement_policy.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "effective_mpro_inventory_codes",
+              "normalize_movement_code",
+              "normalize_movement_codes"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 11,
+          "scanned_files": 11,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-20T01:20:10Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
