@@ -1,0 +1,45 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/worker_job_factory.py",
+          "tools/mirror_sync/worker_requester_rbac.py"
+        ],
+        "search_terms": [
+          "SEMANTIC_DEV_PATH_INVALID"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_CAPABILITY_REGISTRY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-35651E139D15617D9F6C",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en solo lectura los validadores canónicos de tools/mirror_sync para localizar el origen de SEMANTIC_DEV_PATH_INVALID y la regla efectiva de validación de constraints.change_spec[].path para DEVELOPMENT_MUTATION_BOUNDED. No modificar archivos, refs, claims, worktrees, SQL ni Producción. Entregar evidencia exacta del archivo/contrato responsable y la mínima reparación canónica requerida.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CAPABILITY_REGISTRY",
+    "conflict_domains": [
+      "WORKER_CAPABILITY_REGISTRY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
