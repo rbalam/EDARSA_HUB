@@ -1,0 +1,61 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/edge/",
+          "backend/modules/finanzas/",
+          "backend/modules/comercial_v2/",
+          "frontend/src/pages/satelites/",
+          "frontend/src/lib/"
+        ],
+        "search_terms": [
+          "auth",
+          "rbac",
+          "http",
+          "sqlite",
+          "idempotencia",
+          "offline",
+          "sincronizacion",
+          "reconciliacion",
+          "kds",
+          "recetas",
+          "netpay",
+          "tpv",
+          "caja",
+          "comandero",
+          "token",
+          "payment"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMERCIAL_POS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7C206955B2F3FD6CD81D",
+  "mode": "READ_ONLY",
+  "objective": "GATE 2 READ_ONLY — reconciliación de arquitectura Comanderos/POS EDARSAHUB. No repetir Gate 0 SEM-COMERCIAL_POS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B028739A1DD2E18F597D ni Gate 1 SEM-COMERCIAL_POS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-36E4777C27E66751E17A, ambos certificados. Revisar código REAL y dependencias de backend/modules/edge frente a frontend satelital, finanzas, pagos y sincronización; identificar guardias de autenticación/RBAC en HTTP LAN, fuentes únicas SQL, límites de persistencia temporal SQLite, garantías de idempotencia/ACK y replays, seguridad e integridad de caja X/Z y TPV, posibilidad de cobro duplicado, KDS y recetas, puntos de integración con ComanderoPage. No alterar archivos, sistemas, credenciales o producción. Entregar evidencia de rutas, funciones, defectos concretos P0/P1, matriz reuso vs reparación, especificación de cambios atómicos reversibles y pruebas de aceptación. No declarar operativo ni certificación funcional de POS sin pruebas extremo-a-extremo.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
