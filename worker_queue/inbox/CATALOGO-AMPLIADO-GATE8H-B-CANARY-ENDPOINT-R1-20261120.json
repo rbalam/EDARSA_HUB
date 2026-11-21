@@ -1,0 +1,55 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "path": "backend/modules/catalogo_ampliado/routes.py",
+      "replacement": "\n\n# Gate 8H-B - canario E2E de notificaciones, solo Development/Preview.\nfrom pydantic import BaseModel\nfrom .canary_delivery import run_notification_canary\n\n\nclass NotificationCanaryRequest(BaseModel):\n    email: str\n    whatsapp: str\n    canary_key: str\n    confirm_real_send: bool = False\n\n\n@router.post('/notifications/canary')\nasync def notifications_canary(\n    body: NotificationCanaryRequest,\n    current_user: dict = Depends(_gobierno_admin),\n):\n    if not body.confirm_real_send:\n        raise HTTPException(status_code=409, detail='Confirmacion explicita requerida para envio real')\n    try:\n        data = await run_notification_canary(\n            email=body.email,\n            whatsapp=body.whatsapp,\n            canary_key=body.canary_key,\n        )\n    except (ValueError, RuntimeError) as exc:\n        raise HTTPException(status_code=409, detail=str(exc)) from exc\n    return {'success': True, 'data': data}\n",
+      "source_sha256": "c85cbe02f83c62ed4aa3b1f401c08a852ae979ba91d8ab8d43c5e12f960f1da0",
+      "type": "append_once"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/catalogo_ampliado/routes.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_catalogo_ampliado_gate8h_b_canary.py",
+        "backend/tests/test_catalogo_ampliado_gate8f_external_delivery.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "CATALOGO-AMPLIADO-GATE8H-B-CANARY-ENDPOINT-R1-20261120",
+  "mode": "MUTATION",
+  "objective": "Gate 8H-B paso 2. Exponer en Catalogo Ampliado un endpoint administrativo bounded para ejecutar el servicio canario ya certificado, con confirmacion explicita para envio real, reutilizando RBAC existente y sin tocar core ni Produccion. Agregar solo el wiring del endpoint en routes.py y verificar regresiones del canario y Gate 8F.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CATALOGO_AMPLIADO_NOTIFICATIONS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "CATALOGO_AMPLIADO_NOTIFICATIONS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
