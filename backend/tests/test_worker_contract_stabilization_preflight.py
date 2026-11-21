@@ -270,3 +270,285 @@ def test_agentes_ia_gate5_authorized_preflight_dedup_and_mcp_schema_diagnostic(t
     diag = mcp_client.extract_safe_validation_diagnostic(pydantic_422)
     assert diag["rejected_field"] == "constraints"
     assert "WorkerObjectiveRequest" in diag["allowed_correction"]
+
+
+def test_gate_b_precise_diagnostics_for_dev_mutation_and_semantic_extract(tmp_path, monkeypatch, caplog):
+    repo = tmp_path / "repo"
+    target = repo / "backend" / "modules" / "demo" / "sample.py"
+    target.parent.mkdir(parents=True)
+    src = "VALUE = 1\n"
+    target.write_text(src, encoding="utf-8")
+    live_sha = hashlib.sha256(src.encode("utf-8")).hexdigest()
+    monkeypatch.setattr(sem_caps, "_DEV_REPO_ROOT", repo)
+
+    # 1. WORKER_RESULT_SEMANTIC_EXTRACT invalid source_job_id -> precise field constraints.source_job_id + http_status 422
+    r_sj = service.preflight_semantic_objective(
+        {
+            "objective": "Extract semantic result",
+            "bounded_context": "WORKER_OPERATIONS",
+            "mode": "READ_ONLY",
+            "capability": "WORKER_RESULT_SEMANTIC_EXTRACT",
+            "request_key": "corr-gate-b-001",
+            "constraints": {"source_job_id": "bad job id!!"},
+        },
+        current_user=_admin(),
+    )
+    assert r_sj["ok"] is False
+    assert r_sj["error_code"] == "SEMANTIC_SOURCE_JOB_INVALID"
+    assert r_sj["rejected_field"] == "constraints.source_job_id"
+    assert r_sj["http_status"] == 422
+
+    # 2. DEVELOPMENT_MUTATION_BOUNDED empty change_spec -> constraints.change_spec
+    r_cs = service.preflight_semantic_objective(
+        {
+            "objective": "Invalid empty change_spec",
+            "bounded_context": "WORKER_OPERATIONS",
+            "mode": "MUTATION",
+            "capability": "DEVELOPMENT_MUTATION_BOUNDED",
+            "constraints": {"change_spec": []},
+        },
+        current_user=_admin(),
+    )
+    assert r_cs["ok"] is False
+    assert r_cs["error_code"] == "SEMANTIC_DEV_CHANGE_SPEC_INVALID"
+    assert r_cs["rejected_field"] == "constraints.change_spec"
+    assert r_cs["http_status"] == 422
+
+    # 3. DEVELOPMENT_MUTATION_BOUNDED unsupported item key -> constraints.change_spec[]
+    r_keys = service.preflight_semantic_objective(
+        {
+            "objective": "Invalid item key in change_spec",
+            "bounded_context": "WORKER_OPERATIONS",
+            "mode": "MUTATION",
+            "capability": "DEVELOPMENT_MUTATION_BOUNDED",
+            "constraints": {
+                "change_spec": [{"operation": "replace_text", "path": "backend/modules/demo/sample.py", "bogus": 1}]
+            },
+        },
+        current_user=_admin(),
+    )
+    assert r_keys["error_code"] == "SEMANTIC_DEV_CHANGE_KEYS_UNSUPPORTED"
+    assert r_keys["rejected_field"] == "constraints.change_spec[]"
+
+    # 4. DEVELOPMENT_MUTATION_BOUNDED missing source_sha256 -> constraints.change_spec[].source_sha256
+    r_nosha = service.preflight_semantic_objective(
+        {
+            "objective": "Missing source_sha256",
+            "bounded_context": "WORKER_OPERATIONS",
+            "mode": "MUTATION",
+            "capability": "DEVELOPMENT_MUTATION_BOUNDED",
+            "constraints": {
+                "change_spec": [
+                    {
+                        "operation": "replace_text",
+                        "path": "backend/modules/demo/sample.py",
+                        "old_text": "VALUE = 1",
+                        "replacement": "VALUE = 2",
+                    }
+                ]
+            },
+        },
+        current_user=_admin(),
+    )
+    assert r_nosha["error_code"] == "SEMANTIC_SOURCE_SHA256_REQUIRED"
+    assert r_nosha["rejected_field"] == "constraints.change_spec[].source_sha256"
+
+    # 5. DEVELOPMENT_MUTATION_BOUNDED old_text mismatch -> constraints.change_spec[].old_text
+    r_old = service.preflight_semantic_objective(
+        {
+            "objective": "Mismatched old_text",
+            "bounded_context": "WORKER_OPERATIONS",
+            "mode": "MUTATION",
+            "capability": "DEVELOPMENT_MUTATION_BOUNDED",
+            "constraints": {
+                "change_spec": [
+                    {
+                        "operation": "replace_text",
+                        "path": "backend/modules/demo/sample.py",
+                        "source_sha256": live_sha,
+                        "old_text": "DOES_NOT_EXIST_SECRET_PAYLOAD",
+                        "replacement": "VALUE = 2",
+                    }
+                ]
+            },
+        },
+        current_user=_admin(),
+    )
+    assert r_old["error_code"] == "SEMANTIC_DEV_OLD_TEXT_OCCURRENCE_MISMATCH"
+    assert r_old["rejected_field"] == "constraints.change_spec[].old_text"
+
+    # 6. Structured log must never expose change_spec text or sensitive tokens
+    with caplog.at_level("WARNING", logger="edarsahub.worker_ingress"):
+        service.build_semantic_diagnostic(
+            "SEMANTIC_DEV_OLD_TEXT_OCCURRENCE_MISMATCH",
+            request_payload={
+                "capability": "DEVELOPMENT_MUTATION_BOUNDED",
+                "request_key": "bearer-super-secret-value",
+                "constraints": {"change_spec": [{"old_text": "NEVER_LOG_THIS_BODY"}]},
+            },
+        )
+    joined_logs = " ".join(rec.getMessage() for rec in caplog.records)
+    assert "worker_ingress_semantic_rejected" in joined_logs
+    assert "SEMANTIC_DEV_OLD_TEXT_OCCURRENCE_MISMATCH" in joined_logs
+    assert "NEVER_LOG_THIS_BODY" not in joined_logs
+    assert "bearer-super-secret-value" not in joined_logs
+
+
+def test_gate_b_mcp_503_timeout_and_observability_no_duplicate_retries(monkeypatch, caplog):
+    import importlib.util
+    import sys
+
+    if importlib.util.find_spec("mcp") is None:
+        for candidate in sorted(Path("/app/.runtime/worker_mcp/venv/lib").glob("python*/site-packages")):
+            sys.path.append(str(candidate))
+
+    from modules.worker_mcp import server as mcp_server
+    from modules.worker_mcp.config import WorkerMcpConfig
+
+    cfg = WorkerMcpConfig(
+        issuer_url="https://hub.example.test/api/mcp/oauth",
+        resource_url="https://hub.example.test/api/mcp",
+        backend_url="https://hub.example.test",
+        allowed_hosts=("hub.example.test",),
+        allowed_origins=(),
+    )
+    mcp_server.build_mcp_server(cfg)
+    orig_request_json = mcp_client._request_json
+    monkeypatch.setattr(mcp_server, "_authorized_bearer_token", lambda scope: "fake-bearer-jwt-never-log")
+    monkeypatch.setattr(mcp_client, "exchange_service_credential", lambda *, backend_url, credential: "fake-internal-jwt")
+
+    # 1. HTTP 503 WRITER_BUSY / CLAIM_BUSY -> explicit retryable=true ToolError, strictly 1 call (no auto-retry)
+    for busy_state in ("WRITER_BUSY", "CLAIM_BUSY"):
+        calls = []
+
+        def _fake_503(**kwargs):
+            calls.append(kwargs)
+            return 503, {"detail": {"status": busy_state}}
+
+        monkeypatch.setattr(mcp_client, "_request_json", _fake_503)
+        with caplog.at_level("WARNING", logger="edarsahub.worker_mcp"):
+            with pytest.raises(mcp_server.ToolError) as exc_info:
+                mcp_server.submit_objective_tool(
+                    objective="Gate B 503 test",
+                    bounded_context="WORKER_OPERATIONS",
+                    mode="MUTATION",
+                    capability="DEVELOPMENT_MUTATION_BOUNDED",
+                    request_key="corr-503-test",
+                    constraints={"change_spec": [{"operation": "replace_text", "old_text": "SECRET_SPEC_BODY"}]},
+                )
+        msg = str(exc_info.value)
+        assert f"UPSTREAM_UNAVAILABLE_503:{busy_state}" in msg
+        assert "retryable=true" in msg
+        assert "DEVELOPMENT_MUTATION_BOUNDED" in msg
+        assert len(calls) == 1
+
+    # 2. HTTP 503 RECOVERY_REQUIRED -> retryable=false ToolError, strictly 1 call
+    calls_rec = []
+
+    def _fake_rec(**kwargs):
+        calls_rec.append(kwargs)
+        return 503, {"detail": {"status": "RECOVERY_REQUIRED"}}
+
+    monkeypatch.setattr(mcp_client, "_request_json", _fake_rec)
+    with pytest.raises(mcp_server.ToolError) as exc_rec:
+        mcp_server.submit_objective_tool(
+            objective="Gate B recovery test",
+            bounded_context="WORKER_OPERATIONS",
+            mode="MUTATION",
+            capability="DEVELOPMENT_MUTATION_BOUNDED",
+            request_key="corr-rec-test",
+            constraints={},
+        )
+    assert "UPSTREAM_UNAVAILABLE_503:RECOVERY_REQUIRED" in str(exc_rec.value)
+    assert "retryable=false" in str(exc_rec.value)
+    assert len(calls_rec) == 1
+
+    # 3. Upstream TimeoutError -> UPSTREAM_TIMEOUT_504 ToolError, strictly 1 call (no auto-retry)
+    calls_to = []
+
+    def _fake_urlopen(req, timeout=15.0):
+        calls_to.append(req.full_url)
+        raise TimeoutError("timed out")
+
+    monkeypatch.setattr(mcp_client.urllib.request, "urlopen", _fake_urlopen)
+    monkeypatch.setattr(mcp_client, "_request_json", orig_request_json)
+    with pytest.raises(mcp_server.ToolError) as exc_to:
+        mcp_server.submit_objective_tool(
+            objective="Gate B timeout test",
+            bounded_context="WORKER_OPERATIONS",
+            mode="READ_ONLY",
+            capability="READ_ONLY_CANARY",
+            request_key="corr-timeout-test",
+            constraints={},
+        )
+    assert "UPSTREAM_TIMEOUT_504:UPSTREAM_TIMEOUT" in str(exc_to.value)
+    assert "retryable=true" in str(exc_to.value)
+    assert len(calls_to) == 1
+
+    # 3b. HTTP 422 validation error -> ToolError with precise field and http_status=422 logged
+    monkeypatch.setattr(
+        mcp_client,
+        "_request_json",
+        lambda **kwargs: (
+            422,
+            {
+                "detail": {
+                    "error_code": "SEMANTIC_CONSTRAINTS_UNSUPPORTED",
+                    "rejected_field": "constraints",
+                    "capability": "WORKER_RESULT_SEMANTIC_EXTRACT",
+                    "http_status": 422,
+                    "allowed_correction": "Use only allowed key: source_job_id.",
+                }
+            },
+        ),
+    )
+    with pytest.raises(mcp_server.ToolError) as exc_422:
+        mcp_server.submit_objective_tool(
+            objective="Gate B 422 test",
+            bounded_context="WORKER_OPERATIONS",
+            mode="READ_ONLY",
+            capability="WORKER_RESULT_SEMANTIC_EXTRACT",
+            request_key="corr-422-test",
+            constraints={"bad_key": "x"},
+        )
+    assert "VALIDATION_ERROR_422:SEMANTIC_CONSTRAINTS_UNSUPPORTED" in str(exc_422.value)
+    assert "field=constraints" in str(exc_422.value)
+
+    # 3c. HTTP 403 insufficient scope -> PermissionError without leaking token
+    monkeypatch.setattr(
+        mcp_client,
+        "_request_json",
+        lambda **kwargs: (
+            403,
+            {"detail": {"error": "INSUFFICIENT_SCOPE", "required_scope": "worker:submit", "code": "INSUFFICIENT_SCOPE"}},
+        ),
+    )
+    with pytest.raises(PermissionError, match="MCP_SCOPE_FORBIDDEN:INSUFFICIENT_SCOPE"):
+        mcp_server.submit_objective_tool(
+            objective="Gate B 403 scope test",
+            bounded_context="WORKER_OPERATIONS",
+            mode="READ_ONLY",
+            capability="READ_ONLY_CANARY",
+            request_key="corr-403-test",
+            constraints={},
+        )
+
+    # 4. get_job_status remains intact on HTTP 200
+    monkeypatch.setattr(
+        mcp_client,
+        "_request_json",
+        lambda **kwargs: (200, {"job_id": "JOB-1", "lifecycle": "RESULT", "status": "INTEGRATED", "certification": "CERTIFIED", "production_touched": False}),
+    )
+    st = mcp_server.get_job_status_tool("JOB-1")
+    assert st["job_id"] == "JOB-1"
+    assert st["certification"] == "CERTIFIED"
+    assert st["production_touched"] is False
+
+    # 5. Logs never leak tokens, JWTs, or change_spec contents
+    joined_mcp = " ".join(rec.getMessage() for rec in caplog.records)
+    assert "worker_mcp_tool_error" in joined_mcp
+    assert "timestamp_utc=" in joined_mcp
+    assert "http_status=503" in joined_mcp
+    assert "fake-bearer-jwt-never-log" not in joined_mcp
+    assert "fake-internal-jwt" not in joined_mcp
+    assert "SECRET_SPEC_BODY" not in joined_mcp

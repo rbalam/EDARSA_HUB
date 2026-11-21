@@ -1,7 +1,10 @@
 """Minimal MCP transport for the certified EDARSAHUB semantic ingress."""
 
 from contextvars import ContextVar
+from datetime import datetime, timezone
 import json
+import logging
+import re
 import time
 from typing import Any
 
@@ -30,6 +33,7 @@ from starlette.routing import Route
 from .auth import EdarsahubTokenVerifier
 from .client import (
     WorkerMcpAuthorizationError,
+    WorkerMcpUpstreamUnavailableError,
     WorkerMcpValidationError,
     get_job_status as backend_get_job_status,
     submit_objective as backend_submit_objective,
@@ -452,27 +456,141 @@ def _backend_url() -> str:
     return _BACKEND_URL
 
 
+logger = logging.getLogger("edarsahub.worker_mcp")
+_SAFE_MCP_CORR_RE = re.compile(r"^[A-Za-z0-9._:-]{1,80}$")
+_SAFE_MCP_CAP_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{1,119}$")
+_MCP_SENSITIVE_TOKENS = ("secret", "token", "password", "credential", "jwt", "bearer", "api_key", "apikey")
+
+
+def _safe_correlation_id(raw: str | None) -> str | None:
+    text = str(raw or "").strip()
+    if not text or not _SAFE_MCP_CORR_RE.fullmatch(text):
+        return None
+    low = text.lower()
+    if any(tok in low for tok in _MCP_SENSITIVE_TOKENS):
+        return None
+    return text
+
+
+def _safe_capability_name(raw: str | None) -> str | None:
+    text = str(raw or "").strip().upper()
+    if not text or not _SAFE_MCP_CAP_RE.fullmatch(text):
+        return None
+    return text
+
+
+def _log_mcp_tool_error(
+    *,
+    tool_name: str,
+    http_status: int,
+    error_code: str,
+    rejected_field: str | None,
+    capability: str | None,
+    correlation_id: str | None,
+    retryable: bool | None = None,
+) -> None:
+    """Structured secret-free diagnostic logging for MCP tool rejections and upstream failures."""
+    logger.warning(
+        "worker_mcp_tool_error timestamp_utc=%s tool=%s http_status=%s error_code=%s "
+        "rejected_field=%s capability=%s correlation_id=%s retryable=%s",
+        datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        tool_name,
+        int(http_status),
+        error_code,
+        rejected_field or "none",
+        _safe_capability_name(capability) or "none",
+        _safe_correlation_id(correlation_id) or "none",
+        "none" if retryable is None else ("true" if retryable else "false"),
+    )
+
+
 def _raise_mapped_upstream_error(
-    exc: WorkerMcpAuthorizationError | WorkerMcpValidationError,
+    exc: (
+        WorkerMcpAuthorizationError
+        | WorkerMcpValidationError
+        | WorkerMcpUpstreamUnavailableError
+    ),
     *,
     default_required_scope: str,
     tool_name: str,
+    capability: str | None = None,
+    correlation_id: str | None = None,
 ) -> None:
     if isinstance(exc, WorkerMcpValidationError):
         from .client import extract_safe_validation_diagnostic
 
         status_num = int(exc.status_code or 422)
         diag = extract_safe_validation_diagnostic(exc.payload)
+        cap_val = diag.get("capability") or _safe_capability_name(capability)
+        field_val = diag.get("rejected_field")
+        _log_mcp_tool_error(
+            tool_name=tool_name,
+            http_status=status_num,
+            error_code=exc.reason_code,
+            rejected_field=field_val,
+            capability=cap_val,
+            correlation_id=correlation_id,
+            retryable=False,
+        )
         parts = [f"VALIDATION_ERROR_{status_num}:{exc.reason_code}"]
-        if diag.get("rejected_field"):
-            parts.append(f"field={diag['rejected_field']}")
-        if diag.get("capability"):
-            parts.append(f"capability={diag['capability']}")
+        if field_val:
+            parts.append(f"field={field_val}")
+        if cap_val:
+            parts.append(f"capability={cap_val}")
         if diag.get("allowed_correction"):
             parts.append(f"hint={diag['allowed_correction']}")
         raise ToolError(" | ".join(parts)) from exc
 
+    if isinstance(exc, WorkerMcpUpstreamUnavailableError):
+        status_num = int(exc.status_code or 503)
+        cap_val = _safe_capability_name(capability)
+        reason_code = str(exc.reason_code or "UPSTREAM_UNAVAILABLE").strip().upper()
+        retryable = bool(exc.retryable)
+        _log_mcp_tool_error(
+            tool_name=tool_name,
+            http_status=status_num,
+            error_code=reason_code,
+            rejected_field="upstream_runtime",
+            capability=cap_val,
+            correlation_id=correlation_id,
+            retryable=retryable,
+        )
+        prefix = (
+            f"UPSTREAM_TIMEOUT_{status_num}:{reason_code}"
+            if reason_code == "UPSTREAM_TIMEOUT"
+            else f"UPSTREAM_UNAVAILABLE_{status_num}:{reason_code}"
+        )
+        if reason_code == "UPSTREAM_TIMEOUT":
+            hint = (
+                "Upstream timed out; do not auto-retry blindly. Verify status with "
+                "get_job_status or preflight before re-submitting to avoid duplicates."
+            )
+        elif reason_code in {"RECOVERY_REQUIRED", "BLOCKED_CONVERGENCE"}:
+            hint = (
+                "Worker runtime requires convergence/recovery before accepting mutations; "
+                "inspect GET /api/internal/worker/runtime-convergence."
+            )
+        else:
+            hint = (
+                "Transient Worker writer/claim contention; retry manually after checking "
+                "existing job status (no automatic duplicate retry performed)."
+            )
+        parts = [prefix, f"retryable={'true' if retryable else 'false'}"]
+        if cap_val:
+            parts.append(f"capability={cap_val}")
+        parts.append(f"hint={hint}")
+        raise ToolError(" | ".join(parts)) from exc
+
     if exc.status_code == 401 or exc.code == "AUTHENTICATION_REQUIRED":
+        _log_mcp_tool_error(
+            tool_name=tool_name,
+            http_status=401,
+            error_code="AUTHENTICATION_REQUIRED",
+            rejected_field="authorization",
+            capability=capability,
+            correlation_id=correlation_id,
+            retryable=False,
+        )
         _PENDING_HTTP_AUTH_CHALLENGE.set(
             {"status": 401, "kind": "invalid_token"}
         )
@@ -480,6 +598,15 @@ def _raise_mapped_upstream_error(
 
     if exc.code == "INSUFFICIENT_SCOPE":
         req_scope = exc.required_scope or default_required_scope
+        _log_mcp_tool_error(
+            tool_name=tool_name,
+            http_status=403,
+            error_code="INSUFFICIENT_SCOPE",
+            rejected_field="scope",
+            capability=capability,
+            correlation_id=correlation_id,
+            retryable=False,
+        )
         _PENDING_HTTP_AUTH_CHALLENGE.set(
             {
                 "status": 403,
@@ -492,6 +619,15 @@ def _raise_mapped_upstream_error(
             "MCP_SCOPE_FORBIDDEN:INSUFFICIENT_SCOPE"
         ) from exc
 
+    _log_mcp_tool_error(
+        tool_name=tool_name,
+        http_status=int(exc.status_code or 403),
+        error_code=str(exc.code or "AUTHORIZATION_FORBIDDEN"),
+        rejected_field="rbac",
+        capability=capability,
+        correlation_id=correlation_id,
+        retryable=False,
+    )
     _PENDING_HTTP_AUTH_CHALLENGE.set(
         {
             "status": 403,
@@ -539,7 +675,17 @@ def submit_objective_tool(
       Allowed operations: replace_text, insert_before, insert_after, append_once, write_file (no delete_file, shell or SQL).
       Requires live source_sha256 for existing files and authorized admin/worker:submit RBAC.
     """
+    safe_corr = _safe_correlation_id(request_key)
     if constraints is not None and not isinstance(constraints, dict):
+        _log_mcp_tool_error(
+            tool_name="submit_objective",
+            http_status=422,
+            error_code="SEMANTIC_CONSTRAINTS_INVALID",
+            rejected_field="constraints",
+            capability=capability,
+            correlation_id=safe_corr,
+            retryable=False,
+        )
         raise ToolError(
             "VALIDATION_ERROR_422:SEMANTIC_CONSTRAINTS_INVALID | field=constraints | "
             "hint=Pass constraints as a JSON object matching GET /api/internal/worker/capabilities."
@@ -561,11 +707,17 @@ def submit_objective_tool(
             token=token,
             payload=payload,
         )
-    except (WorkerMcpAuthorizationError, WorkerMcpValidationError) as exc:
+    except (
+        WorkerMcpAuthorizationError,
+        WorkerMcpValidationError,
+        WorkerMcpUpstreamUnavailableError,
+    ) as exc:
         _raise_mapped_upstream_error(
             exc,
             default_required_scope=SUBMIT_OBJECTIVE_SCOPE,
             tool_name="submit_objective",
+            capability=capability,
+            correlation_id=safe_corr,
         )
 
     return {
@@ -590,11 +742,16 @@ def get_job_status_tool(
             token=token,
             job_id=job_id,
         )
-    except (WorkerMcpAuthorizationError, WorkerMcpValidationError) as exc:
+    except (
+        WorkerMcpAuthorizationError,
+        WorkerMcpValidationError,
+        WorkerMcpUpstreamUnavailableError,
+    ) as exc:
         _raise_mapped_upstream_error(
             exc,
             default_required_scope=GET_JOB_STATUS_SCOPE,
             tool_name="get_job_status",
+            correlation_id=_safe_correlation_id(job_id),
         )
     return {
         "job_id": result.get("job_id"),

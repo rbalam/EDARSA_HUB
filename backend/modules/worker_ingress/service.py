@@ -6,8 +6,10 @@ delegated to the existing canonical job factory and gate-chain publisher.
 """
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import hashlib
 import json
+import logging
 import re
 from pathlib import Path
 from typing import Any, Mapping
@@ -22,6 +24,10 @@ from .semantic_capabilities import (
     resolve_capability,
 )
 
+
+logger = logging.getLogger("edarsahub.worker_ingress")
+_SAFE_CORR_RE = re.compile(r"^[A-Za-z0-9._:-]{1,80}$")
+_CORR_SENSITIVE = ("secret", "token", "password", "credential", "jwt", "bearer", "api_key", "apikey")
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 STATE_ROOT = REPO_ROOT / ".git" / "universal-worker-queue"
@@ -985,6 +991,7 @@ def build_semantic_diagnostic(
 
     rejected_field = "request"
     allowed_correction = "Consult GET /api/internal/worker/capabilities for registered contracts."
+    http_status = 422 if (code.startswith("SEMANTIC_") or code == "SCHEMA_VALIDATION_ERROR") else 400
 
     if code == "SEMANTIC_CAPABILITY_UNKNOWN":
         rejected_field = "capability"
@@ -998,6 +1005,12 @@ def build_semantic_diagnostic(
                 "Use a registered capability from GET /api/internal/worker/capabilities "
                 f"(registered: {', '.join(reg_caps)})."
             )
+    elif code == "OBJECTIVE_REQUIRED":
+        rejected_field = "objective"
+        allowed_correction = "Provide a non-empty semantic objective string (3..4000 chars)."
+    elif code == "BOUNDED_CONTEXT_REQUIRED":
+        rejected_field = "bounded_context"
+        allowed_correction = "Provide a valid bounded_context token matching ^[A-Za-z0-9][A-Za-z0-9._-]{1,119}$."
     elif code == "SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED" or code == "SEMANTIC_CONTEXT_INVALID":
         rejected_field = "bounded_context"
         expected_ctx = cap_meta.get("bounded_context_rule") if cap_meta else "VALID_DOMAIN_TOKEN"
@@ -1014,12 +1027,51 @@ def build_semantic_diagnostic(
             f"Pass constraints as a JSON object with only allowed keys: {keys_str}. "
             f"Never pass raw Worker fields: {', '.join(RAW_WORKER_FIELDS_FORBIDDEN)}."
         )
+    elif code == "SEMANTIC_SOURCE_JOB_INVALID":
+        rejected_field = "constraints.source_job_id"
+        allowed_correction = (
+            "Provide constraints.source_job_id as a valid Worker job_id matching "
+            "^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$."
+        )
+    elif code == "SEMANTIC_PATHS_INVALID":
+        rejected_field = "constraints.paths"
+        allowed_correction = "Provide constraints.paths as a list of 1..20 relative non-sensitive paths under allowed roots."
+    elif code == "SEMANTIC_TERMS_INVALID":
+        rejected_field = "constraints.search_terms"
+        allowed_correction = "Provide constraints.search_terms as a list of 1..20 tokens matching ^[A-Za-z0-9_.-]{2,64}$."
+    elif code == "SEMANTIC_LIMIT_INVALID":
+        rejected_field = "constraints.max_results"
+        allowed_correction = "Provide constraints.max_results as an integer between 1 and 100."
+    elif code == "SEMANTIC_DEV_CHANGE_SPEC_INVALID":
+        rejected_field = "constraints.change_spec"
+        allowed_correction = "Provide constraints.change_spec as a non-empty list of 1..15 declarative edit items."
+    elif code == "SEMANTIC_DEV_CHANGE_ITEM_INVALID":
+        rejected_field = "constraints.change_spec[]"
+        allowed_correction = "Each entry in constraints.change_spec must be a JSON object with operation and path."
+    elif code == "SEMANTIC_DEV_CHANGE_KEYS_UNSUPPORTED":
+        rejected_field = "constraints.change_spec[]"
+        allowed_correction = (
+            "Use only allowed change_spec keys: operation, path, source_sha256, expected_sha256, "
+            "old_text, replacement, anchor, content, expected_occurrences, overwrite."
+        )
+    elif code == "SEMANTIC_DEV_AUTHORIZATION_REF_INVALID":
+        rejected_field = "constraints.authorization_ref"
+        allowed_correction = "Provide constraints.authorization_ref matching ^[A-Za-z0-9][A-Za-z0-9._:/-]{2,120}$."
+    elif code == "SEMANTIC_DEV_JOB_ID_OVERRIDE_INVALID":
+        rejected_field = "constraints.job_id_override"
+        allowed_correction = "Provide constraints.job_id_override matching ^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$."
+    elif code == "SEMANTIC_DEV_VERIFICATION_TESTS_INVALID":
+        rejected_field = "constraints.verification_tests"
+        allowed_correction = "Provide constraints.verification_tests as up to 15 .py paths under backend/tests/ or tools/tests/."
     elif code in {"SEMANTIC_SOURCE_SHA256_MISMATCH", "SEMANTIC_SOURCE_SHA256_REQUIRED"}:
         rejected_field = "constraints.change_spec[].source_sha256"
         allowed_correction = (
             "Refresh the live 64-hex SHA-256 of the target file in Edarsahub_Desarrollo "
             "before re-submitting; never reuse stale hashes."
         )
+    elif code == "SEMANTIC_SOURCE_FILE_MISSING":
+        rejected_field = "constraints.change_spec[].path"
+        allowed_correction = "Target file does not exist for incremental edit; verify path or use operation=write_file."
     elif code in {"SEMANTIC_PATH_FORBIDDEN", "SEMANTIC_PATH_INVALID", "SEMANTIC_DEV_PATH_FORBIDDEN", "SEMANTIC_DEV_PATH_INVALID"}:
         rejected_field = "constraints.paths" if "DEV" not in code else "constraints.change_spec[].path"
         roots = ", ".join(cap_meta.get("allowed_path_roots", [])) if cap_meta else "backend/modules/, backend/tests/, frontend/src/, tools/mirror_sync/"
@@ -1027,6 +1079,33 @@ def build_semantic_diagnostic(
     elif code == "SEMANTIC_DEV_OPERATION_FORBIDDEN":
         rejected_field = "constraints.change_spec[].operation"
         allowed_correction = "Use only declarative operations: replace_text, insert_before, insert_after, append_once, write_file."
+    elif code == "SEMANTIC_DEV_REPLACE_FIELDS_INVALID":
+        rejected_field = "constraints.change_spec[].old_text"
+        allowed_correction = "Provide non-empty string old_text and string replacement for replace_text."
+    elif code == "SEMANTIC_DEV_EXPECTED_OCCURRENCES_INVALID":
+        rejected_field = "constraints.change_spec[].expected_occurrences"
+        allowed_correction = "Provide expected_occurrences as an integer between 1 and 20."
+    elif code == "SEMANTIC_DEV_OLD_TEXT_OCCURRENCE_MISMATCH":
+        rejected_field = "constraints.change_spec[].old_text"
+        allowed_correction = "Ensure old_text matches expected_occurrences exactly in the live target file."
+    elif code == "SEMANTIC_DEV_INSERT_FIELDS_INVALID":
+        rejected_field = "constraints.change_spec[].anchor"
+        allowed_correction = "Provide non-empty string anchor and string replacement for insert_before/insert_after."
+    elif code == "SEMANTIC_DEV_ANCHOR_MISMATCH":
+        rejected_field = "constraints.change_spec[].anchor"
+        allowed_correction = "Ensure anchor appears exactly once in the live target file."
+    elif code == "SEMANTIC_DEV_APPEND_FIELDS_INVALID":
+        rejected_field = "constraints.change_spec[].replacement"
+        allowed_correction = "Provide a non-empty string replacement for append_once."
+    elif code == "SEMANTIC_DEV_CONTENT_REQUIRED":
+        rejected_field = "constraints.change_spec[].content"
+        allowed_correction = "Provide a non-empty UTF-8 string in content for write_file."
+    elif code == "SEMANTIC_DEV_CONTENT_TOO_LARGE":
+        rejected_field = "constraints.change_spec[].content"
+        allowed_correction = "Keep replacement or file content within the 120000-byte limit."
+    elif code == "SEMANTIC_DEV_FILE_ALREADY_EXISTS":
+        rejected_field = "constraints.change_spec[].overwrite"
+        allowed_correction = "Target file already exists; set overwrite=true with live source_sha256 or use replace_text."
     elif code == "SEMANTIC_DEV_WRITE_LARGE_SHRINK_BLOCKED":
         rejected_field = "constraints.change_spec[].content"
         allowed_correction = (
@@ -1035,9 +1114,11 @@ def build_semantic_diagnostic(
         )
     elif code in {"RBAC_MUTATION_FORBIDDEN", "AUTHENTICATED_REQUESTER_EMAIL_REQUIRED"}:
         rejected_field = "rbac"
+        http_status = 403
         allowed_correction = "Authenticated admin/worker:submit RBAC identity is required for MUTATION mode."
     elif code == "SCOPE_AUTHORIZATION_DENIED":
         rejected_field = "authorization_scope"
+        http_status = 403
         allowed_correction = "Target domain, empresa_id, or unidad_negocio_pk is outside the caller's authorized scope."
     elif code == "SENSITIVE_FIELD_FORBIDDEN":
         rejected_field = "request"
@@ -1049,10 +1130,30 @@ def build_semantic_diagnostic(
             "with valid types and no extra top-level keys."
         )
 
+    raw_corr = _clean(payload.get("request_key"))
+    safe_corr = (
+        raw_corr
+        if raw_corr
+        and _SAFE_CORR_RE.fullmatch(raw_corr)
+        and not any(tok in raw_corr.lower() for tok in _CORR_SENSITIVE)
+        else None
+    )
+    logger.warning(
+        "worker_ingress_semantic_rejected timestamp_utc=%s http_status=%s error_code=%s "
+        "rejected_field=%s capability=%s correlation_id=%s",
+        datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        http_status,
+        code,
+        rejected_field,
+        capability or "UNKNOWN",
+        safe_corr or "none",
+    )
+
     return {
         "schema": "edarsahub.worker-semantic-diagnostic.v1",
         "error_code": code,
         "status": code,
+        "http_status": http_status,
         "classification": classification,
         "runtime_diagnosis": runtime_diag["classification"],
         "rejected_field": rejected_field,

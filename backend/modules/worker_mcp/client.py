@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import socket
 import time
 import urllib.error
 import urllib.parse
@@ -48,6 +49,14 @@ class WorkerMcpAuthorizationError(WorkerMcpBackendError):
         self.required_scope = required_scope
 
 
+_RETRYABLE_503_STATES = frozenset(
+    {"WRITER_BUSY", "CLAIM_BUSY", "REMOTE_MOVED_RETRYABLE"}
+)
+_KNOWN_503_STATES = _RETRYABLE_503_STATES | frozenset(
+    {"RECOVERY_REQUIRED", "BLOCKED_CONVERGENCE"}
+)
+
+
 class WorkerMcpValidationError(WorkerMcpBackendError):
     """Explicit HTTP 422/400 semantic or schema validation failure."""
 
@@ -65,6 +74,39 @@ class WorkerMcpValidationError(WorkerMcpBackendError):
             payload=payload,
         )
         self.reason_code = reason_code
+
+
+class WorkerMcpUpstreamUnavailableError(WorkerMcpBackendError):
+    """Explicit HTTP 503 transient/convergence or HTTP 504 timeout failure."""
+
+    def __init__(
+        self,
+        code: str,
+        *,
+        status_code: int = 503,
+        reason_code: str = "UPSTREAM_UNAVAILABLE",
+        retryable: bool = True,
+        payload: Mapping[str, Any] | None = None,
+    ):
+        super().__init__(
+            code,
+            status_code=status_code,
+            payload=payload,
+        )
+        self.reason_code = reason_code
+        self.retryable = bool(retryable)
+
+
+def _extract_unavailable_reason(payload: Mapping[str, Any]) -> tuple[str, bool]:
+    detail = payload.get("detail")
+    candidate = ""
+    if isinstance(detail, Mapping):
+        candidate = str(detail.get("status") or detail.get("error_code") or "").strip().upper()
+    elif isinstance(detail, str):
+        candidate = detail.strip().split(":", 1)[0].strip().upper()
+    if candidate in _KNOWN_503_STATES:
+        return candidate, candidate in _RETRYABLE_503_STATES
+    return "UPSTREAM_UNAVAILABLE", True
 
 
 def _extract_validation_reason(payload: Mapping[str, Any]) -> str:
@@ -91,6 +133,9 @@ def extract_safe_validation_diagnostic(payload: Mapping[str, Any]) -> dict[str, 
             val = detail.get(key)
             if isinstance(val, str) and val.strip():
                 out[key] = val.strip()[:240]
+        raw_http = detail.get("http_status")
+        if isinstance(raw_http, int) and not isinstance(raw_http, bool) and 400 <= raw_http <= 599:
+            out["http_status"] = str(raw_http)
     elif isinstance(detail, list) and detail:
         fields: list[str] = []
         for item in detail[:5]:
@@ -189,7 +234,21 @@ def _request_json(
     except urllib.error.HTTPError as exc:
         status_code = int(exc.code)
         raw = exc.read()
+    except (TimeoutError, socket.timeout) as exc:
+        raise WorkerMcpUpstreamUnavailableError(
+            "UPSTREAM_TIMEOUT",
+            status_code=504,
+            reason_code="UPSTREAM_TIMEOUT",
+            retryable=True,
+        ) from exc
     except urllib.error.URLError as exc:
+        if isinstance(getattr(exc, "reason", None), (TimeoutError, socket.timeout)):
+            raise WorkerMcpUpstreamUnavailableError(
+                "UPSTREAM_TIMEOUT",
+                status_code=504,
+                reason_code="UPSTREAM_TIMEOUT",
+                retryable=True,
+            ) from exc
         raise WorkerMcpBackendError(
             "BACKEND_UNREACHABLE",
         ) from exc
@@ -378,6 +437,15 @@ def submit_objective(
                 "SEMANTIC_VALIDATION_FAILED",
                 status_code=status_code,
                 reason_code=_extract_validation_reason(response),
+                payload=response,
+            )
+        if status_code == 503:
+            reason_code, retryable = _extract_unavailable_reason(response)
+            raise WorkerMcpUpstreamUnavailableError(
+                "SEMANTIC_SUBMIT_UNAVAILABLE",
+                status_code=503,
+                reason_code=reason_code,
+                retryable=retryable,
                 payload=response,
             )
         raise WorkerMcpBackendError(
