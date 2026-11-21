@@ -1,9 +1,9 @@
 {
   "requested_by": "ChatGPT",
-  "reason": "wake canonical Universal Worker to consume existing EDARSAHUB-R4-RESULT-DETAIL-DIAGNOSTIC-R1-20261120 READ_ONLY request; no duplicate; no Production",
+  "reason": "wake canonical Universal Worker to consume existing EDARSAHUB-PROD-DEV-R4-FINAL-EQUIVALENCE-READONLY-R2-20261120 request; no duplicate; no Production",
   "target_branch": "Edarsahub_Desarrollo",
-  "target_sha": "ac0292e3e91291c1e4fb7ea5c720125d6ad5a9f2",
+  "target_sha": "9a2fa6e909458b39284e9b17b3d59ff6a6518a00",
   "production_allowed": false,
-  "preferred_job_id": "EDARSAHUB-R4-RESULT-DETAIL-DIAGNOSTIC-R1-20261120",
+  "preferred_job_id": "EDARSAHUB-PROD-DEV-R4-FINAL-EQUIVALENCE-READONLY-R2-20261120",
   "attempt": 1
 }
