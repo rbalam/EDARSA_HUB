@@ -1,0 +1,205 @@
+{
+  "base_sha": "ac0292e3e91291c1e4fb7ea5c720125d6ad5a9f2",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-11-21T04:04:49Z",
+  "execution_base_sha": "ac0292e3e91291c1e4fb7ea5c720125d6ad5a9f2",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-WORKER-OPS-M2-SQL-CONCILIATION-R1-20261121",
+  "operation": "WORKER_SQL_BACKFILL_DEVELOPMENT",
+  "operation_summary": {
+    "batch_size": 200,
+    "capabilities_reconciled": 11,
+    "counts_after_pass1": {
+      "Sys_Worker_Capabilities": 11,
+      "Sys_Worker_Incidents": 107,
+      "Sys_Worker_Jobs": 3346,
+      "Sys_Worker_RecoveryEvents": 0
+    },
+    "counts_after_pass2": {
+      "Sys_Worker_Capabilities": 11,
+      "Sys_Worker_Incidents": 107,
+      "Sys_Worker_Jobs": 3346,
+      "Sys_Worker_RecoveryEvents": 0
+    },
+    "counts_before": {
+      "Sys_Worker_Capabilities": 11,
+      "Sys_Worker_Incidents": 107,
+      "Sys_Worker_Jobs": 3342,
+      "Sys_Worker_RecoveryEvents": 0
+    },
+    "database": "EDARSAHUB",
+    "idempotency_delta": {
+      "Sys_Worker_Capabilities": 0,
+      "Sys_Worker_Incidents": 0,
+      "Sys_Worker_Jobs": 0,
+      "Sys_Worker_RecoveryEvents": 0
+    },
+    "idempotency_verified": true,
+    "incidents_reconciled": 107,
+    "inconsistent_count": 285,
+    "jobs_reconciled": 3351,
+    "login_name": "HRLectura",
+    "mode": "BACKFILL_APPLIED",
+    "rejected_count": 1,
+    "returncode": 0,
+    "server_name": "ns559627",
+    "status": "PASS"
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-21T04:06:27Z",
+  "quality_gate": "PASS",
+  "requested_base_sha": "ac0292e3e91291c1e4fb7ea5c720125d6ad5a9f2",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "server_name",
+              "db_name",
+              "login_name",
+              "db_user"
+            ],
+            "name": "worker_sql_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "ns559627",
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "table_name"
+            ],
+            "name": "worker_sql_tables",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "dbo",
+                "Sys_Worker_Capabilities"
+              ],
+              [
+                "dbo",
+                "Sys_Worker_Incidents"
+              ],
+              [
+                "dbo",
+                "Sys_Worker_Jobs"
+              ],
+              [
+                "dbo",
+                "Sys_Worker_RecoveryEvents"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "procedure_name"
+            ],
+            "name": "worker_sql_procedures",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "dbo",
+                "sp_Worker_RecordRecoveryEvent"
+              ],
+              [
+                "dbo",
+                "sp_Worker_UpsertCapability"
+              ],
+              [
+                "dbo",
+                "sp_Worker_UpsertIncident"
+              ],
+              [
+                "dbo",
+                "sp_Worker_UpsertJobState"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "procedure_name",
+              "can_execute"
+            ],
+            "name": "worker_sql_hrlectura_permissions",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "sp_Worker_RecordRecoveryEvent",
+                1
+              ],
+              [
+                "sp_Worker_UpsertCapability",
+                1
+              ],
+              [
+                "sp_Worker_UpsertIncident",
+                1
+              ],
+              [
+                "sp_Worker_UpsertJobState",
+                1
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "row_count"
+            ],
+            "name": "worker_sql_row_counts",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "Sys_Worker_Capabilities",
+                "11"
+              ],
+              [
+                "Sys_Worker_Incidents",
+                "107"
+              ],
+              [
+                "Sys_Worker_Jobs",
+                "3346"
+              ],
+              [
+                "Sys_Worker_RecoveryEvents",
+                "0"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-11-21T04:02:36Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto preflight SQL HRLectura, backfill historico por lotes e idempotente via SPs estrechos en Desarrollo y post-audit SQL HRLectura. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
