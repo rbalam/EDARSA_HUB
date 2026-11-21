@@ -229,8 +229,9 @@ class RBACRepositorySQL:
                 VALUES (%s, %s, %s, %s, 1, GETDATE(), %s)
             ''', (nombre, descripcion, descripcion, es_sistema, nivel))
             
-            # Obtener RolID generado
-            cur.execute("SELECT @@IDENTITY")
+            # Obtener el RolID generado dentro del scope actual.
+            # Evita capturar identidades producidas por triggers.
+            cur.execute("SELECT CAST(SCOPE_IDENTITY() AS INT)")
             rol_id = int(cur.fetchone()[0])
             
             # Insertar permisos
@@ -265,7 +266,16 @@ class RBACRepositorySQL:
                 "activo": True,
                 "permisos": permisos,
             }
-            
+
+        except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                logger.exception(
+                    "[RBAC-SQL] Fallo ejecutando rollback de create_rol"
+                )
+            raise
+
         finally:
             conn.close()
     
@@ -363,19 +373,37 @@ class RBACRepositorySQL:
             conn.close()
     
     def seed_roles(self, roles: List[Dict]) -> int:
-        """Siembra roles del sistema si no existen."""
+        """Siembra roles faltantes de forma idempotente ante concurrencia."""
         count = 0
+
         for r in roles:
-            existing = self.get_rol_by_nombre(r["nombre"])
-            if not existing:
+            nombre = r["nombre"]
+
+            if self.get_rol_by_nombre(nombre):
+                continue
+
+            try:
                 self.create_rol({
-                    "nombre": r["nombre"],
+                    "nombre": nombre,
                     "descripcion": r["descripcion"],
                     "permisos": r["permisos"],
                     "nivel_jerarquia": r["nivel_jerarquia"],
                     "es_sistema": r.get("es_sistema", True),
                 })
                 count += 1
+            except pymssql.Error:
+                # Otro proceso puede haber creado el mismo rol entre
+                # la lectura y el INSERT. La restricción UNIQUE canónica
+                # protege el dato; releer permite tratar esa carrera como
+                # idempotencia exitosa sin ocultar otros errores.
+                if self.get_rol_by_nombre(nombre):
+                    logger.info(
+                        "[RBAC-SQL] Rol %s materializado concurrentemente",
+                        nombre,
+                    )
+                    continue
+                raise
+
         return count
     
     # =========================================================================

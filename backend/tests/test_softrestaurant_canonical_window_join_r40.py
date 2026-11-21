@@ -13,7 +13,7 @@ def test_r40_is_superseded_by_executive_apertura_contract():
     assert 'WHERE CONVERT(varchar, turnos.apertura, 112)' in executive
     assert 'AND cheques.cancelado = 0' in executive
     query_block = header.split('QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA =', 1)[1].split('def build_softrestaurant_ventas_cerradas_query', 1)[0]
-    assert 'CONVERT(varchar, tr.apertura, 112)' in query_block
+    assert 'DATEADD(hour, -{offset_hours}, tr.apertura)' in query_block
     assert 'ch.cancelado = 0' in query_block
     assert 'cierre IS NOT NULL' not in query_block
     assert 'idempresa' not in query_block
@@ -23,3 +23,7 @@ def test_r40_is_superseded_by_executive_apertura_contract():
     assert 'fecha_siguiente' not in builder
     detail_range = detail.split('def _soft_operational_datetime_range', 1)[1].split('def _extract_soft(', 1)[0]
     assert 'get_operational_datetime_range_for_fecha_operacion' not in detail_range
+    assert 'timedelta(hours=9)' in detail_range
+    assert "== 'ESTELAR'" not in detail_range
+    assert "== 'CIENFUEGOS'" not in detail_range
+    assert "== '130MID'" not in detail_range

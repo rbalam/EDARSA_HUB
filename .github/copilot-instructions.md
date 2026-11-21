@@ -73,6 +73,6 @@ Documento normativo:
 # Adapter: GitHub Copilot
 
 Read AGENTS.md and docs/agent-governance/AGENT_POLICY.md before modifying anything.
-Read docs/agent-governance/checkpoints/CURRENT.md and continue only from NEXT.
+Read docs/agent-governance/checkpoints/CURRENT.md and preserve its CxP NEXT. For EDARSAHUB_MCP_RECOVERY only, when the limited exception is recorded in ACTIVE_DECISIONS.md and its dedicated checkpoint exists, also read docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md and continue only from that checkpoint's NEXT for READ_ONLY audit and governance preparation. Keep CxP paused. Use only the existing Universal Worker for this governance formalization. No MCP implementation or technical JOB, no in-process flag, no Production, no parallel execution, and one writer maximum.
 Run tools/agent_guard/bootstrap_agent_context.sh and tools/agent_guard/preflight_agent.sh.
 Never guess. Audit before creating. Preserve shared workspace.

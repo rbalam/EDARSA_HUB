@@ -1,0 +1,73 @@
+name: Agent-Reach Live Canary
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact Edarsahub_Desarrollo SHA to certify
+        required: true
+        type: string
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - backend/tests/live_canary_requests/gate5g_worker_autotrigger_20260914.json
+
+permissions:
+  contents: read
+
+jobs:
+  live-canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXPECTED_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXPECTED_SHA }}
+          persist-credentials: false
+
+      - name: Verify exact SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          echo "EXACT_SHA_CHECK=PASS"
+
+      - name: Build canonical Agent-Reach image
+        shell: bash
+        run: |
+          set -euo pipefail
+          infra/agent-reach/build.sh
+
+      - name: Set up Python test runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install public backend dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-ci.txt
+          python -m pip install -r /tmp/requirements-ci.txt
+
+      - name: Execute real live canary
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH=backend
+          python -m pytest -q backend/tests/test_agent_reach_live_network_canary.py
+
+      - name: Upload sanitized live evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-reach-live-canary-evidence-${{ env.EXPECTED_SHA }}
+          path: backend/tests/agent_reach_live_network_canary_evidence.json
+          if-no-files-found: error
+          retention-days: 7

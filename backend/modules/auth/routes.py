@@ -51,15 +51,18 @@ from typing import Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Response, Request
 
 from core.security import (
-    get_current_user, 
-    set_auth_cookie, 
+    AUTH_COOKIE_NAME,
+    get_current_user,
+    set_auth_cookie,
     clear_auth_cookie,
     get_current_user_dual,
     create_access_token,
+    verify_token,
     ACCESS_TOKEN_MINUTES
 )
-# FASE A P1-REFRESH-TOKENS: Importar módulo de refresh tokens
+# FASE A P1-REFRESH-TOKENS / P1-2: Importar módulo de refresh tokens y sesiones
 from core.refresh_tokens import (
+    RefreshTokenReuseError,
     generate_refresh_token,
     hash_refresh_token,
     set_refresh_cookie,
@@ -80,6 +83,45 @@ from core.rbac.service import get_user_permissions as get_rbac_user_permissions
 
 # Router sin prefix - se agregará en server.py como /api
 router = APIRouter(tags=["auth"])
+
+
+def _extract_request_access_token(request: Request) -> Optional[str]:
+    """Extrae el access token activo del request con la misma prioridad que get_current_user_dual."""
+    auth_header = (request.headers.get("authorization") or "").strip()
+    if auth_header.startswith("Bearer "):
+        candidate = auth_header[7:].strip()
+        if candidate and candidate not in ("null", "undefined"):
+            return candidate
+    cookie_token = (request.cookies.get(AUTH_COOKIE_NAME) or "").strip()
+    if cookie_token and cookie_token not in ("null", "undefined"):
+        return cookie_token
+    return None
+
+
+def _canonical_session_user_ids(user_dict: Dict) -> List[str]:
+    """Resuelve los identificadores canonicos del usuario para dbo.Sesiones sin hash()."""
+    raw_candidates = [
+        user_dict.get("id"),
+        user_dict.get("_id"),
+        user_dict.get("public_uuid"),
+        user_dict.get("PublicUUID"),
+        user_dict.get("usuario_id"),
+        user_dict.get("UsuarioID"),
+        user_dict.get("_sql_usuario_id"),
+    ]
+    resolved: List[str] = []
+    seen = set()
+    for val in raw_candidates:
+        if val is None or isinstance(val, bool):
+            continue
+        text = str(val).strip()
+        if not text:
+            continue
+        key = text.lower()
+        if key not in seen:
+            seen.add(key)
+            resolved.append(text)
+    return resolved
 
 
 # ============================================================================
@@ -107,44 +149,33 @@ async def register(user_data: UserCreate):
 @router.post("/auth/login")
 async def login(credentials: UserLogin, request: Request, response: Response):
     """
-    Autentica un usuario y retorna token JWT.
-    
-    FASE AUTH-SECURITY-01: 
-    - Retorna {token, user} en body para compatibilidad con frontend actual
-    - TAMBIÉN setea cookie httpOnly para futura migración
-    
-    FASE A P1-REFRESH-TOKENS:
-    - Genera access token corto (ACCESS_TOKEN_MINUTES)
-    - Genera refresh token (7 días)
-    - Guarda hash del refresh token en EDARSAHUB.Sesiones
-    - Setea ambas cookies httpOnly
-    - MANTIENE respuesta legacy {token, user} por compatibilidad temporal
+    Autentica un usuario, crea una sesion persistente revocable en dbo.Sesiones (fail-closed)
+    y emite un access token JWT vinculado a ese SesionID ('sid') junto con el refresh token.
     """
-    # Autenticar usuario (valida credenciales contra MongoDB)
+    import asyncio
+    import logging
+
     result = await service.login_user(credentials.email, credentials.password)
-    
-    # Extraer datos del usuario
+
     user_data = result.get("user", {})
     user_id = user_data.get("id", user_data.get("_id", ""))
     email = user_data.get("email", credentials.email)
     role = user_data.get("role", "Usuario")
-    
-    # FASE A P1-REFRESH-TOKENS: Crear tokens
-    # Access token corto (15 minutos por defecto)
-    access_token = create_access_token(str(user_id), email, role, token_type="internal")
-    
-    # Refresh token (7 días por defecto)
+    raw_uid = user_data.get("usuario_id") if user_data.get("usuario_id") is not None else user_data.get("UsuarioID")
+    try:
+        canonical_uid = int(raw_uid) if raw_uid is not None and not isinstance(raw_uid, bool) else None
+    except Exception:
+        canonical_uid = None
+    canonical_puuid = user_data.get("public_uuid") or user_data.get("PublicUUID")
+    if not canonical_puuid and isinstance(user_id, str) and "-" in user_id:
+        canonical_puuid = user_id
+
     refresh_token = generate_refresh_token()
-    
-    # Obtener contexto del request
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    
-    # Crear sesión en EDARSAHUB SQL Server (NO BLOQUEANTE)
-    # OPTIMIZACIÓN: Timeout de 3 segundos para no bloquear login
-    session_info = None
+
+    # P1-2: Crear sesion en EDARSAHUB SQL Server de forma fail-closed antes de emitir el JWT
     try:
-        import asyncio
         session_info = await asyncio.wait_for(
             create_session(
                 user_id=str(user_id),
@@ -153,174 +184,211 @@ async def login(credentials: UserLogin, request: Request, response: Response):
                 user_agent=user_agent,
                 user_type="interno"
             ),
-            timeout=3.0  # Timeout de 3 segundos
+            timeout=5.0
         )
     except asyncio.TimeoutError:
-        import logging
-        logging.warning(f"Timeout creando sesión en EDARSAHUB (continuando con login legacy)")
+        logging.error("[AUTH] Timeout creando sesión segura en EDARSAHUB (fail-closed)")
+        raise HTTPException(
+            status_code=503,
+            detail="No se pudo iniciar la sesión segura. Intenta nuevamente."
+        )
     except Exception as e:
-        # Si falla la creación de sesión en SQL, continuar con login legacy
-        import logging
-        logging.warning(f"No se pudo crear sesión en EDARSAHUB (continuando con login legacy): {e}")
-    
-    # Setear cookies httpOnly
-    # Access token cookie (corta duración)
+        logging.error(f"[AUTH] Error creando sesión segura en EDARSAHUB (fail-closed): {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="No se pudo iniciar la sesión segura. Intenta nuevamente."
+        )
+
+    session_id = (session_info or {}).get("session_id")
+    if not session_id:
+        logging.error("[AUTH] create_session no devolvió session_id válido (fail-closed)")
+        raise HTTPException(
+            status_code=503,
+            detail="No se pudo iniciar la sesión segura. Intenta nuevamente."
+        )
+
+    access_token = create_access_token(
+        str(user_id),
+        email,
+        role,
+        token_type="internal",
+        usuario_id=canonical_uid,
+        public_uuid=str(canonical_puuid) if canonical_puuid else None,
+        session_id=str(session_id),
+    )
+
     set_auth_cookie(response, access_token, short_lived=True)
-    
-    # Refresh token cookie (solo si se creó sesión)
-    if session_info:
-        set_refresh_cookie(response, refresh_token)
-    
-    # Retornar respuesta LEGACY para compatibilidad con frontend actual
-    # NOTA: El campo "token" seguirá siendo el access token corto
-    # El frontend actual lo guarda en memoryToken como fallback
-    # P5-10B: Sanitizar user_data para no exponer password_hash
-    safe_user_data = {k: v for k, v in user_data.items() if k not in ('password_hash', 'password', 'PasswordHashTexto')}
-    
+    set_refresh_cookie(response, refresh_token)
+
+    safe_user_data = {
+        k: v for k, v in user_data.items()
+        if k not in ('password_hash', 'password', 'PasswordHashTexto', '_session_id')
+    }
+
     return {
         "token": access_token,
         "user": safe_user_data,
-        "expires_in": ACCESS_TOKEN_MINUTES * 60  # Nuevo campo informativo
+        "expires_in": ACCESS_TOKEN_MINUTES * 60
     }
 
 
 @router.post("/auth/logout")
 async def logout(request: Request, response: Response):
     """
-    Cierra la sesión del usuario.
-    
-    FASE AUTH-SECURITY-01: Elimina la cookie de autenticación.
-    
-    FASE A P1-REFRESH-TOKENS:
-    - Revoca la sesión actual en EDARSAHUB.Sesiones
-    - Elimina ambas cookies (access y refresh)
-    
-    Nota: El frontend actual usa clearSession() para limpiar localStorage/sessionStorage.
-    Este endpoint complementa esa funcionalidad limpiando las cookies httpOnly.
+    Cierra la sesión del usuario e invalida inmediatamente el SesionID en dbo.Sesiones,
+    tanto por cookie refresh token como por el claim 'sid' del access token (fail-closed).
     """
-    # Obtener refresh token de cookie para identificar la sesión
-    refresh_token = get_refresh_token_from_request(request)
-    
-    if refresh_token:
-        # Validar y obtener sesión
-        session = await validate_and_get_session(refresh_token)
-        
-        if session:
-            # Revocar sesión en BD
-            ip_address = request.client.host if request.client else None
-            user_agent = request.headers.get("user-agent")
-            
-            try:
-                await revoke_session(
-                    session_id=session["session_id"],
-                    reason="logout",
-                    ip_address=ip_address,
-                    user_agent=user_agent
-                )
-            except Exception as e:
-                import logging
-                logging.warning(f"Error revocando sesión: {e}")
-    
-    # Eliminar cookies
+    import logging
+
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    session_ids_to_revoke: List[str] = []
+
     clear_auth_cookie(response)
     clear_refresh_cookie(response)
-    
+
+    try:
+        refresh_token = get_refresh_token_from_request(request)
+        if refresh_token:
+            session = await validate_and_get_session(refresh_token, expected_user_type="interno")
+            if session and session.get("session_id"):
+                session_ids_to_revoke.append(str(session["session_id"]))
+
+        access_token = _extract_request_access_token(request)
+        if access_token:
+            try:
+                payload = verify_token(access_token)
+                sid = str(payload.get("sid") or "").strip()
+                if sid and sid not in session_ids_to_revoke:
+                    session_ids_to_revoke.append(sid)
+            except HTTPException:
+                pass
+
+        for sid in session_ids_to_revoke:
+            await revoke_session(
+                session_id=sid,
+                reason="logout",
+                ip_address=ip_address,
+                user_agent=user_agent
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"[AUTH] Error revocando sesión en logout (fail-closed): {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Error cerrando sesión en el servidor"
+        )
+
     return {"message": "Sesión cerrada correctamente"}
 
 
 @router.post("/auth/refresh")
 async def refresh_tokens(request: Request, response: Response):
     """
-    FASE A P1-REFRESH-TOKENS: Renueva el access token usando el refresh token.
-    
-    Este endpoint:
-    1. Lee el refresh token de la cookie
-    2. Valida que exista una sesión activa con ese token
-    3. Genera un nuevo access token
-    4. Rota el refresh token (el anterior queda inválido)
-    5. Detecta y maneja replay attacks
-    
-    Returns:
-        200: Nuevos tokens seteados en cookies
-        401: Refresh token inválido, expirado, o replay detectado
+    FASE A P1-REFRESH-TOKENS / P1-2: Renueva el access token usando rotacion atomica
+    de refresh token en dbo.Sesiones con proteccion contra replay y concurrencia.
     """
-    # Obtener refresh token de cookie
+    import logging
+
     refresh_token = get_refresh_token_from_request(request)
-    
+
     if not refresh_token:
         raise HTTPException(status_code=401, detail="No refresh token")
-    
+
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    
-    # Verificar si es replay attack
+
     is_replay, replay_info = await detect_and_handle_replay(
         refresh_token=refresh_token,
         ip_address=ip_address,
-        user_agent=user_agent
+        user_agent=user_agent,
+        expected_user_type="interno",
     )
-    
+
     if is_replay:
-        # Limpiar cookies y forzar re-login
         clear_auth_cookie(response)
         clear_refresh_cookie(response)
         raise HTTPException(
-            status_code=401, 
+            status_code=401,
             detail="Sesión inválida - posible uso no autorizado detectado"
         )
-    
-    # Validar sesión
-    session = await validate_and_get_session(refresh_token)
-    
+
+    session = await validate_and_get_session(refresh_token, expected_user_type="interno")
+
     if not session:
-        # Token no encontrado o expirado
         clear_auth_cookie(response)
         clear_refresh_cookie(response)
         raise HTTPException(status_code=401, detail="Sesión expirada")
-    
-    # Obtener datos del usuario para el nuevo access token
-    # El user_id está en la sesión, necesitamos el email y role
+
     user_id = session["user_id"]
-    
-    # Buscar usuario en MongoDB para obtener email y role
+
     from modules.auth.service import get_user_by_id
     user_data = await get_user_by_id(user_id)
-    
-    if not user_data:
+
+    if not user_data or not user_data.get("active", True):
+        try:
+            await revoke_session(
+                session_id=session["session_id"],
+                reason="user_inactive",
+                ip_address=ip_address,
+                user_agent=user_agent,
+            )
+        except Exception:
+            pass
         clear_auth_cookie(response)
         clear_refresh_cookie(response)
-        raise HTTPException(status_code=401, detail="Usuario no encontrado")
-    
+        raise HTTPException(status_code=401, detail="Usuario no autorizado")
+
     email = user_data.get("email", "")
     role = user_data.get("role", "Usuario")
-    
-    # Generar nuevos tokens
-    new_access_token = create_access_token(str(user_id), email, role, token_type="internal")
-    new_refresh_token = generate_refresh_token()
-    
-    # Rotar refresh token en BD
+    raw_uid = user_data.get("usuario_id") if user_data.get("usuario_id") is not None else user_data.get("UsuarioID")
     try:
-        await rotate_refresh_token(
+        canonical_uid = int(raw_uid) if raw_uid is not None and not isinstance(raw_uid, bool) else None
+    except Exception:
+        canonical_uid = None
+    canonical_puuid = user_data.get("public_uuid") or user_data.get("PublicUUID")
+    if not canonical_puuid and isinstance(user_id, str) and "-" in str(user_id):
+        canonical_puuid = str(user_id)
+
+    new_refresh_token = generate_refresh_token()
+
+    # Rotar atomicamente en BD ANTES de emitir el nuevo access token vinculado al nuevo SesionID
+    try:
+        rotated = await rotate_refresh_token(
             old_session_id=session["session_id"],
             familia_id=session["familia_id"],
             user_id=user_id,
             new_refresh_token=new_refresh_token,
             ip_address=ip_address,
             user_agent=user_agent,
-            user_type=session.get("user_type", "interno")
+            user_type="interno",
+            old_refresh_token=refresh_token,
+        )
+    except RefreshTokenReuseError:
+        clear_auth_cookie(response)
+        clear_refresh_cookie(response)
+        raise HTTPException(
+            status_code=401,
+            detail="Sesión inválida - posible uso no autorizado detectado"
         )
     except Exception as e:
-        import logging
         logging.error(f"Error rotando token: {e}")
         raise HTTPException(status_code=500, detail="Error interno")
-    
-    # Setear nuevas cookies
+
+    new_access_token = create_access_token(
+        str(user_id),
+        email,
+        role,
+        token_type="internal",
+        usuario_id=canonical_uid,
+        public_uuid=str(canonical_puuid) if canonical_puuid else None,
+        session_id=str(rotated["session_id"]),
+    )
+
     set_auth_cookie(response, new_access_token, short_lived=True)
     set_refresh_cookie(response, new_refresh_token)
-    
-    # AUTH-REFRESH: Devolver el nuevo access token en el body.
-    # get_current_user lee SOLO el header Authorization: Bearer, por lo que el SPA
-    # debe poder actualizar su token (sessionStorage) tras el refresh silencioso.
+
     return {
         "token": new_access_token,
         "message": "Token renovado",
@@ -331,50 +399,42 @@ async def refresh_tokens(request: Request, response: Response):
 @router.post("/auth/logout-all")
 async def logout_all_sessions(request: Request, response: Response):
     """
-    FASE A P1-REFRESH-TOKENS: Cierra TODAS las sesiones del usuario.
-    
-    Útil cuando:
-    - El usuario sospecha que su cuenta fue comprometida
-    - Quiere cerrar sesiones en otros dispositivos
-    
-    Returns:
-        200: Todas las sesiones revocadas
-        401: No autenticado
+    FASE A P1-REFRESH-TOKENS / P1-2: Revoca TODAS las sesiones internas activas del usuario
+    en dbo.Sesiones usando identificadores canonicos (sin hash() inseguro), fail-closed.
     """
-    # Verificar autenticación actual
+    import logging
+
     try:
         current_user = await get_current_user_dual(request)
     except HTTPException:
         raise HTTPException(status_code=401, detail="No autenticado")
-    
-    user_id = current_user.get("id", current_user.get("_id"))
-    
-    if not user_id:
+
+    canonical_user_ids = _canonical_session_user_ids(current_user)
+    if not canonical_user_ids:
         raise HTTPException(status_code=401, detail="Usuario no identificado")
-    
+
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    
-    # Convertir user_id a int si es necesario
-    user_id_int = int(user_id) if str(user_id).isdigit() else hash(str(user_id)) % 2147483647
-    
-    # Revocar todas las sesiones
-    try:
-        sessions_revoked = await revoke_all_user_sessions(
-            user_id=user_id_int,
-            reason="logout_all",
-            ip_address=ip_address,
-            user_agent=user_agent
-        )
-    except Exception as e:
-        import logging
-        logging.error(f"Error revocando sesiones: {e}")
-        sessions_revoked = 0
-    
-    # Limpiar cookies de la sesión actual
+
     clear_auth_cookie(response)
     clear_refresh_cookie(response)
-    
+
+    try:
+        sessions_revoked = await revoke_all_user_sessions(
+            user_id=canonical_user_ids,
+            reason="logout_all",
+            revoked_by_user_id=canonical_user_ids[0],
+            ip_address=ip_address,
+            user_agent=user_agent,
+            expected_user_type="interno",
+        )
+    except Exception as e:
+        logging.error(f"[AUTH] Error revocando sesiones en logout-all (fail-closed): {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="No se pudieron revocar todas las sesiones"
+        )
+
     return {
         "message": "Todas las sesiones cerradas",
         "sessions_revoked": sessions_revoked
@@ -384,29 +444,44 @@ async def logout_all_sessions(request: Request, response: Response):
 @router.get("/auth/me")
 async def get_me(request: Request):
     """
-    Retorna los datos del usuario autenticado.
-    
-    FASE AUTH-SECURITY-01: Soporta autenticación dual (Header O Cookie).
-    FASE FILTRO-FIX: También retorna token para setear en memoria (CORS fallback).
-    P5-10B: No expone password_hash.
+    Retorna los datos del usuario autenticado con validacion fail-closed de sesion.
+    P1-2: NUNCA genera ni reactiva un nuevo token tras logout; devuelve el token vigente
+    ya verificado del request para hidratar memoria en el SPA sin extender su expiracion.
     """
     current_user = await get_current_user_dual(request)
-    
-    # P5-10B: Sanitizar - nunca exponer password
-    safe_user = {k: v for k, v in current_user.items() if k not in ('password_hash', 'password', 'PasswordHashTexto')}
-    
-    # Generar token fresco para que el frontend pueda usarlo en memoria
-    # Esto soluciona el problema donde al recargar la página el token no está en memoria
+
+    # Defensa en profundidad: si un token legacy sin 'sid' trae cookie refresh revocada/expirada, rechazar
+    if not current_user.get("_session_id"):
+        refresh_token = get_refresh_token_from_request(request)
+        if refresh_token:
+            active_session = await validate_and_get_session(refresh_token, expected_user_type="interno")
+            if not active_session:
+                raise HTTPException(status_code=401, detail="Sesión revocada o expirada")
+
+    safe_user = {
+        k: v for k, v in current_user.items()
+        if k not in ('password_hash', 'password', 'PasswordHashTexto', '_session_id')
+    }
+
     user_id = safe_user.get("id", safe_user.get("_id", ""))
-    email = safe_user.get("email", "")
-    role = safe_user.get("role", safe_user.get("rol", ""))
-    
-    from core.security import create_access_token
-    fresh_token = create_access_token(str(user_id), email, role, token_type="internal")
-    
+    raw_uid = safe_user.get("usuario_id") if safe_user.get("usuario_id") is not None else safe_user.get("UsuarioID")
+    try:
+        canonical_uid = int(raw_uid) if raw_uid is not None and not isinstance(raw_uid, bool) else None
+    except Exception:
+        canonical_uid = None
+    canonical_puuid = safe_user.get("public_uuid") or safe_user.get("PublicUUID")
+    if not canonical_puuid and isinstance(user_id, str) and "-" in str(user_id):
+        canonical_puuid = str(user_id)
+    if canonical_uid is not None:
+        safe_user["usuario_id"] = canonical_uid
+    if canonical_puuid:
+        safe_user["public_uuid"] = str(canonical_puuid)
+
+    active_token = _extract_request_access_token(request)
+
     return {
         **safe_user,
-        "token": fresh_token  # Token para setear en memoria
+        "token": active_token
     }
 
 
@@ -636,7 +711,40 @@ async def _build_effective_permissions_payload(current_user: Dict) -> Dict:
     db = service.repo.get_db()
     rbac_payload = get_rbac_user_permissions(db, current_user)
 
-    permisos_originales = rbac_payload.get("permisos", []) or []
+    permisos_originales = list(rbac_payload.get("permisos", []) or [])
+    raw_uid = current_user.get("usuario_id") if current_user.get("usuario_id") is not None else current_user.get("UsuarioID")
+    try:
+        canonical_uid = int(raw_uid) if raw_uid is not None and not isinstance(raw_uid, bool) else None
+    except Exception:
+        canonical_uid = None
+    canonical_puuid = (
+        current_user.get("public_uuid")
+        or current_user.get("PublicUUID")
+        or (str(context.user_id) if context.user_id and "-" in str(context.user_id) else None)
+    )
+
+    roles_contexto = []
+    if canonical_uid is not None:
+        try:
+            from core.rbac_sql.service import RBACSQLService
+            sql_perms = RBACSQLService.get_effective_permissions(canonical_uid) or []
+            for sp in sql_perms:
+                if sp and sp not in permisos_originales:
+                    permisos_originales.append(sp)
+        except Exception:
+            pass
+        try:
+            from modules.rbac_context_sql.context_service import RBACContextService
+            ctx_info = RBACContextService().get_user_context(current_user)
+            if isinstance(ctx_info, dict):
+                roles_contexto = list(ctx_info.get("roles_contexto") or [])
+                for p in ctx_info.get("permisos_efectivos") or []:
+                    code = p.get("CodigoPermiso") or p.get("codigo_permiso")
+                    if code and code not in permisos_originales:
+                        permisos_originales.append(code)
+        except Exception:
+            roles_contexto = []
+
     permisos_flat = _normalize_permission_codes(permisos_originales)
     permissions_by_module = _group_permissions_by_module(permisos_flat)
 
@@ -653,10 +761,13 @@ async def _build_effective_permissions_payload(current_user: Dict) -> Dict:
 
     return {
         "user_id": context.user_id,
+        "usuario_id": canonical_uid,
+        "public_uuid": canonical_puuid,
         "email": context.email,
         "role_legacy": current_user.get("role"),
         "source": "RBAC_SQL_CANONICAL_WITH_LEGACY_COMPAT",
         "roles": roles,
+        "roles_contexto": roles_contexto,
         "permissions": permissions_by_module,
         "permissions_flat": permisos_flat,
         "scope": {

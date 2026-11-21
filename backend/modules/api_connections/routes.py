@@ -27,8 +27,16 @@ from .repository import (
     delete_api_connection,
     sync_all_to_mongo_cache,
     test_api_connection_health,
-    check_duplicate_api
+    check_duplicate_api,
+    get_api_replication_policy,
+    update_api_replication_policy,
 )
+from .assignment_repository import (
+    list_api_operational_assignments,
+    upsert_api_operational_assignment,
+    deactivate_api_operational_assignment,
+)
+from core.rbac.middleware import require_explicit_permission
 
 router = APIRouter(prefix="/api-connections", tags=["API Connections"])
 security = HTTPBearer()
@@ -43,11 +51,7 @@ class ApiConnectionCreate(BaseModel):
     url: str = Field(..., description="URL del endpoint API (único)")
     api_key: Optional[str] = Field(None, description="API Key para autenticación")
     tipo: str = Field("MPRO", description="Tipo de sistema (MPRO, SoftRestaurant)")
-    servidor_padre: Optional[str] = Field(None, description="Host del servidor padre en nube")
-    servidor_padre_id: Optional[str] = Field(None, description="ID del servidor padre")
-    sucursal_destino: Optional[str] = Field(None, description="Nombre de la sucursal destino")
-    hora_replica: str = Field("04:00", description="Hora de réplica diaria (HH:MM)")
-    solo_ventas_dia: bool = Field(True, description="Solo obtener ventas del día actual")
+    solo_ventas_dia: bool = Field(True, description="Compatibilidad de lectura; la relación operativa se administra por assignments")
     activo: bool = Field(True, description="Si la conexión está activa")
     visible_en_operaciones: bool = Field(False, description="Visible en módulo Operaciones")
 
@@ -57,13 +61,25 @@ class ApiConnectionUpdate(BaseModel):
     url: Optional[str] = None
     api_key: Optional[str] = None
     tipo: Optional[str] = None
-    servidor_padre: Optional[str] = None
-    servidor_padre_id: Optional[str] = None
-    sucursal_destino: Optional[str] = None
-    hora_replica: Optional[str] = None
     solo_ventas_dia: Optional[bool] = None
     activo: Optional[bool] = None
     visible_en_operaciones: Optional[bool] = None
+
+
+class ApiOperationalAssignmentRequest(BaseModel):
+    empresa_id: int
+    rol_conexion: str = Field("VENTAS_DIA_API_LOCAL")
+    numero_sucursal_sistema: Optional[int] = None
+    codigo_sucursal_sistema: Optional[str] = None
+    nombre_sucursal_sistema: Optional[str] = None
+    prioridad: int = Field(1, ge=1)
+    es_principal: bool = True
+
+
+class ApiReplicationPolicyRequest(BaseModel):
+    enabled: bool
+    cutoff_time: str = Field(..., pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    timezone: str = Field(..., min_length=1)
 
 
 class TestConnectionRequest(BaseModel):
@@ -166,6 +182,97 @@ async def get_api(api_id: str, credentials: HTTPAuthorizationCredentials = Depen
         raise HTTPException(status_code=503, detail=f"Error accediendo a base de datos")
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+# ============================================================================
+# ASIGNACIONES OPERATIVAS OPCIONALES
+# ============================================================================
+
+@router.get("/{api_id}/assignments")
+async def list_api_assignments(
+    api_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    get_current_user(credentials)
+    return {
+        "success": True,
+        "data": list_api_operational_assignments(api_id),
+        "source": "SISTEMA_EMPRESASSERVIDORES",
+    }
+
+
+@router.post("/{api_id}/assignments")
+async def create_or_reactivate_api_assignment(
+    api_id: str,
+    data: ApiOperationalAssignmentRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    _admin: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
+):
+    get_current_user(credentials)
+    assignment = upsert_api_operational_assignment(
+        api_id,
+        **data.model_dump(),
+    )
+    return {"success": True, "data": assignment}
+
+
+@router.delete("/{api_id}/assignments/{empresa_id}/{rol_conexion}")
+async def remove_api_assignment(
+    api_id: str,
+    empresa_id: int,
+    rol_conexion: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    _admin: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
+):
+    get_current_user(credentials)
+    changed = deactivate_api_operational_assignment(
+        api_id,
+        empresa_id=empresa_id,
+        rol_conexion=rol_conexion,
+    )
+    return {"success": True, "changed": changed}
+
+
+# ============================================================================
+# POLITICA DE REPLICA API_LOCAL
+# ============================================================================
+
+@router.get("/{api_id}/replication-policy")
+async def get_replication_policy(
+    api_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    get_current_user(credentials)
+    try:
+        return {
+            "success": True,
+            "data": get_api_replication_policy(api_id),
+            "source": "API_CONNECTION_CONFIG",
+        }
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Conexión API no encontrada")
+
+
+@router.put("/{api_id}/replication-policy")
+async def put_replication_policy(
+    api_id: str,
+    data: ApiReplicationPolicyRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    _admin: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
+):
+    user = get_current_user(credentials)
+    try:
+        policy = await update_api_replication_policy(
+            api_id,
+            data.model_dump(),
+            updated_by=user.get("email", "system"),
+        )
+        return {"success": True, "data": policy}
+    except ValueError as exc:
+        code = str(exc)
+        if code == "API_LOCAL_NOT_FOUND":
+            raise HTTPException(status_code=404, detail="Conexión API no encontrada")
+        raise HTTPException(status_code=400, detail="Política de réplica inválida")
 
 
 # ============================================================================

@@ -36,11 +36,12 @@ def test_sync_scripts_use_shared_safety_guard():
         assert "edarsahub_require_sync_enabled" in text
 
 
-def test_dirty_app_is_observed_not_blanket_blocked():
+def test_dirty_app_is_hard_blocked_without_discarding_local_work():
     guard = ROOT / "tools/mirror_sync/shared_app_safety_guard.sh"
     text = guard.read_text(encoding="utf-8")
-    assert "LOCAL_DIRTY_COLLISION_AUDIT_REQUIRED" in text
+    assert "DECISION=GIT_WORKTREE_NOT_CLEAN" in text
     assert "LOCAL_WORK_PRESERVATION_REQUIRED=YES" in text
+    assert "LOCAL_DIRTY_COLLISION_AUDIT_REQUIRED" not in text
     assert "DEFERRED_LOCAL_DIRTY" not in text
 
 
@@ -51,7 +52,6 @@ def test_apply_owns_collision_decision():
     assert "UNTRACKED_COLLISION=" in text
     assert "ABORT=LOCAL_TRACKED_COLLISION" in text
     assert "ABORT=UNTRACKED_WOULD_BE_OVERWRITTEN" in text
-    assert "git merge --ff-only" in text
 
 
 def test_worker_control_plane_has_no_stash_or_reset():

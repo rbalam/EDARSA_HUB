@@ -2,31 +2,28 @@
 
 ## Objetivo
 
-Eliminar la dependencia operativa de Produccion respecto del Preview/IDE de
-Emergent sin modificar la logica ni el archivo protegido
-`sync_comercial_abiertas_v2_job.py`.
+Eliminar la dependencia operativa de Produccion respecto del ciclo de vida del
+Preview/IDE de Emergent sin modificar la logica del job protegido
+`sync_comercial_abiertas_v2`.
 
-Este hotfix parte de `Edarsahub_Produccion` y no incorpora el historial de
-commits de Desarrollo.
+La correccion introduce propiedad explicita del runtime y una aplicacion
+standalone para ejecutar el scheduler productivo como servicio always-on.
 
-## Arquitectura objetivo
+## Regla de arquitectura
+
+Despues del cutover debe existir un unico propietario de los jobs periodicos
+productivos:
 
 ```text
-POS / APIs
-    |
-    v
-Production Scheduler Service (always-on)
-    |
-    v
-EDARSAHUB SQL
-    |
-    v
-Production Web
+POS/APIs -> Production Scheduler Service -> EDARSAHUB -> Production Web
 ```
 
-Emergent Preview queda fuera del camino de escritura productivo.
+El Preview de Emergent queda fuera de esa cadena. Dormir, reiniciar o recrear
+Preview no debe detener ni reactivar sincronizaciones productivas.
 
-## Runtime del Scheduler de Produccion
+## Variables de entorno
+
+### Servicio Scheduler de Produccion
 
 ```text
 EDARSA_ENV=PRODUCTION
@@ -36,13 +33,13 @@ SCHEDULER_ENABLED=true
 SCHEDULER_SYNC_COMERCIAL_ABIERTAS_V2_ENABLED=true
 ```
 
-Con working directory `/app/backend`:
+Comando de arranque, con working directory `/app/backend`:
 
 ```text
 uvicorn scheduler_service:app --host 0.0.0.0 --port <PORT>
 ```
 
-## Backend web de Produccion
+### Backend web de Produccion
 
 ```text
 EDARSA_ENV=PRODUCTION
@@ -50,9 +47,9 @@ EDARSA_RUNTIME_ROLE=PRODUCTION_WEB
 EDARSA_RUNTIME_ROLE_REQUIRED=1
 ```
 
-Con ese rol el backend web no inicia APScheduler.
+El backend web no inicia APScheduler cuando tiene ese rol.
 
-## Preview
+### Preview / Desarrollo
 
 ```text
 EDARSA_ENV=PREVIEW
@@ -61,32 +58,41 @@ EDARSA_RUNTIME_ROLE_REQUIRED=1
 SCHEDULER_ENABLED=false
 ```
 
-## Cutover
+Preview no debe poseer el scheduler que escribe datos consumidos por
+Produccion.
 
-1. Preparar el servicio standalone desde este hotfix.
-2. Configurar el runtime de Produccion con las variables anteriores.
-3. Cambiar el backend web productivo a `PRODUCTION_WEB` en la misma ventana
-   de cutover para evitar doble ownership.
-4. Verificar `/api/health` del servicio standalone.
-5. Confirmar dos ciclos consecutivos del sincronizador de ventas del dia.
-6. Poner Preview en `PREVIEW_WEB` con scheduler apagado.
-7. Dormir/reiniciar Preview y verificar dos ciclos adicionales en Produccion.
-8. Declarar `PRODUCTION_SCHEDULER_DECOUPLED=CERTIFIED` solo con esa evidencia.
+## Cutover seguro
+
+1. Desplegar primero el nuevo servicio Scheduler desde una release aprobada de
+   Produccion. No apagar Preview todavia.
+2. Confirmar `/api/health` del Scheduler con `status=ok`,
+   `environment=PRODUCTION`, `runtime_role=PRODUCTION_SCHEDULER` y jobs
+   registrados.
+3. Confirmar al menos dos ciclos consecutivos de
+   `sync_comercial_abiertas_v2` (10 minutos) con datos nuevos.
+4. Cambiar el backend web de Produccion a
+   `EDARSA_RUNTIME_ROLE=PRODUCTION_WEB` y
+   `EDARSA_RUNTIME_ROLE_REQUIRED=1`.
+5. Cambiar Preview a `PREVIEW_WEB` y `SCHEDULER_ENABLED=false`.
+6. Dormir/reiniciar Preview deliberadamente y verificar que las ventas del dia
+   siguen avanzando en Produccion durante al menos dos ciclos.
+7. Solo entonces declarar `PRODUCTION_SCHEDULER_DECOUPLED=CERTIFIED`.
 
 ## Rollback
 
-Si el scheduler standalone no queda sano:
+Si el servicio standalone no queda sano, no se deben dejar dos propietarios.
 
-1. Detener el standalone.
-2. Restaurar el backend productivo a `LEGACY_EMBEDDED` o retirar temporalmente
+1. Detener el servicio standalone.
+2. Restaurar temporalmente el backend productivo a
+   `EDARSA_RUNTIME_ROLE=LEGACY_EMBEDDED` o retirar
    `EDARSA_RUNTIME_ROLE_REQUIRED`.
 3. Verificar dos ciclos del scheduler embebido.
-4. No habilitar Preview como escritor productivo.
+4. Mantener Preview sin escrituras productivas.
 
 ## Proteccion del sincronizador del dia
 
-El archivo productivo protegido conserva el blob Git:
-
-`e97b55a06b0adb5b447904c7643b99844f00aae7`
-
-Existe una prueba de contrato que falla si cambia un solo byte.
+La correccion no cambia
+`backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py`.
+Existe una prueba de contrato que fija el blob Git
+`47e7e005cf3c382c546ffc017a28a5c6d87796bc`; cualquier cambio byte-a-byte
+rompe el gate.

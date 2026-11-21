@@ -1,0 +1,8 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "RRHH Custodia Gate3B: recover Preview backend runtime so MCP submit_objective serves the current Edarsahub_Desarrollo code. Execute the canonical local Preview recovery path tools/bootstrap/recover_preview_runtime.sh, preserving fail-closed guards: Development branch only, clean worktree, fast-forward only, supervisor backend restart, Universal Worker restart, heartbeat confirmation. Do not create or clone functional RRHH jobs. Do not touch Production. After recovery, validate submit_objective with READ_ONLY_CANARY before retrying Gate3B R2.",
+  "production_touched": false,
+  "requested_by": "chatgpt",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_head": "28b91dc90aa6cb9fd3485b9f02f04cfbbd92a845"
+}

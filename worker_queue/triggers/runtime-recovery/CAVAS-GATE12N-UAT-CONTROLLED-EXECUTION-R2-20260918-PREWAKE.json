@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "CAVAS-GATE12N-UAT-CONTROLLED-EXECUTION-R2-20260918",
+  "reason": "Prepare canonical Universal Worker pickup for Gate12N controlled UAT R2. This wake is created before the request so the request base_sha can target the post-trigger Development SHA. No Production.",
+  "production_touched": false
+}

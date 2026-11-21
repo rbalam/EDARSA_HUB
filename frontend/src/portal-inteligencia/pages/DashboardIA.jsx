@@ -45,6 +45,7 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
   const [loading, setLoading] = useState(true);
   const [periodoLocal, setPeriodoLocal] = useState(periodo);
   const [drill, setDrill] = useState(false);
+  const [drillKpi, setDrillKpi] = useState(null);
   const reqRef = useRef(0);
   const [rangoInicio, setRangoInicio] = useState('');
   const [rangoFin, setRangoFin] = useState('');
@@ -116,14 +117,14 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
 
   // Fila superior: Ventas + los 2 promedios canónicos (lo que pidió el usuario arriba).
   const kpiPrincipales = [
-    { title: 'Acumulado cerrado', value: formatMoney(data.ventasTotales), icon: DollarSign, color: 'emerald', trend: data.trends?.ventas_totales },
-    { title: 'PAX Promedio', sub: 'Ventas ÷ PAX', value: money2(data.paxPromedio), icon: Users, color: 'cyan', trend: null },
-    { title: 'Cheque Promedio', sub: 'Ventas ÷ cheques', value: money2(data.chequePromedio), icon: Receipt, color: 'violet', trend: null },
+    { title: 'Acumulado cerrado', value: formatMoney(data.ventasTotales), rawValue: data.ventasTotales, metric: 'ventas', drillTitle: 'Ventas · Tickets del período', icon: DollarSign, color: 'emerald', trend: data.trends?.ventas_totales },
+    { title: 'PAX Promedio', sub: 'Ventas ÷ PAX', value: money2(data.paxPromedio), rawValue: data.paxPromedio, metric: 'pax_promedio', drillTitle: 'PAX Promedio · Consumo por persona', icon: Users, color: 'cyan', trend: null },
+    { title: 'Cheque Promedio', sub: 'Ventas ÷ cheques', value: money2(data.chequePromedio), rawValue: data.chequePromedio, metric: 'cheque_promedio', drillTitle: 'Cheque Promedio · Distribución por ticket', icon: Receipt, color: 'violet', trend: null },
   ];
   const kpiSecundarios = [
-    { title: 'PAX Total', value: data.paxTotal.toLocaleString(), icon: Users, color: 'blue', trend: data.trends?.pax_total },
-    { title: 'Cheques Emitidos', value: data.chequesTotal.toLocaleString(), icon: Receipt, color: 'purple', trend: data.trends?.cheques_total },
-    { title: 'Propinas', value: formatMoney(data.propinaTotal), icon: TrendingUp, color: 'amber', trend: data.trends?.propinas_total },
+    { title: 'PAX Total', value: data.paxTotal.toLocaleString(), rawValue: data.paxTotal, metric: 'pax_total', drillTitle: 'PAX Total · Comensales por ticket', icon: Users, color: 'blue', trend: data.trends?.pax_total },
+    { title: 'Cheques Emitidos', value: data.chequesTotal.toLocaleString(), rawValue: data.chequesTotal, metric: 'cheques', drillTitle: 'Cheques Emitidos · Relación de tickets', icon: Receipt, color: 'purple', trend: data.trends?.cheques_total },
+    { title: 'Propinas', value: formatMoney(data.propinaTotal), rawValue: data.propinaTotal, metric: 'propinas', drillTitle: 'Propinas · Detalle por ticket', icon: TrendingUp, color: 'amber', trend: data.trends?.propinas_total },
   ];
 
   // Datos para export del resumen
@@ -143,7 +144,7 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
     const trendStr = fmtTrend(kpi.trend);
     const trendUp = (kpi.trend ?? 0) >= 0;
     return (
-      <button onClick={() => setDrill(true)} data-testid={`kpi-card-${idx}`}
+      <button onClick={() => { setDrillKpi(kpi); setDrill(true); }} data-testid={`kpi-card-${idx}`}
         className={`text-left w-full bg-slate-800/50 backdrop-blur border rounded-xl p-5 ${c.hover} transition-all ${big ? `${c.bigBorder} ${c.bigBg}` : 'border-slate-700'}`}>
         <div className="flex items-start justify-between">
           <div className={`p-2 rounded-lg ${c.iconBg}`}>
@@ -161,7 +162,7 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
           <p className="text-sm text-slate-400">{kpi.title}</p>
           {kpi.sub && <p className="text-xs text-slate-500 mt-0.5">{kpi.sub}</p>}
         </div>
-        <p className="text-[10px] text-slate-500 mt-2 flex items-center gap-1"><Search className="h-3 w-3" /> Ver tickets</p>
+        <p className="text-[10px] text-slate-500 mt-2 flex items-center gap-1"><Search className="h-3 w-3" /> Ver detalle del KPI</p>
       </button>
     );
   };
@@ -178,7 +179,7 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
               <Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm">Actualizando...</span>
             </div>
           )}
-          <button onClick={() => setDrill(true)} data-testid="dashboard-drilldown-btn"
+          <button onClick={() => { setDrillKpi(null); setDrill(true); }} data-testid="dashboard-drilldown-btn"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-700 hover:bg-slate-600 text-white transition-colors">
             <Receipt className="h-3.5 w-3.5" /> Reconstruir Tickets
           </button>
@@ -315,8 +316,11 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
 
       <TicketDrilldownModal open={drill} onClose={() => setDrill(false)}
         unidad={unidadSeleccionada} periodo={periodoActivo}
-        fechaInicio={esCustom ? rangoInicio : undefined} fechaFin={esCustom ? rangoFin : undefined}
-        titulo="Reconstrucción de Tickets" />
+        fechaInicio={data.fechaInicio || (esCustom ? rangoInicio : undefined)}
+        fechaFin={data.fechaFin || (esCustom ? rangoFin : undefined)}
+        metric={drillKpi?.metric || 'tickets'}
+        kpiValor={drillKpi?.rawValue}
+        titulo={drillKpi?.drillTitle || 'Reconstrucción de Tickets'} />
     </div>
   );
 }

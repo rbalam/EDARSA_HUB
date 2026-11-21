@@ -596,25 +596,27 @@ def query_listar_colaboradores(
     estatus: Optional[str] = None,
     buscar: Optional[str] = None,
     page: int = 1,
-    limit: int = 50
+    limit: int = 50,
+    allowed_sucursal_ids: Optional[List[int]] = None,
 ) -> Dict[str, Any]:
     """
-    Lista colaboradores con filtros y paginación.
-    
-    PARÁMETROS NATIVOS: sucursal_id, puesto_id (enteros validados)
-    ESCAPE NECESARIO: estatus, buscar (strings en cláusula LIKE)
-    
-    Nota: SQL Server no soporta parámetros en LIKE con comodines,
-    por lo que usamos escape_sql_string() solo para 'buscar'.
+    Lista colaboradores con filtros, aislamiento RBAC por sucursal y paginación.
     """
     conditions = ["1=1"]
-    
+
+    if allowed_sucursal_ids is not None:
+        safe_allowed = sorted({int(x) for x in allowed_sucursal_ids if int(x) > 0})
+        if not safe_allowed:
+            return {"datos": [], "total": 0, "page": 1, "limit": limit, "pages": 1}
+        in_list = ",".join(str(x) for x in safe_allowed)
+        conditions.append(f"c.SucursalID IN ({in_list})")
+
     # Parámetros enteros (seguros, validados como int)
     if sucursal_id is not None:
-        try:
-            conditions.append(f"c.SucursalID = {int(sucursal_id)}")
-        except (ValueError, TypeError):
-            pass
+        suc_int = int(sucursal_id)
+        if suc_int <= 0:
+            raise ValueError("INVALID_SUCURSAL_ID")
+        conditions.append(f"c.SucursalID = {suc_int}")
     
     if puesto_id is not None:
         try:
@@ -1024,30 +1026,33 @@ def query_listar_incidencias(
     fecha_hasta: Optional[str] = None,
     sucursal_id: Optional[int] = None,
     page: int = 1,
-    limit: int = 50
+    limit: int = 50,
+    allowed_sucursal_ids: Optional[List[int]] = None,
 ) -> Dict[str, Any]:
     """
-    Lista incidencias con filtros y paginación.
-    
-    PARÁMETROS NATIVOS: colaborador_id, sucursal_id (enteros validados)
-    ESCAPE NECESARIO: tipo (string), fechas (formato validado por Pydantic)
-    
-    Nota: Las fechas ya vienen validadas en formato YYYY-MM-DD por el schema.
+    Lista incidencias con filtros, aislamiento RBAC por sucursal y paginación.
     """
     conditions = ["1=1"]
-    
+
+    if allowed_sucursal_ids is not None:
+        safe_allowed = sorted({int(x) for x in allowed_sucursal_ids if int(x) > 0})
+        if not safe_allowed:
+            return {"datos": [], "total": 0, "page": 1, "limit": limit}
+        in_list = ",".join(str(x) for x in safe_allowed)
+        conditions.append(f"c.SucursalID IN ({in_list})")
+
     # Filtros con validación de enteros (seguros)
     if colaborador_id is not None:
-        try:
-            conditions.append(f"i.ColaboradorID = {int(colaborador_id)}")
-        except (ValueError, TypeError):
-            pass
-    
+        col_int = int(colaborador_id)
+        if col_int <= 0:
+            raise ValueError("INVALID_COLABORADOR_ID")
+        conditions.append(f"i.ColaboradorID = {col_int}")
+
     if sucursal_id is not None:
-        try:
-            conditions.append(f"c.SucursalID = {int(sucursal_id)}")
-        except (ValueError, TypeError):
-            pass
+        suc_int = int(sucursal_id)
+        if suc_int <= 0:
+            raise ValueError("INVALID_SUCURSAL_ID")
+        conditions.append(f"c.SucursalID = {suc_int}")
     
     # Tipo de incidencia (escapado)
     if tipo:

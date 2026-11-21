@@ -27,6 +27,7 @@ import os
 import json
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timezone
+from core.connections.operational_scope import operational_server_ids
 from core.config.edarsahub_config import get_edarsahub_sql_config
 from core.sql_first.db import get_sql_connection
 
@@ -296,7 +297,8 @@ def _get_servers_from_sql(
         if exclude_core:
             conditions.append("(tipo_conexion != 'CORE' OR tipo_conexion IS NULL)")
         
-        # Excluir conexiones API_LOCAL (tienen su propio endpoint /api/api-connections)
+        # API_LOCAL tiene endpoint y tab propios: /api/api-connections.
+        # El listado /api/servers alimenta exclusivamente el tab SQL Servers.
         conditions.append("(tipo_conexion != 'API_LOCAL' OR tipo_conexion IS NULL)")
         
         where_clause = " AND ".join(conditions) if conditions else "1=1"
@@ -325,7 +327,7 @@ def _get_servers_from_sql(
         return []
 
 
-def _get_server_by_id_from_sql(server_id: str) -> Optional[Dict]:
+def _get_server_by_id_from_sql(server_id: str, include_inactive: bool = False) -> Optional[Dict]:
     """
     Obtiene un servidor específico por ID desde EDARSAHUB SQL.
     Busca tanto por id como por mongodb_id para compatibilidad.
@@ -335,11 +337,12 @@ def _get_server_by_id_from_sql(server_id: str) -> Optional[Dict]:
         
         # Escapar el ID para prevenir SQL injection básico
         safe_id = server_id.replace("'", "''")
+        active_clause = "" if include_inactive else "AND activo = 1"
         
         query = f"""
         SELECT * FROM Servidores_Conexiones
         WHERE (CAST(id AS VARCHAR(50)) = '{safe_id}' OR mongodb_id = '{safe_id}')
-          AND activo = 1
+          {active_clause}
         """
         
         results = execute_sql_query(
@@ -983,7 +986,7 @@ async def create_server(
         payload.get('api_url', ''),
         api_key_to_store,  # FASE 3C: Cifrado
         True,  # activo
-        payload.get('visible_en_operaciones', True),
+        False,  # safe default: operational scope must be mapped before activation
         payload.get('visible_en_listado', True),
         payload.get('es_editable_ui', True),
         payload.get('es_eliminable_ui', True),
@@ -1058,8 +1061,9 @@ async def update_server(
             'sync_status': 'VALIDATION_ERROR'
         }
     
-    # Verificar que existe en SQL
-    existing = _get_server_by_id_from_sql(server_id)
+    # Verificar que existe en SQL, incluyendo registros inactivos para permitir
+    # su corrección/configuración sin activarlos implícitamente.
+    existing = _get_server_by_id_from_sql(server_id, include_inactive=True)
     if not existing:
         return {
             'success': False,
@@ -1150,6 +1154,20 @@ async def update_server(
             update_fields.append("api_key_encrypted = %s")
             update_values.append(encrypted_api)
     
+    # Guard canonico: una conexion solo puede activarse en Operaciones cuando
+    # existe al menos una Unidad de Negocio activa vinculada al servidor.
+    requested_operational_visibility = payload.get('visible_en_operaciones')
+    if requested_operational_visibility is True:
+        from core.connections.operational_scope import require_operational_mapping
+        try:
+            require_operational_mapping(server_id, True)
+        except ValueError as exc:
+            return {
+                'success': False,
+                'error': str(exc),
+                'sync_status': 'OPERATIONAL_SCOPE_REQUIRED'
+            }
+
     # Siempre actualizar timestamp
     update_fields.append("updated_at = %s")
     update_values.append(now)
@@ -1874,6 +1892,11 @@ def list_operational_servers(system_type_filter: str = None) -> List[Dict]:
         system_type_filter: Opcional. Filtra por system_type (ej: 'SoftRestaurant', 'MPRO')
     """
     servers = _get_servers_from_sql(filter_active=True, filter_visible_listado=False, exclude_core=True)
+    scoped_ids = operational_server_ids()
+    servers = [
+        s for s in servers
+        if str(s.get('id') or '').strip().lower() in scoped_ids
+    ]
     
     if system_type_filter:
         filter_upper = system_type_filter.upper()
@@ -1889,7 +1912,12 @@ def get_visible_servers_for_operaciones() -> List[Dict]:
     Filtra por visible_en_operaciones=True.
     """
     servers = _get_servers_from_sql(filter_active=True, filter_visible_listado=False, exclude_core=True)
-    return [s for s in servers if s.get('visible_en_operaciones', False)]
+    scoped_ids = operational_server_ids()
+    return [
+        s for s in servers
+        if s.get('visible_en_operaciones', False)
+        and str(s.get('id') or '').strip().lower() in scoped_ids
+    ]
 
 
 def get_connection_config(server_id: str) -> Optional[Dict]:
@@ -1915,7 +1943,7 @@ def get_connection_config(server_id: str) -> Optional[Dict]:
     }
 
 
-def get_server_connection_info_with_secrets(server_id: str) -> Optional[Dict]:
+def get_server_connection_info_with_secrets(server_id: str, include_inactive: bool = False) -> Optional[Dict]:
     """
     USO INTERNO BACKEND - Obtiene configuración completa de conexión incluyendo credenciales.
     
@@ -1938,7 +1966,7 @@ def get_server_connection_info_with_secrets(server_id: str) -> Optional[Dict]:
         - active
         O None si no existe
     """
-    server = _get_server_by_id_from_sql(server_id)
+    server = _get_server_by_id_from_sql(server_id, include_inactive=include_inactive)
     if not server:
         logger.debug(f"[SERVER_REGISTRY] Servidor {server_id} no encontrado para conexión")
         return None

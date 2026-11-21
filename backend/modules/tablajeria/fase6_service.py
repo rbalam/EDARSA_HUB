@@ -29,7 +29,9 @@ logger = logging.getLogger(__name__)
 class TipoMovimiento(str, Enum):
     SALIDA_INSUMO = "SALIDA_INSUMO"
     ENTRADA_DERIVADO = "ENTRADA_DERIVADO"
-    SALIDA_MERMA = "SALIDA_MERMA"
+    MERMA = "MERMA"
+    # Compatibilidad: el contrato operativo canonico es MERMA.
+    SALIDA_MERMA = "MERMA"
     AJUSTE_INVENTARIO = "AJUSTE_INVENTARIO"
 
 
@@ -88,6 +90,82 @@ class TablajeriaFase6Service:
     
     def _now_utc(self) -> datetime:
         return datetime.now(timezone.utc)
+
+    def _decimal_money(self, value: Any) -> Decimal:
+        """Normaliza importes para comparaciones contables deterministas."""
+        return Decimal(str(value or 0)).quantize(Decimal("0.01"))
+
+    def _fetch_existing_inventory_movements(self, cursor, orden_id: str) -> List[Dict[str, Any]]:
+        """Devuelve movimientos ya generados para evitar duplicados."""
+        cursor.execute("""
+            SELECT MovimientoID, TipoMovimiento, ProductoCodigo, ProductoNombre,
+                   Cantidad, LoteProducto, Referencia
+            FROM Tablajeria_MovimientosInventario
+            WHERE OrdenID = %s
+            ORDER BY FechaMovimiento, MovimientoID
+        """, (orden_id,))
+        rows = cursor.fetchall() or []
+        return [
+            {
+                "movimiento_id": row.get('MovimientoID'),
+                "tipo": row.get('TipoMovimiento'),
+                "producto": row.get('ProductoCodigo'),
+                "producto_nombre": row.get('ProductoNombre'),
+                "cantidad": float(row.get('Cantidad') or 0),
+                "lote": row.get('LoteProducto'),
+                "referencia": row.get('Referencia')
+            }
+            for row in rows
+        ]
+
+    def _fetch_existing_costeo(self, cursor, orden_id: str) -> Optional[Dict[str, Any]]:
+        """Devuelve el costeo existente de la orden para operacion idempotente."""
+        cursor.execute("""
+            SELECT TOP 1 CosteoID, OrdenID, CostoTotalProduccion,
+                   CostoUnitarioPromedio, ReglaCosteoAplicada, FechaCosteo
+            FROM Tablajeria_CosteoProduccion
+            WHERE OrdenID = %s
+            ORDER BY FechaCosteo DESC, CosteoID DESC
+        """, (orden_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+    def _fetch_existing_poliza(self, cursor, orden_id: str, tipo_poliza: str) -> Optional[Dict[str, Any]]:
+        """Devuelve la poliza existente para evitar duplicar asientos."""
+        cursor.execute("""
+            SELECT TOP 1 PolizaID, NumeroPoliza, TipoPoliza, FechaPoliza,
+                   Concepto, MontoTotal, EstatusPoliza
+            FROM Tablajeria_PolizasContables
+            WHERE OrdenID = %s AND TipoPoliza = %s
+            ORDER BY FechaCreacion DESC, PolizaID DESC
+        """, (orden_id, tipo_poliza))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+    def _fetch_poliza_asientos(self, cursor, poliza_id: str) -> List[Dict[str, Any]]:
+        cursor.execute("""
+            SELECT NumeroLinea, CuentaContable, Debe, Haber, Referencia
+            FROM Tablajeria_PolizasDetalle
+            WHERE PolizaID = %s
+            ORDER BY NumeroLinea
+        """, (poliza_id,))
+        rows = cursor.fetchall() or []
+        return [
+            {
+                "linea": row.get('NumeroLinea'),
+                "cuenta": row.get('CuentaContable'),
+                "debe": float(row.get('Debe') or 0),
+                "haber": float(row.get('Haber') or 0),
+                "referencia": row.get('Referencia')
+            }
+            for row in rows
+        ]
+
+    def _validar_balance_asientos(self, asientos: List[Dict[str, Any]]) -> None:
+        debe = self._decimal_money(sum(Decimal(str(a.get("debe", 0) or 0)) for a in asientos))
+        haber = self._decimal_money(sum(Decimal(str(a.get("haber", 0) or 0)) for a in asientos))
+        if debe != haber:
+            raise ValueError(f"DEBE_HABER_DESCUADRADO: debe={debe} haber={haber}")
     
     # =========================================================================
     # CONFIGURACIÓN CONTABLE
@@ -242,7 +320,8 @@ class TablajeriaFase6Service:
                     o.OrdenID, o.EmpresaID, o.SucursalID, o.FolioOrden,
                     o.InsumoBaseCodigo, o.InsumoBaseNombre, o.LoteInsumo,
                     o.CantidadBaseReal, o.MermaRealKg,
-                    o.EstatusOrden, o.FechaOperacionMexico
+                    o.EstatusOrden, o.FechaOperacionMexico,
+                    o.MovimientoInventarioGenerado
                 FROM Operaciones_Tablaje_Ordenes o
                 WHERE o.OrdenID = %s AND o.Activo = 1
             """, (orden_id,))
@@ -253,6 +332,18 @@ class TablajeriaFase6Service:
             
             if orden['EstatusOrden'] not in ('CERRADA', 'PENDIENTE_AUTORIZACION'):
                 raise ValueError(f"Solo se puede afectar inventario de órdenes cerradas. Estatus: {orden['EstatusOrden']}")
+
+            movimientos_existentes = self._fetch_existing_inventory_movements(cursor, orden_id)
+            if orden.get('MovimientoInventarioGenerado') or movimientos_existentes:
+                logger.info(f"[FASE6] Inventario ya afectado para orden {orden['FolioOrden']}")
+                return {
+                    "orden_id": orden_id,
+                    "folio": orden['FolioOrden'],
+                    "idempotente": True,
+                    "movimientos_generados": 0,
+                    "movimientos_existentes": len(movimientos_existentes),
+                    "detalle": movimientos_existentes
+                }
             
             config = self.obtener_config_contable(str(orden['EmpresaID']))
             
@@ -320,7 +411,7 @@ class TablajeriaFase6Service:
                     "cantidad": float(det['CantidadReal'])
                 })
             
-            # 3. SALIDA_MERMA - Mermas (si las hay)
+            # 3. MERMA - Mermas (si las hay)
             if orden['MermaRealKg'] and float(orden['MermaRealKg']) > 0:
                 mov_id = str(uuid.uuid4())
                 cursor.execute("""
@@ -331,14 +422,14 @@ class TablajeriaFase6Service:
                         FechaMovimiento, UsuarioID, Referencia
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
-                    mov_id, orden_id, TipoMovimiento.SALIDA_MERMA.value,
+                    mov_id, orden_id, TipoMovimiento.MERMA.value,
                     'MERMA-TABLAJE', f"Merma de {orden['InsumoBaseNombre']}",
                     str(orden['SucursalID']) if orden['SucursalID'] else None,
                     float(orden['MermaRealKg']),
                     now, usuario_id, orden['FolioOrden']
                 ))
                 movimientos.append({
-                    "tipo": TipoMovimiento.SALIDA_MERMA.value,
+                    "tipo": TipoMovimiento.MERMA.value,
                     "producto": "MERMA-TABLAJE",
                     "cantidad": float(orden['MermaRealKg'])
                 })
@@ -417,6 +508,22 @@ class TablajeriaFase6Service:
             
             if not orden['CantidadBaseReal']:
                 raise ValueError("Orden sin cantidad real registrada")
+
+            costeo_existente = self._fetch_existing_costeo(cursor, orden_id)
+            if costeo_existente:
+                logger.info(f"[FASE6] Costeo ya existente para orden {orden['FolioOrden']}")
+                return {
+                    "costeo_id": costeo_existente.get('CosteoID'),
+                    "orden_id": orden_id,
+                    "folio": orden['FolioOrden'],
+                    "idempotente": True,
+                    "regla_aplicada": costeo_existente.get('ReglaCosteoAplicada'),
+                    "resumen": {
+                        "costo_total": float(costeo_existente.get('CostoTotalProduccion') or 0),
+                        "costo_unitario_promedio": float(costeo_existente.get('CostoUnitarioPromedio') or 0)
+                    },
+                    "detalles": []
+                }
             
             # Calcular costo total del insumo
             cantidad_insumo = Decimal(str(orden['CantidadBaseReal']))
@@ -612,9 +719,33 @@ class TablajeriaFase6Service:
                 raise ValueError("No existe costeo para esta orden. Primero calcule el costeo.")
             
             config = self.obtener_config_contable(str(costeo['EmpresaID']))
+
+            poliza_existente = self._fetch_existing_poliza(cursor, orden_id, TipoPoliza.PRODUCCION.value)
+            if poliza_existente:
+                logger.info(f"[FASE6] Póliza ya existente para orden {costeo['FolioOrden']}")
+                return {
+                    "poliza_id": poliza_existente.get('PolizaID'),
+                    "numero_poliza": poliza_existente.get('NumeroPoliza'),
+                    "tipo": poliza_existente.get('TipoPoliza'),
+                    "fecha": str(poliza_existente.get('FechaPoliza')),
+                    "concepto": poliza_existente.get('Concepto'),
+                    "monto_total": float(poliza_existente.get('MontoTotal') or 0),
+                    "asientos": self._fetch_poliza_asientos(cursor, poliza_existente.get('PolizaID')),
+                    "estatus": poliza_existente.get('EstatusPoliza'),
+                    "idempotente": True
+                }
             
             if not config.generar_poliza_automatica:
                 return {"mensaje": "Generación automática de pólizas deshabilitada"}
+
+            cursor.execute("""
+                SELECT
+                    SUM(CASE WHEN TipoDerivado = 'MERMA' THEN CostoAsignado ELSE 0 END) AS CostoMerma,
+                    SUM(CASE WHEN TipoDerivado <> 'MERMA' THEN CostoAsignado ELSE 0 END) AS CostoProductos
+                FROM Tablajeria_CosteoDetalle
+                WHERE CosteoID = %s
+            """, (costeo['CosteoID'],))
+            totales_poliza = cursor.fetchone() or {}
             
             poliza_id = str(uuid.uuid4())
             now = self._now_utc()
@@ -640,7 +771,14 @@ class TablajeriaFase6Service:
             linea = 1
             
             # 1. Cargo: Almacén Productos Terminados
-            costo_productos = float(costeo['CostoTotalProduccion'] or 0) - float(costeo.get('MermaRealKg') or 0) * 10  # Estimado merma
+            costo_productos_dec = self._decimal_money(totales_poliza.get('CostoProductos'))
+            costo_merma_dec = self._decimal_money(totales_poliza.get('CostoMerma'))
+            monto_total_dec = self._decimal_money(monto_total)
+            if costo_productos_dec == 0 and costo_merma_dec == 0:
+                costo_productos_dec = monto_total_dec
+            if self._decimal_money(costo_productos_dec + costo_merma_dec) != monto_total_dec:
+                costo_productos_dec = monto_total_dec - costo_merma_dec
+            costo_productos = float(costo_productos_dec)
             asiento_id = str(uuid.uuid4())
             cursor.execute("""
                 INSERT INTO Tablajeria_PolizasDetalle (
@@ -661,8 +799,8 @@ class TablajeriaFase6Service:
             linea += 1
             
             # 2. Cargo: Merma (si hay)
-            if costeo.get('MermaRealKg') and float(costeo['MermaRealKg']) > 0:
-                costo_merma = float(costeo['MermaRealKg']) * float(costeo['CostoUnitarioInsumo'] or 0)
+            if costo_merma_dec > 0:
+                costo_merma = float(costo_merma_dec)
                 asiento_id = str(uuid.uuid4())
                 cursor.execute("""
                     INSERT INTO Tablajeria_PolizasDetalle (
@@ -700,6 +838,8 @@ class TablajeriaFase6Service:
                 "linea": linea, "cuenta": config.cuenta_almacen_insumos,
                 "debe": 0, "haber": monto_total
             })
+
+            self._validar_balance_asientos(asientos)
             
             conn.commit()
             

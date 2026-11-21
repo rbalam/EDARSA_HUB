@@ -1,0 +1,461 @@
+import sys
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[2]
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from tools.mirror_sync.gate_chain_publisher import (
+    build_plan,
+    validate_template,
+)
+
+PUBLISHER = ROOT / "tools" / "mirror_sync" / "gate_chain_publisher.py"
+
+
+def template(job="job-next"):
+    return {
+        "schema": "edarsahub.worker-job.v2",
+        "job_id": job,
+        "target_repo": "rbalam/EDARSA_HUB",
+        "target_branch": "Edarsahub_Desarrollo",
+        "production_allowed": False,
+        "objective": "test",
+        "mode": "READ_ONLY",
+        "actions": [],
+        "checks": [
+            {
+                "type": "git_diff_check",
+            }
+        ],
+        "requester": {
+            "email": "ricardo@edarsa.com.mx",
+            "source": "chatgpt",
+            "project": "EDARSAHUB BOS",
+            "chat": "Conexiones y Comunicaciones",
+        },
+    }
+
+
+def chain(t=None):
+    return {
+        "schema": "edarsahub.gate-chain.v1",
+        "chain_id": "T",
+        "enabled": True,
+        "max_hops": 5,
+        "start_gate_id": "A",
+        "gates": [
+            {
+                "gate_id": "A",
+                "job_id": "done-a",
+                "mutation_class": "READ_ONLY",
+                "next_gate_ids": ["B"],
+            },
+            {
+                "gate_id": "B",
+                "job_id": "job-next",
+                "mutation_class": "READ_ONLY",
+                "next_gate_ids": [],
+                "job_template": t or template(),
+            },
+        ],
+    }
+
+
+def decision(state="READY"):
+    return {
+        "state": state,
+        "next_gate_id": "B",
+    }
+
+
+def source():
+    return PUBLISHER.read_text(encoding="utf-8")
+
+
+def test_plan_ready():
+    result = build_plan(
+        chain(),
+        decision(),
+        set(),
+    )
+
+    assert result["status"] == "READY_TO_PUBLISH"
+
+
+def test_duplicate_is_exists():
+    result = build_plan(
+        chain(),
+        decision(),
+        {"job-next"},
+    )
+
+    assert result["status"] == "EXISTS"
+    assert result["publish"] is False
+
+
+def test_nonready_rejected():
+    with pytest.raises(
+        ValueError,
+        match="DECISION_NOT_READY",
+    ):
+        build_plan(
+            chain(),
+            decision("WAIT"),
+            set(),
+        )
+
+
+def test_production_forbidden():
+    value = template()
+    value["production_allowed"] = True
+
+    with pytest.raises(
+        ValueError,
+        match="CANONICAL_FIELD_CONFLICT:production_allowed",
+    ):
+        build_plan(
+            chain(value),
+            decision(),
+            set(),
+        )
+
+
+def test_invalid_schema():
+    value = template()
+    value["schema"] = "x"
+
+    with pytest.raises(
+        ValueError,
+        match="CANONICAL_FIELD_CONFLICT:schema",
+    ):
+        validate_template(value)
+
+
+def test_arbitrary_shell_forbidden():
+    value = template()
+    value["command"] = "rm -rf /"
+
+    with pytest.raises(
+        ValueError,
+        match="FORBIDDEN_TEMPLATE_KEY:command",
+    ):
+        validate_template(value)
+
+
+def test_arbitrary_sql_forbidden():
+    value = template()
+    value["sql"] = "DELETE FROM x"
+
+    with pytest.raises(
+        ValueError,
+        match="FORBIDDEN_TEMPLATE_KEY:sql",
+    ):
+        validate_template(value)
+
+
+def test_unsupported_action_rejected():
+    value = template()
+    value["actions"] = [
+        {
+            "type": "run_shell",
+        }
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="UNSUPPORTED_ACTION",
+    ):
+        validate_template(value)
+
+
+def test_repository_contract_audit_supported():
+    value = template()
+
+    value["checks"] = [
+        {
+            "type": "repository_contract_audit",
+            "request": {
+                "paths": ["backend"],
+                "search_terms": ["finanzas"],
+                "max_results": 10,
+            },
+        }
+    ]
+
+    validated = validate_template(value)
+
+    assert validated["job_id"] == value["job_id"]
+    assert validated["mode"] == value["mode"]
+    assert validated["actions"] == value["actions"]
+    assert validated["checks"] == value["checks"]
+    assert validated["requester"] == value["requester"]
+
+    assert validated["target_repo"] == "rbalam/EDARSA_HUB"
+    assert validated["target_branch"] == "Edarsahub_Desarrollo"
+    assert validated["production_allowed"] is False
+    assert validated["human_summary_language"] == "es"
+
+    assert validated["checks"][0]["type"] == "repository_contract_audit"
+    assert validated["checks"][0]["request"] == {
+        "paths": ["backend"],
+        "search_terms": ["finanzas"],
+        "max_results": 10,
+    }
+
+    assert isinstance(validated.get("scheduling"), dict)
+
+
+def test_worker_result_semantic_extract_supported():
+    from tools.mirror_sync.gate_chain_publisher import ALLOWED_CHECKS
+    from tools.mirror_sync.universal_job_bridge import (
+        ALLOWED_CHECKS as BRIDGE_ALLOWED_CHECKS,
+        validate as validate_worker_job,
+    )
+
+    assert "worker_result_semantic_extract" in ALLOWED_CHECKS
+    assert ALLOWED_CHECKS == BRIDGE_ALLOWED_CHECKS
+
+    value = template("BOS-KNOWLEDGE-LOOP-HISTORICAL-INCIDENTS-READONLY-R1-20261103")
+    value["checks"] = [
+        {
+            "type": "repository_contract_audit",
+            "request": {
+                "paths": [
+                    "tools/mirror_sync/worker_repair_capability_registry.py",
+                ],
+                "search_terms": ["register_learned_capability"],
+                "max_results": 500,
+            },
+        },
+        {
+            "type": "worker_result_semantic_extract",
+            "request": {
+                "source_result": {
+                    "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-KNOWLEDGE-GATE1-READONLY-R1-20261022",
+                    "path": "worker_queue/results/EDARSAHUB-BOS-WORKER-REPAIR-KNOWLEDGE-GATE1-READONLY-R1-20261022.json",
+                    "branch": "worker/results",
+                },
+                "required_semantic_fields": [
+                    "repository_evidence",
+                    "certification_basis",
+                    "execution_base_sha",
+                    "summary_es",
+                ],
+            },
+        },
+        {
+            "type": "git_diff_check",
+        },
+    ]
+
+    validated = validate_template(value)
+    assert validated["mode"] == "READ_ONLY"
+    assert validated["actions"] == []
+    assert validated["production_allowed"] is False
+    assert validated["checks"][1]["type"] == "worker_result_semantic_extract"
+    assert validate_worker_job(validated) == []
+
+
+def test_unsupported_check_rejected():
+    value = template()
+    value["checks"] = [
+        {
+            "type": "execute_sql",
+        }
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="UNSUPPORTED_CHECK",
+    ):
+        validate_template(value)
+
+
+def test_publisher_uses_registered_agent_guard_worktree():
+    text = source()
+
+    assert '"worktree-create"' in text
+    assert '"worker_queue_publication"' in text
+    assert 'f"agent/queue-publisher/{safe_id}"' in text
+    assert 'f"queue-publisher-{safe_id}"' in text
+
+    assert "tempfile.mkdtemp" not in text
+    assert '"worktree", "add"' not in text
+
+
+def test_publisher_claim_scope_is_exact_job_request():
+    text = source()
+
+    assert '"--path",' in text
+    assert "rel," in text
+    assert 'f"worker_queue/inbox/{job_id}.json"' in text
+    assert "STAGED_SCOPE_MISMATCH" in text
+    assert "validate_commit_scope(" in text
+
+
+def test_publisher_uses_canonical_authorized_push():
+    text = source()
+
+    assert "authorized_push(" in text
+    assert "scoped_push_env(" not in text
+
+    assert "EDARSA_ALLOW_PUSH" not in text
+    assert "EDARSA_PUSH_JOB_ID" not in text
+    assert "EDARSA_PUSH_OWNER" not in text
+
+
+def test_publisher_never_bypasses_hooks_or_force_pushes():
+    text = source().lower()
+
+    assert "--no-verify" not in text
+    assert "--force" not in text
+    assert "force-with-lease" not in text
+
+
+def test_publisher_has_optimistic_queue_concurrency_guard():
+    text = source()
+
+    assert "_queue_remote_head(" in text
+    assert "REMOTE_MOVED_RETRY_REQUIRED" in text
+    assert "QUEUE_PUBLISHER_LINEAGE_INVALID" in text
+
+
+def test_publisher_releases_agent_guard_claim():
+    text = source()
+
+    assert '"release"' in text
+    assert "_release_agent_guard(" in text
+    assert "_cleanup_queue_worktree(" in text
+
+
+def test_publisher_preserves_failure_evidence():
+    text = source()
+
+    assert "QUEUE_PUBLISHER_WORKTREE_DIRTY_PRESERVED" in text
+
+    # Branch cleanup occurs only on successful publication.
+    assert "if success and not worktree.exists():" in text
+
+
+def test_publisher_is_idempotent():
+    text = source()
+
+    assert "REMOTE_JOB=EXISTS" in text
+    assert '"cat-file",' in text
+
+
+def test_plan_only_remains_non_mutating():
+    text = source()
+
+    assert "publish(plan)" in text
+    assert "if args.publish" in text
+
+
+def test_publisher_explicitly_reports_production_untouched():
+    text = source()
+
+    assert '"production_touched": False' in text
+
+def test_publisher_can_resume_exact_interrupted_publication():
+    text = source()
+
+    assert "resumed_existing" in text
+    assert "GATE_RESUMED_AND_ENQUEUED=PASS" in text
+    assert "QUEUE_PUBLISHER_RESIDUAL_STATE_INCOMPLETE" in text
+    assert "QUEUE_PUBLISHER_RESIDUAL_HEAD_MISMATCH" in text
+    assert "QUEUE_PUBLISHER_RESIDUAL_WORKTREE_DIRTY" in text
+    assert "QUEUE_PUBLISHER_RESIDUAL_LINEAGE_INVALID" in text
+    assert "QUEUE_PUBLISHER_RESIDUAL_REQUEST_MISSING" in text
+    assert "QUEUE_PUBLISHER_RESIDUAL_REQUEST_MISMATCH" in text
+
+
+def test_publisher_resume_reuses_existing_commit():
+    text = source()
+
+    assert "candidate = current_head" in text
+    assert "RESUME_STAGED_SCOPE_NOT_EMPTY" in text
+    assert "resumed_existing_publication" in text
+
+
+def test_publisher_resume_keeps_exact_scope_validation():
+    text = source()
+
+    assert text.count("validate_commit_scope(") >= 2
+    assert "{rel}" in text
+
+
+def test_publisher_resume_keeps_optimistic_concurrency():
+    text = source()
+
+    assert "REMOTE_MOVED_RETRY_REQUIRED" in text
+    assert "_queue_remote_head(" in text
+
+
+def test_publisher_resume_keeps_canonical_authorized_push():
+    text = source()
+
+    assert "authorized_push(" in text
+    assert '"worktree-create"' in text
+    assert '"worker_queue_publication"' in text
+
+
+def test_publisher_resume_never_force_pushes_or_bypasses_hooks():
+    text = source().lower()
+
+    assert "--force" not in text
+    assert "--force-with-lease" not in text
+    assert "--no-verify" not in text
+
+
+def test_build_plan_rejects_stale_tampered_or_unauthorized_ready_decision():
+    from concurrent.futures import ThreadPoolExecutor
+    from tools.mirror_sync.gate_chain_controller import decide_next
+
+    # Forged READY decision against gate requiring human decision -> rejected
+    cfg = chain()
+    cfg["gates"][1]["requires_human_decision"] = True
+    with pytest.raises(ValueError, match="GATE_AUTHORIZATION_DENIED:HUMAN_DECISION_REQUIRED"):
+        build_plan(cfg, decision("READY"), set())
+
+    # Forged READY decision against gate requiring missing authorization_class -> rejected
+    cfg2 = chain()
+    cfg2["gates"][1]["mutation_class"] = "CODE_MUTATION"
+    cfg2["gates"][1]["authorization_class"] = "PREAUTHORIZED_CODE_MUTATION"
+    with pytest.raises(ValueError, match="GATE_AUTHORIZATION_DENIED:AUTHORIZATION_REQUIRED"):
+        build_plan(cfg2, decision("READY"), set())
+
+    # Tampered decision_digest -> rejected
+    cfg2["authorization_classes"] = ["PREAUTHORIZED_CODE_MUTATION"]
+    with pytest.raises(ValueError, match="STALE_OR_TAMPERED_DECISION:DIGEST_MISMATCH"):
+        build_plan(cfg2, {**decision("READY"), "decision_digest": "0" * 64}, set())
+
+    # Chain ID mismatch -> rejected
+    with pytest.raises(ValueError, match="STALE_OR_TAMPERED_DECISION:CHAIN_ID_MISMATCH"):
+        build_plan(cfg2, {**decision("READY"), "chain_id": "OTHER_CHAIN"}, set())
+
+    # Concurrency check: parallel plan evaluations remain deterministic & fail-closed
+    d = decide_next(
+        cfg2,
+        completed_results=[{
+            "job_id": "done-a",
+            "status": "READ_ONLY_COMPLETE",
+            "certification": "CERTIFIED_READ_ONLY",
+            "quality_gate": "PASS",
+            "tests": "PASS",
+            "blockers": [],
+            "production_touched": False,
+        }],
+        existing_job_ids=[],
+        hop_count=1,
+        authorization_classes=["PREAUTHORIZED_CODE_MUTATION"],
+    )
+    assert d.action == "READY"
+    valid_decision = {"state": d.action, "chain_id": d.chain_id, "next_gate_id": d.next_gate_id, "decision_digest": d.decision_digest}
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(lambda _: build_plan(cfg2, valid_decision, set()), range(16)))
+    assert all(r["status"] == "READY_TO_PUBLISH" and r["job_id"] == "job-next" for r in results)

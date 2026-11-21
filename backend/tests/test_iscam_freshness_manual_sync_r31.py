@@ -25,5 +25,5 @@ def test_manual_sync_is_dry_run_gated_and_refetches():
     assert "'/admin/scheduler/resync/execute'" in text
     assert 'dry_run: true' in text
     assert 'dry_run: false' in text
-    assert 'splitDateChunks(freshness.missing_from, freshness.missing_to, 30)' in text
+    assert 'splitDateChunks(syncFrom, syncTo, 1)' in text
     assert 'Promise.all([fetchReport(), fetchFreshness()])' in text

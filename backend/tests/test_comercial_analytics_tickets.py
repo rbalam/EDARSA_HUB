@@ -3,6 +3,8 @@ from datetime import datetime
 
 import pytest
 
+import modules.comercial_analytics.repository_tickets as repository_tickets
+
 os.environ.setdefault(
     "JWT_SECRET",
     "test-ticket-repository-secret",
@@ -125,6 +127,7 @@ def test_ticket_detail_uses_identity_fields():
             "sucursal": "Mérida",
             "fecha_operacion": "2026-07-15",
             "numero_ticket": "100",
+            "primera_fecha_hora": datetime(2026, 7, 15, 20, 30),
             "codigo": "P1",
             "producto": "Producto",
             "familia": "Familia",
@@ -136,7 +139,9 @@ def test_ticket_detail_uses_identity_fields():
             "es_alcoholico": False,
             "cantidad": 2,
             "precio_unitario": 100,
+            "importe_bruto": 220,
             "importe": 200,
+            "descuento": 20,
             "propina": 20,
             "pax": 3,
         }]
@@ -158,9 +163,15 @@ def test_ticket_detail_uses_identity_fields():
         "2026-07-15",
         "100",
     )
+    assert "CONVERT(varchar(128), d.numero_ticket) = %s" in captured["sql"]
     assert result["ticket"]["ventas"] == 200
+    assert result["ticket"]["subtotal"] == 220
+    assert result["ticket"]["descuento"] == 20
+    assert result["ticket"]["estado"] == "CERRADA"
+    assert result["ticket"]["fecha_hora"].startswith("2026-07-15 20:30")
     assert result["ticket"]["propina"] == 20
     assert result["ticket"]["pax"] == 3
+    assert result["lines"][0]["importe_bruto"] == 220
     assert len(result["lines"]) == 1
 
 
@@ -192,3 +203,208 @@ def test_ticket_detail_returns_not_found():
             allowed_unit_codes=["130MID"],
             query_executor=lambda sql, params: [],
         )
+
+
+def test_default_executor_uses_parameterized_edarsahub_query(monkeypatch):
+    calls = []
+
+    def fake_execute_sql_query_params(
+        host, port, database, username, password, query, params
+    ):
+        calls.append((host, port, database, username, password, query, params))
+        if "COUNT(*) AS total" in query:
+            return [{"total": 0}]
+        return []
+
+    monkeypatch.setattr(
+        repository_tickets,
+        "execute_sql_query_params",
+        fake_execute_sql_query_params,
+    )
+
+    result = repository_tickets.list_tickets(
+        fecha_inicio="2026-07-01",
+        fecha_fin="2026-07-31",
+        allowed_unit_codes=["CIENFUEGOS"],
+        unidad_negocio_id="CIENFUEGOS",
+    )
+
+    assert result["total"] == 0
+    assert len(calls) == 2
+    # Para rangos históricos de una unidad, el contrato canónico primero
+    # resuelve si existe una jornada activa en snapshot y después ejecuta el
+    # conteo histórico parametrizado. Ambas llamadas son EDARSAHUB read-only.
+    assert calls[0][-1] == ("CIENFUEGOS",)
+    assert calls[1][-1] == (
+        "2026-07-01",
+        "2026-07-31",
+        "CIENFUEGOS",
+    )
+
+
+def test_ticket_detail_falls_back_to_certified_comercial_ticket(monkeypatch):
+    ticket_pk = create_ticket_pk(
+        unidad_negocio_id="CIENFUEGOS",
+        fecha_operacion="2026-09-01",
+        numero_ticket="105118",
+    )
+
+    def fallback(identity):
+        assert identity.unidad_negocio_id == "CIENFUEGOS"
+        assert identity.fecha_operacion == "2026-09-01"
+        assert identity.numero_ticket == "105118"
+        return {
+            "ticket": {
+                "unidad_negocio_id": "CIENFUEGOS",
+                "unidad": "CIENFUEGOS",
+                "fecha_operacion": "2026-09-01",
+                "fecha": "2026-09-01",
+                "fecha_hora": "2026-09-01 14:08:07",
+                "numero_ticket": "105118",
+                "estado": "CERRADA",
+                "pax": 10,
+                "lineas": 1,
+                "subtotal": 13710,
+                "descuento": 0,
+                "impuesto": None,
+                "ventas": 13710,
+                "total": 13710,
+                "propina": 0,
+            },
+            "lines": [{
+                "linea_pk": "105118:fallback:1",
+                "producto": "PRODUCTO",
+                "cantidad": 1,
+                "precio_unitario": 13710,
+                "importe_bruto": 13710,
+                "importe": 13710,
+                "pax": 10,
+            }],
+            "lineas": [],
+            "traceability": {
+                "source": "modules.comercial.ticket_service",
+                "live": False,
+                "fallback": "COMERCIAL_TICKET_CERTIFIED_PATH",
+            },
+        }
+
+    monkeypatch.setattr(
+        repository_tickets,
+        "_fallback_ticket_from_comercial",
+        fallback,
+    )
+
+    result = get_ticket_detail(
+        identity=parse_ticket_pk(ticket_pk),
+        allowed_unit_codes=["CIENFUEGOS"],
+    )
+
+    assert result["ticket"]["numero_ticket"] == "105118"
+    assert result["ticket"]["total"] == 13710
+    assert result["traceability"]["fallback"] == (
+        "COMERCIAL_TICKET_CERTIFIED_PATH"
+    )
+    assert result["traceability"]["contract"] == (
+        "TABLERO_COMERCIAL_TICKET_CERTIFIED_PATH"
+    )
+
+
+def test_executive_ticket_visual_contract_matches_comercial():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    executive = (
+        root
+        / "frontend/src/components/comercial/TicketVentaModal.jsx"
+    ).read_text(encoding="utf-8")
+
+    assert "VENDEDOR:" in executive
+    assert "replace('T', ' ').slice(0, 19)" in executive
+    assert "item.descuento_importe" in executive
+    assert "item.descuento_pct" in executive
+    assert "TOTAL PROD." in executive
+    assert "DESC. PRODUCTOS" in executive
+    assert "DESC. CUENTA" in executive
+    assert "text-red-600 font-semibold" in executive
+
+
+
+def test_historical_range_replaces_active_day_with_atomic_snapshot(monkeypatch):
+    monkeypatch.setattr(
+        repository_tickets,
+        "_latest_snapshot_operation_date",
+        lambda unit_code: "2026-10-09",
+    )
+    monkeypatch.setattr(
+        repository_tickets,
+        "_list_current_day_with_comercial_merge",
+        lambda **kwargs: {
+            "items": [
+                {
+                    "ticket_pk": "today-1",
+                    "unidad_negocio_id": "ORIGEN",
+                    "fecha_operacion": "2026-10-09",
+                    "numero_ticket": "SB-0055609",
+                    "pax": 1,
+                    "ventas": 130.0,
+                    "propina": 0.0,
+                },
+                {
+                    "ticket_pk": "today-2",
+                    "unidad_negocio_id": "ORIGEN",
+                    "fecha_operacion": "2026-10-09",
+                    "numero_ticket": "SB-0055610",
+                    "pax": 2,
+                    "ventas": 535.0,
+                    "propina": 0.0,
+                },
+            ]
+        },
+    )
+
+    calls = []
+
+    def fake_execute(sql, params, query_executor=None):
+        calls.append((sql, params))
+        if "COUNT(*) AS total" in sql:
+            return [{"total": 2}]
+        return [{
+            "unidad_negocio_id": "ORIGEN",
+            "unidad": "ORIGEN",
+            "sucursal": "ORIGEN",
+            "fecha_operacion": "2026-10-01",
+            "numero_ticket": "SB-0050312",
+            "fecha_hora": datetime(2026, 10, 1, 12, 0),
+            "pax": 1,
+            "lineas": 1,
+            "ventas": 45.0,
+            "propina": 0.0,
+        }]
+
+    monkeypatch.setattr(
+        repository_tickets,
+        "_execute",
+        fake_execute,
+    )
+
+    result = repository_tickets.list_tickets(
+        fecha_inicio="2026-10-01",
+        fecha_fin="2026-10-31",
+        allowed_unit_codes=["ORIGEN"],
+        unidad_negocio_id="ORIGEN",
+        page=1,
+        page_size=200,
+    )
+
+    assert result["total"] == 4
+    assert result["items"][0]["numero_ticket"] == "SB-0055609"
+    assert result["items"][1]["numero_ticket"] == "SB-0055610"
+    assert result["items"][2]["numero_ticket"] == "SB-0050312"
+    assert result["traceability"]["contract"] == (
+        "HISTORICO_CON_DIA_OPERATIVO_ATOMICO"
+    )
+    assert result["traceability"]["snapshot_operation_date"] == "2026-10-09"
+
+    count_sql, count_params = calls[0]
+    assert "d.fecha_operacion <> %s" in count_sql
+    assert count_params[-1] == "2026-10-09"

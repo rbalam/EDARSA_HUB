@@ -1,0 +1,358 @@
+{
+  "job": "universal_worker",
+  "version": "v1",
+  "parameters": {
+    "job_name": "BOS-GLOBALIZATION-MASTERDATA-GATE0-ASIS-CANONICAL-DISCOVERY-R1",
+    "mode": "READ_ONLY",
+    "phase": "GATE_0",
+    "task": "audit_existing_globalization_localization_masterdata_capabilities",
+    "objective": "Inventariar y clasificar exclusivamente la implementación AS-IS existente en repositorio y EDARSAHUB SQL para capacidades transversales de globalización, localización y master data. No diseñar ni implementar todavía una solución nueva. Determinar qué ya es canónico, qué está duplicado, qué pertenece correctamente a un bounded context, qué es legacy y qué está realmente ausente.",
+    "absolute_rules": [
+      "READ_ONLY absoluto.",
+      "EDARSAHUB SQL es la fuente canónica de verdad.",
+      "No MongoDB como fuente operativa ni de verdad.",
+      "No crear, alterar, eliminar ni migrar tablas, vistas, procedimientos, funciones, índices, datos o esquemas.",
+      "No INSERT, UPDATE, DELETE, MERGE, TRUNCATE, DROP, ALTER, CREATE ni ejecución equivalente.",
+      "No modificar código.",
+      "No commits.",
+      "No pull requests.",
+      "No deployments.",
+      "No reinicios.",
+      "No tocar Production.",
+      "No tocar Scheduler.",
+      "No tocar NetPay.",
+      "No modificar permisos, RBAC, usuarios, menús ni Layout.",
+      "No crear helpers, repositories, services, endpoints, catálogos ni módulos.",
+      "No introducir hardcode.",
+      "No crear duplicados.",
+      "No crecer el Core.",
+      "No proponer una nueva arquitectura hasta terminar el inventario AS-IS.",
+      "Reutilizar únicamente conexiones y helpers canónicos existentes para cualquier lectura SQL.",
+      "No exponer secretos, credenciales, connection strings ni tokens.",
+      "Toda afirmación debe estar acompañada de evidencia exacta de archivo/símbolo o esquema/objeto SQL."
+    ],
+    "audit_scope": [
+      {
+        "capability": "COUNTRIES",
+        "search": [
+          "país",
+          "pais",
+          "country",
+          "countries",
+          "ISO 3166",
+          "country_code",
+          "codigo_pais"
+        ]
+      },
+      {
+        "capability": "CURRENCIES",
+        "search": [
+          "moneda",
+          "currency",
+          "currencies",
+          "ISO 4217",
+          "currency_code",
+          "codigo_moneda",
+          "MXN",
+          "USD"
+        ]
+      },
+      {
+        "capability": "FX_EXCHANGE_RATES",
+        "search": [
+          "tipo_cambio",
+          "exchange_rate",
+          "fx",
+          "currency conversion",
+          "conversion moneda",
+          "FIX",
+          "rate"
+        ]
+      },
+      {
+        "capability": "LANGUAGES_LOCALES",
+        "search": [
+          "idioma",
+          "language",
+          "locale",
+          "localization",
+          "internationalization",
+          "i18n",
+          "l10n",
+          "BCP 47"
+        ]
+      },
+      {
+        "capability": "TIME_ZONES",
+        "search": [
+          "timezone",
+          "time_zone",
+          "zona_horaria",
+          "America/Mexico_City",
+          "America/Merida",
+          "UTC"
+        ]
+      },
+      {
+        "capability": "UNITS_OF_MEASURE",
+        "search": [
+          "unidad_medida",
+          "unidad de medida",
+          "unit_of_measure",
+          "uom",
+          "measurement",
+          "kg",
+          "gramo",
+          "litro",
+          "ml",
+          "pieza",
+          "presentacion"
+        ]
+      },
+      {
+        "capability": "UNIT_CONVERSIONS",
+        "search": [
+          "conversion_unidad",
+          "unit_conversion",
+          "factor_conversion",
+          "equivalencia",
+          "conversion factor"
+        ]
+      },
+      {
+        "capability": "CALENDARS",
+        "search": [
+          "calendario",
+          "calendar",
+          "business_day",
+          "dia_habil",
+          "feriado",
+          "holiday",
+          "festivo"
+        ]
+      },
+      {
+        "capability": "OPERATING_HOURS",
+        "search": [
+          "horario_operativo",
+          "operating_hours",
+          "business_hours",
+          "opening_hours",
+          "hora_apertura",
+          "hora_cierre"
+        ]
+      },
+      {
+        "capability": "FORMATS",
+        "search": [
+          "date_format",
+          "number_format",
+          "currency_format",
+          "locale format",
+          "formato_fecha",
+          "formato_moneda",
+          "formato_numero"
+        ]
+      },
+      {
+        "capability": "TAXES",
+        "search": [
+          "impuesto",
+          "tax",
+          "IVA",
+          "VAT",
+          "ISR",
+          "tax_rate",
+          "tasa_impuesto"
+        ]
+      },
+      {
+        "capability": "ADDRESSES",
+        "search": [
+          "direccion",
+          "address",
+          "postal_code",
+          "codigo_postal",
+          "estado",
+          "municipio",
+          "region",
+          "province"
+        ]
+      },
+      {
+        "capability": "FISCAL_IDENTIFIERS",
+        "search": [
+          "RFC",
+          "VAT ID",
+          "EIN",
+          "NIF",
+          "tax_identifier",
+          "identificador_fiscal"
+        ]
+      },
+      {
+        "capability": "BANK_IDENTIFIERS",
+        "search": [
+          "CLABE",
+          "IBAN",
+          "SWIFT",
+          "BIC",
+          "ABA",
+          "routing",
+          "bank_identifier"
+        ]
+      }
+    ],
+    "repository_audit": {
+      "required": true,
+      "inspect": [
+        "backend",
+        "frontend",
+        "database",
+        "migrations",
+        "validation",
+        "repositories",
+        "services",
+        "helpers",
+        "models",
+        "schemas",
+        "routers",
+        "configuration",
+        "scheduler",
+        "tests"
+      ],
+      "requirements": [
+        "Localizar archivos y símbolos reales.",
+        "Identificar constantes y valores hardcodeados relacionados.",
+        "Detectar implementaciones duplicadas o casi duplicadas.",
+        "Detectar helpers transversales ya existentes.",
+        "Determinar imports y consumidores principales.",
+        "Determinar si la capacidad está indebidamente alojada en core.",
+        "Determinar bounded context propietario cuando aplique.",
+        "Distinguir runtime productivo, compatibilidad legacy, tests y código muerto."
+      ]
+    },
+    "sql_audit": {
+      "required": true,
+      "database": "EDARSAHUB",
+      "connection_policy": "USE_EXISTING_CANONICAL_EDARSAHUB_SQL_CONNECTION_ONLY",
+      "allowed_operations": [
+        "SELECT",
+        "metadata inspection",
+        "INFORMATION_SCHEMA read",
+        "sys catalog read"
+      ],
+      "inspect_objects": [
+        "tables",
+        "views",
+        "columns",
+        "foreign keys",
+        "unique constraints",
+        "indexes",
+        "functions",
+        "stored procedures",
+        "reference/master data structures"
+      ],
+      "requirements": [
+        "Buscar objetos por nombre y por columnas relacionadas con cada capability.",
+        "Detectar catálogos equivalentes con nombres diferentes.",
+        "Detectar relaciones FK existentes.",
+        "Detectar tablas aparentemente duplicadas.",
+        "Determinar cuáles objetos tienen consumidores reales en código.",
+        "No inferir canonicidad únicamente por nombre.",
+        "No mostrar valores sensibles."
+      ]
+    },
+    "classification": {
+      "allowed": [
+        "CANONICAL",
+        "DUPLICATE",
+        "DOMAIN-SPECIFIC",
+        "MISSING",
+        "LEGACY"
+      ],
+      "definitions": {
+        "CANONICAL": "Existe una implementación reutilizable, vigente, con propietario claro y evidencia de consumo real coherente con BOS.",
+        "DUPLICATE": "Existen dos o más implementaciones que representan sustancialmente el mismo concepto o responsabilidad.",
+        "DOMAIN-SPECIFIC": "La implementación existe y correctamente pertenece a un bounded context concreto, por lo que no debe extraerse automáticamente a infraestructura transversal.",
+        "MISSING": "No se encontró una implementación utilizable después de revisar repositorio y SQL con evidencia suficiente.",
+        "LEGACY": "Existe pero está deprecada, desconectada, sustituida, sólo por compatibilidad o no debe utilizarse para nuevas capacidades."
+      }
+    },
+    "special_architecture_checks": [
+      "Determinar si existe actualmente un catálogo maestro de unidades de medida.",
+      "Separar unidades físicas universales de presentaciones comerciales por producto.",
+      "No considerar caja->botella, paquete->pieza u otras equivalencias comerciales como conversión física universal sin demostrarlo.",
+      "Determinar si conversiones kg/g, L/ml u otras están centralizadas o repetidas.",
+      "Determinar dónde se almacenan moneda original, moneda funcional/base y moneda de presentación.",
+      "Determinar si tipos de cambio poseen fecha de vigencia, fuente y granularidad temporal.",
+      "Determinar si timezone es IANA o un offset/string hardcodeado.",
+      "Localizar usos directos de datetime.now, utcnow, Date(), timezone offsets y equivalentes que puedan saltarse la política canónica.",
+      "Determinar cómo se resuelve FechaOperacion frente a timestamp técnico.",
+      "Determinar si idioma/locale se guarda por usuario, empresa, unidad o frontend.",
+      "Determinar si horarios operativos están centralizados o repetidos por módulo.",
+      "Determinar si impuestos son catálogos globales o reglas específicas del dominio/jurisdicción.",
+      "Distinguir identificadores fiscales por jurisdicción.",
+      "Distinguir identificadores bancarios por país/red bancaria.",
+      "Identificar configuraciones específicas de México que estén tratadas incorrectamente como universales.",
+      "Detectar cualquier capacidad transversal colocada dentro de core que pueda contribuir a core growth."
+    ],
+    "required_matrix_columns": [
+      "capability",
+      "classification",
+      "repository_evidence",
+      "sql_evidence",
+      "current_owner",
+      "current_consumers",
+      "canonical_source_if_any",
+      "duplicates_if_any",
+      "hardcodes_if_any",
+      "country_or_domain_scope",
+      "risk",
+      "notes"
+    ],
+    "required_deliverables": [
+      "Executive summary AS-IS.",
+      "Repository evidence inventory.",
+      "SQL evidence inventory.",
+      "Capability classification matrix.",
+      "Duplicate/conflict matrix.",
+      "Hardcode inventory relevant to scope.",
+      "Current ownership/bounded-context map.",
+      "Core-growth findings.",
+      "List of real MISSING capabilities only after eliminating false negatives.",
+      "List of unresolved evidence requiring a later targeted audit.",
+      "No implementation plan yet.",
+      "No migration plan yet.",
+      "No proposed new tables yet."
+    ],
+    "quality_gate": {
+      "pass_only_if": [
+        "All 14 capability groups were inspected in repository and SQL.",
+        "UNITS_OF_MEASURE and UNIT_CONVERSIONS are separately analyzed.",
+        "Every CANONICAL classification has concrete repository and/or SQL evidence.",
+        "Every DUPLICATE identifies at least two concrete implementations.",
+        "Every DOMAIN-SPECIFIC identifies its bounded context.",
+        "Every LEGACY classification explains replacement/deprecation evidence.",
+        "Every MISSING classification records searches performed and absence of evidence.",
+        "Hardcoded timezone/currency/country/UOM patterns were explicitly checked.",
+        "No repository or SQL mutation occurred.",
+        "production_touched=false"
+      ]
+    },
+    "expected_terminal_result": {
+      "status": "COMPLETE",
+      "quality_gate": "PASS",
+      "mode": "READ_ONLY",
+      "production_touched": false,
+      "repository_mutated": false,
+      "sql_mutated": false,
+      "percent_complete": 100,
+      "blockers": [],
+      "missing_evidence": [],
+      "classification_counts": {},
+      "report_path": "",
+      "evidence_path": ""
+    }
+  }
+}

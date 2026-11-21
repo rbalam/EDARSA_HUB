@@ -1,0 +1,27 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "triggered_at_utc": "2026-09-19T04:23:00Z",
+  "source": "chatgpt",
+  "project": "13. Produccion",
+  "reason": "Re-wake del R24F original despues de validar que el preview publico ya responde /api/internal/worker/wake con 401 y no 404.",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-DESIGN-CONTRACT-READONLY-R1-20260918",
+  "validation_before_trigger": {
+    "branch": "Edarsahub_Desarrollo",
+    "head_observed_in_emergent_dev": "b4f86080c77e16c2db73ffe4fc7910958f67b797",
+    "local_backend_health_code": 200,
+    "local_backend_openapi_wake_route": "PASS",
+    "local_backend_wake_post_no_headers_code": 401,
+    "local_backend_wake_status": "PASS_NOT_404",
+    "public_preview_health_code": 200,
+    "public_preview_wake_post_no_headers_code": 401,
+    "public_preview_wake_status": "PASS_NOT_404"
+  },
+  "guards": {
+    "production_allowed": false,
+    "sql_allowed": false,
+    "create_r24f_r2_allowed": false,
+    "implementation_publish_allowed": false,
+    "touch_scheduler_netpay_allowed": false,
+    "touch_rbac_or_menu_allowed": false
+  }
+}

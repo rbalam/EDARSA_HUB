@@ -1,0 +1,7 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "RH GLOBAL HCM - priorizar el job READ_ONLY ya publicado EDARSAHUB-RH-GLOBAL-HCM-GATE0-ASIS-CANONICAL-DISCOVERY-R2 cuando termine cualquier trabajo activo. Recuperar la arquitectura canónica existente de Global HCM + Payroll + Compliance + Reconciliation; no crear arquitectura paralela, no crear R3, no tocar Produccion, SQL de escritura, RBAC, Scheduler, NetPay ni formulas.",
+  "existing_job_id": "EDARSAHUB-RH-GLOBAL-HCM-GATE0-ASIS-CANONICAL-DISCOVERY-R2",
+  "preferred_job_id": "EDARSAHUB-RH-GLOBAL-HCM-GATE0-ASIS-CANONICAL-DISCOVERY-R2",
+  "production_touched": false
+}

@@ -1,0 +1,198 @@
+name: Soft Movement Canonical Mapping Candidates
+
+on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - ".github/workflows/soft-movement-canonical-mapping-candidates.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "HRLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: python -m pip install --quiet pymssql
+
+      - name: Resolve exact canonical candidates
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import pymssql
+
+          targets = {
+              "130MID": [
+                  "005239","005240","008124","046014","005242","008125",
+                  "020161","001083","005247","008126","020162","013068",
+                  "018067","020160","027012","027013","A02013","A066025",
+                  "001084","005236","005241","008127","008128","013081",
+                  "013084",
+              ],
+              "CIENFUEGOS": [
+                  "A500302","A500303","A500307","A500309",
+                  "A500310","A500311","A500312",
+              ],
+              "ESTELAR": ["B160011","A100220","B131068"],
+          }
+
+          conn = pymssql.connect(
+              server=os.environ["EDARSAHUB_SQL_HOST"],
+              port=int(os.environ["EDARSAHUB_SQL_PORT"]),
+              database=os.environ["EDARSAHUB_SQL_DATABASE"],
+              user=os.environ["EDARSAHUB_SQL_USER"],
+              password=os.environ["EDARSAHUB_SQL_PASSWORD"],
+              login_timeout=15,
+              timeout=45,
+              as_dict=True,
+          )
+          cur = conn.cursor(as_dict=True)
+
+          summary = {}
+          exact_candidates = []
+
+          for unit, codes in targets.items():
+              cur.execute("""
+                  SELECT TOP 1
+                      CONVERT(varchar(36), s.id) AS ServerID,
+                      UPPER(LTRIM(RTRIM(s.system_type))) AS SystemType
+                  FROM dbo.Servidores_Conexiones s
+                  INNER JOIN dbo.Unidades_Negocio u
+                      ON u.server_id=CAST(s.id AS nvarchar(36))
+                     AND ISNULL(u.activo,0)=1
+                  WHERE UPPER(u.codigo)=%s
+                    AND ISNULL(s.activo,0)=1
+              """, (unit,))
+              server = cur.fetchone()
+              if not server:
+                  raise SystemExit(f"SERVER_NOT_FOUND={unit}")
+
+              sid = str(server["ServerID"])
+              placeholders = ",".join(["%s"] * len(codes))
+              params = (sid, *codes)
+
+              cur.execute(f"""
+                  SELECT
+                      CONVERT(varchar(36), i.InsumoID) AS InsumoID,
+                      CONVERT(varchar(36), i.ServerID) AS ServerID,
+                      UPPER(LTRIM(RTRIM(i.SystemType))) AS SystemType,
+                      LTRIM(RTRIM(i.CodigoFuente)) AS CodigoFuente,
+                      LTRIM(RTRIM(i.Nombre)) AS Nombre,
+                      LTRIM(RTRIM(i.UnidadMedida)) AS UnidadMedida,
+                      ISNULL(i.Activo,0) AS Activo,
+                      pc.ProductoID,
+                      pc.CodigoProducto,
+                      pc.SKU,
+                      pc.NombreProducto,
+                      CASE WHEN m.MapeoOrigenID IS NULL THEN 0 ELSE 1 END AS HasMap
+                  FROM dbo.Sync_Productos_Insumos i
+                  LEFT JOIN dbo.Producto_Catalogo pc
+                    ON pc.SKU=CONVERT(varchar(36), i.InsumoID)
+                   AND ISNULL(pc.Activo,1)=1
+                  LEFT JOIN dbo.Producto_MapeoOrigen m
+                    ON LOWER(CONVERT(varchar(36),m.ServerID))=
+                       LOWER(CONVERT(varchar(36),i.ServerID))
+                   AND UPPER(m.SystemType)=UPPER(i.SystemType)
+                   AND UPPER(LTRIM(RTRIM(m.CodigoFuente)))=
+                       UPPER(LTRIM(RTRIM(i.CodigoFuente)))
+                   AND m.Activo=1
+                  WHERE CONVERT(varchar(36),i.ServerID)=%s
+                    AND UPPER(LTRIM(RTRIM(i.CodigoFuente))) IN ({placeholders})
+                    AND ISNULL(i.Activo,0)=1
+                  ORDER BY i.CodigoFuente, i.InsumoID
+              """, params)
+              rows = cur.fetchall() or []
+
+              by_code = {}
+              for row in rows:
+                  code = str(row.get("CodigoFuente") or "").strip().upper()
+                  by_code.setdefault(code, []).append(row)
+
+              unit_rows = []
+              for code in codes:
+                  matches = by_code.get(code.upper(), [])
+                  item = {
+                      "codigo_fuente": code,
+                      "active_sync_rows": len(matches),
+                      "matches": [
+                          {
+                              "insumo_id": r.get("InsumoID"),
+                              "system_type": r.get("SystemType"),
+                              "nombre": r.get("Nombre"),
+                              "unidad_medida": r.get("UnidadMedida"),
+                              "producto_id": r.get("ProductoID"),
+                              "codigo_producto": r.get("CodigoProducto"),
+                              "sku": r.get("SKU"),
+                              "nombre_producto": r.get("NombreProducto"),
+                              "has_map": bool(r.get("HasMap")),
+                          }
+                          for r in matches
+                      ],
+                  }
+
+                  if len(matches) == 1 and not matches[0].get("HasMap"):
+                      r = matches[0]
+                      item["candidate_status"] = (
+                          "EXISTING_CANONICAL_PRODUCT"
+                          if r.get("ProductoID") is not None
+                          else "NEEDS_CANONICAL_PRODUCT_AND_MAP"
+                      )
+                      exact_candidates.append({
+                          "unidad": unit,
+                          "server_id": sid,
+                          "codigo_fuente": code,
+                          "insumo_id": r.get("InsumoID"),
+                          "system_type": r.get("SystemType"),
+                          "nombre": r.get("Nombre"),
+                          "unidad_medida": r.get("UnidadMedida"),
+                          "producto_id": r.get("ProductoID"),
+                          "candidate_status": item["candidate_status"],
+                      })
+                  elif len(matches) == 0:
+                      item["candidate_status"] = "SYNC_PRODUCT_MISSING"
+                  elif len(matches) > 1:
+                      item["candidate_status"] = "AMBIGUOUS_SYNC_PRODUCT"
+                  else:
+                      item["candidate_status"] = "ALREADY_MAPPED"
+
+                  unit_rows.append(item)
+
+              summary[unit] = unit_rows
+
+          print("MAPPING_CANDIDATE_SUMMARY=" + json.dumps(
+              summary, ensure_ascii=False, default=str
+          ))
+          print("MAPPING_EXACT_CANDIDATES=" + json.dumps(
+              exact_candidates, ensure_ascii=False, default=str
+          ))
+          print("MAPPING_EXACT_COUNTS=" + json.dumps({
+              "total": len(exact_candidates),
+              "existing_product": sum(
+                  1 for x in exact_candidates
+                  if x["candidate_status"]=="EXISTING_CANONICAL_PRODUCT"
+              ),
+              "needs_product_and_map": sum(
+                  1 for x in exact_candidates
+                  if x["candidate_status"]=="NEEDS_CANONICAL_PRODUCT_AND_MAP"
+              ),
+          }))
+
+          cur.close()
+          conn.close()
+          PY

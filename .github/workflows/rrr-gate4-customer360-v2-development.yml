@@ -1,0 +1,124 @@
+name: RRR Gate 4 Customer360 V2 Development
+
+on:
+  push:
+    branches: [Edarsahub_Desarrollo]
+    paths: [ops/migrations/requests/RRR-GATE4-CUSTOMER360-V2-20260909.execute]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rrr-gate4-customer360-v2-development
+  cancel-in-progress: false
+
+jobs:
+  migrate-development:
+    runs-on: ubuntu-latest
+    environment: development
+    timeout-minutes: 20
+    env:
+      EDARSAHUB_SQL_HOST: '54.39.104.176'
+      EDARSAHUB_SQL_PORT: '1433'
+      EDARSAHUB_SQL_DATABASE: 'EDARSAHUB'
+      MIGRATION_SCRIPT: docs/RRR/sql/RRR_GATE4_CUSTOMER360_VIEWS_V2.sql
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: '${{ github.sha }}'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install SQL runtime
+        run: python -m pip install pymssql pydantic python-dotenv email-validator
+      - name: Preflight absence and permissions
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os,pymssql
+          views=['vw_RRR_ClienteActividadComercial','vw_RRR_ClienteScoreActual','vw_RRR_ClienteRankingActual','vw_RRR_Customer360']
+          c=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD']);q=c.cursor(as_dict=True);p=','.join(['%s']*4);q.execute(f"SELECT name FROM sys.objects WHERE schema_id=SCHEMA_ID('dbo') AND name IN ({p})",tuple(views));existing=q.fetchall();q.execute("SELECT HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE VIEW') cv,HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER') ad");perms=q.fetchone();q.close();c.close();print(existing,perms);assert not existing;assert int(perms['cv'])==1 and int(perms['ad'])==1
+          PY
+      - name: R8 controlled canonical deployment
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+          EDARSAHUB_ALLOW_MIGRATIONS: 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE/backend" python - <<'PY'
+          import json, os, pathlib, traceback
+          report={'job':'RRR-GATE4D-R8-CONTROLLED-COMMIT-DEPLOYMENT-20260914','stage':'init','batch':None,'batch_count':None,'batches':[],'identity':None,'exception':None,'commit':None,'rollback':None,'deployment_outcome':None}
+          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'rrr_gate4_r8_deployment.json'
+          conn=None; cur=None
+          try:
+              report['stage']='import_runner'
+              from tools.edarsahub_sql_runner import get_connection, split_sql_batches, validate_sql_safety
+              report['stage']='read_sql'
+              sql=pathlib.Path(os.environ['MIGRATION_SCRIPT']).read_text(encoding='utf-8')
+              report['stage']='validate_safety'
+              validate_sql_safety(sql,'migrate')
+              report['stage']='split_batches'
+              batches=split_sql_batches(sql); report['batch_count']=len(batches)
+              report['stage']='canonical_get_connection'
+              conn=get_connection('migrate')
+              report['stage']='canonical_cursor_as_dict'
+              cur=conn.cursor(as_dict=True)
+              report['stage']='identity_probe'
+              cur.execute("SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS user_name")
+              report['identity']=cur.fetchone()
+              for idx,batch in enumerate(batches,start=1):
+                  report['stage']='execute_batch'; report['batch']=idx
+                  cur.execute(batch)
+                  report['batches'].append({'batch':idx,'status':'EXECUTED'})
+              report['stage']='commit_success_path'
+              conn.commit(); report['commit']='OK'; report['deployment_outcome']='CANONICAL_PATH_ALL_BATCHES_EXECUTED_AND_COMMITTED'
+          except Exception as exc:
+              report['exception']={'type':type(exc).__name__,'message':str(exc),'repr':repr(exc),'traceback':traceback.format_exc()}
+              report['deployment_outcome']='CANONICAL_PATH_FAILURE_CAPTURED'
+              if conn is not None:
+                  try:
+                      conn.rollback(); report['rollback']='OK_AFTER_FAILURE'
+                  except Exception as rb_exc:
+                      report['rollback']='ROLLBACK_FAILED: '+repr(rb_exc)
+          finally:
+              if cur is not None:
+                  try: cur.close()
+                  except Exception: pass
+              if conn is not None:
+                  try: conn.close()
+                  except Exception: pass
+              out.write_text(json.dumps(report,ensure_ascii=False,indent=2,default=str),encoding='utf-8')
+              print(out.read_text(encoding='utf-8'))
+          PY
+      - name: R8 mandatory physical postcheck 4 of 4
+        if: always()
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, pymssql
+          views=['vw_RRR_ClienteActividadComercial','vw_RRR_ClienteScoreActual','vw_RRR_ClienteRankingActual','vw_RRR_Customer360']
+          result={'stage':'postcheck','present_count':None,'views':None,'exception':None}
+          try:
+              c=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD']);q=c.cursor(as_dict=True);p=','.join(['%s']*4);q.execute(f"SELECT name FROM sys.views WHERE schema_id=SCHEMA_ID('dbo') AND name IN ({p}) ORDER BY name",tuple(views));got=[r['name'] for r in q.fetchall()]; result['views']=got; result['present_count']=len(got); q.close(); c.close()
+          except Exception as exc:
+              result['exception']=repr(exc)
+          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'rrr_gate4_r8_postcheck.json'; out.write_text(json.dumps(result,indent=2,default=str),encoding='utf-8'); print(out.read_text(encoding='utf-8'))
+          if result['exception'] is not None or result['present_count'] != 4 or set(result['views'] or []) != set(views):
+              raise SystemExit('R8_POSTCHECK_FAILED')
+          PY
+      - name: Upload R8 durable deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rrr-gate4-r8-controlled-deployment-evidence
+          path: |
+            ${{ runner.temp }}/rrr_gate4_r8_deployment.json
+            ${{ runner.temp }}/rrr_gate4_r8_postcheck.json
+          if-no-files-found: error
+          retention-days: 90

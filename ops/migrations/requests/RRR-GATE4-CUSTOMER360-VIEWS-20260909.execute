@@ -1,0 +1,8 @@
+job=RRR-GATE4D-CUSTOMER360-VIEWS-EXECUTION-20260909
+target_branch=Edarsahub_Desarrollo
+production_allowed=false
+migration=docs/RRR/sql/RRR_GATE4_CUSTOMER360_VIEWS_V1.sql
+expected_blob_sha=47d377a5a4d5ac37ae6f846c0b233f1ade399ef7
+preflight_job=RRR-GATE4C-CUSTOMER360-VIEWS-PREFLIGHT-READONLY-20260909
+preflight_certification=CERTIFIED_READ_ONLY
+preflight_percent=100

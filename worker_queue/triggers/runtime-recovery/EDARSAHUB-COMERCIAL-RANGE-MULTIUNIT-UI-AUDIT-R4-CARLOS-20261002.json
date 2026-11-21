@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-COMERCIAL-RANGE-MULTIUNIT-UI-AUDIT-R4-CARLOS-20261002",
+  "reason": "Wake canonical Universal Worker and prefer final read-only certification R4 for Commercial range multi-unit UI. Preserve active work; do not touch Production.",
+  "production_touched": false
+}

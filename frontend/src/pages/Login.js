@@ -120,7 +120,7 @@ const Login = () => {
           {/* Card de login */}
           <Card className="bg-white border-slate-200 shadow-lg shadow-slate-200/50">
             <CardContent className="p-6 sm:p-8">
-              <form onSubmit={handleLogin} className="space-y-5">
+              <form onSubmit={handleLogin} autoComplete="on" className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-slate-700 font-medium">
                     Correo Electrónico
@@ -129,7 +129,9 @@ const Login = () => {
                     <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
                       id="email"
+                      name="username"
                       type="email"
+                      autoComplete="username"
                       placeholder="usuario@empresa.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -147,6 +149,8 @@ const Login = () => {
                   </Label>
                   <PasswordInput
                     id="password"
+                    name="password"
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required

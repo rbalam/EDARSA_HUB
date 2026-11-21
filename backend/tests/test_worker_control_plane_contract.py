@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -8,11 +9,14 @@ MIRROR = ROOT / "tools" / "mirror_sync" / "mirror_sync_worker.sh"
 def test_control_plane_is_independent_and_supervised():
     control = CONTROL.read_text(encoding="utf-8")
     mirror = MIRROR.read_text(encoding="utf-8")
-    assert "worker_control_plane.py" in mirror
-    assert "start_control_plane" in mirror
-    assert "ensure_control_plane" in mirror
-    assert "CONTROL_PLANE_STARTED=YES" in mirror
+
     assert "edarsahub.worker-control-plane.v1" in control
+
+    # Supervisor owns the control-plane lifecycle independently.
+    assert "start_control_plane" not in mirror
+    assert "ensure_control_plane" not in mirror
+    assert "stop_control_plane" not in mirror
+    assert "CONTROL_PLANE_STARTED=YES" not in mirror
 
 
 def test_orphan_claims_are_quarantined_not_deleted():
@@ -30,7 +34,53 @@ def test_runtime_self_heal_detects_generation_heartbeat_and_pid():
     assert "HEARTBEAT_STALE" in text
     assert "PID_DEAD" in text
     assert "request_universal_restart" in text
+    assert 'cycle = read_text(RUNTIME / "last_cycle_utc")' in text
+    assert "heartbeat_stale = cycle_age is None" in text
     assert "last_receive_utc" in text
+    assert '"last_cycle_age_seconds": cycle_age' in text
+    assert "current_job_id" in text
+    assert "active_execution_ownership" in text
+    assert "heartbeat_deferred_for_active_job" in text
+    assert "WORKER_HEARTBEAT_STALE_DEFERRED_ACTIVE_JOB" in text
+
+
+def test_runtime_self_heal_does_not_restart_idle_worker_with_fresh_cycle(
+    monkeypatch,
+):
+    from tools.mirror_sync import worker_control_plane as control
+
+    fresh_cycle = datetime.now(timezone.utc).isoformat()
+    values = {
+        "generation": "test-generation",
+        "pid": "4242",
+        "last_cycle_utc": fresh_cycle,
+        "last_receive_utc": "2000-01-01T00:00:00+00:00",
+        "current_job_id": "",
+    }
+
+    monkeypatch.setattr(
+        control,
+        "expected_generation",
+        lambda: "test-generation",
+    )
+    monkeypatch.setattr(
+        control,
+        "read_text",
+        lambda path: values.get(path.name, ""),
+    )
+    monkeypatch.setattr(control, "pid_alive", lambda pid: pid == 4242)
+    restarts = []
+    monkeypatch.setattr(
+        control,
+        "request_universal_restart",
+        lambda reason: restarts.append(reason) or True,
+    )
+
+    state = control.heal_runtime_generation_and_heartbeat()
+    assert state["runtime_repair_needed"] is False
+    assert state["last_cycle_age_seconds"] <= control.HEARTBEAT_STALE
+    assert state["last_receive_age_seconds"] > control.HEARTBEAT_STALE
+    assert restarts == []
 
 
 def test_worktree_recovery_is_preserving_and_fast_forward_only():
@@ -58,6 +108,24 @@ def test_stale_processing_is_idempotently_requeued():
     assert "STALE_PROCESSING_REQUEUED" in text
     assert "if target.exists()" in text
     assert "os.replace(path, target)" in text
+
+
+def test_stale_processing_defers_only_for_live_canonical_ownership():
+    text = CONTROL.read_text(encoding="utf-8")
+    assert "active_execution_ownership" in text
+    assert "STALE_PROCESSING_DEFERRED_ACTIVE_OWNERSHIP" in text
+    assert "load_slot" in text
+    assert "slot_is_live" in text
+    assert "reconciler_fresh" in text
+    assert "owner_pid_alive" in text
+
+
+def test_known_worker_blocker_routes_through_learned_capability():
+    text = CONTROL.read_text(encoding="utf-8")
+    assert "learned_registry.iter_learned_capabilities()" in text
+    assert "blocker_signature" in text
+    assert "learned_capability.required_paths" in text
+    assert "KNOWN_BLOCKER_CAPABILITY_AMBIGUOUS" in text
 
 
 def test_production_is_explicitly_out_of_scope():

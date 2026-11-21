@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="/app"
 DIR="$ROOT/tools/mirror_sync"
-RUNTIME_GENERATION="20260827-universal-job-worker-selfheal-v3"
+RUNTIME_GENERATION="20261117-universal-job-worker-lifecycle-v4"
 
 resolve_worker_python() {
     if [ -x "/root/.venv/bin/python" ]; then
@@ -19,6 +19,8 @@ resolve_worker_python() {
 
 PYTHON_BIN="$(resolve_worker_python)"
 if [ -z "$PYTHON_BIN" ] || [ ! -x "$PYTHON_BIN" ]; then echo "ABORT=WORKER_PYTHON_NOT_EXECUTABLE"; exit 4; fi
+SETSID_BIN="$(command -v setsid 2>/dev/null || true)"
+if [ -z "$SETSID_BIN" ] || [ ! -x "$SETSID_BIN" ]; then echo "ABORT=WORKER_SETSID_NOT_EXECUTABLE"; exit 5; fi
 
 BRIDGE="$DIR/universal_job_bridge.py"
 DISPATCHER="$DIR/universal_job_dispatcher.py"
@@ -36,20 +38,37 @@ RECONCILE_SECONDS="${UNIVERSAL_WORKER_RECONCILE_SECONDS:-30}"
 DISPATCH_IDLE_SECONDS="${UNIVERSAL_WORKER_DISPATCH_IDLE_SECONDS:-2}"
 RUNNING=1
 CHILD_PIDS=()
+ACTIVE_TOOL_PGID=""
 mkdir -p "$RUNTIME_STATE"
 
 log() { printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 now_utc() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 shutdown_worker() { RUNNING=0; log "UNIVERSAL_WORKER_SIGNAL_RECEIVED=YES"; local pid; for pid in "${CHILD_PIDS[@]:-}"; do [ -n "$pid" ] || continue; kill "$pid" 2>/dev/null || true; done; }
+shutdown_child_loop() {
+    trap '' TERM INT HUP
+    RUNNING=0
+    if [[ "${ACTIVE_TOOL_PGID:-}" =~ ^[0-9]+$ ]] && [ "$ACTIVE_TOOL_PGID" -gt 1 ]; then
+        kill -TERM -- "-$ACTIVE_TOOL_PGID" 2>/dev/null || true
+    fi
+}
 trap shutdown_worker TERM INT HUP
 is_authorized() { [ ! -e "$PERSISTENT_STOP" ] && [ ! -e "$TEMP_STOP" ]; }
 
 run_tool() {
     local NAME="$1" TIMEOUT_SECONDS="$2"; shift 2
-    local OUT RC
+    local OUT RC TOOL_PID
     OUT="$(mktemp)"
     set +e
-    if command -v timeout >/dev/null 2>&1; then timeout --signal=TERM --kill-after=5 "${TIMEOUT_SECONDS}s" "$@" >"$OUT" 2>&1; RC=$?; else "$@" >"$OUT" 2>&1; RC=$?; fi
+    if command -v timeout >/dev/null 2>&1; then
+        "$SETSID_BIN" --wait timeout --signal=TERM --kill-after=5 "${TIMEOUT_SECONDS}s" "$@" >"$OUT" 2>&1 &
+    else
+        "$SETSID_BIN" --wait "$@" >"$OUT" 2>&1 &
+    fi
+    TOOL_PID=$!
+    ACTIVE_TOOL_PGID="$TOOL_PID"
+    wait "$TOOL_PID"
+    RC=$?
+    ACTIVE_TOOL_PGID=""
     set -e
     log "TOOL=$NAME RC=$RC"; cat "$OUT"; rm -f "$OUT"
     if [ "$RC" -eq 124 ] || [ "$RC" -eq 137 ]; then log "TOOL=$NAME TIMEOUT=YES"; fi
@@ -64,11 +83,11 @@ publish_health_once() { [ -f "$HEALTH_PUBLISHER" ] || { log "RUNTIME_HEALTH_PUBL
 reconcile_once() { [ -f "$RECONCILER" ] || { log "WORKER_RUNTIME_RECONCILER_AVAILABLE=NO"; return 0; }; if run_tool "WORKER_RUNTIME_RECONCILER" "${UNIVERSAL_RECONCILE_TIMEOUT_SECONDS:-90}" "$PYTHON_BIN" "$RECONCILER"; then log "WORKER_RUNTIME_RECONCILER_STATE=READY"; else log "WORKER_RUNTIME_RECONCILER_STATE=ERROR"; fi; }
 
 validate_interval() { local name="$1" value="$2" minimum="$3"; case "$value" in ''|*[!0-9]*) echo "ABORT=INVALID_${name}"; exit 2;; esac; if [ "$value" -lt "$minimum" ]; then echo "ABORT=${name}_TOO_LOW"; exit 3; fi; }
-intake_loop() { while [ "$RUNNING" -eq 1 ]; do printf '%s\n' "$(now_utc)" > "$RUNTIME_STATE/last_cycle_utc"; if is_authorized; then receive_once; else log "INTAKE_STATE=DISABLED"; fi; sleep "$INTAKE_SECONDS" || true; done; }
-result_loop() { while [ "$RUNNING" -eq 1 ]; do if is_authorized; then publish_results_once; else log "RESULT_STATE=DISABLED"; fi; sleep "$RESULT_SECONDS" || true; done; }
-health_loop() { while [ "$RUNNING" -eq 1 ]; do if is_authorized; then publish_health_once; else log "HEALTH_STATE=DISABLED"; fi; sleep "$HEALTH_SECONDS" || true; done; }
-reconcile_loop() { while [ "$RUNNING" -eq 1 ]; do if is_authorized; then reconcile_once; else log "RECONCILE_STATE=DISABLED"; fi; sleep "$RECONCILE_SECONDS" || true; done; }
-dispatch_loop() { while [ "$RUNNING" -eq 1 ]; do if is_authorized; then dispatch_once; else log "DISPATCH_STATE=DISABLED"; fi; sleep "$DISPATCH_IDLE_SECONDS" || true; done; }
+intake_loop() { trap shutdown_child_loop TERM INT HUP; while [ "$RUNNING" -eq 1 ]; do printf '%s\n' "$(now_utc)" > "$RUNTIME_STATE/last_cycle_utc"; if is_authorized; then receive_once; else log "INTAKE_STATE=DISABLED"; fi; sleep "$INTAKE_SECONDS" || true; done; }
+result_loop() { trap shutdown_child_loop TERM INT HUP; while [ "$RUNNING" -eq 1 ]; do if is_authorized; then publish_results_once; else log "RESULT_STATE=DISABLED"; fi; sleep "$RESULT_SECONDS" || true; done; }
+health_loop() { trap shutdown_child_loop TERM INT HUP; while [ "$RUNNING" -eq 1 ]; do if is_authorized; then publish_health_once; else log "HEALTH_STATE=DISABLED"; fi; sleep "$HEALTH_SECONDS" || true; done; }
+reconcile_loop() { trap shutdown_child_loop TERM INT HUP; while [ "$RUNNING" -eq 1 ]; do if is_authorized; then reconcile_once; else log "RECONCILE_STATE=DISABLED"; fi; sleep "$RECONCILE_SECONDS" || true; done; }
+dispatch_loop() { trap shutdown_child_loop TERM INT HUP; while [ "$RUNNING" -eq 1 ]; do if is_authorized; then dispatch_once; else log "DISPATCH_STATE=DISABLED"; fi; sleep "$DISPATCH_IDLE_SECONDS" || true; done; }
 
 validate_interval "UNIVERSAL_WORKER_INTAKE_SECONDS" "$INTAKE_SECONDS" 5
 validate_interval "UNIVERSAL_WORKER_RESULT_SECONDS" "$RESULT_SECONDS" 5

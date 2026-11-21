@@ -113,10 +113,10 @@ export default function LoginPage({ onLogin }) {
             </p>
 
             {/* Formulario */}
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} autoComplete="on" className="space-y-6">
               {/* Campo RFC */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="portal-rfc" className="block text-sm font-semibold text-gray-700 mb-2">
                   RFC
                 </label>
                 <div className="relative">
@@ -124,7 +124,10 @@ export default function LoginPage({ onLogin }) {
                     <FileText className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
+                    id="portal-rfc"
+                    name="username"
                     type="text"
+                    autoComplete="username"
                     value={rfc}
                     onChange={(e) => setRfc(e.target.value.toUpperCase())}
                     placeholder="XAXX010101000"
@@ -137,11 +140,14 @@ export default function LoginPage({ onLogin }) {
 
               {/* Campo Contraseña */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="portal-password" className="block text-sm font-semibold text-gray-700 mb-2">
                   Contraseña
                 </label>
                 <div className="relative">
                   <PasswordInput
+                    id="portal-password"
+                    name="password"
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     leftIcon={<Lock className="h-5 w-5" />}

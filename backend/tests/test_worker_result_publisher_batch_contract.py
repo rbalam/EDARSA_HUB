@@ -37,3 +37,12 @@ def test_certified_markers_are_skipped_before_attempt_budget():
 
     assert 'marker = PUBLISHED / path.name' in text
     assert '"certification=CERTIFIED"' in text
+
+
+def test_pending_audit_promotions_are_prioritized_before_fresh_results():
+    text = PUB.read_text(encoding="utf-8")
+
+    assert "without starving certification promotions" in text
+    assert '"certification=PENDING_AUDIT_EVIDENCE"' in text
+    assert "return (0, mtime, path.name)" in text
+    assert "return (1, -mtime, path.name)" in text

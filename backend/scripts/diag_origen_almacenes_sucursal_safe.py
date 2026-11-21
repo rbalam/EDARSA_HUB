@@ -110,7 +110,7 @@ def diagnosticar_unidad(unidad: dict) -> dict:
             q_alm = "SELECT CAST(Al_Cve_Almacen AS VARCHAR(50)) cod, Al_Descripcion nom FROM Almacen"
             q_suc = "SELECT CAST(Sc_Cve_Sucursal AS VARCHAR(50)) sc, Sc_Nombre nom FROM Sucursal"
         else:
-            q_mov = "SELECT COUNT(*) n, MIN(fecha) fmin, MAX(fecha) fmax FROM movtosalmacen WHERE cancelado = 0"
+            q_mov = "SELECT COUNT(*) n, MIN(fecha) fmin, MAX(fecha) fmax FROM movtosalmacen"
             q_alm = "SELECT CAST(idalmacen AS VARCHAR(50)) cod, nombre nom FROM almacen"
             q_suc = None  # SoftRestaurant = 1 sucursal por base
 

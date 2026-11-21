@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import hashlib
 import json
 import os
-import shutil
 import subprocess
-import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,11 +14,125 @@ STATE = Path(os.environ.get("EDARSAHUB_BOOTSTRAP_STATE", "/var/lib/edarsahub-boo
 REMOTE = os.environ.get("EDARSAHUB_REMOTE", "origin")
 DEV = os.environ.get("EDARSAHUB_DEV_BRANCH", "Edarsahub_Desarrollo")
 SERVICE = os.environ.get("EDARSAHUB_SUPERVISOR_SERVICE", "edarsahub-mirror-sync")
+WORKER_SERVICE = os.environ.get("EDARSAHUB_UNIVERSAL_WORKER_SERVICE", "edarsahub-universal-worker")
+BACKEND_SERVICE = os.environ.get("EDARSAHUB_BACKEND_SERVICE", "backend")
+BACKEND_WAKE_URL = os.environ.get("EDARSAHUB_BACKEND_WAKE_URL", "http://127.0.0.1:8001/api/internal/worker/wake")
 INTERVAL = int(os.environ.get("EDARSAHUB_BOOTSTRAP_INTERVAL", "20"))
-MAX_STALE = int(os.environ.get("EDARSAHUB_BOOTSTRAP_MAX_STALE", "90"))
+MAX_STALE = int(os.environ.get("EDARSAHUB_BOOTSTRAP_MAX_STALE", "60"))
+BACKEND_RECOVERY_COOLDOWN = int(os.environ.get("EDARSAHUB_BACKEND_RECOVERY_COOLDOWN", "120"))
+BACKEND_UNHEALTHY_THRESHOLD = max(
+    1,
+    int(os.environ.get("EDARSAHUB_BACKEND_UNHEALTHY_THRESHOLD", "3")),
+)
+BACKEND_STOPWAITSECS = 30
+SUPERVISOR_RESTART_TIMEOUT = max(
+    BACKEND_STOPWAITSECS + 5,
+    int(os.environ.get("EDARSAHUB_SUPERVISOR_RESTART_TIMEOUT", "65")),
+)
+STOPPED_SUPERVISOR_STATES = frozenset({"STOPPED", "FATAL", "EXITED"})
 RUNTIME = APP / ".git" / "universal-worker-queue" / "runtime"
+MIRROR_STATE = APP / ".git" / "mirror-sync"
+MIRROR_ENABLE = MIRROR_STATE / "ENABLED"
+MIRROR_STOP = MIRROR_STATE / "STOP"
+MIRROR_TEMP_STOP = Path(
+    os.environ.get("EDARSAHUB_MIRROR_TEMP_STOP", "/tmp/edarsahub-mirror-sync/STOP")
+)
+MIRROR_START_SCRIPT = APP / "tools" / "mirror_sync" / "mirror_sync_start.sh"
+MIRROR_RECOVERY_STATE = STATE / "mirror_recovery_state.json"
+MIRROR_RECOVERY_COOLDOWN = int(
+    os.environ.get("EDARSAHUB_MIRROR_RECOVERY_COOLDOWN", "120")
+)
+MIRROR_RECOVERY_MAX_ATTEMPTS = max(
+    1,
+    int(os.environ.get("EDARSAHUB_MIRROR_RECOVERY_MAX_ATTEMPTS", "3")),
+)
+SYNC_PAUSE = APP / ".git" / "EDARSAHUB_SYNC_PAUSED"
 STATUS = STATE / "status.json"
 AUDIT = STATE / "audit.jsonl"
+BACKEND_RECOVERY_STAMP = STATE / "backend_recovery_epoch"
+BACKEND_RECOVERY_STATE = STATE / "backend_recovery_state.json"
+
+CONTROL_PLANE_SERVICE = os.environ.get(
+    "EDARSAHUB_CONTROL_PLANE_SERVICE",
+    "edarsahub-worker-control-plane",
+)
+CONTROL_PLANE_RUNTIME_STATE = (
+    STATE / "control_plane_runtime.json"
+)
+CONTROL_PLANE_ACTIVE_MARKER = (
+    STATE / "control_plane_active_runtime.json"
+)
+CONTROL_PLANE_RESTART_COOLDOWN_SECONDS = int(
+    os.environ.get(
+        "EDARSAHUB_CONTROL_PLANE_RESTART_COOLDOWN_SECONDS",
+        "60",
+    )
+)
+CONTROL_PLANE_MAX_RESTART_ATTEMPTS = int(
+    os.environ.get(
+        "EDARSAHUB_CONTROL_PLANE_MAX_RESTART_ATTEMPTS",
+        "2",
+    )
+)
+PLATFORM_MANAGED_SYSTEM_DEPS = ".emergent/system_deps.txt"
+
+def expected_platform_system_deps_drift() -> bool:
+    current = APP / PLATFORM_MANAGED_SYSTEM_DEPS
+    try:
+        if not current.is_file() or current.read_bytes() != b"":
+            return False
+    except OSError:
+        return False
+
+    canonical = run(
+        ["git", "show", f"HEAD:{PLATFORM_MANAGED_SYSTEM_DEPS}"],
+        timeout=20,
+    )
+    if canonical.returncode != 0 or canonical.stdout.strip() != "git":
+        return False
+
+    staged = run(
+        [
+            "git", "diff", "--cached", "--quiet", "--",
+            PLATFORM_MANAGED_SYSTEM_DEPS,
+        ],
+        timeout=20,
+    )
+    if staged.returncode != 0:
+        return False
+
+    unstaged = run(
+        [
+            "git", "diff", "--quiet", "--",
+            PLATFORM_MANAGED_SYSTEM_DEPS,
+        ],
+        timeout=20,
+    )
+    return unstaged.returncode == 1
+
+def effective_git_status() -> str:
+    proc = run(
+        ["git", "status", "--porcelain=v1", "--untracked-files=all"],
+        timeout=20,
+    )
+    if proc.returncode != 0:
+        return "__STATUS_FAILED__"
+    lines = proc.stdout.splitlines()
+    if expected_platform_system_deps_drift():
+        lines = [
+            line for line in lines
+            if line != " M .emergent/system_deps.txt"
+        ]
+    return "\n".join(lines).strip()
+
+CONTROL_PLANE_IDENTITY_PATHS = (
+    "tools/mirror_sync/worker_control_plane.py",
+    "tools/mirror_sync/worker_maintenance_runtime.py",
+    "tools/mirror_sync/worker_maintenance_controller.py",
+    "tools/mirror_sync/worker_maintenance_contract.py",
+    "tools/mirror_sync/worker_auditor.py",
+    "tools/mirror_sync/worker_repair.py",
+)
 
 
 def now() -> str:
@@ -27,13 +140,29 @@ def now() -> str:
 
 
 def run(args: list[str], cwd: Path | None = None, timeout: int = 60) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(args, cwd=str(cwd or APP), text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout, check=False, env={**os.environ, "GIT_TERMINAL_PROMPT":"0"})
+    return subprocess.run(
+        args,
+        cwd=str(cwd or APP),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        timeout=timeout,
+        check=False,
+        env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+    )
 
 
 def audit(event: str, **fields):
     STATE.mkdir(parents=True, exist_ok=True)
     with AUDIT.open("a", encoding="utf-8") as h:
-        h.write(json.dumps({"at_utc": now(), "event": event, **fields, "production_touched": False}, ensure_ascii=False, sort_keys=True) + "\n")
+        h.write(
+            json.dumps(
+                {"at_utc": now(), "event": event, **fields, "production_touched": False},
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+            + "\n"
+        )
 
 
 def age_seconds(path: Path) -> float | None:
@@ -45,75 +174,977 @@ def age_seconds(path: Path) -> float | None:
         return None
 
 
-def supervisor_restart(reason: str) -> bool:
-    result = run(["supervisorctl", "restart", SERVICE], cwd=APP, timeout=30)
+def is_production_environment() -> bool:
+    env_name = (
+        os.environ.get("EDARSA_ENV")
+        or os.environ.get("APP_ENV")
+        or os.environ.get("ENVIRONMENT")
+        or "PREVIEW"
+    ).upper()
+    return "PROD" in env_name
+
+
+def backend_wake_route_health() -> dict:
+    """Probe the local route without a queue proof.
+
+    A healthy mounted route must reject the request with 401. 404 means the
+    running backend is stale and does not have the router mounted.
+    """
+    try:
+        result = run(
+            [
+                "curl",
+                "--silent",
+                "--show-error",
+                "--connect-timeout",
+                "2",
+                "--max-time",
+                "5",
+                "--output",
+                "/dev/null",
+                "--write-out",
+                "%{http_code}",
+                "--request",
+                "POST",
+                BACKEND_WAKE_URL,
+                "--header",
+                "Content-Type: application/json",
+                "--data",
+                "{}",
+            ],
+            timeout=8,
+        )
+        code = (result.stdout or "").strip()[-3:]
+        http_code = code if len(code) == 3 and code.isdigit() else "000"
+        healthy = result.returncode == 0 and code == "401"
+        if healthy:
+            failure_kind = None
+        elif result.returncode == 28:
+            failure_kind = "PROBE_TIMEOUT"
+        elif http_code == "404":
+            failure_kind = "ROUTE_NOT_MOUNTED"
+        elif result.returncode != 0:
+            failure_kind = "TRANSPORT_ERROR"
+        else:
+            failure_kind = "HTTP_UNHEALTHY"
+        return {
+            "healthy": healthy,
+            "http_code": http_code,
+            "returncode": result.returncode,
+            "failure_kind": failure_kind,
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            "healthy": False,
+            "http_code": "000",
+            "returncode": 124,
+            "failure_kind": "PROBE_TIMEOUT",
+        }
+    except Exception as exc:
+        return {
+            "healthy": False,
+            "http_code": "000",
+            "failure_kind": "PROBE_ERROR",
+            "error": str(exc),
+        }
+
+
+def backend_supervisor_status(service: str = BACKEND_SERVICE) -> dict:
+    try:
+        result = run(["supervisorctl", "status", service], cwd=APP, timeout=15)
+    except subprocess.TimeoutExpired:
+        return {
+            "state": "STATUS_TIMEOUT",
+            "confirmed_stopped": False,
+            "running": False,
+            "returncode": 124,
+        }
+    except Exception as exc:
+        return {
+            "state": "STATUS_ERROR",
+            "confirmed_stopped": False,
+            "running": False,
+            "error": str(exc),
+        }
+
+    raw = (result.stdout or "").strip()
+    tokens = raw.split()
+    parsed_state = "UNKNOWN"
+    if len(tokens) >= 2 and tokens[0] == service:
+        parsed_state = tokens[1].upper()
+    else:
+        for token in tokens:
+            candidate = token.strip(",:").upper()
+            if candidate in {
+                "RUNNING",
+                "STARTING",
+                "STOPPING",
+                "BACKOFF",
+                *STOPPED_SUPERVISOR_STATES,
+            }:
+                parsed_state = candidate
+                break
+
+    confirmed_stopped = parsed_state in STOPPED_SUPERVISOR_STATES
+    not_started = parsed_state == "STOPPED" and ("NOT STARTED" in raw.upper())
+    return {
+        "state": parsed_state,
+        "confirmed_stopped": confirmed_stopped,
+        "not_started": not_started,
+        "running": parsed_state == "RUNNING",
+        "returncode": result.returncode,
+    }
+
+
+def _write_atomic_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_name(f"{path.name}.tmp-{os.getpid()}-{time.monotonic_ns()}")
+    temp.write_text(content, encoding="utf-8")
+    os.replace(temp, path)
+
+
+def _read_backend_recovery_state() -> dict:
+    payload = read_json(BACKEND_RECOVERY_STATE)
+    if not isinstance(payload, dict):
+        return {"consecutive_failures": 0}
+    try:
+        failures = max(0, int(payload.get("consecutive_failures") or 0))
+    except (TypeError, ValueError):
+        failures = 0
+    return {**payload, "consecutive_failures": failures}
+
+
+def _write_backend_recovery_state(payload: dict) -> None:
+    record = {
+        "schema": "edarsahub.backend-recovery-state.v1",
+        **payload,
+        "updated_at_utc": now(),
+        "production_touched": False,
+    }
+    _write_atomic_text(
+        BACKEND_RECOVERY_STATE,
+        json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+    )
+
+
+def maybe_recover_backend() -> dict:
+    if is_production_environment():
+        audit("BACKEND_RECOVERY_BLOCKED_PRODUCTION_ENV", service=BACKEND_SERVICE)
+        return {"state": "BLOCKED_PRODUCTION_ENV", "restarted": False}
+
+    prev_state = _read_backend_recovery_state()
+    prev_failures = int(prev_state.get("consecutive_failures") or 0)
+
+    probe = backend_wake_route_health()
+    if probe.get("healthy"):
+        if prev_failures > 0 or BACKEND_RECOVERY_STATE.exists():
+            _write_backend_recovery_state(
+                {
+                    "consecutive_failures": 0,
+                    "last_healthy_at_utc": now(),
+                    "previous_failures": prev_failures,
+                }
+            )
+        if prev_failures > 0:
+            audit(
+                "BACKEND_PROBE_RECOVERED",
+                previous_failures=prev_failures,
+                service=BACKEND_SERVICE,
+            )
+        return {
+            "state": "HEALTHY",
+            "probe": probe,
+            "consecutive_failures": 0,
+            "restarted": False,
+        }
+
+    supervisor_info = backend_supervisor_status(BACKEND_SERVICE)
+    sup_state = str(supervisor_info.get("state") or "UNKNOWN")
+    confirmed_stopped = bool(supervisor_info.get("confirmed_stopped"))
+    consecutive_failures = prev_failures + 1
+
+    if not confirmed_stopped and consecutive_failures < BACKEND_UNHEALTHY_THRESHOLD:
+        _write_backend_recovery_state(
+            {
+                "consecutive_failures": consecutive_failures,
+                "last_unhealthy_at_utc": now(),
+                "last_failure_kind": probe.get("failure_kind"),
+                "supervisor_state": sup_state,
+            }
+        )
+        audit(
+            "BACKEND_PROBE_TRANSIENT_FAILURE",
+            probe=probe,
+            supervisor_state=sup_state,
+            consecutive_failures=consecutive_failures,
+            threshold=BACKEND_UNHEALTHY_THRESHOLD,
+            service=BACKEND_SERVICE,
+        )
+        return {
+            "state": "TRANSIENT_UNHEALTHY",
+            "probe": probe,
+            "supervisor_state": sup_state,
+            "consecutive_failures": consecutive_failures,
+            "threshold": BACKEND_UNHEALTHY_THRESHOLD,
+            "restarted": False,
+        }
+
+    now_epoch = int(time.time())
+    try:
+        last_epoch = int(BACKEND_RECOVERY_STAMP.read_text(encoding="utf-8").strip())
+    except Exception:
+        last_epoch = 0
+
+    in_cooldown = (now_epoch - last_epoch) < BACKEND_RECOVERY_COOLDOWN
+    if in_cooldown and not confirmed_stopped:
+        _write_backend_recovery_state(
+            {
+                "consecutive_failures": consecutive_failures,
+                "last_unhealthy_at_utc": now(),
+                "last_failure_kind": probe.get("failure_kind"),
+                "supervisor_state": sup_state,
+            }
+        )
+        audit(
+            "BACKEND_RECOVERY_COOLDOWN",
+            probe=probe,
+            supervisor_state=sup_state,
+            consecutive_failures=consecutive_failures,
+            service=BACKEND_SERVICE,
+        )
+        return {
+            "state": "COOLDOWN",
+            "probe": probe,
+            "supervisor_state": sup_state,
+            "consecutive_failures": consecutive_failures,
+            "restarted": False,
+        }
+
+    cooldown_bypassed = bool(in_cooldown and confirmed_stopped)
+    if confirmed_stopped:
+        restarted = supervisor_restart("BACKEND_PROCESS_STOPPED", BACKEND_SERVICE)
+        recovery_reason = "BACKEND_PROCESS_STOPPED"
+    else:
+        restarted = supervisor_restart("WAKE_ROUTE_UNHEALTHY", BACKEND_SERVICE)
+        recovery_reason = "WAKE_ROUTE_UNHEALTHY"
+
+    post_supervisor = (
+        backend_supervisor_status(BACKEND_SERVICE)
+        if restarted
+        else supervisor_info
+    )
+    post_probe = backend_wake_route_health() if restarted else probe
+    restart_confirmed = bool(
+        restarted
+        and not post_supervisor.get("confirmed_stopped")
+        and (post_supervisor.get("running") or post_probe.get("healthy"))
+    )
+
+    if restart_confirmed:
+        confirmed_epoch = int(time.time())
+        _write_atomic_text(BACKEND_RECOVERY_STAMP, f"{confirmed_epoch}\n")
+        _write_backend_recovery_state(
+            {
+                "consecutive_failures": 0,
+                "last_confirmed_restart_at_utc": now(),
+                "last_recovery_reason": recovery_reason,
+                "supervisor_state": post_supervisor.get("state"),
+            }
+        )
+    else:
+        _write_backend_recovery_state(
+            {
+                "consecutive_failures": consecutive_failures,
+                "last_unhealthy_at_utc": now(),
+                "last_failed_restart_at_utc": now(),
+                "last_recovery_reason": recovery_reason,
+                "supervisor_state": post_supervisor.get("state"),
+            }
+        )
+
+    audit(
+        "PREVIEW_BACKEND_STALE_RECOVERY",
+        probe=probe,
+        supervisor_state=sup_state,
+        post_supervisor_state=post_supervisor.get("state"),
+        consecutive_failures=consecutive_failures,
+        cooldown_bypassed=cooldown_bypassed,
+        reason=recovery_reason,
+        action="SUPERVISOR_RESTART",
+        service=BACKEND_SERVICE,
+        restarted=restart_confirmed,
+    )
+    return {
+        "state": "RESTART_REQUESTED" if restart_confirmed else "RESTART_FAILED",
+        "probe": probe,
+        "supervisor_state": sup_state,
+        "post_supervisor_state": post_supervisor.get("state"),
+        "consecutive_failures": 0 if restart_confirmed else consecutive_failures,
+        "cooldown_bypassed": cooldown_bypassed,
+        "restarted": restart_confirmed,
+        "restart_confirmed": restart_confirmed,
+    }
+
+
+def mirror_authorization() -> dict:
+    """Fail closed: sync needs explicit ENABLED and no persistent pause/stop."""
+    branch = run(["git", "branch", "--show-current"], timeout=20).stdout.strip()
+    env_name = (
+        os.environ.get("EDARSA_ENV")
+        or os.environ.get("APP_ENV")
+        or os.environ.get("ENVIRONMENT")
+        or "PREVIEW"
+    ).upper()
+    if "PROD" in env_name:
+        return {"authorized": False, "state": "BLOCKED_PRODUCTION_ENV"}
+    if branch != DEV:
+        return {"authorized": False, "state": "BLOCKED_WRONG_BRANCH", "branch": branch}
+    if SYNC_PAUSE.exists():
+        return {"authorized": False, "state": "SYNC_PAUSED"}
+    if MIRROR_STOP.exists():
+        return {"authorized": False, "state": "PERSISTENT_KILL_SWITCH"}
+    if MIRROR_TEMP_STOP.exists():
+        return {"authorized": False, "state": "TEMPORARY_KILL_SWITCH"}
+    if not MIRROR_ENABLE.exists():
+        return {"authorized": False, "state": "EXPLICIT_ENABLE_REQUIRED"}
+    effective_dirty = effective_git_status()
+    if effective_dirty == "__STATUS_FAILED__":
+        return {"authorized": False, "state": "WORKTREE_STATUS_FAILED"}
+    if effective_dirty:
+        return {"authorized": False, "state": "DEFERRED_LOCAL_DIRTY"}
+    return {"authorized": True, "state": "AUTHORIZED"}
+
+
+def atomic_state_json(
+    path: Path,
+    payload: dict,
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_name(
+        path.name + ".tmp-" + str(os.getpid())
+    )
+    temp.write_text(
+        json.dumps(
+            payload,
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\\n",
+        encoding="utf-8",
+    )
+    os.replace(temp, path)
+
+
+def read_json(path: Path) -> dict | None:
+    try:
+        payload = json.loads(
+            path.read_text(encoding="utf-8")
+        )
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    return payload if isinstance(payload, dict) else None
+
+
+def control_plane_expected_identity() -> str | None:
+    components: list[str] = []
+
+    for rel in CONTROL_PLANE_IDENTITY_PATHS:
+        proc = run(
+            [
+                "git",
+                "rev-parse",
+                f"HEAD:{rel}",
+            ],
+            timeout=20,
+        )
+        blob = proc.stdout.strip()
+
+        if (
+            proc.returncode != 0
+            or len(blob) != 40
+            or any(
+                char not in "0123456789abcdef"
+                for char in blob.lower()
+            )
+        ):
+            return None
+
+        components.append(
+            f"{rel}={blob.lower()}"
+        )
+
+    return hashlib.sha256(
+        ("\\n".join(components) + "\\n").encode(
+            "utf-8"
+        )
+    ).hexdigest()
+
+
+def control_plane_repo_is_canonical() -> tuple[bool, str]:
+    branch = run(
+        ["git", "branch", "--show-current"],
+        timeout=20,
+    ).stdout.strip()
+
+    if branch != DEV:
+        return False, "WRONG_BRANCH"
+
+    effective_dirty = effective_git_status()
+
+    if effective_dirty == "__STATUS_FAILED__":
+        return False, "STATUS_FAILED"
+
+    if effective_dirty:
+        return False, "LOCAL_WORK_DIRTY"
+
+    local = run(
+        ["git", "rev-parse", "HEAD"],
+        timeout=20,
+    ).stdout.strip()
+    remote = run(
+        [
+            "git",
+            "rev-parse",
+            f"{REMOTE}/{DEV}",
+        ],
+        timeout=20,
+    ).stdout.strip()
+
+    if not local or local != remote:
+        return False, "DEVELOPMENT_NOT_CONVERGED"
+
+    return True, "CANONICAL"
+
+
+def control_plane_runtime_convergence() -> dict:
+    expected = control_plane_expected_identity()
+    active = read_json(
+        CONTROL_PLANE_ACTIVE_MARKER
+    ) or {}
+    state = read_json(
+        CONTROL_PLANE_RUNTIME_STATE
+    ) or {}
+
+    active_identity = str(
+        active.get("active_identity") or ""
+    ).strip()
+    active_pid = int(
+        active.get("pid") or 0
+    )
+
+    base = {
+        "expected_identity": expected,
+        "active_identity": active_identity or None,
+        "active_pid": active_pid or None,
+        "production_touched": False,
+    }
+
+    if not expected:
+        return {
+            **base,
+            "state": "IDENTITY_UNAVAILABLE",
+            "restart_requested": False,
+        }
+
+    if (
+        active_identity == expected
+        and active_pid > 1
+    ):
+        return {
+            **base,
+            "state": "CONVERGED",
+            "restart_requested": False,
+        }
+
+    canonical, canonical_reason = (
+        control_plane_repo_is_canonical()
+    )
+
+    if not canonical:
+        return {
+            **base,
+            "state": "DEFERRED",
+            "reason": canonical_reason,
+            "restart_requested": False,
+        }
+
+    attempts = int(
+        state.get("restart_attempts") or 0
+    )
+    cooldown_until = float(
+        state.get("cooldown_until_epoch") or 0
+    )
+    now_epoch = time.time()
+
+    if now_epoch < cooldown_until:
+        return {
+            **base,
+            "state": "COOLDOWN",
+            "restart_attempts": attempts,
+            "cooldown_until_epoch": cooldown_until,
+            "restart_requested": False,
+        }
+
+    if attempts >= CONTROL_PLANE_MAX_RESTART_ATTEMPTS:
+        return {
+            **base,
+            "state": "ATTEMPTS_EXHAUSTED",
+            "restart_attempts": attempts,
+            "restart_requested": False,
+        }
+
+    previous_pid = active_pid
+
+    request_state = {
+        "schema": (
+            "edarsahub.control-plane-runtime.v1"
+        ),
+        "expected_identity": expected,
+        "active_identity": (
+            active_identity or None
+        ),
+        "last_restart_requested_at_utc": now(),
+        "last_restart_reason": (
+            "CONTROL_PLANE_CODE_STALE"
+        ),
+        "last_successful_activation_at_utc": (
+            state.get(
+                "last_successful_activation_at_utc"
+            )
+        ),
+        "restart_attempts": attempts + 1,
+        "cooldown_until_epoch": (
+            now_epoch
+            + CONTROL_PLANE_RESTART_COOLDOWN_SECONDS
+        ),
+        "production_touched": False,
+    }
+
+    atomic_state_json(
+        CONTROL_PLANE_RUNTIME_STATE,
+        request_state,
+    )
+
+    restarted = supervisor_restart(
+        "CONTROL_PLANE_CODE_STALE",
+        CONTROL_PLANE_SERVICE,
+    )
+
+    if not restarted:
+        return {
+            **base,
+            "state": "RESTART_FAILED",
+            "restart_attempts": attempts + 1,
+            "restart_requested": True,
+            "restart_succeeded": False,
+        }
+
+    deadline = time.time() + 20
+
+    while time.time() < deadline:
+        time.sleep(0.5)
+
+        activated = read_json(
+            CONTROL_PLANE_ACTIVE_MARKER
+        ) or {}
+
+        new_identity = str(
+            activated.get("active_identity") or ""
+        ).strip()
+        new_pid = int(
+            activated.get("pid") or 0
+        )
+
+        if (
+            new_identity == expected
+            and new_pid > 1
+            and new_pid != previous_pid
+        ):
+            success = {
+                "schema": (
+                    "edarsahub.control-plane-runtime.v1"
+                ),
+                "expected_identity": expected,
+                "active_identity": expected,
+                "last_restart_requested_at_utc": (
+                    request_state[
+                        "last_restart_requested_at_utc"
+                    ]
+                ),
+                "last_restart_reason": (
+                    "CONTROL_PLANE_CODE_STALE"
+                ),
+                "last_successful_activation_at_utc": (
+                    now()
+                ),
+                "restart_attempts": 0,
+                "cooldown_until_epoch": None,
+                "active_pid": new_pid,
+                "production_touched": False,
+            }
+
+            atomic_state_json(
+                CONTROL_PLANE_RUNTIME_STATE,
+                success,
+            )
+
+            return {
+                **base,
+                "state": "CONVERGED_AFTER_RESTART",
+                "active_identity": expected,
+                "active_pid": new_pid,
+                "restart_requested": True,
+                "restart_succeeded": True,
+            }
+
+    return {
+        **base,
+        "state": "ACTIVATION_ACK_TIMEOUT",
+        "restart_attempts": attempts + 1,
+        "restart_requested": True,
+        "restart_succeeded": True,
+    }
+
+
+def supervisor_restart(
+    reason: str,
+    service: str = SERVICE,
+    timeout: int | None = None,
+) -> bool:
+    if is_production_environment():
+        audit("SUPERVISOR_RESTART_BLOCKED_PRODUCTION_ENV", reason=reason, service=service)
+        return False
+    effective_timeout = max(
+        BACKEND_STOPWAITSECS + 5,
+        SUPERVISOR_RESTART_TIMEOUT if timeout is None else int(timeout),
+    )
+    try:
+        result = run(
+            ["supervisorctl", "restart", service],
+            cwd=APP,
+            timeout=effective_timeout,
+        )
+    except subprocess.TimeoutExpired:
+        audit(
+            "SUPERVISOR_RESTART_TIMEOUT",
+            reason=reason,
+            service=service,
+            timeout=effective_timeout,
+        )
+        return False
     ok = result.returncode == 0
-    audit("SUPERVISOR_RESTART", reason=reason, ok=ok, output=result.stdout[-1000:])
+    audit(
+        "SUPERVISOR_RESTART",
+        reason=reason,
+        service=service,
+        timeout=effective_timeout,
+        ok=ok,
+        output=(result.stdout or "")[-1000:],
+    )
     return ok
 
 
 def safe_fast_forward() -> dict:
+    auth = mirror_authorization()
+    if not auth["authorized"]:
+        audit("FAST_FORWARD_DEFERRED", reason=auth["state"])
+        return {"state": auth["state"], "preserved": True}
+
     fetch = run(["git", "fetch", "--quiet", REMOTE, DEV], timeout=90)
     if fetch.returncode != 0:
-        return {"state":"FETCH_FAILED", "output":fetch.stdout[-800:]}
+        return {"state": "FETCH_FAILED", "output": fetch.stdout[-800:]}
     branch = run(["git", "branch", "--show-current"], timeout=20).stdout.strip()
     if branch != DEV:
-        return {"state":"WRONG_BRANCH", "branch":branch}
+        return {"state": "WRONG_BRANCH", "branch": branch}
     local = run(["git", "rev-parse", "HEAD"], timeout=20).stdout.strip()
     remote = run(["git", "rev-parse", f"{REMOTE}/{DEV}"], timeout=20).stdout.strip()
     if local == remote:
-        return {"state":"ALIGNED", "head":local}
+        return {"state": "ALIGNED", "head": local}
     counts = run(["git", "rev-list", "--left-right", "--count", f"HEAD...{REMOTE}/{DEV}"], timeout=20)
     if counts.returncode != 0:
-        return {"state":"TOPOLOGY_FAILED"}
+        return {"state": "TOPOLOGY_FAILED"}
     left, right = [int(v) for v in counts.stdout.split()[:2]]
     if left != 0 or right <= 0:
-        return {"state":"NON_FF", "local_ahead":left, "remote_ahead":right}
-    # BLINDAJE: nunca sobrescribir trabajo local en curso. Si el worktree tiene
-    # cambios sin commitear (staged/unstaged/untracked), DIFERIR el fast-forward
-    # en lugar de hacer stash (que antes descartaba el trabajo activo del pod).
-    dirty = run(["git", "status", "--porcelain=v1", "--untracked-files=all"], timeout=20)
-    if dirty.stdout.strip():
+        return {"state": "NON_FF", "local_ahead": left, "remote_ahead": right}
+
+    # Re-check immediately before mutation. Never stash/reset/clean/restore.
+    effective_dirty = effective_git_status()
+    if effective_dirty == "__STATUS_FAILED__":
+        return {"state": "WORKTREE_STATUS_FAILED", "local": local, "remote": remote}
+    if effective_dirty:
         audit("FAST_FORWARD_DEFERRED", reason="LOCAL_WORK_DIRTY", local=local, remote=remote)
         return {"state": "DEFERRED_LOCAL_DIRTY", "local": local, "remote": remote, "preserved": True}
+
     ff = run(["git", "merge", "--ff-only", f"{REMOTE}/{DEV}"], timeout=120)
     if ff.returncode != 0:
-        return {"state":"FF_FAILED", "output":ff.stdout[-800:]}
+        return {"state": "FF_FAILED", "output": ff.stdout[-800:]}
     new_head = run(["git", "rev-parse", "HEAD"], timeout=20).stdout.strip()
     audit("FAST_FORWARD_APPLIED", from_sha=local, to_sha=new_head)
-    return {"state":"FF_APPLIED", "from":local, "to":new_head}
+    return {"state": "FF_APPLIED", "from": local, "to": new_head}
+
+
+def _read_mirror_recovery_state() -> dict:
+    payload = read_json(MIRROR_RECOVERY_STATE)
+    if not isinstance(payload, dict):
+        return {"attempts": 0, "cooldown_until_epoch": 0.0}
+    try:
+        attempts = max(0, int(payload.get("attempts") or 0))
+    except (TypeError, ValueError):
+        attempts = 0
+    try:
+        cooldown_until = float(payload.get("cooldown_until_epoch") or 0.0)
+    except (TypeError, ValueError):
+        cooldown_until = 0.0
+    return {**payload, "attempts": attempts, "cooldown_until_epoch": cooldown_until}
+
+
+def _write_mirror_recovery_state(payload: dict) -> None:
+    record = {
+        "schema": "edarsahub.mirror-recovery-state.v1",
+        **payload,
+        "updated_at_utc": now(),
+        "production_touched": False,
+    }
+    _write_atomic_text(
+        MIRROR_RECOVERY_STATE,
+        json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+    )
+
+
+def maybe_recover_mirror_sync(auth: dict) -> dict:
+    """Recover edarsahub-mirror-sync after Preview disconnect ONLY when authorized and Not started."""
+    if is_production_environment():
+        audit("MIRROR_RECOVERY_BLOCKED_PRODUCTION_ENV", service=SERVICE)
+        return {"state": "BLOCKED_PRODUCTION_ENV", "started": False, "production_touched": False}
+
+    if not auth.get("authorized"):
+        return {
+            "state": "NOT_AUTHORIZED",
+            "reason": auth.get("state"),
+            "started": False,
+            "production_touched": False,
+        }
+
+    sup = backend_supervisor_status(SERVICE)
+    sup_state = str(sup.get("state") or "UNKNOWN")
+
+    if sup_state in {"RUNNING", "STARTING"}:
+        prev = _read_mirror_recovery_state()
+        if prev.get("attempts", 0) > 0:
+            _write_mirror_recovery_state(
+                {
+                    "attempts": 0,
+                    "cooldown_until_epoch": 0.0,
+                    "last_running_at_utc": now(),
+                }
+            )
+        return {
+            "state": "ALREADY_RUNNING",
+            "supervisor_state": sup_state,
+            "started": False,
+            "production_touched": False,
+        }
+
+    if sup_state == "STOPPED" and not sup.get("not_started"):
+        audit(
+            "MIRROR_RECOVERY_ADMINISTRATIVE_STOP_RESPECTED",
+            service=SERVICE,
+            supervisor_state=sup_state,
+        )
+        return {
+            "state": "ADMINISTRATIVE_STOP_RESPECTED",
+            "supervisor_state": sup_state,
+            "started": False,
+            "production_touched": False,
+        }
+
+    if sup_state != "STOPPED":
+        return {
+            "state": "DEFERRED_SUPERVISOR_STATE",
+            "supervisor_state": sup_state,
+            "started": False,
+            "production_touched": False,
+        }
+
+    prev = _read_mirror_recovery_state()
+    attempts = int(prev.get("attempts") or 0)
+    cooldown_until = float(prev.get("cooldown_until_epoch") or 0.0)
+    now_epoch = time.time()
+
+    if now_epoch < cooldown_until:
+        return {
+            "state": "COOLDOWN",
+            "attempts": attempts,
+            "cooldown_until_epoch": cooldown_until,
+            "started": False,
+            "production_touched": False,
+        }
+
+    if attempts >= MIRROR_RECOVERY_MAX_ATTEMPTS:
+        audit(
+            "MIRROR_RECOVERY_ATTEMPTS_EXHAUSTED",
+            service=SERVICE,
+            attempts=attempts,
+        )
+        return {
+            "state": "ATTEMPTS_EXHAUSTED",
+            "attempts": attempts,
+            "started": False,
+            "production_touched": False,
+        }
+
+    if not MIRROR_START_SCRIPT.is_file():
+        return {
+            "state": "START_SCRIPT_MISSING",
+            "started": False,
+            "production_touched": False,
+        }
+
+    try:
+        proc = run(
+            ["/bin/bash", str(MIRROR_START_SCRIPT), "--recover-authorized"],
+            cwd=APP,
+            timeout=90,
+        )
+    except subprocess.TimeoutExpired:
+        _write_mirror_recovery_state(
+            {
+                "attempts": attempts + 1,
+                "cooldown_until_epoch": now_epoch + MIRROR_RECOVERY_COOLDOWN,
+                "last_failure_reason": "RECOVERY_TIMEOUT",
+            }
+        )
+        audit("MIRROR_POST_DISCONNECT_RECOVERY_TIMEOUT", service=SERVICE, attempts=attempts + 1)
+        return {
+            "state": "RECOVERY_TIMEOUT",
+            "attempts": attempts + 1,
+            "started": False,
+            "production_touched": False,
+        }
+
+    post_sup = backend_supervisor_status(SERVICE)
+    post_state = str(post_sup.get("state") or "UNKNOWN")
+    started = bool(proc.returncode == 0 and post_state in {"RUNNING", "STARTING"})
+
+    if started:
+        _write_mirror_recovery_state(
+            {
+                "attempts": 0,
+                "cooldown_until_epoch": 0.0,
+                "last_recovered_at_utc": now(),
+                "supervisor_state": post_state,
+            }
+        )
+        audit(
+            "MIRROR_POST_DISCONNECT_RECOVERY",
+            service=SERVICE,
+            supervisor_state=post_state,
+            started=True,
+            output=(proc.stdout or "")[-600:],
+        )
+        return {
+            "state": "RECOVERED",
+            "supervisor_state": post_state,
+            "started": True,
+            "production_touched": False,
+        }
+
+    _write_mirror_recovery_state(
+        {
+            "attempts": attempts + 1,
+            "cooldown_until_epoch": now_epoch + MIRROR_RECOVERY_COOLDOWN,
+            "last_failure_returncode": proc.returncode,
+            "supervisor_state": post_state,
+        }
+    )
+    audit(
+        "MIRROR_POST_DISCONNECT_RECOVERY_FAILED",
+        service=SERVICE,
+        returncode=proc.returncode,
+        supervisor_state=post_state,
+        attempts=attempts + 1,
+        output=(proc.stdout or "")[-600:],
+    )
+    return {
+        "state": "RECOVERY_FAILED",
+        "returncode": proc.returncode,
+        "supervisor_state": post_state,
+        "attempts": attempts + 1,
+        "started": False,
+        "production_touched": False,
+    }
 
 
 def cycle() -> dict:
     STATE.mkdir(parents=True, exist_ok=True)
+    auth = mirror_authorization()
     ff = safe_fast_forward()
-    age = age_seconds(RUNTIME / "last_receive_utc")
-    stale = age is None or age > MAX_STALE
+    backend = maybe_recover_backend()
+    control_plane_runtime = (
+        control_plane_runtime_convergence()
+    )
+    cycle_age = age_seconds(RUNTIME / "last_cycle_utc")
+    receive_age = age_seconds(RUNTIME / "last_receive_utc")
+    stale = cycle_age is None or cycle_age > MAX_STALE
     restarted = False
 
-    # Bootstrap owns mirror lifecycle only. The universal worker has a
-    # canonical external owner and must never be restarted indirectly by
-    # bouncing mirror-sync.
-    if ff.get("state") == "FF_APPLIED":
-        restarted = supervisor_restart("FAST_FORWARD_APPLIED")
-    elif stale:
+    # Mirror lifecycle is enabled only after explicit authorization. Pod restart
+    # itself is never authorization.
+    if auth["authorized"] and ff.get("state") == "FF_APPLIED":
+        mirror_restarted = supervisor_restart("FAST_FORWARD_APPLIED")
+        worker_restarted = supervisor_restart(
+            "FAST_FORWARD_APPLIED",
+            WORKER_SERVICE,
+        )
+        restarted = mirror_restarted or worker_restarted
         audit(
-            "UNIVERSAL_WORKER_STALE_OBSERVED",
-            worker_receive_age_seconds=age,
-            action="DEFER_TO_CANONICAL_WORKER_OWNER",
+            "UNIVERSAL_WORKER_FF_RELOAD",
+            service=WORKER_SERVICE,
+            restarted=worker_restarted,
+            reason="FAST_FORWARD_APPLIED",
+        )
+        mirror_recovery = {
+            "state": "HANDLED_BY_FF_RELOAD",
+            "started": mirror_restarted,
+            "production_touched": False,
+        }
+    else:
+        mirror_recovery = maybe_recover_mirror_sync(auth)
+        if mirror_recovery.get("started"):
+            restarted = True
+
+    if stale:
+        restarted = supervisor_restart("WORKER_HEARTBEAT_STALE", WORKER_SERVICE) or restarted
+        audit(
+            "UNIVERSAL_WORKER_STALE_RECOVERY",
+            worker_cycle_age_seconds=cycle_age,
+            worker_receive_age_seconds=receive_age,
+            action="SUPERVISOR_RESTART",
+            service=WORKER_SERVICE,
+            restarted=restarted,
         )
 
     payload = {
-        "schema": "edarsahub.bootstrap-watchdog.v1",
+        "schema": "edarsahub.bootstrap-watchdog.v2",
         "at_utc": now(),
+        "mirror_authorization": auth,
+        "mirror_recovery": mirror_recovery,
         "ff": ff,
-        "worker_receive_age_seconds": age,
+        "backend_recovery": backend,
+        "control_plane_runtime": control_plane_runtime,
+        "worker_cycle_age_seconds": cycle_age,
+        "worker_receive_age_seconds": receive_age,
         "worker_stale": stale,
         "restart_requested": restarted,
-        "worker_restart_owner": "EXTERNAL_CANONICAL_OWNER",
+        "worker_restart_owner": "BOOTSTRAP_WATCHDOG_SUPERVISOR_FALLBACK",
         "production_touched": False,
     }
-    STATUS.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True)+"\n", encoding="utf-8")
+    STATUS.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
     return payload
 
 
@@ -121,7 +1152,11 @@ def main() -> int:
     once = "--once" in os.sys.argv
     while True:
         try:
-            print("BOOTSTRAP_WATCHDOG=" + json.dumps(cycle(), ensure_ascii=False, sort_keys=True), flush=True)
+            print(
+                "BOOTSTRAP_WATCHDOG="
+                + json.dumps(cycle(), ensure_ascii=False, sort_keys=True),
+                flush=True,
+            )
         except Exception as exc:
             audit("CYCLE_ERROR", error=str(exc))
             print(f"BOOTSTRAP_WATCHDOG_ERROR={exc}", flush=True)

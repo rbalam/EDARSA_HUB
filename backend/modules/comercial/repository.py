@@ -492,7 +492,7 @@ async def save_metas_sucursal(server_id: str, sucursal: str, mes: int, anio: int
     """
     # Verificar si existe
     check_query = """
-        SELECT 1 FROM Comercial_Metas
+        SELECT 1 AS existe FROM Comercial_Metas
         WHERE LOWER(ServerID) = LOWER(%s) AND Sucursal = %s AND Mes = %s AND Anio = %s
     """
     exists = execute_hub_query_single(check_query, (server_id, sucursal, mes, anio))
@@ -550,7 +550,7 @@ async def save_kpis_cache(server_id: str, periodo_key: str, kpis: dict) -> None:
     
     # Verificar si existe
     check_query = """
-        SELECT 1 FROM Comercial_KPIs_Cache
+        SELECT 1 AS existe FROM Comercial_KPIs_Cache
         WHERE LOWER(ServerID) = LOWER(%s) AND PeriodoKey = %s
     """
     exists = execute_hub_query_single(check_query, (server_id, periodo_key))
@@ -592,7 +592,7 @@ async def save_server_connection_status(server_id: str, is_online: bool, respons
     """Guarda el estado de conexión de un servidor en SQL."""
     # Verificar si existe
     check_query = """
-        SELECT 1 FROM Servidores_Status
+        SELECT 1 AS existe FROM Servidores_Status
         WHERE LOWER(ServerID) = LOWER(%s)
     """
     exists = execute_hub_query_single(check_query, (server_id,))
@@ -711,7 +711,7 @@ async def save_dashboard_cache(server_id: str, periodo_key: str, dashboard_data:
     
     # Verificar si existe
     check_query = """
-        SELECT 1 FROM Comercial_Dashboard_Cache
+        SELECT 1 AS existe FROM Comercial_Dashboard_Cache
         WHERE LOWER(ServerID) = LOWER(%s) AND PeriodoKey = %s
     """
     exists = execute_hub_query_single(check_query, (server_id, periodo_key))

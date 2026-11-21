@@ -28,6 +28,26 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from tools.mirror_sync.worker_slot_runtime import (
+    load_slot,
+    slot_is_live,
+)
+from tools.mirror_sync.worker_maintenance_runtime import (
+    audit_runtime_incident,
+    declare_runtime_incident,
+    read_runtime_incident,
+    register_repair_attempt,
+    register_repair_result,
+    repair_attempt_allowed,
+    supersede_runtime_incident,
+)
+from tools.mirror_sync.worker_repair_auto_loop import (
+    advance_repair_automation,
+)
+from tools.mirror_sync import (
+    worker_repair_capability_registry as learned_registry,
+)
+
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 GIT = ROOT / ".git"
 STATE = GIT / "universal-worker-queue"
@@ -45,11 +65,93 @@ REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
 DEV_BRANCH = "Edarsahub_Desarrollo"
 INTERVAL = int(os.environ.get("EDARSAHUB_CONTROL_PLANE_INTERVAL", "15"))
 HEARTBEAT_STALE = int(os.environ.get("EDARSAHUB_WORKER_HEARTBEAT_STALE_SECONDS", "60"))
-CLAIM_GRACE = int(os.environ.get("EDARSAHUB_AGENT_CLAIM_GRACE_SECONDS", "300"))
-PROCESSING_GRACE = int(os.environ.get("EDARSAHUB_PROCESSING_REQUEUE_SECONDS", "2100"))
+CLAIM_GRACE = int(os.environ.get("EDARSAHUB_AGENT_CLAIM_GRACE_SECONDS", "90"))
+PROCESSING_GRACE = int(os.environ.get("EDARSAHUB_PROCESSING_REQUEUE_SECONDS", "120"))
+OPERATIONAL_PROCESSING_GRACE = int(
+    os.environ.get("EDARSAHUB_OPERATIONAL_PROCESSING_REQUEUE_SECONDS", "21600")
+)
+OPERATIONAL_PROCESSING_MODES = {
+    "SOFTRESTAURANT_FULL_HISTORY_RESYNC",
+    "MPRO_FULL_HISTORY_RESYNC",
+    "ISCAM_DETAIL_BACKFILL",
+    "ISCAM_PAYMENTS_ONLY_RESYNC",
+    "COMERCIAL_RANGE_RESYNC",
+    "COMERCIAL_OPEN_DAY_SYNC",
+    "SQL_MIGRATION_DEVELOPMENT",
+}
+WORKER_SERVICE = os.environ.get("EDARSAHUB_UNIVERSAL_WORKER_SERVICE", "edarsahub-universal-worker")
 EXPECTED_GENERATION_RE = re.compile(r'^RUNTIME_GENERATION="([^"]+)"', re.MULTILINE)
 PID_RE = re.compile(r'(?i)["\']?pid["\']?\s*[:=]\s*["\']?(\d+)')
 WORKER_TOKEN_RE = re.compile(r"worker-[A-Za-z0-9._-]{3,160}")
+
+BOOTSTRAP_STATE = Path(
+    os.environ.get(
+        "EDARSAHUB_BOOTSTRAP_STATE",
+        "/var/lib/edarsahub-bootstrap",
+    )
+)
+CONTROL_PLANE_RUNTIME_MARKER = (
+    BOOTSTRAP_STATE / "control_plane_active_runtime.json"
+)
+PLATFORM_MANAGED_SYSTEM_DEPS = ".emergent/system_deps.txt"
+
+def expected_platform_system_deps_drift() -> bool:
+    current = ROOT / PLATFORM_MANAGED_SYSTEM_DEPS
+    try:
+        if not current.is_file() or current.read_bytes() != b"":
+            return False
+    except OSError:
+        return False
+
+    canonical = run(
+        ["git", "show", f"HEAD:{PLATFORM_MANAGED_SYSTEM_DEPS}"],
+        timeout=20,
+    )
+    if canonical.returncode != 0 or canonical.stdout.strip() != "git":
+        return False
+
+    staged = run(
+        [
+            "git", "diff", "--cached", "--quiet", "--",
+            PLATFORM_MANAGED_SYSTEM_DEPS,
+        ],
+        timeout=20,
+    )
+    if staged.returncode != 0:
+        return False
+
+    unstaged = run(
+        [
+            "git", "diff", "--quiet", "--",
+            PLATFORM_MANAGED_SYSTEM_DEPS,
+        ],
+        timeout=20,
+    )
+    return unstaged.returncode == 1
+
+def effective_git_status() -> str:
+    proc = run(
+        ["git", "status", "--porcelain=v1", "--untracked-files=all"],
+        timeout=20,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError("GIT_STATUS_FAILED")
+    lines = proc.stdout.splitlines()
+    if expected_platform_system_deps_drift():
+        lines = [
+            line for line in lines
+            if line != " M .emergent/system_deps.txt"
+        ]
+    return "\n".join(lines).strip()
+
+CONTROL_PLANE_IDENTITY_PATHS = (
+    "tools/mirror_sync/worker_control_plane.py",
+    "tools/mirror_sync/worker_maintenance_runtime.py",
+    "tools/mirror_sync/worker_maintenance_controller.py",
+    "tools/mirror_sync/worker_maintenance_contract.py",
+    "tools/mirror_sync/worker_auditor.py",
+    "tools/mirror_sync/worker_repair.py",
+)
 
 
 def utc_now() -> str:
@@ -74,6 +176,61 @@ def run(args: list[str], timeout: int = 30, check: bool = False) -> subprocess.C
     if check and result.returncode != 0:
         raise RuntimeError(f"COMMAND_FAILED:{args}:{result.stdout[-1500:]}")
     return result
+
+
+def control_plane_runtime_identity() -> str:
+    components: list[str] = []
+
+    for rel in CONTROL_PLANE_IDENTITY_PATHS:
+        blob = git_output(
+            "rev-parse",
+            f"HEAD:{rel}",
+        ).strip()
+
+        if not re.fullmatch(r"[0-9a-f]{40}", blob):
+            raise RuntimeError(
+                f"CONTROL_PLANE_IDENTITY_INVALID:{rel}"
+            )
+
+        components.append(f"{rel}={blob}")
+
+    return hashlib.sha256(
+        ("\\n".join(components) + "\\n").encode("utf-8")
+    ).hexdigest()
+
+
+def write_control_plane_runtime_marker() -> dict[str, Any]:
+    identity = control_plane_runtime_identity()
+    development_sha = git_output(
+        "rev-parse",
+        "HEAD",
+    ).strip()
+
+    if not re.fullmatch(
+        r"[0-9a-f]{40}",
+        development_sha,
+    ):
+        raise RuntimeError(
+            "CONTROL_PLANE_DEVELOPMENT_SHA_INVALID"
+        )
+
+    payload = {
+        "schema": (
+            "edarsahub.control-plane-active-runtime.v1"
+        ),
+        "active_identity": identity,
+        "development_sha": development_sha,
+        "pid": os.getpid(),
+        "started_at_utc": utc_now(),
+        "production_touched": False,
+    }
+
+    atomic_json(
+        CONTROL_PLANE_RUNTIME_MARKER,
+        payload,
+    )
+
+    return payload
 
 
 def audit(event: str, **fields: Any) -> None:
@@ -126,22 +283,25 @@ def expected_generation() -> str:
 
 
 def request_universal_restart(reason: str) -> bool:
-    candidates = [RUNTIME / "pid", RUNTIME / "parent_child_pid"]
-    signalled = False
-    for path in candidates:
-        raw = read_text(path)
-        if not raw.isdigit():
-            continue
-        pid = int(raw)
-        if not pid_alive(pid):
-            continue
-        try:
-            os.kill(pid, signal.SIGTERM)
-            audit("UNIVERSAL_RESTART_REQUESTED", reason=reason, pid=pid)
-            signalled = True
-        except OSError as exc:
-            audit("UNIVERSAL_RESTART_SIGNAL_FAILED", reason=reason, pid=pid, error=str(exc))
-    return signalled
+    env_name = (
+        os.environ.get("EDARSA_ENV")
+        or os.environ.get("APP_ENV")
+        or os.environ.get("ENVIRONMENT")
+        or "PREVIEW"
+    ).upper()
+    if "PROD" in env_name:
+        audit("UNIVERSAL_RESTART_BLOCKED_PRODUCTION_ENV", reason=reason, environment=env_name)
+        return False
+    result = run(["supervisorctl", "restart", WORKER_SERVICE], timeout=30)
+    ok = result.returncode == 0
+    audit(
+        "UNIVERSAL_RESTART_REQUESTED",
+        reason=reason,
+        service=WORKER_SERVICE,
+        ok=ok,
+        output=result.stdout[-1000:],
+    )
+    return ok
 
 
 def heal_runtime_generation_and_heartbeat() -> dict[str, Any]:
@@ -149,12 +309,39 @@ def heal_runtime_generation_and_heartbeat() -> dict[str, Any]:
     actual = read_text(RUNTIME / "generation")
     pid_raw = read_text(RUNTIME / "pid")
     pid = int(pid_raw) if pid_raw.isdigit() else 0
+    cycle = read_text(RUNTIME / "last_cycle_utc")
+    cycle_age = parse_iso_age(cycle)
     receive = read_text(RUNTIME / "last_receive_utc")
     receive_age = parse_iso_age(receive)
 
     generation_stale = bool(expected and actual != expected)
-    heartbeat_stale = receive_age is None or receive_age > HEARTBEAT_STALE
+    # last_receive_utc is transport telemetry, not process liveness. It can
+    # remain old while the queue is idle or a bounded receive is in flight.
+    # last_cycle_utc is written by the worker before every intake attempt.
+    heartbeat_stale = cycle_age is None or cycle_age > HEARTBEAT_STALE
     pid_dead = not pid_alive(pid)
+
+    current_job_id = read_text(
+        RUNTIME / "current_job_id"
+    ).strip()
+
+    active_job_ownership: dict[str, Any] = {}
+    heartbeat_deferred_for_active_job = False
+
+    if heartbeat_stale and current_job_id and not pid_dead:
+        active_job_ownership = active_execution_ownership(
+            current_job_id,
+            heartbeat_stale_seconds=PROCESSING_GRACE,
+        )
+
+        if active_job_ownership.get("active") is True:
+            heartbeat_stale = False
+            heartbeat_deferred_for_active_job = True
+            audit(
+                "WORKER_HEARTBEAT_STALE_DEFERRED_ACTIVE_JOB",
+                job_id=current_job_id,
+                ownership=active_job_ownership,
+            )
 
     if generation_stale or heartbeat_stale or pid_dead:
         reason = ",".join(
@@ -173,9 +360,20 @@ def heal_runtime_generation_and_heartbeat() -> dict[str, Any]:
         "actual_generation": actual,
         "pid": pid,
         "pid_alive": not pid_dead,
+        "last_cycle_utc": cycle or None,
+        "last_cycle_age_seconds": cycle_age,
         "last_receive_utc": receive or None,
         "last_receive_age_seconds": receive_age,
-        "runtime_repair_needed": generation_stale or heartbeat_stale or pid_dead,
+        "current_job_id": current_job_id or None,
+        "active_job_ownership": active_job_ownership,
+        "heartbeat_deferred_for_active_job": (
+            heartbeat_deferred_for_active_job
+        ),
+        "runtime_repair_needed": (
+            generation_stale
+            or heartbeat_stale
+            or pid_dead
+        ),
     }
 
 
@@ -202,10 +400,7 @@ def preserve_and_fast_forward() -> dict[str, Any]:
         if local_ahead != 0 or remote_ahead <= 0:
             return {"ff": "SKIP_NON_FF", "local_ahead": local_ahead, "remote_ahead": remote_ahead}
 
-        dirty = run(
-            ["git", "status", "--porcelain=v1", "--untracked-files=all"],
-            timeout=20,
-        ).stdout.strip()
+        dirty = effective_git_status()
         stash_ref = None
         if dirty:
             audit("FAST_FORWARD_DEFERRED_LOCAL_DIRTY")
@@ -279,6 +474,110 @@ def reconcile_agent_guard_orphans() -> dict[str, int]:
     return {"live": live, "recent": recent, "quarantined": quarantined}
 
 
+def active_execution_ownership(
+    job_id: str,
+    *,
+    heartbeat_stale_seconds: int,
+) -> dict[str, Any]:
+    """Return only fresh/live canonical ownership evidence for one job."""
+    evidence: dict[str, Any] = {
+        "active": False,
+        "job_id": job_id,
+        "sources": [],
+    }
+
+    reconciler_path = RUNTIME / "reconciler.json"
+    try:
+        reconciler = json.loads(
+            reconciler_path.read_text(encoding="utf-8")
+        )
+    except Exception:
+        reconciler = {}
+
+    generated_at = str(
+        reconciler.get("generated_at_utc") or ""
+    ).strip()
+    reconciler_age = parse_iso_age(generated_at)
+    reconciler_fresh = (
+        reconciler_age is not None
+        and reconciler_age <= heartbeat_stale_seconds
+    )
+
+    if reconciler_fresh:
+        for claim in reconciler.get("claims") or []:
+            if not isinstance(claim, dict):
+                continue
+            if str(claim.get("task_id") or "").strip() != job_id:
+                continue
+            decision = str(claim.get("decision") or "").strip()
+            released = claim.get("released") is True
+            if not released and decision in {
+                "CLAIM_NOT_STALE",
+                "LIVE_PROCESS_REFERENCES_WORKTREE",
+                "WORK_NOT_TERMINAL_OR_INTEGRATED",
+            }:
+                evidence["active"] = True
+                evidence["sources"].append(
+                    {
+                        "kind": "agent_claim",
+                        "decision": decision,
+                        "reconciler_age_seconds": int(reconciler_age),
+                    }
+                )
+
+    try:
+        slot = load_slot("mutation-1")
+    except Exception as exc:
+        evidence["slot_error"] = type(exc).__name__
+        slot = None
+
+    if (
+        isinstance(slot, dict)
+        and str(slot.get("job_id") or "").strip() == job_id
+    ):
+        try:
+            live_slot = slot_is_live(
+                slot,
+                heartbeat_stale_seconds=heartbeat_stale_seconds,
+            )
+        except Exception as exc:
+            evidence["slot_error"] = type(exc).__name__
+            live_slot = False
+
+        if live_slot:
+            evidence["active"] = True
+            evidence["sources"].append(
+                {
+                    "kind": "slot",
+                    "slot_id": slot.get("slot_id"),
+                    "state": slot.get("state"),
+                }
+            )
+
+    writer_owner = STATE / "git-writer.lock.d" / "owner.json"
+    try:
+        writer = json.loads(
+            writer_owner.read_text(encoding="utf-8")
+        )
+    except Exception:
+        writer = {}
+
+    if str(writer.get("job_id") or "").strip() == job_id:
+        owner_pid = int(writer.get("owner_pid") or 0)
+        owner_alive = pid_alive(owner_pid) if owner_pid > 0 else False
+        if owner_alive:
+            evidence["active"] = True
+            evidence["sources"].append(
+                {
+                    "kind": "git_writer_lock",
+                    "owner_pid": owner_pid,
+                    "owner_pid_alive": True,
+                }
+            )
+
+    return evidence
+
+
 def requeue_stale_processing() -> int:
     PENDING.mkdir(parents=True, exist_ok=True)
     PROCESSING.mkdir(parents=True, exist_ok=True)
@@ -290,13 +589,36 @@ def requeue_stale_processing() -> int:
             age = epoch() - path.stat().st_mtime
         except OSError:
             continue
-        if age < PROCESSING_GRACE:
-            continue
         try:
             envelope = json.loads(path.read_text(encoding="utf-8"))
         except Exception as exc:
             audit("STALE_PROCESSING_INVALID_ENVELOPE", job_file=path.name, error=str(exc))
             continue
+
+        job = envelope.get("job") if isinstance(envelope.get("job"), dict) else {}
+        mode = str(job.get("mode") or "").upper().strip()
+        processing_grace = (
+            OPERATIONAL_PROCESSING_GRACE
+            if mode in OPERATIONAL_PROCESSING_MODES
+            else PROCESSING_GRACE
+        )
+
+        if age < processing_grace:
+            continue
+
+        ownership = active_execution_ownership(
+            str(job.get("job_id") or path.stem),
+            heartbeat_stale_seconds=processing_grace,
+        )
+        if ownership.get("active") is True:
+            audit(
+                "STALE_PROCESSING_DEFERRED_ACTIVE_OWNERSHIP",
+                job_file=path.name,
+                age_seconds=int(age),
+                ownership=ownership,
+            )
+            continue
+
         retry_count = int(envelope.get("_worker_stale_requeue_count") or 0)
         if retry_count >= 1:
             job = envelope.get("job") if isinstance(envelope.get("job"), dict) else {}
@@ -330,11 +652,1202 @@ def requeue_stale_processing() -> int:
     return requeued
 
 
+
+
+GIT_LOCK_BUSY_REPAIR_PATHS = (
+    "tools/mirror_sync/git_divergence_guard.py",
+    "tools/mirror_sync/universal_job_dispatcher.py",
+)
+
+AUTOMATION_STATE_SCHEMA = "edarsahub.worker-repair-automation-state.v1"
+
+
+def _parse_canonical_utc(value: Any) -> datetime | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+
+    try:
+        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+    if parsed.tzinfo is None:
+        return None
+
+    return parsed.astimezone(timezone.utc)
+
+
+def repair_automation_state_path() -> Path:
+    return (
+        ROOT
+        / ".git"
+        / "universal-worker-queue"
+        / "maintenance"
+        / "automation_state.json"
+    )
+
+
+def load_repair_automation_state() -> dict[str, Any]:
+    path = repair_automation_state_path()
+
+    fail_closed = {
+        "schema": AUTOMATION_STATE_SCHEMA,
+        "enabled": False,
+        "enabled_at_utc": None,
+        "enabled_from_development_sha": None,
+        "adopted_job_ids": [],
+        "production_allowed": False,
+        "valid": False,
+    }
+
+    if not path.is_file():
+        return fail_closed
+
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return fail_closed
+
+    if not isinstance(payload, dict):
+        return fail_closed
+
+    enabled_at = _parse_canonical_utc(payload.get("enabled_at_utc"))
+    development_sha = str(
+        payload.get("enabled_from_development_sha") or ""
+    ).strip()
+
+    adopted = payload.get("adopted_job_ids")
+
+    valid = (
+        payload.get("schema") == AUTOMATION_STATE_SCHEMA
+        and payload.get("enabled") is True
+        and payload.get("production_allowed") is False
+        and enabled_at is not None
+        and bool(re.fullmatch(r"[0-9a-f]{40}", development_sha))
+        and isinstance(adopted, list)
+        and all(
+            isinstance(job_id, str) and job_id.strip()
+            for job_id in adopted
+        )
+    )
+
+    if not valid:
+        return fail_closed
+
+    return {
+        "schema": AUTOMATION_STATE_SCHEMA,
+        "enabled": True,
+        "enabled_at_utc": enabled_at.isoformat().replace("+00:00", "Z"),
+        "enabled_from_development_sha": development_sha,
+        "adopted_job_ids": sorted(set(adopted)),
+        "production_allowed": False,
+        "valid": True,
+    }
+
+
+def automatic_repair_result_is_eligible(
+    result: dict[str, Any],
+    automation_state: dict[str, Any],
+) -> tuple[bool, str]:
+    if not isinstance(result, dict):
+        return False, "RESULT_INVALID"
+
+    if automation_state.get("valid") is not True:
+        return False, "AUTOMATION_STATE_INVALID"
+
+    if automation_state.get("enabled") is not True:
+        return False, "AUTOMATION_DISABLED"
+
+    if automation_state.get("production_allowed") is not False:
+        return False, "AUTOMATION_PRODUCTION_POLICY_INVALID"
+
+    if result.get("production_touched") is not False:
+        return False, "PRODUCTION_TOUCHED"
+
+    job_id = str(result.get("job_id") or "").strip()
+
+    adopted = set(automation_state.get("adopted_job_ids") or [])
+
+    if job_id and job_id in adopted:
+        return True, "EXPLICITLY_ADOPTED"
+
+    completed_at = _parse_canonical_utc(result.get("completed_at_utc"))
+    enabled_at = _parse_canonical_utc(
+        automation_state.get("enabled_at_utc")
+    )
+
+    if completed_at is None:
+        return False, "RESULT_COMPLETED_AT_INVALID"
+
+    if enabled_at is None:
+        return False, "AUTOMATION_ENABLED_AT_INVALID"
+
+    if completed_at <= enabled_at:
+        return False, "HISTORICAL_RESULT"
+
+    return True, "POST_ACTIVATION_RESULT"
+
+
+
+def _valid_git_sha(value: Any) -> str | None:
+    text = str(value or "").strip().lower()
+
+    if re.fullmatch(r"[0-9a-f]{40}", text):
+        return text
+
+    return None
+
+
+def automatic_repair_source_anchor(
+    source_result: dict[str, Any],
+) -> tuple[str | None, str]:
+    for field in (
+        "execution_base_sha",
+        "base_sha",
+        "initial_base_sha",
+        "remote_at_start",
+        "local_at_start",
+        "candidate_sha",
+    ):
+        value = _valid_git_sha(
+            source_result.get(field)
+        )
+
+        if value is not None:
+            return value, field
+
+    source_job_id = str(
+        source_result.get("job_id") or ""
+    ).strip()
+
+    if source_job_id:
+        queue_root = (
+            ROOT / ".git" / "universal-worker-queue"
+        )
+        envelope_paths: list[Path] = [
+            queue_root / folder / f"{source_job_id}.json"
+            for folder in (
+                "done",
+                "rejected",
+                "processing",
+                "pending",
+                "drafts",
+            )
+        ]
+        rejected_history = (
+            queue_root / "rejected_history"
+        )
+        if rejected_history.is_dir():
+            envelope_paths.extend(
+                sorted(
+                    rejected_history.glob(
+                        f"{source_job_id}*.json"
+                    )
+                )
+            )
+        for envelope_path in envelope_paths:
+            if not envelope_path.is_file():
+                continue
+            try:
+                envelope = json.loads(
+                    envelope_path.read_text(
+                        encoding="utf-8"
+                    )
+                )
+            except Exception:
+                continue
+            if not isinstance(envelope, dict):
+                continue
+            embedded = (
+                envelope.get("job")
+                if isinstance(
+                    envelope.get("job"),
+                    dict,
+                )
+                else envelope
+            )
+            if not isinstance(embedded, dict):
+                continue
+            envelope_sha = _valid_git_sha(
+                embedded.get("base_sha")
+            )
+            if envelope_sha is not None:
+                return (
+                    envelope_sha,
+                    "job_envelope_base_sha",
+                )
+
+    return None, "SOURCE_ANCHOR_UNAVAILABLE"
+
+
+def automatic_repair_result_commit(
+    result: dict[str, Any],
+) -> str | None:
+    return (
+        _valid_git_sha(result.get("development_sha"))
+        or _valid_git_sha(result.get("candidate_sha"))
+    )
+
+
+def automatic_repair_result_is_certified_successor(
+    result: dict[str, Any],
+) -> bool:
+    blockers = result.get("blockers")
+
+    return (
+        result.get("status") == "INTEGRATED"
+        and result.get("quality_gate") == "PASS"
+        and result.get("tests") == "PASS"
+        and result.get("git_sync_status")
+        == "CERTIFIED_GIT_SYNC"
+        and result.get("production_touched") is False
+        and blockers in (None, [])
+        and automatic_repair_result_commit(result)
+        is not None
+    )
+
+
+def _git_is_ancestor(
+    ancestor_sha: str,
+    descendant_sha: str,
+) -> bool:
+    proc = subprocess.run(
+        [
+            "git",
+            "merge-base",
+            "--is-ancestor",
+            ancestor_sha,
+            descendant_sha,
+        ],
+        cwd=str(ROOT),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        check=False,
+    )
+
+    return proc.returncode == 0
+
+
+def _target_diff_paths(
+    base_sha: str,
+    head_sha: str,
+    target_paths: tuple[str, ...],
+) -> set[str] | None:
+    try:
+        return {
+            line.strip()
+            for line in git_output(
+                "diff",
+                "--name-only",
+                base_sha,
+                head_sha,
+                "--",
+                *target_paths,
+            ).splitlines()
+            if line.strip()
+        }
+    except Exception:
+        return None
+
+
+def find_certified_successor_result(
+    source_result: dict[str, Any],
+    target_paths: tuple[str, ...],
+    result_corpus: tuple[dict[str, Any], ...],
+    *,
+    current_head: str,
+) -> dict[str, Any] | None:
+    source_anchor, _anchor_field = (
+        automatic_repair_source_anchor(
+            source_result
+        )
+    )
+
+    source_status = str(
+        source_result.get("status") or ""
+    ).strip()
+    preworktree_failure = source_status in {
+        "GIT_LOCK_BUSY",
+        "GIT_WORKTREE_NOT_CLEAN",
+    }
+
+    if source_anchor is None and not preworktree_failure:
+        return None
+
+    if not _valid_git_sha(current_head):
+        return None
+
+    source_job_id = str(
+        source_result.get("job_id") or ""
+    ).strip()
+
+    source_completed = _parse_canonical_utc(
+        source_result.get("completed_at_utc")
+    )
+
+    if source_anchor is None and source_completed is None:
+        return None
+
+    required_paths = set(target_paths)
+
+    if not required_paths:
+        return None
+
+    preliminary: list[
+        tuple[datetime, str, dict[str, Any]]
+    ] = []
+
+    for candidate in result_corpus:
+        if candidate is source_result:
+            continue
+
+        candidate_job_id = str(
+            candidate.get("job_id") or ""
+        ).strip()
+
+        if (
+            source_job_id
+            and candidate_job_id == source_job_id
+        ):
+            continue
+
+        if not automatic_repair_result_is_certified_successor(
+            candidate
+        ):
+            continue
+
+        successor_sha = (
+            automatic_repair_result_commit(candidate)
+        )
+
+        if successor_sha is None:
+            continue
+
+        candidate_completed = _parse_canonical_utc(
+            candidate.get("completed_at_utc")
+        )
+
+        if source_anchor is None:
+            if (
+                candidate_completed is None
+                or candidate_completed <= source_completed
+            ):
+                continue
+        elif (
+            source_completed is not None
+            and candidate_completed is not None
+            and candidate_completed <= source_completed
+        ):
+            continue
+
+        candidate_paths_raw = (
+            candidate.get("files_changed") or []
+        )
+
+        if not isinstance(candidate_paths_raw, list):
+            continue
+
+        candidate_paths = {
+            str(path).strip()
+            for path in candidate_paths_raw
+            if isinstance(path, str)
+            and str(path).strip()
+        }
+
+        if not required_paths.issubset(
+            candidate_paths
+        ):
+            continue
+
+        sort_time = (
+            candidate_completed
+            or datetime.min.replace(
+                tzinfo=timezone.utc
+            )
+        )
+
+        preliminary.append(
+            (
+                sort_time,
+                successor_sha,
+                candidate,
+            )
+        )
+
+    if not preliminary:
+        return None
+
+    preliminary.sort(
+        key=lambda item: (
+            item[0],
+            item[1],
+            str(
+                item[2].get("job_id") or ""
+            ),
+        )
+    )
+
+    for _sort_time, successor_sha, candidate in preliminary:
+        anchor_to_verify = (
+            source_anchor
+            or _valid_git_sha(
+                candidate.get("execution_base_sha")
+            )
+            or _valid_git_sha(
+                candidate.get("base_sha")
+            )
+        )
+
+        if anchor_to_verify is None:
+            continue
+
+        if not _git_is_ancestor(
+            anchor_to_verify,
+            successor_sha,
+        ):
+            continue
+
+        if not _git_is_ancestor(
+            successor_sha,
+            current_head,
+        ):
+            continue
+
+        changed = _target_diff_paths(
+            anchor_to_verify,
+            successor_sha,
+            target_paths,
+        )
+
+        if changed is None:
+            continue
+
+        if not required_paths.issubset(changed):
+            continue
+
+        return candidate
+
+    return None
+
+
+def repair_incident_is_superseded(
+    source_result: dict[str, Any],
+    target_paths: tuple[str, ...],
+    *,
+    result_corpus: tuple[dict[str, Any], ...] = (),
+) -> tuple[bool, str]:
+    development_sha = _valid_git_sha(
+        source_result.get("development_sha")
+    )
+
+    try:
+        current_head = git_output(
+            "rev-parse",
+            "HEAD",
+        ).strip()
+    except Exception:
+        return False, "CURRENT_HEAD_UNAVAILABLE"
+
+    if not _valid_git_sha(current_head):
+        return False, "CURRENT_HEAD_INVALID"
+
+    if development_sha is not None:
+        if development_sha == current_head:
+            return False, "SOURCE_IS_CURRENT_HEAD"
+
+        if not _git_is_ancestor(
+            development_sha,
+            current_head,
+        ):
+            return False, "SOURCE_NOT_ANCESTOR"
+
+        changed_after = _target_diff_paths(
+            development_sha,
+            current_head,
+            target_paths,
+        )
+
+        if changed_after is None:
+            return False, "TARGET_DIFF_UNAVAILABLE"
+
+        if not changed_after:
+            return False, "TARGETS_UNCHANGED"
+
+        if not set(target_paths).issubset(
+            changed_after
+        ):
+            return (
+                False,
+                "NOT_ALL_TARGETS_SUPERSEDED",
+            )
+
+        return True, "SUPERSEDED_BY_CURRENT_HEAD"
+
+    successor = find_certified_successor_result(
+        source_result,
+        target_paths,
+        result_corpus,
+        current_head=current_head,
+    )
+
+    if successor is None:
+        anchor, anchor_reason = (
+            automatic_repair_source_anchor(
+                source_result
+            )
+        )
+
+        if anchor is None:
+            return False, anchor_reason
+
+        return (
+            False,
+            "CERTIFIED_SUCCESSOR_NOT_FOUND",
+        )
+
+    return True, "CERTIFIED_SUCCESSOR_RESULT"
+
+
+def _resolve_automatic_repair_candidate_scope(
+    result: dict[str, Any],
+    *,
+    fallback_job_id: str,
+    automation_state: dict[str, Any],
+    repairable_statuses: set[str],
+    worker_roots: tuple[str, ...],
+    git_lock_busy_repair_paths: tuple[str, ...] = GIT_LOCK_BUSY_REPAIR_PATHS,
+) -> dict[str, Any] | None:
+    status = str(result.get("status") or "").strip()
+    certification = str(
+        result.get("certification") or ""
+    ).strip()
+
+    if status not in repairable_statuses:
+        return None
+
+    if certification not in {
+        "",
+        "NOT_CERTIFIED",
+        "PENDING_AUDIT_EVIDENCE",
+    }:
+        return None
+
+    if result.get("production_touched") is not False:
+        return None
+
+    boundary_allowed, boundary_reason = (
+        automatic_repair_result_is_eligible(
+            result,
+            automation_state,
+        )
+    )
+
+    source_job_id = str(
+        result.get("job_id") or fallback_job_id
+    ).strip()
+    if not source_job_id:
+        return None
+
+    blockers = {
+        str(value or "").strip().upper()
+        for value in result.get("blockers") or []
+        if str(value or "").strip()
+    }
+
+    learned_matches = []
+
+    if blockers:
+        for capability in (
+            learned_registry.iter_learned_capabilities()
+        ):
+            if not capability.reusable:
+                continue
+            blocker_signature = str(
+                (capability.evidence or {}).get(
+                    "blocker_signature"
+                )
+                or ""
+            ).strip().upper()
+
+            if (
+                blocker_signature
+                and blocker_signature in blockers
+            ):
+                learned_matches.append(capability)
+
+        learned_matches = (
+            learned_registry._filter_superseded_capabilities(
+                learned_matches
+            )
+        )
+
+    if len(learned_matches) > 1:
+        return {
+            "ambiguous": True,
+            "source_job_id": source_job_id,
+            "status": status,
+            "boundary_allowed": boundary_allowed,
+            "boundary_reason": boundary_reason,
+        }
+
+    learned_capability = (
+        learned_matches[0]
+        if len(learned_matches) == 1
+        else None
+    )
+
+    if learned_capability is not None:
+        raw_paths = list(
+            learned_capability.required_paths
+        )
+    else:
+        raw_paths = (
+            result.get("files_changed")
+            or result.get("expected_scope")
+            or []
+        )
+
+    if status == "GIT_LOCK_BUSY" and not raw_paths:
+        raw_paths = list(
+            git_lock_busy_repair_paths
+        )
+
+    if not isinstance(raw_paths, list):
+        return None
+
+    normalized = {
+        str(path).strip()
+        for path in raw_paths
+        if isinstance(path, str)
+        and str(path).strip()
+    }
+
+    target_paths = tuple(
+        sorted(
+            path
+            for path in normalized
+            if any(
+                path.startswith(root)
+                for root in worker_roots
+            )
+        )
+    )
+
+    if not target_paths:
+        return None
+
+    # Scope derivado de capability conocida o resultado debe ser
+    # exclusivamente infraestructura Worker.
+    if len(target_paths) != len(normalized):
+        return None
+
+    digest = hashlib.sha256(
+        (
+            source_job_id
+            + "\n"
+            + status
+            + "\n"
+            + "\n".join(target_paths)
+        ).encode("utf-8")
+    ).hexdigest()[:20]
+
+    return {
+        "ambiguous": False,
+        "source_job_id": source_job_id,
+        "status": status,
+        "boundary_allowed": boundary_allowed,
+        "boundary_reason": boundary_reason,
+        "target_paths": target_paths,
+        "incident_id": f"WORKER-{digest}",
+        "learned_capability": learned_capability,
+        "normalized_blockers": tuple(sorted(blockers)),
+    }
+
+
+def select_automatic_repair_candidates(
+    results: tuple[dict[str, Any], ...],
+    automation_state: dict[str, Any],
+    repairable_statuses: set[str],
+    worker_roots: tuple[str, ...],
+    *,
+    fallback_job_ids: tuple[str, ...] = (),
+) -> tuple[dict[str, dict[str, Any]], int]:
+    """Select one canonical repair incident per active root cause."""
+    groups: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
+
+    for index, result in enumerate(results):
+        fallback_job_id = (
+            fallback_job_ids[index]
+            if index < len(fallback_job_ids)
+            else ""
+        )
+        resolved = _resolve_automatic_repair_candidate_scope(
+            result,
+            fallback_job_id=fallback_job_id,
+            automation_state=automation_state,
+            repairable_statuses=repairable_statuses,
+            worker_roots=worker_roots,
+        )
+        if resolved is None or resolved["ambiguous"]:
+            continue
+
+        if not resolved["boundary_allowed"]:
+            continue
+
+        source_job_id = resolved["source_job_id"]
+        status = resolved["status"]
+        target_paths = resolved["target_paths"]
+        incident_id = resolved["incident_id"]
+        learned_capability = resolved["learned_capability"]
+
+        existing = read_runtime_incident(incident_id)
+        if existing is not None and existing.state in {
+            "SUPERSEDED",
+            "CERTIFIED",
+        }:
+            continue
+
+        candidate_superseded, _ = repair_incident_is_superseded(
+            result,
+            target_paths,
+            result_corpus=results,
+        )
+        if candidate_superseded:
+            continue
+
+        if existing is None:
+            has_binding = False
+            attempts = 0
+            owns_attempt_history = False
+            attempt_allowed = True
+        else:
+            has_binding = bool(existing.repair_job_id)
+            attempts = int(existing.attempts or 0)
+            owns_attempt_history = bool(
+                attempts > 0
+                or existing.cooldown_until_epoch is not None
+                or existing.state == "REPAIRED_PENDING_AUDIT"
+            )
+            attempt_allowed, _ = repair_attempt_allowed(
+                incident_id
+            )
+
+        completed = _parse_canonical_utc(
+            result.get("completed_at_utc")
+        ) or datetime.min.replace(tzinfo=timezone.utc)
+
+        cause_discriminator = (
+            ("CAPABILITY", learned_capability.code)
+            if learned_capability is not None
+            else ("BLOCKERS", resolved["normalized_blockers"])
+        )
+        cause_key = (
+            status,
+            cause_discriminator,
+            target_paths,
+        )
+
+        groups.setdefault(cause_key, []).append(
+            {
+                "source_job_id": source_job_id,
+                "incident_id": incident_id,
+                # Active repair binding and attempt-history/cooldown/max-attempts
+                # ownership always take precedence over raw recency.
+                "priority": (
+                    has_binding,
+                    owns_attempt_history,
+                    attempts,
+                    attempt_allowed,
+                    completed,
+                    source_job_id,
+                ),
+            }
+        )
+
+    selections: dict[str, dict[str, Any]] = {}
+    for candidates in groups.values():
+        selected = max(
+            candidates,
+            key=lambda item: item["priority"],
+        )
+        for candidate in candidates:
+            selections[candidate["incident_id"]] = selected
+
+    return selections, len(groups)
+
+
+def automatic_repair_orchestration() -> dict[str, Any]:
+    """Detect bounded Worker-infrastructure repair incidents only.
+
+    Detection and incident declaration occur here.
+    Mutation execution remains exclusively in Universal Worker.
+    Independent certification remains exclusively in Worker Auditor.
+    """
+    results_root = ROOT / ".git" / "universal-worker-queue" / "results"
+    automation_state = load_repair_automation_state()
+
+    observed = 0
+    eligible = 0
+    declared = 0
+    blocked = 0
+    incidents: list[dict[str, Any]] = []
+
+    repairable_statuses = {
+        "GIT_LOCK_BUSY",
+        "GIT_TESTS_FAILED",
+        "GIT_SCOPE_VIOLATION",
+        "GIT_DIVERGENCE_BLOCKED",
+        "GIT_PUSH_FAILED",
+        "BLOCKED",
+    }
+
+    worker_roots = (
+        "tools/mirror_sync/",
+        "backend/modules/worker_runtime_wake/",
+        "backend/tests/test_worker_",
+        ".github/workflows/universal-worker-",
+        ".github/workflows/worker-",
+    )
+
+    if not results_root.is_dir():
+        return {
+            "schema": "edarsahub.worker-automatic-repair.v1",
+            "observed_terminal_results": 0,
+            "eligible_incidents": 0,
+            "declared_incidents": 0,
+            "blocked_incidents": 0,
+            "selected_incidents": 0,
+            "incidents": [],
+            "production_touched": False,
+        }
+
+    result_corpus: list[dict[str, Any]] = []
+    result_stems: list[str] = []
+
+    for result_path in sorted(results_root.glob("*.json")):
+        try:
+            result = json.loads(
+                result_path.read_text(encoding="utf-8")
+            )
+        except Exception:
+            continue
+
+        if not isinstance(result, dict):
+            continue
+
+        result_corpus.append(result)
+        result_stems.append(result_path.stem)
+
+    result_corpus_tuple = tuple(result_corpus)
+    result_stems_tuple = tuple(result_stems)
+    root_cause_selections, selected_incident_count = (
+        select_automatic_repair_candidates(
+            result_corpus_tuple,
+            automation_state,
+            repairable_statuses,
+            worker_roots,
+            fallback_job_ids=result_stems_tuple,
+        )
+    )
+
+    for index, result in enumerate(result_corpus_tuple):
+        observed += 1
+
+        if result.get("production_touched") is not False:
+            continue
+
+        resolved = _resolve_automatic_repair_candidate_scope(
+            result,
+            fallback_job_id=result_stems_tuple[index],
+            automation_state=automation_state,
+            repairable_statuses=repairable_statuses,
+            worker_roots=worker_roots,
+            git_lock_busy_repair_paths=GIT_LOCK_BUSY_REPAIR_PATHS,
+        )
+        if resolved is None:
+            continue
+
+        source_job_id = resolved["source_job_id"]
+        status = resolved["status"]
+        boundary_allowed = resolved["boundary_allowed"]
+        boundary_reason = resolved["boundary_reason"]
+
+        if resolved["ambiguous"]:
+            if not boundary_allowed:
+                incidents.append(
+                    {
+                        "incident_id": None,
+                        "source_job_id": source_job_id,
+                        "source_status": status,
+                        "state": "OBSERVED_NOT_ELIGIBLE",
+                        "target_paths": [],
+                        "repair_allowed": False,
+                        "repair_reason": boundary_reason,
+                        "publication_required": False,
+                    }
+                )
+                continue
+
+            blocked += 1
+            incidents.append(
+                {
+                    "incident_id": None,
+                    "source_job_id": source_job_id,
+                    "source_status": status,
+                    "state": "BLOCKED",
+                    "target_paths": [],
+                    "repair_allowed": False,
+                    "repair_reason": (
+                        "KNOWN_BLOCKER_CAPABILITY_AMBIGUOUS"
+                    ),
+                    "publication_required": False,
+                }
+            )
+            continue
+
+        learned_capability = resolved["learned_capability"]
+        target_paths = resolved["target_paths"]
+
+        if not boundary_allowed:
+            incidents.append(
+                {
+                    "incident_id": None,
+                    "source_job_id": source_job_id,
+                    "source_status": status,
+                    "state": "OBSERVED_NOT_ELIGIBLE",
+                    "target_paths": list(target_paths),
+                    "repair_allowed": False,
+                    "repair_reason": boundary_reason,
+                    "publication_required": False,
+                }
+            )
+            continue
+
+        eligible += 1
+
+        digest = hashlib.sha256(
+            (
+                source_job_id
+                + "\n"
+                + status
+                + "\n"
+                + "\n".join(target_paths)
+            ).encode("utf-8")
+        ).hexdigest()[:20]
+
+        incident_id = f"WORKER-{digest}"
+
+        blocker_sig = (
+            str(
+                (learned_capability.evidence or {}).get(
+                    "blocker_signature"
+                )
+                or ""
+            ).strip()
+            if learned_capability is not None
+            else ""
+        )
+
+        root_cause_selection = root_cause_selections.get(
+            incident_id
+        )
+        if (
+            root_cause_selection is not None
+            and root_cause_selection["incident_id"]
+            != incident_id
+        ):
+            incidents.append(
+                {
+                    "incident_id": incident_id,
+                    "source_job_id": source_job_id,
+                    "source_status": status,
+                    "state": "DUPLICATE_ROOT_CAUSE_SUPPRESSED",
+                    "target_paths": list(target_paths),
+                    "repair_allowed": False,
+                    "repair_reason": (
+                        "DUPLICATE_ROOT_CAUSE_SUPPRESSED"
+                    ),
+                    "selected_incident_id": (
+                        root_cause_selection["incident_id"]
+                    ),
+                    "publication_required": False,
+                    "capability_code": (
+                        learned_capability.code
+                        if learned_capability is not None
+                        else None
+                    ),
+                    "problem_signature": (
+                        learned_capability.problem_signature
+                        if learned_capability is not None
+                        else None
+                    ),
+                    "blocker_signature": blocker_sig or None,
+                }
+            )
+            continue
+
+        try:
+            incident = declare_runtime_incident(
+                incident_id,
+                list(target_paths),
+            )
+        except ValueError as exc:
+            blocked += 1
+
+            incidents.append(
+                {
+                    "incident_id": incident_id,
+                    "source_job_id": source_job_id,
+                    "state": "BLOCKED",
+                    "reason": str(exc),
+                    "target_paths": list(target_paths),
+                }
+            )
+            continue
+
+        # SUPERSEDED is a terminal, non-actionable maintenance
+        # state. Re-observing the same historical failure must
+        # never attempt SUPERSEDED -> SUPERSEDED.
+        if incident.state == "SUPERSEDED":
+            incidents.append(
+                {
+                    "incident_id": incident.incident_id,
+                    "source_job_id": source_job_id,
+                    "source_status": status,
+                    "state": incident.state,
+                    "target_paths": list(target_paths),
+                    "repair_allowed": False,
+                    "repair_reason": "ALREADY_SUPERSEDED",
+                    "publication_required": False,
+                }
+            )
+            continue
+
+        superseded, superseded_reason = (
+            repair_incident_is_superseded(
+                result,
+                target_paths,
+                result_corpus=result_corpus_tuple,
+            )
+        )
+
+        if superseded:
+            incident = supersede_runtime_incident(
+                incident_id,
+                reason=superseded_reason,
+            )
+
+            incidents.append(
+                {
+                    "incident_id": incident.incident_id,
+                    "source_job_id": source_job_id,
+                    "source_status": status,
+                    "state": incident.state,
+                    "target_paths": list(target_paths),
+                    "repair_allowed": False,
+                    "repair_reason": superseded_reason,
+                    "publication_required": False,
+                }
+            )
+            continue
+
+        allowed, reason = repair_attempt_allowed(
+            incident_id
+        )
+
+        incidents.append(
+            {
+                "incident_id": incident.incident_id,
+                "source_job_id": source_job_id,
+                "source_status": status,
+                "state": incident.state,
+                "target_paths": list(target_paths),
+                "repair_allowed": allowed,
+                "repair_reason": reason,
+                "publication_required": allowed,
+                "capability_code": (
+                    learned_capability.code
+                    if learned_capability is not None
+                    else None
+                ),
+                "problem_signature": (
+                    learned_capability.problem_signature
+                    if learned_capability is not None
+                    else None
+                ),
+                "blocker_signature": blocker_sig or None,
+            }
+        )
+
+        if allowed:
+            declared += 1
+        else:
+            blocked += 1
+
+    return {
+        "schema": "edarsahub.worker-automatic-repair.v1",
+        "observed_terminal_results": observed,
+        "eligible_incidents": eligible,
+        "declared_incidents": declared,
+        "blocked_incidents": blocked,
+        "selected_incidents": selected_incident_count,
+        "incidents": incidents,
+        "production_touched": False,
+    }
+
+
+def maintenance_runtime_summary() -> dict[str, Any]:
+    """Read-only maintenance-plane visibility for the canonical control plane."""
+    maintenance_root = ROOT / ".git" / "universal-worker-queue" / "maintenance" / "incidents"
+
+    incidents: list[dict[str, Any]] = []
+
+    if maintenance_root.is_dir():
+        for path in sorted(maintenance_root.glob("*.json")):
+            try:
+                incident = read_runtime_incident(path.stem)
+            except Exception as exc:
+                incidents.append(
+                    {
+                        "incident_id": path.stem,
+                        "state": "INVALID",
+                        "error": type(exc).__name__,
+                    }
+                )
+                continue
+
+            if incident is None:
+                continue
+
+            incidents.append(
+                {
+                    "incident_id": incident.incident_id,
+                    "state": incident.state,
+                    "attempts": incident.attempts,
+                    "cooldown_until_epoch": incident.cooldown_until_epoch,
+                    "target_paths": list(incident.target_paths),
+                    "production_touched": incident.production_touched,
+                }
+            )
+
+    return {
+        "schema": "edarsahub.worker-maintenance-summary.v1",
+        "incident_count": len(incidents),
+        "incidents": incidents,
+        "production_touched": False,
+    }
+
 def cycle() -> dict[str, Any]:
     ff = preserve_and_fast_forward()
     runtime = heal_runtime_generation_and_heartbeat()
     claims = reconcile_agent_guard_orphans()
     requeued = requeue_stale_processing()
+    automatic_repair = automatic_repair_orchestration()
+    automatic_repair_execution = advance_repair_automation(
+        automatic_repair
+    )
     payload = {
         "schema": "edarsahub.worker-control-plane.v1",
         "at_utc": utc_now(),
@@ -342,6 +1855,9 @@ def cycle() -> dict[str, Any]:
         "runtime": runtime,
         "agent_guard": claims,
         "stale_processing_requeued": requeued,
+        "maintenance": maintenance_runtime_summary(),
+        "automatic_repair": automatic_repair,
+        "automatic_repair_execution": automatic_repair_execution,
         "production_touched": False,
     }
     atomic_json(STATUS, payload)
@@ -350,6 +1866,27 @@ def cycle() -> dict[str, Any]:
 
 def main() -> int:
     once = "--once" in os.sys.argv
+
+    try:
+        active_runtime = (
+            write_control_plane_runtime_marker()
+        )
+        audit(
+            "CONTROL_PLANE_RUNTIME_ACTIVE",
+            active_identity=active_runtime[
+                "active_identity"
+            ],
+            development_sha=active_runtime[
+                "development_sha"
+            ],
+            pid=active_runtime["pid"],
+        )
+    except Exception as exc:
+        audit(
+            "CONTROL_PLANE_RUNTIME_IDENTITY_FAILED",
+            error=str(exc),
+        )
+
     while True:
         try:
             payload = cycle()

@@ -1,0 +1,8 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-IMPLEMENTATION-SCOPE-DRAFT-READONLY-R1-20260919",
+  "reason": "publish/read R24F implementation scope draft terminal result",
+  "production_allowed": false,
+  "requested_by": "chatgpt",
+  "created_at_utc": "2026-09-19T04:49:00Z"
+}

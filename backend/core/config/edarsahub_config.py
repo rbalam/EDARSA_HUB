@@ -12,9 +12,9 @@ class EdarsaHubSQLConfig:
     profile: str = "default"
 
 
-_PROFILE_PREFIXES = {
-    "default": "EDARSAHUB_SQL",
-}
+_DEFAULT_PREFIX = "EDARSAHUB_SQL"
+_WRITER_CREDENTIAL_PREFIX = "EDARSAHUB_SQL_WRITER"
+_SUPPORTED_PROFILES = {"default", "writer"}
 
 
 def _required(name: str) -> str:
@@ -26,40 +26,49 @@ def _required(name: str) -> str:
     return value
 
 
+def _base_connection_fields() -> tuple[str, int, str]:
+    return (
+        _required(f"{_DEFAULT_PREFIX}_HOST"),
+        int(os.getenv(f"{_DEFAULT_PREFIX}_PORT", "1433")),
+        _required(f"{_DEFAULT_PREFIX}_DATABASE"),
+    )
+
+
 def get_edarsahub_sql_config(
     profile: str = "default",
 ) -> EdarsaHubSQLConfig:
     """
     Configuracion SQL canonica de EDARSAHUB.
 
-    El unico perfil permitido es ``default`` y usa
-    exclusivamente las variables ``EDARSAHUB_SQL_*``.
+    El perfil default conserva la identidad de lectura existente.
+    El perfil writer reutiliza host, puerto y base del perfil default
+    y solo resuelve credenciales dedicadas desde
+    EDARSAHUB_SQL_WRITER_USER y EDARSAHUB_SQL_WRITER_PASSWORD.
 
-    No se permiten perfiles paralelos o alternativos.
+    Ningun perfil lee archivos .env ni descifra secretos.
     """
     normalized = (profile or "default").lower()
-    prefix = _PROFILE_PREFIXES.get(normalized)
 
-    if not prefix:
+    if normalized not in _SUPPORTED_PROFILES:
         raise ValueError(
             "Perfil EDARSAHUB SQL no soportado: "
             f"{profile}"
         )
 
+    host, port, database = _base_connection_fields()
+
+    if normalized == "default":
+        user = _required(f"{_DEFAULT_PREFIX}_USER")
+        password = _required(f"{_DEFAULT_PREFIX}_PASSWORD")
+    else:
+        user = _required(f"{_WRITER_CREDENTIAL_PREFIX}_USER")
+        password = _required(f"{_WRITER_CREDENTIAL_PREFIX}_PASSWORD")
+
     return EdarsaHubSQLConfig(
-        host=_required(f"{prefix}_HOST"),
-        port=int(
-            os.getenv(
-                f"{prefix}_PORT",
-                "1433",
-            )
-        ),
-        database=_required(
-            f"{prefix}_DATABASE"
-        ),
-        user=_required(f"{prefix}_USER"),
-        password=_required(
-            f"{prefix}_PASSWORD"
-        ),
+        host=host,
+        port=port,
+        database=database,
+        user=user,
+        password=password,
         profile=normalized,
     )

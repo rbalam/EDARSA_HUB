@@ -58,10 +58,14 @@ class UnidadesService:
         _CACHE["ts"] = 0
 
     @classmethod
-    def get_all(cls):
-        """Retorna todas las unidades activas con PK real"""
+    def get_all(cls, force_refresh: bool = False):
+        """Retorna todas las unidades activas con PK real.
+
+        ``force_refresh`` omite la cache para decisiones criticas de activacion
+        operacional, preservando el comportamiento cacheado para lecturas normales.
+        """
         now = time.time()
-        if _CACHE["data"] is not None and now - _CACHE["ts"] < _CACHE["ttl"]:
+        if not force_refresh and _CACHE["data"] is not None and now - _CACHE["ts"] < _CACHE["ttl"]:
             return _CACHE["data"]
 
         try:

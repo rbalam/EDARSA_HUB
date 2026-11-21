@@ -83,12 +83,12 @@ def get_db():
 )
 async def calcular_responsabilidad(
     workflow_id: str,
-    usuario_id: str = Query(..., description="ID del usuario que ejecuta el cálculo"),
     forzar_recalculo: bool = Query(False, description="Forzar recálculo si ya existe"),
     current_user: dict = Depends(require_explicit_permission("RESPONSABILIDAD_CALCULAR"))
 ):
     """Calcula el impacto económico de un workflow."""
     try:
+        usuario_id, _ = _get_authenticated_responsabilidad_actor(current_user)
         db = get_db()
         service = ResponsabilidadService(db)
         
@@ -108,6 +108,8 @@ async def calcular_responsabilidad(
         raise HTTPException(status_code=409, detail="Error interno del servidor")
     except SinDiferenciasError as e:
         raise HTTPException(status_code=400, detail="Error interno del servidor")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno")
 

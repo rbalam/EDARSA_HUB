@@ -404,3 +404,133 @@ def test_sync_requisiciones_updates_duplicate_key(monkeypatch):
     assert result["records_synced"] == 1
     assert result["error"] is None
     assert fake_conn.cursor_obj.updated_params[-3:] == ("server-1", "0000025203", "ORDEN")
+
+
+def test_compras_writer_connection_uses_writer_profile(monkeypatch):
+    from modules.compras import sync_service
+
+    calls = []
+    expected = object()
+
+    def fake_get_sql_connection(profile="default"):
+        calls.append(profile)
+        return expected
+
+    monkeypatch.setattr(
+        sync_service,
+        "get_sql_connection",
+        fake_get_sql_connection,
+    )
+
+    assert sync_service.get_edarsahub_writer_connection() is expected
+    assert calls == ["writer"]
+
+
+def test_sync_inventarios_uses_writer_connection(monkeypatch):
+    from modules.compras import sync_service
+
+    calls = []
+
+    def fake_execute(host, port, database, username, password, query):
+        calls.append(query)
+        if len(calls) == 1:
+            return [{
+                "folio": "1001",
+                "fecha": "2026-10-20",
+                "almacen": "BODEGA",
+                "almacen_id": "1",
+                "sucursal": "",
+                "sucursal_id": "",
+                "tipo": "FISICO",
+                "estatus": "CERRADO",
+                "total_productos": 1,
+                "comentario": "",
+            }]
+        return [{
+            "folio": "1001",
+            "codigo_producto": "INS-1",
+            "nombre_producto": "Insumo 1",
+            "unidad": "PZA",
+            "existencia_fisica": 1,
+            "rendimiento": 1,
+            "costo_unitario": 10,
+            "almacen": "BODEGA",
+            "almacen_id": "1",
+        }]
+
+    class FakeCursor:
+        def __init__(self):
+            self._rows = []
+            self.rowcount = 1
+
+        def execute(self, query, params=None):
+            if "INFORMATION_SCHEMA.COLUMNS" in query:
+                self._rows = [
+                    (name,)
+                    for name in [
+                        "unidad_negocio_id",
+                        "unidad_negocio_codigo",
+                        "server_id",
+                        "system_type",
+                        "folio",
+                        "codigo_producto",
+                        "nombre_producto",
+                        "unidad",
+                        "existencia_fisica",
+                        "rendimiento",
+                        "costo_unitario",
+                        "almacen",
+                        "almacen_id",
+                        "sync_source",
+                        "sync_timestamp",
+                        "sync_status",
+                    ]
+                ]
+            else:
+                self._rows = []
+                self.rowcount = 1
+
+        def fetchall(self):
+            return self._rows
+
+    class FakeConnection:
+        def __init__(self):
+            self.cursor_obj = FakeCursor()
+            self.committed = False
+
+        def cursor(self):
+            return self.cursor_obj
+
+        def commit(self):
+            self.committed = True
+
+        def rollback(self):
+            pass
+
+        def close(self):
+            pass
+
+    fake_conn = FakeConnection()
+
+    monkeypatch.setattr(
+        sync_service,
+        "get_edarsahub_connection",
+        lambda: (_ for _ in ()).throw(
+            AssertionError("La escritura no debe usar el perfil default")
+        ),
+    )
+    monkeypatch.setattr(
+        sync_service,
+        "get_edarsahub_writer_connection",
+        lambda: fake_conn,
+    )
+
+    result = sync_service.sync_inventarios_fisicos_from_server(
+        _server(),
+        _unidad(),
+        fake_execute,
+    )
+
+    assert result["status"] == "OK"
+    assert result["records_synced"] == 1
+    assert fake_conn.committed is True

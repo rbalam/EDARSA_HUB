@@ -42,6 +42,11 @@ from .mappers import (
     map_mpro_ventas_abiertas
 )
 from core.unidades_service import UnidadesService
+from .mpro_closed_api import (
+    resolve_mpro_closed_api,
+    build_mpro_closed_sales_query,
+    execute_mpro_select_via_api,
+)
 from .repository_comercial_edarsahub import (
     EDARSAHUB_CONFIG,
     get_unidades_negocio_config,
@@ -622,7 +627,7 @@ SELECT
 FROM cheques AS ch
 INNER JOIN turnos AS tr
     ON tr.idturno = ch.idturno
-WHERE CONVERT(varchar, tr.apertura, 112) = '{fecha_operacion_sql}'
+WHERE CONVERT(varchar, DATEADD(hour, -{offset_hours}, tr.apertura), 112) = '{fecha_operacion_sql}'
   AND ch.cancelado = 0
 """
 
@@ -637,13 +642,16 @@ def build_softrestaurant_ventas_cerradas_query(
     La pertenencia al dia se define SOLO por la fecha calendario de
     turnos.apertura. No usa turnos operativos, cierre ni idempresa.
     """
-    del server_config
+    # Regla canónica/transversal SoftRestaurant: todas las sucursales usan
+    # el mismo corte operativo de 09:00 sobre turnos.apertura.
+    offset_hours = 9
     bloques = []
     fecha_actual = fecha_inicio
     while fecha_actual <= fecha_fin:
         bloques.append(QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA.format(
             fecha_operacion=fecha_actual.strftime('%Y-%m-%d'),
             fecha_operacion_sql=fecha_actual.strftime('%Y%m%d'),
+            offset_hours=offset_hours,
         ))
         fecha_actual += timedelta(days=1)
     return "\nUNION ALL\n".join(bloques)
@@ -830,26 +838,43 @@ def sync_mpro_ventas_cerradas(
     )
     
     try:
-        # Obtener configuración del servidor
-        server_config = get_server_connection_config(
-            config.server_id,
-            config.unidad_negocio_pk,
-        )
-        if not server_config:
-            result.error_message = f"No se encontró configuración para server_id {config.server_id}"
+        # REGLA CANÓNICA MPRO CERRADAS:
+        # toda unidad ManagementPro se resuelve por la relación API local
+        # canónica y usa la misma autoridad final Venta_Encabezado.
+        # No se permite fallback silencioso al servidor compartido/CENTRAL2020.
+        api_config = resolve_mpro_closed_api(config.unidad_negocio_pk)
+        if not api_config:
+            result.error_message = (
+                "No se encontró API local canónica para ventas cerradas MPRO "
+                f"(unidad_negocio_pk={config.unidad_negocio_pk})"
+            )
             return result
-        
-        # Ejecutar query con sucursal específica
-        query = QUERY_MPRO_VENTAS_CERRADAS.format(
-            fecha_inicio=fecha_inicio.isoformat(),
-            fecha_fin=fecha_fin.isoformat(),
-            sucursal_id=sucursal_id
+
+        api_sucursal_id = str(api_config.get("sucursal_id") or "").strip()
+        requested_sucursal_id = str(sucursal_id or "").strip()
+        if not api_sucursal_id or api_sucursal_id != requested_sucursal_id:
+            result.error_message = (
+                "La sucursal de la API local no coincide con la unidad canónica: "
+                f"api={api_sucursal_id or 'EMPTY'}, requested={requested_sucursal_id or 'EMPTY'}"
+            )
+            return result
+
+        # La consulta final es transversal para toda unidad ManagementPro.
+        # La sucursal canónica identifica la rama; no cambia el algoritmo.
+        query = build_mpro_closed_sales_query(
+            api_config.get("unidad_codigo"),
+            api_sucursal_id,
+            fecha_inicio,
+            fecha_fin,
         )
-        
-        rows, conn_status = execute_query_on_server(server_config, query)
+
+        rows, conn_status = execute_mpro_select_via_api(
+            api_config,
+            query,
+        )
         
         if conn_status != ConnectionStatus.ONLINE:
-            result.error_message = f"Conexión fallida: {conn_status}"
+            result.error_message = f"Conexión API local fallida: {conn_status}"
             log = SyncLogV2(
                 run_id=run_id,
                 run_type=SyncRunType.INCREMENTAL,

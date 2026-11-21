@@ -32,3 +32,12 @@ def test_health_and_results_are_independent_of_dispatch():
     text = source()
     assert 'UNIVERSAL_WORKER_RESULT_SECONDS:-10' in text
     assert 'UNIVERSAL_WORKER_HEALTH_SECONDS:-30' in text
+
+
+def test_worker_tools_are_isolated_and_terminated_by_process_group():
+    text = source()
+    assert 'SETSID_BIN="$(command -v setsid' in text
+    assert '"$SETSID_BIN" --wait timeout' in text
+    assert 'ACTIVE_TOOL_PGID="$TOOL_PID"' in text
+    assert 'kill -TERM -- "-$ACTIVE_TOOL_PGID"' in text
+    assert "trap shutdown_child_loop TERM INT HUP" in text

@@ -41,6 +41,7 @@ BLINDAJE DE AISLAMIENTO (Abril 2026):
 Fecha: Abril 2026
 """
 
+import json
 import logging
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
@@ -56,6 +57,7 @@ from ..sql_repository import (
     actualizar_inventario_completado,
     actualizar_inventario_error,
     get_inventarios_pendientes_reintento,
+    get_inventario_error_by_id,
     registrar_bitacora_job
 )
 
@@ -305,39 +307,85 @@ class InventariosDetectorJob:
         
         return compatible
     
+    def _rehidratar_registro_reintento(self, registro: Dict) -> Dict:
+        """Reconstruye el contexto persistido de un registro para reintento canónico."""
+        detalles_raw = registro.get('DetallesJSON')
+        detalles = {}
+        if isinstance(detalles_raw, dict):
+            detalles = detalles_raw
+        elif detalles_raw:
+            try:
+                detalles = json.loads(detalles_raw) or {}
+            except (TypeError, ValueError, json.JSONDecodeError):
+                logger.warning(
+                    "[INVENTARIOS_DETECTOR] DetallesJSON inválido en reintento folio=%s",
+                    registro.get('FolioInventario'),
+                )
+
+        return {
+            'clave': {
+                'sistema_origen': registro.get('SistemaOrigen'),
+                'server_id': registro.get('ServerID'),
+                'sucursal_id': registro.get('SucursalID'),
+                'almacen_id': registro.get('AlmacenID'),
+                'folio_inventario': registro.get('FolioInventario')
+            },
+            'server_name': detalles.get('server_name'),
+            'almacen_nombre': detalles.get('almacen_nombre', ''),
+            'folio_inicial': detalles.get('folio_inicial'),
+            'fecha_inicial': detalles.get('fecha_inicial'),
+            'fecha_inventario': detalles.get('fecha_inventario'),
+            'metadata': detalles.get('metadata', {}),
+            'intentos': registro.get('Intentos', 1),
+        }
+
+    async def retry_error_by_id(self, record_id: int) -> Dict:
+        """Reintenta exactamente un registro ERROR sin alterar el umbral global de reintentos."""
+        registro = await get_inventario_error_by_id(record_id)
+        if not registro:
+            return {
+                "status": "NOT_ELIGIBLE",
+                "record_id": record_id,
+                "message": "El registro no existe o no está en ERROR",
+            }
+
+        run_id = f"recovery-{record_id}-{str(uuid.uuid4())[:8]}"
+        await registrar_bitacora_job(
+            job_name="inventarios_detector",
+            run_id=run_id,
+            accion="RECOVERY_CANARY_START",
+            detalles={"record_id": record_id, "intentos_antes": registro.get('Intentos')},
+        )
+
+        registro_compat = self._rehidratar_registro_reintento(registro)
+        self.stats["inventarios_reintentados"] += 1
+        await self._procesar_inventario_desde_registro(registro_compat)
+
+        await registrar_bitacora_job(
+            job_name="inventarios_detector",
+            run_id=run_id,
+            accion="RECOVERY_CANARY_END",
+            detalles={"record_id": record_id},
+        )
+        return {"status": "EXECUTED", "record_id": record_id, "run_id": run_id}
+
     async def _procesar_reintentos(self):
         """Procesa inventarios en ERROR que pueden reintentarse."""
-        # Limitar reintentos por ejecución
         max_reintentos = 5
-        
-        # Buscar inventarios en ERROR con intentos < MAX desde SQL
         pendientes = await get_inventarios_pendientes_reintento(
             max_intentos=MAX_INTENTOS,
             limit=max_reintentos
         )
-        
+
         for registro in pendientes:
-            # Verificar límite global
             total_procesados = self.stats["inventarios_procesados"] + self.stats["inventarios_error"]
             if total_procesados >= self.max_inventarios_por_ejecucion:
                 logger.info("[INVENTARIOS_DETECTOR] Límite alcanzado, saltando reintentos")
                 break
-            
+
             self.stats["inventarios_reintentados"] += 1
             logger.info(f"[INVENTARIOS_DETECTOR] Reintentando folio={registro.get('FolioInventario')}")
-            
-            # Construir registro compatible para procesamiento
-            registro_compat = {
-                'clave': {
-                    'sistema_origen': registro.get('SistemaOrigen'),
-                    'server_id': registro.get('ServerID'),
-                    'sucursal_id': registro.get('SucursalID'),
-                    'almacen_id': registro.get('AlmacenID'),
-                    'folio_inventario': registro.get('FolioInventario')
-                }
-            }
-            
-            # Intentar procesar
+            registro_compat = self._rehidratar_registro_reintento(registro)
             await self._procesar_inventario_desde_registro(registro_compat)
     
     async def _escanear_servidor(self, servidor: Dict):
@@ -579,7 +627,10 @@ class InventariosDetectorJob:
                 detalles={
                     "server_name": inv.server_name,
                     "almacen_nombre": inv.almacen_nombre,
-                    "folio_inicial": inv.folio_inicial
+                    "folio_inicial": inv.folio_inicial,
+                    "fecha_inicial": inv.fecha_inicial,
+                    "fecha_inventario": inv.fecha_inventario,
+                    "metadata": inv.metadata,
                 }
             )
             if not success:

@@ -1,0 +1,176 @@
+name: CIENFUEGOS Movement Source Audit
+
+on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - ".github/workflows/cienfuegos-movement-source-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "HRLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+      SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install read-only audit runtime
+        run: python -m pip install --quiet pymssql cryptography
+
+      - name: Audit CIENFUEGOS source movements
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import pymssql
+          from cryptography.fernet import Fernet
+
+          hub = pymssql.connect(
+              server=os.environ["EDARSAHUB_SQL_HOST"],
+              port=int(os.environ["EDARSAHUB_SQL_PORT"]),
+              database=os.environ["EDARSAHUB_SQL_DATABASE"],
+              user=os.environ["EDARSAHUB_SQL_USER"],
+              password=os.environ["EDARSAHUB_SQL_PASSWORD"],
+              login_timeout=15,
+              timeout=30,
+              as_dict=True,
+          )
+          cur = hub.cursor(as_dict=True)
+          cur.execute("""
+              SELECT TOP 1
+                  s.id,
+                  s.host,
+                  ISNULL(s.port,1433) AS port,
+                  s.database_name,
+                  s.username,
+                  s.password_encrypted,
+                  s.tipos_movimiento,
+                  s.system_type
+              FROM dbo.Servidores_Conexiones s
+              INNER JOIN dbo.Unidades_Negocio u
+                  ON u.server_id=CAST(s.id AS nvarchar(36))
+                 AND ISNULL(u.activo,0)=1
+              WHERE UPPER(u.codigo)='CIENFUEGOS'
+                AND ISNULL(s.activo,0)=1
+          """)
+          server = cur.fetchone()
+          cur.close()
+          hub.close()
+          if not server:
+              raise SystemExit("CIENFUEGOS_SERVER_NOT_FOUND")
+
+          encrypted = str(server.get("password_encrypted") or "")
+          if encrypted.startswith("enc:v1:"):
+              key = os.environ.get("SERVER_SECRET_KEY") or ""
+              if not key:
+                  raise SystemExit("SERVER_SECRET_KEY_MISSING")
+              password = Fernet(key.encode()).decrypt(
+                  encrypted[len("enc:v1:"):].encode()
+              ).decode()
+          else:
+              password = encrypted
+
+          raw_host = str(server.get("host") or "").strip()
+          port = int(server.get("port") or 1433)
+          host = raw_host
+          if "\\" in host:
+              host = host.split("\\",1)[0].strip()
+          if "," in host:
+              hp, pp = host.rsplit(",",1)
+              host = hp.strip()
+              try:
+                  port = int(pp.strip())
+              except ValueError:
+                  pass
+
+          selected_raw = server.get("tipos_movimiento")
+          try:
+              selected = selected_raw if isinstance(selected_raw,list) else json.loads(selected_raw or "[]")
+          except Exception:
+              selected = []
+          selected = {str(x).strip().upper() for x in selected if str(x).strip()}
+
+          pos = pymssql.connect(
+              server=host,
+              port=port,
+              database=str(server.get("database_name") or ""),
+              user=str(server.get("username") or ""),
+              password=password,
+              login_timeout=15,
+              timeout=90,
+              as_dict=True,
+          )
+          pcur = pos.cursor(as_dict=True)
+
+          pcur.execute("""
+              SELECT
+                  RTRIM(LTRIM(idconcepto)) AS concepto,
+                  COUNT(*) AS registros,
+                  SUM(ABS(ISNULL(cantidad,0))) AS cantidad
+              FROM movsinv
+              WHERE fecha >= '2026-10-01'
+                AND fecha < '2026-10-20'
+                AND CAST(idalmacen AS VARCHAR(50))='200'
+                AND NULLIF(RTRIM(LTRIM(idinsumo)),'') IS NOT NULL
+              GROUP BY RTRIM(LTRIM(idconcepto))
+              ORDER BY RTRIM(LTRIM(idconcepto))
+          """)
+          movsinv = pcur.fetchall() or []
+
+          pcur.execute("""
+              SELECT
+                  RTRIM(LTRIM(m.idconcepto)) AS concepto,
+                  COUNT(*) AS registros,
+                  SUM(ABS(ISNULL(m.cantidad,0))) AS cantidad
+              FROM movtosalmacen m
+              INNER JOIN insumospresentaciones ip
+                ON ip.idinsumospresentaciones=m.idinsumospresentaciones
+              WHERE m.fecha >= '2026-10-01'
+                AND m.fecha < '2026-10-20'
+                AND CAST(m.idalmacen AS VARCHAR(50))='200'
+                AND NULLIF(RTRIM(LTRIM(ip.idinsumo)),'') IS NOT NULL
+              GROUP BY RTRIM(LTRIM(m.idconcepto))
+              ORDER BY RTRIM(LTRIM(m.idconcepto))
+          """)
+          movtos = pcur.fetchall() or []
+          pcur.close()
+          pos.close()
+
+          def summarize(rows):
+              return [
+                  {
+                      "concepto": str(r.get("concepto") or "").strip(),
+                      "registros": int(r.get("registros") or 0),
+                      "cantidad": float(r.get("cantidad") or 0),
+                      "autorizado": str(r.get("concepto") or "").strip().upper() in selected,
+                  }
+                  for r in rows
+              ]
+
+          m1=summarize(movsinv)
+          m2=summarize(movtos)
+          print("CIENFUEGOS_SELECTED_TYPES=" + json.dumps(sorted(selected), ensure_ascii=False))
+          print("CIENFUEGOS_MOVSINV=" + json.dumps(m1, ensure_ascii=False))
+          print("CIENFUEGOS_MOVTOSALMACEN=" + json.dumps(m2, ensure_ascii=False))
+          print("CIENFUEGOS_SOURCE_TOTALS=" + json.dumps({
+              "movsinv_rows": sum(x["registros"] for x in m1),
+              "movsinv_authorized_rows": sum(x["registros"] for x in m1 if x["autorizado"]),
+              "movtos_rows": sum(x["registros"] for x in m2),
+              "movtos_authorized_rows": sum(x["registros"] for x in m2 if x["autorizado"]),
+          }, ensure_ascii=False))
+          PY

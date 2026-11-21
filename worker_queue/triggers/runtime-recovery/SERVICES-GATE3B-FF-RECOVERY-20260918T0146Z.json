@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Recover canonical Universal Worker runtime convergence for existing EDARSAHUB-SERVICES-GATE3B-PHYSICAL-SCHEMA-DDL-DOSSIER-R1 after terminal GIT_DIVERGENCE_BLOCKED with NEEDS_FAST_FORWARD_REFRESH. Do not create a new Gate3B functional job. Use authoritative /api/internal/worker/wake flow, preserve fail-closed convergence rules, preserve local work, and do not touch Production.",
+  "existing_job_id": "EDARSAHUB-SERVICES-GATE3B-PHYSICAL-SCHEMA-DDL-DOSSIER-R1",
+  "production_touched": false
+}

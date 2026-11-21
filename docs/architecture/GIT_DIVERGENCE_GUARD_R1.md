@@ -1,0 +1,3 @@
+# EDARSAHUB Git Divergence Guard R1
+
+R4 integra el contrato originalmente solicitado: inspeccion branch/local/remote/merge-base/ahead/behind/dirty; bloqueo de dirty y divergencia antes de mutar; worktrees aislados; writer lock canonico para escritores de Development, incluyendo Worker, backup y finalizer; CAS de remoto antes de push; cancelacion REMOTE_MOVED_RETRY_REQUIRED; push fast-forward normal con EDARSA_ALLOW_PUSH solo en el proceso exacto; postcheck topology 0/0; no pull/merge/rebase/reset-hard/clean/stash/force; no false PASS. Los publishers de ramas auxiliares conservan sus locks propios. Rollback solo mediante job controlado y revert/fast-forward normal, preservando refs/evidencia. Produccion queda fuera de alcance.

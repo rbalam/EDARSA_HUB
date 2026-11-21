@@ -1,0 +1,125 @@
+-- Tickets de venta: extensión del destino canónico existente, sin recalcular KPIs.
+SET XACT_ABORT ON;
+BEGIN TRANSACTION;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'partida_origen_id') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD partida_origen_id nvarchar(100) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'partida_key') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD partida_key nvarchar(100) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_id') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_id nvarchar(100) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_nombre') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_nombre nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_razon_social') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_razon_social nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_descripcion') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_descripcion nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_maestro_id') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_maestro_id nvarchar(100) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_sucursal_origen') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_sucursal_origen nvarchar(50) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_contacto') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_contacto nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_rfc') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_rfc nvarchar(50) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_direccion_1') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_direccion_1 nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_direccion_2') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_direccion_2 nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_direccion_3') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_direccion_3 nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_calle') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_calle nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_numero_exterior') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_numero_exterior nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_numero_interior') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_numero_interior nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_colonia') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_colonia nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_ciudad') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_ciudad nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_municipio') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_municipio nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_estado') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_estado nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_pais') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_pais nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_codigo_postal') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_codigo_postal nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'ticket_fecha') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD ticket_fecha datetime2 NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'ticket_fecha_cierre') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD ticket_fecha_cierre datetime2 NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'ticket_pagado') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD ticket_pagado bit NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'ticket_impreso') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD ticket_impreso bit NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'ticket_impresiones') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD ticket_impresiones int NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'ticket_comentario') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD ticket_comentario nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'ticket_comentario_descuento') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD ticket_comentario_descuento nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'ticket_fecha_alta') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD ticket_fecha_alta datetime2 NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'ticket_oper_ult_modif') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD ticket_oper_ult_modif nvarchar(100) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'ticket_oper_baja') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD ticket_oper_baja nvarchar(100) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'ticket_fecha_baja') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD ticket_fecha_baja datetime2 NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'partida_comentario') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD partida_comentario nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'partida_comentario_descuento') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD partida_comentario_descuento nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'partida_comentario_cancelacion') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD partida_comentario_cancelacion nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'partida_oper_baja') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD partida_oper_baja nvarchar(100) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'partida_fecha_baja') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD partida_fecha_baja datetime2 NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'tipo_descuento_id') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD tipo_descuento_id nvarchar(100) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'tipo_descuento_descripcion') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD tipo_descuento_descripcion nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'tipo_descuento_valor') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD tipo_descuento_valor decimal(18,6) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_cruzamiento_1') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_cruzamiento_1 nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_cruzamiento_2') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_cruzamiento_2 nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_entrega_direccion_1') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_entrega_direccion_1 nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_entrega_direccion_2') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_entrega_direccion_2 nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_entrega_direccion_3') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_entrega_direccion_3 nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_entrega_ciudad') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_entrega_ciudad nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_entrega_estado') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_entrega_estado nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_entrega_pais') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_entrega_pais nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_entrega_codigo_postal') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_entrega_codigo_postal nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_colonia_origen_id') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_colonia_origen_id nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_ciudad_origen_id') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_ciudad_origen_id nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_municipio_origen_id') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_municipio_origen_id nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_estado_origen_id') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_estado_origen_id nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_pais_origen_id') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_pais_origen_id nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_codigo_postal_origen_id') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_codigo_postal_origen_id nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_latitud') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_latitud nvarchar(max) NULL;
+IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'cliente_longitud') IS NULL
+    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto ADD cliente_longitud nvarchar(max) NULL;
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto') AND name='UX_Comercial_Intel_VentasDetalle_NoDup')
+    DROP INDEX UX_Comercial_Intel_VentasDetalle_NoDup ON dbo.Comercial_Inteligencia_VentasDetalleProducto;
+EXEC sp_executesql N'CREATE UNIQUE INDEX UX_Comercial_Intel_VentasDetalle_NoDup
+ON dbo.Comercial_Inteligencia_VentasDetalleProducto
+(unidad_negocio_id, id_transaccion, numero_ticket, producto_codigo_fuente, descuento_pct, fecha_operacion, partida_origen_id);';
+COMMIT TRANSACTION;

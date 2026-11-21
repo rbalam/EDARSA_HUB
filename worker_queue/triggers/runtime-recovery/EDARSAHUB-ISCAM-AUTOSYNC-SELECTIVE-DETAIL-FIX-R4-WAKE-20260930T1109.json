@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-ISCAM-AUTOSYNC-SELECTIVE-DETAIL-FIX-R4-CARLOS-20260930T1108",
+  "reason": "Wake canonical Universal Worker and prefer R4. R4 fixes the pytest path so tests read the isolated worktree instead of /app, then reapplies the same selective ISCAM detail autosync mutation. Preserve queue identities; no Production.",
+  "production_touched": false
+}

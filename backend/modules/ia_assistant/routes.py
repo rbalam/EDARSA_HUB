@@ -2,21 +2,26 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
+    Request,
 )
 from pydantic import BaseModel, Field
 
 from core.rbac.middleware import (
-    require_explicit_permission,
+    require_explicit_permission_dual,
 )
+from modules.ia_assistant import access
+from modules.ia_assistant import contextual
+from modules.ia_assistant import query_bridge
 from modules.ia_assistant import repository
 from modules.ia_assistant import service
+from modules.ia_assistant.worker_routes import router as worker_router
 
 IA_PERMISSION = "IA_ASSISTANT_VER"
 
@@ -24,6 +29,7 @@ router = APIRouter(
     prefix="/ia",
     tags=["Asistente IA"],
 )
+router.include_router(worker_router)
 
 
 class CrearSesionRequest(BaseModel):
@@ -40,6 +46,7 @@ class ChatRequest(BaseModel):
         min_length=1,
         max_length=8000,
     )
+    contexto_vista: Optional[Dict[str, Any]] = None
 
 
 def _current_email(
@@ -132,7 +139,7 @@ def _translate_error(
 @router.get("/health")
 async def health(
     current_user: dict = Depends(
-        require_explicit_permission(
+        require_explicit_permission_dual(
             IA_PERMISSION
         )
     ),
@@ -144,7 +151,7 @@ async def health(
 @router.get("/sesiones")
 async def listar_sesiones(
     current_user: dict = Depends(
-        require_explicit_permission(
+        require_explicit_permission_dual(
             IA_PERMISSION
         )
     ),
@@ -169,7 +176,7 @@ async def listar_sesiones(
 async def crear_sesion(
     request: CrearSesionRequest,
     current_user: dict = Depends(
-        require_explicit_permission(
+        require_explicit_permission_dual(
             IA_PERMISSION
         )
     ),
@@ -204,7 +211,7 @@ async def crear_sesion(
 async def obtener_mensajes(
     sesion_id: UUID,
     current_user: dict = Depends(
-        require_explicit_permission(
+        require_explicit_permission_dual(
             IA_PERMISSION
         )
     ),
@@ -232,7 +239,7 @@ async def obtener_mensajes(
 async def eliminar_sesion(
     sesion_id: UUID,
     current_user: dict = Depends(
-        require_explicit_permission(
+        require_explicit_permission_dual(
             IA_PERMISSION
         )
     ),
@@ -256,8 +263,9 @@ async def eliminar_sesion(
 @router.post("/chat")
 async def chat(
     request: ChatRequest,
+    http_request: Request,
     current_user: dict = Depends(
-        require_explicit_permission(
+        require_explicit_permission_dual(
             IA_PERMISSION
         )
     ),
@@ -273,13 +281,54 @@ async def chat(
                 "estar vacío"
             )
 
-        return await service.enviar_mensaje(
-            str(request.sesion_id),
+        session_id = str(request.sesion_id)
+        view_context = contextual.normalize_view_context(
+            request.contexto_vista
+        )
+        access_context = access.build_ai_access_context(current_user)
+        if access_context.get("authorized") is not True:
+            raise HTTPException(status_code=403, detail="Alcance IA no autorizado")
+
+        catalog = query_bridge.build_readonly_catalog(http_request.app)
+        prompt_catalog = query_bridge.catalog_for_prompt(
+            catalog,
+            message,
+            context_text=str(view_context),
+        )
+        planned = await service.plan_system_queries(
+            session_id,
+            message,
+            prompt_catalog,
+            view_context=view_context,
+            access_context=access_context,
+        )
+        system_context = await query_bridge.execute_planned_queries(
+            http_request.app,
+            catalog,
+            planned,
+            authorization=http_request.headers.get("authorization"),
+            cookie=http_request.headers.get("cookie"),
+        )
+
+        response = await service.enviar_mensaje(
+            session_id,
             _current_email(
                 current_user
             ),
             message,
+            system_context=system_context,
+            view_context=view_context,
+            access_context=access_context,
         )
+        response["acciones_ui"] = await service.plan_contextual_actions(
+            session_id,
+            message,
+            response.get("respuesta") or "",
+            view_context,
+            datasets=response.get("datasets") or [],
+        )
+        response["contexto_vista_aceptado"] = bool(view_context)
+        return response
 
     except Exception as exc:
         _translate_error(exc)

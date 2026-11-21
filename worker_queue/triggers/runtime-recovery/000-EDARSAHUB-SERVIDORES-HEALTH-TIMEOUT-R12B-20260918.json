@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Mandatory preferred-job wake for SERVIDORES timeout fix 000-EDARSAHUB-SERVIDORES-HEALTH-TIMEOUT-R12B-20260918. Preserve active work, register this job as next preferred, and do not touch Production.",
+  "existing_job_id": "000-EDARSAHUB-SERVIDORES-HEALTH-TIMEOUT-R12B-20260918",
+  "production_touched": false
+}

@@ -35,12 +35,16 @@ def test_certification_requires_sha_bound_attestation():
     )
 
 
-def test_certification_requires_dev_mirror_convergence():
+def test_certification_requires_dev_mirror_artifact_convergence():
     text = source()
 
-    assert 'development_head != mirror_head' in text
+    assert "branches_preserve_job_artifacts(" in text
+    assert "for head in (development_head, mirror_head):" in text
     assert '"merge-base",' in text
     assert '"--is-ancestor",' in text
+    assert '"diff",' in text
+    assert '"--quiet",' in text
+    assert "*files_changed," in text
 
 
 def test_certification_requires_job_files_unchanged():
@@ -60,7 +64,7 @@ def test_certified_contract_is_explicit():
     assert '"work_completion": "COMPLETE"' in text
     assert '"percent_complete": 100' in text
     assert (
-        '"SHA_BOUND_ATTESTATION_PLUS_DESCENDANT_CONVERGENCE"'
+        '"SHA_BOUND_ATTESTATION_PLUS_ARTIFACT_CONVERGENCE"'
         in text
     )
 

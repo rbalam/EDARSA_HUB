@@ -179,25 +179,59 @@ def _get_sql_config() -> dict:
     return _sql_config
 
 
+class RefreshTokenReuseError(RuntimeError):
+    """Error fail-closed al detectar rotacion concurrente o reutilizacion de refresh token."""
+
+
+def _normalize_user_id_candidates(user_id: Any) -> list[str]:
+    """Normaliza identificadores canonicos de usuario (sin hash() ni truncamiento)."""
+    raw_items = user_id if isinstance(user_id, (list, tuple, set)) else [user_id]
+    candidates: list[str] = []
+    seen: set[str] = set()
+    for item in raw_items:
+        if item is None or isinstance(item, bool):
+            continue
+        text = str(item).strip()
+        if not text:
+            continue
+        key = text.lower()
+        if key not in seen:
+            seen.add(key)
+            candidates.append(text)
+    return candidates
+
+
+def _open_session_tx_connection():
+    """Abre una conexion pymssql dedicada (autocommit=False) para transacciones atomicas de sesion."""
+    import pymssql
+    from core.db import parse_sql_server_host
+
+    config = _get_sql_config()
+    hostname, parsed_port, instance = parse_sql_server_host(config["host"], config["port"])
+    server = f"{hostname}\\{instance}" if instance else hostname
+    connect_kwargs = {
+        "server": server,
+        "user": config["username"],
+        "password": config["password"],
+        "database": config["database"],
+        "timeout": 5,
+        "login_timeout": 5,
+        "autocommit": False,
+    }
+    if not instance and parsed_port:
+        connect_kwargs["port"] = int(parsed_port)
+    return pymssql.connect(**connect_kwargs)
+
+
 async def _execute_sql_async(query: str, params: tuple = None, fetch_one: bool = False, fetch_all: bool = False):
     """
-    Ejecuta una query SQL de forma asíncrona usando executor.
-    
-    Args:
-        query: Query SQL con placeholders %s
-        params: Tupla de parámetros
-        fetch_one: Si True, retorna solo un registro
-        fetch_all: Si True, retorna todos los registros
-        
-    Returns:
-        Resultados de la query o None
+    Ejecuta una query SQL de forma asincrona usando asyncio.to_thread.
     """
     import asyncio
-    from concurrent.futures import ThreadPoolExecutor
     from core.db import execute_sql_query_params
-    
+
     config = _get_sql_config()
-    
+
     def _sync_execute():
         try:
             results = execute_sql_query_params(
@@ -208,16 +242,17 @@ async def _execute_sql_async(query: str, params: tuple = None, fetch_one: bool =
                 password=config['password'],
                 query=query,
                 params=params,
-                timeout_seconds=5  # Reducido de 30 a 5 segundos
+                timeout_seconds=5,
+                raise_on_error=True,
             )
-            
-            if fetch_one and results:
-                # Convertir dict a tuple para compatibilidad
+
+            if fetch_one:
+                if not results:
+                    return None
                 if isinstance(results[0], dict):
                     return tuple(results[0].values())
                 return results[0]
             elif fetch_all:
-                # Convertir dicts a tuples
                 if results and isinstance(results[0], dict):
                     return [tuple(r.values()) for r in results]
                 return results
@@ -225,42 +260,66 @@ async def _execute_sql_async(query: str, params: tuple = None, fetch_one: bool =
         except Exception as e:
             logger.error(f"Error ejecutando SQL: {e}")
             raise
-    
-    # Ejecutar en thread pool para no bloquear el event loop
-    loop = asyncio.get_event_loop()
-    with ThreadPoolExecutor() as executor:
-        return await loop.run_in_executor(executor, _sync_execute)
+
+    return await asyncio.to_thread(_sync_execute)
+
+
+async def is_session_active(
+    session_id: str,
+    expected_user_type: Optional[str] = None,
+) -> bool:
+    """
+    Verifica fail-closed en dbo.Sesiones si un SesionID sigue activo y no revocado.
+    Usa columna nombrada (SesionID) para compatibilidad estricta con pymssql as_dict=True.
+    """
+    sid = str(session_id or "").strip()
+    if not sid:
+        return False
+
+    query = """
+        SELECT TOP 1 SesionID
+        FROM Sesiones
+        WHERE
+            SesionID = %s
+            AND EstaActiva = 1
+            AND FechaExpiracion > GETUTCDATE()
+            AND FechaRevocacion IS NULL
+    """
+    params = [sid]
+    if expected_user_type:
+        query += """
+            AND LOWER(LTRIM(RTRIM(ISNULL(TipoUsuario, '')))) =
+                LOWER(LTRIM(RTRIM(%s)))
+        """
+        params.append(expected_user_type)
+
+    result = await _execute_sql_async(query, tuple(params), fetch_one=True)
+    if not result:
+        return False
+    first_val = result[0] if isinstance(result, (tuple, list)) else result
+    return str(first_val or "").strip().lower() == sid.lower()
 
 
 async def create_session(
-    user_id: int,
+    user_id: Any,
     refresh_token: str,
     ip_address: Optional[str] = None,
     user_agent: Optional[str] = None,
     user_type: str = "interno"
 ) -> Dict[str, Any]:
     """
-    Crea una nueva sesión en EDARSAHUB.
-    
-    Args:
-        user_id: ID del usuario
-        refresh_token: Refresh token generado (texto plano)
-        ip_address: IP del cliente (opcional)
-        user_agent: User-Agent del cliente (opcional)
-        user_type: Tipo de usuario ('interno' o 'portal')
-        
-    Returns:
-        Dict con session_id y familia_id
+    Crea una nueva sesion en EDARSAHUB.
     """
+    candidates = _normalize_user_id_candidates(user_id)
+    if not candidates:
+        raise ValueError("INVALID_USER_ID_FOR_SESSION")
+    canonical_user_id = candidates[0]
+
     session_id = str(uuid4())
     familia_id = str(uuid4())
     token_hash = hash_refresh_token(refresh_token)
-    
-    # Calcular expiración
     expires_at = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_DAYS)
-    
-    # Primero intentar eliminar sesión existente con mismo ID (por si acaso)
-    # Luego insertar nueva
+
     delete_query = "DELETE FROM Sesiones WHERE SesionID = %s"
     insert_query = """
         INSERT INTO Sesiones (
@@ -273,78 +332,77 @@ async def create_session(
             1, %s, %s, GETUTCDATE()
         )
     """
-    
+
     insert_params = (
-        session_id, user_id, user_type, token_hash, familia_id,
-        expires_at,  # Pasar datetime directamente, el driver lo convertirá
+        session_id, canonical_user_id, user_type, token_hash, familia_id,
+        expires_at,
         ip_address[:45] if ip_address else None,
         user_agent[:500] if user_agent else None
     )
-    
+
     try:
-        # Primero eliminar si existe (evitar error de clave duplicada)
         try:
             await _execute_sql_async(delete_query, (session_id,))
         except Exception:
-            pass  # Ignorar si no existe
-        
-        # Insertar nueva sesión
+            pass
+
         await _execute_sql_async(insert_query, insert_params)
-        
-        # Registrar en histórico
+
         await _log_session_action(
             session_id=session_id,
-            user_id=user_id,
+            user_id=canonical_user_id,
             user_type=user_type,
             action="login",
             ip_address=ip_address,
             user_agent=user_agent
         )
-        
-        logger.info(f"Sesión creada para usuario {user_id}, session_id={session_id[:8]}...")
-        
+
+        logger.info(f"Sesión creada para usuario {canonical_user_id}, session_id={session_id[:8]}...")
+
         return {
             "session_id": session_id,
             "familia_id": familia_id,
             "expires_at": expires_at.isoformat()
         }
-        
+
     except Exception as e:
         logger.error(f"Error creando sesión: {e}")
         raise
 
 
-async def validate_and_get_session(refresh_token: str) -> Optional[Dict[str, Any]]:
+async def validate_and_get_session(
+    refresh_token: str,
+    expected_user_type: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
     """
-    Valida un refresh token y retorna la sesión si es válida.
-    
-    Args:
-        refresh_token: Token a validar
-        
-    Returns:
-        Dict con datos de sesión o None si inválido
+    Valida un refresh token y retorna la sesion si es valida.
     """
     token_hash = hash_refresh_token(refresh_token)
-    
+
     query = """
-        SELECT 
+        SELECT
             SesionID, UsuarioID, TipoUsuario, FamiliaTokenID,
             FechaCreacion, FechaExpiracion, UltimaActividad,
             IPCliente, UserAgent
         FROM Sesiones
-        WHERE 
+        WHERE
             RefreshTokenHash = %s
             AND EstaActiva = 1
             AND FechaExpiracion > GETUTCDATE()
+            AND FechaRevocacion IS NULL
     """
-    
+    params = [token_hash]
+    if expected_user_type:
+        query += """
+            AND LOWER(LTRIM(RTRIM(ISNULL(TipoUsuario, '')))) =
+                LOWER(LTRIM(RTRIM(%s)))
+        """
+        params.append(expected_user_type)
+
     try:
-        result = await _execute_sql_async(query, (token_hash,), fetch_one=True)
-        
+        result = await _execute_sql_async(query, tuple(params), fetch_one=True)
+
         if result:
-            # SQL puede devolver datetimes como objetos datetime o como str
-            # (según el driver/path). Normalizar defensivamente para no crashear
-            # en .isoformat() (bug AUTH-REFRESH-500).
             def _iso(v):
                 if v is None:
                     return None
@@ -361,61 +419,71 @@ async def validate_and_get_session(refresh_token: str) -> Optional[Dict[str, Any
                 "ip_address": result[7],
                 "user_agent": result[8]
             }
-        
+
         return None
-        
+
     except Exception as e:
         logger.error(f"Error validando sesión: {e}")
         raise
 
 
-async def rotate_refresh_token(
+def _execute_atomic_rotation_sync(
+    *,
     old_session_id: str,
+    new_session_id: str,
     familia_id: str,
-    user_id: int,
-    new_refresh_token: str,
-    ip_address: Optional[str] = None,
-    user_agent: Optional[str] = None,
-    user_type: str = "interno"
-) -> Dict[str, Any]:
+    user_id: str,
+    new_token_hash: str,
+    old_token_hash: Optional[str],
+    expires_at_str: str,
+    ip_address: Optional[str],
+    user_agent: Optional[str],
+    user_type: str,
+) -> bool:
     """
-    Rota el refresh token: invalida el anterior y crea uno nuevo.
-    
-    Este es el mecanismo principal de seguridad:
-    - El token anterior queda inválido inmediatamente
-    - Si alguien intenta usar el token anterior, se detecta como replay
-    
-    Args:
-        old_session_id: ID de la sesión a invalidar
-        familia_id: ID de familia (se mantiene para detección de replay)
-        user_id: ID del usuario
-        new_refresh_token: Nuevo token generado
-        ip_address: IP actual
-        user_agent: User-Agent actual
-        user_type: Tipo de usuario
-        
-    Returns:
-        Dict con nueva session_id y expires_at
+    Ejecuta UPDATE (con UPDLOCK, HOLDLOCK y validacion rowcount==1) + INSERT
+    dentro de una unica transaccion SQL Server para evitar rotacion concurrente duplicada.
     """
-    new_session_id = str(uuid4())
-    new_token_hash = hash_refresh_token(new_refresh_token)
-    expires_at = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_DAYS)
-    
+    conn = _open_session_tx_connection()
     try:
-        # 1. Invalidar sesión anterior
-        query_invalidate = """
-            UPDATE Sesiones
-            SET 
-                EstaActiva = 0,
-                FechaRevocacion = GETUTCDATE(),
-                MotivoRevocacion = 'token_rotated',
-                ReemplazadaPorSesionID = %s,
-                FechaModificacion = GETUTCDATE()
-            WHERE SesionID = %s AND EstaActiva = 1
-        """
-        await _execute_sql_async(query_invalidate, (new_session_id, old_session_id))
-        
-        # 2. Crear nueva sesión (misma familia)
+        cur = conn.cursor()
+        if old_token_hash:
+            query_invalidate = """
+                UPDATE Sesiones WITH (UPDLOCK, HOLDLOCK)
+                SET
+                    EstaActiva = 0,
+                    FechaRevocacion = GETUTCDATE(),
+                    MotivoRevocacion = 'token_rotated',
+                    ReemplazadaPorSesionID = %s,
+                    FechaModificacion = GETUTCDATE()
+                WHERE SesionID = %s
+                  AND RefreshTokenHash = %s
+                  AND EstaActiva = 1
+                  AND FechaExpiracion > GETUTCDATE()
+                  AND FechaRevocacion IS NULL
+            """
+            inv_params = (new_session_id, old_session_id, old_token_hash)
+        else:
+            query_invalidate = """
+                UPDATE Sesiones WITH (UPDLOCK, HOLDLOCK)
+                SET
+                    EstaActiva = 0,
+                    FechaRevocacion = GETUTCDATE(),
+                    MotivoRevocacion = 'token_rotated',
+                    ReemplazadaPorSesionID = %s,
+                    FechaModificacion = GETUTCDATE()
+                WHERE SesionID = %s
+                  AND EstaActiva = 1
+                  AND FechaExpiracion > GETUTCDATE()
+                  AND FechaRevocacion IS NULL
+            """
+            inv_params = (new_session_id, old_session_id)
+
+        cur.execute(query_invalidate, inv_params)
+        if cur.rowcount != 1:
+            conn.rollback()
+            return False
+
         query_insert = """
             INSERT INTO Sesiones (
                 SesionID, UsuarioID, TipoUsuario, RefreshTokenHash, FamiliaTokenID,
@@ -427,34 +495,113 @@ async def rotate_refresh_token(
                 1, %s, %s, GETUTCDATE()
             )
         """
-        
-        params = (
-            new_session_id, user_id, user_type, new_token_hash, familia_id,
-            expires_at.strftime('%Y-%m-%d %H:%M:%S'),
+        ins_params = (
+            new_session_id,
+            user_id,
+            user_type,
+            new_token_hash,
+            familia_id,
+            expires_at_str,
             ip_address[:45] if ip_address else None,
-            user_agent[:500] if user_agent else None
+            user_agent[:500] if user_agent else None,
         )
-        
-        await _execute_sql_async(query_insert, params)
-        
-        # 3. Registrar en histórico
+        cur.execute(query_insert, ins_params)
+        conn.commit()
+        return True
+    except Exception:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        raise
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+async def rotate_refresh_token(
+    old_session_id: str,
+    familia_id: str,
+    user_id: Any,
+    new_refresh_token: str,
+    ip_address: Optional[str] = None,
+    user_agent: Optional[str] = None,
+    user_type: str = "interno",
+    old_refresh_token: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Rota el refresh token de forma atomica (una sola transaccion SQL con UPDLOCK, HOLDLOCK).
+
+    Si otro request concurrente ya roto o revoco la sesion (rowcount != 1):
+    - Revoca la familia completa de tokens (fail-closed)
+    - Lanza RefreshTokenReuseError para rechazar con HTTP 401
+    """
+    import asyncio
+
+    candidates = _normalize_user_id_candidates(user_id)
+    if not candidates:
+        raise ValueError("INVALID_USER_ID_FOR_ROTATION")
+    canonical_user_id = candidates[0]
+
+    new_session_id = str(uuid4())
+    new_token_hash = hash_refresh_token(new_refresh_token)
+    old_token_hash = hash_refresh_token(old_refresh_token) if old_refresh_token else None
+    expires_at = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_DAYS)
+
+    try:
+        rotated = await asyncio.to_thread(
+            _execute_atomic_rotation_sync,
+            old_session_id=old_session_id,
+            new_session_id=new_session_id,
+            familia_id=familia_id,
+            user_id=canonical_user_id,
+            new_token_hash=new_token_hash,
+            old_token_hash=old_token_hash,
+            expires_at_str=expires_at.strftime('%Y-%m-%d %H:%M:%S'),
+            ip_address=ip_address,
+            user_agent=user_agent,
+            user_type=user_type,
+        )
+
+        if not rotated:
+            logger.warning(
+                f"ROTACION CONCURRENTE / REPLAY DETECTADO para usuario {canonical_user_id}, "
+                f"sesion {str(old_session_id)[:8]}..., familia {str(familia_id)[:8]}..."
+            )
+            try:
+                await revoke_session_family(
+                    familia_id=familia_id,
+                    user_id=canonical_user_id,
+                    reason="replay_detected",
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                )
+            except Exception as rev_exc:
+                logger.error(f"Error revocando familia tras replay concurrente: {rev_exc}")
+            raise RefreshTokenReuseError("Refresh token ya fue utilizado o revocado")
+
         await _log_session_action(
             session_id=new_session_id,
-            user_id=user_id,
+            user_id=canonical_user_id,
             user_type=user_type,
             action="refresh",
             ip_address=ip_address,
             user_agent=user_agent,
             details={"previous_session": old_session_id}
         )
-        
-        logger.info(f"Token rotado para usuario {user_id}: {old_session_id[:8]}... -> {new_session_id[:8]}...")
-        
+
+        logger.info(f"Token rotado atomicamente para usuario {canonical_user_id}: {old_session_id[:8]}... -> {new_session_id[:8]}...")
+
         return {
             "session_id": new_session_id,
+            "familia_id": familia_id,
             "expires_at": expires_at.isoformat()
         }
-        
+
+    except RefreshTokenReuseError:
+        raise
     except Exception as e:
         logger.error(f"Error rotando token: {e}")
         raise
@@ -463,49 +610,36 @@ async def rotate_refresh_token(
 async def detect_and_handle_replay(
     refresh_token: str,
     ip_address: Optional[str] = None,
-    user_agent: Optional[str] = None
+    user_agent: Optional[str] = None,
+    expected_user_type: Optional[str] = None,
 ) -> Tuple[bool, Optional[Dict]]:
     """
-    Detecta si un refresh token es un intento de replay.
-    
-    Un replay ocurre cuando:
-    - El token ya fue rotado (existe en BD pero está inactivo)
-    - El atacante intenta usar el token robado después de que la víctima lo rotó
-    
-    Si se detecta replay:
-    - Se revoca TODA la familia de tokens
-    - Tanto atacante como víctima quedan deslogueados
-    - Se registra el evento de seguridad
-    
-    Args:
-        refresh_token: Token a verificar
-        ip_address: IP del request
-        user_agent: User-Agent del request
-        
-    Returns:
-        Tuple (is_replay, session_info)
-        - is_replay: True si es un intento de replay
-        - session_info: Info de la sesión afectada (para logging)
+    Detecta si un refresh token es un intento de replay y revoca la familia completa.
     """
     token_hash = hash_refresh_token(refresh_token)
-    
-    # Buscar si el token existió pero está inactivo (fue rotado)
+
     query = """
-        SELECT 
+        SELECT
             SesionID, UsuarioID, TipoUsuario, FamiliaTokenID,
             MotivoRevocacion, ReemplazadaPorSesionID
         FROM Sesiones
-        WHERE 
+        WHERE
             RefreshTokenHash = %s
             AND EstaActiva = 0
             AND MotivoRevocacion = 'token_rotated'
     """
-    
+    params = [token_hash]
+    if expected_user_type:
+        query += """
+            AND LOWER(LTRIM(RTRIM(ISNULL(TipoUsuario, '')))) =
+                LOWER(LTRIM(RTRIM(%s)))
+        """
+        params.append(expected_user_type)
+
     try:
-        result = await _execute_sql_async(query, (token_hash,), fetch_one=True)
-        
+        result = await _execute_sql_async(query, tuple(params), fetch_one=True)
+
         if result:
-            # ¡REPLAY DETECTADO!
             session_info = {
                 "session_id": str(result[0]),
                 "user_id": result[1],
@@ -513,10 +647,9 @@ async def detect_and_handle_replay(
                 "familia_id": str(result[3]),
                 "replaced_by": str(result[5]) if result[5] else None
             }
-            
+
             logger.warning(f"REPLAY DETECTADO para usuario {session_info['user_id']}, familia {session_info['familia_id'][:8]}...")
-            
-            # Revocar toda la familia
+
             await revoke_session_family(
                 familia_id=session_info["familia_id"],
                 user_id=session_info["user_id"],
@@ -524,11 +657,11 @@ async def detect_and_handle_replay(
                 ip_address=ip_address,
                 user_agent=user_agent
             )
-            
+
             return True, session_info
-        
+
         return False, None
-        
+
     except Exception as e:
         logger.error(f"Error detectando replay: {e}")
         raise
@@ -537,42 +670,31 @@ async def detect_and_handle_replay(
 async def revoke_session(
     session_id: str,
     reason: str = "logout",
-    revoked_by_user_id: Optional[int] = None,
+    revoked_by_user_id: Optional[Any] = None,
     ip_address: Optional[str] = None,
     user_agent: Optional[str] = None
 ) -> bool:
     """
-    Revoca una sesión específica.
-    
-    Args:
-        session_id: ID de la sesión a revocar
-        reason: Motivo ('logout', 'admin_revoked', 'security', etc.)
-        revoked_by_user_id: ID del usuario que revoca (si es admin)
-        ip_address: IP del request
-        user_agent: User-Agent del request
-        
-    Returns:
-        True si se revocó, False si no existía o ya estaba revocada
+    Revoca una sesion especifica en dbo.Sesiones.
     """
-    # Obtener info de la sesión antes de revocar
     query_get = """
         SELECT UsuarioID, TipoUsuario
         FROM Sesiones
         WHERE SesionID = %s AND EstaActiva = 1
     """
-    
+
     try:
         session_info = await _execute_sql_async(query_get, (session_id,), fetch_one=True)
-        
+
         if not session_info:
             return False
-        
+
         user_id, user_type = session_info
-        
-        # Revocar
+        revoked_by_str = str(revoked_by_user_id).strip() if revoked_by_user_id is not None else None
+
         query_revoke = """
-            UPDATE Sesiones
-            SET 
+            UPDATE Sesiones WITH (UPDLOCK, HOLDLOCK)
+            SET
                 EstaActiva = 0,
                 FechaRevocacion = GETUTCDATE(),
                 MotivoRevocacion = %s,
@@ -580,10 +702,9 @@ async def revoke_session(
                 FechaModificacion = GETUTCDATE()
             WHERE SesionID = %s AND EstaActiva = 1
         """
-        
-        await _execute_sql_async(query_revoke, (reason, revoked_by_user_id, session_id))
-        
-        # Registrar en histórico
+
+        await _execute_sql_async(query_revoke, (reason, revoked_by_str, session_id))
+
         await _log_session_action(
             session_id=session_id,
             user_id=user_id,
@@ -591,13 +712,13 @@ async def revoke_session(
             action=reason,
             ip_address=ip_address,
             user_agent=user_agent,
-            performed_by=revoked_by_user_id
+            performed_by=revoked_by_str
         )
-        
+
         logger.info(f"Sesión {session_id[:8]}... revocada. Motivo: {reason}")
-        
+
         return True
-        
+
     except Exception as e:
         logger.error(f"Error revocando sesión: {e}")
         raise
@@ -605,205 +726,190 @@ async def revoke_session(
 
 async def revoke_session_family(
     familia_id: str,
-    user_id: int,
+    user_id: Any,
     reason: str = "security",
     ip_address: Optional[str] = None,
     user_agent: Optional[str] = None
 ) -> int:
     """
-    Revoca TODAS las sesiones de una familia.
-    
-    Se usa cuando se detecta replay attack.
-    
-    Args:
-        familia_id: ID de la familia de tokens
-        user_id: ID del usuario
-        reason: Motivo de revocación
-        ip_address: IP del request
-        user_agent: User-Agent del request
-        
-    Returns:
-        Número de sesiones revocadas
+    Revoca TODAS las sesiones activas de una familia de tokens.
     """
-    # Obtener todas las sesiones de la familia antes de revocar
     query_get = """
         SELECT SesionID, TipoUsuario
         FROM Sesiones
         WHERE FamiliaTokenID = %s AND EstaActiva = 1
     """
-    
+
     try:
         sessions = await _execute_sql_async(query_get, (familia_id,), fetch_all=True)
-        
+
         if not sessions:
             return 0
-        
-        # Revocar todas
+
         query_revoke = """
-            UPDATE Sesiones
-            SET 
+            UPDATE Sesiones WITH (UPDLOCK, HOLDLOCK)
+            SET
                 EstaActiva = 0,
                 FechaRevocacion = GETUTCDATE(),
                 MotivoRevocacion = %s,
                 FechaModificacion = GETUTCDATE()
             WHERE FamiliaTokenID = %s AND EstaActiva = 1
         """
-        
+
         await _execute_sql_async(query_revoke, (reason, familia_id))
-        
-        # Registrar cada sesión en histórico
+
         for session in sessions:
             session_id, user_type = session
             await _log_session_action(
                 session_id=str(session_id),
-                user_id=user_id,
+                user_id=str(user_id),
                 user_type=user_type,
                 action=reason,
                 ip_address=ip_address,
                 user_agent=user_agent,
                 details={"familia_id": familia_id, "batch_revocation": True}
             )
-        
+
         logger.warning(f"Familia {familia_id[:8]}... revocada ({len(sessions)} sesiones). Motivo: {reason}")
-        
+
         return len(sessions)
-        
+
     except Exception as e:
         logger.error(f"Error revocando familia: {e}")
         raise
 
 
 async def revoke_all_user_sessions(
-    user_id: int,
+    user_id: Any,
     reason: str = "logout_all",
     except_session_id: Optional[str] = None,
-    revoked_by_user_id: Optional[int] = None,
+    revoked_by_user_id: Optional[Any] = None,
     ip_address: Optional[str] = None,
-    user_agent: Optional[str] = None
+    user_agent: Optional[str] = None,
+    expected_user_type: Optional[str] = None,
 ) -> int:
     """
-    Revoca TODAS las sesiones activas de un usuario.
-    
-    Args:
-        user_id: ID del usuario
-        reason: Motivo de revocación
-        except_session_id: Sesión a excluir (opcional, para logout de otras)
-        revoked_by_user_id: Quién revoca (si es admin)
-        ip_address: IP del request
-        user_agent: User-Agent del request
-        
-    Returns:
-        Número de sesiones revocadas
+    Revoca TODAS las sesiones activas de un usuario por sus identificadores canonicos
+    (PublicUUID, UsuarioID o alias en dbo.Sesiones.UsuarioID), sin hash() inseguro.
     """
-    # Construir query con o sin excepción
+    candidates = _normalize_user_id_candidates(user_id)
+    if not candidates:
+        raise ValueError("USER_ID_REQUIRED_FOR_SESSION_REVOCATION")
+
+    placeholders = ", ".join(["%s"] * len(candidates))
+    where_clauses = [
+        f"CAST(UsuarioID AS VARCHAR(100)) IN ({placeholders})",
+        "EstaActiva = 1",
+    ]
+    filter_params: list[Any] = list(candidates)
+
+    if expected_user_type:
+        where_clauses.append(
+            "LOWER(LTRIM(RTRIM(ISNULL(TipoUsuario, '')))) = LOWER(LTRIM(RTRIM(%s)))"
+        )
+        filter_params.append(expected_user_type)
+
     if except_session_id:
-        query_get = """
-            SELECT SesionID, TipoUsuario
-            FROM Sesiones
-            WHERE UsuarioID = %s AND EstaActiva = 1 AND SesionID != %s
-        """
-        params_get = (user_id, except_session_id)
-    else:
-        query_get = """
-            SELECT SesionID, TipoUsuario
-            FROM Sesiones
-            WHERE UsuarioID = %s AND EstaActiva = 1
-        """
-        params_get = (user_id,)
-    
+        where_clauses.append("SesionID != %s")
+        filter_params.append(except_session_id)
+
+    where_sql = " AND ".join(where_clauses)
+    query_get = f"""
+        SELECT SesionID, TipoUsuario, UsuarioID
+        FROM Sesiones
+        WHERE {where_sql}
+    """
+
     try:
-        sessions = await _execute_sql_async(query_get, params_get, fetch_all=True)
-        
+        sessions = await _execute_sql_async(query_get, tuple(filter_params), fetch_all=True)
+
         if not sessions:
             return 0
-        
-        # Revocar todas
-        if except_session_id:
-            query_revoke = """
-                UPDATE Sesiones
-                SET 
-                    EstaActiva = 0,
-                    FechaRevocacion = GETUTCDATE(),
-                    MotivoRevocacion = %s,
-                    RevocadoPorUsuarioID = %s,
-                    FechaModificacion = GETUTCDATE()
-                WHERE UsuarioID = %s AND EstaActiva = 1 AND SesionID != %s
-            """
-            params_revoke = (reason, revoked_by_user_id, user_id, except_session_id)
-        else:
-            query_revoke = """
-                UPDATE Sesiones
-                SET 
-                    EstaActiva = 0,
-                    FechaRevocacion = GETUTCDATE(),
-                    MotivoRevocacion = %s,
-                    RevocadoPorUsuarioID = %s,
-                    FechaModificacion = GETUTCDATE()
-                WHERE UsuarioID = %s AND EstaActiva = 1
-            """
-            params_revoke = (reason, revoked_by_user_id, user_id)
-        
+
+        revoked_by_str = str(revoked_by_user_id).strip() if revoked_by_user_id is not None else None
+        query_revoke = f"""
+            UPDATE Sesiones WITH (UPDLOCK, HOLDLOCK)
+            SET
+                EstaActiva = 0,
+                FechaRevocacion = GETUTCDATE(),
+                MotivoRevocacion = %s,
+                RevocadoPorUsuarioID = %s,
+                FechaModificacion = GETUTCDATE()
+            WHERE {where_sql}
+        """
+        params_revoke = tuple([reason, revoked_by_str] + filter_params)
         await _execute_sql_async(query_revoke, params_revoke)
-        
-        # Registrar en histórico
+
         for session in sessions:
-            session_id, user_type = session
+            session_id = session[0]
+            user_type = session[1]
+            stored_uid = session[2] if len(session) > 2 else candidates[0]
             await _log_session_action(
                 session_id=str(session_id),
-                user_id=user_id,
+                user_id=str(stored_uid),
                 user_type=user_type,
                 action=reason,
                 ip_address=ip_address,
                 user_agent=user_agent,
-                performed_by=revoked_by_user_id
+                performed_by=revoked_by_str
             )
-        
-        logger.info(f"Revocadas {len(sessions)} sesiones del usuario {user_id}. Motivo: {reason}")
-        
+
+        logger.info(f"Revocadas {len(sessions)} sesiones del usuario {candidates[0]}. Motivo: {reason}")
+
         return len(sessions)
-        
+
     except Exception as e:
         logger.error(f"Error revocando sesiones del usuario: {e}")
         raise
 
 
-async def get_user_active_sessions(user_id: int) -> list:
+async def get_user_active_sessions(user_id: Any, expected_user_type: Optional[str] = None) -> list:
     """
-    Obtiene todas las sesiones activas de un usuario.
-    
-    Útil para mostrar al usuario dónde tiene sesiones abiertas.
-    
-    Args:
-        user_id: ID del usuario
-        
-    Returns:
-        Lista de sesiones activas
+    Obtiene todas las sesiones activas de un usuario por sus identificadores canonicos.
     """
-    query = """
-        SELECT 
+    candidates = _normalize_user_id_candidates(user_id)
+    if not candidates:
+        return []
+
+    placeholders = ", ".join(["%s"] * len(candidates))
+    where_clauses = [
+        f"CAST(UsuarioID AS VARCHAR(100)) IN ({placeholders})",
+        "EstaActiva = 1",
+        "FechaExpiracion > GETUTCDATE()",
+        "FechaRevocacion IS NULL",
+    ]
+    params: list[Any] = list(candidates)
+    if expected_user_type:
+        where_clauses.append(
+            "LOWER(LTRIM(RTRIM(ISNULL(TipoUsuario, '')))) = LOWER(LTRIM(RTRIM(%s)))"
+        )
+        params.append(expected_user_type)
+
+    query = f"""
+        SELECT
             SesionID, FechaCreacion, FechaExpiracion, UltimaActividad,
             IPCliente, UserAgent
         FROM Sesiones
-        WHERE UsuarioID = %s AND EstaActiva = 1
+        WHERE {" AND ".join(where_clauses)}
         ORDER BY UltimaActividad DESC
     """
-    
+
     try:
-        results = await _execute_sql_async(query, (user_id,), fetch_all=True)
-        
+        results = await _execute_sql_async(query, tuple(params), fetch_all=True)
+
         sessions = []
         for row in results or []:
             sessions.append({
                 "session_id": str(row[0]),
-                "created_at": row[1].isoformat() if row[1] else None,
-                "expires_at": row[2].isoformat() if row[2] else None,
-                "last_activity": row[3].isoformat() if row[3] else None,
+                "created_at": row[1].isoformat() if hasattr(row[1], "isoformat") else (str(row[1]) if row[1] else None),
+                "expires_at": row[2].isoformat() if hasattr(row[2], "isoformat") else (str(row[2]) if row[2] else None),
+                "last_activity": row[3].isoformat() if hasattr(row[3], "isoformat") else (str(row[3]) if row[3] else None),
                 "ip_address": row[4],
                 "user_agent": row[5]
             })
-        
+
         return sessions
-        
+
     except Exception as e:
         logger.error(f"Error obteniendo sesiones del usuario: {e}")
         raise

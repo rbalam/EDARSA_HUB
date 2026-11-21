@@ -1,0 +1,9 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Re-wake the same R24F READ_ONLY / DESIGN-CONTRACT job after Development runtime reload marker commit 9a16593122f90c988885c2cc1c24eadbac726beb. Previous wake attempts failed with HTTP 404 on /api/internal/worker/wake. Do not create R24F-R2. Do not implement R24F. Do not touch SQL, Production, Scheduler, NetPay, RBAC/permissions, menu/layout transversal, frontend functionality, backend business functionality or database migrations.",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-DESIGN-CONTRACT-READONLY-R1-20260918",
+  "queue_sha": "f0726ae2bb8efdbfd6de79e5648707ae890bf774",
+  "development_reload_marker_sha": "9a16593122f90c988885c2cc1c24eadbac726beb",
+  "previous_failure": "http=404 convergence=FAILED detail=http_404",
+  "production_touched": false
+}

@@ -86,7 +86,8 @@ export default function PortalInteligenciaApp() {
     if (authEstado !== 'OK') return;
     (async () => {
       try {
-        const res = await intelApi.get('/inteligencia/unidades');
+        const client = esExterno ? intelApi : api;
+        const res = await client.get('/inteligencia/unidades');
         const lista = res.data?.unidades || [];
         setUnidades(lista);
         // Externo: no existe vista consolidada; pre-seleccionar su primera unidad.
@@ -102,7 +103,7 @@ export default function PortalInteligenciaApp() {
     // 1) Usuario interno del CRM
     if (getToken()) {
       try {
-        const res = await intelApi.get('/auth/me');
+        const res = await api.get('/auth/me');
         setUser(res.data);
         setEsExterno(false);
         setAuthEstado('OK');

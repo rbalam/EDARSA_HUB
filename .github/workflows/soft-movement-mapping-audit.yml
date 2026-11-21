@@ -1,0 +1,201 @@
+name: SoftRestaurant Movement Mapping Audit
+
+on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - ".github/workflows/soft-movement-mapping-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "HRLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+      SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install audit runtime
+        run: python -m pip install --quiet pymssql cryptography
+
+      - name: Audit unresolved SoftRestaurant movement products
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import pymssql
+          from cryptography.fernet import Fernet
+
+          HUB_CFG = dict(
+              server=os.environ["EDARSAHUB_SQL_HOST"],
+              port=int(os.environ["EDARSAHUB_SQL_PORT"]),
+              database=os.environ["EDARSAHUB_SQL_DATABASE"],
+              user=os.environ["EDARSAHUB_SQL_USER"],
+              password=os.environ["EDARSAHUB_SQL_PASSWORD"],
+              login_timeout=15,
+              timeout=30,
+              as_dict=True,
+          )
+
+          hub = pymssql.connect(**HUB_CFG)
+          cur = hub.cursor(as_dict=True)
+          cur.execute("""
+              SELECT
+                  s.id AS server_id,
+                  s.host,
+                  ISNULL(s.port,1433) AS port,
+                  s.database_name,
+                  s.username,
+                  s.password_encrypted,
+                  s.tipos_movimiento,
+                  s.system_type,
+                  u.codigo AS unidad_codigo
+              FROM dbo.Servidores_Conexiones s
+              INNER JOIN dbo.Unidades_Negocio u
+                  ON u.server_id=CAST(s.id AS nvarchar(36))
+                 AND ISNULL(u.activo,0)=1
+              WHERE ISNULL(s.activo,0)=1
+                AND UPPER(LTRIM(RTRIM(s.system_type))) IN (
+                    'SOFTRESTAURANT','SOFTRESTAURANT_PRO',
+                    'SOFTRESTAURANTPRO','SR'
+                )
+              ORDER BY u.codigo
+          """)
+          servers=cur.fetchall() or []
+
+          # Mapeos existentes por servidor/código fuente.
+          cur.execute("""
+              SELECT
+                  LOWER(ServerID) AS server_id,
+                  UPPER(LTRIM(RTRIM(CodigoFuente))) AS codigo_fuente,
+                  ProductoID,
+                  SystemType
+              FROM dbo.Producto_MapeoOrigen
+              WHERE Activo=1
+                AND UPPER(SystemType) IN (
+                    'SOFTRESTAURANT','SOFTRESTAURANT_PRO'
+                )
+          """)
+          mapped_rows=cur.fetchall() or []
+          cur.close()
+          hub.close()
+
+          mapped={
+              (str(r["server_id"]).lower(), str(r["codigo_fuente"]).upper())
+              for r in mapped_rows
+          }
+
+          fernet=Fernet(os.environ["SERVER_SECRET_KEY"].encode())
+
+          def decrypt(value):
+              value=str(value or "")
+              if value.startswith("enc:v1:"):
+                  return fernet.decrypt(value[len("enc:v1:"):].encode()).decode()
+              return value
+
+          def endpoint(row):
+              host=str(row.get("host") or "").strip()
+              port=int(row.get("port") or 1433)
+              if "\\" in host:
+                  host=host.split("\\",1)[0].strip()
+              if "," in host:
+                  hp,pp=host.rsplit(",",1)
+                  host=hp.strip()
+                  try:
+                      port=int(pp.strip())
+                  except ValueError:
+                      pass
+              return host,port
+
+          for server in servers:
+              sid=str(server["server_id"]).lower()
+              unit=str(server["unidad_codigo"])
+              try:
+                  selected_raw=server.get("tipos_movimiento")
+                  selected=(
+                      selected_raw
+                      if isinstance(selected_raw,list)
+                      else json.loads(selected_raw or "[]")
+                  )
+              except Exception:
+                  selected=[]
+              selected={str(x).strip().upper() for x in selected if str(x).strip()}
+
+              host,port=endpoint(server)
+              pos=pymssql.connect(
+                  server=host,
+                  port=port,
+                  database=str(server.get("database_name") or ""),
+                  user=str(server.get("username") or ""),
+                  password=decrypt(server.get("password_encrypted")),
+                  login_timeout=15,
+                  timeout=90,
+                  as_dict=True,
+              )
+              pc=pos.cursor(as_dict=True)
+              placeholders=",".join(["%s"]*len(selected)) if selected else "''"
+              params=tuple(sorted(selected))
+              pc.execute(f"""
+                  SELECT
+                      UPPER(RTRIM(LTRIM(idinsumo))) AS codigo_fuente,
+                      UPPER(RTRIM(LTRIM(idconcepto))) AS concepto,
+                      COUNT(*) AS registros,
+                      SUM(ABS(ISNULL(cantidad,0))) AS cantidad
+                  FROM movsinv
+                  WHERE fecha >= DATEADD(DAY,-30,GETDATE())
+                    AND NULLIF(RTRIM(LTRIM(idinsumo)),'') IS NOT NULL
+                    AND UPPER(RTRIM(LTRIM(idconcepto))) IN ({placeholders})
+                  GROUP BY
+                      UPPER(RTRIM(LTRIM(idinsumo))),
+                      UPPER(RTRIM(LTRIM(idconcepto)))
+              """, params)
+              rows=pc.fetchall() or []
+              pc.close()
+              pos.close()
+
+              unresolved={}
+              for row in rows:
+                  code=str(row.get("codigo_fuente") or "").strip().upper()
+                  if (sid,code) in mapped:
+                      continue
+                  item=unresolved.setdefault(code,{
+                      "codigo_fuente":code,
+                      "registros":0,
+                      "cantidad":0.0,
+                      "conceptos":set(),
+                  })
+                  item["registros"]+=int(row.get("registros") or 0)
+                  item["cantidad"]+=float(row.get("cantidad") or 0)
+                  item["conceptos"].add(str(row.get("concepto") or ""))
+
+              payload=[]
+              for item in unresolved.values():
+                  payload.append({
+                      **item,
+                      "conceptos":sorted(item["conceptos"]),
+                  })
+              payload.sort(key=lambda x:(-x["registros"],x["codigo_fuente"]))
+
+              print(
+                  f"SOFT_UNRESOLVED_PRODUCTS unit={unit} count={len(payload)} "
+                  + json.dumps(payload[:150],ensure_ascii=False)
+              )
+          PY

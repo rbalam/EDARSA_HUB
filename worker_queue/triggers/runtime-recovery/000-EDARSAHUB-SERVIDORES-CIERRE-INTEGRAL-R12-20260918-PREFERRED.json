@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Apply mandatory preferred-job protocol for existing SERVIDORES job 000-EDARSAHUB-SERVIDORES-CIERRE-INTEGRAL-R12-20260918. Preserve active work, register this job as next preferred, and do not touch Production.",
+  "existing_job_id": "000-EDARSAHUB-SERVIDORES-CIERRE-INTEGRAL-R12-20260918",
+  "production_touched": false
+}

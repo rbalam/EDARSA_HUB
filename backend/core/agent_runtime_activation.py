@@ -14,6 +14,7 @@ class RuntimeEnvironment(str, Enum):
 
 class RuntimeActivationMode(str, Enum):
     DRY_RUN = 'dry_run'
+    LOCAL_EXECUTE = 'local_execute'
     EXECUTE = 'execute'
 
 
@@ -43,7 +44,7 @@ def authorize_runtime_activation(
         reasons.extend(execution_gate.reasons)
     if activation.environment is RuntimeEnvironment.PRODUCTION:
         reasons.append('RUNTIME_PRODUCTION_FORBIDDEN')
-    if activation.mode is not RuntimeActivationMode.DRY_RUN:
+    if activation.mode is RuntimeActivationMode.EXECUTE:
         reasons.append('RUNTIME_EXECUTION_NOT_ENABLED')
     if activation.external_execution_enabled:
         reasons.append('RUNTIME_EXTERNAL_EXECUTION_DISABLED')
@@ -61,5 +62,5 @@ def authorize_runtime_activation(
         allowed=True,
         reasons=(),
         execution_gate=execution_gate,
-        ready_for_executor=False,
+        ready_for_executor=(activation.mode is RuntimeActivationMode.LOCAL_EXECUTE),
     )

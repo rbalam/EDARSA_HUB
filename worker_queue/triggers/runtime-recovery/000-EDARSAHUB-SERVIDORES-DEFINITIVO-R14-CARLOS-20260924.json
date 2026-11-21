@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Prioridad inmediata para correccion definitiva SERVIDORES 000-EDARSAHUB-SERVIDORES-DEFINITIVO-R14-CARLOS-20260924. Consumir este job como siguiente preferente y no tocar Produccion.",
+  "existing_job_id": "000-EDARSAHUB-SERVIDORES-DEFINITIVO-R14-CARLOS-20260924",
+  "production_touched": false
+}

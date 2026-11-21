@@ -1,0 +1,7 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "SEM-RRHH_CUSTODIA-WORKER_RESULT_DETAIL_READ-43AAE68504C3CDA26469",
+  "preferred_job_id": "SEM-RRHH_CUSTODIA-WORKER_RESULT_DETAIL_READ-43AAE68504C3CDA26469",
+  "reason": "RRHH Custodia Gate3B: wake canonical Universal Worker to consume the already-submitted semantic READ_ONLY detail-read job. Preserve original job_id and payload, do not clone or modify it, do not interrupt active work, fail closed on unsafe runtime state, and do not touch Production.",
+  "production_touched": false
+}

@@ -151,16 +151,24 @@ def _detail_coverage(unidad_codigo: str, desde: str, hasta_exclusivo: str):
               AND (ISNULL(ventas_total,0) <> 0 OR ISNULL(tickets_total,0) <> 0 OR ISNULL(pax_total,0) <> 0)
             GROUP BY CAST(fecha_operacion AS date)
         ),
-        detalle AS (
+        detalle_ticket AS (
             SELECT CAST(fecha_operacion AS date) AS fecha_operacion,
-                   SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) AS ventas_detalle,
-                   COUNT(DISTINCT id_transaccion) AS tickets_detalle,
-                   SUM(CAST(ISNULL(pax,0) AS bigint)) AS pax_detalle
+                   numero_ticket,
+                   SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) AS ventas_ticket,
+                   MAX(CAST(ISNULL(pax,0) AS bigint)) AS pax_ticket
             FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
             WHERE unidad_negocio_id = %s
               AND fecha_operacion >= %s AND fecha_operacion < %s
               AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
-            GROUP BY CAST(fecha_operacion AS date)
+            GROUP BY CAST(fecha_operacion AS date), numero_ticket
+        ),
+        detalle AS (
+            SELECT fecha_operacion,
+                   SUM(ventas_ticket) AS ventas_detalle,
+                   COUNT(*) AS tickets_detalle,
+                   SUM(pax_ticket) AS pax_detalle
+            FROM detalle_ticket
+            GROUP BY fecha_operacion
         )
         SELECT r.fecha_operacion, r.ventas_runtime, r.tickets_runtime, r.pax_runtime,
                d.fecha_operacion AS detalle_fecha,
@@ -396,16 +404,35 @@ async def ventas_periodos_productos(unidad: str = Query(...), periodo: str = Que
         FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
         WHERE unidad_negocio_id = %s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
           AND {pexpr} = %s
+          AND producto_codigo_fuente NOT LIKE '__ISCAM_AJUSTE_%'
         GROUP BY producto_codigo_fuente
         ORDER BY importe DESC
         """,
         (str(unidad_pk), periodo),
     )
+    resumen_rows = _q(
+        f"""
+        SELECT
+            SUM(CASE WHEN producto_codigo_fuente NOT LIKE '__ISCAM_AJUSTE_%' THEN ISNULL(importe_neto,0) ELSE 0 END) AS venta_productos,
+            SUM(CASE WHEN producto_codigo_fuente LIKE '__ISCAM_AJUSTE_%' THEN ISNULL(importe_neto,0) ELSE 0 END) AS ajustes_cheque,
+            SUM(ISNULL(importe_neto,0)) AS venta_neta
+        FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
+        WHERE unidad_negocio_id = %s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
+          AND {pexpr} = %s
+        """,
+        (str(unidad_pk), periodo),
+    )
+    resumen = resumen_rows[0] if resumen_rows else {}
     return {"success": True, "source": "Comercial_Inteligencia_VentasDetalleProducto",
             "unidad": unidad, "periodo": periodo,
             "productos": [{"codigo": r["codigo"], "producto": r["producto"],
                            "cantidad": _f(r["cantidad"]), "importe": round(_f(r["importe"]), 2),
-                           "tickets": int(r["tickets"] or 0)} for r in rows]}
+                           "tickets": int(r["tickets"] or 0)} for r in rows],
+            "resumen_conciliacion": {
+                "venta_productos": round(_f(resumen.get("venta_productos")), 2),
+                "ajustes_cheque": round(_f(resumen.get("ajustes_cheque")), 2),
+                "venta_neta": round(_f(resumen.get("venta_neta")), 2),
+            }}
 
 
 @iscam_router.get("/ventas-periodos/tickets")
@@ -425,7 +452,9 @@ async def ventas_periodos_tickets(unidad: str = Query(...), periodo: str = Query
         ),
         tickets AS (
             SELECT id_transaccion, numero_ticket, MIN(fecha_hora) AS fecha,
-                   SUM(ISNULL(importe_neto,0)) AS importe_ticket, MAX(ISNULL(pax,0)) AS personas
+                   SUM(ISNULL(importe_neto,0)) AS importe_ticket,
+                   SUM(CASE WHEN producto_codigo_fuente LIKE '__ISCAM_AJUSTE_%' THEN ISNULL(importe_neto,0) ELSE 0 END) AS ajustes_cheque,
+                   MAX(ISNULL(pax,0)) AS personas
             FROM base
             GROUP BY id_transaccion, numero_ticket
         ),
@@ -436,7 +465,7 @@ async def ventas_periodos_tickets(unidad: str = Query(...), periodo: str = Query
             WHERE producto_codigo_fuente = %s
             GROUP BY id_transaccion, numero_ticket
         )
-        SELECT t.numero_ticket AS folio, t.fecha, t.importe_ticket, t.personas,
+        SELECT t.numero_ticket AS folio, t.fecha, t.importe_ticket, t.ajustes_cheque, t.personas,
                p.cantidad, p.importe_producto
         FROM tickets t
         INNER JOIN producto_ticket p ON p.id_transaccion=t.id_transaccion AND p.numero_ticket=t.numero_ticket
@@ -447,7 +476,9 @@ async def ventas_periodos_tickets(unidad: str = Query(...), periodo: str = Query
     return {"success": True, "source": "Comercial_Inteligencia_VentasDetalleProducto",
             "tickets": [{
         "folio": r["folio"], "fecha": _iso(r["fecha"]),
-        "importe_ticket": round(_f(r["importe_ticket"]), 2), "personas": int(r["personas"] or 0),
+        "importe_ticket": round(_f(r["importe_ticket"]), 2),
+        "ajustes_cheque": round(_f(r["ajustes_cheque"]), 2),
+        "personas": int(r["personas"] or 0),
         "cantidad": _f(r["cantidad"]), "importe_producto": round(_f(r["importe_producto"]), 2)} for r in rows]}
 
 
@@ -523,14 +554,35 @@ async def cuenta_detalle(unidad: str = Query(...), folio: str = Query(...)):
                SUM(ISNULL(importe_neto,0)) AS importe
         FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
         WHERE unidad_negocio_id=%s AND numero_ticket=%s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
+          AND producto_codigo_fuente NOT LIKE '__ISCAM_AJUSTE_%'
         GROUP BY producto_codigo_fuente
         ORDER BY importe DESC
         """,
         (str(unidad_pk), folio),
     )
+    ajustes_rows = _q(
+        """
+        SELECT producto_codigo_fuente AS codigo, MAX(producto_nombre) AS concepto, SUM(ISNULL(importe_neto,0)) AS importe
+        FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
+        WHERE unidad_negocio_id=%s AND numero_ticket=%s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
+          AND producto_codigo_fuente LIKE '__ISCAM_AJUSTE_%'
+        GROUP BY producto_codigo_fuente
+        """,
+        (str(unidad_pk), folio),
+    )
+    venta_productos = sum((_f(r["importe"]) for r in rows), 0.0)
+    ajustes_cheque = sum((_f(r["importe"]) for r in ajustes_rows), 0.0)
+    total_ticket = venta_productos + ajustes_cheque
     return {"success": True, "folio": folio,
             "productos": [{"codigo": r["codigo"], "producto": r["producto"], "cantidad": _f(r["cantidad"]),
-                           "precio": round(_f(r["precio"]), 2), "importe": round(_f(r["importe"]), 2)} for r in rows]}
+                           "precio": round(_f(r["precio"]), 2), "importe": round(_f(r["importe"]), 2)} for r in rows],
+            "ajustes": [{"codigo": r["codigo"], "concepto": r["concepto"], "importe": round(_f(r["importe"]), 2)} for r in ajustes_rows],
+            "resumen_conciliacion": {
+                "venta_productos": round(venta_productos, 2),
+                "ajustes_cheque": round(ajustes_cheque, 2),
+                "total_ticket": round(total_ticket, 2),
+                "diferencia": 0.0,
+            }}
 
 
 # ============================================================================
@@ -587,8 +639,119 @@ async def comandas_venta(unidad: str = Query(...), desde: Optional[str] = None, 
                           "precio": round(_f(r["precio"]), 2), "importe": round(_f(r["importe"]), 2)} for r in rows]}
 
 
+def _formas_pago_desde_detalle(unidad, nombre, d, h, group_by, limit, export_all):
+    """ISCAM Formas de Pago desde detalle conciliado por ticket.
+
+    Los importes salen exclusivamente de Finanzas_CortesCaja_DetallePagos.
+    Finanzas_CortesCaja se consulta solo para recuperar folio/caja del corte
+    mediante la misma FechaApertura/FechaHora; sus importes no participan.
+    """
+    forma = "UPPER(ISNULL(FormaPago,''))"
+    cash = f"({forma} LIKE '%EFECTIVO%' OR {forma} LIKE '%DOLAR%')"
+    amex = f"({forma} LIKE '%AMEX%')"
+    card = f"(({forma} LIKE '%CREDITO%' OR {forma} LIKE '%DEBITO%' OR {forma} LIKE '%CLIP%' OR {forma} LIKE '%INTERNACIONAL%') AND {forma} NOT LIKE '%AMEX%')"
+    intl = f"({forma} LIKE '%INTERNACIONAL%')"
+    vales = f"({forma} LIKE '%VALE%')"
+    known = f"({cash} OR {amex} OR {card} OR {vales})"
+
+    if group_by in ('anio', 'mes', 'dia'):
+        pexpr = _period_sql('FechaHora', group_by)
+        rows = _q(
+            f"""
+            SELECT {pexpr} AS periodo,
+                   COUNT(DISTINCT FechaHora) AS cortes,
+                   SUM(ISNULL(Importe,0)) AS total,
+                   SUM(CASE WHEN {cash} THEN ISNULL(Importe,0) ELSE 0 END) AS efectivo,
+                   SUM(CASE WHEN {card} THEN ISNULL(Importe,0) ELSE 0 END) AS tarjeta,
+                   SUM(CASE WHEN {amex} THEN ISNULL(Importe,0) ELSE 0 END) AS amex,
+                   SUM(CASE WHEN {intl} THEN ISNULL(Importe,0) ELSE 0 END) AS internacional,
+                   SUM(CASE WHEN {vales} THEN ISNULL(Importe,0) ELSE 0 END) AS vales,
+                   SUM(CASE WHEN NOT {known} THEN ISNULL(Importe,0) ELSE 0 END) AS otros,
+                   SUM(ISNULL(Propina,0)) AS propina,
+                   CAST(0 AS decimal(18,2)) AS comision
+            FROM dbo.Finanzas_CortesCaja_DetallePagos
+            WHERE UnidadNegocio = %s AND ISNULL(Activo,1)=1
+              AND FechaHora >= %s AND FechaHora < %s
+            GROUP BY {pexpr}
+            ORDER BY periodo DESC
+            """,
+            (unidad, d, h),
+        )
+        keys = ('total','efectivo','tarjeta','amex','internacional','vales','otros','propina','comision')
+        agrupado = [{
+            'periodo': r['periodo'], 'cortes': int(r['cortes'] or 0),
+            **{k: round(_f(r.get(k)), 2) for k in keys},
+        } for r in rows]
+        tot = {k: round(sum(a[k] for a in agrupado), 2) for k in keys}
+        return {
+            'success': True,
+            'source': 'Finanzas_CortesCaja_DetallePagos (canonica, conciliada por apertura)',
+            'unidad': unidad, 'unidad_nombre': nombre, 'desde': d, 'hasta': h,
+            'group_by': group_by, 'totales': tot, 'agrupado': agrupado,
+        }
+
+    rows = _q(
+        f"""
+        WITH pagos AS (
+            SELECT FechaHora,
+                   SUM(ISNULL(Importe,0)) AS total,
+                   SUM(CASE WHEN {cash} THEN ISNULL(Importe,0) ELSE 0 END) AS efectivo,
+                   SUM(CASE WHEN {card} THEN ISNULL(Importe,0) ELSE 0 END) AS tarjeta,
+                   SUM(CASE WHEN {amex} THEN ISNULL(Importe,0) ELSE 0 END) AS amex,
+                   SUM(CASE WHEN {intl} THEN ISNULL(Importe,0) ELSE 0 END) AS internacional,
+                   SUM(CASE WHEN {vales} THEN ISNULL(Importe,0) ELSE 0 END) AS vales,
+                   SUM(CASE WHEN NOT {known} THEN ISNULL(Importe,0) ELSE 0 END) AS otros,
+                   SUM(ISNULL(Propina,0)) AS propina
+            FROM dbo.Finanzas_CortesCaja_DetallePagos
+            WHERE UnidadNegocio = %s AND ISNULL(Activo,1)=1
+              AND FechaHora >= %s AND FechaHora < %s
+            GROUP BY FechaHora
+        )
+        SELECT COALESCE(meta.FolioCorte, CONVERT(varchar(19), p.FechaHora, 120)) AS folio,
+               p.FechaHora AS fecha, COALESCE(meta.CajaNombre, 'PAGOS') AS caja,
+               p.total, p.efectivo, p.tarjeta, p.amex, p.internacional,
+               p.vales, p.otros, p.propina, CAST(0 AS decimal(18,2)) AS comision
+        FROM pagos p
+        OUTER APPLY (
+            SELECT TOP (1) c.FolioCorte, c.CajaNombre
+            FROM dbo.Finanzas_CortesCaja c
+            WHERE c.UnidadNegocioNombre = %s AND ISNULL(c.Activo,1)=1
+              AND c.FechaApertura = p.FechaHora
+            ORDER BY c.FolioCorte
+        ) meta
+        ORDER BY p.FechaHora DESC
+        """,
+        (unidad, d, h, nombre),
+    )
+    if not export_all:
+        rows = rows[:limit]
+    cortes = [{
+        'folio': r['folio'], 'fecha': _iso(r['fecha']), 'caja': r['caja'],
+        'total': round(_f(r.get('total')), 2),
+        'efectivo': round(_f(r.get('efectivo')), 2),
+        'tarjeta_debito': round(_f(r.get('tarjeta')), 2),
+        'tarjeta_credito': 0.0,
+        'tarjeta': round(_f(r.get('tarjeta')), 2),
+        'amex': round(_f(r.get('amex')), 2),
+        'internacional': round(_f(r.get('internacional')), 2),
+        'vales': round(_f(r.get('vales')), 2),
+        'otros': round(_f(r.get('otros')), 2),
+        'propina': round(_f(r.get('propina')), 2),
+        'comision': 0.0,
+    } for r in rows]
+    keys = ('total','efectivo','tarjeta','amex','internacional','vales','otros','propina','comision')
+    tot = {k: round(sum(_f(r.get(k)) for r in cortes), 2) for k in keys}
+    return {
+        'success': True,
+        'source': 'Finanzas_CortesCaja_DetallePagos (canonica, conciliada por apertura)',
+        'unidad': unidad, 'unidad_nombre': nombre, 'desde': d, 'hasta': h,
+        'export_all': export_all, 'limited': not export_all,
+        'limit': None if export_all else limit, 'totales': tot, 'cortes': cortes,
+    }
+
+
 # ============================================================================
-# 4) VENTAS POR FORMAS DE PAGO  (REUTILIZA dbo.Finanzas_CortesCaja)
+# 4) VENTAS POR FORMAS DE PAGO  (IMPORTES DESDE DetallePagos; corte solo metadata)
 # ============================================================================
 @iscam_router.get("/formas-pago")
 async def ventas_formas_pago(unidad: str = Query(...), desde: Optional[str] = None, hasta: Optional[str] = None,
@@ -598,6 +761,7 @@ async def ventas_formas_pago(unidad: str = Query(...), desde: Optional[str] = No
     if not nombre:
         raise HTTPException(status_code=404, detail=f"No se pudo resolver la unidad '{unidad}'")
     d, h = _rango_fechas(desde, hasta)
+    return _formas_pago_desde_detalle(unidad, nombre, d, h, group_by, limit, export_all)
     if group_by in ("anio", "mes", "dia"):
         pexpr = _period_sql("FechaApertura", group_by)
         rows = _q(

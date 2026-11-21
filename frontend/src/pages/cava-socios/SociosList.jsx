@@ -302,6 +302,7 @@ function SociosListContent() {
                     <TableHead>Socio</TableHead>
                     <TableHead>Contacto</TableHead>
                     <TableHead>Membresía</TableHead>
+                    <TableHead>Identidad BOS</TableHead>
                     <TableHead className="text-center">Botellas</TableHead>
                     <TableHead>Vencimiento</TableHead>
                     <TableHead>Estatus</TableHead>
@@ -337,6 +338,11 @@ function SociosListContent() {
                       </TableCell>
                       <TableCell>
                         <span className="text-sm font-medium">{socio.tipo_membresia}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${socio.persona_id ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                          {socio.persona_id ? 'Vinculada' : 'Pendiente'}
+                        </span>
                       </TableCell>
                       <TableCell className="text-center">
                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">

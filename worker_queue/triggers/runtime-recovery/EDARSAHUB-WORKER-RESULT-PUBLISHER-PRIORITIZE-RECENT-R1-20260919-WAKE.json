@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-WORKER-RESULT-PUBLISHER-PRIORITIZE-RECENT-R1-20260919",
+  "reason": "Wake Worker to process result publisher prioritize recent R1. No product mutation, no Production, no SQL, no Scheduler, no NetPay, no RBAC, no menu.",
+  "production_touched": false
+}

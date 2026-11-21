@@ -49,7 +49,9 @@ def test_decision_dashboard_frontend_consumes_backend():
     ) in src
 
     assert "decisionResumen.limite_pago" in src
-    assert "decisionResumen.comprometido" in src
+    assert "renderDashboardAmount('comprometido')" in src
+    assert "renderDashboardAmount('saldo_cxp')" in src
+    assert "renderDashboardAmount('autorizado')" in src
     assert "decisionResumen.disponible" in src
     assert (
         "decisionResumen.porcentaje_utilizado"

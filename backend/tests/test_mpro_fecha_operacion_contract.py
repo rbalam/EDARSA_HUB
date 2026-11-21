@@ -117,20 +117,22 @@ def test_mpro_vn_fecha_es_fecha_comercial_y_no_debe_desplazarse(
     assert result[0]["fecha_operacion"] == date(2026, 7, 10)
 
 
-def test_softrestaurant_conserva_calculo_por_timestamp_operativo(
+def test_softrestaurant_usa_fecha_calendario_de_turnos_apertura(
     monkeypatch,
 ):
     """
-    SoftRestaurant sí entrega timestamp real y debe continuar usando la
-    configuración canónica de turnos para resolver fecha_operacion.
+    SoftRestaurant agrupa por la fecha calendario de fecha_hora proveniente
+    de turnos.apertura. Este agrupador no debe aplicar operational_window.
     """
 
-    def fecha_operativa_simulada(_unidad_pk, _timestamp):
-        return date(2026, 7, 10)
+    def operational_window_no_debe_usarse(*_args, **_kwargs):
+        raise AssertionError(
+            "SoftRestaurant no debe aplicar operational_window en este agrupador"
+        )
 
     monkeypatch.setattr(
         "core.utils.operational_window.get_fecha_operacion",
-        fecha_operativa_simulada,
+        operational_window_no_debe_usarse,
     )
 
     rows = [
@@ -146,9 +148,9 @@ def test_softrestaurant_conserva_calculo_por_timestamp_operativo(
     result = sync._agrupar_ventas_cerradas_por_fecha_operacion(
         rows,
         _config(SistemaOrigen.SOFTRESTAURANT),
-        fecha_inicio=date(2026, 7, 10),
-        fecha_fin=date(2026, 7, 10),
+        fecha_inicio=date(2026, 7, 11),
+        fecha_fin=date(2026, 7, 11),
     )
 
     assert len(result) == 1
-    assert result[0]["fecha_operacion"] == date(2026, 7, 10)
+    assert result[0]["fecha_operacion"] == date(2026, 7, 11)

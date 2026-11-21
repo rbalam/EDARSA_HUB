@@ -12,6 +12,73 @@ import CanonicalTicketDrilldown from '../../components/comercial/analytics/Canon
 import { apiGet, ESTADO } from '../api/client';
 import { ExportButtons } from './ExportButtons';
 
+const DEFAULT_TICKET_COLUMNS = [
+  { key: 'fecha', label: 'FECHA' },
+  { key: 'hora', label: 'HORA' },
+  { key: 'unidad', label: 'UNIDAD' },
+  { key: 'numero_ticket', label: 'TICKET', mono: true },
+  { key: 'pax', label: 'PAX', align: 'center', format: 'number' },
+  { key: 'lineas', label: 'LÍNEAS', align: 'center', format: 'number' },
+  { key: 'ventas', label: 'VENTAS', align: 'right', format: 'money', emphasis: true },
+];
+
+const KPI_TICKET_COLUMNS = {
+  tickets: DEFAULT_TICKET_COLUMNS,
+  ventas: [
+    { key: 'fecha', label: 'FECHA' },
+    { key: 'hora', label: 'HORA' },
+    { key: 'numero_ticket', label: 'TICKET', mono: true },
+    { key: 'pax', label: 'PAX', align: 'center', format: 'number' },
+    { key: 'ventas', label: 'VENTAS', align: 'right', format: 'money', emphasis: true },
+  ],
+  pax_promedio: [
+    { key: 'fecha', label: 'FECHA' },
+    { key: 'hora', label: 'HORA' },
+    { key: 'numero_ticket', label: 'TICKET', mono: true },
+    { key: 'pax', label: 'PAX', align: 'center', format: 'number' },
+    { key: 'ventas', label: 'VENTAS', align: 'right', format: 'money' },
+    { key: 'venta_por_pax', label: 'VENTA / PAX', align: 'right', format: 'money', emphasis: true },
+  ],
+  cheque_promedio: [
+    { key: 'fecha', label: 'FECHA' },
+    { key: 'hora', label: 'HORA' },
+    { key: 'numero_ticket', label: 'TICKET', mono: true },
+    { key: 'pax', label: 'PAX', align: 'center', format: 'number' },
+    { key: 'ventas', label: 'IMPORTE CHEQUE', align: 'right', format: 'money', emphasis: true },
+    { key: 'vs_promedio', label: 'VS PROMEDIO', align: 'right', format: 'money' },
+  ],
+  pax_total: [
+    { key: 'fecha', label: 'FECHA' },
+    { key: 'hora', label: 'HORA' },
+    { key: 'numero_ticket', label: 'TICKET', mono: true },
+    { key: 'pax', label: 'PAX', align: 'center', format: 'number', emphasis: true },
+    { key: 'ventas', label: 'VENTAS', align: 'right', format: 'money' },
+  ],
+  cheques: [
+    { key: 'fecha', label: 'FECHA' },
+    { key: 'hora', label: 'HORA' },
+    { key: 'numero_ticket', label: 'CHEQUE / TICKET', mono: true, emphasis: true },
+    { key: 'pax', label: 'PAX', align: 'center', format: 'number' },
+    { key: 'ventas', label: 'IMPORTE', align: 'right', format: 'money' },
+  ],
+  propinas: [
+    { key: 'fecha', label: 'FECHA' },
+    { key: 'hora', label: 'HORA' },
+    { key: 'numero_ticket', label: 'TICKET', mono: true },
+    { key: 'ventas', label: 'VENTAS', align: 'right', format: 'money' },
+    { key: 'propina', label: 'PROPINA', align: 'right', format: 'money', emphasis: true },
+    { key: 'propina_pct', label: '% PROPINA', align: 'right', format: 'percent' },
+  ],
+};
+
+const KPI_SORT_KEY = {
+  ventas: 'ventas',
+  pax_promedio: 'venta_por_pax',
+  cheque_promedio: 'ventas',
+  pax_total: 'pax',
+  propinas: 'propina',
+};
+
 export function TicketDrilldownModal({
   open,
   onClose,
@@ -19,6 +86,8 @@ export function TicketDrilldownModal({
   periodo,
   fechaInicio,
   fechaFin,
+  metric = 'tickets',
+  kpiValor = null,
   titulo = 'Reconstrucción de Tickets',
 }) {
   const scope = React.useMemo(
@@ -31,8 +100,10 @@ export function TicketDrilldownModal({
       periodo,
       fechaInicio,
       fechaFin,
+      metric,
+      kpiValor,
     }),
-    [unidad, periodo, fechaInicio, fechaFin]
+    [unidad, periodo, fechaInicio, fechaFin, metric, kpiValor]
   );
 
   const loadTickets = useCallback(async (
@@ -74,8 +145,29 @@ export function TicketDrilldownModal({
       throw new Error('No fue posible consultar los tickets');
     }
 
+    const normalizedTickets = (payload.items || []).map((ticket) => {
+      const ventas = Number(ticket.ventas || 0);
+      const pax = Number(ticket.pax || 0);
+      const propina = Number(ticket.propina || 0);
+      const promedio = Number(currentScope?.kpiValor || 0);
+
+      return {
+        ...ticket,
+        venta_por_pax: pax > 0 ? ventas / pax : 0,
+        vs_promedio: ventas - promedio,
+        propina_pct: ventas > 0 ? (propina / ventas) * 100 : 0,
+      };
+    });
+
+    const sortKey = KPI_SORT_KEY[currentScope?.metric];
+    const tickets = sortKey
+      ? [...normalizedTickets].sort(
+          (a, b) => Number(b[sortKey] || 0) - Number(a[sortKey] || 0)
+        )
+      : normalizedTickets;
+
     return {
-      tickets: payload.items || [],
+      tickets,
       filters: {
         fecha_inicio: currentScope.fechaInicio,
         fecha_fin: currentScope.fechaFin,
@@ -119,6 +211,8 @@ export function TicketDrilldownModal({
     };
   }, []);
 
+  const ticketColumns = KPI_TICKET_COLUMNS[metric] || DEFAULT_TICKET_COLUMNS;
+
   const renderExportActions = useCallback(({
     selectedTicket,
     tickets,
@@ -130,16 +224,7 @@ export function TicketDrilldownModal({
         <ExportButtons
           filename="tickets"
           title="Tickets"
-          columns={[
-            { key: 'fecha', label: 'Fecha' },
-            { key: 'hora', label: 'Hora' },
-            { key: 'unidad', label: 'Unidad' },
-            { key: 'numero_ticket', label: 'Ticket' },
-            { key: 'pax', label: 'PAX' },
-            { key: 'lineas', label: 'Líneas' },
-            { key: 'ventas', label: 'Ventas' },
-            { key: 'propina', label: 'Propina' },
-          ]}
+          columns={ticketColumns.map(({ key, label }) => ({ key, label }))}
           rows={tickets}
           meta={metadata}
           testid="drilldown-tickets-export"
@@ -171,7 +256,7 @@ export function TicketDrilldownModal({
     }
 
     return null;
-  }, []);
+  }, [ticketColumns]);
 
   return (
     <CanonicalTicketDrilldown
@@ -179,6 +264,7 @@ export function TicketDrilldownModal({
       onClose={onClose}
       scope={scope}
       title={titulo}
+      ticketColumns={ticketColumns}
       loadTickets={loadTickets}
       loadTicketDetail={loadTicketDetail}
       renderExportActions={renderExportActions}

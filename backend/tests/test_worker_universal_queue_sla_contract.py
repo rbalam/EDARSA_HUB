@@ -9,8 +9,11 @@ HEALTH = ROOT / 'tools/mirror_sync/runtime_health_publisher.py'
 
 def test_inbox_is_history_and_results_deduplicate_jobs():
     text = BRIDGE.read_text(encoding='utf-8')
-    assert '(PENDING, PROCESSING, DONE, REJECTED, RESULTS)' in text
+    assert 'for folder in (PENDING, PROCESSING, DONE)' in text
+    assert 'result_retry = preexecution_infrastructure_retry_decision(name)' in text
     assert 'worker_queue/inbox is immutable audit history' in text
+    assert 'retry_decision = rejected_correction_retry_decision(name, raw, job)' in text
+    assert 'REJECTED_REASON_NOT_CORRECTABLE' in text
 
 
 def test_dispatcher_tracks_runtime_and_only_releases_created_claims():
@@ -23,6 +26,44 @@ def test_dispatcher_tracks_runtime_and_only_releases_created_claims():
     assert 'last_terminal_utc' in text
 
 
+def test_dispatcher_uses_serial_slot_runtime_without_parallel_execution():
+    text = DISPATCHER.read_text(encoding='utf-8')
+    assert "heartbeat_slot" in text
+    assert "load_slot" in text
+    assert "create_slot" in text
+    assert "reclaim_stale_slot" in text
+    assert "release_slot" in text
+    assert "update_slot_state" in text
+    assert 'slot_id = "readonly-1" if slot_class == "READ_ONLY" else "mutation-1"' in text
+    assert 'result["slot_recovery"] = reclaim_stale_slot(' in text
+    assert 'heartbeat_stale_seconds=90' in text
+    assert text.index('reclaim_stale_slot(') < text.index('create_slot(')
+    assert 'create_slot(' in text
+    assert 'update_slot_state(slot_id, "RUNNING"' in text
+    assert 'update_slot_state(slot_id, "TERMINALIZING"' in text
+    assert 'release_slot(slot_id)' in text
+    assert 'result["parallel_execution_enabled"] = False' in text
+
+
+def test_dispatcher_claim_is_atomic_and_execution_is_outside_lock():
+    text = DISPATCHER.read_text(encoding='utf-8')
+    assert 'def claim_one() -> Path | None:' in text
+    assert 'with LOCK_FILE.open("a+") as lock:' in text
+    assert 'os.replace(selected, processing)' in text
+    assert 'return process_one(claimed, already_claimed=True)' in text
+    claim_start = text.index('def claim_one() -> Path | None:')
+    dispatch_start = text.index('def dispatch() -> int:')
+    claim_block = text[claim_start:dispatch_start]
+    assert 'process_one(' not in claim_block
+
+
+def test_preferred_job_is_boost_not_global_freeze():
+    text = DISPATCHER.read_text(encoding='utf-8')
+    assert 'PREFERRED_JOB_STALE_IGNORED' in text
+    assert 'WAITING_PREFERRED_JOB' not in text
+    assert 'return jobs[0], False' in text
+
+
 def test_stale_processing_is_requeued_once_then_terminal():
     text = CONTROL.read_text(encoding='utf-8')
     assert '_worker_stale_requeue_count' in text
@@ -30,7 +71,31 @@ def test_stale_processing_is_requeued_once_then_terminal():
     assert 'processing_stale_after_single_requeue' in text
 
 
+def test_long_checks_refresh_existing_slot_ownership():
+    text = DISPATCHER.read_text(encoding='utf-8')
+    assert 'heartbeat_active_slot' in text
+    assert 'run_check_process' in text
+    assert 'heartbeat_slot(' in text
+    assert 'time.monotonic()' in text
+    assert 'subprocess.Popen(' in text
+
+
 def test_health_exposes_sla_metrics():
     text = HEALTH.read_text(encoding='utf-8')
     for token in ('queue_depth','oldest_pending_age_seconds','intake_sla_seconds','intake_sla_breached','current_job_id','last_terminal_utc'):
         assert token in text
+
+
+def test_dispatcher_treats_missing_slot_as_already_released_only_during_cleanup():
+    text = DISPATCHER.read_text(encoding='utf-8')
+    assert "heartbeat_slot" in text
+    assert "load_slot" in text
+    assert "create_slot" in text
+    assert "reclaim_stale_slot" in text
+    assert "release_slot" in text
+    assert "update_slot_state" in text
+    assert 'from worker_slot_runtime import SlotRuntimeError' in text
+    assert 'except SlotRuntimeError as exc:' in text
+    assert 'if str(exc) == "SLOT_NOT_FOUND":' in text
+    assert 'result["slot_release"] = "ALREADY_RELEASED"' in text
+    assert 'slot_release_failed:{type(exc).__name__}:{exc}' in text

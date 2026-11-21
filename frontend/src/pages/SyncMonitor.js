@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   RefreshCw, 
   Server, 
@@ -36,16 +37,12 @@ const STATUS_CONFIG = {
     dot: 'bg-red-500',
     label: 'ERROR'
   },
-  STALE: { 
-    bg: 'bg-gray-500/20', 
-    border: 'border-gray-500/50', 
-    text: 'text-gray-400',
-    dot: 'bg-gray-500',
-    label: 'INACTIVO'
-  },
+  STALE: { bg: 'bg-zinc-500/10', border: 'border-zinc-500/30', text: 'text-zinc-400', dot: 'bg-zinc-500', label: 'STALE' },
+  SIN_SLA_THRESHOLD_CONFIGURADO: { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-300', dot: 'bg-amber-400', label: 'SIN SLA' },
+  SIN_TELEMETRIA: { bg: 'bg-zinc-800', border: 'border-zinc-700', text: 'text-zinc-400', dot: 'bg-zinc-500', label: 'SIN TELEMETRIA' },
 };
 
-const getStatusConfig = (status) => STATUS_CONFIG[status] || STATUS_CONFIG.STALE;
+const getStatusConfig = (status) => STATUS_CONFIG[status] || STATUS_CONFIG.SIN_TELEMETRIA;
 
 // Formatear duración
 const formatDuration = (seconds) => {
@@ -81,15 +78,15 @@ const formatTimestamp = (isoString) => {
 // Componente KPI Card
 const KpiCard = ({ icon: Icon, label, value, subvalue, color = 'blue' }) => {
   const colors = {
-    blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/30',
-    green: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/30',
-    amber: 'from-amber-500/20 to-amber-600/10 border-amber-500/30',
-    red: 'from-red-500/20 to-red-600/10 border-red-500/30',
-    gray: 'from-gray-500/20 to-gray-600/10 border-gray-500/30',
+    blue: 'border-zinc-800',
+    green: 'border-emerald-900/60',
+    amber: 'border-amber-900/60',
+    red: 'border-red-900/60',
+    gray: 'border-zinc-800',
   };
   
   return (
-    <div className={`bg-gradient-to-br ${colors[color]} border rounded-xl p-4`}>
+    <div className={`bg-zinc-950/70 ${colors[color]} border rounded-lg p-4 shadow-sm`}>
       <div className="flex items-center gap-3">
         <div className="p-2 bg-white/5 rounded-lg">
           <Icon className="w-5 h-5 text-white/70" />
@@ -268,6 +265,7 @@ const SyncTimeline = ({ ultimos }) => {
 
 // Componente principal
 const SyncMonitor = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -346,7 +344,7 @@ const SyncMonitor = () => {
   const kpis = data?.kpis || {};
 
   return (
-    <div className="space-y-6 p-6" data-testid="sync-monitor-page">
+    <div className="space-y-6 p-6 text-zinc-100" data-testid="sync-monitor-page">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -358,7 +356,15 @@ const SyncMonitor = () => {
             Vista NOC • Fuente: EDARSAHUB SQL
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => navigate('/sync-historical')}
+            className="flex items-center gap-2 rounded-md border border-blue-500/50 bg-blue-500/15 px-4 py-2 text-sm font-medium text-blue-300 transition-colors hover:bg-blue-500/25"
+            data-testid="open-sync-historical"
+          >
+            <Database className="w-4 h-4" />
+            Sincronización Histórica
+          </button>
           <label className="flex items-center gap-2 text-white/60 text-sm cursor-pointer">
             <input
               type="checkbox"
@@ -371,7 +377,7 @@ const SyncMonitor = () => {
           <button 
             onClick={fetchData}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white/70 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-md text-zinc-200 transition-colors disabled:opacity-50"
             data-testid="refresh-sync-monitor"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />

@@ -1,0 +1,9 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-COMERCIAL-OPEN-FOLIOS-MERGE-FIX-R2-CARLOS-20261001T0110Z",
+  "preferred_job_id": "EDARSAHUB-COMERCIAL-OPEN-FOLIOS-MERGE-FIX-R2-CARLOS-20261001T0110Z",
+  "reason": "Intake SLA breached. Wake canonical Universal Worker and prefer the already-published Comercial open-folios merge fix R2 as the next job after any healthy active work. Preserve all queue identities; do not clone, rename or modify the functional job. Do not interrupt another owner job. Do not touch Production, SQL data/schema, Inteligencia Comercial or Tablero Ejecutivo.",
+  "production_touched": false,
+  "requested_by": "carlosruz@edarsa.com.mx",
+  "source": "chatgpt"
+}

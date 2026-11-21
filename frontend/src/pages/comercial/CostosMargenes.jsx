@@ -156,7 +156,11 @@ const RecetaModal = ({ isOpen, onClose, productoId, serverId, unidad, onVerSubRe
       setReceta(res.data);
       setSortConfig({ key: null, direction: 'asc' }); // Reset sort on new load
     } catch (err) {
-      setError(err.response?.data?.detail || err.message);
+      const detail = err.response?.data?.detail;
+      const msg = typeof detail === 'object' && detail !== null
+        ? (detail.mensaje || detail.message || detail.error || JSON.stringify(detail))
+        : (detail || err.message);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -1416,6 +1420,9 @@ const TabProductos = ({ onSimularPrecio }) => {
   // (CorporateFiltersProvider). Aquí solo reaccionamos al cambio para resetear página.
   useEffect(() => {
     setPage(1);
+    if (!unidadNegocio) {
+      setMargenBajo(false);
+    }
   }, [unidadNegocio]);
   
   // Cargar familias cuando cambie la unidad de negocio
@@ -1488,7 +1495,7 @@ const TabProductos = ({ onSimularPrecio }) => {
         if (familia) params.append('familia', familia);
         if (subfamilia) params.append('subfamilia', subfamilia);
         if (soloConReceta) params.append('solo_con_receta', 'true');
-        if (margenBajo) {
+        if (margenBajo && unidadNegocio) {
           params.append('margen_bajo', 'true');
         }
         if (incluirInactivos) params.append('incluir_inactivos', 'true');
@@ -1530,7 +1537,11 @@ const TabProductos = ({ onSimularPrecio }) => {
 
       }
     } catch (err) {
-      setError(err.response?.data?.detail || err.message);
+      const detail = err.response?.data?.detail;
+      const msg = typeof detail === 'object' && detail !== null
+        ? (detail.mensaje || detail.message || detail.error || JSON.stringify(detail))
+        : (detail || err.message);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -1712,12 +1723,16 @@ const TabProductos = ({ onSimularPrecio }) => {
             <span className="text-sm text-gray-600">Solo con receta</span>
           </label>
           
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label
+            className={`flex items-center gap-2 ${unidadNegocio ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
+            title={unidadNegocio ? 'Filtrar productos con margen inferior al esperado' : 'Seleccione una unidad de negocio para filtrar por margen bajo'}
+          >
             <input
               type="checkbox"
-              checked={margenBajo}
+              checked={margenBajo && Boolean(unidadNegocio)}
+              disabled={!unidadNegocio}
               onChange={(e) => { setMargenBajo(e.target.checked); setPage(1); }}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
             />
             <span className="text-sm text-gray-600 flex items-center gap-1">
               Margen bajo
@@ -2299,13 +2314,22 @@ const TabPreciosSugeridos = () => {
   const unidadNegocio = corpSel?.unidades_negocio || '';
 
   const fetchProductos = useCallback(async () => {
+    if (!unidadNegocio) {
+      setProductos([]);
+      setTotal(0);
+      setTotalPages(1);
+      setError('Seleccione una unidad de negocio para consultar precios sugeridos');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams({
         page: vistaAgrupada ? '1' : page.toString(),
         page_size: vistaAgrupada ? '500' : pageSize.toString(),
-        margen_objetivo: filters.margenObjetivo.toString()
+        unidad: unidadNegocio,
       });
       if (search) params.append('search', search);
       if (filters.soloVinos) params.append('solo_vinos', 'true');
@@ -2313,14 +2337,17 @@ const TabPreciosSugeridos = () => {
       if (filters.soloRequiereRevision) params.append('solo_requiere_revision', 'true');
       if (filters.fuente) params.append('fuente', filters.fuente);
       if (filters.incluirInactivos) params.append('incluir_inactivos', 'true'); // BUG-COSTOS-001
-      if (unidadNegocio) params.append('unidad', unidadNegocio);
       
       const res = await api.get(`/comercial/pricing/precios-sugeridos?${params}`);
       setProductos(res.data.productos || []);
       setTotal(res.data.total || 0);
       setTotalPages(vistaAgrupada ? 1 : (res.data.total_pages || 1));
     } catch (err) {
-      setError(err.response?.data?.detail || err.message);
+      const detail = err.response?.data?.detail;
+      const msg = typeof detail === 'object' && detail !== null
+        ? (detail.mensaje || detail.message || detail.error || JSON.stringify(detail))
+        : (detail || err.message);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -2832,7 +2859,11 @@ const TabRangosVinos = () => {
       setRangos(res.data.rangos || []);
       setTraslapes(res.data.traslapes || []);
     } catch (err) {
-      setError(err.response?.data?.detail || err.message);
+      const detail = err.response?.data?.detail;
+      const msg = typeof detail === 'object' && detail !== null
+        ? (detail.mensaje || detail.message || detail.error || JSON.stringify(detail))
+        : (detail || err.message);
+      setError(msg);
     } finally {
       setLoading(false);
     }

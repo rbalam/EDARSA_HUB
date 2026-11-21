@@ -1,21 +1,16 @@
 """Standalone always-on scheduler service for EDARSAHUB Production.
 
-Required runtime:
+Deploy this application as a separate service from the web backend with:
+
     EDARSA_ENV=PRODUCTION
     EDARSA_RUNTIME_ROLE=PRODUCTION_SCHEDULER
     EDARSA_RUNTIME_ROLE_REQUIRED=1
-    SCHEDULER_ENABLED=true
+
+The service intentionally fails closed in Preview/Development or when the
+runtime role is missing.
 """
 
 import logging
-from pathlib import Path
-
-from dotenv import load_dotenv
-
-# Cargar el mismo archivo de entorno que usa backend/server.py.
-# load_dotenv no sobreescribe variables inyectadas por el runtime, por lo que
-# EDARSA_RUNTIME_ROLE y EDARSA_ENV siguen siendo autoridad de despliegue.
-load_dotenv(Path(__file__).parent / ".env")
 
 from fastapi import FastAPI
 
@@ -40,12 +35,11 @@ async def startup_scheduler_service():
     if not status.get("running"):
         raise RuntimeError("PRODUCTION_SCHEDULER_FAILED_TO_START")
 
-    jobs = status.get("jobs") or []
     logger.warning(
         "Production scheduler service started environment=%s role=%s jobs=%s",
         policy.get("environment"),
         policy.get("role"),
-        len(jobs),
+        status.get("jobs_count"),
     )
 
 
@@ -68,6 +62,6 @@ async def scheduler_health():
         "role_explicit": policy.get("role_explicit"),
         "scheduler_enabled": policy.get("scheduler_enabled"),
         "running": status.get("running", False),
-        "jobs_count": len(status.get("jobs") or []),
+        "jobs_count": status.get("jobs_count", 0),
         "jobs": status.get("jobs", []),
     }

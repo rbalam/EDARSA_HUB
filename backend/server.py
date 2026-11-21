@@ -9,6 +9,13 @@ if hasattr(sys.stdout, 'reconfigure'):
     except Exception:
         pass
 
+# DEPLOY-FIX: asegurar que el repo-root (/app) esté en sys.path para que
+# imports como `tools.mirror_sync` resuelvan cuando uvicorn corre desde /app/backend
+# (en producción no hay PYTHONPATH=/app como en el supervisor local).
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
 # ==============================================================================
 # CARGA DE VARIABLES DE ENTORNO - DEBE ESTAR ANTES DE CUALQUIER OTRO IMPORT
 # ==============================================================================
@@ -120,6 +127,29 @@ logger.info("[DB] Sistema funcionando 100% SQL Server - MongoDB ELIMINADO (usand
 app = FastAPI(title="EDARSA HUB API")
 api_router = APIRouter(prefix="/api")
 
+# PRODUCTION QUALITY / FOTO FINISH - bounded context canónico
+# SQL-first, RBAC explícito y sin dependencia LIVE.
+from modules.production_quality import router as production_quality_router
+api_router.include_router(production_quality_router)
+
+# CAVAS CORPORATIVAS GATE 5 - API backend B2B separada y RBAC SQL explicito
+from modules.cavas_corporativas.routes import router as cavas_corporativas_router
+api_router.include_router(cavas_corporativas_router)
+
+# CATALOGO AMPLIADO GATE 4 - Gobierno corporativo SQL-first
+from modules.catalogo_ampliado.routes import router as catalogo_ampliado_router
+api_router.include_router(catalogo_ampliado_router)
+
+# TABLAJERIA - Operaciones / Produccion
+# Router existente con prefijo propio /api/tablajeria; se monta directo en app para evitar /api/api.
+from modules.tablajeria.routes import router as tablajeria_router
+app.include_router(tablajeria_router)
+
+# TABLAJERIA - Operaciones / Produccion
+# Router existente con prefijo propio /api/tablajeria; se monta directo en app para evitar /api/api.
+from modules.tablajeria.routes import router as tablajeria_router
+app.include_router(tablajeria_router)
+
 # Montar archivos estáticos para descargas
 STATIC_DIR = ROOT_DIR / "static"
 if STATIC_DIR.exists():
@@ -159,17 +189,12 @@ async def global_exception_handler(request: Request, exc: Exception):
 # HEALTH CHECK GENERAL (Monitoreo de Infraestructura)
 # ==========================================
 @app.get("/api/health")
+@app.get("/health")
 async def health_check():
     """
     Endpoint de salud vital. La infraestructura (Docker/Kubernetes) hará ping aquí.
     Si el servidor se bloquea, la infraestructura lo detectará y reiniciará el nodo.
     """
-    return {"status": "operativo", "sistema": "EDARSA HUB", "version": "1.0"}
-
-
-@app.get("/health")
-async def root_health_check():
-    """Alias de salud para probes de infraestructura."""
     return {"status": "operativo", "sistema": "EDARSA HUB", "version": "1.0"}
 
 # ==========================================
@@ -319,6 +344,16 @@ async def validate_server_access_unified(current_user: Dict, server_id: str) -> 
     context = await resolve_user_access_context(current_user)
 
     if has_server_access(context, server_id):
+        return context
+
+    # Scope BRANCH canónico: un usuario puede tener acceso efectivo a una
+    # sucursal de este servidor sin una fila explícita en
+    # Usuario_ServidoresAsignacion. Para endpoints administrativos que ya
+    # exigen SERVIDORES_VER/EDITAR, reconocer ese mismo ServidorID evita el
+    # falso 403 unidad/sucursal -> servidor sin ampliar a otros servidores.
+    server_key = str(server_id or "").strip().lower()
+    branch_scope = context.sucursales_por_server.get(server_key, [])
+    if branch_scope:
         return context
 
     logging.warning(
@@ -717,6 +752,10 @@ from modules.comercial.kpis_repository import init_kpis_repository
 init_sync_receiver(None)  # MongoDB eliminado
 init_kpis_repository(None)  # MongoDB eliminado
 api_router.include_router(sync_receiver_router)
+
+# RRR - atribucion determinista cliente <-> venta (Gate 4E)
+from modules.rrr.routes import router as rrr_attribution_router
+api_router.include_router(rrr_attribution_router)
 
 # ============================================================================
 # MÓDULO API CONNECTIONS: CRUD de conexiones a APIs locales
@@ -1993,7 +2032,7 @@ async def get_servers(current_user: Dict = Depends(get_current_user), _rbac: dic
         allow_mongo_fallback=False,  # P5: Fallback MongoDB deshabilitado
         filter_active=True,
         filter_visible_listado=True,
-        exclude_core=False,
+        exclude_core=True,
         mask_secrets=True
     )
 
@@ -2058,6 +2097,15 @@ async def update_server(server_id: str, server_data: Dict, current_user: Dict = 
     # Prevenir que desde UI se cambie a tipo CORE
     if server_data.get("tipo_conexion") == "CORE":
         raise HTTPException(status_code=403, detail="No se puede cambiar el tipo de conexión a CORE desde UI")
+
+    # La selección configurada por el usuario es autoridad para MPRO y SR.
+    # Guardar exactamente los códigos seleccionados (incluidos AJUSTES).
+    if "tipos_movimiento" in server_data:
+        from core.inventarios.movement_filter_config import normalize_movement_codes
+        server_data = dict(server_data)
+        server_data["tipos_movimiento"] = normalize_movement_codes(
+            server_data.get("tipos_movimiento") or []
+        )
 
     # Actualizar usando registry (SQL-first)
     result = await registry_update_server(
@@ -2160,9 +2208,9 @@ def _sql_upsert_servidor_status(server_id: str, is_online: bool, response_time_m
             """, (1 if is_online else 0, response_time_ms, server_id))
         else:
             cur.execute("""
-                INSERT INTO dbo.Servidores_Status (StatusID, ServerID, IsOnline, ResponseTimeMs, LastCheck)
-                VALUES (%s, %s, %s, %s, GETDATE())
-            """, (_sql_next_id(cur, "Servidores_Status", "StatusID"), server_id, 1 if is_online else 0, response_time_ms))
+                INSERT INTO dbo.Servidores_Status (ServerID, IsOnline, ResponseTimeMs, LastCheck)
+                VALUES (%s, %s, %s, GETDATE())
+            """, (server_id, 1 if is_online else 0, response_time_ms))
         conn.commit()
     finally:
         conn.close()
@@ -2833,7 +2881,67 @@ async def get_tipos_movimiento(server_id: str, current_user: Dict = Depends(get_
 
     logging.info(f"[GET_TIPOS_MOVIMIENTO] Servidor obtenido. Origin={server.get('config_origin', 'UNKNOWN')}, Name={server.get('name', 'N/A')}")
 
-    # EDARSAHUB-FIRST: Leer tipos_movimiento desde EDARSAHUB
+    # MPRO: mostrar catálogo completo desde el catálogo canónico DB-driven
+    # Inventario_ConceptoMapeoOrigen. La configuración guardada es selección,
+    # NO debe limitar las opciones visibles del modal.
+    if is_mpro_system(server.get('system_type')):
+        conn = None
+        try:
+            conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=10)
+            cursor = conn.cursor(as_dict=True)
+            cursor.execute("""
+                SELECT
+                    m.ConceptoOrigen AS codigo,
+                    m.Descripcion AS descripcion_mapeo,
+                    tm.Naturaleza AS naturaleza
+                FROM dbo.Inventario_ConceptoMapeoOrigen m
+                LEFT JOIN dbo.Inventario_TipoMovimiento tm
+                    ON tm.TipoMovimientoID=m.TipoMovimientoID
+                WHERE UPPER(m.SystemType)='MPRO'
+                  AND ISNULL(m.Activo,1)=1
+                ORDER BY m.ConceptoOrigen
+            """)
+            result = []
+            for row in cursor.fetchall() or []:
+                codigo = str(row.get("codigo") or "").strip()
+                if not codigo:
+                    continue
+                descripcion = str(row.get("descripcion_mapeo") or "").strip()
+                # El seed histórico guarda "MPRO <codigo> <desc> -> CANON".
+                # Mostrar en UI sólo la descripción fuente, conservando el catálogo DB.
+                if descripcion:
+                    prefix = f"MPRO {codigo} "
+                    if descripcion.upper().startswith(prefix.upper()):
+                        descripcion = descripcion[len(prefix):]
+                    if " -> " in descripcion:
+                        descripcion = descripcion.rsplit(" -> ", 1)[0].strip()
+                naturaleza = str(row.get("naturaleza") or "").strip().upper()
+                result.append({
+                    "codigo": codigo,
+                    "descripcion": descripcion or codigo,
+                    "tipo": "EN" if naturaleza in ("E","EN","ENTRADA") else "SA",
+                    "autorizado_analisis": True,
+                })
+            if result:
+                logging.info(
+                    "[GET_TIPOS_MOVIMIENTO][MPRO] catalogo=%s seleccionados=%s",
+                    len(result),
+                    len(server.get("tipos_movimiento") or []),
+                )
+                return result
+        except Exception as exc:
+            logging.warning(
+                "[GET_TIPOS_MOVIMIENTO][MPRO] catálogo canónico no disponible: %s",
+                str(exc)[:180],
+            )
+        finally:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+
+    # EDARSAHUB-FIRST: selección configurada (SoftRestaurant / fallback MPRO)
     tipos_edarsahub = server.get('tipos_movimiento', [])
 
     if tipos_edarsahub:
@@ -3877,12 +3985,11 @@ async def get_unidades_negocio(
         logging.info(f"[UNIDADES_NEGOCIO] Obtenidas {len(unidades_sql)} unidades desde EDARSAHUB SQL")
 
         # ============================================================================
-        # APLICAR RBAC: Filtrar por permisos del usuario
+        # APLICAR RBAC: Filtrar por scope canónico SQL
         # ============================================================================
         user_role = (current_user.get('role') or '').strip()
 
-        # SuperAdministrador y Administrador ven todas las unidades
-        # (se aceptan tanto los nombres visibles como los códigos canónicos RBAC)
+        # SuperAdministrador y Administrador conservan acceso global.
         is_admin_global = (
             user_role in ['SuperAdministrador', 'Administrador']
             or user_role.upper() in ['SUPERADMIN', 'ADMIN', 'ADMINISTRADOR']
@@ -3890,19 +3997,31 @@ async def get_unidades_negocio(
         if is_admin_global:
             unidades_filtradas = unidades_sql
         else:
-            # Otros roles: filtrar por empresas permitidas
-            empresas_permitidas = await get_user_empresas_permitidas(current_user)
-            allowed_servers = set(current_user.get('allowed_servers', []))
+            from core.auth.sql_user_identity import resolve_sql_usuario_id
+            from core.rbac_sql.service import RBACSQLService
 
-            # Filtrar unidades cuyos server_id estén en allowed_servers
-            # o cuyo ID esté en empresas_permitidas (para compatibilidad)
+            usuario_id = resolve_sql_usuario_id(current_user)
+            unidades_scope = (
+                RBACSQLService.get_unidades(usuario_id)
+                if usuario_id
+                else []
+            )
+            unidades_ids = {
+                str(row.get('UnidadNegocioID') or '').strip().lower()
+                for row in (unidades_scope or [])
+                if str(row.get('UnidadNegocioID') or '').strip()
+            }
+
             unidades_filtradas = [
                 u for u in unidades_sql
-                if u.get('server_id') in allowed_servers or u.get('id') in empresas_permitidas
+                if str(u.get('id') or '').strip().lower() in unidades_ids
             ]
 
             if not unidades_filtradas:
-                logging.warning(f"[UNIDADES_NEGOCIO] Usuario {current_user.get('email')} sin unidades permitidas")
+                logging.warning(
+                    f"[UNIDADES_NEGOCIO] Usuario {current_user.get('email')} "
+                    "sin unidades efectivas en RBAC canónico"
+                )
 
         # ============================================================================
         # CONSTRUIR RESPUESTA
@@ -4520,14 +4639,76 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     from core.server_registry import get_server_connection_info
     from core.inventarios.contracts import build_normalized_inventory_request
 
-    from core.corporate_filters.request_resolver import canonical_server_id
+    from core.corporate_filters.request_resolver import (
+        canonical_server_id,
+        resolve_authorized_unidad_scope,
+    )
 
-    server_id = str(canonical_server_id(report_params.get('server_id')) or '').strip()
-    if not server_id:
-        raise HTTPException(status_code=400, detail='server_id es requerido')
-    report_params['server_id'] = server_id
-    access_context = await validate_server_access_unified(current_user, server_id)
-    normalized_request = build_normalized_inventory_request(report_params, server_id)
+    unidad_token = str(
+        report_params.get('unidad')
+        or report_params.get('unidad_id')
+        or ''
+    ).strip()
+    unidad_scope = None
+
+    if unidad_token:
+        unidad_scope = await resolve_authorized_unidad_scope(
+            current_user,
+            "OPERACIONES_VER",
+            unidad_token,
+        )
+        if unidad_scope.access_denied or not unidad_scope.server_id:
+            logging.warning(
+                "[RBAC-INVENTORY-ANALYSIS] Usuario=%s unidad=%s denegada reason=%s",
+                current_user.get("email"),
+                unidad_token,
+                unidad_scope.denial_reason,
+            )
+            raise HTTPException(
+                status_code=403,
+                detail="No tiene acceso a esta unidad de negocio",
+            )
+
+        server_id = str(unidad_scope.server_id).strip()
+        report_params['server_id'] = server_id
+        report_params['unidad'] = (
+            unidad_scope.unidad_codigo
+            or unidad_token
+        )
+
+        # En servidores compartidos (MPRO) la sucursal proviene siempre
+        # del catálogo canónico, nunca del frontend.
+        if unidad_scope.sucursal_origen_id:
+            report_params['sucursal_id'] = str(
+                unidad_scope.sucursal_origen_id
+            ).strip()
+
+        # Se conserva el contexto existente únicamente para restricciones
+        # adicionales de almacén. La autorización principal ya ocurrió
+        # por unidad canónica + OPERACIONES_VER.
+        access_context = await resolve_user_access_context(current_user)
+    else:
+        # Compatibilidad temporal para consumidores legacy que aún envían
+        # server_id directo. No ampliar este camino para servidores compartidos.
+        server_id = str(
+            canonical_server_id(report_params.get('server_id'))
+            or ''
+        ).strip()
+        if not server_id:
+            raise HTTPException(
+                status_code=400,
+                detail='unidad o server_id es requerido',
+            )
+        report_params['server_id'] = server_id
+        access_context = await validate_server_access_unified(
+            current_user,
+            server_id,
+        )
+
+    normalized_request = build_normalized_inventory_request(
+        report_params,
+        server_id,
+    )
 
     sucursal_id_param = normalized_request.sucursal_id_param
     sucursal = normalized_request.sucursal
@@ -4608,6 +4789,29 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
         selected_subfamilia_codes = _as_filter_set(filtro_subfamilias_frontend)
 
         selected_almacenes = []
+
+        # Regla canónica SoftRestaurant:
+        # almacenes tipo Presentaciones (tipo=2 / unidad_natural=presentaciones)
+        # NO descargan ventas. Si hay mezcla con al menos un almacén de consumo,
+        # las ventas se aplican una sola vez al conjunto.
+        selected_warehouse_items = list(almacenes or [])
+        soft_sales_enabled = True
+        if selected_warehouse_items:
+            def _is_presentation_warehouse(item):
+                if not isinstance(item, dict):
+                    return False
+                unidad_natural = _as_text(item.get('unidad_natural')).lower()
+                tipo_value = item.get('tipo', item.get('tipo_almacen', item.get('almacen_tipo')))
+                try:
+                    tipo_num = int(tipo_value)
+                except (TypeError, ValueError):
+                    tipo_num = None
+                return unidad_natural == 'presentaciones' or tipo_num == 2
+
+            soft_sales_enabled = any(
+                not _is_presentation_warehouse(item)
+                for item in selected_warehouse_items
+            )
 
         def _append_almacen_candidate(value):
             value_text = _as_text(value)
@@ -4930,23 +5134,40 @@ WHERE t._rn = 1
 
             detail_rows = _fetch_inventory_detail_rows(detail_filters, detail_params, "almacen")
 
-            if not detail_rows and (almacen_ids or almacen_names):
+            detail_folios = {
+                _as_text(row.get("folio"))
+                for row in detail_rows
+                if _as_text(row.get("folio"))
+            }
+            missing_detail_folios = [
+                folio for folio in folios_all
+                if _as_text(folio) not in detail_folios
+            ]
+
+            if missing_detail_folios and (almacen_ids or almacen_names):
                 folio_only_filters = [
                     "server_id = %s",
                     f"folio IN ({folio_placeholders})",
                     "sync_status IN ('ACTIVE', 'REPLACED')",
                 ]
                 folio_only_params = [server_id, *folios_all]
-                detail_rows = _fetch_inventory_detail_rows(
+                folio_rows = _fetch_inventory_detail_rows(
                     folio_only_filters,
                     folio_only_params,
                     "folio",
                 )
-                if detail_rows:
+                folio_coverage = {
+                    _as_text(row.get("folio"))
+                    for row in folio_rows
+                    if _as_text(row.get("folio"))
+                }
+                if all(_as_text(f) in folio_coverage for f in folios_all):
+                    detail_rows = folio_rows
                     logging.warning(
-                        "[SOFT-CANONICAL-NOLIVE] detalle recuperado por folio sin filtro de almacen; server_id=%s folios=%s almacenes=%s",
+                        "[SOFT-CANONICAL-NOLIVE] detalle recuperado por folio para completar cobertura; server_id=%s folios=%s faltaban=%s almacenes=%s",
                         server_id,
                         folios_all,
+                        missing_detail_folios,
                         sorted(almacen_ids or almacen_names),
                     )
 
@@ -4990,116 +5211,43 @@ WHERE t._rn = 1
                 if folio in fin_set:
                     inv_final[codigo] = inv_final.get(codigo, 0.0) + cantidad
 
-            movimientos = {}
-            movement_params = [server_id, period_start, period_end]
-            movement_filters = [
-                "server_id = %s",
-                "fecha >= %s",
-                "fecha <= %s",
-                "sync_status = 'ACTIVE'",
-                "ISNULL(idconcepto, '') NOT IN ('', 'SPV', 'SCP', 'SCS')",
-                _soft_date_only_final_day_guard("fecha"),
-            ]
-            movement_params.extend([period_end, period_end])
-            if almacen_ids:
-                ids = sorted(almacen_ids)
-                movement_filters.append(f"almacen_id IN ({','.join(['%s'] * len(ids))})")
-                movement_params.extend(ids)
-            elif almacen_names:
-                names = sorted(almacen_names)
-                movement_filters.append(f"almacen IN ({','.join(['%s'] * len(names))})")
-                movement_params.extend(names)
+            from core.inventarios.analysis_soft_sources import (
+                fetch_soft_activity_canonical,
+            )
 
-            try:
-                m_exec_started = perf_counter()
-                cursor.execute(
-                    f"""
-SELECT
-    codigo_producto,
-    SUM(cantidad) AS cantidad
-FROM Compras_Inventarios_Movimientos_Sync
-WHERE {' AND '.join(movement_filters)}
-GROUP BY codigo_producto
-""",
-                    tuple(movement_params),
-                )
-                m_exec_ms = int((perf_counter() - m_exec_started) * 1000)
-                m_fetch_started = perf_counter()
-                movimientos = {
-                    _as_text(row.get('codigo_producto')): _as_float(row.get('cantidad'))
-                    for row in cursor.fetchall()
-                    if _as_text(row.get('codigo_producto'))
-                }
-                m_fetch_ms = int((perf_counter() - m_fetch_started) * 1000)
-                logging.info(
-                    "[INV-STAGE] stage=MOVIMIENTOS execute_ms=%s fetch_ms=%s rows=%s classification=OK",
-                    m_exec_ms,
-                    m_fetch_ms,
-                    len(movimientos),
-                )
-            except Exception as mov_error:
-                mov_class = _classify_inventory_sql_error(mov_error)
-                logging.exception(
-                    "[INV-STAGE] stage=MOVIMIENTOS classification=%s error_type=%s",
-                    mov_class,
-                    type(mov_error).__name__,
-                )
-                raise
+            scope_unidad_codigo = (
+                unidad_scope.unidad_codigo
+                if unidad_scope is not None
+                else _as_text(unidad_token)
+            )
+            scope_sucursal_origen = (
+                unidad_scope.sucursal_origen_id
+                if unidad_scope is not None
+                else _as_text(report_params.get("sucursal_id"))
+            )
+            activity_warehouses = sorted(almacen_ids or almacen_names)
 
-            ventas = {}
-            sales_params = [server_id, sales_start, sales_end]
-            sales_filters = [
-                "server_id = %s",
-                "fecha >= %s",
-                "fecha <= %s",
-                "sync_status = 'ACTIVE'",
-                "ISNULL(idconcepto, '') IN ('SPV', 'SCP', 'SCS')",
-                _soft_date_only_final_day_guard("fecha"),
-            ]
-            sales_params.extend([sales_end, sales_end])
-            if almacen_ids:
-                ids = sorted(almacen_ids)
-                sales_filters.append(f"almacen_id IN ({','.join(['%s'] * len(ids))})")
-                sales_params.extend(ids)
-            elif almacen_names:
-                names = sorted(almacen_names)
-                sales_filters.append(f"almacen IN ({','.join(['%s'] * len(names))})")
-                sales_params.extend(names)
-
-            try:
-                s_exec_started = perf_counter()
-                cursor.execute(
-                    f"""
-SELECT
-    codigo_producto,
-    SUM(cantidad) AS cantidad
-FROM Compras_Inventarios_Movimientos_Sync
-WHERE {' AND '.join(sales_filters)}
-GROUP BY codigo_producto
-""",
-                    tuple(sales_params),
-                )
-                s_exec_ms = int((perf_counter() - s_exec_started) * 1000)
-                s_fetch_started = perf_counter()
-                ventas = {
-                    _as_text(row.get('codigo_producto')): abs(_as_float(row.get('cantidad')))
-                    for row in cursor.fetchall()
-                    if _as_text(row.get('codigo_producto'))
-                }
-                s_fetch_ms = int((perf_counter() - s_fetch_started) * 1000)
-                logging.info(
-                    "[INV-STAGE] stage=VENTAS execute_ms=%s fetch_ms=%s rows=%s classification=OK",
-                    s_exec_ms,
-                    s_fetch_ms,
-                    len(ventas),
-                )
-            except Exception as sales_error:
-                sales_class = _classify_inventory_sql_error(sales_error)
-                logging.warning(
-                    "[INV-STAGE] stage=VENTAS classification=%s error_type=%s",
-                    sales_class,
-                    type(sales_error).__name__,
-                )
+            movimientos, ventas = fetch_soft_activity_canonical(
+                cursor,
+                server_id=server_id,
+                unidad_codigo=scope_unidad_codigo,
+                sucursal_origen_id=scope_sucursal_origen,
+                movement_start=period_start,
+                movement_end=period_end,
+                sales_start=sales_start,
+                sales_end=sales_end,
+                warehouses=activity_warehouses,
+                visible_product_codes=sorted(productos.keys()),
+                include_sales=soft_sales_enabled,
+                selected_movement_codes=server.get("tipos_movimiento") or [],
+            )
+            logging.info(
+                "[SOFT-CANONICAL-NOLIVE] actividad canonica movimientos=%s ventas=%s unidad=%s sales_enabled=%s",
+                len(movimientos),
+                len(ventas),
+                scope_unidad_codigo,
+                soft_sales_enabled,
+            )
 
             all_codes = sorted(set(productos.keys()) | set(inv_inicial.keys()) | set(inv_final.keys()) | set(movimientos.keys()) | set(ventas.keys()))
             catalogo_productos = {}
@@ -5673,7 +5821,7 @@ GROUP BY Codigo
                     'Producto': prod.get('Producto') or f'Producto {codigo}',
                     'Unidad': prod.get('Unidad') or 'PZA',
                     'Rendimiento': _as_float(prod.get('Rendimiento')) or 1,
-                    'tipo_almacen': 1,
+                    'tipo_almacen': 1 if soft_sales_enabled else 2,
                     'Costo_Unitario': round(costo, 4),
                     'Inv_Inicial_Cantidad': round(inv_ini_qty, 4),
                     'Inv_Inicial_Costo': round(inv_ini_qty * costo, 2),
@@ -5702,7 +5850,23 @@ GROUP BY Codigo
                 len(movimientos),
                 len(ventas),
             )
-            return {"data": results, "count": len(results), "source": "EDARSAHUB_SQL_CANONICAL"}
+            return {
+                "data": results,
+                "count": len(results),
+                "source": "EDARSAHUB_SQL_CANONICAL",
+                "detalle_ventanas": {
+                    "movimientos": {
+                        "fecha_inicio": period_start.isoformat(sep=" "),
+                        "fecha_fin": period_end.isoformat(sep=" "),
+                    },
+                    "ventas": {
+                        "fecha_inicio": sales_start.isoformat(sep=" "),
+                        "fecha_fin": sales_end.isoformat(sep=" "),
+                        "habilitado": soft_sales_enabled,
+                    },
+                    "almacenes": activity_warehouses,
+                },
+            }
         except HTTPException:
             raise
         except Exception as error:
@@ -5725,17 +5889,63 @@ GROUP BY Codigo
             return await _generate_soft_inventory_analysis_canonical()
 
         if is_mpro_system(server.get('system_type')):
-            raise HTTPException(
-                status_code=503,
-                detail={
-                    "code": "INVENTORY_ANALYSIS_CANONICAL_PENDING",
-                    "message": (
-                        "Análisis de inventario MPRO pendiente de fuente canónica EDARSAHUB. "
-                        "Por regla NO-LIVE no se consulta POS en vivo."
-                    ),
-                    "source": "EDARSAHUB_SQL_CANONICAL",
-                },
+            if unidad_scope is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "code": "MPRO_CANONICAL_UNIT_REQUIRED",
+                        "message": (
+                            "ManagementPro requiere unidad canónica para "
+                            "desambiguar sucursal sin mezclar datos."
+                        ),
+                        "source": "EDARSAHUB_SQL_CANONICAL",
+                    },
+                )
+
+            from core.inventarios.analysis_mpro_canonical import (
+                MproInventoryAnalysisSourceError,
+                generate_mpro_inventory_analysis_canonical,
             )
+
+            logging.info(
+                "[MPRO-CANONICAL-NOLIVE] unidad=%s server=%s sucursal=%s "
+                "folios_ini=%s folios_fin=%s",
+                unidad_scope.unidad_codigo,
+                server_id,
+                unidad_scope.sucursal_origen_id,
+                lista_folios_ini,
+                lista_folios_fin,
+            )
+            try:
+                return generate_mpro_inventory_analysis_canonical(
+                    server_id=server_id,
+                    unidad_pk=unidad_scope.unidad_pk,
+                    unidad_codigo=unidad_scope.unidad_codigo,
+                    sucursal_origen_id=unidad_scope.sucursal_origen_id,
+                    folios_iniciales=lista_folios_ini,
+                    folios_finales=lista_folios_fin,
+                    fecha_ini=fecha_ini,
+                    fecha_fin=fecha_fin,
+                    almacenes=almacenes or ([almacen] if almacen else []),
+                    selected_movement_codes=server.get("tipos_movimiento") or [],
+                    categorias=filtro_categorias_frontend,
+                    familias=filtro_familias_frontend,
+                    subfamilias=filtro_subfamilias_frontend,
+                )
+            except MproInventoryAnalysisSourceError as source_error:
+                logging.warning(
+                    "[MPRO-CANONICAL-NOLIVE] source_error code=%s message=%s",
+                    source_error.code,
+                    source_error.message,
+                )
+                raise HTTPException(
+                    status_code=source_error.status_code,
+                    detail={
+                        "code": source_error.code,
+                        "message": source_error.message,
+                        "source": "EDARSAHUB_SQL_CANONICAL",
+                    },
+                )
 
         raise HTTPException(
             status_code=400,
@@ -10186,6 +10396,47 @@ async def limpiar_inventarios_provisionales(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+async def _resolve_detalle_producto_scope(request, current_user):
+    """Autoriza drilldown por unidad canónica para SoftRestaurant y MPRO."""
+    from core.corporate_filters.request_resolver import (
+        canonical_server_id,
+        resolve_authorized_unidad_scope,
+        resolve_unidad_simple,
+    )
+    from core.user_access_context import resolve_user_access_context, has_server_access
+    from modules.compras.access import require_compras_permission, COMPRAS_VER
+
+    token = str(request.server_id or "").strip()
+    unidad, matched_by = resolve_unidad_simple(token)
+
+    if matched_by == "unidad" and unidad:
+        scope = await resolve_authorized_unidad_scope(
+            current_user,
+            COMPRAS_VER,
+            token,
+        )
+        if scope.access_denied or not scope.server_id:
+            raise HTTPException(
+                status_code=403,
+                detail="No tiene acceso a esta unidad de negocio.",
+            )
+        request.server_id = str(scope.server_id).strip()
+        if scope.sucursal_origen_id:
+            request.sucursal = str(scope.sucursal_origen_id).strip()
+        return scope
+
+    # Compatibilidad legacy: server_id directo mantiene validación estricta.
+    request.server_id = canonical_server_id(token)
+    require_compras_permission(current_user, COMPRAS_VER)
+    access_context = await resolve_user_access_context(current_user)
+    if not has_server_access(access_context, request.server_id):
+        raise HTTPException(
+            status_code=403,
+            detail="No tiene acceso a esta unidad de negocio.",
+        )
+    return None
+
+
 @api_router.post("/compras/detalle-movimientos")
 async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, current_user: Dict = Depends(get_current_user)):
     """
@@ -10200,23 +10451,14 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
     print("Fecha final:", request.fecha_fin)
     print("Server ID:", request.server_id)
 
-    # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy (detalle-movimientos).
-    from core.corporate_filters.request_resolver import canonical_server_id
-    request.server_id = canonical_server_id(request.server_id)
+    # Unidad canónica + RBAC SQL para ambos motores; legacy conserva server_id estricto.
+    detalle_scope = await _resolve_detalle_producto_scope(request, current_user)
 
     # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
     from core.server_registry import get_server_connection_info
     server = await get_server_connection_info(request.server_id, db=db)
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-
-    # RBAC: alcance por servidor/unidad y permiso funcional de Compras.
-    from core.user_access_context import resolve_user_access_context, has_server_access
-    from modules.compras.access import require_compras_permission, COMPRAS_VER
-    require_compras_permission(current_user, COMPRAS_VER)
-    access_context = await resolve_user_access_context(current_user)
-    if not has_server_access(access_context, request.server_id):
-        raise HTTPException(status_code=403, detail="No tiene acceso a esta unidad de negocio.")
 
     # =====================================================================
     # NO-LIVE: el detalle de movimientos se lee EXCLUSIVAMENTE de las tablas
@@ -10243,10 +10485,45 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
     logging.info(f"[DETALLE_MOV][NO-LIVE] server={request.server_id} sys={system_type} codigo='{codigo_limpio}' "
                  f"fechas={request.fecha_inicio}..{request.fecha_fin} almacenes={almacenes_limpios}")
 
-    try:
-        if is_softrestaurant_system(server.get('system_type')):
-            return _obtener_detalle_softrestaurant_canonico(request, solo_ventas=False)
+    if is_softrestaurant_system(server.get('system_type')):
+        if detalle_scope is None:
+            raise HTTPException(status_code=400, detail="SoftRestaurant requiere unidad canónica para el desglose.")
+        conn = None
+        try:
+            from core.inventarios.analysis_soft_sources import get_soft_movement_detail
+            conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=15)
+            cursor = conn.cursor(as_dict=True)
+            result = get_soft_movement_detail(
+                cursor,
+                server_id=request.server_id,
+                unidad_codigo=detalle_scope.unidad_codigo,
+                sucursal_origen_id=detalle_scope.sucursal_origen_id,
+                componente_codigo=codigo_limpio,
+                fecha_ini=request.fecha_inicio,
+                fecha_fin=request.fecha_fin,
+                warehouses=almacenes_limpios,
+                selected_movement_codes=server.get("tipos_movimiento") or [],
+            )
+            return {
+                "movimientos": result["rows"],
+                "totales": result["totales"],
+                "source": "EDARSAHUB_SQL_CANONICAL",
+            }
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logging.exception("[DETALLE_MOV][SOFT-CANONICAL] Error")
+            return {
+                "movimientos": [],
+                "totales": {"entradas": 0, "salidas": 0, "neto": 0},
+                "error": f"Error al obtener movimientos SoftRestaurant: {str(exc)[:120]}",
+            }
+        finally:
+            if conn is not None:
+                conn.close()
 
+    try:
+        # MPRO conserva la ruta de movimientos existente, sin alterar sus reglas.
         conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
 
@@ -10268,20 +10545,52 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
         # 2) Detalle de movimientos canónico (NO-LIVE).
         prod_ph = ", ".join(["%s"] * len(producto_ids))
         params = list(producto_ids) + [request.fecha_inicio, request.fecha_fin]
+        filtro_scope = ""
+        if detalle_scope is not None:
+            from core.inventarios.resolver_canonico import resolver_empresa_id, resolver_sucursal_id
+
+            empresa_scope = resolver_empresa_id(detalle_scope.unidad_codigo)
+            sucursal_scope = resolver_sucursal_id(
+                request.server_id,
+                detalle_scope.sucursal_origen_id,
+            )
+            if not empresa_scope.resuelto or not sucursal_scope.resuelto:
+                conn.close()
+                raise HTTPException(
+                    status_code=400,
+                    detail="No se pudo resolver Empresa/Sucursal canónica para el drilldown.",
+                )
+            filtro_scope = " AND m.EmpresaID = %s AND m.SucursalID = %s "
+            params += [int(empresa_scope.canonical_id), int(sucursal_scope.canonical_id)]
+
         filtro_almacen = ""
         if almacenes_limpios:
             alm_ph = ", ".join(["%s"] * len(almacenes_limpios))
-            filtro_almacen = f" AND al.CodigoAlmacen IN ({alm_ph}) "
-            params += almacenes_limpios
+            # Paridad con el reporte MPRO: aceptar id canónico, código
+            # o nombre visible, sin mezclar otras unidades/sucursales.
+            filtro_almacen = (
+                f" AND (CONVERT(varchar(50), al.AlmacenID) IN ({alm_ph}) "
+                f"OR al.CodigoAlmacen IN ({alm_ph}) OR al.NombreAlmacen IN ({alm_ph})) "
+            )
+            params.extend(almacenes_limpios)
+            params.extend(almacenes_limpios)
+            params.extend(almacenes_limpios)
+
+        from core.inventarios.movement_filter_config import movement_origin_sql_filter
+        origin_filter, origin_params = movement_origin_sql_filter(
+            server.get("tipos_movimiento") or []
+        )
+        params.extend(origin_params)
 
         query = f"""
-        SELECT TOP 1000
+        SELECT
             m.FechaMovimiento AS fecha,
             tm.Codigo AS concepto,
             tm.Descripcion AS descripcion_concepto,
             d.Cantidad AS cantidad,
             al.NombreAlmacen AS almacen,
             ISNULL(m.FolioReferencia, '') AS referencia,
+            ISNULL(m.ReferenciaTipo, '') AS referencia_tipo,
             tm.Naturaleza AS tipo
         FROM dbo.Inventario_MovimientosDetalle d
         INNER JOIN dbo.Inventario_Movimientos m ON m.MovimientoID = d.MovimientoID
@@ -10290,26 +10599,49 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
         WHERE d.ProductoID IN ({prod_ph})
           AND m.FechaMovimiento >= CAST(%s AS DATE)
           AND m.FechaMovimiento < DATEADD(DAY, 1, CAST(%s AS DATE))
+          {filtro_scope}
           {filtro_almacen}
+          AND ({origin_filter})
+          AND ISNULL(m.Activo,1)=1
         ORDER BY m.FechaMovimiento DESC
         """
         cursor.execute(query, tuple(params))
         for r in cursor.fetchall():
             cantidad = float(r['cantidad'] or 0)
             tipo = (r['tipo'] or 'S').upper()
+            concepto_visible = r['concepto'] or ''
+            descripcion_visible = r['descripcion_concepto'] or ''
+
+            if is_mpro_system(server.get('system_type')):
+                referencia_tipo = str(r.get('referencia_tipo') or '')
+                if referencia_tipo.startswith('MOVIMIENTO_POS|'):
+                    from core.inventarios.mpro_movement_policy import (
+                        MPRO_INVENTORY_MOVEMENT_POLICY,
+                    )
+                    codigo_origen = referencia_tipo.split('|', 1)[1].strip()
+                    if codigo_origen:
+                        concepto_visible = codigo_origen
+                        policy_item = MPRO_INVENTORY_MOVEMENT_POLICY.get(codigo_origen)
+                        if policy_item:
+                            descripcion_visible = policy_item.get('descripcion') or descripcion_visible
+
             movimientos.append({
                 "fecha": r['fecha'].isoformat() if hasattr(r['fecha'], 'isoformat') else str(r['fecha']),
-                "concepto": r['concepto'] or '',
-                "descripcion": r['descripcion_concepto'] or '',
-                "cantidad": cantidad if tipo == 'E' else -cantidad,
+                "concepto": concepto_visible,
+                "descripcion": descripcion_visible,
+                "cantidad": cantidad if tipo in ('E', 'EN', 'ENTRADA') else -cantidad,
                 "almacen": r['almacen'] or '',
                 "referencia": str(r['referencia'] or ''),
                 "tipo": tipo
             })
-            if tipo == 'E':
+            if tipo in ('E', 'EN', 'ENTRADA'):
                 totales["entradas"] += cantidad
             else:
                 totales["salidas"] += cantidad
+
+        # VENTAS es una columna separada. No añadir reclasificaciones sintéticas
+        # al detalle de MOVIMIENTOS: su suma debe coincidir con el ledger filtrado.
+
         conn.close()
 
         totales["neto"] = totales["entradas"] - totales["salidas"]
@@ -10452,40 +10784,152 @@ async def obtener_detalle_consumos_post(request: DetalleConsumosRequest, current
     UNIFICACIÓN CANÓNICA (Fase B): utiliza fuentes sincronizadas en EDARSAHUB.
     La fecha inicial proviene del inventario inicial (la envía el frontend en fecha_inicio).
     """
-    # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy.
-    from core.corporate_filters.request_resolver import canonical_server_id
-    request.server_id = canonical_server_id(request.server_id)
+    # Unidad canónica + RBAC SQL para ambos motores.
+    detalle_scope = await _resolve_detalle_producto_scope(request, current_user)
 
     from core.server_registry import get_server_connection_info
     server = await get_server_connection_info(request.server_id, db=db)
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
 
-    # RBAC: alcance por servidor/unidad y permiso funcional de Compras.
-    from core.user_access_context import resolve_user_access_context, has_server_access
-    from modules.compras.access import require_compras_permission, COMPRAS_VER
-    require_compras_permission(current_user, COMPRAS_VER)
-    access_context = await resolve_user_access_context(current_user)
-    if not has_server_access(access_context, request.server_id):
-        raise HTTPException(status_code=403, detail="No tiene acceso a esta unidad de negocio.")
-
     if is_softrestaurant_system(server.get('system_type')):
+        if detalle_scope is None:
+            raise HTTPException(status_code=400, detail="SoftRestaurant requiere unidad canónica para el desglose.")
+        conn = None
         try:
-            return _obtener_detalle_softrestaurant_canonico(request, solo_ventas=True)
+            from core.inventarios.analysis_soft_sources import get_soft_sales_consumption_detail
+            conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=15)
+            cursor = conn.cursor(as_dict=True)
+            detail = get_soft_sales_consumption_detail(
+                cursor,
+                unidad_codigo=detalle_scope.unidad_codigo,
+                server_id=request.server_id,
+                componente_codigo=request.codigo,
+                fecha_ini=request.fecha_inicio,
+                fecha_fin=request.fecha_fin,
+            )
+            rows = []
+            for item in detail.get("rows") or []:
+                consumo = float(item.get("cantidad_consumo") or 0)
+                fecha = item.get("fecha")
+                rows.append({
+                    "fecha": fecha.isoformat() if hasattr(fecha, "isoformat") else str(fecha or ""),
+                    "concepto": "VENTA",
+                    "descripcion": f"Consumo por venta {item.get('producto_venta') or ''}".strip(),
+                    "cantidad": -consumo,
+                    "almacen": "",
+                    "referencia": str(item.get("producto_venta") or ""),
+                    "tipo": "S",
+                })
+            total = float(detail.get("total") or 0)
+            return {
+                "consumos": rows,
+                "movimientos": rows,
+                "totales": {"total": total, "entradas": 0, "salidas": total, "neto": -total},
+                "source": "EDARSAHUB_SQL_CANONICAL",
+            }
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logging.exception("[DETALLE_CONSUMOS][SOFT-CANONICAL] Error")
+            return {"consumos": [], "movimientos": [],
+                    "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
+                    "error": f"Error al obtener ventas SoftRestaurant: {str(exc)[:120]}"}
+        finally:
+            if conn is not None:
+                conn.close()
+
+    if is_mpro_system(server.get('system_type')):
+        if detalle_scope is None:
+            return {
+                "consumos": [],
+                "movimientos": [],
+                "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
+                "source": "EDARSAHUB_SQL_CANONICAL",
+                "error": "MPRO requiere unidad canónica para el detalle de ventas.",
+            }
+
+        warehouse_ids = {
+            str(value or "").strip().zfill(4)
+            for value in (request.almacenes or [])
+            if str(value or "").strip()
+        }
+        sales_enabled = (not warehouse_ids) or ("0001" in warehouse_ids)
+        if not sales_enabled:
+            return {
+                "consumos": [],
+                "movimientos": [],
+                "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
+                "source": "EDARSAHUB_SQL_CANONICAL",
+            }
+
+        conn = None
+        try:
+            from core.inventarios.analysis_mpro_canonical import (
+                get_mpro_sales_consumption_detail,
+            )
+
+            conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=15)
+            cursor = conn.cursor(as_dict=True)
+            detail = get_mpro_sales_consumption_detail(
+                cursor,
+                unidad_codigo=detalle_scope.unidad_codigo,
+                server_id=request.server_id,
+                componente_codigo=request.codigo,
+                fecha_ini=request.fecha_inicio,
+                fecha_fin=request.fecha_fin,
+            )
+            rows = []
+            for item in detail.get("rows") or []:
+                consumo = abs(float(item.get("cantidad_consumo") or 0))
+                rows.append({
+                    "fecha": (
+                        item.get("fecha").isoformat()
+                        if hasattr(item.get("fecha"), "isoformat")
+                        else str(item.get("fecha") or "")
+                    ),
+                    "concepto": "VENTA",
+                    "descripcion": f"Consumo por venta {item.get('producto_venta') or ''}".strip(),
+                    "cantidad": -consumo,
+                    "almacen": "0001",
+                    "referencia": str(item.get("producto_venta") or ""),
+                    "tipo": "S",
+                })
+
+            total = abs(float(detail.get("total") or 0))
+            return {
+                "consumos": rows,
+                "movimientos": rows,
+                "totales": {
+                    "total": total,
+                    "entradas": 0,
+                    "salidas": total,
+                    "neto": -total,
+                },
+                "source": "EDARSAHUB_SQL_CANONICAL",
+            }
         except Exception as e:
-            logging.error(f"[DETALLE_CONSUMOS][SOFT-CANONICAL] Error: {e}")
-            return {"consumos": [], "movimientos": [], "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
-                    "error": f"Error al obtener consumos: {str(e)[:100]}"}
+            logging.error(f"[DETALLE_CONSUMOS][MPRO-CANONICAL] Error: {e}")
+            return {
+                "consumos": [],
+                "movimientos": [],
+                "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
+                "source": "EDARSAHUB_SQL_CANONICAL",
+                "error": f"Error al obtener ventas MPRO: {str(e)[:120]}",
+            }
+        finally:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     return {
         "consumos": [],
         "movimientos": [],
         "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
-        "source": "EDARSAHUB_SQL_CANONICAL_PENDING",
-        "error": (
-            "Detalle canónico de consumos para este sistema pendiente de sincronización. "
-            "Por regla NO-LIVE no se consulta POS en vivo."
-        ),
+        "source": "EDARSAHUB_SQL_CANONICAL",
+        "error": "Sistema no soportado para detalle de ventas.",
     }
 
 
@@ -12271,7 +12715,7 @@ import os
 from datetime import datetime
 
 # Directorio para almacenar evidencias
-EVIDENCIAS_DIR = "/app/uploads/evidencias"
+EVIDENCIAS_DIR = os.environ.get("EDARSAHUB_EVIDENCIAS_DIR", "/app/uploads/evidencias")
 os.makedirs(EVIDENCIAS_DIR, exist_ok=True)
 
 # Modelos Pydantic para Informes de Auditoría
@@ -14894,7 +15338,7 @@ async def obtener_pendientes_unificados(
 
     # ===== SCOPE POR UNIDAD / PERMISOS =====
     # Admin/SuperAdmin ven todas las unidades. Roles operativos solo sus servers permitidos.
-    from core.security import es_admin as _es_admin, es_superadmin as _es_superadmin, get_user_empresas_permitidas
+    from core.security import es_admin as _es_admin, es_superadmin as _es_superadmin
     is_admin_view = _es_admin(current_user) or _es_superadmin(current_user)
     allowed_servers = set()
     if not is_admin_view:
@@ -16323,8 +16767,24 @@ async def retirar_perfil_usuario(
 app.include_router(api_router)
 
 # WORKER: endpoint autenticado de runtime wake
-from modules.worker_runtime_wake.routes import router as worker_runtime_wake_router
+# Runtime reload marker 2026-09-20: fuerza recarga Preview sin cambio funcional; Produccion fuera de alcance.
+from modules.worker_runtime_wake.routes import (
+    router as worker_runtime_wake_router,
+    ensure_worker_runtime_on_preview_startup,
+)
 app.include_router(worker_runtime_wake_router, prefix="/api")
+
+# Universal Worker Remote Canonical Ingress (global)
+from modules.worker_ingress.routes import router as worker_ingress_router
+app.include_router(worker_ingress_router, prefix="/api")
+
+# Existing MCP gateway: routes already include /api/mcp (no additional prefix).
+from modules.worker_mcp.gateway_router import router as worker_mcp_gateway_router
+app.include_router(worker_mcp_gateway_router)
+
+# EDARSAHUB Universal Worker Console (Fase 1, solo lectura)
+from modules.worker_console.routes import router as worker_console_router
+app.include_router(worker_console_router, prefix="/api")
 
 # FASE6: health canónico V1.0 (SQL-First / NO-LIVE) -> /api/health/v1
 app.include_router(health_v1_router, prefix="/api")
@@ -16388,6 +16848,13 @@ from api.admin_scheduler_resync import router as admin_resync_router
 app.include_router(admin_resync_router, tags=["Admin - Scheduler Resync"])
 logger.info("Consola Admin Scheduler Resync registrada")
 
+# ============= SINCRONIZACION HISTORICA DE TABLAS =============
+# Modulo canonico metadata-driven. La API solo planifica/persiste/encola;
+# la ejecucion real pertenece al WORKER UNIVERSAL V1.2.
+from modules.sync_historicos.routes import router as sync_historical_router
+app.include_router(sync_historical_router)
+logger.info("Sincronizacion Historica de Tablas registrada")
+
 # ============= LIMPIEZA DE CACHÉ PREVIEW =============
 # P0-CACHE-PREVIEW: Limpieza automática de cachés en modo preview
 from api.admin_cache import router as admin_cache_router
@@ -16424,13 +16891,15 @@ from modules.rentabilidad.routes import router as rentabilidad_router
 from modules.alertas_estrategicas.routes import router as alertas_estrategicas_router
 from core.sql_first.db import get_sql_connection
 from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
-# Inicializar RBAC (sembrar permisos y roles si no existen)
-try:
-    rbac_service = RBACService(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad
-    rbac_service.ensure_initialized()
-    logger.info("RBAC Service inicializado (SQL Server)")
-except Exception as e:
-    logger.warning(f"Error inicializando RBAC: {e}")
+def _initialize_rbac_runtime() -> None:
+    """Inicializa RBAC en runtime, nunca durante el import del módulo."""
+    try:
+        rbac_service = RBACService(db)
+        rbac_service.ensure_initialized()
+        logger.info("RBAC Service inicializado (SQL Server)")
+    except Exception as e:
+        logger.warning(f"Error inicializando RBAC: {e}")
+
 app.include_router(rbac_router, prefix="/api/v2", tags=["RBAC"])
 
 # ============= COMERCIAL V2 - ENDPOINTS AISLADOS =============
@@ -16764,31 +17233,128 @@ except Exception as e:
 
 
 # =============================================================================
-# P0 - TRIGGER HTTP PRODUCTIVO PARA VENTAS DEL DIA
+# PRODUCCION - TRIGGER HTTP EXTERNO PARA INVENTARIOS/COMPRAS
 # =============================================================================
 try:
-    from modules.scheduler_trigger.routes import router as scheduler_trigger_router
-    app.include_router(scheduler_trigger_router)
+    from modules.scheduler_trigger_inventarios.routes import (
+        router as inventory_scheduler_trigger_router,
+    )
+    app.include_router(inventory_scheduler_trigger_router)
+    logger.info("Inventory scheduler HTTP trigger router registrado")
+except Exception as e:
+    logger.warning(
+        "Error registrando Inventory scheduler HTTP trigger router: %s",
+        e,
+    )
+
+# Production-only Scheduler HTTP trigger. El router falla cerrado fuera de PRODUCTION_WEB.
+try:
+    from modules.scheduler_trigger.routes import router as production_scheduler_trigger_router
+    app.include_router(production_scheduler_trigger_router)
     logger.info("Production scheduler HTTP trigger router registrado")
 except Exception as e:
-    logger.warning(f"Error registrando scheduler HTTP trigger router: {e}")
+    logger.warning(f"Error registrando production scheduler HTTP trigger router: {e}")
 
 
 # =============================================================================
-# UNIVERSAL WORKER - WAKE INTERNO CANONICO
+# PREVIEW - TRIGGER HTTP EXTERNO PARA SINCRONIZADORES COMERCIALES
 # =============================================================================
 try:
-    from modules.worker_runtime_wake.routes import router as worker_runtime_wake_router
-    app.include_router(worker_runtime_wake_router, prefix="/api")
-    logger.info("Universal Worker wake router registrado")
+    from modules.scheduler_trigger_preview.routes import (
+        router as preview_scheduler_trigger_router,
+    )
+    app.include_router(preview_scheduler_trigger_router)
+    logger.info("Preview commercial scheduler HTTP trigger router registrado")
 except Exception as e:
-    logger.warning(f"Error registrando Universal Worker wake router: {e}")
+    logger.warning(
+        "Error registrando Preview commercial scheduler HTTP trigger router: %s",
+        e,
+    )
 
 
-# Startup: ownership explicito del Scheduler.
+# UNIVERSAL WORKER: el router se registra una sola vez arriba.
+# El arranque del backend actua como frontera local de auto-recuperacion del Worker.
+
+
+# Startup: recuperar Worker y aplicar ownership explicito del Scheduler.
 @app.on_event("startup")
 async def startup_scheduler():
-    """Aplica ownership del scheduler y despierta Ventas del Dia en Live."""
+    """Recupera el Worker y arranca APScheduler solo si la politica lo permite."""
+    _initialize_rbac_runtime()
+
+    try:
+        worker_runtime_state = ensure_worker_runtime_on_preview_startup()
+        logger.info(f"Universal Worker startup self-heal: {worker_runtime_state}")
+    except Exception as e:
+        logger.warning(f"Universal Worker startup self-heal no disponible: {e}")
+
+    # PREVIEW commercial ownership cutover:
+    # GitHub Actions is the default external owner. The legacy internal wakes
+    # remain available only through an explicit rollback flag.
+    try:
+        from modules.scheduler_runtime.policy import (
+            should_start_preview_commercial_internal_owner,
+        )
+
+        if should_start_preview_commercial_internal_owner():
+            from modules.scheduler_runtime.preview_sales_wake import (
+                start_preview_sales_wake,
+            )
+            from modules.scheduler_runtime.preview_closed_sales_wake import (
+                start_preview_closed_sales_wake,
+            )
+
+            preview_sales_wake_state = start_preview_sales_wake(db)
+            preview_closed_sales_wake_state = start_preview_closed_sales_wake(db)
+            logger.warning(
+                "Preview commercial internal owner enabled "
+                "open=%s closed=%s",
+                preview_sales_wake_state,
+                preview_closed_sales_wake_state,
+            )
+        else:
+            logger.warning(
+                "Preview commercial internal owner disabled; "
+                "external owner is authoritative"
+            )
+    except Exception as e:
+        logger.error(
+            "Preview commercial owner policy unavailable: %s",
+            e,
+        )
+
+    try:
+        from modules.scheduler_trigger.wake_loop import (
+            start_production_sales_wake,
+        )
+
+        production_sales_wake_state = start_production_sales_wake(db)
+        logger.warning(
+            "Production Ventas del Dia wake state=%s",
+            production_sales_wake_state,
+        )
+    except Exception as e:
+        logger.error(
+            "Production Ventas del Dia wake no disponible: %s",
+            e,
+        )
+
+    try:
+        from modules.scheduler_runtime.preview_scoped_scheduler import (
+            start_preview_scoped_scheduler,
+        )
+
+        preview_scoped_scheduler_state = await start_preview_scoped_scheduler(db)
+        logger.warning(
+            "Preview scoped scheduler state=%s",
+            preview_scoped_scheduler_state,
+        )
+    except Exception as e:
+        logger.error(
+            "Preview scoped scheduler no disponible: %s",
+            e,
+        )
+
     try:
         from modules.scheduler_runtime.policy import (
             runtime_policy_snapshot,
@@ -16800,7 +17366,7 @@ async def startup_scheduler():
         if should_start_embedded_scheduler():
             from core.scheduler import start_scheduler
 
-            await start_scheduler(db)
+            await start_scheduler(db)  # SQL-only; StubDatabase conserva firmas legacy
             logger.warning(
                 "Scheduler embebido iniciado environment=%s role=%s legacy_fallback=%s",
                 policy.get("environment"),
@@ -16820,32 +17386,45 @@ async def startup_scheduler():
         logger.error(f"Error evaluando/iniciando scheduler: {e}")
         # Fail-closed para roles invalidos; el backend web debe continuar disponible.
 
-    try:
-        from modules.scheduler_trigger.wake_loop import (
-            start_internal_wake_loop,
-        )
-
-        wake_state = start_internal_wake_loop()
-        logger.warning(
-            "Production internal wake state: %s",
-            wake_state,
-        )
-    except Exception as e:
-        logger.error(f"Error iniciando production internal wake: {e}")
-
 # Shutdown: Detener scheduler
 @app.on_event("shutdown")
 async def shutdown_scheduler():
-    """Detiene scheduler y wake loop limpiamente."""
+    """Detiene el scheduler y el wake acotado de Preview limpiamente."""
     try:
-        from modules.scheduler_trigger.wake_loop import (
-            stop_internal_wake_loop,
+        from modules.scheduler_runtime.preview_sales_wake import (
+            stop_preview_sales_wake,
         )
 
-        await stop_internal_wake_loop()
-        logger.info("Production internal wake detenido correctamente")
+        await stop_preview_sales_wake()
     except Exception as e:
-        logger.error(f"Error deteniendo production internal wake: {e}")
+        logger.error(
+            "Error deteniendo Preview Ventas del Dia wake: %s",
+            e,
+        )
+
+    try:
+        from modules.scheduler_runtime.preview_closed_sales_wake import (
+            stop_preview_closed_sales_wake,
+        )
+
+        await stop_preview_closed_sales_wake()
+    except Exception as e:
+        logger.error(
+            "Error deteniendo Preview Ventas Cerradas wake: %s",
+            e,
+        )
+
+    try:
+        from modules.scheduler_trigger.wake_loop import (
+            stop_production_sales_wake,
+        )
+
+        await stop_production_sales_wake()
+    except Exception as e:
+        logger.error(
+            "Error deteniendo Production Ventas del Dia wake: %s",
+            e,
+        )
 
     try:
         from core.scheduler import stop_scheduler

@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Recover Universal Worker runtime convergence after BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-CONTRACT-R4 ended GIT_DIVERGENCE_BLOCKED with NEEDS_FAST_FORWARD_REFRESH. Require fast-forward only to current Edarsahub_Desarrollo, preserve local work, fail closed on wrong branch, non-fast-forward or unsafe local state. Restart only the canonical Universal Worker when required. Production must not be touched.",
+  "existing_job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-CONTRACT-R4",
+  "production_touched": false
+}

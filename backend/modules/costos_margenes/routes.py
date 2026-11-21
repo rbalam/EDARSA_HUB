@@ -136,6 +136,28 @@ def _verify_costos_margenes_access(
     return permission
 
 
+_ALL_UNITS_SENTINELS = {
+    "",
+    "ALL",
+    "__ALL__",
+    "TODAS",
+    "__TODAS__",
+    "TODOS",
+    "__TODOS__",
+    "TODAS LAS UNIDADES",
+    "*",
+}
+
+
+def _normalize_unit_selector(
+    value: Optional[str],
+) -> Optional[str]:
+    text = str(value or "").strip()
+    if not text or text.upper() in _ALL_UNITS_SENTINELS:
+        return None
+    return text
+
+
 def _resolve_configuracion_efectiva(
     current_user: dict,
     unidad_pk: Optional[str],
@@ -150,6 +172,10 @@ def _resolve_configuracion_efectiva(
     La ausencia de unidad o configuración no inventa defaults.
     """
     if not unidad_pk:
+        return None
+
+    unidad_norm = _normalize_unit_selector(unidad_pk)
+    if not unidad_norm:
         return None
 
     usuario_id = _get_sql_usuario_id(current_user)
@@ -168,7 +194,7 @@ def _resolve_configuracion_efectiva(
 
     try:
         return resolver_configuracion_efectiva(
-            str(unidad_pk),
+            str(unidad_norm),
             usuario_id=usuario_id,
         )
     except ValueError as exc:
@@ -196,6 +222,8 @@ async def _resolve_servidor_filtro(
     Returns: (servidor_id_filtro, servidores_ids_filtro, access_denied, unidad_pk)
     """
     permission = permission or _verify_costos_margenes_access(current_user)
+    unidad = _normalize_unit_selector(unidad)
+    servidor_id = _normalize_unit_selector(servidor_id)
 
     if unidad:
         scope = await resolve_authorized_unidad_scope(
@@ -641,6 +669,8 @@ async def obtener_resumen(
             sync_run_id=data.get('sync_run_id'),
             source_type=SourceType.EDARSAHUB_SQL
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error obteniendo resumen")
 
@@ -874,6 +904,8 @@ async def listar_productos(
             configuracion_efectiva=config_efectiva,
             source_type=SourceType.EDARSAHUB_SQL,
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error obteniendo productos")
 
@@ -1218,6 +1250,7 @@ async def listar_subfamilias(
             familia,
             servidor_id_filtro,
             unidad_negocio_pk=unidad_pk,
+            servidores_ids=_sids,
         )
         return {
             "subfamilias": subfamilias,

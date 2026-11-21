@@ -1,0 +1,7 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker for existing preferred job EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R1-20260918. This trigger only requests pickup of the already published job in worker/requests and does not publish R24F or touch Production.",
+  "existing_job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R1-20260918",
+  "queue_sha": "486f2882e4ad4a107fb8d0c1d509fe9d46405f10",
+  "production_touched": false
+}

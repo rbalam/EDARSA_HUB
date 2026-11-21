@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "wake canonical Universal Worker to consume existing EDARSAHUB-PROD-DEV-DIVERGENCE-SEMANTIC-CLASSIFICATION-R2-20261024 request; do not duplicate the job",
+  "preferred_job": "EDARSAHUB-PROD-DEV-DIVERGENCE-SEMANTIC-CLASSIFICATION-R2-20261024",
+  "production_touched": false
+}

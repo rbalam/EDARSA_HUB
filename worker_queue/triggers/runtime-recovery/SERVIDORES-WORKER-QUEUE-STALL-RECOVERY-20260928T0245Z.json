@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Universal Worker result publication appears stalled globally: worker/results has not advanced since 2026-09-28T01:41:45Z while worker/requests continued advancing through at least 2026-09-28T02:43:41Z. Recover canonical Universal Worker runtime and resume existing queue consumption. Do not clone or replace pending jobs. Preserve active owners and fail closed on unsafe Git state. Pending downstream jobs include SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927 and SERVIDORES-API-EMPRESA-HOMOLOGATION-READONLY-R1-20260927.",
+  "existing_job_id": "WORKER-REPAIR-5fd8a2408ad53dea294f-A1",
+  "production_touched": false
+}

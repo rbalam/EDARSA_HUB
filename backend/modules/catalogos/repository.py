@@ -702,7 +702,7 @@ async def verificar_tablas_nuevas(db) -> Dict[str, bool]:
     resultado = {}
     
     for tabla in tablas_nuevas:
-        query = f"SELECT 1 FROM sys.tables WHERE name = '{tabla}'"
+        query = f"SELECT 1 AS existe FROM sys.tables WHERE name = '{tabla}'"
         try:
             result = execute_edarsa_query(server, query)
             resultado[tabla] = len(result) > 0

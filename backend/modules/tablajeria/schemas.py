@@ -77,6 +77,13 @@ class PlantillaDetalleBase(BaseModel):
     producto_derivado_nombre: str
     tipo_derivado: TipoDerivado = TipoDerivado.PRINCIPAL
     unidad_derivado_codigo: Optional[str] = None
+    sku_kg_codigo: Optional[str] = None
+    sku_pieza_codigo: Optional[str] = None
+    gramaje_pieza_g: Optional[Decimal] = None
+    captura_por_piezas: bool = False
+    costo_fijo: bool = False
+    costo_fijo_unitario: Optional[Decimal] = None
+    prorratea_costo: bool = True
     cantidad_esperada: Decimal
     porcentaje_rendimiento_esperado: Optional[Decimal] = None
     porcentaje_costo_asignado: Optional[Decimal] = None
@@ -132,6 +139,14 @@ class PlantillaUpdate(BaseModel):
     tolerancia_rendimiento: Optional[Decimal] = None
     regla_costeo: Optional[ReglaCosteo] = None
     estatus: Optional[EstatusPlantilla] = None
+    detalles: Optional[List[PlantillaDetalleCreate]] = None
+
+
+class PlantillaDuplicateRequest(BaseModel):
+    codigo_plantilla: Optional[str] = None
+    nombre_plantilla: Optional[str] = None
+    descripcion: Optional[str] = None
+    motivo_version: Optional[str] = None
 
 
 class Plantilla(PlantillaBase):
@@ -167,6 +182,13 @@ class OrdenDetalleBase(BaseModel):
     porcentaje_esperado: Optional[Decimal] = None
     cantidad_real: Optional[Decimal] = None
     peso_real_kg: Optional[Decimal] = None
+    piezas_reales: Optional[Decimal] = None
+    sku_kg_codigo: Optional[str] = None
+    sku_pieza_codigo: Optional[str] = None
+    gramaje_pieza_g: Optional[Decimal] = None
+    costo_fijo: bool = False
+    costo_fijo_unitario: Optional[Decimal] = None
+    prorratea_costo: bool = True
     observaciones: Optional[str] = None
 
 
@@ -196,7 +218,30 @@ class OrdenCreate(BaseModel):
     fecha_programada: Optional[date] = None
     cantidad_base_planeada: Decimal
     lote_insumo: Optional[str] = None
+    almacen_origen_id: Optional[str] = None
+    almacen_destino_id: Optional[str] = None
+    lonja_id: Optional[str] = None
+    lonja_codigo: Optional[str] = None
+    lonja_nombre: Optional[str] = None
+    lonja_peso_kg: Optional[Decimal] = None
+    lonja_costo_total: Optional[Decimal] = None
     observaciones: Optional[str] = None
+
+
+class LonjaDisponible(BaseModel):
+    lonja_id: str
+    empresa_id: Optional[str] = None
+    unidad_negocio_pk: Optional[str] = None
+    sucursal_id: Optional[str] = None
+    almacen_origen_id: Optional[str] = None
+    almacen_destino_id: Optional[str] = None
+    lote_insumo: Optional[str] = None
+    insumo_base_codigo: Optional[str] = None
+    insumo_base_nombre: Optional[str] = None
+    peso_kg: Decimal
+    costo_total: Optional[Decimal] = None
+    costo_unitario: Optional[Decimal] = None
+    procesada: bool = False
 
 
 class OrdenCapturaDirectaCreate(BaseModel):

@@ -53,7 +53,8 @@ export const eliminarSesion = (
 
 export const enviarMensaje = (
   sesionId,
-  mensaje
+  mensaje,
+  contextoVista = null
 ) =>
   unwrap(
     api.post(
@@ -61,6 +62,7 @@ export const enviarMensaje = (
       {
         sesion_id: sesionId,
         mensaje,
+        ...(contextoVista ? { contexto_vista: contextoVista } : {}),
       },
       {
         timeout: 70000,

@@ -1,0 +1,7 @@
+{
+  "schema": "edarsahub.worker-runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker to consume Agent Runtime Gate 5B after stale health.",
+  "requested_by": "chatgpt",
+  "production_allowed": false,
+  "target_queue_branch": "worker/requests"
+}

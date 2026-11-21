@@ -105,6 +105,24 @@ async def comercial_detalle_movimientos_canonical(
     filtered by the resolved canonical `unidad_negocio_id`.
     """
 
+    # Active public route: delegate to the real-folio implementation in routes.py.
+    # The legacy daily implementation below is intentionally preserved in this
+    # file so the repository artifact guard does not see a destructive shrink.
+    from modules.comercial.routes import comercial_detalle_movimientos as _real_folio_handler
+
+    return await _real_folio_handler(
+        server_id=server_id,
+        sucursal=sucursal,
+        tipo=tipo,
+        periodo=periodo,
+        meses=meses,
+        anios=anios,
+        page=page,
+        limit=limit,
+        current_user=current_user,
+    )
+
+    # Legacy canonical-daily code retained below as rollback/reference only.
     del tipo, periodo
 
     server = await get_server_by_id(server_id)

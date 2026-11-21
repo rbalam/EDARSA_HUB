@@ -29,7 +29,7 @@ def ejecutar_proyeccion_masiva(anio=2026):
             SET 
                 Proyeccion_Ventas = dbo.fn_CalcularProyeccionMensual(
                     Ventas_Reales_M, 
-                    ISNULL(Dias_Con_Ventas, CASE WHEN Mes = 'Mayo' THEN 30.0 ELSE DAY(EOMONTH(DATEFROMPARTS(Anio, 5, 1))) END),
+                    Dias_Con_Ventas,
                     Mes, 
                     Anio
                 ),

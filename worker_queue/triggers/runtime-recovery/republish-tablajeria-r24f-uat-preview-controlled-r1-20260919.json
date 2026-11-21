@@ -1,0 +1,18 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "triggered_at_utc": "2026-09-19T07:31:30Z",
+  "source": "chatgpt",
+  "project": "13. Produccion",
+  "reason": "Republish recent result for R24F UAT preview controlled R1 after local RESULT_READY.",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-PREVIEW-CONTROLLED-R1-20260919",
+  "guards": {
+    "production": false,
+    "sql_mutation": false,
+    "business_endpoint_calls": false,
+    "scheduler": false,
+    "netpay": false,
+    "rbac_permissions": false,
+    "menu_layout": false,
+    "product_mutation": false
+  }
+}

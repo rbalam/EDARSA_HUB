@@ -192,6 +192,10 @@ class VentasDiaAbiertasV2(BaseModel):
     # Diagnóstico técnico; no sustituye la frescura del snapshot.
     source_status: Optional[str] = "SYNC_OK"
 
+    # Snapshot JSON de folios/productos ABIERTOS del dia.
+    # None = no se pudo refrescar el detalle; "[]" = cero abiertos confirmado.
+    detalle_abiertas_json: Optional[str] = None
+
     class Config:
         use_enum_values = True
 

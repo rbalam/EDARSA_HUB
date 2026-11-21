@@ -19,7 +19,7 @@ def test_pickup_uses_scope_aware_policy_instead_of_global_sha_block():
 def test_integration_rechecks_scope_and_replays_only_when_safe():
     src = _source()
     assert "CONCURRENT_SCOPE_CONFLICT" in src
-    assert "CONCURRENT_REPLAY_REQUIRED" in src
+    assert "SAFE_REPLAY" in src
     assert "MAX_CONCURRENCY_REPLAY_ATTEMPTS" in src
     assert 'result["concurrency"]["integration"] = accumulated_integration' in src
     assert 'git("rebase", "--onto"' not in src
@@ -27,7 +27,7 @@ def test_integration_rechecks_scope_and_replays_only_when_safe():
 
 def test_read_only_can_tolerate_unrelated_repository_advance():
     src = _source()
-    assert 'allow_empty_scope_advance=(mode == "READ_ONLY_SQL")' in src
+    assert 'allow_empty_scope_advance=(mode in {"READ_ONLY_SQL", READ_ONLY_MODE, FRONTEND_BUILD_CERTIFICATION_MODE})' in src
 
 
 def test_production_remains_explicitly_untouched_in_worker_results():

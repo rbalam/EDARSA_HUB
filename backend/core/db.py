@@ -307,10 +307,13 @@ def execute_sql_query(
     password: str,
     query: str,
     timeout_seconds: int = 45,
-    context: str = "web"
+    context: str = "web",
+    raise_on_error: bool = False,
 ) -> List[Dict]:
     if is_server_offline_in_memory(host):
         logging.info(f"Servidor {host} en cooldown")
+        if raise_on_error:
+            raise ConnectionError(f"Servidor {host} en cooldown")
         return []
 
     hostname, parsed_port, instance = parse_sql_server_host(host, port)
@@ -360,6 +363,8 @@ def execute_sql_query(
             if is_recoverable_error(e):
                 mark_server_offline(host, e)
             logging.error(f"Error execute_sql_query {host}: {str(e)[:300]}")
+            if raise_on_error:
+                raise
             return []
 
 
@@ -372,9 +377,12 @@ def execute_sql_query_params(
     query: str,
     params: tuple = None,
     timeout_seconds: int = 45,
-    context: str = "web"
+    context: str = "web",
+    raise_on_error: bool = False,
 ) -> List[Dict]:
     if is_server_offline_in_memory(host):
+        if raise_on_error:
+            raise ConnectionError(f"Servidor {host} en cooldown")
         return []
 
     hostname, parsed_port, instance = parse_sql_server_host(host, port)
@@ -419,6 +427,8 @@ def execute_sql_query_params(
             if is_recoverable_error(final_error):
                 mark_server_offline(host, final_error)
             logging.error(f"Error execute_sql_query_params {host}: {str(final_error)[:300]}")
+            if raise_on_error:
+                raise
             return []
 
 
@@ -473,7 +483,10 @@ def sql_health_check(
             password,
             ResilientConfig.HEALTH_CHECK_QUERY,
             timeout_seconds=ResilientConfig.HEALTH_CHECK_TIMEOUT,
+            raise_on_error=True,
         )
+        if not rows:
+            raise RuntimeError("Health check SQL no devolvio filas")
 
         latency = (time.time() - start) * 1000
         result["healthy"] = True
@@ -565,6 +578,7 @@ def execute_query_safe(
             server_config["password"],
             query,
             timeout_seconds,
+            raise_on_error=True,
         )
 
         return SafeQueryResult(
@@ -632,7 +646,15 @@ async def _execute_sql_direct_with_error(
     import asyncio
     try:
         result = await asyncio.to_thread(
-            execute_sql_query, host, port, database, username, password, query, timeout_seconds
+            execute_sql_query,
+            host,
+            port,
+            database,
+            username,
+            password,
+            query,
+            timeout_seconds,
+            raise_on_error=True,
         )
         if result is None:
             return ([], None)

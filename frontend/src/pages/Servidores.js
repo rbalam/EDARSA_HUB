@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import QueryConfigWizard from '@/components/QueryConfigWizard';
 import UniversalQueryTester from '@/components/UniversalQueryTester';
 import { formatNombreSucursal } from '@/lib/formatSucursal';
+import { fetchUnidadesNegocio } from '@/services/unidadesNegocioService';
 
 // Helper: Renderiza indicador de estado del servidor
 const StatusIndicator = ({ pingStatus }) => {
@@ -104,8 +105,46 @@ const Servidores = () => {
   const [syncingSucursales, setSyncingSucursales] = useState(false);
   const [serverForSucursales, setServerForSucursales] = useState(null);
   
-  // Estado para el tab activo (SQL Servers o Conexiones API)
+  // Estado para el tab activo
   const [activeMainTab, setActiveMainTab] = useState('sql');
+
+  // ========== API FACTORY H8 - SOLO LECTURA ==========
+  const [apiFactoryOverview, setApiFactoryOverview] = useState({
+    apis: 0,
+    versions: 0,
+    consumers: 0,
+    grants: 0
+  });
+  const [apiFactoryApis, setApiFactoryApis] = useState([]);
+  const [apiFactoryConsumers, setApiFactoryConsumers] = useState([]);
+  const [loadingApiFactory, setLoadingApiFactory] = useState(false);
+
+  const loadApiFactory = useCallback(async () => {
+    setLoadingApiFactory(true);
+    try {
+      const [overviewResponse, apisResponse, consumersResponse] = await Promise.all([
+        api.get('/integrations-center/api-factory/overview'),
+        api.get('/integrations-center/api-factory/apis'),
+        api.get('/integrations-center/api-factory/consumers')
+      ]);
+      setApiFactoryOverview(overviewResponse.data?.data || {
+        apis: 0,
+        versions: 0,
+        consumers: 0,
+        grants: 0
+      });
+      setApiFactoryApis(apisResponse.data?.data || []);
+      setApiFactoryConsumers(consumersResponse.data?.data || []);
+    } catch (error) {
+      console.error('Error cargando API Factory:', error);
+      setApiFactoryOverview({ apis: 0, versions: 0, consumers: 0, grants: 0 });
+      setApiFactoryApis([]);
+      setApiFactoryConsumers([]);
+      toast.error('Error al cargar API Factory');
+    } finally {
+      setLoadingApiFactory(false);
+    }
+  }, []);
 
   // ========== ESTADO BITÁCORA ADMIN CORE ==========
   const [coreAuditLog, setCoreAuditLog] = useState([]);
@@ -131,11 +170,15 @@ const Servidores = () => {
     if (activeMainTab === 'bitacora') {
       loadCoreAuditLog();
     }
-  }, [activeMainTab, loadCoreAuditLog]);
+    if (activeMainTab === 'api-factory') {
+      loadApiFactory();
+    }
+  }, [activeMainTab, loadCoreAuditLog, loadApiFactory]);
   
   // Estado para Conexiones API
   const [apiConnections, setApiConnections] = useState([]);
   const [loadingApis, setLoadingApis] = useState(false);
+  const [apiLoadError, setApiLoadError] = useState(null);
   const [apiDialogOpen, setApiDialogOpen] = useState(false);
   const [editingApi, setEditingApi] = useState(null);
   const [apiFormData, setApiFormData] = useState({
@@ -143,13 +186,25 @@ const Servidores = () => {
     url: '',
     api_key: '',
     tipo: 'MPRO',
-    servidor_padre: '',
-    servidor_padre_id: '',
-    sucursal_destino: '',
-    hora_replica: '04:00',
-    solo_ventas_dia: true,
     activo: true,
     visible_en_operaciones: false
+  });
+  const [apiOperationalUnits, setApiOperationalUnits] = useState([]);
+  const [apiAssignments, setApiAssignments] = useState([]);
+  const [selectedApiUnitId, setSelectedApiUnitId] = useState('');
+  const [loadingApiAssignments, setLoadingApiAssignments] = useState(false);
+  const [apiReplicationPolicy, setApiReplicationPolicy] = useState({
+    enabled: true,
+    cutoff_time: '',
+    timezone: ''
+  });
+  const [savingApiReplicationPolicy, setSavingApiReplicationPolicy] = useState(false);
+  const [apiTimezoneOptions] = useState(() => {
+    try {
+      return Intl.supportedValuesOf('timeZone') || [];
+    } catch {
+      return [];
+    }
   });
   
   // Estado para sección de consulta de prueba en el modal de conexión API
@@ -251,13 +306,8 @@ const Servidores = () => {
       }
     } catch (error) {
       console.error('Error cargando tipos de sistema:', error);
-      // Fallback final a valores hardcodeados (último recurso)
-      setTiposSistema([
-        { Codigo: 'MPRO', Descripcion: 'ManagementPro (MPRO)' },
-        { Codigo: 'SOFTRESTAURANT', Descripcion: 'SoftRestaurant' },
-        { Codigo: 'API_LOCAL', Descripcion: 'API Local (Enterprise)' },
-        { Codigo: 'OTRO', Descripcion: 'Otro' }
-      ]);
+      // Fail closed: el catalogo canonico es la unica autoridad.
+      setTiposSistema([]);
     } finally {
       setLoadingTiposSistema(false);
     }
@@ -330,22 +380,32 @@ const Servidores = () => {
   // Cargar conexiones API desde backend
   const loadApiConnections = async () => {
     setLoadingApis(true);
+    setApiLoadError(null);
+
     try {
       const response = await api.get('/api-connections');
-      if (response.data.success) {
-        // Formatear hora_replica a string "HH:00"
-        const formatted = response.data.data.map(conn => ({
-          ...conn,
-          hora_replica: typeof conn.hora_replica === 'number' 
-            ? `${String(conn.hora_replica).padStart(2, '0')}:00`
-            : conn.hora_replica
-        }));
-        setApiConnections(formatted);
+
+      if (!response.data?.success || !Array.isArray(response.data?.data)) {
+        throw new Error('Respuesta inválida del endpoint de conexiones API');
       }
+
+      setApiConnections(response.data.data);
     } catch (error) {
       console.error('Error cargando conexiones API:', error);
-      // SECURITY P0: sin fallback hardcodeado. No inventar conexiones ni exponer IPs reales.
-      setApiConnections([]);
+
+      const detail =
+        error.response?.data?.detail ||
+        error.message ||
+        'Error al cargar conexiones API';
+
+      // Un error no equivale a cero conexiones.
+      // Conservar los últimos datos válidos.
+      setApiLoadError(
+        typeof detail === 'string'
+          ? detail
+          : 'Error al cargar conexiones API'
+      );
+
       toast.error('No se pudieron cargar las conexiones API locales.');
     } finally {
       setLoadingApis(false);
@@ -529,27 +589,30 @@ const Servidores = () => {
     }));
     
     try {
-      // Usar endpoint que obtiene api_key internamente y no requiere permisos estrictos
-      const response = await api.post(`/api-connections/${apiConn.id}/test-connectivity`);
+      const response = await api.post(
+        `/api-connections/${apiConn.id}/test-connectivity`,
+        {},
+        { timeout: 40000 }
+      );
       
       if (response.data.success) {
         if (response.data.sql_connected) {
           setApiTestStatus(prev => ({
             ...prev,
-            [apiConn.id]: { 
-              loading: false, 
-              status: 'success', 
-              message: `✅ ${response.data.message || 'API y SQL Server conectados'}` 
+            [apiConn.id]: {
+              loading: false,
+              status: 'success',
+              message: `✅ ${response.data.message || 'API y SQL Server conectados'}`
             }
           }));
           toast.success(`${apiConn.name}: Conexión exitosa`);
         } else {
           setApiTestStatus(prev => ({
             ...prev,
-            [apiConn.id]: { 
-              loading: false, 
-              status: 'warning', 
-              message: `⚠️ API responde pero SQL Server no disponible: ${response.data.sql_error || 'Error desconocido'}` 
+            [apiConn.id]: {
+              loading: false,
+              status: 'warning',
+              message: `⚠️ API responde pero SQL Server no disponible: ${response.data.sql_error || 'Error desconocido'}`
             }
           }));
           toast.warning(`${apiConn.name}: API OK pero SQL Server no disponible`);
@@ -558,36 +621,48 @@ const Servidores = () => {
         const errorText = response.data.sql_error || response.data.message || 'Error de conexión';
         setApiTestStatus(prev => ({
           ...prev,
-          [apiConn.id]: { 
-            loading: false, 
-            status: 'error', 
-            message: `❌ ${errorText.substring(0, 100)}` 
+          [apiConn.id]: {
+            loading: false,
+            status: 'error',
+            message: `❌ ${errorText.substring(0, 100)}`
           }
         }));
         toast.error(`${apiConn.name}: ${errorText.substring(0, 100)}`);
       }
     } catch (error) {
+      const detail = error.response?.data?.detail;
       let errorMsg = 'Error de conexión';
+      let status = 'error';
+
       if (error.response?.status === 404) {
         errorMsg = 'Conexión no encontrada';
+      } else if (error.response?.status === 409) {
+        errorMsg = typeof detail === 'string'
+          ? detail
+          : 'Falta EmpresaID canónico para esta conexión API';
+        status = 'warning';
       } else if (error.response?.status === 400) {
-        const detail = error.response?.data?.detail;
         errorMsg = typeof detail === 'string' ? detail : 'Conexión inválida';
-      } else if (error.response?.data?.detail) {
-        const detail = error.response.data.detail;
+      } else if (detail) {
         errorMsg = typeof detail === 'string' ? detail : JSON.stringify(detail);
       } else if (error.message) {
         errorMsg = error.message;
       }
+
       setApiTestStatus(prev => ({
         ...prev,
-        [apiConn.id]: { 
-          loading: false, 
-          status: 'error', 
-          message: `❌ ${errorMsg.substring(0, 150)}` 
+        [apiConn.id]: {
+          loading: false,
+          status,
+          message: `${status === 'warning' ? '⚠️' : '❌'} ${errorMsg.substring(0, 150)}`
         }
       }));
-      toast.error(`${apiConn.name}: ${errorMsg.substring(0, 100)}`);
+
+      if (status === 'warning') {
+        toast.warning(`${apiConn.name}: ${errorMsg.substring(0, 100)}`);
+      } else {
+        toast.error(`${apiConn.name}: ${errorMsg.substring(0, 100)}`);
+      }
     }
   };
   
@@ -669,6 +744,10 @@ const Servidores = () => {
   const [categorias, setCategorias] = useState([]);
   const [departamentos, setDepartamentos] = useState([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
+  const [savingFilters, setSavingFilters] = useState(false);
+  const [filterLoadError, setFilterLoadError] = useState(null);
+  const [persistedFiltersSnapshot, setPersistedFiltersSnapshot] = useState(null);
+  const configRequestTokenRef = useRef(0);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -694,8 +773,7 @@ const Servidores = () => {
   });
 
   useEffect(() => {
-    loadServers();
-    loadApiConnections();  // Cargar conexiones API desde backend
+    loadServers();         // Inventario canonico SQL + API_LOCAL
     loadTiposSistema();    // Cargar tipos de sistema desde catálogo
     loadVtigerConnections(); // Cargar conexiones Vtiger
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -842,12 +920,63 @@ const Servidores = () => {
 
   const loadServers = async () => {
     try {
-      const response = await api.get('/servers');
-      setServers(response.data);
+      // Lectura canonica unificada. Los writers legacy se conservan sin cambios.
+      const response = await api.get('/integrations-center/connections', {
+        params: { include_inactive: true }
+      });
+      const connections = response.data?.data || [];
+
+      const sqlConnections = connections
+        .filter(conn => String(conn.connection_type || '').toUpperCase() === 'DATA_SOURCE')
+        .map(conn => ({
+          ...conn,
+          nombre: conn.name,
+          tipo_conexion: conn.connection_type,
+          activo: conn.active,
+          visible_en_operaciones: conn.visible,
+          database: conn.database_name,
+          EmpresaID: conn.scope?.empresa_id,
+          sucursales: conn.scope?.sucursales || []
+        }));
+
+      const localApis = connections
+        .filter(conn => String(conn.connection_type || '').toUpperCase() === 'API_LOCAL')
+        .map(conn => ({
+          ...conn,
+          name: conn.name,
+          tipo: conn.system_type,
+          activo: conn.active,
+          visible_en_operaciones: conn.visible,
+          url: conn.api_url,
+          sucursales: conn.scope?.sucursales || []
+        }));
+
+      setServers(sqlConnections);
+      setApiConnections(localApis);
     } catch (error) {
-      toast.error('Error al cargar servidores');
+      console.error('Error cargando inventario canonico de conexiones:', error);
+
+      // Failover operativo: mantener la fachada unificada como ruta primaria.
+      // Si falla su composicion, reutilizar contratos canonicos existentes.
+      try {
+        const sqlResponse = await api.get('/servers');
+        setServers(Array.isArray(sqlResponse.data) ? sqlResponse.data : []);
+      } catch (sqlError) {
+        console.error(
+          'Error cargando servidores SQL por fallback canonico:',
+          sqlError
+        );
+        setServers([]);
+      }
+
+      await loadApiConnections();
+
+      toast.warning(
+        'Inventario unificado no disponible; se usaron contratos canonicos de compatibilidad.'
+      );
     } finally {
       setLoading(false);
+      setLoadingApis(false);
     }
   };
 
@@ -988,42 +1117,105 @@ const Servidores = () => {
   const toggleVisibilidadOperaciones = async (server) => {
     try {
       const newValue = server.visible_en_operaciones === false ? true : false;
+      if (newValue && !isOperationallyEligible(server)) {
+        toast.error('Para habilitar operaciones se requiere Unidad de Negocio y homologación certificada');
+        return;
+      }
       await api.put(`/servers/${server.id}`, { visible_en_operaciones: newValue });
       toast.success(newValue ? 'Servidor visible en operaciones' : 'Servidor oculto en operaciones');
       loadServers();
     } catch (error) {
-      toast.error('Error al cambiar visibilidad');
+      toast.error(error.response?.data?.detail || 'Error al cambiar visibilidad');
     }
   };
 
+  const normalizeFilterCodes = (values) => (
+    Array.isArray(values)
+      ? [...new Set(
+          values
+            .map(value => {
+              if (value && typeof value === 'object') {
+                return String(
+                  value.codigo ?? value.code ?? value.id ?? value.value ?? ''
+                ).trim();
+              }
+              return String(value ?? '').trim();
+            })
+            .filter(Boolean)
+        )].sort()
+      : []
+  );
+
+  // Lectura de la fuente SQL canonica bajo SERVIDORES_VER.
+  // El endpoint de lista usa el mismo registry SQL que administra Servidores;
+  // evita condicionar el modal al RBAC adicional de /servers/{id}.
+  const readServerFiltersFromSql = async (serverId) => {
+    const response = await api.get('/servers');
+    if (!Array.isArray(response.data)) {
+      throw new Error('El Server Registry SQL no devolvió una lista verificable');
+    }
+    const currentServer = response.data.find(
+      item => String(item.id || '').toLowerCase() === String(serverId).toLowerCase()
+    );
+    if (!currentServer || !Array.isArray(currentServer.tipos_movimiento)) {
+      throw new Error('El servidor o sus filtros no están disponibles en el registro SQL');
+    }
+    return currentServer;
+  };
+
+  // La selección visible y la línea base para guardar provienen exclusivamente
+  // del Server Registry SQL. No utilizar la fachada/lista de conexiones en caché.
+  const normalizeServerFilters = (server) => ({
+    tipos_movimiento: normalizeFilterCodes(server?.tipos_movimiento || []),
+    categorias: normalizeFilterCodes(server?.categorias || []),
+    departamentos: normalizeFilterCodes(server?.departamentos || [])
+  });
+
   const loadFilterOptions = async (serverId) => {
+    const token = ++configRequestTokenRef.current;
     setLoadingOptions(true);
+    setFilterLoadError(null);
+    setPersistedFiltersSnapshot(null);
     try {
+      const persistedServer = await readServerFiltersFromSql(serverId);
+      if (token !== configRequestTokenRef.current) return;
+      if (!persistedServer || String(persistedServer.id).toLowerCase() !== String(serverId).toLowerCase()
+        || !Array.isArray(persistedServer.tipos_movimiento)) {
+        throw new Error('El servidor no devolvió una configuración SQL verificable');
+      }
+
       const [tiposRes, categoriasRes, departamentosRes] = await Promise.all([
         api.get(`/servers/${serverId}/tipos-movimiento`),
         api.get(`/servers/${serverId}/categorias`),
         api.get(`/servers/${serverId}/departamentos`)
       ]);
-      
-      setTiposMovimiento(tiposRes.data);
-      setCategorias(categoriasRes.data);
-      setDepartamentos(departamentosRes.data);
-      
-      // Si el servidor ya tiene filtros configurados, cargarlos
-      const server = servers.find(s => s.id === serverId) || selectedServer;
-      if (server) {
-        setSelectedFilters({
-          tipos_movimiento: server.tipos_movimiento || [],
-          categorias: server.categorias || [],
-          departamentos: server.departamentos || []
-        });
-      }
-      
+      if (token !== configRequestTokenRef.current) return;
+
+      const persistedFilters = normalizeServerFilters(persistedServer);
+      setTiposMovimiento(Array.isArray(tiposRes.data) ? tiposRes.data : []);
+      setCategorias(Array.isArray(categoriasRes.data) ? categoriasRes.data : []);
+      setDepartamentos(Array.isArray(departamentosRes.data) ? departamentosRes.data : []);
+      setSelectedServer(persistedServer);
+      setSelectedFilters(persistedFilters);
+      setPersistedFiltersSnapshot(persistedFilters);
     } catch (error) {
-      logger.error('Error cargando opciones de filtros:', error);
-      toast.error('Error al cargar opciones de filtros');
+      if (token !== configRequestTokenRef.current) return;
+      logger.error('Error cargando configuración canónica del servidor:', error);
+      setTiposMovimiento([]);
+      setCategorias([]);
+      setDepartamentos([]);
+      setPersistedFiltersSnapshot(null);
+      const status = error.response?.status;
+      setFilterLoadError(
+        status
+          ? `No se pudo cargar la configuración SQL (HTTP ${status}). No se modificaron los filtros guardados.`
+          : 'No se pudo cargar la configuración SQL o sus catálogos. No se modificaron los filtros guardados.'
+      );
+      toast.error('Error leyendo Filtros desde SQL. No se borró la configuración guardada.');
     } finally {
-      setLoadingOptions(false);
+      if (token === configRequestTokenRef.current) {
+        setLoadingOptions(false);
+      }
     }
   };
 
@@ -1111,30 +1303,99 @@ const Servidores = () => {
 
   const openConfigDialog = async (server) => {
     setSelectedServer(server);
-    setSelectedFilters({
-      tipos_movimiento: server.tipos_movimiento || [],
-      categorias: server.categorias || [],
-      departamentos: server.departamentos || []
-    });
+    // Nunca mostrar ni guardar filtros procedentes de un registro en caché.
+    setSelectedFilters({ tipos_movimiento: [], categorias: [], departamentos: [] });
+    setPersistedFiltersSnapshot(null);
+    setFilterLoadError(null);
     setConfigDialogOpen(true);
     await loadFilterOptions(server.id);
   };
 
   const saveFilters = async () => {
-    if (!selectedServer) return;
-    
+    if (!selectedServer || !persistedFiltersSnapshot || loadingOptions || savingFilters) return;
+
+    const filterKeys = ['tipos_movimiento', 'categorias', 'departamentos'];
+    const expectedFilters = normalizeServerFilters(selectedFilters);
+    const sameCodes = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const changedKeys = filterKeys.filter(
+      key => !sameCodes(expectedFilters[key], persistedFiltersSnapshot[key])
+    );
+
+    if (changedKeys.length === 0) {
+      toast.info('No hay cambios pendientes de guardar');
+      return;
+    }
+
+    setSavingFilters(true);
     try {
-      await api.put(`/servers/${selectedServer.id}`, {
-        tipos_movimiento: selectedFilters.tipos_movimiento,
-        categorias: selectedFilters.categorias,
-        departamentos: selectedFilters.departamentos
-      });
-      
-      toast.success('Filtros guardados correctamente');
+      // Evitar sobrescribir silenciosamente la selección de otra sesión.
+      const latestServer = await readServerFiltersFromSql(selectedServer.id);
+      if (String(latestServer.id).toLowerCase() !== String(selectedServer.id).toLowerCase()) {
+        throw new Error('No se pudo verificar el servidor antes de guardar');
+      }
+      const latestFilters = normalizeServerFilters(latestServer);
+      if (changedKeys.some(key => !sameCodes(latestFilters[key], persistedFiltersSnapshot[key]))) {
+        toast.error('La configuración cambió en otra sesión. Se recargará antes de permitir guardar.');
+        await loadFilterOptions(selectedServer.id);
+        return;
+      }
+
+      // Sólo se actualizan los filtros realmente modificados, preservando
+      // categorías, departamentos y demás configuración del servidor.
+      const payload = Object.fromEntries(
+        changedKeys.map(key => [key, expectedFilters[key]])
+      );
+      let uncertainWrite = null;
+      try {
+        await api.put(`/servers/${selectedServer.id}`, payload);
+      } catch (error) {
+        const status = error.response?.status;
+        // Ante 502/503/504/red, la escritura pudo haber llegado a SQL.
+        // No reintentar automáticamente; consultar el estado canónico.
+        if (status && ![502, 503, 504].includes(status)) throw error;
+        uncertainWrite = error;
+      }
+
+      let verifyResponse;
+      try {
+        verifyResponse = { data: await readServerFiltersFromSql(selectedServer.id) };
+      } catch (error) {
+        logger.error('No fue posible verificar la escritura del servidor:', error);
+        // La escritura pudo completarse: bloquear cualquier reintento hasta
+        // recuperar una nueva línea base directamente desde SQL.
+        setPersistedFiltersSnapshot(null);
+        toast.error('Guardado sin confirmar por error de conexión. Cierra y vuelve a abrir la configuración antes de intentarlo.');
+        return;
+      }
+
+      const persistedServer = verifyResponse.data || {};
+      if (String(persistedServer.id || '').toLowerCase() !== String(selectedServer.id).toLowerCase()
+        || !Array.isArray(persistedServer.tipos_movimiento)) {
+        setPersistedFiltersSnapshot(null);
+        throw new Error('La lectura posterior no permitió verificar el servidor y sus movimientos.');
+      }
+      const persistedFilters = normalizeServerFilters(persistedServer);
+      if (changedKeys.some(key => !sameCodes(persistedFilters[key], expectedFilters[key]))) {
+        setPersistedFiltersSnapshot(null);
+        toast.error('Los filtros no coinciden con lo solicitado. Cierra y vuelve a abrir la configuración.');
+        return;
+      }
+
+      setSelectedServer(persistedServer);
+      setSelectedFilters(persistedFilters);
+      setPersistedFiltersSnapshot(persistedFilters);
+      if (uncertainWrite) {
+        toast.warning('La respuesta inicial falló, pero se verificó la configuración guardada en SQL.');
+      } else {
+        toast.success('Filtros guardados y verificados en EDARSAHUB SQL');
+      }
       setConfigDialogOpen(false);
-      loadServers();
+      await loadServers();
     } catch (error) {
-      toast.error('Error al guardar filtros');
+      logger.error('Error guardando filtros del servidor:', error);
+      toast.error(error.response?.data?.detail || error.message || 'No se pudo guardar la configuración');
+    } finally {
+      setSavingFilters(false);
     }
   };
 
@@ -1153,9 +1414,11 @@ const Servidores = () => {
   };
 
   const selectAll = (type, items) => {
+    const selectableItems = items;
+
     setSelectedFilters(prev => ({
       ...prev,
-      [type]: items.map(item => item.codigo)
+      [type]: selectableItems.map(item => String(item.codigo || '').trim()).filter(Boolean)
     }));
   };
 
@@ -1197,25 +1460,152 @@ const Servidores = () => {
     setEditingServer(null);
   };
 
-  // Función para abrir el diálogo de edición con los datos del servidor
-  const openEditDialog = (server) => {
-    setFormData({
-      name: server.name || '',
-      host: server.host || '',
-      port: server.port || 1433,
-      database: server.database || '',
-      username: server.username || '',
-      password: '', // No mostramos la contraseña por seguridad
-      system_type: server.system_type || 'MPRO',
-      date_calculation_method: server.date_calculation_method || 'inventory_dates',
-      sucursales: server.sucursales || [],
-      tipos_movimiento: server.tipos_movimiento || [],
-      categorias: server.categorias || [],
-      departamentos: server.departamentos || []
-    });
-    setEditingServer(server);
-    setConnectionValid(false);
-    setDialogOpen(true);
+  // Edición: hidratar detalle desde el contrato legacy por ID.
+  // La membresía del inventario sigue siendo integrations-center.
+  const openEditDialog = async (server) => {
+    try {
+      const response = await api.get(`/servers/${server.id}`);
+      const detail = response.data || {};
+      setFormData({
+        name: detail.name || '',
+        host: detail.host || '',
+        port: detail.port || 1433,
+        database: detail.database || detail.database_name || '',
+        username: detail.username || '',
+        password: '',
+        system_type: detail.system_type || 'MPRO',
+        date_calculation_method: detail.date_calculation_method || 'inventory_dates',
+        sucursales: detail.sucursales || [],
+        tipos_movimiento: detail.tipos_movimiento || [],
+        categorias: detail.categorias || [],
+        departamentos: detail.departamentos || [],
+        visible_en_operaciones: detail.visible_en_operaciones !== false
+      });
+      setEditingServer({ ...server, ...detail });
+      setConnectionValid(false);
+      setDialogOpen(true);
+    } catch (error) {
+      console.error('Error cargando detalle del servidor:', error);
+      toast.error('No se pudo cargar el detalle del servidor');
+    }
+  };
+
+  const loadApiAssignments = async (apiId) => {
+    setLoadingApiAssignments(true);
+    try {
+      const [units, assignmentsResponse] = await Promise.all([
+        fetchUnidadesNegocio(),
+        api.get(`/api-connections/${apiId}/assignments`)
+      ]);
+      setApiOperationalUnits(units || []);
+      setApiAssignments(assignmentsResponse.data?.data || []);
+    } catch (error) {
+      console.error('Error cargando asignaciones operativas:', error);
+      setApiOperationalUnits([]);
+      setApiAssignments([]);
+      toast.error('No se pudieron cargar las asignaciones operativas');
+    } finally {
+      setLoadingApiAssignments(false);
+    }
+  };
+
+  const addApiAssignment = async () => {
+    if (!editingApi?.id || !selectedApiUnitId) return;
+    try {
+      await api.post(`/api-connections/${editingApi.id}/assignments`, {
+        empresa_id: Number(selectedApiUnitId),
+        rol_conexion: 'VENTAS_DIA_API_LOCAL',
+        prioridad: 1,
+        es_principal: true
+      });
+      setSelectedApiUnitId('');
+      await loadApiAssignments(editingApi.id);
+      await loadServers();
+      toast.success('Unidad asignada');
+    } catch (error) {
+      console.error('Error asignando unidad:', error);
+      toast.error(error.response?.data?.detail || 'No se pudo asignar la unidad');
+    }
+  };
+
+  const removeApiAssignment = async (assignment) => {
+    if (!editingApi?.id) return;
+    try {
+      await api.delete(
+        `/api-connections/${editingApi.id}/assignments/${assignment.empresa_id}/${assignment.rol_conexion}`
+      );
+      await loadApiAssignments(editingApi.id);
+      await loadServers();
+      toast.success('Unidad desasignada');
+    } catch (error) {
+      console.error('Error desasignando unidad:', error);
+      toast.error(error.response?.data?.detail || 'No se pudo desasignar la unidad');
+    }
+  };
+
+  const loadApiReplicationPolicy = async (apiId) => {
+    try {
+      const response = await api.get(`/api-connections/${apiId}/replication-policy`);
+      const policy = response.data?.data || {};
+      setApiReplicationPolicy({
+        enabled: policy.enabled !== false,
+        cutoff_time: policy.cutoff_time || '',
+        timezone: policy.timezone || ''
+      });
+    } catch (error) {
+      console.error('Error cargando política de réplica:', error);
+      toast.error('No se pudo cargar la política de réplica');
+    }
+  };
+
+  const saveApiReplicationPolicy = async () => {
+    if (!editingApi?.id) return;
+    setSavingApiReplicationPolicy(true);
+    try {
+      const response = await api.put(
+        `/api-connections/${editingApi.id}/replication-policy`,
+        apiReplicationPolicy
+      );
+      setApiReplicationPolicy(response.data?.data || apiReplicationPolicy);
+      toast.success('Política de réplica guardada');
+    } catch (error) {
+      console.error('Error guardando política de réplica:', error);
+      toast.error(error.response?.data?.detail || 'No se pudo guardar la política de réplica');
+    } finally {
+      setSavingApiReplicationPolicy(false);
+    }
+  };
+
+  const openEditApi = async (apiConn) => {
+    try {
+      const response = await api.get(`/api-connections/${apiConn.id}`);
+      const detail = response.data?.data || {};
+      setEditingApi({ ...apiConn, ...detail });
+      setApiFormData({
+        name: detail.name || apiConn.name || '',
+        url: detail.url || apiConn.url || '',
+        api_key: '',
+        tipo: detail.tipo || apiConn.tipo || '',
+        activo: detail.activo !== false,
+        visible_en_operaciones: detail.visible_en_operaciones === true
+      });
+      setSelectedApiUnitId('');
+      await Promise.all([
+        loadApiAssignments(apiConn.id),
+        loadApiReplicationPolicy(apiConn.id)
+      ]);
+      setQueryTestData({
+        tipo_uso: detail.tipo_uso || 'Otro',
+        nombre_consulta: detail.nombre_consulta || '',
+        sql_query: detail.sql_query || DEFAULT_SQL_QUERY,
+        timeout: 30
+      });
+      setQueryTestResult(null);
+      setApiDialogOpen(true);
+    } catch (error) {
+      console.error('Error cargando detalle de la conexión API:', error);
+      toast.error('No se pudo cargar el detalle de la conexión API');
+    }
   };
 
   const getFilterCount = (server) => {
@@ -1223,6 +1613,64 @@ const Servidores = () => {
     const catCount = server.categorias?.length || 0;
     const deptCount = server.departamentos?.length || 0;
     return tiposCount + catCount + deptCount;
+  };
+
+  const getHomologationPresentation = (connection) => {
+    const homologation = connection?.homologation || {};
+    const status = String(homologation.status || 'NOT_ASSESSED').toUpperCase();
+    const source = homologation.certification_source;
+    const labels = {
+      NOT_ASSESSED: 'No evaluada',
+      PENDING: 'Pendiente',
+      IN_PROGRESS: 'En proceso',
+      PARTIAL: 'Parcial',
+      CERTIFIED: source === 'REUSED' ? 'Certificada · Reutilizada' : 'Certificada',
+      REVALIDATION_REQUIRED: 'Revalidación requerida',
+      BLOCKED: 'Bloqueada',
+      NOT_APPLICABLE: 'No aplica'
+    };
+    const classes = {
+      NOT_ASSESSED: 'bg-zinc-50 text-zinc-600 border-zinc-200',
+      PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
+      IN_PROGRESS: 'bg-blue-50 text-blue-700 border-blue-200',
+      PARTIAL: 'bg-orange-50 text-orange-700 border-orange-200',
+      CERTIFIED: 'bg-green-50 text-green-700 border-green-200',
+      REVALIDATION_REQUIRED: 'bg-red-50 text-red-700 border-red-200',
+      BLOCKED: 'bg-red-50 text-red-700 border-red-200',
+      NOT_APPLICABLE: 'bg-zinc-50 text-zinc-500 border-zinc-200'
+    };
+    return {
+      status,
+      label: labels[status] || status,
+      className: classes[status] || classes.NOT_ASSESSED,
+      source,
+      sourceContractVersion: homologation.source_contract_version,
+      edarsahubContractVersion: homologation.edarsahub_contract_version,
+      domains: homologation.domains || []
+    };
+  };
+
+  const isOperationallyEligible = (connection) => {
+    const unitCount = connection?.scope?.unidad_negocio_ids?.length || 0;
+    const homologation = getHomologationPresentation(connection);
+    return unitCount > 0 && homologation.status === 'CERTIFIED';
+  };
+
+  const renderHomologationBadge = (connection) => {
+    const state = getHomologationPresentation(connection);
+    return (
+      <Badge
+        variant="outline"
+        className={`text-xs ${state.className}`}
+        title={
+          state.sourceContractVersion || state.edarsahubContractVersion
+            ? `Origen: ${state.sourceContractVersion || '-'} · EDARSAHUB: ${state.edarsahubContractVersion || '-'}`
+            : state.label
+        }
+      >
+        {state.label}
+      </Badge>
+    );
   };
 
   return (
@@ -1236,9 +1684,9 @@ const Servidores = () => {
         </div>
       </div>
 
-      {/* Tabs principales: SQL Servers | Conexiones API | Vtiger CRM */}
+      {/* Tabs principales del Centro de Conexiones */}
       <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
-        <TabsList className="grid w-full max-w-2xl grid-cols-4 mb-6">
+        <TabsList className="grid w-full max-w-4xl grid-cols-5 mb-6">
           <TabsTrigger value="sql" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
             SQL Servers
@@ -1250,6 +1698,10 @@ const Servidores = () => {
           <TabsTrigger value="vtiger" className="flex items-center gap-2">
             <Link2 className="h-4 w-4" />
             Vtiger CRM
+          </TabsTrigger>
+          <TabsTrigger value="api-factory" className="flex items-center gap-2" data-testid="tab-api-factory" data-enterprise-tab-id="sistema.servidores.api-factory">
+            <Code className="h-4 w-4" />
+            API Factory
           </TabsTrigger>
           <TabsTrigger value="bitacora" className="flex items-center gap-2" data-testid="tab-bitacora-core">
             <History className="h-4 w-4" />
@@ -1326,6 +1778,7 @@ const Servidores = () => {
                         <th className="px-3 py-2 text-left font-medium text-zinc-600">Sistema</th>
                         <th className="px-3 py-2 text-left font-medium text-zinc-600">Host:Puerto</th>
                         <th className="px-3 py-2 text-left font-medium text-zinc-600">Base de datos</th>
+                        <th className="px-3 py-2 text-left font-medium text-zinc-600">Homologación</th>
                         <th className="px-3 py-2 text-left font-medium text-zinc-600">Visible Op.</th>
                         <th className="px-3 py-2 text-left font-medium text-zinc-600">Activo</th>
                         <th className="px-3 py-2 text-right font-medium text-zinc-600">Acciones</th>
@@ -1370,6 +1823,10 @@ const Servidores = () => {
                           </td>
                           {/* Base de datos */}
                           <td className="px-3 py-2 text-zinc-600 text-xs">{server.database || '-'}</td>
+                          {/* Homologación */}
+                          <td className="px-3 py-2">
+                            {renderHomologationBadge(server)}
+                          </td>
                           {/* Visible Operaciones */}
                           <td className="px-3 py-2">
                             {server.visible_en_operaciones ? (
@@ -1407,21 +1864,7 @@ const Servidores = () => {
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 w-7 p-0"
-                                onClick={() => {
-                                  setEditingServer(server);
-                                  setFormData({
-                                    name: server.name || '',
-                                    host: server.host || '',
-                                    port: server.port || 1433,
-                                    database: server.database || '',
-                                    username: server.username || '',
-                                    password: '',
-                                    system_type: server.system_type || '',
-                                    activo: server.activo !== false,
-                                    visible_en_operaciones: server.visible_en_operaciones || false
-                                  });
-                                  setDialogOpen(true);
-                                }}
+                                onClick={() => openEditDialog(server)}
                                 title="Editar servidor"
                               >
                                 <Edit className="h-3 w-3" />
@@ -1501,6 +1944,19 @@ const Servidores = () => {
                     <span className="font-mono text-zinc-900">{server.username}</span>
                   </div>
                   
+                  {/* Homologación canónica */}
+                  <div className="pt-2 border-t border-zinc-100">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-zinc-500">Homologación:</span>
+                      {renderHomologationBadge(server)}
+                    </div>
+                    {server.homologation?.profile_code && (
+                      <p className="text-xs text-zinc-400 mt-1">
+                        Perfil: {server.homologation.profile_code}
+                      </p>
+                    )}
+                  </div>
+
                   {/* Mostrar estado de consultas SQL */}
                   <div className="pt-2 border-t border-zinc-100">
                     <div className="flex items-center justify-between">
@@ -1662,12 +2118,16 @@ const Servidores = () => {
                   url: '',
                   api_key: '',
                   tipo: 'MPRO',
-                  servidor_padre: '',
-                  sucursal_destino: '',
-                  hora_replica: '04:00',
-                  solo_ventas_dia: true,
                   activo: true,
                   visible_en_operaciones: false
+                });
+                setApiOperationalUnits([]);
+                setApiAssignments([]);
+                setSelectedApiUnitId('');
+                setApiReplicationPolicy({
+                  enabled: true,
+                  cutoff_time: '',
+                  timezone: ''
                 });
                 setQueryTestData({
                   tipo_uso: 'Otro',
@@ -1745,8 +2205,8 @@ const Servidores = () => {
                       <th className="px-3 py-2 text-left font-medium text-zinc-600">Nombre</th>
                       <th className="px-3 py-2 text-left font-medium text-zinc-600">Sistema</th>
                       <th className="px-3 py-2 text-left font-medium text-zinc-600">URL/Host</th>
-                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Sucursal</th>
-                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Hora Réplica</th>
+                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Asignación</th>
+                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Homologación</th>
                       <th className="px-3 py-2 text-left font-medium text-zinc-600">Activo</th>
                       <th className="px-3 py-2 text-right font-medium text-zinc-600">Acciones</th>
                     </tr>
@@ -1793,10 +2253,16 @@ const Servidores = () => {
                         <td className="px-3 py-2 text-zinc-600 text-xs font-mono max-w-40 truncate" title={apiConn.url}>
                           {apiConn.url ? apiConn.url.replace(/^https?:\/\//, '').substring(0, 30) + (apiConn.url.length > 30 ? '...' : '') : '-'}
                         </td>
-                        {/* Sucursal */}
-                        <td className="px-3 py-2 text-zinc-600">{apiConn.sucursal_destino || '-'}</td>
-                        {/* Hora Réplica */}
-                        <td className="px-3 py-2 text-zinc-600">{apiConn.hora_replica || '04:00'}</td>
+                        {/* Asignación operativa */}
+                        <td className="px-3 py-2 text-zinc-600">
+                          {apiConn.scope?.unidad_negocio_ids?.length
+                            ? `${apiConn.scope.unidad_negocio_ids.length} unidad(es)`
+                            : 'Sin asignación'}
+                        </td>
+                        {/* Homologación */}
+                        <td className="px-3 py-2">
+                          {renderHomologationBadge(apiConn)}
+                        </td>
                         {/* Activo */}
                         <td className="px-3 py-2">
                           {apiConn.activo ? (
@@ -1826,29 +2292,7 @@ const Servidores = () => {
                               variant="ghost"
                               size="sm"
                               className="h-7 w-7 p-0"
-                              onClick={() => {
-                                setEditingApi(apiConn);
-                                setApiFormData({
-                                  name: apiConn.name,
-                                  url: apiConn.url,
-                                  api_key: '',
-                                  tipo: apiConn.tipo,
-                                  servidor_padre: apiConn.servidor_padre,
-                                  sucursal_destino: apiConn.sucursal_destino,
-                                  hora_replica: apiConn.hora_replica,
-                                  solo_ventas_dia: apiConn.solo_ventas_dia,
-                                  activo: apiConn.activo,
-                                  visible_en_operaciones: apiConn.visible_en_operaciones
-                                });
-                                setQueryTestData({
-                                  tipo_uso: apiConn.tipo_uso || 'Otro',
-                                  nombre_consulta: apiConn.nombre_consulta || '',
-                                  sql_query: apiConn.sql_query || DEFAULT_SQL_QUERY,
-                                  timeout: 30
-                                });
-                                setQueryTestResult(null);
-                                setApiDialogOpen(true);
-                              }}
+                              onClick={() => openEditApi(apiConn)}
                               title="Editar conexión"
                             >
                               <Edit className="h-3 w-3" />
@@ -1942,24 +2386,26 @@ const Servidores = () => {
                       <span className="font-mono text-zinc-900 text-xs truncate max-w-[180px]">{apiConn.url}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-zinc-600">Servidor Padre:</span>
-                      <span className="text-zinc-900">{apiConn.servidor_padre}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-zinc-600">Sucursal Destino:</span>
-                      <span className="font-medium text-zinc-900">{apiConn.sucursal_destino}</span>
+                      <span className="text-zinc-600">Asignación operativa:</span>
+                      <span className="text-zinc-900">
+                        {apiConn.scope?.unidad_negocio_ids?.length
+                          ? `${apiConn.scope.unidad_negocio_ids.length} unidad(es)`
+                          : 'Sin asignación'}
+                      </span>
                     </div>
                     
                     <div className="pt-2 border-t border-zinc-100">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-zinc-500 flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Hora de Réplica:
-                        </span>
-                        <span className="text-xs font-mono bg-zinc-100 px-2 py-0.5 rounded">{apiConn.hora_replica}</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-zinc-500">Homologación:</span>
+                        {renderHomologationBadge(apiConn)}
                       </div>
+                      {apiConn.homologation?.profile_code && (
+                        <p className="text-xs text-zinc-400 mt-1">
+                          Perfil: {apiConn.homologation.profile_code}
+                        </p>
+                      )}
                     </div>
-                    
+
                     <div className="pt-2 border-t border-zinc-100">
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-zinc-500">Solo Ventas del Día:</span>
@@ -1977,6 +2423,10 @@ const Servidores = () => {
                           onClick={async () => {
                             // CORRECCIÓN P0-CHAPUR: Persistir visible_en_operaciones en EDARSAHUB SQL
                             const newValue = !apiConn.visible_en_operaciones;
+                            if (newValue && !isOperationallyEligible(apiConn)) {
+                              toast.error('Para habilitar operaciones se requiere Unidad de Negocio y homologación certificada');
+                              return;
+                            }
                             try {
                               await api.put(`/api-connections/${apiConn.id}`, {
                                 visible_en_operaciones: newValue
@@ -2067,9 +2517,7 @@ const Servidores = () => {
                           name: apiConn.name,
                           system_type: apiConn.tipo,
                           tipo_conexion: 'API_LOCAL',
-                          host: apiConn.servidor_padre,
-                          port: 0,
-                          database: apiConn.sucursal_destino,
+                          url: apiConn.url,
                           queries_configured: true,
                           is_api_connection: true
                         });
@@ -2104,31 +2552,7 @@ const Servidores = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => {
-                          setEditingApi(apiConn);
-                          setApiFormData({
-                            name: apiConn.name,
-                            url: apiConn.url,
-                            api_key: '',
-                            tipo: apiConn.tipo,
-                            servidor_padre: apiConn.servidor_padre,
-                            sucursal_destino: apiConn.sucursal_destino,
-                            hora_replica: apiConn.hora_replica,
-                            solo_ventas_dia: apiConn.solo_ventas_dia,
-                            activo: apiConn.activo,
-                            visible_en_operaciones: apiConn.visible_en_operaciones
-                          });
-                          // Resetear sección de consulta de prueba
-                          // En edición: si tiene consulta guardada, cargarla; si no, sugerir la default
-                          setQueryTestData({
-                            tipo_uso: apiConn.tipo_uso || 'Otro',
-                            nombre_consulta: apiConn.nombre_consulta || '',
-                            sql_query: apiConn.sql_query || DEFAULT_SQL_QUERY,
-                            timeout: 30
-                          });
-                          setQueryTestResult(null);
-                          setApiDialogOpen(true);
-                        }}
+                        onClick={() => openEditApi(apiConn)}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -2143,9 +2567,7 @@ const Servidores = () => {
                             name: apiConn.name,
                             system_type: apiConn.tipo,
                             tipo_conexion: 'API_LOCAL',
-                            host: apiConn.servidor_padre,
-                            port: 0,
-                            database: apiConn.sucursal_destino,
+                            url: apiConn.url,
                             is_api_connection: true,
                             // Copiar filtros existentes si los hay
                             tipos_movimiento: apiConn.config?.tipos_movimiento || [],
@@ -2166,7 +2588,7 @@ const Servidores = () => {
                           if (window.confirm('¿Eliminar esta conexión API?')) {
                             try {
                               await api.delete(`/api-connections/${apiConn.id}`);
-                              await loadApiConnections();  // Recargar lista
+                              await loadServers();  // Recargar inventario canonico
                               toast.success('Conexión eliminada');
                             } catch (error) {
                               console.error('Error eliminando conexión:', error);
@@ -2192,6 +2614,103 @@ const Servidores = () => {
               <p className="text-sm mt-1">Agrega una conexión para obtener datos en tiempo real</p>
             </div>
           )}
+        </TabsContent>
+
+        {/* Tab: API Factory H8 - solo lectura */}
+        <TabsContent value="api-factory">
+          <div className="space-y-6" data-testid="api-factory-readonly">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-zinc-800">API Factory</h3>
+                <p className="text-sm text-zinc-500">
+                  Catálogo administrativo de APIs, versiones y consumidores. Solo lectura.
+                </p>
+              </div>
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                H8 · READ ONLY
+              </Badge>
+            </div>
+
+            {loadingApiFactory ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    ['APIs', apiFactoryOverview.apis],
+                    ['Versiones', apiFactoryOverview.versions],
+                    ['Consumidores', apiFactoryOverview.consumers],
+                    ['Permisos', apiFactoryOverview.grants]
+                  ].map(([label, value]) => (
+                    <Card key={label}>
+                      <CardContent className="pt-5">
+                        <p className="text-xs uppercase tracking-wide text-zinc-500">{label}</p>
+                        <p className="text-2xl font-bold text-zinc-900 mt-1">{value || 0}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">APIs registradas</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {apiFactoryApis.length === 0 ? (
+                      <div className="text-sm text-zinc-500 py-4">
+                        No hay APIs registradas todavía.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {apiFactoryApis.map((item) => (
+                          <div key={item.api_id} className="flex items-center justify-between rounded-lg border border-zinc-200 p-3">
+                            <div>
+                              <p className="font-medium text-zinc-900">{item.name || item.api_code}</p>
+                              <p className="text-xs text-zinc-500">{item.api_code} · {item.auth_mode}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">{item.status}</Badge>
+                              <span className="text-xs text-zinc-500">{item.version_count || 0} versiones</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Consumidores</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {apiFactoryConsumers.length === 0 ? (
+                      <div className="text-sm text-zinc-500 py-4">
+                        No hay consumidores registrados todavía.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {apiFactoryConsumers.map((item) => (
+                          <div key={item.consumer_id} className="flex items-center justify-between rounded-lg border border-zinc-200 p-3">
+                            <div>
+                              <p className="font-medium text-zinc-900">{item.name || item.consumer_code}</p>
+                              <p className="text-xs text-zinc-500">{item.consumer_code}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">{item.status}</Badge>
+                              <span className="text-xs text-zinc-500">{item.grant_count || 0} permisos</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
         </TabsContent>
 
         {/* Tab: Vtiger CRM */}
@@ -2568,62 +3087,189 @@ const Servidores = () => {
                 </Select>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="api_hora">Hora de Réplica</Label>
-                <Input
-                  id="api_hora"
-                  type="time"
-                  value={apiFormData.hora_replica}
-                  onChange={(e) => setApiFormData({...apiFormData, hora_replica: e.target.value})}
-                />
-              </div>
             </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="api_servidor">Servidor Padre (Nube)</Label>
-                <Select 
-                  value={apiFormData.servidor_padre} 
-                  onValueChange={(value) => setApiFormData({...apiFormData, servidor_padre: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {servers.map(s => (
-                      <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+
+            <div className="border border-zinc-200 rounded-md p-3 space-y-3">
+              <div>
+                <Label>Asignación operativa (opcional)</Label>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Una conexión puede quedar sin asignación si es de pruebas o infraestructura.
+                  Las relaciones operativas se guardan en el catálogo canónico de unidades.
+                </p>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="api_sucursal">Sucursal Destino</Label>
-                <Input
-                  id="api_sucursal"
-                  value={apiFormData.sucursal_destino}
-                  onChange={(e) => setApiFormData({...apiFormData, sucursal_destino: e.target.value})}
-                  placeholder="Querétaro"
-                />
+
+              {editingApi ? (
+                <>
+                  {loadingApiAssignments ? (
+                    <div className="flex items-center gap-2 text-sm text-zinc-500">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Cargando asignaciones...
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex gap-2">
+                        <Select
+                          value={selectedApiUnitId}
+                          onValueChange={setSelectedApiUnitId}
+                        >
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Seleccionar unidad..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {apiOperationalUnits
+                              .filter(unit => !apiAssignments.some(
+                                assignment => String(assignment.empresa_id) === String(unit.id)
+                              ))
+                              .map(unit => (
+                                <SelectItem key={unit.id} value={String(unit.id)}>
+                                  {unit.nombre || unit.codigo || unit.id}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={addApiAssignment}
+                          disabled={!selectedApiUnitId}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Asignar
+                        </Button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {apiAssignments.length === 0 ? (
+                          <p className="text-xs text-zinc-500">Sin asignación operativa.</p>
+                        ) : apiAssignments.map(assignment => (
+                          <div
+                            key={`${assignment.empresa_id}-${assignment.rol_conexion}`}
+                            className="flex items-center justify-between rounded border border-zinc-200 px-3 py-2"
+                          >
+                            <div>
+                              <p className="text-sm font-medium">
+                                {assignment.empresa_nombre || assignment.empresa_codigo || assignment.empresa_id}
+                              </p>
+                              <p className="text-xs text-zinc-500">
+                                {assignment.rol_conexion}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeApiAssignment(assignment)}
+                              title="Quitar asignación"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <p className="text-xs text-zinc-500">
+                  Guarda primero la conexión. Después podrás asignarla a una o varias unidades desde este mismo formulario.
+                </p>
+              )}
+            </div>
+
+            <div className="border border-zinc-200 rounded-md p-3 space-y-3">
+              <div>
+                <Label>Política de réplica (opcional)</Label>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Define cuándo esta fuente local deja de usarse porque sus datos ya fueron replicados a nube.
+                </p>
               </div>
+
+              {editingApi ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="api_replication_enabled">Réplica a nube</Label>
+                    <Switch
+                      id="api_replication_enabled"
+                      checked={apiReplicationPolicy.enabled}
+                      onCheckedChange={(checked) => setApiReplicationPolicy({
+                        ...apiReplicationPolicy,
+                        enabled: checked
+                      })}
+                    />
+                  </div>
+
+                  {apiReplicationPolicy.enabled && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="api_replication_cutoff">Hora de réplica</Label>
+                        <Input
+                          id="api_replication_cutoff"
+                          type="time"
+                          value={apiReplicationPolicy.cutoff_time}
+                          onChange={(e) => setApiReplicationPolicy({
+                            ...apiReplicationPolicy,
+                            cutoff_time: e.target.value
+                          })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Zona horaria</Label>
+                        <Select
+                          value={apiReplicationPolicy.timezone}
+                          onValueChange={(value) => setApiReplicationPolicy({
+                            ...apiReplicationPolicy,
+                            timezone: value
+                          })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar zona..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {[
+                              ...(apiReplicationPolicy.timezone &&
+                              !apiTimezoneOptions.includes(apiReplicationPolicy.timezone)
+                                ? [apiReplicationPolicy.timezone]
+                                : []),
+                              ...apiTimezoneOptions
+                            ].map((timezoneName) => (
+                              <SelectItem key={timezoneName} value={timezoneName}>
+                                {timezoneName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={saveApiReplicationPolicy}
+                      disabled={
+                        savingApiReplicationPolicy ||
+                        (apiReplicationPolicy.enabled &&
+                          (!apiReplicationPolicy.cutoff_time || !apiReplicationPolicy.timezone))
+                      }
+                    >
+                      {savingApiReplicationPolicy && (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      )}
+                      Guardar política
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-zinc-500">
+                  Guarda primero la conexión. Después podrás definir su horario y zona horaria de réplica.
+                </p>
+              )}
             </div>
-            
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="api_solo_ventas"
-                checked={apiFormData.solo_ventas_dia}
-                onCheckedChange={(checked) => setApiFormData({...apiFormData, solo_ventas_dia: checked})}
-              />
-              <Label htmlFor="api_solo_ventas" className="text-sm">
-                Solo obtener ventas del día actual (evita duplicación)
-              </Label>
-            </div>
-            
-            <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
-              <p className="text-xs text-amber-900">
-                <strong>Nota:</strong> Esta conexión obtiene ventas del día que se suman a las del servidor padre. 
-                Por la noche (a las {apiFormData.hora_replica || '04:00'}) los datos se replican al servidor en la nube, 
-                momento en que esta API deja de sumar para evitar duplicación.
+
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+              <p className="text-xs text-blue-900">
+                <strong>Ventas del día:</strong> se habilita mediante la relación canónica VENTAS_DIA_API_LOCAL; no depende de host, puerto ni nombre de sucursal.
               </p>
             </div>
             
@@ -2823,14 +3469,14 @@ const Servidores = () => {
                     // Actualizar conexión existente
                     const response = await api.put(`/api-connections/${editingApi.id}`, apiFormData);
                     if (response.data.success) {
-                      await loadApiConnections();  // Recargar lista
+                      await loadServers();  // Recargar inventario canonico
                       toast.success('Conexión actualizada');
                     }
                   } else {
                     // Crear nueva conexión
                     const response = await api.post('/api-connections', apiFormData);
                     if (response.data.success) {
-                      await loadApiConnections();  // Recargar lista
+                      await loadServers();  // Recargar inventario canonico
                       toast.success('Conexión agregada');
                     }
                   }
@@ -3248,6 +3894,23 @@ const Servidores = () => {
               <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
               <span className="ml-2 text-zinc-600">Cargando opciones...</span>
             </div>
+          ) : filterLoadError ? (
+            <div role="alert" className="flex flex-col gap-3 rounded-md border border-red-200 bg-red-50 p-4 text-red-900">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 shrink-0" />
+                <span>{filterLoadError}</span>
+              </div>
+              <p className="text-sm">No se reemplazaron ni eliminaron movimientos. La configuración sigue protegida.</p>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-fit"
+                onClick={() => selectedServer && loadFilterOptions(selectedServer.id)}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Reintentar carga
+              </Button>
+            </div>
           ) : (
             <Tabs defaultValue="tipos" className="flex-1 overflow-hidden flex flex-col">
               <TabsList className="grid w-full grid-cols-3">
@@ -3289,11 +3952,16 @@ const Servidores = () => {
                           ? 'bg-blue-50 border-blue-300'
                           : 'bg-white border-zinc-200 hover:border-zinc-300'
                       }`}
-                      onClick={() => toggleFilter('tipos_movimiento', tipo.codigo)}
+                      onClick={() => {
+                        toggleFilter('tipos_movimiento', tipo.codigo);
+                      }}
                     >
-                      <Checkbox 
+                      <Checkbox
                         checked={selectedFilters.tipos_movimiento.includes(tipo.codigo)}
-                        onCheckedChange={() => toggleFilter('tipos_movimiento', tipo.codigo)}
+                        onClick={(event) => event.stopPropagation()}
+                        onCheckedChange={() => {
+                          toggleFilter('tipos_movimiento', tipo.codigo);
+                        }}
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
@@ -3401,11 +4069,12 @@ const Servidores = () => {
                 </Button>
                 <Button 
                   onClick={saveFilters}
+                  disabled={!persistedFiltersSnapshot || Boolean(filterLoadError) || loadingOptions || savingFilters}
                   className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800"
                   data-testid="save-filters-button"
                 >
-                  <Check className="h-4 w-4 mr-2" />
-                  Guardar Configuración
+                  {savingFilters ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+                  {savingFilters ? 'Guardando...' : 'Guardar Configuración'}
                 </Button>
               </div>
             </div>

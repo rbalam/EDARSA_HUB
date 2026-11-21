@@ -49,9 +49,10 @@ def test_mirror_does_not_spawn_universal_worker():
     assert forbidden not in body
 
 
-def test_bootstrap_defers_to_canonical_owner():
+def test_bootstrap_is_independent_stale_worker_recovery_fallback():
     body = text(BOOTSTRAP)
 
-    assert "DEFER_TO_CANONICAL_WORKER_OWNER" in body
-    assert '"worker_restart_owner": "EXTERNAL_CANONICAL_OWNER"' in body
-    assert 'supervisor_restart("WORKER_HEARTBEAT_STALE")' not in body
+    assert "WORKER_HEARTBEAT_STALE" in body
+    assert "BOOTSTRAP_WATCHDOG_SUPERVISOR_FALLBACK" in body
+    assert "UNIVERSAL_WORKER_STALE_RECOVERY" in body
+    assert 'supervisor_restart("WORKER_HEARTBEAT_STALE", WORKER_SERVICE)' in body

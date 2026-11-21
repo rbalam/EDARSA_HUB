@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-WIRING-READONLY-R1-20260919",
+  "reason": "Re-wake same Tablajeria R24F UAT wiring READ_ONLY result to expose worker/results terminal. No product mutation, no Production, no SQL.",
+  "production_touched": false
+}

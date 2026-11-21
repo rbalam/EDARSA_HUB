@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-ISCAM-AUTOSYNC-SELECTIVE-DETAIL-FIX-R4-CARLOS-20260930T1108",
+  "reason": "Re-wake after Emergent agent sleep. Prefer existing R4 ISCAM autosync fix job, do not clone it, preserve queue identity, apply only on Edarsahub_Desarrollo/Preview, no Production.",
+  "production_touched": false
+}

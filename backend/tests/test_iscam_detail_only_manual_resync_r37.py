@@ -24,7 +24,7 @@ def test_frontend_uses_detail_only_only_when_header_is_current():
     text = FRONTEND.read_text(encoding='utf-8')
     assert 'const detailOnly = detailGap && !headerGap;' in text
     assert 'detail_only: detailOnly' in text
-    assert 'splitDateChunks(syncFrom, syncTo, detailOnly ? 1 : 30)' in text
+    assert 'splitDateChunks(syncFrom, syncTo, 1)' in text
     assert 'freshness?.detail_missing_from' in text
     assert 'freshness?.detail_missing_to' in text
 

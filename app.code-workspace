@@ -4,5 +4,16 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"chat.tools.terminal.autoApprove": {
+			"/^git status --short --branch && git rev-parse HEAD && git branch --show-current$/": {
+				"approve": true,
+				"matchCommandLine": true
+			},
+			"/^git ls-remote --heads origin Edarsahub_Desarrollo worker/requests worker/results$/": {
+				"approve": true,
+				"matchCommandLine": true
+			}
+		}
+	}
 }

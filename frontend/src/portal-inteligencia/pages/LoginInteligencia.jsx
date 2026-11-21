@@ -37,7 +37,7 @@ export default function LoginInteligencia({ onSuccess }) {
           <p className="text-sm text-slate-400 mt-1">Portal de consulta · Acceso de socios</p>
         </div>
 
-        <form onSubmit={submit} className="bg-slate-800 border border-slate-700 rounded-2xl p-7 space-y-4">
+        <form onSubmit={submit} autoComplete="on" className="bg-slate-800 border border-slate-700 rounded-2xl p-7 space-y-4">
           {error && (
             <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-lg px-3 py-2" data-testid="intel-login-error">
               <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
@@ -45,11 +45,14 @@ export default function LoginInteligencia({ onSuccess }) {
             </div>
           )}
           <div>
-            <label className="text-xs text-slate-400 mb-1 block">Correo electrónico</label>
+            <label htmlFor="intel-login-email" className="text-xs text-slate-400 mb-1 block">Correo electrónico</label>
             <div className="relative">
               <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
               <input
+                id="intel-login-email"
+                name="username"
                 type="email"
+                autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -60,9 +63,12 @@ export default function LoginInteligencia({ onSuccess }) {
             </div>
           </div>
           <div>
-            <label className="text-xs text-slate-400 mb-1 block">Contraseña</label>
+            <label htmlFor="intel-login-password" className="text-xs text-slate-400 mb-1 block">Contraseña</label>
             <div className="relative">
               <PasswordInput
+                id="intel-login-password"
+                name="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
