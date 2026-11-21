@@ -1,0 +1,44 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 25,
+        "paths": [
+          "backend/modules/comercial"
+        ],
+        "search_terms": [
+          "meseros",
+          "capitanes",
+          "ventas_sin_propina"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMERCIAL_VENTAS_RESTAURANTES-REPOSITORY_CONTRACT_AUDIT_BOUNDE-FF248229A999F72D5E01",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY el contrato de KPIs de meseros y capitanes del dominio comercial de restaurantes: localizar implementación canónica, fuentes SQL, filtros empresa/unidad/sucursal/fecha operativa, permisos, métricas y discrepancias; emitir evidencia y recomendaciones sin cambios ni conexiones LIVE, sin publicar mutaciones ni tocar Producción. No duplicar trabajos existentes.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_VENTAS_RESTAURANTES",
+    "conflict_domains": [
+      "COMERCIAL_VENTAS_RESTAURANTES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
