@@ -1,0 +1,38 @@
+{
+  "actions": [],
+  "base_sha": "ac0292e3e91291c1e4fb7ea5c720125d6ad5a9f2",
+  "batch_size": 200,
+  "confirm_sql_backfill": true,
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-OPS-M2-SQL-CONCILIATION-R1-20261121",
+  "mode": "WORKER_SQL_BACKFILL_DEVELOPMENT",
+  "objective": "Conciliar de forma idempotente via worker_sql_projection.py y SPs estrechos los registros historicos y de validacion operativa Preview de GATE-M2 (R1 y R4, mas R2/R3) en dbo.Sys_Worker_Jobs en EDARSAHUB Desarrollo, con pre/post audit HRLectura y verificacion de idempotencia sin tocar Produccion.",
+  "post_audit_profile": "worker_operations_sql_state_v1",
+  "preflight_audit_profile": "worker_operations_sql_state_v1",
+  "production_allowed": false,
+  "requester": {
+    "chat": "WORKER-OPS-M2-SQL-CONCILIATION-AGY",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_OPERATIONS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_OPERATIONS",
+      "EDARSAHUB_SQL_DEV"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "P0",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": [
+      "tools/mirror_sync/worker_sql_projection.py"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "title": "Conciliacion SQL idempotente post-certificacion GATE-M2 R1-R4 (ACTIVE_IN_PREVIEW) en Desarrollo"
+}
