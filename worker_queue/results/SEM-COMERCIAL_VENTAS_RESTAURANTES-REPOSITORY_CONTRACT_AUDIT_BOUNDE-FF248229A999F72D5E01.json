@@ -1,0 +1,197 @@
+{
+  "base_sha": "9a2fa6e909458b39284e9b17b3d59ff6a6518a00",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-21T07:56:40Z",
+  "execution_base_sha": "9a2fa6e909458b39284e9b17b3d59ff6a6518a00",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-COMERCIAL_VENTAS_RESTAURANTES-REPOSITORY_CONTRACT_AUDIT_BOUNDE-FF248229A999F72D5E01",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-21T07:57:18Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "json",
+              "logging",
+              "modules.comercial_v2.repository_comercial_edarsahub",
+              "modules.comercial_v2.schemas",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "ventas_sin_propina"
+            ],
+            "path": "backend/modules/comercial/kpis_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_build_filter_key",
+              "_calculate_diff",
+              "_detect_kpi_changes",
+              "_get_utc_now",
+              "_sql_build_hash",
+              "_sql_decimal",
+              "_sql_int",
+              "_sql_parse_date",
+              "_sql_resolve_sistema",
+              "_sql_resolve_unidad_pk",
+              "cambiar_estado_periodo",
+              "cerrar_periodos_anteriores",
+              "get_db",
+              "get_kpi_comercial",
+              "get_kpis_by_empresa_rango",
+              "get_kpis_by_server_rango",
+              "get_pendientes_reconciliacion",
+              "init_kpis_repository",
+              "upsert_kpi_comercial"
+            ],
+            "tables_referenced": [
+              "Comercial_KPIs_Diarios_v2",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "calendar",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.rbac_helper_sql",
+              "core.rbac_sql.service",
+              "core.security",
+              "core.server_registry",
+              "core.source_resolver",
+              "core.system_type_utils",
+              "core.unidades_service",
+              "core.user_access_context",
+              "core.utils.date_filters",
+              "core.utils.operational_window",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.comercial.adapters",
+              "modules.comercial.cache_service",
+              "modules.comercial.queries.mpro",
+              "modules.comercial.queries.softrestaurant",
+              "modules.comercial.repository",
+              "modules.comercial.service",
+              "modules.comercial_analytics.repository_tickets",
+              "modules.comercial_v2.repository_readonly",
+              "pymssql",
+              "pytz",
+              "service",
+              "ticket_service",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "meseros"
+            ],
+            "path": "backend/modules/comercial/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/comercial/dashboard/{server_id}",
+              "/comercial/detalle-movimientos/{server_id}",
+              "/comercial/detalle-ventas-agrupado/{server_id}",
+              "/comercial/mesas/{server_id}",
+              "/comercial/metas/{server_id}",
+              "/comercial/precios-constantes/{server_id}",
+              "/comercial/reporte-pax/{server_id}",
+              "/comercial/sucursales/{server_id}",
+              "/comercial/tablero-ejecutivo",
+              "/comercial/ticket-perfecto/{server_id}",
+              "/comercial/ticket-venta/{server_id}",
+              "/comercial/ventas-tiempo/{server_id}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_active_server_ids",
+              "_agrupar_por_unidad",
+              "_dashboard_unit_resolution_sucursal",
+              "_empty_mesas_unidad",
+              "_filtrar_server",
+              "_safe_float",
+              "_safe_int",
+              "_tablero_ejecutivo_internal",
+              "check_live_guard_rail",
+              "comercial_dashboard",
+              "comercial_detalle_movimientos",
+              "comercial_detalle_ventas_agrupado",
+              "comercial_mesas",
+              "comercial_metas",
+              "comercial_reporte_pax",
+              "comercial_ticket_perfecto",
+              "comercial_ticket_venta",
+              "comercial_ventas_tiempo",
+              "cte_para",
+              "empty_response",
+              "get_user_context_or_403",
+              "get_ventas_dia_snapshot_from_edarsahub",
+              "obtener_sucursales",
+              "resolver_codigo_dedup",
+              "sql_fecha",
+              "tablero_ejecutivo",
+              "validate_server_access_rbac",
+              "ventas_precios_constantes"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Sync_Mesas",
+              "Unidades_Negocio"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 50,
+          "skipped_sensitive": 42
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-21T07:56:39Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
