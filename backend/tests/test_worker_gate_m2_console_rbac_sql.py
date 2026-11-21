@@ -705,6 +705,33 @@ def test_incremental_projection_idempotent_and_non_blocking(tmp_path):
     assert prod_out["reason"] == "PRODUCTION_POLICY_VIOLATION"
 
 
+def test_publisher_incremental_projection_hook_uses_canonical_state_dir(monkeypatch, tmp_path):
+    from tools.mirror_sync import universal_job_result_publisher as pub
+
+    fake_env = tmp_path / "backend" / ".env"
+    fake_env.parent.mkdir(parents=True)
+    fake_env.write_text("# test marker only\n", encoding="utf-8")
+
+    captured = {}
+
+    def fake_project(**kwargs):
+        captured.update(kwargs)
+        return {"projected": True, "job_id": kwargs["job_id"], "production_touched": False}
+
+    monkeypatch.setattr(pub, "ROOT", tmp_path)
+    monkeypatch.setattr(pub, "STATE", tmp_path / ".git" / "universal-worker-queue")
+    monkeypatch.setattr(proj, "project_single_job_best_effort", fake_project)
+
+    pub._project_published_result_to_sql_best_effort(
+        job_id="EDARSAHUB-BOS-INC-HOOK-R2",
+        public_result={"job_id": "EDARSAHUB-BOS-INC-HOOK-R2", "certification": "CERTIFIED"},
+        published_commit="a" * 40,
+    )
+    assert captured["job_id"] == "EDARSAHUB-BOS-INC-HOOK-R2"
+    assert captured["published_commit"] == "a" * 40
+    assert captured["queue_root"] == tmp_path / ".git" / "universal-worker-queue"
+
+
 # -----------------------------------------------------------------------------
 # 4. CONTRATO ESTÁTICO DEL FRONTEND WorkerConsole.jsx
 # -----------------------------------------------------------------------------

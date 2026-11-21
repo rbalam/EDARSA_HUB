@@ -1729,13 +1729,16 @@ def _project_published_result_to_sql_best_effort(
     if not env_file.is_file():
         return
     try:
-        from worker_sql_projection import project_single_job_best_effort
+        try:
+            from tools.mirror_sync.worker_sql_projection import project_single_job_best_effort
+        except ModuleNotFoundError:
+            from worker_sql_projection import project_single_job_best_effort
 
         outcome = project_single_job_best_effort(
             job_id=job_id,
             result_payload=public_result,
             published_commit=published_commit,
-            queue_root=QUEUE_ROOT,
+            queue_root=STATE,
         )
         if outcome.get("projected"):
             print(f"SQL_INCREMENTAL_PROJECTION_OK={job_id}")
