@@ -1,0 +1,53 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"READ_ONLY guardrail for SQL runtime bootstrap.\n\nInspects only environment variable NAMES from the live backend process and\nshell structure from /entrypoint.sh. It never reads .env contents or prints\nenvironment values.\n\"\"\"\nfrom __future__ import annotations\n\nimport re\nimport subprocess\nfrom pathlib import Path\n\n\nCANONICAL_SQL_ENV = (\n    \"EDARSAHUB_SQL_HOST\",\n    \"EDARSAHUB_SQL_PORT\",\n    \"EDARSAHUB_SQL_DATABASE\",\n    \"EDARSAHUB_SQL_USER\",\n    \"EDARSAHUB_SQL_PASSWORD\",\n)\n\n\ndef _backend_pid() -> int:\n    proc = subprocess.run(\n        [\"supervisorctl\", \"status\", \"backend\"],\n        text=True,\n        stdout=subprocess.PIPE,\n        stderr=subprocess.STDOUT,\n        check=False,\n        timeout=10,\n    )\n    assert proc.returncode == 0, (\n        \"BACKEND_SUPERVISOR_STATUS_FAILED:\"\n        f\"rc={proc.returncode}\"\n    )\n    match = re.search(r\"\\\\bpid\\\\s+(\\\\d+)\\\\b\", proc.stdout or \"\")\n    assert match is not None, \"BACKEND_PID_NOT_FOUND\"\n    return int(match.group(1))\n\n\ndef _backend_env_names(pid: int) -> set[str]:\n    path = Path(f\"/proc/{pid}/environ\")\n    assert path.is_file(), \"BACKEND_ENVIRON_UNAVAILABLE\"\n    raw = path.read_bytes()\n    return {\n        item.split(b\"=\", 1)[0].decode(\"utf-8\", errors=\"replace\")\n        for item in raw.split(b\"\\\\0\")\n        if b\"=\" in item\n    }\n\n\ndef _entrypoint_semantics() -> dict[str, bool]:\n    path = Path(\"/entrypoint.sh\")\n    assert path.is_file(), \"ENTRYPOINT_NOT_FOUND\"\n\n    syntax = subprocess.run(\n        [\"bash\", \"-n\", str(path)],\n        text=True,\n        stdout=subprocess.PIPE,\n        stderr=subprocess.STDOUT,\n        check=False,\n        timeout=10,\n    )\n    assert syntax.returncode == 0, \"ENTRYPOINT_BASH_SYNTAX_INVALID\"\n\n    lines = path.read_text(encoding=\"utf-8\").splitlines()\n    supervisor_line = None\n    for number, raw in enumerate(lines, start=1):\n        text = raw.strip()\n        if text.startswith(\"#\"):\n            continue\n        if \"supervisord\" in text or \"supervisorctl\" in text:\n            supervisor_line = number\n            break\n\n    pre = lines if supervisor_line is None else lines[: supervisor_line - 1]\n\n    has_env_reference = any(\n        \".env\" in line.lower() or \"env_file\" in line.lower()\n        for line in pre\n        if not line.lstrip().startswith(\"#\")\n    )\n    has_source = any(\n        re.search(r\"(^|[;&|()\\\\s])(source|\\\\.)\\\\s+[^#]*\", line)\n        and (\n            \".env\" in line.lower()\n            or \"env_file\" in line.lower()\n            or \"$ENV\" in line.upper()\n        )\n        for line in pre\n        if not line.lstrip().startswith(\"#\")\n    )\n    has_autoexport = any(\n        re.search(r\"(^|[;&|()\\\\s])set\\\\s+(-a|-o\\\\s+allexport)(\\\\s|$)\", line)\n        for line in pre\n        if not line.lstrip().startswith(\"#\")\n    )\n\n    return {\n        \"has_env_reference_before_supervisor\": has_env_reference,\n        \"has_source_before_supervisor\": has_source,\n        \"has_autoexport_before_supervisor\": has_autoexport,\n    }\n\n\ndef test_backend_runtime_receives_canonical_sql_environment_names():\n    pid = _backend_pid()\n    names = _backend_env_names(pid)\n    missing = sorted(set(CANONICAL_SQL_ENV) - names)\n    semantics = _entrypoint_semantics()\n\n    assert not missing, (\n        \"BACKEND_CANONICAL_SQL_ENV_MISSING:\"\n        + \",\".join(missing)\n        + \"|entrypoint_env_reference=\"\n        + str(int(semantics[\"has_env_reference_before_supervisor\"]))\n        + \"|entrypoint_source=\"\n        + str(int(semantics[\"has_source_before_supervisor\"]))\n        + \"|entrypoint_autoexport=\"\n        + str(int(semantics[\"has_autoexport_before_supervisor\"]))\n    )\n\n\ndef test_entrypoint_has_pre_supervisor_environment_bootstrap_signal():\n    semantics = _entrypoint_semantics()\n    assert semantics[\"has_env_reference_before_supervisor\"], (\n        \"ENTRYPOINT_NO_ENV_REFERENCE_BEFORE_SUPERVISOR\"\n    )\n",
+      "path": "backend/tests/test_sql_connections_runtime_bootstrap_readonly.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_sql_connections_runtime_bootstrap_readonly.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_sql_connections_runtime_bootstrap_readonly.py",
+        "backend/tests/test_universal_job_dispatcher_python_runtime.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-SQL-8OF10-RUNTIME-BOOTSTRAP-GUARD-R1-20261120",
+  "mode": "MUTATION",
+  "objective": "Agregar y ejecutar un guardrail bounded para certificar que el proceso backend uvicorn recibe los cinco nombres canonicos EDARSAHUB_SQL_* y que /entrypoint.sh tiene senal de bootstrap de entorno antes de Supervisor. El guardrail no debe leer contenidos .env ni imprimir valores de entorno. Si el runtime no cumple, bloquear sin integrar cambios. No SQL, no reinicios, no Produccion, no 019.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SQL_CONNECTIONS_8OF10",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "SQL_CONNECTIONS_8OF10"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
