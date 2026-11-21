@@ -4,11 +4,11 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "43888db9a3dcd3709c9e12756a6ea9cead5ce134",
-  "generated_at_utc": "2026-11-21T02:46:41Z",
+  "generated_at_utc": "2026-11-21T02:48:19Z",
   "history": {
     "done_total_local": 1924,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 1372,
     "results_total_local": 3056
   },
@@ -16,40 +16,46 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1490,
+      "age_seconds": 1588,
       "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M2-ENTERPRISE-MENU-R3-20261121",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1236,
+      "age_seconds": 1334,
       "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M2-ENTERPRISE-MENU-SQL-EXEC-R3-20261121",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3249,
+      "age_seconds": 3347,
       "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M2-INCREMENTAL-PROJ-R2-20261120",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 12,
+      "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M2-CONSOLE-RUNTIME-PARITY-R4-20261121",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "local_development_sha": "43888db9a3dcd3709c9e12756a6ea9cead5ce134",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 3,
-  "queue_running": 0,
+  "queue_running": 1,
   "remote_development_sha": "43888db9a3dcd3709c9e12756a6ea9cead5ce134",
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M2-CONSOLE-RUNTIME-PARITY-R4-20261121",
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-21T02:46:23Z",
-    "last_receive_utc": "2026-11-21T02:46:18Z",
+    "last_cycle_utc": "2026-11-21T02:47:58Z",
+    "last_receive_utc": "2026-11-21T02:47:53Z",
     "last_terminal_utc": "2026-11-21T02:26:04Z",
     "pid": "576144",
     "runtime_fingerprint": {
