@@ -59,6 +59,7 @@ from .jobs.alertas_excepciones_job import execute_alertas_excepciones_notifier
 # Resumen Diario Ejecutivo de Excepciones (correo matutino)
 from .jobs.resumen_diario_excepciones_job import execute_resumen_diario_excepciones
 from .jobs.bos_direction_status_job import execute_bos_direction_status
+from .jobs.bos_workers_global_watch_job import execute_bos_workers_global_watch
 
 from .persistent_state_repository import SchedulerPersistentStateRepository
 logger = logging.getLogger(__name__)
@@ -1211,6 +1212,36 @@ class SchedulerManager:
         finally:
             await lock.release()
 
+    async def _run_bos_workers_global_watch_job(self):
+        """Observe existing worker queue using the canonical Scheduler."""
+        config = self.config.jobs.get("bos_workers_global_watch")
+        if not config or not config.enabled:
+            return
+        lock = get_lock_manager(self.db).get_lock("bos_workers_global_watch")
+        if not await lock.acquire(timeout_seconds=config.timeout_seconds):
+            logger.warning("[BOS_WORKERS_WATCH] Lock occupied")
+            return
+        job_logger = get_job_logger()
+        entry = await job_logger.start_execution("bos_workers_global_watch")
+        try:
+            result = await asyncio.to_thread(execute_bos_workers_global_watch)
+            status = "failed" if result["status"] == "UNKNOWN" else "success"
+            await job_logger.finish_execution(
+                log_entry=entry,
+                status=status,
+                processed_count=1,
+                success_count=1 if status == "success" else 0,
+                message="Worker queue observation: " + result["status"],
+                extra_metadata=result,
+            )
+        except Exception:
+            await job_logger.finish_execution(
+                log_entry=entry, status="failed", error_detail="Worker observation failed"
+            )
+            raise
+        finally:
+            await lock.release()
+
     async def _run_bos_direction_status_job(self):
         """Publica el status vivo BOS de Direccion mediante el ciclo certificado."""
         job_config = self.config.jobs.get("bos_direction_status")
@@ -1793,6 +1824,20 @@ class SchedulerManager:
             )
             self._jobs["resumen_diario_excepciones"] = resumen_diario_config
             logger.info(f"Job RESUMEN_DIARIO_EXC registrado: cron={resumen_diario_config.cron_expression}")
+
+        workers_watch_config = self.config.jobs.get("bos_workers_global_watch")
+        if workers_watch_config and workers_watch_config.enabled:
+            self._scheduler.add_job(
+                self._run_bos_workers_global_watch_job,
+                trigger=IntervalTrigger(seconds=workers_watch_config.interval_seconds),
+                id="bos_workers_global_watch",
+                name="BOS Workers Global Watch",
+                replace_existing=True,
+                max_instances=1,
+                coalesce=True,
+                misfire_grace_time=workers_watch_config.misfire_grace_time,
+            )
+            self._jobs["bos_workers_global_watch"] = workers_watch_config
 
         # ========================================
         # BOS Direccion: Status vivo recurrente

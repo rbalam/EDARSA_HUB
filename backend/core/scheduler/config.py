@@ -155,6 +155,11 @@ class SchedulerConfig(BaseModel):
         if bos_direction_status_interval < 60:
             raise ValueError("SCHEDULER_BOS_DIRECTION_STATUS_INTERVAL_SECONDS must be >= 60")
         
+        workers_watch_interval = int(os.environ.get("SCHEDULER_BOS_WORKERS_WATCH_INTERVAL_SECONDS", "180"))
+        if workers_watch_interval < 180:
+            raise ValueError("SCHEDULER_BOS_WORKERS_WATCH_INTERVAL_SECONDS must be >= 180")
+        workers_watch_enabled = os.environ.get("SCHEDULER_BOS_WORKERS_WATCH_ENABLED", "false").lower() == "true"
+
         jobs = {
             "sla_processor": JobConfig(
                 job_id="sla_processor",
@@ -396,6 +401,18 @@ class SchedulerConfig(BaseModel):
                 timeout_seconds=300
             ),
             # BOS Direccion: status vivo basado en evidencia certificada
+            "bos_workers_global_watch": JobConfig(
+                job_id="bos_workers_global_watch",
+                job_name="BOS Workers Global Watch",
+                description="READ_ONLY health inspection of canonical worker queue",
+                enabled=workers_watch_enabled,
+                interval_seconds=workers_watch_interval,
+                batch_size=1,
+                timeout_seconds=60,
+                max_instances=1,
+                coalesce=True,
+                misfire_grace_time=60,
+            ),
             "bos_direction_status": JobConfig(
                 job_id="bos_direction_status",
                 job_name="BOS Direccion - Status Vivo",
