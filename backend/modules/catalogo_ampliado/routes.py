@@ -108,3 +108,33 @@ def crear_regla_alerta(empresa_id:int,body:AlertaReglaCreate,current_user:dict=D
 @router.get('/empresas/{empresa_id}/alertas/eventos')
 def eventos_alerta(empresa_id:int,limit:int=Query(default=200,ge=1,le=500),current_user:dict=Depends(_gobierno_admin)):
     _assert_empresa(empresa_id); return {'success':True,'data':repo.list_alerta_eventos(empresa_id,limit)}
+
+
+# Gate 8H-B - canario E2E de notificaciones, solo Development/Preview.
+from pydantic import BaseModel
+from .canary_delivery import run_notification_canary
+
+
+class NotificationCanaryRequest(BaseModel):
+    email: str
+    whatsapp: str
+    canary_key: str
+    confirm_real_send: bool = False
+
+
+@router.post('/notifications/canary')
+async def notifications_canary(
+    body: NotificationCanaryRequest,
+    current_user: dict = Depends(_gobierno_admin),
+):
+    if not body.confirm_real_send:
+        raise HTTPException(status_code=409, detail='Confirmacion explicita requerida para envio real')
+    try:
+        data = await run_notification_canary(
+            email=body.email,
+            whatsapp=body.whatsapp,
+            canary_key=body.canary_key,
+        )
+    except (ValueError, RuntimeError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {'success': True, 'data': data}
