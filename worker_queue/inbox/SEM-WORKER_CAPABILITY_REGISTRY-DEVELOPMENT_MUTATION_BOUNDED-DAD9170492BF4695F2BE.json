@@ -1,0 +1,56 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "def _dev_validate_path(raw_path: Any, *, allowed_roots: tuple[str, ...] = _G3_ROOTS) -> str:",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "def _dev_validate_path(\n    raw_path: Any,\n    *,\n    allowed_roots: tuple[str, ...] = _G3_ROOTS + (\"docs/\",),\n) -> str:",
+      "source_sha256": "6f6f17d201e137b6ac109f7fef658ffdd42cff9c52aaac618fe67e4c054ecc8c",
+      "type": "replace_text"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_mcp_dev_ingress_gate_b.py",
+        "backend/tests/test_worker_contract_stabilization_preflight.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_CAPABILITY_REGISTRY-DEVELOPMENT_MUTATION_BOUNDED-DAD9170492BF4695F2BE",
+  "mode": "MUTATION",
+  "objective": "Reparar de forma minima y fail-closed DEVELOPMENT_MUTATION_BOUNDED para permitir rutas documentales versionadas bajo docs/ sin modificar _G3_ROOTS, sin ampliar roots READ_ONLY y sin debilitar tokens sensibles. Cambiar únicamente el default de _dev_validate_path en backend/modules/worker_ingress/semantic_capabilities.py para usar _G3_ROOTS + ('docs/',). No tocar Produccion, no SQL, no deploy, no push, no crear workers/colas/publicadores alternativos. Ejecutar las pruebas existentes de ingress y preflight. No integrar todavía FINANZAS-RBAC-RECOVERY-001 en este mismo job.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CAPABILITY_REGISTRY",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CAPABILITY_REGISTRY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
