@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/EDARSAHUB-BOS-SQL-8OF10-RUNTIME-BOOTSTRAP-GUARD-R1-20261120.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-SQL_CONNECTIONS_8OF10-WORKER_RESULT_SEMANTIC_EXTRACT-1892CBE4AB3BE3098FDA",
+  "mode": "READ_ONLY",
+  "objective": "Extraer en READ_ONLY la causa semantica del resultado terminal EDARSAHUB-BOS-SQL-8OF10-RUNTIME-BOOTSTRAP-GUARD-R1-20261120, enfocada exclusivamente en el check_failed:pytest y sin repetir pruebas ni modificar repositorio o Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SQL_CONNECTIONS_8OF10",
+    "conflict_domains": [
+      "SQL_CONNECTIONS_8OF10"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
