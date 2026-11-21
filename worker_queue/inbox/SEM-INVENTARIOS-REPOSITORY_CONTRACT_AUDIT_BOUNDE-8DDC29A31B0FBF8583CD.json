@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "inventario",
+          "rfid",
+          "tender",
+          "kardex",
+          "barcode"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-INVENTARIOS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-8DDC29A31B0FBF8583CD",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY y sin cambios la reutilización de captura wearable/manos libres para inventarios físicos EDARSAHUB, EdarsaTender, QR/RFID, almacenes, Kardex, MPRO y SoftRestaurant. Revisar duplicados y gates existentes; entregar evidencia y brechas sin implementar ni tocar producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INVENTARIOS",
+    "conflict_domains": [
+      "INVENTARIOS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
