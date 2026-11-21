@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/UNIVERSAL-BANKING-GATE1-MATERIALIZE-CANONICAL-DESIGN-R1.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-FINANZAS-WORKER_RESULT_SEMANTIC_EXTRACT-CA8971EC30CC56AB2343",
+  "mode": "READ_ONLY",
+  "objective": "UNIVERSAL-BANKING Gate 2: preparar el preflight fisico READ_ONLY del bounded context Finanzas/Universal Banking a partir del resultado certificado de Gate 1, que ya incorpora la evidencia vinculante de Gate 0. Extraer y consolidar exclusivamente la evidencia necesaria para definir el contrato fisico minimo de PaymentRail, BankingChannel, BankingIdentifierModel y BankingExternalEvent, reutilizando estructuras canonicas existentes y deteniendose antes de cualquier implementacion. No DDL, no DML, no codigo, no adapters BBVA/Banorte, no conexiones bancarias, no pagos reales, no Produccion, no MongoDB, no hardcodes, no crecimiento de Core.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FINANZAS",
+    "conflict_domains": [
+      "FINANZAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
