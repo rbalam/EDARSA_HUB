@@ -831,6 +831,147 @@ def execute_backfill(
             pass
 
 
+def _record_pending_projection(
+    queue_root: Path,
+    *,
+    job_id: str,
+    reason: str,
+) -> None:
+    """Registra fallo transitorio de proyección SQL sin bloquear la cola Git."""
+    runtime_dir = queue_root / "runtime"
+    pending_file = runtime_dir / "sql_projection_pending.json"
+    try:
+        runtime_dir.mkdir(parents=True, exist_ok=True)
+        existing = _load_json_dict(pending_file) or {}
+        pending_map = existing.get("pending") if isinstance(existing.get("pending"), dict) else {}
+        pending_map[job_id] = {
+            "job_id": job_id,
+            "reason": str(reason)[:240],
+            "recorded_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        }
+        # Mantener acotado a los últimos 100 registros
+        if len(pending_map) > 100:
+            oldest_keys = sorted(pending_map.keys())[:-100]
+            for k in oldest_keys:
+                pending_map.pop(k, None)
+        payload = {
+            "schema": "edarsahub.worker-sql-projection-pending.v1",
+            "updated_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "pending_count": len(pending_map),
+            "pending": pending_map,
+        }
+        pending_file.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    except Exception:
+        pass
+
+
+def _clear_pending_projection(queue_root: Path, *, job_id: str) -> None:
+    pending_file = queue_root / "runtime" / "sql_projection_pending.json"
+    if not pending_file.is_file():
+        return
+    try:
+        existing = _load_json_dict(pending_file) or {}
+        pending_map = existing.get("pending") if isinstance(existing.get("pending"), dict) else {}
+        if job_id not in pending_map:
+            return
+        pending_map.pop(job_id, None)
+        payload = {
+            "schema": "edarsahub.worker-sql-projection-pending.v1",
+            "updated_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "pending_count": len(pending_map),
+            "pending": pending_map,
+        }
+        pending_file.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    except Exception:
+        pass
+
+
+def project_single_job_best_effort(
+    *,
+    job_id: str,
+    result_payload: dict[str, Any],
+    request_payload: dict[str, Any] | None = None,
+    published_commit: str | None = None,
+    queue_root: Path | None = None,
+    connection_factory=None,
+) -> dict[str, Any]:
+    """Proyección incremental segura, idempotente y no bloqueante hacia dbo.Sys_Worker_Jobs.
+
+    - Invoca únicamente dbo.sp_Worker_UpsertJobState (SP estrecho certificado en GATE-M1).
+    - Valida DB_NAME() == 'EDARSAHUB' y rechaza production_touched=True (fail-closed).
+    - Nunca lanza excepciones que bloqueen la publicación Git; cualquier error SQL queda
+      trazado en runtime/sql_projection_pending.json para reintento idempotente.
+    """
+    qroot = queue_root or QUEUE_ROOT
+    clean_job_id = _clean_str(job_id, 128) or ""
+    if not clean_job_id:
+        return {"projected": False, "pending_recorded": False, "reason": "EMPTY_JOB_ID"}
+
+    marker = {"commit": published_commit} if published_commit else {}
+    record, reject_reason = normalize_job_record(
+        job_id=clean_job_id,
+        request_payload=request_payload,
+        result_payload=result_payload,
+        marker=marker,
+        provenance_source="RUNTIME_INCREMENTAL_PROJECTION",
+    )
+    if record is None:
+        _record_pending_projection(qroot, job_id=clean_job_id, reason=reject_reason or "NORMALIZE_REJECTED")
+        return {
+            "projected": False,
+            "pending_recorded": True,
+            "reason": reject_reason or "NORMALIZE_REJECTED",
+            "production_touched": False,
+        }
+
+    conn = None
+    try:
+        if connection_factory is None:
+            from core.config.env_bootstrap import load_edarsahub_environment
+            from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
+
+            load_edarsahub_environment()
+            conn = get_edarsahub_pymssql_connection(timeout=10, login_timeout=5, autocommit=False)
+        else:
+            conn = connection_factory()
+
+        cur = conn.cursor(as_dict=True)
+        identity = _verify_dev_database_identity(cur)
+        cur.execute(_JOB_SP_SQL, tuple(record[k] for k in _JOB_PARAM_KEYS))
+        conn.commit()
+        _clear_pending_projection(qroot, job_id=clean_job_id)
+        return {
+            "projected": True,
+            "pending_recorded": False,
+            "job_id": clean_job_id,
+            "database": identity["db_name"],
+            "lifecycle_stage": record["LifecycleStage"],
+            "certification_status": record["CertificationStatus"],
+            "production_touched": False,
+        }
+    except Exception as exc:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        reason = f"{type(exc).__name__}:{str(exc)[:180]}"
+        _record_pending_projection(qroot, job_id=clean_job_id, reason=reason)
+        return {
+            "projected": False,
+            "pending_recorded": True,
+            "job_id": clean_job_id,
+            "reason": reason,
+            "production_touched": False,
+        }
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--confirm", action="store_true")

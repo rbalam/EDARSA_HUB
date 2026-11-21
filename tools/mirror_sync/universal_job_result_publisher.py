@@ -1713,6 +1713,38 @@ def result_identity(path: Path, payload: dict[str, Any]) -> str:
     return fallback
 
 
+def _project_published_result_to_sql_best_effort(
+    *,
+    job_id: str,
+    public_result: dict,
+    published_commit: str,
+) -> None:
+    """Proyección incremental best-effort hacia dbo.Sys_Worker_Jobs (GATE-M2).
+
+    Nunca bloquea ni falla la publicación Git de resultados.
+    """
+    if os.environ.get("EDARSAHUB_WORKER_SQL_INCREMENTAL_PROJECTION", "1") == "0":
+        return
+    env_file = ROOT / "backend" / ".env"
+    if not env_file.is_file():
+        return
+    try:
+        from worker_sql_projection import project_single_job_best_effort
+
+        outcome = project_single_job_best_effort(
+            job_id=job_id,
+            result_payload=public_result,
+            published_commit=published_commit,
+            queue_root=QUEUE_ROOT,
+        )
+        if outcome.get("projected"):
+            print(f"SQL_INCREMENTAL_PROJECTION_OK={job_id}")
+        else:
+            print(f"SQL_INCREMENTAL_PROJECTION_DEFERRED={job_id}:{outcome.get('reason')}")
+    except Exception as exc:
+        print(f"SQL_INCREMENTAL_PROJECTION_DEFERRED={job_id}:{type(exc).__name__}")
+
+
 def publish_one(path: Path) -> bool:
     PUBLISHED.mkdir(parents=True, exist_ok=True)
     marker = PUBLISHED / path.name
@@ -1919,6 +1951,12 @@ def publish_one(path: Path) -> bool:
                 f"commit={commit}\n"
                 f"certification={public.get('certification')}\n",
                 encoding="utf-8",
+            )
+
+            _project_published_result_to_sql_best_effort(
+                job_id=job_id,
+                public_result=public,
+                published_commit=commit,
             )
 
             print(
