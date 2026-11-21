@@ -1,0 +1,88 @@
+{
+  "actions": [
+    {
+      "expected_sha256": "9aac306a15f3149e0bcc529da49db6fa83610dac15ea3ec49decfca4af95d6d5",
+      "new": "def _read_reconciled_result_doc(job_id: str, path: Path, state: str) -> Optional[Any]:\n    \"\"\"Lee resultados reconciliados vía worker_result_reader + preview_validations (sin inventar estado).\"\"\"\n    if state == \"results\":\n        try:\n            read_res = C.read_canonical_result(path, expected_job_id=job_id)\n            if getattr(read_res, \"terminal_result_valid\", False) and isinstance(getattr(read_res, \"payload\", None), dict):\n                payload = dict(read_res.payload)\n                preview_path = C.QUEUE_ROOT / \"preview_validations\" / f\"{job_id}.json\"\n                if preview_path.is_file() and \"operational_validation\" not in payload:\n                    preview_doc = C.read_json_file(preview_path)\n                    if isinstance(preview_doc, dict):\n                        payload[\"operational_validation\"] = preview_doc\n                return payload\n        except Exception:\n            pass\n    return C.read_json_file(path)\n\n\ndef _find_in_state(state: str, job_id: str) -> Optional[Path]:",
+      "old": "def _find_in_state(state: str, job_id: str) -> Optional[Path]:",
+      "path": "backend/modules/worker_console/routes.py",
+      "type": "replace_text"
+    },
+    {
+      "new": "    runtime_dir = C.QUEUE_ROOT / \"runtime\"\n\n    def _read_txt(name: str) -> Optional[str]:\n        p = runtime_dir / name\n        try:\n            return p.read_text(encoding=\"utf-8\", errors=\"replace\").strip() if p.exists() else None\n        except Exception:\n            return None\n\n    preferred_doc = C.read_json_file(runtime_dir / \"preferred_job.json\")\n    preferred_job_orphaned = False\n    if isinstance(preferred_doc, dict):\n        pref_jid = str(preferred_doc.get(\"job_id\") or \"\").strip()\n        exp_epoch = preferred_doc.get(\"expires_at_epoch\")\n        expired = isinstance(exp_epoch, (int, float)) and datetime.now(timezone.utc).timestamp() > float(exp_epoch)\n        in_flight = bool(pref_jid and (_find_in_state(\"pending\", pref_jid) or _find_in_state(\"processing\", pref_jid)))\n        preferred_job_orphaned = bool(not pref_jid or not in_flight or expired)\n\n    orphaned_archive_dir = runtime_dir / \"orphaned-preferred\"\n    orphaned_archive_count = (\n        sum(1 for entry in orphaned_archive_dir.iterdir())\n        if orphaned_archive_dir.is_dir()\n        else 0\n    )\n\n    return {\n        \"generated_at_utc\": datetime.now(timezone.utc).isoformat(),\n        \"source\": sql_summary[\"source\"],\n        \"sql_summary\": sql_summary,\n        \"states\": states,\n        \"runtime\": {\n            \"current_job_id\": _read_txt(\"current_job_id\"),\n            \"generation\": _read_txt(\"generation\"),\n            \"last_cycle_utc\": _read_txt(\"last_cycle_utc\"),\n            \"last_receive_utc\": _read_txt(\"last_receive_utc\"),\n            \"last_terminal_utc\": _read_txt(\"last_terminal_utc\"),\n            \"control_plane_status\": C.read_json_file(runtime_dir / \"control_plane_status.json\"),\n            \"reconciler\": C.read_json_file(runtime_dir / \"reconciler.json\"),\n            \"preferred_job\": preferred_doc,\n            \"preferred_job_orphaned\": preferred_job_orphaned,\n            \"orphaned_preferred_archive_count\": orphaned_archive_count,\n            \"sql_projection_pending\": C.read_json_file(runtime_dir / \"sql_projection_pending.json\"),\n        },",
+      "old": "    runtime_dir = C.QUEUE_ROOT / \"runtime\"\n\n    def _read_txt(name: str) -> Optional[str]:\n        p = runtime_dir / name\n        try:\n            return p.read_text(encoding=\"utf-8\", errors=\"replace\").strip() if p.exists() else None\n        except Exception:\n            return None\n\n    return {\n        \"generated_at_utc\": datetime.now(timezone.utc).isoformat(),\n        \"source\": sql_summary[\"source\"],\n        \"sql_summary\": sql_summary,\n        \"states\": states,\n        \"runtime\": {\n            \"current_job_id\": _read_txt(\"current_job_id\"),\n            \"generation\": _read_txt(\"generation\"),\n            \"last_cycle_utc\": _read_txt(\"last_cycle_utc\"),\n            \"last_receive_utc\": _read_txt(\"last_receive_utc\"),\n            \"last_terminal_utc\": _read_txt(\"last_terminal_utc\"),\n            \"control_plane_status\": C.read_json_file(runtime_dir / \"control_plane_status.json\"),\n            \"reconciler\": C.read_json_file(runtime_dir / \"reconciler.json\"),\n            \"preferred_job\": C.read_json_file(runtime_dir / \"preferred_job.json\"),\n            \"preferred_job_orphaned\": (runtime_dir / \"orphaned-preferred\").exists(),\n            \"sql_projection_pending\": C.read_json_file(runtime_dir / \"sql_projection_pending.json\"),\n        },",
+      "path": "backend/modules/worker_console/routes.py",
+      "type": "replace_text"
+    },
+    {
+      "new": "    result_interp = None\n    for st in (\"results\", \"done\", \"published\"):\n        rp = _find_in_state(st, job_id)\n        if rp is None:\n            continue\n        doc = _read_reconciled_result_doc(job_id, rp, st)\n        if doc is not None:\n            result_interp = C.interpret_result(doc)\n            break",
+      "old": "    result_interp = None\n    rp = _find_in_state(\"results\", job_id) or _find_in_state(\"done\", job_id) or _find_in_state(\"published\", job_id)\n    if rp is not None:\n        doc = C.read_json_file(rp)\n        if doc is not None:\n            result_interp = C.interpret_result(doc)",
+      "path": "backend/modules/worker_console/routes.py",
+      "type": "replace_text"
+    },
+    {
+      "new": "    for st in (\"results\", \"done\", \"published\", \"rejected\"):\n        p = _find_in_state(st, job_id)\n        if p is not None:\n            doc = _read_reconciled_result_doc(job_id, p, st)\n            return {\n                \"job_id\": job_id,\n                \"found_in\": st,\n                \"interpretation\": C.interpret_result(doc) if doc is not None else None,\n                \"raw\": doc,\n            }",
+      "old": "    for st in (\"results\", \"done\", \"published\", \"rejected\"):\n        p = _find_in_state(st, job_id)\n        if p is not None:\n            if st == \"results\":\n                try:\n                    read_res = C.read_canonical_result(p, expected_job_id=job_id)\n                    if getattr(read_res, \"terminal_result_valid\", False) and isinstance(getattr(read_res, \"payload\", None), dict):\n                        return {\n                            \"job_id\": job_id,\n                            \"found_in\": st,\n                            \"interpretation\": C.interpret_result(read_res.payload),\n                            \"raw\": read_res.payload,\n                        }\n                except Exception:\n                    pass\n            doc = C.read_json_file(p)\n            return {\n                \"job_id\": job_id,\n                \"found_in\": st,\n                \"interpretation\": C.interpret_result(doc) if doc is not None else None,\n                \"raw\": doc,\n            }",
+      "path": "backend/modules/worker_console/routes.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_sha256": "c4e4864170f0672383772cfa8fc3a7954b706aad5304b16e97c7f6a26e241100",
+      "new": "    assert captured[\"queue_root\"] == tmp_path / \".git\" / \"universal-worker-queue\"\n\n\ndef test_dashboard_preferred_job_orphaned_ignores_historical_archive_and_detects_active_orphan(monkeypatch, tmp_path):\n    _mock_sql_reads(monkeypatch)\n    monkeypatch.setattr(C, \"QUEUE_ROOT\", tmp_path)\n    monkeypatch.setattr(\n        R,\n        \"get_current_user_dual\",\n        AsyncMock(return_value={\"id\": \"u-sa\", \"email\": \"superadmin@edarsa.com\", \"role\": \"SUPERADMIN\"}),\n    )\n    monkeypatch.setattr(\n        R,\n        \"_check_sql_worker_console_authority\",\n        lambda email: {\"authorized\": True, \"is_superadmin\": True, \"reason\": \"SQL_SUPERADMIN:SUPERADMIN\"},\n    )\n    archive = tmp_path / \"runtime\" / \"orphaned-preferred\"\n    (archive / \"20260920T191607Z\").mkdir(parents=True)\n    (archive / \"20260920T192100Z\").mkdir(parents=True)\n\n    client = _make_client()\n    r1 = client.get(\"/api/worker/console/dashboard\")\n    assert r1.status_code == 200\n    rt1 = r1.json()[\"runtime\"]\n    assert rt1[\"preferred_job\"] is None\n    assert rt1[\"preferred_job_orphaned\"] is False\n    assert rt1[\"orphaned_preferred_archive_count\"] == 2\n\n    # Si existe un preferred_job.json activo cuyo job_id no está en pending/processing -> True\n    (tmp_path / \"runtime\" / \"preferred_job.json\").write_text(\n        '{\"job_id\": \"ORPHAN-ACTIVE-JOB-1\", \"expires_at_epoch\": 9999999999}',\n        encoding=\"utf-8\",\n    )\n    r2 = client.get(\"/api/worker/console/dashboard\")\n    assert r2.status_code == 200\n    assert r2.json()[\"runtime\"][\"preferred_job_orphaned\"] is True\n\n\ndef test_lifecycle_and_result_reconcile_canonical_result_and_preview_validation(monkeypatch, tmp_path):\n    _mock_sql_reads(monkeypatch)\n    monkeypatch.setattr(C, \"QUEUE_ROOT\", tmp_path)\n    monkeypatch.setattr(\n        R,\n        \"get_current_user_dual\",\n        AsyncMock(return_value={\"id\": \"u-sa\", \"email\": \"superadmin@edarsa.com\", \"role\": \"SUPERADMIN\"}),\n    )\n    monkeypatch.setattr(\n        R,\n        \"_check_sql_worker_console_authority\",\n        lambda email: {\"authorized\": True, \"is_superadmin\": True, \"reason\": \"SQL_SUPERADMIN:SUPERADMIN\"},\n    )\n\n    jid = \"EDARSAHUB-BOS-TEST-ACTIVE-PREVIEW-1\"\n    (tmp_path / \"results\").mkdir(parents=True)\n    (tmp_path / \"results\" / f\"{jid}.json\").write_text(\n        '{\"job_id\": \"EDARSAHUB-BOS-TEST-ACTIVE-PREVIEW-1\", \"status\": \"INTEGRATED\", \"certification\": \"PENDING_AUDIT_EVIDENCE\"}',\n        encoding=\"utf-8\",\n    )\n    (tmp_path / \"preview_validations\").mkdir(parents=True)\n    (tmp_path / \"preview_validations\" / f\"{jid}.json\").write_text(\n        '{\"schema\": \"edarsahub.preview-operational-validation.v1\", \"job_id\": \"EDARSAHUB-BOS-TEST-ACTIVE-PREVIEW-1\", \"commit_sha\": \"'\n        + (\"a\" * 40)\n        + '\", \"preview_activated\": true, \"operational_tests\": \"PASS\", \"functional_result\": \"PASS\", \"validated_at_utc\": \"2026-11-21T02:30:00Z\", \"production_touched\": false}',\n        encoding=\"utf-8\",\n    )\n\n    class _FakeRead:\n        terminal_result_valid = True\n        payload = {\n            \"schema\": \"edarsahub.worker-result.v1\",\n            \"completed_at_utc\": \"2026-11-21T02:25:00Z\",\n            \"job_id\": jid,\n            \"percent_complete\": 100,\n            \"work_completion\": \"COMPLETE\",\n            \"status\": \"INTEGRATED\",\n            \"certification\": \"CERTIFIED\",\n            \"quality_gate\": \"PASS\",\n            \"tests\": \"PASS\",\n            \"blockers\": [],\n            \"production_touched\": False,\n            \"development_sha\": \"a\" * 40,\n            \"git_sync_status\": \"CERTIFIED_GIT_SYNC\",\n        }\n\n    monkeypatch.setattr(C, \"read_canonical_result\", lambda p, *, expected_job_id: _FakeRead())\n\n    client = _make_client()\n    r_lc = client.get(f\"/api/worker/console/lifecycle/{jid}\")\n    assert r_lc.status_code == 200\n    assert r_lc.json()[\"interpretation\"][\"verdict\"] == \"PASS\"\n    assert r_lc.json()[\"interpretation\"][\"lifecycle_stage\"] == \"ACTIVE_IN_PREVIEW\"\n\n    r_res = client.get(f\"/api/worker/console/result/{jid}\")\n    assert r_res.status_code == 200\n    assert r_res.json()[\"interpretation\"][\"verdict\"] == \"PASS\"\n    assert r_res.json()[\"interpretation\"][\"lifecycle_stage\"] == \"ACTIVE_IN_PREVIEW\"",
+      "old": "    assert captured[\"queue_root\"] == tmp_path / \".git\" / \"universal-worker-queue\"",
+      "path": "backend/tests/test_worker_gate_m2_console_rbac_sql.py",
+      "type": "replace_text"
+    }
+  ],
+  "base_sha": "43888db9a3dcd3709c9e12756a6ea9cead5ce134",
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "paths": [
+        "backend/modules/worker_console/routes.py",
+        "backend/tests/test_worker_gate_m2_console_rbac_sql.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_gate_m2_console_rbac_sql.py",
+        "backend/tests/test_worker_console_contract.py",
+        "backend/tests/test_worker_console_enterprise_menu_contract.py",
+        "backend/tests/test_sql_as_dict_fail_closed_guard_r1.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "commit_message": "fix(worker-console): GATE-M2 R4 fix preferred_job_orphaned false positive and canonical lifecycle/result reconciliation",
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M2-CONSOLE-RUNTIME-PARITY-R4-20261121",
+  "mode": "MUTATION",
+  "objective": "GATE-M2 R4 (Paridad operativa Worker Console): corregir falso positivo de preferred_job_orphaned cuando solo existe archivo historico en runtime/orphaned-preferred/ sin preferred_job.json activo, y unificar lifecycle() y result() sobre read_canonical_result + preview_validations para paridad exacta CERTIFIED/ACTIVE_IN_PREVIEW sin alterar evidencia historica.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "WORKER-OPS-GATE-M2-R4-AGY",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_OPERATIONS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "conflict_scope": [
+      "backend/modules/worker_console/routes.py",
+      "backend/tests/test_worker_gate_m2_console_rbac_sql.py"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "HIGH",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
