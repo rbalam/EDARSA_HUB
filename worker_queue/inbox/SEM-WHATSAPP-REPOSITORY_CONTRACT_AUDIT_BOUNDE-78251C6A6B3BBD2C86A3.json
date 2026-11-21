@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/core/communications/",
+          "backend/core/centro_control/",
+          "backend/modules/ia_assistant/",
+          "backend/modules/agent_harness/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "webhook",
+          "RequestValidator",
+          "X-Twilio-Signature",
+          "MessageSid",
+          "TwiML",
+          "form-urlencoded",
+          "inbound",
+          "twilio",
+          "whatsapp",
+          "escalamiento",
+          "handoff"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WHATSAPP-REPOSITORY_CONTRACT_AUDIT_BOUNDE-78251C6A6B3BBD2C86A3",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 focalizado READ_ONLY de WhatsApp bidireccional EDARSAHUB. Revisar contratos existentes de recepción webhook Twilio, verificación X-Twilio-Signature, parsing form-urlencoded, deduplicación MessageSid, TwiML, enrutamiento IA autorizada y escalamiento humano. Reutilizar proveedor, dispatcher, SQL canónico, RBAC y conexiones existentes; evaluar Azure Logic Apps como adaptador opcional, no infraestructura paralela. Entregar evidencia, brechas y plan mínimo reversible; no modificar archivos ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WHATSAPP",
+    "conflict_domains": [
+      "WHATSAPP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
