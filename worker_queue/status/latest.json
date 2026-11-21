@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "27e7901aec8e42a673206f94a44bb4a3fd26de07",
-  "generated_at_utc": "2026-11-21T06:19:01Z",
+  "generated_at_utc": "2026-11-21T06:20:35Z",
   "history": {
     "done_total_local": 1969,
     "pending_total_local": 0,
@@ -16,31 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1727,
+      "age_seconds": 1821,
       "job_id": "EDARSAHUB-BOS-SEC-WS-AUTH-R5-20261121",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1487,
+      "age_seconds": 1581,
       "job_id": "SEM-TABLAJERIA-WORKER_RESULT_DETAIL_READ-F4ADB2FAD9DA717C0AAC",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3488,
+      "age_seconds": 3582,
       "job_id": "SEM-WORKER_CAPABILITY_REGISTRY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-35651E139D15617D9F6C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3512,
-      "job_id": "SEM-WORKER_CAPABILITY_REGISTRY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-A99A54C997EB1AD95545",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3446,
+      "age_seconds": 3541,
       "job_id": "SEM-WORKER_CAPABILITY_REGISTRY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-F3705AAEA58A3E3B341D",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,14 +48,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "remote_development_sha": "27e7901aec8e42a673206f94a44bb4a3fd26de07",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-21T06:18:44Z",
-    "last_receive_utc": "2026-11-21T06:18:57Z",
+    "last_cycle_utc": "2026-11-21T06:20:27Z",
+    "last_receive_utc": "2026-11-21T06:20:22Z",
     "last_terminal_utc": "2026-11-21T05:54:14Z",
     "pid": "1055191",
     "runtime_fingerprint": {
