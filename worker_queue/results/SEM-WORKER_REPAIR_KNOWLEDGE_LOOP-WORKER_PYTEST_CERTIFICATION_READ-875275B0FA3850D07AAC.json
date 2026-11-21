@@ -1,0 +1,24 @@
+{
+  "base_sha": "ac0292e3e91291c1e4fb7ea5c720125d6ad5a9f2",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:READONLY_PYTEST_REVISION_MISMATCH:recorded=ac0292e3e91291c1e4fb7ea5c720125d6ad5a9f2:checkout=41f7c14b11c33ecdb12d01fed4d2c58fef1679f6:tracked_dirty=False"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-11-21T03:45:57Z",
+  "execution_base_sha": "ac0292e3e91291c1e4fb7ea5c720125d6ad5a9f2",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_PYTEST_CERTIFICATION_READ-875275B0FA3850D07AAC",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-11-21T03:47:09Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-21T03:45:57Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
