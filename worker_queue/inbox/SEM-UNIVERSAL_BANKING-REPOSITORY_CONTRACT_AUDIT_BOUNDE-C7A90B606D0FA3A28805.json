@@ -1,0 +1,66 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/finanzas/",
+          "backend/modules/integrations_center/",
+          "backend/modules/integrations_runtime/",
+          "backend/tests/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "router",
+          "repository",
+          "migration",
+          "scheduler",
+          "feature_flag",
+          "Servidores_Conexiones",
+          "Sistema_Capacidades",
+          "Sync_Control_Ejecuciones",
+          "Sync_Control_Evidencias",
+          "Finanzas_CxP_PagosOrigenQueue",
+          "Finanzas_Pagos",
+          "repository_bancarios",
+          "secret_manager",
+          "pytest",
+          "RBAC",
+          "adapter",
+          "conciliacion",
+          "estado-cuenta",
+          "movimientos-banco",
+          "payment"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-UNIVERSAL_BANKING-REPOSITORY_CONTRACT_AUDIT_BOUNDE-C7A90B606D0FA3A28805",
+  "mode": "READ_ONLY",
+  "objective": "UNIVERSAL-BANKING-2 — MINIMAL IMPLEMENTATION DESIGN. Producir en READ_ONLY el diseño de implementación mínima para Universal Banking, partiendo de Gate 0 y Gate 1 ya certificados. Definir exactamente qué archivos/módulos existentes deben extenderse, qué nuevos módulos mínimos serían necesarios, contratos internos, endpoints candidatos, ownership, secuencia de migraciones hipotéticas, pruebas, feature flags y orden de implementación. Mantener separación estricta entre Finanzas/CxP y ejecución bancaria externa; reutilizar Servidores_Conexiones, Sistema_Capacidades, Sync_Control_Ejecuciones, Sync_Control_Evidencias, RBAC, Scheduler y secret_manager. No crear ni modificar código, SQL, schema, datos, adapters reales, conexiones bancarias ni Producción. El resultado debe terminar con un plan ejecutable por fases y criterios de aceptación para un futuro Gate 3 de implementación.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "UNIVERSAL_BANKING",
+    "conflict_domains": [
+      "UNIVERSAL_BANKING"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
