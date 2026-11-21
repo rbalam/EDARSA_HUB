@@ -1,0 +1,26 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-R4-RESULT-DETAIL-DIAGNOSTIC-R1-20261120",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "base_sha": "41f7c14b11c33ecdb12d01fed4d2c58fef1679f6",
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar en READ_ONLY la inconsistencia de certificacion del job EDARSAHUB-PROD-DEV-R4-FINAL-EQUIVALENCE-READONLY-R1-20261119, cuyo artifact remoto muestra READ_ONLY_COMPLETE + PASS + files_changed=[] pero get_job_status reporta CONTRADICTORY_RESULT_ARTIFACT con published_marker_contradicts_non_mutation_result. Recuperar evidencia local sanitizada y causa exacta. No mutar repositorio, runtime, SQL ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "worker_result_detail_read",
+      "request": {
+        "job_id": "EDARSAHUB-PROD-DEV-R4-FINAL-EQUIVALENCE-READONLY-R1-20261119"
+      }
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Production divergence reconciliation R4 certification diagnostic"
+  }
+}
