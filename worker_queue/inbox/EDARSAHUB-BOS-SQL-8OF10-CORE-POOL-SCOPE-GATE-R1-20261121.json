@@ -1,0 +1,78 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "_DEV_TEST_ROOTS = (\"backend/tests/\", \"tools/tests/\")\n_DEV_SHA256_RE = _g3_re.compile(r\"^[0-9a-f]{64}$\")",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "_DEV_TEST_ROOTS = (\"backend/tests/\", \"tools/tests/\")\n_SQL_CONNECTIONS_MUTATION_CONTEXT = \"SQL_CONNECTIONS_8OF10\"\n_SQL_CONNECTIONS_MUTATION_PATH = \"backend/core/pool.py\"\n_DEV_SHA256_RE = _g3_re.compile(r\"^[0-9a-f]{64}$\")",
+      "source_sha256": "6f6f17d201e137b6ac109f7fef658ffdd42cff9c52aaac618fe67e4c054ecc8c",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    return raw_path\n\n\ndef _dev_apply_virtual_change(current_text: str, action: dict[str, Any]) -> str:",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "    return raw_path\n\n\ndef _dev_validate_change_path(raw_path: Any, *, context: str) -> str:\n    \"\"\"Allow one exact Core path only for SQL_CONNECTIONS_8OF10.\"\"\"\n    if (\n        context == _SQL_CONNECTIONS_MUTATION_CONTEXT\n        and raw_path == _SQL_CONNECTIONS_MUTATION_PATH\n    ):\n        if not isinstance(raw_path, str) or not _G3_PATH.fullmatch(raw_path):\n            raise SemanticCapabilityError(\"SEMANTIC_DEV_PATH_INVALID\")\n        return raw_path\n    return _dev_validate_path(raw_path)\n\n\ndef _dev_apply_virtual_change(current_text: str, action: dict[str, Any]) -> str:",
+      "source_sha256": "561937b3e0b0048506b36f9fcf0aa8b40db46df90a095c5664d08f9488d0aee9",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "        rel_path = _dev_validate_path(item.get(\"path\"))",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "        rel_path = _dev_validate_change_path(\n            item.get(\"path\"),\n            context=context,\n        )",
+      "source_sha256": "a0ce204a28af12e4bf2653b78710e5a493094d3f1d774c4705d9f36914ca0b5e",
+      "type": "replace_text"
+    },
+    {
+      "content": "\"\"\"Least-privilege scope tests for SQL connections Core mutation.\"\"\"\nfrom __future__ import annotations\n\nimport hashlib\nimport importlib.util\nimport sys\nfrom pathlib import Path\n\nimport pytest\n\nROOT = Path(__file__).resolve().parents[2]\nSEMANTIC = ROOT / \"backend/modules/worker_ingress/semantic_capabilities.py\"\nPOOL = ROOT / \"backend/core/pool.py\"\n\ndef _module():\n    spec = importlib.util.spec_from_file_location(\"_sql_connections_core_scope_semantic_capabilities\", SEMANTIC)\n    module = importlib.util.module_from_spec(spec)\n    sys.modules[spec.name] = module\n    spec.loader.exec_module(module)\n    return module\n\ndef _build(module, *, context: str, path: str, source_sha256: str):\n    return module.resolve_capability(\"DEVELOPMENT_MUTATION_BOUNDED\").builder({\"bounded_context\": context, \"constraints\": {\"change_spec\": [{\"operation\": \"append_once\", \"path\": path, \"source_sha256\": source_sha256, \"replacement\": \"\\n# sql-connections-scope-test-marker\\n\"}], \"verification_tests\": []}})\n\ndef test_sql_connections_context_allows_exact_pool_path_without_writing():\n    module = _module(); before = POOL.read_bytes(); source_sha = hashlib.sha256(before).hexdigest()\n    result = _build(module, context=\"SQL_CONNECTIONS_8OF10\", path=\"backend/core/pool.py\", source_sha256=source_sha)\n    assert result[\"actions\"][0][\"path\"] == \"backend/core/pool.py\"\n    assert result[\"actions\"][0][\"type\"] == \"append_once\"\n    assert POOL.read_bytes() == before\n\ndef test_other_context_cannot_mutate_pool_path():\n    module = _module(); source_sha = hashlib.sha256(POOL.read_bytes()).hexdigest()\n    with pytest.raises(ValueError, match=\"SEMANTIC_DEV_PATH_FORBIDDEN\"):\n        _build(module, context=\"OTHER_CONTEXT\", path=\"backend/core/pool.py\", source_sha256=source_sha)\n\ndef test_sql_connections_context_cannot_mutate_other_core_path():\n    module = _module()\n    with pytest.raises(ValueError, match=\"SEMANTIC_DEV_PATH_FORBIDDEN\"):\n        _build(module, context=\"SQL_CONNECTIONS_8OF10\", path=\"backend/core/security.py\", source_sha256=\"0\" * 64)\n",
+      "path": "backend/tests/test_sql_connections_core_mutation_scope.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_sql_connections_core_mutation_scope.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_sql_connections_core_mutation_scope.py",
+        "backend/tests/test_worker_objective_certification_r2.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-SQL-8OF10-CORE-POOL-SCOPE-GATE-R1-20261121",
+  "mode": "MUTATION",
+  "objective": "Issue #133 / SQL Connections 8/10: habilitar una excepcion de minimo privilegio para que DEVELOPMENT_MUTATION_BOUNDED pueda modificar exclusivamente backend/core/pool.py cuando bounded_context=SQL_CONNECTIONS_8OF10. Preservar el bloqueo de cualquier otro backend/core/* y preservar la restriccion para todos los demas bounded contexts. Agregar pruebas positivas y negativas. No modificar pool.py en este Gate, no SQL, no secretos, no reinicios, no Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SQL_CONNECTIONS_8OF10",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "SQL_CONNECTIONS_8OF10"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
