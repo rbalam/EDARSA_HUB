@@ -1,0 +1,2486 @@
+{
+  "base_sha": "9a2fa6e909458b39284e9b17b3d59ff6a6518a00",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-21T06:54:11Z",
+  "execution_base_sha": "9a2fa6e909458b39284e9b17b3d59ff6a6518a00",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-WHATSAPP-REPOSITORY_CONTRACT_AUDIT_BOUNDE-CB9DAC97C776E8C9BB08",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-21T06:55:16Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "dataclasses",
+              "modules.agent_harness.transversal_capability_registry",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/modules/agent_harness/coa_communications_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "COACommunicationRequest",
+              "COACommunicationsAdapterError",
+              "__post_init__",
+              "_authorization",
+              "authorize_coa_communication"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/modules/agent_harness/marketing_cx.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "Customer360Request",
+              "MarketingActivationRequest",
+              "MarketingPolicyError",
+              "__post_init__",
+              "_required",
+              "to_envelope",
+              "view_contract"
+            ],
+            "tables_referenced": [
+              "CRM_Cuentas",
+              "CRM_PostventaEncuestas",
+              "Cliente_Catalogo",
+              "Cliente_Contactos",
+              "Cliente_Direcciones",
+              "Cliente_UsuariosPortal",
+              "RRR_Eventos",
+              "RRR_LedgerMovimientos",
+              "RRR_RankingHistorial",
+              "RRR_ScoreHistorial"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/modules/auth/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "Role",
+              "RoleCreate",
+              "RoleUpdate",
+              "User",
+              "UserCreate",
+              "UserLogin",
+              "UserPermissions",
+              "UserRole",
+              "UserUpdate"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.automatizacion",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [
+              "mpro",
+              "sap",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/modules/automatizacion/feature_flags.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "get_all_flags",
+              "is_enabled",
+              "is_module_active"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.automatizacion",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "sap",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/modules/automatizacion/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "AutomatizacionConfigBase",
+              "AutomatizacionConfigCreate",
+              "AutomatizacionConfigResponse",
+              "Config",
+              "DestinatarioBase",
+              "DestinatarioCreate",
+              "DestinatarioResponse",
+              "EjecucionBase",
+              "EjecucionCreate",
+              "EjecucionResponse",
+              "EnvioBase",
+              "EnvioCreate",
+              "EnvioResponse",
+              "FolioProcesadoBase",
+              "FolioProcesadoCreate",
+              "FolioProcesadoResponse",
+              "UltimoFolioBase",
+              "UltimoFolioCreate",
+              "UltimoFolioResponse"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogo_ampliado",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "external_delivery"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/modules/catalogo_ampliado/alert_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "despachar_alertas",
+              "planificar_alertas"
+            ],
+            "tables_referenced": [
+              "Sistema_Tareas"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogo_ampliado",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.communications.dispatcher.dispatcher",
+              "modules.scheduler_runtime.policy",
+              "uuid"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "twilio",
+              "whatsapp"
+            ],
+            "path": "backend/modules/catalogo_ampliado/canary_delivery.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_queue_id",
+              "_validate_email",
+              "_validate_whatsapp",
+              "run_notification_canary"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogo_ampliado",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "asyncio",
+              "core.communications.notifications.repository",
+              "core.sql_first.db",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/modules/catalogo_ampliado/external_delivery.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_mark_generated",
+              "_queue_exists",
+              "_queue_id",
+              "_target",
+              "dispatch_external_alert"
+            ],
+            "tables_referenced": [
+              "Gobierno_AlertaEvento",
+              "Operativo_Notificaciones_Queue",
+              "Usuario_Catalogo",
+              "Usuario_PortalConfiguracion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogo_ampliado",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "canary_delivery",
+              "core.rbac_helper_sql",
+              "core.security",
+              "fastapi",
+              "pydantic",
+              "schemas"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/modules/catalogo_ampliado/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/documentos/{documento_id}/kardex",
+              "/documentos/{documento_id}/versiones",
+              "/empresas/{empresa_id}/alertas/eventos",
+              "/empresas/{empresa_id}/alertas/reglas",
+              "/empresas/{empresa_id}/configuracion",
+              "/empresas/{empresa_id}/documentos",
+              "/empresas/{empresa_id}/roles",
+              "/empresas/{empresa_id}/vencimientos",
+              "/notifications/canary",
+              "/personas",
+              "/personas/{persona_id}/vinculos",
+              "/roles-corporativos",
+              "/tipos-documento"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "NotificationCanaryRequest",
+              "_assert_empresa",
+              "_gobierno_admin",
+              "_usuario_id",
+              "actualizar_configuracion",
+              "asignar_rol",
+              "crear_documento",
+              "crear_persona",
+              "crear_regla_alerta",
+              "crear_version",
+              "crear_vinculo",
+              "documentos",
+              "empresa_configuracion",
+              "eventos_alerta",
+              "kardex",
+              "notifications_canary",
+              "personas",
+              "reglas_alerta",
+              "roles",
+              "tipos_documento",
+              "vencimientos"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogo_ampliado",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/modules/catalogo_ampliado/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AlertaReglaCreate",
+              "DocumentoCreate",
+              "DocumentoVersionCreate",
+              "EmpresaConfiguracionUpdate",
+              "PersonaCreate",
+              "PersonaEmpresaRolCreate",
+              "PersonaVinculoCreate"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "email.mime.application",
+              "email.mime.multipart",
+              "email.mime.text",
+              "logging",
+              "os",
+              "smtplib",
+              "ssl",
+              "twilio.rest",
+              "typing"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "twilio",
+              "twilio_whatsapp",
+              "whatsapp"
+            ],
+            "path": "backend/modules/cava_socios/notification_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "NotificationService",
+              "__init__",
+              "enviar_email",
+              "enviar_reporte_email",
+              "enviar_reporte_multicanal",
+              "enviar_reporte_whatsapp",
+              "enviar_whatsapp",
+              "get_notification_service",
+              "twilio_client"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "blind_audit_operational_service",
+              "core.auth.sql_user_identity",
+              "core.rbac",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "logging",
+              "modules.rbac_context_sql.context_service",
+              "notification_service",
+              "persona_link_service",
+              "pydantic",
+              "report_service",
+              "service",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/modules/cava_socios/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/auditorias-ciegas/reconciliar",
+              "/botellas/{botella_id}/consumo",
+              "/botellas/{botella_id}/etiqueta",
+              "/clientes-canonicos",
+              "/clientes-canonicos/sync",
+              "/consumos",
+              "/dashboard",
+              "/inventario",
+              "/inventario-fisico/aplicar",
+              "/inventario-fisico/hoja",
+              "/inventario-inicial",
+              "/kardex",
+              "/personas-canonicas",
+              "/reportes/socio/{socio_id}/consumos",
+              "/reportes/socio/{socio_id}/estado-cuenta",
+              "/reportes/socio/{socio_id}/ficha",
+              "/socios",
+              "/socios/promover-cliente",
+              "/socios/{socio_id}",
+              "/socios/{socio_id}/botellas",
+              "/socios/{socio_id}/enviar-reporte",
+              "/socios/{socio_id}/enviar-todos-reportes",
+              "/socios/{socio_id}/persona-link",
+              "/socios/{socio_id}/persona-link/crear-persona"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BlindAuditObservationInput",
+              "BlindAuditReconcileRequest",
+              "BotellaCreate",
+              "ConsumoCreate",
+              "EnvioReporteRequest",
+              "InventarioFisicoAplicarRequest",
+              "InventarioFisicoItem",
+              "InventarioInicialBotellaItem",
+              "InventarioInicialCreate",
+              "PersonaCreateLinkRequest",
+              "PersonaExistingLinkRequest",
+              "PromoverClienteCreate",
+              "SincronizarClientesRequest",
+              "SocioCreate",
+              "SocioUpdate",
+              "_resolve_cava_actor",
+              "_resolve_cava_scope",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_persona_y_vincular",
+              "crear_socio",
+              "descargar_estado_cuenta",
+              "descargar_ficha_socio",
+              "descargar_historial_consumos",
+              "desvincular_persona",
+              "enviar_reporte_socio",
+              "enviar_todos_reportes_socio",
+              "get_dashboard",
+              "listar_clientes_canonicos",
+              "listar_personas_canonicas",
+              "listar_socios",
+              "obtener_consumos",
+              "obtener_etiqueta_botella",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario",
+              "obtener_kardex",
+              "obtener_persona_link",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "reconciliar_auditoria_ciega",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos",
+              "vincular_persona_existente"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.pool",
+              "core.unidades_service",
+              "fastapi",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/modules/comercial/crm_router.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/actividades",
+              "/actividades/{actividad_id}/estatus",
+              "/clientes/solicitudes",
+              "/cotizaciones",
+              "/cuentas",
+              "/ia/forecast/{oportunidad_id}",
+              "/ia/salud-comercial",
+              "/implementaciones",
+              "/implementaciones/entregables/{entregable_id}/estatus",
+              "/implementaciones/{implementacion_id}/entregables",
+              "/integraciones/erp/backlog",
+              "/integraciones/erp/transmitir",
+              "/kpis",
+              "/pedidos-venta",
+              "/pedidos-venta/convertir"
+            ],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "ActividadCreate",
+              "ActividadEstatusUpdate",
+              "ConvertirPedidoCreate",
+              "CotizacionCreate",
+              "CotizacionLineaCreate",
+              "CuentaCreate",
+              "ERPSyncRequest",
+              "EntregableEstatusUpdate",
+              "IAForecastResponse",
+              "IASeguimientoSalud",
+              "KPISummaryResponse",
+              "ProyectoCreate",
+              "SolicitudCreate",
+              "actualizar_estatus_actividad",
+              "actualizar_estatus_entregable",
+              "agente_forecast_prediccion_cierre",
+              "agente_seguimiento_salud_ventas",
+              "aperturar_proyecto_implementacion",
+              "convertir_cotizacion_a_pedido",
+              "crear_cotizacion_enterprise",
+              "crear_cuenta",
+              "crear_solicitud",
+              "encolar_transaccion_erp_staging",
+              "obtener_actividades_propias",
+              "obtener_backlog_erp_pendiente",
+              "obtener_cotizaciones_cuenta",
+              "obtener_cuentas",
+              "obtener_entregables_proyecto",
+              "obtener_metricas_kpi_comercial",
+              "obtener_pedidos_activos",
+              "obtener_proyectos_activos",
+              "obtener_solicitudes",
+              "registrar_actividad"
+            ],
+            "tables_referenced": [
+              "CRM_Actividades",
+              "CRM_ActividadesHistorial",
+              "CRM_ERPSyncLog",
+              "CRM_Implementaciones",
+              "CRM_ImplementacionesEntregables",
+              "CRM_Leads",
+              "CRM_Oportunidades",
+              "CRM_PostventaEncuestas",
+              "Comercial_Metas",
+              "Venta_Cotizaciones",
+              "Venta_CotizacionesDetalle",
+              "Venta_Pedidos",
+              "Venta_PedidosDetalle"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.rbac.middleware",
+              "core.security",
+              "core.unidades_service",
+              "fastapi",
+              "logging",
+              "modules.comercial.services.metricas_ia_service",
+              "modules.comercial.services.pricing_ai_service",
+              "modules.comercial.services.unidad_resolver",
+              "os",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "openai"
+            ],
+            "path": "backend/modules/comercial/routes_pricing_ai.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/analisis/{analisis_id}",
+              "/analizar-benchmark",
+              "/analizar-producto",
+              "/dashboard/estadisticas-competidores",
+              "/dashboard/metricas",
+              "/generar-justificacion",
+              "/health",
+              "/sugerir-comparables"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AnalisisIAResponse",
+              "AnalizarBenchmarkRequest",
+              "AnalizarProductoRequest",
+              "GenerarJustificacionRequest",
+              "SugerirComparablesRequest",
+              "endpoint_analizar_benchmark",
+              "endpoint_analizar_producto",
+              "endpoint_dashboard_metricas",
+              "endpoint_estadisticas_competidores",
+              "endpoint_generar_justificacion",
+              "endpoint_obtener_analisis",
+              "endpoint_sugerir_comparables",
+              "health_check_ia"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "benchmark_service",
+              "competidores_service",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "dotenv",
+              "emergentintegrations.llm.chat",
+              "enum",
+              "json",
+              "logging",
+              "modules.comercial.services.listas_competidores_service",
+              "os",
+              "perfil_unidad_service",
+              "pricing_schemas",
+              "pricing_sugerido_service",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "openai"
+            ],
+            "path": "backend/modules/comercial/services/pricing_ai_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConfianzaIA",
+              "EstadoAnalisisIA",
+              "TipoAnalisisIA",
+              "_calcular_confianza_analisis",
+              "_ensure_tabla_analisis_existe",
+              "_get_conn",
+              "_get_llm_key",
+              "_guardar_analisis_ia",
+              "_obtener_competidores_para_contexto",
+              "_obtener_contexto_unidad",
+              "_obtener_datos_producto",
+              "analizar_benchmark_con_ia",
+              "analizar_producto_con_ia",
+              "generar_justificacion_con_ia",
+              "obtener_analisis_ia",
+              "sugerir_comparables_con_ia"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.crm",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/modules/crm/sql/02_seed_crm_catalogs.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "CRM_Cat_EstatusContrato",
+              "CRM_Cat_EstatusLead",
+              "CRM_Cat_EstatusOportunidad",
+              "CRM_Cat_EstatusPropuesta",
+              "CRM_Cat_MotivosGanada",
+              "CRM_Cat_MotivosPerdida",
+              "CRM_Cat_OrigenLead",
+              "CRM_Cat_Prioridades",
+              "CRM_Cat_Sectores",
+              "CRM_Cat_TamanosCliente",
+              "CRM_Cat_TiposPipeline",
+              "CRM_Config_PipelineEtapas",
+              "CRM_Config_Pipelines"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.crm",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "vtiger"
+            ],
+            "matched_terms": [
+              "webhook"
+            ],
+            "path": "backend/modules/crm/sql/03_create_integration_tables.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "CRM_Integracion_Conectores",
+              "CRM_Integracion_MapeoEtapas",
+              "CRM_Integracion_SyncLog",
+              "CRM_Staging_Cuentas",
+              "CRM_Staging_Leads",
+              "CRM_Staging_Oportunidades"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.crm",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "fastapi",
+              "logging",
+              "pydantic",
+              "trigger_service",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "webhook",
+              "whatsapp"
+            ],
+            "path": "backend/modules/crm/trigger_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/",
+              "/acciones",
+              "/dispatch",
+              "/eventos",
+              "/{trigger_id}/toggle"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AccionTrigger",
+              "CrearTriggerRequest",
+              "DispatchEventRequest",
+              "_get_descripcion_accion",
+              "_get_descripcion_evento",
+              "_get_parametros_accion",
+              "crear_trigger",
+              "dispatch_event",
+              "listar_tipos_accion",
+              "listar_tipos_evento",
+              "listar_triggers",
+              "toggle_trigger"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.crm",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "enum",
+              "json",
+              "logging",
+              "modules.cava_socios.notification_service",
+              "os",
+              "pymssql",
+              "requests",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "webhook",
+              "whatsapp"
+            ],
+            "path": "backend/modules/crm/trigger_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CRMTriggerService",
+              "TriggerAction",
+              "TriggerEvent",
+              "__init__",
+              "_accion_actualizar_campo",
+              "_accion_crear_actividad",
+              "_accion_crear_notificacion",
+              "_accion_crear_tarea_seguimiento",
+              "_accion_enviar_email",
+              "_accion_enviar_whatsapp",
+              "_accion_webhook",
+              "_default_config",
+              "_ejecutar_acciones",
+              "_evaluar_condicion_compleja",
+              "_evaluar_condiciones",
+              "_get_connection",
+              "_obtener_triggers_activos",
+              "_reemplazar_variables",
+              "_registrar_ejecucion",
+              "activar_desactivar_trigger",
+              "crear_trigger",
+              "dispatch_event",
+              "get_crm_trigger_service",
+              "listar_triggers",
+              "notification_service"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "email_service",
+              "logging",
+              "repositories.sql_base_repository",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/modules/fase2_operativo/services/notification_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "NotificationService",
+              "__init__",
+              "_generar_html_cargo_aplicado",
+              "_generar_html_tarea_asignada",
+              "_generar_html_tarea_vencida",
+              "_generar_html_workflow_creado",
+              "_registrar_notificacion",
+              "get_notification_service",
+              "notificar_cargo_aplicado",
+              "notificar_tarea_asignada",
+              "notificar_tarea_vencida",
+              "notificar_workflow_creado"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.communications.notifications.service",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "enum",
+              "logging",
+              "sql_repository",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/modules/fase2_operativo/services/sla_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EstadoSLA",
+              "SLAService",
+              "__init__",
+              "_cargar_configuracion_async",
+              "_get_configuracion",
+              "_get_notification_service",
+              "_obtener_limite_horas",
+              "_parsear_fecha",
+              "actualizar_configuracion",
+              "actualizar_estados_sla",
+              "calcular_estado_sla",
+              "get_sla_service",
+              "invalidar_cache_config",
+              "notify_sla_escalated",
+              "notify_sla_expired",
+              "notify_sla_warning",
+              "obtener_configuracion",
+              "obtener_metricas_globales",
+              "obtener_tareas_proximas_vencer",
+              "obtener_tareas_vencidas"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "base64",
+              "core.auditoria_helpers",
+              "core.security",
+              "datetime",
+              "fastapi",
+              "logging",
+              "os",
+              "repository_cortes_caja_edarsahub",
+              "repository_cortes_z",
+              "repository_cuadres_z_edarsahub",
+              "tesoreria_access",
+              "tesoreria_models",
+              "typing"
+            ],
+            "integrations": [
+              "bbva"
+            ],
+            "matched_terms": [
+              "azure"
+            ],
+            "path": "backend/modules/finanzas/tesoreria.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/cortes-z",
+              "/cortes-z/{sucursal}/{folio}",
+              "/cuadres",
+              "/cuadres/resumen",
+              "/cuadres/{cuadre_id}",
+              "/cuadres/{cuadre_id}/ficha-deposito",
+              "/cuadres/{cuadre_id}/validar-ficha",
+              "/sucursales"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "actualizar_cuadre",
+              "crear_cuadre",
+              "eliminar_cuadre",
+              "listar_cortes_z",
+              "listar_cuadres",
+              "listar_sucursales",
+              "obtener_corte_z",
+              "obtener_cuadre",
+              "obtener_resumen_cuadres",
+              "subir_ficha_deposito",
+              "validar_ficha_deposito"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.ia_assistant",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "openai"
+            ],
+            "path": "backend/modules/ia_assistant/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.ia_assistant",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "asyncio",
+              "emergentintegrations.llm.chat",
+              "json",
+              "logging",
+              "modules.ia_assistant",
+              "os",
+              "re",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "openai"
+            ],
+            "path": "backend/modules/ia_assistant/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "LLMProviderError",
+              "LLMTimeoutError",
+              "SessionNotFoundError",
+              "_api_key",
+              "_dataset_candidates",
+              "_dataset_cell",
+              "_parse_planner_response",
+              "_sanitize_assistant_visual_markup",
+              "_send_llm",
+              "build_response_datasets",
+              "crear_sesion",
+              "eliminar_sesion",
+              "enviar_mensaje",
+              "health",
+              "listar_sesiones",
+              "obtener_mensajes",
+              "plan_contextual_actions",
+              "plan_system_queries"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "communications_routes",
+              "core.rbac.middleware",
+              "core.security",
+              "fastapi",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/modules/integrations_center/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/api-factory/apis",
+              "/api-factory/apis/{api_id}/versions",
+              "/api-factory/consumers",
+              "/api-factory/consumers/{consumer_id}/grants",
+              "/api-factory/overview",
+              "/catalogs",
+              "/communications",
+              "/connections",
+              "/connections/{connection_id}",
+              "/overview"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_meta",
+              "api_factory_apis",
+              "api_factory_consumer_grants",
+              "api_factory_consumers",
+              "api_factory_overview",
+              "api_factory_versions",
+              "catalogs",
+              "communications",
+              "connection_detail",
+              "connections",
+              "overview"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.centro_control",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/core/centro_control/recipients_manager.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_conn",
+              "_created_at_iso",
+              "_merge_dedup",
+              "_normalizar_tel",
+              "_parse_payload",
+              "_role_based_recipients",
+              "_row_to_recipient",
+              "add_recipient",
+              "delete_recipient",
+              "get_all_recipients",
+              "get_email_recipients",
+              "get_recipients_summary",
+              "get_whatsapp_recipients",
+              "update_recipient"
+            ],
+            "tables_referenced": [
+              "Sistema_AlertasDestinatarios",
+              "Usuario_Catalogo",
+              "vw_Usuario_RolesContexto_Efectivo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.centro_control",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "core.centro_control",
+              "core.centro_control.email_notifications",
+              "core.centro_control.recipients_manager",
+              "core.centro_control.websocket",
+              "core.centro_control.whatsapp_notifications",
+              "core.connection_resolver",
+              "core.corporate_filters.service",
+              "core.health_checker",
+              "core.rbac.middleware",
+              "core.regression_checker",
+              "core.scheduler.scheduler_manager",
+              "core.security",
+              "core.sql_first.connection_factory",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "json",
+              "logging",
+              "os",
+              "pydantic",
+              "re",
+              "subprocess",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "sap",
+              "softrestaurant",
+              "twilio"
+            ],
+            "matched_terms": [
+              "twilio",
+              "whatsapp"
+            ],
+            "path": "backend/core/centro_control/routes.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "get_current_user"
+            ],
+            "routes": [
+              "/alertas",
+              "/alertas/acknowledge",
+              "/bitacora",
+              "/blindaje/modulos",
+              "/destinatarios",
+              "/destinatarios/resumen",
+              "/destinatarios/{recipient_id}",
+              "/email/alerta-critica",
+              "/email/config",
+              "/email/test",
+              "/estado",
+              "/fuentes",
+              "/historial",
+              "/jobs",
+              "/jobs/{job_id}/run",
+              "/matriz-resolucion",
+              "/metricas",
+              "/notificaciones/config",
+              "/notificar/alerta-critica",
+              "/notificar/test",
+              "/ping",
+              "/regresiones",
+              "/regresiones/{modulo}",
+              "/salud",
+              "/salud/resumen",
+              "/whatsapp/alerta-critica",
+              "/whatsapp/config",
+              "/whatsapp/test",
+              "/ws/status"
+            ],
+            "scheduler_contracts": [
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "AlertAcknowledgeRequest",
+              "BitacoraEntryRequest",
+              "RecipientCreateRequest",
+              "RecipientUpdateRequest",
+              "RegressionCheckRequest",
+              "SchedulerJobCreateRequest",
+              "SchedulerJobRunRequest",
+              "_allowed_ws_origins",
+              "_authenticate_ws_connection",
+              "_authorize_ws_principal",
+              "_cc_execute",
+              "_cc_fetchall",
+              "_cc_sql_connection",
+              "_crear_alerta",
+              "_ensure_scheduler_job_config_table",
+              "_enviar_email_alerta_critica",
+              "_enviar_whatsapp_alerta_critica",
+              "_extract_ws_credential",
+              "_has_explicit_ws_permission_sql",
+              "_is_ws_origin_allowed",
+              "_registrar_evento",
+              "_revoke_if_unauthorized",
+              "_run_netpay_backfill_sync",
+              "_safe_job_id",
+              "_validate_handler",
+              "actualizar_destinatario",
+              "crear_destinatario",
+              "crear_scheduler_job",
+              "ejecutar_checks_regresion",
+              "ejecutar_scheduler_job_manual",
+              "eliminar_destinatario",
+              "enviar_alerta_critica_email",
+              "enviar_alerta_critica_whatsapp",
+              "enviar_email_prueba",
+              "enviar_whatsapp_prueba",
+              "listar_destinatarios",
+              "notificar_alerta_critica",
+              "notificar_test",
+              "obtener_alertas",
+              "obtener_bitacora",
+              "obtener_config_email",
+              "obtener_config_notificaciones",
+              "obtener_config_whatsapp",
+              "obtener_estado_fuentes",
+              "obtener_estado_general",
+              "obtener_estado_jobs",
+              "obtener_historial",
+              "obtener_matriz_resolucion",
+              "obtener_metricas_estabilidad",
+              "obtener_modulos_blindados",
+              "obtener_regresiones_modulo",
+              "obtener_resumen_ejecutivo",
+              "obtener_salud_sistema",
+              "ping_centro_control",
+              "reconocer_alerta",
+              "registrar_cambio_bitacora",
+              "resumen_destinatarios",
+              "websocket_endpoint",
+              "websocket_status"
+            ],
+            "tables_referenced": [
+              "Scheduler_BitacoraJobs",
+              "Sys_Scheduler_JobConfig",
+              "Sys_Scheduler_Jobs",
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.centro_control",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "concurrent.futures",
+              "core.centro_control.recipients_manager",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "os",
+              "twilio.base.exceptions",
+              "twilio.rest",
+              "typing"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "twilio",
+              "twilio_whatsapp",
+              "whatsapp"
+            ],
+            "path": "backend/core/centro_control/whatsapp_notifications.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_twilio_client",
+              "_send_whatsapp_sync",
+              "generate_alert_message",
+              "get_whatsapp_config_status",
+              "get_whatsapp_recipients",
+              "is_whatsapp_configured",
+              "send_critical_alert_whatsapp",
+              "send_test_whatsapp"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "audit.audit_service",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "dispatcher.dispatcher",
+              "notifications.schemas",
+              "notifications.service",
+              "providers.base",
+              "providers.mock_provider",
+              "providers.whatsapp_provider"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "twilio",
+              "whatsapp"
+            ],
+            "path": "backend/core/communications/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.mongo_stub",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "notifications.dedup",
+              "notifications.repository",
+              "notifications.schemas",
+              "providers.base",
+              "providers.email_smtp_provider",
+              "providers.mock_provider",
+              "providers.twilio_provider",
+              "templates.template_service",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "twilio",
+              "twilio_whatsapp",
+              "whatsapp"
+            ],
+            "path": "backend/core/communications/dispatcher/dispatcher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "NotificationDispatcher",
+              "__init__",
+              "_check_is_stub",
+              "_log_notification",
+              "_process_item",
+              "_schedule_retry",
+              "enqueue",
+              "get_dispatcher",
+              "get_provider",
+              "get_providers_status",
+              "initialize_providers",
+              "process_queue",
+              "reset_dispatcher",
+              "send_immediate"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.sql_first.connection_factory",
+              "json",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/core/communications/notifications/repository_sql.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "NotificationRepository",
+              "__init__",
+              "_all_config_rows",
+              "_conn",
+              "_deactivate_document",
+              "_decode_config",
+              "_doc",
+              "_documents",
+              "_find_document",
+              "_insert_document",
+              "_json",
+              "_kind",
+              "_queue_doc",
+              "_rows",
+              "_update_document",
+              "_value",
+              "check_duplicate",
+              "count_logs",
+              "create_config",
+              "create_log",
+              "create_provider_config",
+              "create_template",
+              "delete_config",
+              "delete_template",
+              "enqueue",
+              "get_active_provider",
+              "get_all_configs",
+              "get_all_provider_configs",
+              "get_all_templates",
+              "get_config",
+              "get_log_stats",
+              "get_logs",
+              "get_notification_repository",
+              "get_pending_items",
+              "get_provider_config",
+              "get_queue_stats",
+              "get_template",
+              "get_template_by_id",
+              "loads",
+              "lock_item",
+              "mark_failed",
+              "mark_sent",
+              "update_config",
+              "update_provider_config",
+              "update_queue_item",
+              "update_template"
+            ],
+            "tables_referenced": [
+              "Operativo_Notificaciones_Log",
+              "Operativo_Notificaciones_Queue",
+              "Sistema_NotificacionesConfig"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "enum",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "twilio",
+              "whatsapp"
+            ],
+            "path": "backend/core/communications/notifications/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ChannelType",
+              "Config",
+              "EventType",
+              "NotificationConfig",
+              "NotificationConfigCreate",
+              "NotificationConfigUpdate",
+              "NotificationEvent",
+              "NotificationLog",
+              "NotificationQueue",
+              "NotificationResult",
+              "NotificationStatus",
+              "NotificationTemplate",
+              "NotificationTemplateCreate",
+              "NotificationTemplateUpdate",
+              "NotificationTestRequest",
+              "ProviderConfig",
+              "RecipientType",
+              "SendMode"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.mongo_stub",
+              "core.unidades_service",
+              "dedup",
+              "dispatcher.dispatcher",
+              "logging",
+              "modules.compras.sync_service",
+              "modules.fase2_operativo.sql_repository",
+              "repository",
+              "schemas",
+              "templates.template_service",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/core/communications/notifications/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "NotificationOrchestratorService",
+              "__init__",
+              "_check_is_stub",
+              "_get_dispatcher",
+              "_get_user_contact",
+              "_resolve_recipients",
+              "get_notification_orchestrator",
+              "notify",
+              "notify_audit_decision",
+              "notify_justification_rejected",
+              "notify_sla_escalated",
+              "notify_sla_expired",
+              "notify_sla_warning",
+              "notify_task_assigned",
+              "notify_workflow_closed",
+              "reset_notification_orchestrator"
+            ],
+            "tables_referenced": [
+              "Usuario_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "base",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "email_smtp_provider",
+              "mock_provider",
+              "twilio_provider",
+              "whatsapp_provider"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "twilio",
+              "whatsapp"
+            ],
+            "path": "backend/core/communications/providers/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "abc",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "dataclasses",
+              "datetime",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/core/communications/providers/base.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BaseProvider",
+              "ProviderFactory",
+              "ProviderResponse",
+              "__init__",
+              "_get_provider_name",
+              "create",
+              "get_config_value",
+              "get_message_status",
+              "initialize",
+              "is_initialized",
+              "list_providers",
+              "register",
+              "send_bulk",
+              "send_message",
+              "to_dict",
+              "validate_recipient"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "base",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "logging",
+              "os",
+              "re",
+              "twilio.rest",
+              "typing"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "twilio",
+              "twilio_whatsapp",
+              "whatsapp"
+            ],
+            "path": "backend/core/communications/providers/twilio_provider.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TwilioWhatsAppProvider",
+              "__init__",
+              "_format_whatsapp_number",
+              "_get_provider_name",
+              "get_message_status",
+              "get_status",
+              "initialize",
+              "is_available",
+              "send_message",
+              "validate_recipient"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "base",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "httpx",
+              "logging",
+              "os",
+              "re",
+              "typing"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "twilio",
+              "webhook",
+              "whatsapp"
+            ],
+            "path": "backend/core/communications/providers/whatsapp_provider.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "WhatsAppProvider",
+              "__init__",
+              "_get_provider_name",
+              "_get_twilio_status",
+              "_send_via_meta",
+              "_send_via_twilio",
+              "close",
+              "get_message_status",
+              "initialize",
+              "send_message",
+              "validate_recipient"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.communications.audit.audit_service",
+              "core.communications.dispatcher.dispatcher",
+              "core.communications.notifications.repository",
+              "core.communications.notifications.schemas",
+              "core.communications.scripts",
+              "core.communications.templates.template_service",
+              "core.corporate_filters.service",
+              "core.rbac.middleware",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "twilio",
+              "twilio_whatsapp",
+              "whatsapp"
+            ],
+            "path": "backend/core/communications/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/config",
+              "/config/set-twilio",
+              "/config/{config_id}",
+              "/config/{config_id}/set-provider",
+              "/inicializar",
+              "/log",
+              "/provider-status",
+              "/providers",
+              "/providers/{provider_id}",
+              "/queue-status",
+              "/reprocesar",
+              "/stats",
+              "/templates",
+              "/templates/{template_id}",
+              "/test",
+              "/test-real"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConfigCreateRequest",
+              "ConfigUpdateRequest",
+              "TemplateCreateRequest",
+              "TemplateUpdateRequest",
+              "TestNotificationRequest",
+              "TestRealNotificationRequest",
+              "configure_twilio_provider",
+              "create_config",
+              "create_template",
+              "get_config",
+              "get_db",
+              "get_notification_logs",
+              "get_notification_stats",
+              "get_provider",
+              "get_provider_runtime_status",
+              "get_queue_status",
+              "get_template",
+              "init_notifications_routes",
+              "initialize_notification_system",
+              "is_mongo_available",
+              "list_configs",
+              "list_providers",
+              "list_templates",
+              "reprocess_queue",
+              "test_notification",
+              "test_real_notification",
+              "update_config",
+              "update_event_provider",
+              "update_template"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "os"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/core/communications/scripts/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "create_indexes",
+              "init_notification_system",
+              "main",
+              "seed_default_data"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.communications",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "notifications.repository",
+              "re",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/core/communications/templates/template_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TemplateService",
+              "__init__",
+              "get_template",
+              "get_template_service",
+              "invalidate_cache",
+              "render",
+              "render_template",
+              "reset_template_service",
+              "seed_default_templates",
+              "validate_variables"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "os",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "sap",
+              "softrestaurant",
+              "twilio",
+              "vtiger"
+            ],
+            "matched_terms": [
+              "twilio",
+              "whatsapp"
+            ],
+            "path": "backend/core/scheduler/config.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "Config",
+              "JobConfig",
+              "SchedulerConfig",
+              "from_env",
+              "get_scheduler_config",
+              "reload_scheduler_config"
+            ],
+            "tables_referenced": [
+              "Finanzas_CxP_Sync"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.auth.sql_user_identity",
+              "core.centro_control.email_notifications",
+              "core.centro_control.whatsapp_notifications",
+              "core.config.edarsahub_sql",
+              "datetime",
+              "logging",
+              "modules.alertas_estrategicas.service",
+              "os",
+              "typing"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "twilio",
+              "whatsapp"
+            ],
+            "path": "backend/core/scheduler/jobs/alertas_excepciones_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_build_digest_alerta",
+              "_excepcion_key",
+              "_keys_ya_gestionadas",
+              "_marcar_notificada",
+              "_obtener_excepciones_por_severidad",
+              "_severidades_configuradas",
+              "enviar_prueba_canales",
+              "execute_alertas_excepciones_notifier",
+              "marcar_excepcion_revisada_estado",
+              "obtener_excepciones_revisadas",
+              "silenciar_backlog_excepciones"
+            ],
+            "tables_referenced": [
+              "Sistema_Excepciones_Estado"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.communications.dispatcher",
+              "core.pool",
+              "datetime",
+              "modules.comercial.rentabilidad"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "backend/core/scheduler/jobs/rentabilidad_scheduler_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "ejecutar_auditoria_rentabilidad_job"
+            ],
+            "tables_referenced": [
+              "CRM_OportunidadesHistorial",
+              "Venta_Pedidos"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "apscheduler.events",
+              "apscheduler.schedulers.asyncio",
+              "apscheduler.triggers.cron",
+              "apscheduler.triggers.interval",
+              "asyncio",
+              "config",
+              "core.mongo_stub",
+              "datetime",
+              "job_logger",
+              "jobs.alertas_excepciones_job",
+              "jobs.auditorias_job",
+              "jobs.bos_direction_status_job",
+              "jobs.catalogo_ampliado_alertas_job",
+              "jobs.cava_socios_monthly_job",
+              "jobs.crm_sync_job",
+              "jobs.cxp_sync_job",
+              "jobs.inteligencia_comercial_sync_job",
+              "jobs.inventarios_detector_job",
+              "jobs.netpay_sync_job",
+              "jobs.notifications_job",
+              "jobs.pedidos_detector_job",
+              "jobs.resumen_diario_excepciones_job",
+              "jobs.sla_job",
+              "jobs.sync_comercial_abiertas_v2_job",
+              "jobs.sync_comercial_v2_job",
+              "jobs.sync_compras_job",
+              "jobs.sync_ingresos_job",
+              "jobs.sync_nightly_comercial_job",
+              "jobs.sync_propinas_tpv_job",
+              "jobs.sync_short_comercial_job",
+              "jobs.vtiger_sync_job",
+              "locks",
+              "logging",
+              "modules.economia.service",
+              "os",
+              "persistent_state_repository",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "sap",
+              "softrestaurant",
+              "twilio",
+              "vtiger"
+            ],
+            "matched_terms": [
+              "twilio",
+              "whatsapp"
+            ],
+            "path": "backend/core/scheduler/scheduler_manager.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "APScheduler",
+              "AsyncIOScheduler",
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "SchedulerManager",
+              "__init__",
+              "__new__",
+              "_create_scheduler",
+              "_normalize_comercial_sync_status",
+              "_on_job_error",
+              "_on_job_executed",
+              "_on_job_missed",
+              "_run_alertas_excepciones_notifier_job",
+              "_run_auditorias_job",
+              "_run_bos_direction_status_job",
+              "_run_catalogo_ampliado_alertas_job",
+              "_run_cava_socios_monthly_job",
+              "_run_crm_actividades_vencidas_job",
+              "_run_crm_sla_check_job",
+              "_run_crm_sync_job",
+              "_run_economia_sync_job",
+              "_run_inteligencia_comercial_sync_job",
+              "_run_inventarios_detector_job",
+              "_run_netpay_sync_diario_job",
+              "_run_notifications_job",
+              "_run_pedidos_detector_job",
+              "_run_resumen_diario_excepciones_job",
+              "_run_sla_job",
+              "_run_sync_comercial_abiertas_v2_job",
+              "_run_sync_comercial_v2_job",
+              "_run_sync_compras_job",
+              "_run_sync_cxp_facturas_job",
+              "_run_sync_ingresos_incremental_job",
+              "_run_sync_nightly_comercial_job",
+              "_run_sync_propinas_tpv_incremental_job",
+              "_run_sync_short_comercial_job",
+              "_run_vtiger_sync_job",
+              "get_job_info",
+              "get_scheduler_manager",
+              "get_status",
+              "pause_job",
+              "register_jobs",
+              "reset_scheduler_manager",
+              "resume_job",
+              "retry_inventario_error_by_id",
+              "run_job_now",
+              "start",
+              "start_scheduler",
+              "stop",
+              "stop_scheduler"
+            ],
+            "tables_referenced": [
+              "Finanzas_CxP_Sync"
+            ]
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "frontend/src/components/centro-control/DestinatariosManager.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "frontend/src/components/crm/ActividadesPanel.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "twilio",
+              "whatsapp"
+            ],
+            "path": "frontend/src/pages/CentroControl.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "openai"
+            ],
+            "path": "frontend/src/pages/IAAsistente.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "frontend/src/pages/MisTareas.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "frontend/src/pages/catalogo-ampliado/CatalogoAmpliadoDashboard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "frontend/src/pages/cava-socios/SocioDetail.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "frontend/src/pages/cava-socios/SocioForm.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "openai"
+            ],
+            "path": "frontend/src/pages/comercial/PricingIA.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "sap"
+            ],
+            "matched_terms": [
+              "whatsapp"
+            ],
+            "path": "frontend/src/pages/satelites/COAHome.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [
+              "MongoClient",
+              "get_sql_connection",
+              "pymongo",
+              "pyodbc",
+              "readonly_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "corporate_identity_resolver",
+              "get_sql_connection",
+              "load_catalog_real",
+              "readonly_sql_connection",
+              "resolver_canonico"
+            ],
+            "imports": [
+              "__future__",
+              "argparse",
+              "ast",
+              "fnmatch",
+              "json",
+              "pathlib",
+              "re",
+              "typing"
+            ],
+            "integrations": [
+              "banorte",
+              "bbva",
+              "dynamics",
+              "mpro",
+              "netpay",
+              "oracle",
+              "sap",
+              "softrestaurant",
+              "twilio",
+              "vtiger"
+            ],
+            "matched_terms": [
+              "twilio"
+            ],
+            "path": "tools/mirror_sync/repository_contract_audit.py",
+            "rbac_contracts": [
+              "RBAC_Permisos",
+              "Sistema_RBAC",
+              "Usuario_Roles",
+              "Usuario_RolesContexto",
+              "get_current_user",
+              "menu-permissions"
+            ],
+            "routes": [],
+            "scheduler_contracts": [
+              "APScheduler",
+              "AsyncIOScheduler",
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "_is_sensitive",
+              "_matches_any",
+              "_ownership",
+              "_python_metadata",
+              "_safe_relative",
+              "main",
+              "scan_repository",
+              "validate_request"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 55,
+          "scanned_files": 1172,
+          "skipped_sensitive": 590
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-21T06:54:10Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
