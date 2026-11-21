@@ -1,0 +1,40 @@
+{
+  "actions": [
+    {
+      "content": "# UNIVERSAL BANKING — Gate 3 Physical Design\n\nEstado objetivo: DOCUMENTAL / NO DDL / NO DML / NO BANK CONNECTIONS\n\n## 1. Entrada certificada\n\n- Gate 0: CERTIFIED_READ_ONLY / PASS / 100%.\n- Gate 1: INTEGRATED / CERTIFIED / PASS / 100%.\n- Gate 2 repository preflight: CERTIFIED_READ_ONLY / PASS / 100%.\n- Gate 2 SQL canary: CERTIFIED_READ_ONLY / PASS / 100%.\n- Gate 2 semantic extract: CERTIFIED_READ_ONLY / PASS / 100%.\n\nPrincipio vinculante:\nREUSE -> CONSOLIDATE -> EXTEND -> CREATE_ONLY_WHEN_PROVEN_MISSING.\n\nEDARSAHUB SQL Server permanece como fuente operativa canonica.\n\n## 2. Reutilizacion obligatoria\n\nREUSE:\n- dbo.Global_Cat_Bancos\n- dbo.Finanzas_Cat_CuentasBancarias\n- dbo.Proveedor_CuentasBancarias\n- dbo.Finanzas_SaldosBancarios\n- dbo.Finanzas_CxP_DecisionesPago\n- dbo.Finanzas_CxP_PagosOrigenQueue\n- dbo.Finanzas_Pagos\n- dbo.Finanzas_EstatusPago\n- dbo.Servidores_Conexiones\n- dbo.Servidores_ConexionEstado\n- dbo.Sistema_Capacidades\n- dbo.Sistema_IdentificadoresExternos\n- dbo.Sync_Control_Ejecuciones\n- dbo.Sync_Control_Evidencias\n- RBAC canonico\n- Scheduler canonico\n- Secrets/config canonicos\n- timezone/locale/moneda/pais canonicos\n\nNo crear equivalentes paralelos.\n\n## 3. PaymentRail\n\nConcepto realmente nuevo de dominio.\n\nContrato candidato minimo:\n- PaymentRailID bigint identity PK\n- Codigo nvarchar(50) NOT NULL UNIQUE\n- PaisID int NULL\n- MonedaID smallint NULL\n- TipoRail nvarchar(40) NOT NULL\n- EsTiempoReal bit NOT NULL default 0\n- SoportaInternacional bit NOT NULL default 0\n- Activo bit NOT NULL default 1\n- FechaAltaUTC datetime2(3) NOT NULL\n- FechaModificacionUTC datetime2(3) NULL\n\nEjemplos de Codigo configurables:\nMX_SPEI, MX_TEF, US_ACH, US_FEDWIRE, EU_SEPA, UK_FPS, SWIFT.\n\nNo hardcodear comportamiento por Codigo en Core.\n\n## 4. BankingChannel\n\nConcepto de dominio; infraestructura de conexion reutiliza Servidores_Conexiones.\n\nContrato candidato minimo:\n- BankingChannelID bigint identity PK\n- ConexionID uniqueidentifier NOT NULL FK -> Servidores_Conexiones(id)\n- Codigo nvarchar(50) NOT NULL\n- TipoCanal nvarchar(40) NOT NULL\n- SistemaCapacidadID int NULL FK -> Sistema_Capacidades(SistemaCapacidadID)\n- Activo bit NOT NULL default 1\n- FechaAltaUTC datetime2(3) NOT NULL\n- FechaModificacionUTC datetime2(3) NULL\n- UNIQUE (ConexionID, Codigo)\n\nTipos esperados como datos:\nREST_API, HOST_TO_HOST, SFTP, SWIFT, OPEN_BANKING, FILE_UPLOAD.\n\nNo crear segundo registry de conexiones.\n\n## 5. BankingIdentifierModel\n\nNo agregar columnas internacionales dispersas en tablas legacy.\n\n### Account identifiers\n- BankingAccountIdentifierID bigint identity PK\n- CuentaBancariaID int NULL\n- ProveedorCuentaBancariaID bigint NULL\n- TipoIdentificador nvarchar(30) NOT NULL\n- Valor nvarchar(140) NOT NULL\n- PaisID int NULL\n- EsPrincipal bit NOT NULL default 0\n- Activo bit NOT NULL default 1\n- FechaAltaUTC datetime2(3) NOT NULL\n\nTipos como datos:\nCLABE, IBAN, ACCOUNT_NUMBER, LOCAL_ACCOUNT.\n\nRegla:\nexactamente uno de CuentaBancariaID / ProveedorCuentaBancariaID debe aplicar.\n\n### Institution identifiers\n- BankingInstitutionIdentifierID bigint identity PK\n- BancoID int NOT NULL FK -> Global_Cat_Bancos\n- TipoIdentificador nvarchar(30) NOT NULL\n- Valor nvarchar(140) NOT NULL\n- PaisID int NULL\n- Activo bit NOT NULL default 1\n- FechaAltaUTC datetime2(3) NOT NULL\n- UNIQUE (BancoID, TipoIdentificador, Valor)\n\nTipos como datos:\nSWIFT, BIC, ABA, ROUTING, CLEARING_CODE.\n\nUETR pertenece a transferencia/mensaje externo.\n\n## 6. BankingExternalEvent\n\nProyeccion de dominio nueva para eventos bancarios externos.\n\nContrato candidato minimo:\n- BankingExternalEventID bigint identity PK\n- SyncControlID int NOT NULL FK -> Sync_Control_Ejecuciones(SyncControlID)\n- EvidenciaID bigint NULL FK -> Sync_Control_Evidencias(EvidenciaID)\n- PagoID bigint NULL FK -> Finanzas_Pagos(PagoID)\n- DecisionPagoID bigint NULL\n- BankingChannelID bigint NULL\n- PaymentRailID bigint NULL\n- ExternalEventType nvarchar(40) NOT NULL\n- ExternalStatusCode nvarchar(80) NULL\n- ExternalReference nvarchar(200) NULL\n- UETR nvarchar(80) NULL\n- IdempotencyKey nvarchar(200) NOT NULL\n- OccurredAtUTC datetime2(3) NULL\n- ReceivedAtUTC datetime2(3) NOT NULL\n- PayloadHashSHA256 char(64) NULL\n- Activo bit NOT NULL default 1\n- UNIQUE (IdempotencyKey)\n\nEstados tecnicos normalizados:\nACKNOWLEDGED, ACCEPTED, PROCESSING, REJECTED, SETTLED, CANCELLED, UNKNOWN.\n\nEstos estados NO sustituyen Finanzas_EstatusPago.\n\n## 7. Capas de estado\n\nA. Autorizacion: Finanzas_CxP_DecisionesPago\nB. Despacho: Finanzas_CxP_PagosOrigenQueue\nC. Ejecucion transversal: Sync_Control_Ejecuciones\nD. Evento externo: BankingExternalEvent\nE. Hecho financiero: Finanzas_Pagos + Finanzas_EstatusPago\nF. Conciliacion: Finanzas_Conciliacion*\n\n## 8. Idempotencia y timeout\n\n- idempotency key por intento logico\n- deduplicacion de eventos\n- RAW inmutable via Sync_Control_Evidencias\n- timestamps persistidos en UTC\n- TIMEOUT != FAILED\n- timeout -> UNKNOWN -> query status -> evento/receipt -> conciliacion -> resolucion\n- nunca reenviar automaticamente solo por timeout\n\n## 9. Adapters\n\nBBVA y Banorte son adapters y no owners del dominio.\n\nNo son dueños de pagos, cuentas, beneficiarios, conciliacion, scheduler, RBAC, moneda, pais, timezone, secrets ni capabilities registry.\n\n## 10. Criterios para futura migracion\n\nLa migracion posterior solo puede:\n1. crear estructuras realmente nuevas;\n2. agregar FKs/indices estrictamente necesarios;\n3. ser idempotente;\n4. tener preflight READ_ONLY inmediatamente previo;\n5. no tocar Produccion;\n6. no poblar datos bancarios reales;\n7. no crear adapters ni endpoints en la misma compuerta;\n8. validar reversibilidad;\n9. mantener Core slim;\n10. usar tipos exactos certificados antes de DDL.\n\nGATE_3_DESIGN_COMPLETE=true\nDDL_EXECUTED=false\nDML_EXECUTED=false\nBANK_CONNECTIONS_EXECUTED=false\nREAL_PAYMENTS_EXECUTED=false\nPRODUCTION_TOUCHED=false\n",
+      "path": "backend/modules/finanzas/UNIVERSAL_BANKING_GATE3_PHYSICAL_DESIGN.md",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-FINANZAS-DEVELOPMENT_MUTATION_BOUNDED-C8FCA269B3657D0B4579",
+  "mode": "MUTATION",
+  "objective": "UNIVERSAL-BANKING Gate 3: materializar en Desarrollo exclusivamente el dossier Markdown de diseño fisico minimo derivado de Gate 0, Gate 1 y Gate 2 certificados. No codigo, no SQL ejecutable, no DDL/DML, no adapters, no conexiones bancarias, no pagos reales, no Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FINANZAS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "FINANZAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
