@@ -1,0 +1,67 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/catalogos_workflow_sql/",
+          "backend/modules/catalogo_ampliado/",
+          "backend/modules/compras/",
+          "backend/modules/bos_executive/",
+          "backend/modules/crm/",
+          "backend/modules/worker_ingress/",
+          "backend/core/rbac/",
+          "backend/tests/",
+          "frontend/src/config/",
+          "frontend/src/pages/",
+          "frontend/src/components/"
+        ],
+        "search_terms": [
+          "Sistema_Tareas",
+          "TareaSistemaID",
+          "crear_tarea",
+          "listar_tareas",
+          "PROYECTOS",
+          "comingSoon",
+          "adapt_operational_task",
+          "permisos",
+          "kanban",
+          "gantt",
+          "proyectos",
+          "actividades",
+          "FechaLimite",
+          "AsignadoAUsuarioID",
+          "workflow",
+          "SLA"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-PLANEACION_GESTION_TRABAJO-REPOSITORY_CONTRACT_AUDIT_BOUNDE-AF6CCB2214BA5EDAC518",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 de Planeacion y Gestion del Trabajo EDARSAHUB BOS, auditoria READ_ONLY de contratos concretos para integracion estilo Monday. Reconciliar dbo.Sistema_Tareas con catalogos_workflow_sql, alertas documentales, tareas operativas de compras, prioridades ejecutivas, actividades CRM, registro de navegacion PROYECTOS y RBAC; identificar entidades, campos, rutas, propietarios, semantica de estados, asignacion, contexto empresarial, identidad, dependencias, idempotencia y fechas. Examinar evidencia sobre funcionalidades portafolio, proyectos, Kanban, Gantt y calendario; separar implementado vs solamente registrado. Entregar matriz trazable y prioridades minimas de Gate 2. No publicar duplicados, no mutaciones ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "PLANEACION_GESTION_TRABAJO",
+    "conflict_domains": [
+      "PLANEACION_GESTION_TRABAJO"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
