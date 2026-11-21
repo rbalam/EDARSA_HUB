@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "tools/mirror_sync/gate_chain_publisher.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/worker_job_factory.py",
+          "tools/mirror_sync/worker_requester_rbac.py"
+        ],
+        "search_terms": [
+          "capability",
+          "allowed_roots",
+          "docs",
+          "documentation",
+          "mutation",
+          "integration",
+          "claim",
+          "worktree",
+          "gate_chain_publisher"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_CAPABILITY_REGISTRY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-E5E3CAEF3329A91E907D",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en solo lectura los contratos canonicos de tools/mirror_sync para identificar la capability registrada y el mecanismo canonico que puede integrar cambios de documentacion bajo docs/ en Edarsahub_Desarrollo, sin push, deploy, SQL ni Produccion. No modificar archivos, refs, claims ni worktrees. Revisar validacion de allowed roots, capabilities de mutacion, repository integration, documentacion, cleanup de claims/worktrees y publicacion canonica via gate_chain_publisher. Entregar nombres exactos de capabilities candidatas, restricciones de path y una sola siguiente accion concreta para FINANZAS-RBAC-RECOVERY-001.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CAPABILITY_REGISTRY",
+    "conflict_domains": [
+      "WORKER_CAPABILITY_REGISTRY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
