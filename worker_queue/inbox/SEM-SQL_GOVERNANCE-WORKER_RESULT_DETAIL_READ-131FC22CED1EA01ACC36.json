@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "EDARSAHUB-BOS-SQLGLOT-DEPENDENCY-CAPABILITY-GATE1-R1-20261120"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-SQL_GOVERNANCE-WORKER_RESULT_DETAIL_READ-131FC22CED1EA01ACC36",
+  "mode": "READ_ONLY",
+  "objective": "Leer en modo READ_ONLY el detalle terminal del job EDARSAHUB-BOS-SQLGLOT-DEPENDENCY-CAPABILITY-GATE1-R1-20261120 para identificar exactamente qué prueba pytest falló, preservar evidencia y decidir si procede un R2 mínimo. No modificar archivos ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SQL_GOVERNANCE",
+    "conflict_domains": [
+      "SQL_GOVERNANCE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
