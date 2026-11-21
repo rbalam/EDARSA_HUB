@@ -1,0 +1,139 @@
+{
+  "base_sha": "fc147c3c41ce4beef7366949b479830c58769bf3",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-21T05:10:00Z",
+  "execution_base_sha": "fc147c3c41ce4beef7366949b479830c58769bf3",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-IA_ASSISTANT-WORKER_RESULT_DETAIL_READ-00DDD23A00349DC08666",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-21T05:11:01Z",
+  "quality_gate": "PASS",
+  "result_detail_evidence": {
+    "checks": [
+      {
+        "blockers": [],
+        "certification": "PENDING_AUDIT_EVIDENCE",
+        "evidence_status": "COMPLETE",
+        "evidence_summary": {
+          "check_count": 1,
+          "entries_returned": 3,
+          "matched_files": 3,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "evidence_truncated": false,
+        "failed_checks": [],
+        "files_changed": [
+          "backend/tests/test_ia_contextual_comercial_contract.py",
+          "frontend/src/pages/Comercial.js"
+        ],
+        "percent_complete": 95,
+        "production_touched": false,
+        "quality_gate": "PASS",
+        "repository_contract_evidence": {
+          "checks": [
+            {
+              "evidence": [
+                {
+                  "candidate_ownership": "frontend",
+                  "connections": [],
+                  "helpers": [],
+                  "imports": [],
+                  "integrations": [
+                    "mpro",
+                    "softrestaurant"
+                  ],
+                  "matched_terms": [
+                    "comercial_detalle_ventas",
+                    "contextovistaia",
+                    "detalle de ventas",
+                    "iacontextuallauncher",
+                    "selecciona un folio para abrir el ticket de venta."
+                  ],
+                  "path": "frontend/src/pages/Comercial.js",
+                  "rbac_contracts": [],
+                  "routes": [],
+                  "scheduler_contracts": [],
+                  "symbols": [],
+                  "tables_referenced": []
+                },
+                {
+                  "candidate_ownership": "frontend",
+                  "connections": [],
+                  "helpers": [],
+                  "imports": [],
+                  "integrations": [],
+                  "matched_terms": [
+                    "iacontextuallauncher"
+                  ],
+                  "path": "frontend/src/components/ia/IAContextual.jsx",
+                  "rbac_contracts": [],
+                  "routes": [],
+                  "scheduler_contracts": [],
+                  "symbols": [],
+                  "tables_referenced": []
+                },
+                {
+                  "candidate_ownership": "backend",
+                  "connections": [],
+                  "helpers": [],
+                  "imports": [
+                    "modules.ia_assistant.contextual",
+                    "pathlib"
+                  ],
+                  "integrations": [],
+                  "matched_terms": [
+                    "comercial_detalle_ventas",
+                    "iacontextuallauncher",
+                    "selecciona un folio para abrir el ticket de venta."
+                  ],
+                  "path": "backend/tests/test_ia_contextual_comercial_contract.py",
+                  "rbac_contracts": [],
+                  "routes": [
+                    "/chat"
+                  ],
+                  "scheduler_contracts": [],
+                  "symbols": [
+                    "test_context_normalization_is_whitelist_and_drops_secrets",
+                    "test_existing_chat_contract_is_extended_not_replaced",
+                    "test_frontend_reuses_existing_assistant_client_and_has_no_worker_key",
+                    "test_query_bridge_remains_get_only_and_no_generated_sql",
+                    "test_ui_actions_are_fail_closed"
+                  ],
+                  "tables_referenced": []
+                }
+              ],
+              "mode": "READ_ONLY_REPOSITORY",
+              "status": "PASS",
+              "summary": {
+                "matched_files": 3,
+                "scanned_files": 3,
+                "skipped_sensitive": 0
+              },
+              "truncated": false
+            }
+          ]
+        },
+        "result_status": "INTEGRATED",
+        "source_completed_at_utc": "2026-10-01T22:40:09Z",
+        "source_job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-ACTUAL-MODAL-FIX-R2-CARLOS-20261001",
+        "source_terminal": true,
+        "tests": "PASS"
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-21T05:09:59Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
