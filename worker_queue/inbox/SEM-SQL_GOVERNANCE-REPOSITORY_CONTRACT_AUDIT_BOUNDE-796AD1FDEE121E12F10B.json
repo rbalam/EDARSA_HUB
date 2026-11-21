@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/core/",
+          "backend/modules/",
+          "backend/tests/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "sqlglot",
+          "sql_first",
+          "execute_sql_query",
+          "pymssql.connect",
+          "pyodbc.connect",
+          "sql_readonly_audit",
+          "no_live",
+          "readonly_sql_connection",
+          "repository_contract_audit",
+          "ALLOWED_CHECKS"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-SQL_GOVERNANCE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-796AD1FDEE121E12F10B",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY la integración potencial de SQLGlot como analizador AST T-SQL dentro de los guardrails SQL existentes de EDARSAHUB BOS. Revisar la capa SQL canónica, políticas no-LIVE, helpers de auditoría READ_ONLY, pruebas y contratos Worker. Determinar punto mínimo de integración, reutilización obligatoria, corpus T-SQL representativo, límites de parseo, falsos positivos/negativos, impacto CI/runtime y recomendación GO/NO-GO para añadir sqlglot. No modificar archivos, no instalar dependencias, no abrir conexiones SQL, no ejecutar migraciones y no tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SQL_GOVERNANCE",
+    "conflict_domains": [
+      "SQL_GOVERNANCE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
