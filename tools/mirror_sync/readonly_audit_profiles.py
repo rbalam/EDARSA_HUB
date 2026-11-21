@@ -15,6 +15,7 @@ API_FACTORY_PERSISTENCE_STATE_V1 = "api_factory_persistence_state_v1"
 CHAPUR_EXTERNAL_INTEGRATION_READINESS_V1 = "chapur_external_integration_readiness_v1"
 SQL_RUNTIME_PRINCIPAL_PERMISSIONS_V1 = "sql_runtime_principal_permissions_v1"
 WORKER_OPERATIONS_SQL_STATE_V1 = "worker_operations_sql_state_v1"
+WORKER_CONSOLE_ENTERPRISE_MENU_V1 = "worker_console_enterprise_menu_v1"
 
 _ALLOWED = {
     CHAPUR_CONNECTION_DISCOVERY_V1,
@@ -23,6 +24,7 @@ _ALLOWED = {
     CHAPUR_EXTERNAL_INTEGRATION_READINESS_V1,
     SQL_RUNTIME_PRINCIPAL_PERMISSIONS_V1,
     WORKER_OPERATIONS_SQL_STATE_V1,
+    WORKER_CONSOLE_ENTERPRISE_MENU_V1,
 }
 
 
@@ -32,6 +34,43 @@ def is_allowed_readonly_audit_profile(value: str) -> bool:
 
 def build_readonly_audit_checks(profile: str) -> List[Dict[str, Any]]:
     name = str(profile or "").strip()
+    if name == WORKER_CONSOLE_ENTERPRISE_MENU_V1:
+        return [
+            {
+                "type": "sql_readonly_audit",
+                "source": "EDARSAHUB",
+                "max_rows": 50,
+                "queries": [
+                    {
+                        "name": "worker_console_menu_sql_identity",
+                        "sql": (
+                            "SELECT @@SERVERNAME AS server_name,DB_NAME() AS db_name,"
+                            "SUSER_SNAME() AS login_name,USER_NAME() AS db_user"
+                        ),
+                    },
+                    {
+                        "name": "sistema_module_status",
+                        "sql": (
+                            "SELECT ModuloID,Codigo,Nombre,Orden,Activo "
+                            "FROM dbo.Sistema_Modulos "
+                            "WHERE Codigo='SISTEMA'"
+                        ),
+                    },
+                    {
+                        "name": "worker_console_menu_row",
+                        "sql": (
+                            "SELECT mm.MenuID,mm.ModuloID,m.Codigo AS modulo_codigo,"
+                            "mm.Codigo AS menu_codigo,mm.Nombre,mm.Icono,mm.Ruta,"
+                            "mm.Orden,mm.RequierePermiso,mm.Activo "
+                            "FROM dbo.Sistema_ModulosMenus mm "
+                            "INNER JOIN dbo.Sistema_Modulos m ON m.ModuloID=mm.ModuloID "
+                            "WHERE mm.Codigo='sistema.worker_console' OR mm.Ruta='/worker-console' "
+                            "ORDER BY mm.MenuID"
+                        ),
+                    },
+                ],
+            }
+        ]
     if name == WORKER_OPERATIONS_SQL_STATE_V1:
         return [
             {
