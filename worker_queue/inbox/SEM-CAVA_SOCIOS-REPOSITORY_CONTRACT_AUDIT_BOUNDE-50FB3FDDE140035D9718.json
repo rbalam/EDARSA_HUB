@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/cava_socios",
+          "backend/modules/cavas_corporativas",
+          "frontend/src/pages/cava-socios",
+          "frontend/src/pages/cavas-corporativas"
+        ],
+        "search_terms": [
+          "descorche",
+          "consumo",
+          "reposicion",
+          "autorizacion",
+          "cobro",
+          "pos",
+          "netpay"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CAVA_SOCIOS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-50FB3FDDE140035D9718",
+  "mode": "READ_ONLY",
+  "objective": "Gate 17 Cavas: ejecutar diagnóstico READ_ONLY acotado sobre implementación existente de políticas de consumo, investigación interna de faltantes, reposición ordinaria vs botellas especiales, consentimiento documentado del socio, descorche configurable por unidad/membresía/servicio, momento de cobro e integración POS. Reutilizar los dos diagnósticos Cavas certificados y Gate 16L, evitar trabajos duplicados, localizar pruebas y evidencias concretas. Entregar matriz de brechas confirmadas versus no verificadas, riesgos, archivos dueños y propuesta de cambios atómicos para autorización posterior. No realizar mutaciones ni tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CAVA_SOCIOS",
+    "conflict_domains": [
+      "CAVA_SOCIOS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
