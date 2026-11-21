@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PROD-DEV-R4-FINAL-EQUIVALENCE-READONLY-R2-20261120",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "base_sha": "ac0292e3e91291c1e4fb7ea5c720125d6ad5a9f2",
+  "mode": "READ_ONLY",
+  "objective": "R4-R2 final y acotado de equivalencia funcional. Verificar en Development que ya existen y están alineadas las capacidades productivas previamente faltantes: alias root /health reutilizando health_check; scheduler trigger protegido y fail-closed solo PRODUCTION_WEB; wake productivo de Ventas del Dia con owner lock distribuido, heartbeat y single-owner; runtime policy que impide scheduler embebido en PRODUCTION_WEB; ausencia del fingerprint temporal de secreto. No mutar archivos, no tocar Produccion, no reconciliar ramas. El resultado debe ser suficiente para decidir si las brechas funcionales de los 38 commits productivos quedaron absorbidas.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/server.py",
+          "backend/modules/scheduler_runtime/policy.py",
+          "backend/modules/scheduler_trigger/routes.py",
+          "backend/modules/scheduler_trigger/wake_loop.py",
+          "backend/tests/test_root_health_alias_contract.py",
+          "backend/tests/test_scheduler_http_trigger_production_contract.py",
+          "backend/tests/test_scheduler_production_wake_contract.py"
+        ],
+        "search_terms": [
+          "health",
+          "PRODUCTION_WEB",
+          "EDARSA_SCHEDULER_TRIGGER_ENABLED",
+          "sync_comercial_abiertas_v2_wake_owner",
+          "start_heartbeat_loop",
+          "SCHEDULER_TRIGGER_SECRET_DIAG"
+        ],
+        "max_results": 40
+      }
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Production divergence reconciliation R4-R2"
+  }
+}
