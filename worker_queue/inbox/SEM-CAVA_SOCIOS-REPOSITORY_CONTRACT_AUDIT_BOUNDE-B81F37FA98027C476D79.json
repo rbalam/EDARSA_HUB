@@ -1,0 +1,47 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "backend/modules/cava_socios",
+          "frontend/src/pages/cava-socios"
+        ],
+        "search_terms": [
+          "CavaSocios",
+          "CavasCorporativas",
+          "consumo",
+          "reposicion",
+          "beneficio"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CAVA_SOCIOS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B81F37FA98027C476D79",
+  "mode": "READ_ONLY",
+  "objective": "READ_ONLY Cavas Personales y Corporativas: verificar brechas funcionales posteriores a Gate 16L R4 y cierre Personales V1 certificados, sin repetir trabajos ni alterar Producción. Revisar SQL-first, UI/API, RBAC, inventario del socio, faltantes y reposiciones, autorizaciones de ajustes de consumo, convenios corporativos, POS y pruebas E2E. Entregar evidencia y siguiente Gate mínimo.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CAVA_SOCIOS",
+    "conflict_domains": [
+      "CAVA_SOCIOS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
