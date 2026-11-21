@@ -1,0 +1,57 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/edge/",
+          "backend/modules/contract/",
+          "backend/modules/comercial/",
+          "backend/modules/comercial_v2/",
+          "frontend/src/pages/satelites/",
+          "frontend/src/config/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "comandero",
+          "sqlite3",
+          "cola_sincronizacion_offline",
+          "registrar_comanda_offline",
+          "contabilidadDefault",
+          "precio_final",
+          "inventario",
+          "RBAC",
+          "idempotencia",
+          "sync"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-VENTAS_COMERCIAL_POS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4786C33D0E06D19D8481",
+  "mode": "READ_ONLY",
+  "objective": "EDARSAHUB BOS Ventas/POS Comandero satelite GATE3 READ_ONLY integration-readiness. Continue certified Gate1 and Gate2 without repeating them. Inspect real canonical implementation and dependencies of offline edge cache and FIFO reconciling, POS/Comandero terminal contracts, source of prices tax tips and accounting mappings, inventory discharge timing, SQL-first sync, RBAC/empresa/unidad context, idempotency and concurrent reconciliation. Identify exact files functions and tests, classify reusable versus unsafe hardcode and gaps, produce minimal reversible mutation plan with acceptance tests for subsequent separately authorized Gate. No actions, no changes, no Production, no new Worker or SQL schema, no LIVE operational queries.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "VENTAS_COMERCIAL_POS",
+    "conflict_domains": [
+      "VENTAS_COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
