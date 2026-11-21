@@ -1,0 +1,76 @@
+{
+  "actions": [
+    {
+      "content": "from .routes import router\n\n__all__ = [\"router\"]\n",
+      "path": "backend/modules/coa_fiscal/__init__.py",
+      "type": "write_file"
+    },
+    {
+      "content": "from pydantic import BaseModel\nfrom typing import Optional\nfrom datetime import datetime\n\nclass DocumentoCreate(BaseModel):\n    empresa_id:int\n    unidad_negocio_id:str\n    cliente_id:int\n    venta_id:Optional[int]=None\n    estatus_id:int=1\n    uuid:Optional[str]=None\n\nclass DocumentoTransition(BaseModel):\n    nuevo_estatus_id:int\n    fecha_cancelacion:Optional[datetime]=None\n\nclass DocumentoLink(BaseModel):\n    expediente_id:int\n",
+      "path": "backend/modules/coa_fiscal/schemas.py",
+      "type": "write_file"
+    },
+    {
+      "content": "from core.connections.edarsahub_writer_connection import open_validated_writer_connection\nfrom core.sql_first.db import get_sql_connection\n\nALLOWED_TRANSITIONS={1:{2},2:{3,4},4:{2},3:{5},5:{6,3},6:set()}\n\ndef _dict(cur,row):\n    return dict(zip([d[0] for d in cur.description],row)) if row else None\n\ndef _read_one(sql,params=()):\n    conn=get_sql_connection(); cur=conn.cursor()\n    try:\n        cur.execute(sql,params); return _dict(cur,cur.fetchone())\n    finally:\n        cur.close(); conn.close()\n\ndef get_by_id(documento_id):\n    return _read_one('SELECT * FROM dbo.Fiscal_DocumentosEmitidos WHERE DocumentoFiscalEmitidoID=%s',(documento_id,))\n\ndef get_by_uuid(uuid):\n    return _read_one('SELECT * FROM dbo.Fiscal_DocumentosEmitidos WHERE UUID=%s',(uuid,))\n\ndef list_documents(empresa_id=None,unidad_negocio_id=None,cliente_id=None,venta_id=None,estatus_id=None,limit=100):\n    pairs=[('EmpresaID',empresa_id),('UnidadNegocioID',unidad_negocio_id),('ClienteID',cliente_id),('VentaID',venta_id),('EstatusDocumentoFiscalEmitidoID',estatus_id)]\n    clauses=[]; params=[]\n    for col,val in pairs:\n        if val is not None: clauses.append(col+'=%s'); params.append(val)\n    where=(' WHERE '+' AND '.join(clauses)) if clauses else ''\n    conn=get_sql_connection(); cur=conn.cursor()\n    try:\n        cur.execute(f'SELECT TOP ({int(limit)}) * FROM dbo.Fiscal_DocumentosEmitidos{where} ORDER BY DocumentoFiscalEmitidoID DESC',tuple(params))\n        cols=[d[0] for d in cur.description]; return [dict(zip(cols,r)) for r in cur.fetchall()]\n    finally:\n        cur.close(); conn.close()\n\ndef _exists(cur,table,column,value):\n    cur.execute(f'SELECT 1 FROM dbo.{table} WHERE {column}=%s',(value,)); return cur.fetchone() is not None\n\ndef create_document(p,actor):\n    uuid=(p.get('uuid') or '').strip() or None\n    if uuid:\n        old=get_by_uuid(uuid)\n        if old: return old\n    conn,_=open_validated_writer_connection(); cur=conn.cursor()\n    try:\n        for table,column,value,error in [('Sistema_Empresas','EmpresaID',p['empresa_id'],'EMPRESA_NOT_FOUND'),('Unidades_Negocio','id',p['unidad_negocio_id'],'UNIDAD_NEGOCIO_NOT_FOUND'),('Cliente_Catalogo','ClienteID',p['cliente_id'],'CLIENTE_NOT_FOUND'),('Fiscal_DocumentosEmitidosEstatus','EstatusDocumentoFiscalEmitidoID',p['estatus_id'],'ESTATUS_NOT_FOUND')]:\n            if not _exists(cur,table,column,value): raise ValueError(error)\n        if p.get('venta_id') is not None and not _exists(cur,'Venta_Encabezado','VentaID',p['venta_id']): raise ValueError('VENTA_NOT_FOUND')\n        cur.execute('INSERT INTO dbo.Fiscal_DocumentosEmitidos (EmpresaID,UnidadNegocioID,ClienteID,VentaID,EstatusDocumentoFiscalEmitidoID,UUID,CreadoPor) OUTPUT INSERTED.DocumentoFiscalEmitidoID VALUES (%s,%s,%s,%s,%s,%s,%s)',(p['empresa_id'],p['unidad_negocio_id'],p['cliente_id'],p.get('venta_id'),p['estatus_id'],uuid,actor))\n        new_id=int(cur.fetchone()[0]); conn.commit()\n    except Exception:\n        conn.rollback(); raise\n    finally:\n        cur.close(); conn.close()\n    return get_by_id(new_id)\n\ndef transition_document(documento_id,nuevo,actor,fecha_cancelacion=None):\n    conn,_=open_validated_writer_connection(); cur=conn.cursor()\n    try:\n        cur.execute('SELECT EstatusDocumentoFiscalEmitidoID FROM dbo.Fiscal_DocumentosEmitidos WITH (UPDLOCK,HOLDLOCK) WHERE DocumentoFiscalEmitidoID=%s',(documento_id,)); row=cur.fetchone()\n        if not row: raise ValueError('DOCUMENT_NOT_FOUND')\n        actual=int(row[0])\n        if nuevo==actual: conn.rollback(); return get_by_id(documento_id)\n        if nuevo not in ALLOWED_TRANSITIONS.get(actual,set()): raise ValueError('INVALID_STATUS_TRANSITION')\n        if nuevo==6 and fecha_cancelacion is None: raise ValueError('FECHA_CANCELACION_REQUIRED')\n        cur.execute('UPDATE dbo.Fiscal_DocumentosEmitidos SET EstatusDocumentoFiscalEmitidoID=%s,FechaCancelacion=CASE WHEN %s=6 THEN %s ELSE FechaCancelacion END,ModificadoPor=%s,FechaModificacion=SYSUTCDATETIME() WHERE DocumentoFiscalEmitidoID=%s',(nuevo,nuevo,fecha_cancelacion,actor,documento_id)); conn.commit()\n    except Exception:\n        conn.rollback(); raise\n    finally:\n        cur.close(); conn.close()\n    return get_by_id(documento_id)\n\ndef link_to_coa(documento_id,expediente_id,actor):\n    conn,_=open_validated_writer_connection(); cur=conn.cursor()\n    try:\n        if not _exists(cur,'Fiscal_DocumentosEmitidos','DocumentoFiscalEmitidoID',documento_id): raise ValueError('DOCUMENT_NOT_FOUND')\n        if not _exists(cur,'COA_Expedientes','ExpedienteID',expediente_id): raise ValueError('EXPEDIENTE_NOT_FOUND')\n        cur.execute('SELECT ReferenciaID FROM dbo.COA_ExpedienteReferencias WITH (UPDLOCK,HOLDLOCK) WHERE ExpedienteID=%s AND DocumentoFiscalEmitidoID=%s',(expediente_id,documento_id)); row=cur.fetchone()\n        if row: conn.rollback(); return {'referencia_id':int(row[0]),'created':False}\n        cur.execute('INSERT INTO dbo.COA_ExpedienteReferencias (ExpedienteID,DocumentoFiscalEmitidoID,CreadoPor) OUTPUT INSERTED.ReferenciaID VALUES (%s,%s,%s)',(expediente_id,documento_id,actor)); ref=int(cur.fetchone()[0]); conn.commit(); return {'referencia_id':ref,'created':True}\n    except Exception:\n        conn.rollback(); raise\n    finally:\n        cur.close(); conn.close()\n",
+      "path": "backend/modules/coa_fiscal/repository.py",
+      "type": "write_file"
+    },
+    {
+      "content": "from fastapi import APIRouter,Depends,HTTPException,Query\nfrom core.security import get_current_user\nfrom . import repository\nfrom .schemas import DocumentoCreate,DocumentoTransition,DocumentoLink\n\nrouter=APIRouter(prefix='/coa/fiscal/documentos-emitidos',tags=['COA - CFDI emitidos'])\n\ndef _actor(user):\n    for k in ('UsuarioID','usuario_id','id','user_id'):\n        if user.get(k) is not None: return int(user[k])\n    raise HTTPException(403,'USER_ID_REQUIRED')\n\n@router.get('')\ndef listar(empresa_id:int|None=None,unidad_negocio_id:str|None=None,cliente_id:int|None=None,venta_id:int|None=None,estatus_id:int|None=None,limit:int=Query(100,ge=1,le=500),_user=Depends(get_current_user)):\n    return repository.list_documents(empresa_id,unidad_negocio_id,cliente_id,venta_id,estatus_id,limit)\n\n@router.get('/uuid/{uuid}')\ndef por_uuid(uuid:str,_user=Depends(get_current_user)):\n    row=repository.get_by_uuid(uuid)\n    if not row: raise HTTPException(404,'DOCUMENT_NOT_FOUND')\n    return row\n\n@router.get('/{documento_id}')\ndef por_id(documento_id:int,_user=Depends(get_current_user)):\n    row=repository.get_by_id(documento_id)\n    if not row: raise HTTPException(404,'DOCUMENT_NOT_FOUND')\n    return row\n\n@router.post('')\ndef crear(payload:DocumentoCreate,user=Depends(get_current_user)):\n    try: return repository.create_document(payload.model_dump(),_actor(user))\n    except ValueError as e: raise HTTPException(409,str(e))\n\n@router.post('/{documento_id}/transiciones')\ndef transicionar(documento_id:int,payload:DocumentoTransition,user=Depends(get_current_user)):\n    try: return repository.transition_document(documento_id,payload.nuevo_estatus_id,_actor(user),payload.fecha_cancelacion)\n    except ValueError as e: raise HTTPException(404 if str(e)=='DOCUMENT_NOT_FOUND' else 409,str(e))\n\n@router.post('/{documento_id}/coa-referencias')\ndef vincular(documento_id:int,payload:DocumentoLink,user=Depends(get_current_user)):\n    try: return repository.link_to_coa(documento_id,payload.expediente_id,_actor(user))\n    except ValueError as e: raise HTTPException(404 if str(e) in {'DOCUMENT_NOT_FOUND','EXPEDIENTE_NOT_FOUND'} else 409,str(e))\n",
+      "path": "backend/modules/coa_fiscal/routes.py",
+      "type": "write_file"
+    },
+    {
+      "content": "from pathlib import Path\nfrom modules.coa_fiscal import repository\n\ndef test_transition_contract():\n    assert repository.ALLOWED_TRANSITIONS=={1:{2},2:{3,4},4:{2},3:{5},5:{6,3},6:set()}\n\ndef test_canonical_dependencies_and_scope():\n    src=Path('backend/modules/coa_fiscal/repository.py').read_text()\n    assert 'open_validated_writer_connection' in src\n    assert 'get_sql_connection' in src\n    assert 'Venta_Encabezado' in src and 'Cliente_Catalogo' in src and 'COA_ExpedienteReferencias' in src\n    assert 'Mongo' not in src and 'pymongo' not in src\n    server=Path('backend/server.py').read_text()\n    assert 'modules.coa_fiscal' not in server\n\ndef test_cancelled_terminal_and_uuid_preserved():\n    src=Path('backend/modules/coa_fiscal/repository.py').read_text()\n    assert '6:set()' in src.replace(' ','')\n    block=src.split('UPDATE dbo.Fiscal_DocumentosEmitidos',1)[1].split('WHERE DocumentoFiscalEmitidoID',1)[0]\n    assert 'UUID=' not in block\n",
+      "path": "backend/tests/test_coa_fiscal_backend_gate6i.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/coa_fiscal/__init__.py",
+        "backend/modules/coa_fiscal/schemas.py",
+        "backend/modules/coa_fiscal/repository.py",
+        "backend/modules/coa_fiscal/routes.py",
+        "backend/tests/test_coa_fiscal_backend_gate6i.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_coa_fiscal_backend_gate6i.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-COA-GATE6I-FISCAL-BACKEND-R1-20261120",
+  "mode": "MUTATION",
+  "objective": "COA Gate 6I. Implementar un bounded context backend mínimo y aislado para CFDI emitidos, sin montar todavía el router en backend/server.py. Crear únicamente backend/modules/coa_fiscal/ y backend/tests/test_coa_fiscal_backend_gate6i.py. Reutilizar open_validated_writer_connection para writes, get_sql_connection/sql_first para reads y get_current_user para autenticación. Implementar lectura por ID/UUID, listado filtrable, creación idempotente por UUID, transición controlada de estados 1→2, 2→3/4, 4→2, 3→5, 5→6/3, cancelación sin borrar UUID, vínculo idempotente con COA_ExpedienteReferencias y validación de Venta_Encabezado/Cliente_Catalogo. No Mongo, no server.py, no Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COA",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
