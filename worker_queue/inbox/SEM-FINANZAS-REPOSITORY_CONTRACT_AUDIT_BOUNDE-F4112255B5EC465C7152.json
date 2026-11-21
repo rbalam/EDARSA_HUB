@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/finanzas",
+          "backend/modules/integrations_center"
+        ],
+        "search_terms": [
+          "PaymentRail",
+          "BankingChannel",
+          "IBAN",
+          "SWIFT",
+          "BIC",
+          "ABA",
+          "UETR",
+          "Sistema_Capacidades",
+          "Sistema_IdentificadoresExternos",
+          "Sync_Control_Ejecuciones",
+          "Sync_Control_Evidencias",
+          "Finanzas_Pagos",
+          "Finanzas_CxP_PagosOrigenQueue",
+          "Global_Cat_Bancos"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-FINANZAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-F4112255B5EC465C7152",
+  "mode": "READ_ONLY",
+  "objective": "UNIVERSAL-BANKING Gate 2 physical preflight. Auditar en modo READ_ONLY el bounded context Finanzas para confirmar el contrato fisico minimo y puntos de extension de PaymentRail, BankingChannel, BankingIdentifierModel y BankingExternalEvent, reutilizando la infraestructura canonica existente y deteniendose antes de cualquier implementacion. Sin DDL, sin DML, sin codigo, sin adapters BBVA/Banorte, sin conexiones bancarias, sin pagos reales y sin Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FINANZAS",
+    "conflict_domains": [
+      "FINANZAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
