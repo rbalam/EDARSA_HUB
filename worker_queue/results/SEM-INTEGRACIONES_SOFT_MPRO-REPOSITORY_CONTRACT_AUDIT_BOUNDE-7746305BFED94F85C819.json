@@ -1,0 +1,3630 @@
+{
+  "base_sha": "8373aeeeda4109a58e9907dd604b6071f3d2da9a",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-21T20:58:22Z",
+  "execution_base_sha": "8373aeeeda4109a58e9907dd604b6071f3d2da9a",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-INTEGRACIONES_SOFT_MPRO-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7746305BFED94F85C819",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-21T20:59:43Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.automatizacion",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "estado"
+            ],
+            "path": "backend/modules/automatizacion/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.automatizacion",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [
+              "mpro",
+              "sap",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "mpro",
+              "softrestaurant"
+            ],
+            "path": "backend/modules/automatizacion/feature_flags.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "get_all_flags",
+              "is_enabled",
+              "is_module_active"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.automatizacion",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "comentario",
+              "estado",
+              "folio",
+              "mpro"
+            ],
+            "path": "backend/modules/automatizacion/queries_mpro.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.automatizacion",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "folio",
+              "softrestaurant"
+            ],
+            "path": "backend/modules/automatizacion/queries_soft.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.automatizacion",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.source_resolver",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "hashlib",
+              "logging",
+              "pymssql",
+              "time",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "comentario",
+              "estado",
+              "folio",
+              "insert",
+              "mpro",
+              "softrestaurant",
+              "update"
+            ],
+            "path": "backend/modules/automatizacion/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "actualizar_ultimo_folio_conocido",
+              "construir_clave_cab003",
+              "contar_registros_por_identificador",
+              "execute_sql_parametrized",
+              "generar_hash_verificacion",
+              "generar_identificador_ejecucion",
+              "get_configuracion_activa",
+              "get_folios_ya_procesados",
+              "insertar_folio_procesado",
+              "leer_configuracion_con_estado",
+              "leer_folios_procesados_con_estado",
+              "registrar_folio_procesado",
+              "rollback_por_identificador",
+              "verificar_duplicado_en_bd",
+              "verificar_ya_procesado"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.automatizacion",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "sap",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "mpro",
+              "softrestaurant",
+              "update"
+            ],
+            "path": "backend/modules/automatizacion/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "AutomatizacionConfigBase",
+              "AutomatizacionConfigCreate",
+              "AutomatizacionConfigResponse",
+              "Config",
+              "DestinatarioBase",
+              "DestinatarioCreate",
+              "DestinatarioResponse",
+              "EjecucionBase",
+              "EjecucionCreate",
+              "EjecucionResponse",
+              "EnvioBase",
+              "EnvioCreate",
+              "EnvioResponse",
+              "FolioProcesadoBase",
+              "FolioProcesadoCreate",
+              "FolioProcesadoResponse",
+              "UltimoFolioBase",
+              "UltimoFolioCreate",
+              "UltimoFolioResponse"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "modules.compras.repository",
+              "modules.compras.routes",
+              "modules.compras.schemas",
+              "modules.compras.system_type_utils"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "movimiento",
+              "mpro",
+              "softrestaurant"
+            ],
+            "path": "backend/modules/compras/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "get_router",
+              "init_compras_module",
+              "router"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.rbac_sql.service",
+              "fastapi",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac"
+            ],
+            "path": "backend/modules/compras/access.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_sql_usuario_id",
+              "_normalize",
+              "require_any_compras_permission",
+              "require_compras_permission"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sync"
+            ],
+            "path": "backend/modules/compras/adapters/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "movimiento",
+              "mpro",
+              "proveedor"
+            ],
+            "path": "backend/modules/compras/adapters/mpro_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "query_almacenes",
+              "query_requisiciones",
+              "query_requisiciones_detalle"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "folio",
+              "movimiento",
+              "proveedor",
+              "softrestaurant",
+              "sync"
+            ],
+            "path": "backend/modules/compras/adapters/softrestaurant_pro_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "query_almacenes",
+              "query_inventarios_fisicos",
+              "query_inventarios_fisicos_detalle",
+              "query_movimientos_almacen",
+              "query_ordenes",
+              "query_ordenes_detalle",
+              "query_pedidos",
+              "query_pedidos_detalle",
+              "query_recepciones",
+              "query_recepciones_detalle"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "abc",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "dataclasses",
+              "datetime",
+              "enum",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "cliente",
+              "estado",
+              "folio",
+              "insert",
+              "mpro",
+              "proveedor",
+              "softrestaurant",
+              "sync",
+              "update",
+              "upsert"
+            ],
+            "path": "backend/modules/compras/eventos_compras.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CheckpointManager",
+              "EventDispatcher",
+              "EventoCompras",
+              "EventoTipo",
+              "NuevosRegistrosDetector",
+              "PollingEventDispatcher",
+              "ServiceBrokerEventDispatcher",
+              "SyncType",
+              "__init__",
+              "__post_init__",
+              "_get_connection",
+              "detectar_nuevas_requisiciones",
+              "detectar_nuevos_inventarios",
+              "dispatch",
+              "get_all_checkpoints",
+              "get_checkpoint",
+              "get_checkpoint_manager",
+              "get_detector",
+              "get_event_dispatcher",
+              "get_pending_events",
+              "mark_as_processed",
+              "process_pending_events",
+              "register_handler",
+              "to_dict",
+              "update_checkpoint"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.server_registry",
+              "datetime",
+              "logging",
+              "os",
+              "pytds",
+              "sys",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotencia",
+              "insert",
+              "proveedor",
+              "update",
+              "upsert"
+            ],
+            "path": "backend/modules/compras/historical_kpis_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "check_table_exists",
+              "create_table_if_not_exists",
+              "get_edarsahub_connection",
+              "get_edarsahub_server",
+              "upsert_compras_kpi_historico"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.secret_manager",
+              "core.server_registry",
+              "core.unidades_service",
+              "dataclasses",
+              "logging",
+              "modules.compras.repository_compras_sql",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "movimiento",
+              "mpro",
+              "proveedor",
+              "softrestaurant",
+              "sync"
+            ],
+            "path": "backend/modules/compras/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ComprasQueryResult",
+              "_decrypt_server_password",
+              "get_compras_params",
+              "get_db",
+              "get_server_by_id",
+              "init_compras_repository",
+              "is_stub_mode",
+              "query_detalle_factura_mpro",
+              "query_detalle_pedido_mpro",
+              "query_facturas_proveedor_mpro",
+              "query_inventarios_fisicos_mpro",
+              "query_inventarios_fisicos_sr",
+              "query_pedidos_vigentes_mpro",
+              "query_pedidos_vigentes_sr",
+              "save_compras_params",
+              "validate_table_exists"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "estado",
+              "insert",
+              "proveedor",
+              "update",
+              "upsert"
+            ],
+            "path": "backend/modules/compras/repository_compras_sql.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_edarsahub_connection",
+              "delete_compras_params_sql",
+              "ensure_table_exists",
+              "get_all_compras_params_sql",
+              "get_compras_params_sql",
+              "save_compras_params_sql"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "insert",
+              "sync",
+              "update",
+              "upsert"
+            ],
+            "path": "backend/modules/compras/repository_pedidos_sql.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_execute_edarsahub_insert",
+              "_execute_edarsahub_query",
+              "crear_tarea_operativa_sql",
+              "marcar_pedido_procesado_sql",
+              "obtener_pedidos_procesados_sql",
+              "obtener_tareas_pendientes_sql",
+              "pedido_ya_procesado_sql",
+              "registrar_bitacora_pedidos_sql"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "fastapi",
+              "fastapi.security",
+              "modules.compras",
+              "modules.compras.schemas",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "folio",
+              "movimiento",
+              "proveedor",
+              "sync"
+            ],
+            "path": "backend/modules/compras/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/compras/parametros",
+              "/compras/parametros/{server_id}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "folio",
+              "movimiento",
+              "proveedor"
+            ],
+            "path": "backend/modules/compras/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AnalisisComprasRequest",
+              "AuditoriaOperativaRequest",
+              "CalculoPedidoRequest",
+              "DetalleConsumosRequest",
+              "DetalleMovimientosRequest",
+              "ParametrosCompra",
+              "ProductosParaCapturaRequest"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "fastapi",
+              "logging",
+              "modules.compras",
+              "modules.compras.system_type_utils",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "mpro",
+              "proveedor",
+              "softrestaurant",
+              "sync"
+            ],
+            "path": "backend/modules/compras/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "guardar_parametros",
+              "obtener_detalle_factura",
+              "obtener_facturas_proveedor",
+              "obtener_inventarios_fisicos",
+              "obtener_parametros",
+              "obtener_pedidos_vigentes"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "folio",
+              "movimiento",
+              "mpro",
+              "softrestaurant",
+              "sync"
+            ],
+            "path": "backend/modules/compras/sql_first_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ComprasSQLFirstRepository",
+              "__init__",
+              "_fetch_all",
+              "detalle_movimientos",
+              "productos_para_captura",
+              "table_counts"
+            ],
+            "tables_referenced": [
+              "Compras_Ordenes",
+              "Compras_OrdenesDetalle",
+              "Compras_Pedidos",
+              "Compras_PedidosDetalle",
+              "Compras_Recepciones",
+              "Compras_RecepcionesDetalle",
+              "Compras_Requisiciones_Sync",
+              "Inventario_Almacenes",
+              "Inventario_Existencias",
+              "Inventario_Movimientos",
+              "Inventario_MovimientosDetalle"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection",
+              "resolver_canonico"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.inventarios.resolver_canonico",
+              "core.inventarios.sync_movimientos_canonico",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "logging",
+              "os",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "comentario",
+              "estado",
+              "folio",
+              "insert",
+              "movimiento",
+              "mpro",
+              "proveedor",
+              "softrestaurant",
+              "sync",
+              "update",
+              "upsert",
+              "write"
+            ],
+            "path": "backend/modules/compras/sync_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_as_float",
+              "_as_text",
+              "_bulk_insert_detail_values",
+              "_bulk_update_detail_values",
+              "_bulk_upsert_detail_values",
+              "_collapse_detail_values_by_key",
+              "_detail_insert_parts",
+              "_detail_insert_statement",
+              "_detail_update_statement",
+              "_detail_values",
+              "_fetch_existing_detail_keys",
+              "_fetch_table_columns",
+              "_filter_inventory_headers_with_detail",
+              "_folio_in_filter",
+              "_get_edarsahub_context",
+              "_insert_detail_row",
+              "_inventarios_fisicos_detalle_query",
+              "_inventory_detail_batch_size",
+              "_inventory_detail_key",
+              "_inventory_header_detail_key",
+              "_inventory_history_filter",
+              "_sql_identifier",
+              "_sql_literal",
+              "_sync_inventarios_fisicos_detalle",
+              "_unique_folio_batches",
+              "_update_detail_row",
+              "get_compras_adapter",
+              "get_edarsahub_connection",
+              "get_edarsahub_writer_connection",
+              "get_last_sync_info",
+              "log_sync_operation",
+              "map_tipo_movimiento_softrestaurant",
+              "obtener_inventarios_fisicos_sync",
+              "obtener_requisiciones_sync",
+              "registrar_concepto_movimiento_no_mapeado",
+              "resolver_proveedor_edarsahub",
+              "sync_almacenes_from_server",
+              "sync_existencias_from_server",
+              "sync_inventarios_fisicos_from_server",
+              "sync_movimientos_from_server",
+              "sync_ordenes_from_server",
+              "sync_pedidos_from_server",
+              "sync_recepciones_from_server",
+              "sync_requisiciones_from_server"
+            ],
+            "tables_referenced": [
+              "Compras_Inventarios_Fisicos_Detalle_Sync",
+              "Proveedor_Catalogo",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.system_type_utils",
+              "core.unidades_service",
+              "dataclasses",
+              "enum",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "mpro",
+              "softrestaurant"
+            ],
+            "path": "backend/modules/compras/system_type_utils.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ComprasResponse",
+              "ComprasStatus",
+              "configuration_missing",
+              "log_compras_adapter_selected",
+              "log_compras_error",
+              "log_compras_query_result",
+              "no_data",
+              "not_available",
+              "query_error",
+              "source_unreachable",
+              "success",
+              "to_dict",
+              "unsupported_system"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "collections",
+              "core.rbac_sql.service",
+              "core.unidades_service",
+              "fastapi",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cliente",
+              "rbac"
+            ],
+            "path": "backend/modules/finanzas/access.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_branch_pairs",
+              "_context_values",
+              "_get_sql_usuario_id",
+              "_normalize",
+              "_normalize_key",
+              "filter_unidades_for_finanzas",
+              "get_finanzas_allowed_unidad_pks",
+              "require_any_finanzas_permission",
+              "require_finanzas_permission",
+              "resolve_finanzas_unit_filter"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "mpro",
+              "softrestaurant",
+              "sync"
+            ],
+            "path": "backend/modules/finanzas/canonical_sync_units.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FinanzasCanonicalUnitError",
+              "_clean",
+              "_effective_system_type",
+              "get_canonical_finance_sync_unit_names",
+              "get_canonical_finance_sync_units"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "decimal",
+              "logging",
+              "modules.finanzas.sync_cortes_mpro",
+              "modules.finanzas.sync_cortes_softrestaurant",
+              "os",
+              "pathlib",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "insert",
+              "mpro",
+              "softrestaurant",
+              "sync"
+            ],
+            "path": "backend/modules/finanzas/carga_historica_ingresos.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_load_env",
+              "calcular_bloques_trimestrales",
+              "ejecutar_carga_historica_completa",
+              "ejecutar_carga_historica_unidad_mpro",
+              "ejecutar_carga_historica_unidad_sr"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "dateutil.relativedelta",
+              "logging",
+              "modules.finanzas.sync_propinas_mpro",
+              "modules.finanzas.sync_propinas_softrestaurant",
+              "os",
+              "pathlib",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "insert",
+              "mpro",
+              "softrestaurant",
+              "sync"
+            ],
+            "path": "backend/modules/finanzas/carga_historica_propinas_tpv.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_load_env",
+              "ejecutar_carga_historica_completa",
+              "ejecutar_carga_historica_unidad_mpro",
+              "ejecutar_carga_historica_unidad_sr",
+              "generar_bloques_mensuales"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.security",
+              "core.sql_first.db",
+              "fastapi",
+              "modules.finanzas.access",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "estado",
+              "mpro",
+              "rbac",
+              "sync"
+            ],
+            "path": "backend/modules/finanzas/comprobaciones.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/status"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_normalize_filter",
+              "_require_schema_ready",
+              "_schema_status",
+              "get_comprobaciones_status",
+              "listar_comprobaciones"
+            ],
+            "tables_referenced": [
+              "Compras_DocumentosFiscales",
+              "Compras_DocumentosFiscalesDetalle",
+              "Compras_DocumentosFiscalesRelaciones",
+              "Finanzas_Comprobaciones",
+              "Finanzas_ComprobacionesDocumentos",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.connections.pos_runtime_resolver",
+              "core.sql_first.connection_factory",
+              "core.system_type_utils",
+              "datetime",
+              "logging",
+              "modules.finanzas.sync_cortes_mpro",
+              "modules.finanzas.sync_cortes_softrestaurant",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "mpro",
+              "softrestaurant",
+              "sync"
+            ],
+            "path": "backend/modules/finanzas/cortes_z_runtime_sync.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_extract_mpro",
+              "_extract_softrestaurant",
+              "_resolve_dates",
+              "_sync_mapping",
+              "sync_cortes_z_context"
+            ],
+            "tables_referenced": [
+              "Finanzas_CortesCaja"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.security",
+              "fastapi",
+              "logging",
+              "modules.finanzas.access",
+              "modules.finanzas.models_bancarios",
+              "modules.finanzas.repository_bancarios",
+              "modules.finanzas.utils_bancarios",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "estado",
+              "sync",
+              "update",
+              "write"
+            ],
+            "path": "backend/modules/finanzas/cuentas_bancarias.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/bancos",
+              "/cuentas-bancarias",
+              "/cuentas-bancarias/{cuenta_id}",
+              "/cuentas-bancarias/{cuenta_id}/desactivar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "actualizar_cuenta",
+              "crear_cuenta",
+              "desactivar_cuenta",
+              "get_user_id",
+              "listar_bancos",
+              "listar_cuentas_bancarias",
+              "obtener_cuenta_bancaria",
+              "require_cuenta_scope",
+              "require_view_scope",
+              "require_write_scope"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.auditoria_helpers",
+              "core.security",
+              "core.sql_first.db",
+              "datetime",
+              "decimal",
+              "fastapi",
+              "modules.finanzas.access",
+              "pydantic",
+              "typing",
+              "urllib.parse"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "comentario",
+              "estado",
+              "folio",
+              "insert",
+              "mpro",
+              "proveedor",
+              "rbac",
+              "softrestaurant",
+              "sync",
+              "update",
+              "upsert"
+            ],
+            "path": "backend/modules/finanzas/cuentas_por_pagar.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/decision-dashboard",
+              "/decision-dashboard/drilldown",
+              "/decision-pago-masivo",
+              "/proveedores",
+              "/resumen",
+              "/sucursales",
+              "/{factura_id}",
+              "/{factura_id}/decision-pago",
+              "/{factura_id}/decision-pago/autorizacion"
+            ],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "ActualizarDecisionPago",
+              "ActualizarDecisionPagoMasivo",
+              "AutorizarDecisionPago",
+              "_cxp_authorization_entity_id",
+              "_cxp_authorization_visibility",
+              "_cxp_block_if_pago_origen_locked",
+              "_cxp_cancel_queue_pendiente",
+              "_cxp_create_canonical_authorization",
+              "_cxp_decision_projection",
+              "_cxp_decision_row_for_hash",
+              "_cxp_decisiones_schema_ready",
+              "_cxp_enqueue_pago_origen",
+              "_cxp_factura_dict",
+              "_cxp_get_canonical_authorization",
+              "_cxp_listar_canonico",
+              "_cxp_project_authorization_state",
+              "_cxp_proveedores_canonico",
+              "_cxp_queue_estados_for_decision",
+              "_cxp_queue_schema_ready",
+              "_cxp_require_decisiones_schema",
+              "_cxp_require_queue_schema",
+              "_cxp_resolve_canonical_authorization",
+              "_cxp_resumen_canonico",
+              "_cxp_row_for_ref",
+              "_cxp_rows_canonico",
+              "_cxp_rows_for_refs",
+              "_cxp_sucursales_canonico",
+              "_cxp_update_autorizacion",
+              "_cxp_upsert_decision",
+              "_decision_dashboard_canonico",
+              "_decision_dashboard_compras",
+              "_decision_dashboard_drilldown",
+              "_decision_dashboard_period",
+              "_get_cxp_usuario_id",
+              "_month_span_inclusive",
+              "_normalizar_importe_decision",
+              "_parse_cxp_factura_ref",
+              "_validar_fecha_corte",
+              "actualizar_decision_pago",
+              "actualizar_decision_pago_masivo",
+              "autorizar_decision_pago",
+              "get_decision_dashboard",
+              "get_decision_dashboard_drilldown",
+              "get_factura_detalle",
+              "get_resumen_cuentas_por_pagar",
+              "listar_facturas_pendientes",
+              "listar_proveedores_con_saldo",
+              "listar_sucursales_cxp",
+              "set_finanzas_repository",
+              "set_mpro_repository",
+              "set_softrestaurant_repository"
+            ],
+            "tables_referenced": [
+              "Compras_Recepciones",
+              "Finanzas_CxP_DecisionesPago",
+              "Finanzas_CxP_PagosOrigenQueue",
+              "Finanzas_CxP_Sync",
+              "Proveedor_Catalogo",
+              "Unidades_Negocio",
+              "Usuario_Autorizaciones",
+              "Usuario_AutorizacionesDetalle",
+              "Usuario_TiposAutorizacion",
+              "sp_Usuario_CrearAutorizacion",
+              "sp_Usuario_ResolverAutorizacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.security",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "server",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "cliente",
+              "estado",
+              "mpro",
+              "softrestaurant",
+              "sync"
+            ],
+            "path": "backend/modules/finanzas/health.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/quick",
+              "/servers/{server_id}",
+              "/tables"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "check_edarsahub_tables",
+              "check_server_connectivity",
+              "get_finanzas_health",
+              "get_finanzas_health_quick",
+              "get_server_health",
+              "get_tables_status"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.server_registry",
+              "datetime",
+              "logging",
+              "os",
+              "pytds",
+              "sys",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "insert",
+              "update",
+              "upsert"
+            ],
+            "path": "backend/modules/finanzas/historical_kpis_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "check_table_exists",
+              "create_table_if_not_exists",
+              "get_edarsahub_connection",
+              "get_edarsahub_server",
+              "get_finanzas_historico_stats",
+              "upsert_finanzas_kpi_historico"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.finanzas.access",
+              "modules.finanzas.repository_ingresos_edarsahub",
+              "pydantic",
+              "secrets",
+              "typing"
+            ],
+            "integrations": [
+              "bbva",
+              "mpro",
+              "netpay",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "movimiento",
+              "mpro",
+              "proveedor",
+              "rbac",
+              "softrestaurant",
+              "sync"
+            ],
+            "path": "backend/modules/finanzas/ingresos.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/cargar-estado-cuenta",
+              "/config-comisiones",
+              "/cortes-caja",
+              "/cortes-caja/{corte_id}/deposito-efectivo",
+              "/cortes-caja/{corte_id}/deposito-tarjetas",
+              "/movimientos-banco",
+              "/resumen-comisiones",
+              "/saldos-por-depositar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConciliarMovimiento",
+              "RegistrarDepositoEfectivo",
+              "_listar_cortes_demo",
+              "calcular_comision_con_iva",
+              "calcular_fecha_deposito_efectivo",
+              "calcular_fecha_deposito_tarjeta",
+              "cargar_estado_cuenta",
+              "demo_choice",
+              "demo_randint",
+              "demo_random",
+              "demo_uniform",
+              "generar_cortes_caja_demo",
+              "get_config_comisiones",
+              "get_repo",
+              "get_resumen_comisiones",
+              "get_saldos_por_depositar",
+              "get_user_sucursales_permitidas",
+              "get_user_unidades_permitidas",
+              "listar_cortes_caja",
+              "listar_movimientos_banco",
+              "registrar_deposito_efectivo",
+              "registrar_deposito_tarjetas",
+              "resumen_tipo",
+              "set_finanzas_repository"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "update"
+            ],
+            "path": "backend/modules/finanzas/models_bancarios.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BancoResponse",
+              "CuentaBancariaCreate",
+              "CuentaBancariaDesactivar",
+              "CuentaBancariaResponse",
+              "CuentaBancariaUpdate",
+              "HistorialAccion",
+              "HistorialSaldoResponse",
+              "ListaCuentasResponse",
+              "ListaSaldosResponse",
+              "SaldoBancarioCancelar",
+              "SaldoBancarioCorregir",
+              "SaldoBancarioCreate",
+              "SaldoBancarioResponse",
+              "SaldoTotalResponse",
+              "UltimoSaldoResponse",
+              "validar_clabe",
+              "validar_fecha_no_futura",
+              "validar_moneda",
+              "validar_numero_cuenta"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "hashlib",
+              "json",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "estado",
+              "sync",
+              "update",
+              "upsert"
+            ],
+            "path": "backend/modules/finanzas/propinas_tpv/cache_manager.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "PropinasCacheManager",
+              "__init__",
+              "_es_cache_valido",
+              "_generar_cache_key",
+              "crear_indices",
+              "get_config_cache",
+              "get_detalle_cache",
+              "get_listado_cache",
+              "get_resumen_cache",
+              "invalidar_configs",
+              "invalidar_detalle",
+              "invalidar_listados",
+              "invalidar_resumenes",
+              "invalidar_todo",
+              "obtener_stats",
+              "set_config_cache",
+              "set_detalle_cache",
+              "set_listado_cache",
+              "set_resumen_cache"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "enum",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "softrestaurant",
+              "update"
+            ],
+            "path": "backend/modules/finanzas/propinas_tpv/models.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AlcanceConfig",
+              "CalculoComision",
+              "Config",
+              "EstadoCuadre",
+              "EstadoCuadreInfo",
+              "FormasPagoTPV",
+              "MetodoPago",
+              "OrigenDatos",
+              "ParametrosConfig",
+              "PropinasConfigBase",
+              "PropinasConfigCreate",
+              "PropinasConfigInDB",
+              "PropinasControlBase",
+              "PropinasControlCreate",
+              "PropinasControlInDB",
+              "PropinasControlResponse",
+              "PropinasListResponse",
+              "RegistrarPagoRequest",
+              "RegistroPago",
+              "ResumenPropinasResponse",
+              "SincronizarRequest",
+              "SincronizarResponse",
+              "TipoAlcanceConfig",
+              "TipoDatoOrigen",
+              "VigenciaConfig"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "modules.finanzas.sql_subprocess_helper",
+              "schema_detector",
+              "schema_detector_subprocess",
+              "typing"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "insert",
+              "softrestaurant",
+              "sync",
+              "update",
+              "upsert"
+            ],
+            "path": "backend/modules/finanzas/propinas_tpv/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "PropinasTPVRepository",
+              "__init__",
+              "actualizar_config",
+              "contar_propinas",
+              "crear_config",
+              "crear_indices",
+              "crear_o_actualizar_propina",
+              "detectar_esquema_servidor",
+              "get_propinas_cortes_defensivo",
+              "get_propinas_cortes_softrestaurant",
+              "get_propinas_cortes_subprocess",
+              "listar_configs",
+              "obtener_config_vigente",
+              "obtener_propina_por_id",
+              "obtener_propinas",
+              "obtener_resumen",
+              "registrar_pago"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "logging",
+              "os",
+              "pathlib",
+              "pymssql",
+              "re",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "folio",
+              "insert",
+              "mpro",
+              "rbac",
+              "softrestaurant",
+              "sync"
+            ],
+            "path": "backend/modules/finanzas/propinas_tpv/repository_edarsahub.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "PropinasTPVRepositoryEdarsahub",
+              "__init__",
+              "_get_connection",
+              "_load_env",
+              "_transformar_propina",
+              "obtener_detalle",
+              "obtener_formas_pago",
+              "obtener_propina_por_id",
+              "obtener_propinas",
+              "obtener_resumen",
+              "obtener_status_sincronizacion",
+              "obtener_unidades_disponibles"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.security",
+              "core.server_registry",
+              "core.unidades_service",
+              "fastapi",
+              "logging",
+              "models",
+              "server",
+              "service",
+              "typing"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "rbac",
+              "softrestaurant",
+              "sync"
+            ],
+            "path": "backend/modules/finanzas/propinas_tpv/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/config",
+              "/config/all",
+              "/config/{config_id}",
+              "/detectar-esquema-todos",
+              "/detectar-esquema/{server_id}",
+              "/health",
+              "/inicializar",
+              "/preview",
+              "/resumen",
+              "/sincronizar",
+              "/{propina_id}",
+              "/{propina_id}/pago"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_empresas_codigos_sql",
+              "_get_server_from_registry",
+              "_list_softrestaurant_servers",
+              "actualizar_config",
+              "crear_config",
+              "detectar_esquema",
+              "detectar_esquema_todos",
+              "get_db",
+              "get_user_server_ids_permitidos",
+              "health_check",
+              "inicializar_modulo",
+              "listar_configs",
+              "listar_propinas",
+              "obtener_config",
+              "obtener_propina",
+              "preview_propinas",
+              "registrar_pago",
+              "resumen_propinas",
+              "sincronizar_propinas"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "models",
+              "modules.finanzas.access",
+              "repository_edarsahub",
+              "sql_repository",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "mpro",
+              "rbac",
+              "softrestaurant",
+              "sync",
+              "update"
+            ],
+            "path": "backend/modules/finanzas/propinas_tpv/routes_edarsahub.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/config",
+              "/config/all",
+              "/config/{config_id}",
+              "/detalle",
+              "/formas-pago",
+              "/health",
+              "/listado",
+              "/resumen",
+              "/status",
+              "/unidades",
+              "/{propina_id}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_config_repo",
+              "_config_request_to_sql",
+              "_enum_value",
+              "actualizar_config_v2",
+              "crear_config_v2",
+              "detalle_propinas_edarsahub",
+              "formas_pago_disponibles",
+              "get_unidades_permitidas_rbac",
+              "get_user_v2",
+              "health_check",
+              "listado_propinas_edarsahub",
+              "listar_configs_v2",
+              "obtener_config_v2",
+              "obtener_propina_por_id",
+              "resumen_propinas_edarsahub",
+              "status_sincronizacion",
+              "unidades_disponibles"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.security",
+              "core.server_registry",
+              "core.unidades_service",
+              "fastapi",
+              "logging",
+              "models",
+              "server",
+              "service",
+              "service_sql",
+              "typing"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "insert",
+              "softrestaurant",
+              "sync"
+            ],
+            "path": "backend/modules/finanzas/propinas_tpv/routes_sql.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/cache/invalidar",
+              "/cache/stats",
+              "/config",
+              "/config/all",
+              "/config/{config_id}",
+              "/detectar-esquema-todos",
+              "/detectar-esquema/{server_id}",
+              "/health",
+              "/inicializar-sql",
+              "/preview",
+              "/resumen",
+              "/sincronizar",
+              "/{propina_id}",
+              "/{propina_id}/pago"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_server_from_registry",
+              "_list_softrestaurant_servers",
+              "actualizar_config_sql",
+              "cache_stats",
+              "crear_config_sql",
+              "detectar_esquema",
+              "detectar_esquema_todos",
+              "get_db",
+              "health_check_sql",
+              "inicializar_modulo_sql",
+              "invalidar_cache",
+              "listar_configs_sql",
+              "listar_propinas_sql",
+              "obtener_config_sql",
+              "obtener_propina_sql",
+              "preview_propinas",
+              "registrar_pago_sql",
+              "resumen_propinas_sql",
+              "sincronizar_propinas_sql"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.unidades_service",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "folio",
+              "movimiento",
+              "softrestaurant"
+            ],
+            "path": "backend/modules/finanzas/propinas_tpv/schema_detector.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "SoftRestaurantSchemaDetector",
+              "_build_schema",
+              "_check_compatibility",
+              "_get_compatibility_issues",
+              "build_propinas_query",
+              "clear_cache",
+              "detect_schema",
+              "get_schema_summary"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "logging",
+              "modules.finanzas.sql_subprocess_helper",
+              "typing"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "folio",
+              "softrestaurant",
+              "sync"
+            ],
+            "path": "backend/modules/finanzas/propinas_tpv/schema_detector_subprocess.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "SoftRestaurantSchemaDetectorSubprocess",
+              "_build_schema",
+              "clear_cache",
+              "detect_all_schemas",
+              "detect_schema"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "models",
+              "repository",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "mpro",
+              "softrestaurant",
+              "sync",
+              "update",
+              "upsert"
+            ],
+            "path": "backend/modules/finanzas/propinas_tpv/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "PropinasTPVService",
+              "__init__",
+              "actualizar_config",
+              "crear_config",
+              "inicializar_modulo",
+              "listar_configs",
+              "obtener_config",
+              "obtener_propinas",
+              "obtener_resumen",
+              "registrar_pago",
+              "sincronizar_propinas"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "cache_manager",
+              "core.corporate_filters.service",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "models",
+              "repository",
+              "sql_repository",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "insert",
+              "softrestaurant",
+              "sync",
+              "trazabilidad",
+              "update",
+              "upsert"
+            ],
+            "path": "backend/modules/finanzas/propinas_tpv/service_sql.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "PropinasTPVSQLService",
+              "__init__",
+              "actualizar_config",
+              "crear_config",
+              "inicializar_modulo",
+              "invalidar_cache_completo",
+              "listar_configs",
+              "obtener_cache_stats",
+              "obtener_config",
+              "obtener_propina_por_id",
+              "obtener_propinas",
+              "obtener_resumen",
+              "registrar_pago",
+              "sincronizar_propinas"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "sql_scripts",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "insert",
+              "softrestaurant",
+              "sync",
+              "update",
+              "upsert"
+            ],
+            "path": "backend/modules/finanzas/propinas_tpv/sql_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "PropinasTPVSQLRepository",
+              "__init__",
+              "_config_default",
+              "_escape_sql",
+              "_execute_hub_query",
+              "_format_config",
+              "_format_propinas_result",
+              "_get_default_config",
+              "_registrar_historial",
+              "_resumen_vacio",
+              "actualizar_config",
+              "contar_propinas",
+              "crear_config",
+              "crear_tablas",
+              "get_edarsa_hub_server",
+              "listar_configs",
+              "obtener_config_vigente",
+              "obtener_propina_por_id",
+              "obtener_propinas",
+              "obtener_resumen",
+              "registrar_pago",
+              "upsert_propina"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "insert",
+              "mpro",
+              "softrestaurant",
+              "trazabilidad",
+              "update"
+            ],
+            "path": "backend/modules/finanzas/propinas_tpv/sql_scripts.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "insert",
+              "movimiento",
+              "proveedor",
+              "sync",
+              "update"
+            ],
+            "path": "backend/modules/finanzas/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FinanzasRepository",
+              "__init__",
+              "actualizar_config_tpv",
+              "actualizar_decision_pago",
+              "actualizar_decision_pago_masivo",
+              "crear_tablas",
+              "get_config_tpv_sucursal",
+              "get_cortes_caja",
+              "get_facturas_pendientes",
+              "get_finanzas_repository",
+              "get_todas_config_tpv",
+              "inicializar_config_tpv",
+              "registrar_deposito_efectivo",
+              "registrar_deposito_tarjetas"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "insert",
+              "update"
+            ],
+            "path": "backend/modules/finanzas/repository_bancarios.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_execute_edarsahub",
+              "_get_valid_usuario_id",
+              "_sql_literal",
+              "_unidad_scope_condition",
+              "actualizar_cuenta_bancaria",
+              "crear_cuenta_bancaria",
+              "crear_saldo_bancario",
+              "cuenta_tiene_saldos_vigentes",
+              "desactivar_cuenta_bancaria",
+              "existe_alias",
+              "existe_numero_cuenta",
+              "existe_saldo_vigente",
+              "get_banco_by_id",
+              "get_bancos_activos",
+              "get_cuenta_by_id",
+              "get_cuentas_bancarias",
+              "get_empresa_id_for_unidad",
+              "get_historial_saldo",
+              "get_saldo_bancario_total",
+              "get_saldo_by_id",
+              "get_saldos_cuenta",
+              "get_ultimo_saldo_vigente",
+              "marcar_saldo_cancelado",
+              "marcar_saldo_corregido"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_registry",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "time",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "estado",
+              "folio"
+            ],
+            "path": "backend/modules/finanzas/repository_cortes_caja_edarsahub.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CortesCajaRepositoryError",
+              "RepositoryCortesCajaEdarsahub",
+              "__init__",
+              "_formatear_corte",
+              "calcular_fecha_deposito_esperada",
+              "contar_cortes",
+              "get_cortes_caja_repository_sql",
+              "get_edarsahub_connection",
+              "listar_cortes_caja",
+              "listar_cortes_por_server_id",
+              "obtener_cortes_todos_servidores"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.source_resolver",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "server",
+              "time",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "movimiento",
+              "mpro",
+              "softrestaurant",
+              "sync"
+            ],
+            "path": "backend/modules/finanzas/repository_cortes_z.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RepositoryCortesZ",
+              "__init__",
+              "_execute_query_with_server_id",
+              "_find_server_id_by_name",
+              "_get_active_server_ids",
+              "_get_cortes_mpro_by_server",
+              "_get_cortes_softrest_by_server",
+              "_get_server_config",
+              "get_all_cortes_z",
+              "get_all_cortes_z_from_servers",
+              "get_all_cortes_z_with_status",
+              "get_cortes_z_by_server_id",
+              "get_cortes_z_mpro",
+              "get_cortes_z_repository",
+              "get_cortes_z_softrestaurant"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "logging",
+              "os",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "folio",
+              "idempotencia",
+              "insert",
+              "sync",
+              "trazabilidad",
+              "update"
+            ],
+            "path": "backend/modules/finanzas/repository_cuadres_z_edarsahub.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RepositoryCuadresZEdarsahub",
+              "__init__",
+              "_formatear_cuadre",
+              "_mapear_estatus_cuadre",
+              "_mapear_estatus_tesoreria",
+              "actualizar_cuadre_z",
+              "calcular_hash_origen",
+              "crear_cuadre_z",
+              "get_cuadres_z_repository_sql",
+              "get_edarsahub_connection",
+              "listar_cuadres_z",
+              "listar_cuadres_z_por_server_id",
+              "obtener_cuadre_z",
+              "obtener_estatus_cuadre_z",
+              "obtener_estatus_tesoreria",
+              "obtener_resumen_cuadres_z",
+              "obtener_resumen_por_server_id",
+              "registrar_log_operacion",
+              "resolver_server_id_a_unidad",
+              "validar_hash_origen"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "os",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "mpro",
+              "rbac",
+              "softrestaurant",
+              "sync"
+            ],
+            "path": "backend/modules/finanzas/repository_ingresos_edarsahub.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RepositorioIngresosEDARSAHUB",
+              "__init__",
+              "_get_connection",
+              "_get_estatus_nombre",
+              "_transform_corte",
+              "format_date",
+              "get_cortes_caja",
+              "get_edarsahub_connection",
+              "get_repositorio_ingresos",
+              "get_resumen_por_unidad",
+              "get_totales_por_rango",
+              "get_unidad_por_nombre",
+              "get_unidades_activas"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "sql_subprocess_helper",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "comentario",
+              "estado",
+              "folio",
+              "mpro",
+              "proveedor",
+              "sync",
+              "trazabilidad"
+            ],
+            "path": "backend/modules/finanzas/repository_mpro.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FinanzasRepositoryMPRO",
+              "__init__",
+              "_execute_query",
+              "_get_credentials",
+              "get_cuentas_por_pagar",
+              "get_proveedores",
+              "get_resumen_antiguedad",
+              "get_resumen_por_proveedor",
+              "get_resumen_por_sucursal",
+              "get_sucursales"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "proveedor",
+              "sync",
+              "update"
+            ],
+            "path": "backend/modules/finanzas/repository_real.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FinanzasRepositoryReal",
+              "__init__",
+              "_execute_query",
+              "_get_server",
+              "get_config_tpv",
+              "get_cortes_caja",
+              "get_cuentas_por_pagar",
+              "get_cxp_por_proveedor",
+              "get_estatus_cierre",
+              "get_estatus_pago",
+              "get_pendientes_deposito",
+              "get_resumen_cxp",
+              "get_resumen_ingresos",
+              "get_sucursales",
+              "marcar_deposito"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "logging",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "os",
+              "sql_subprocess_helper",
+              "typing"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "folio",
+              "proveedor",
+              "softrestaurant",
+              "sync"
+            ],
+            "path": "backend/modules/finanzas/repository_softrestaurant.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FinanzasRepositorySoftRestaurant",
+              "__init__",
+              "_build_softrestaurant_servers",
+              "_execute_query",
+              "_execute_query_subprocess",
+              "_get_connection",
+              "_resolve_sucursal_filter",
+              "get_cuentas_por_pagar",
+              "get_nombre_tipo",
+              "get_resumen_antiguedad",
+              "get_resumen_por_sucursal",
+              "get_resumen_por_tipo",
+              "get_sucursales",
+              "get_tipo_proveedor"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.security",
+              "datetime",
+              "decimal",
+              "fastapi",
+              "logging",
+              "modules.finanzas.access",
+              "modules.finanzas.models_bancarios",
+              "modules.finanzas.repository_bancarios",
+              "modules.finanzas.utils_bancarios",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "estado",
+              "sync"
+            ],
+            "path": "backend/modules/finanzas/saldos_bancarios.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/cuentas-bancarias/{cuenta_id}/saldo-actual",
+              "/cuentas-bancarias/{cuenta_id}/saldos",
+              "/saldos-bancarios",
+              "/saldos-bancarios/total",
+              "/saldos-bancarios/{saldo_id}/cancelar",
+              "/saldos-bancarios/{saldo_id}/corregir",
+              "/saldos-bancarios/{saldo_id}/historial"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "cancelar_saldo",
+              "capturar_saldo",
+              "corregir_saldo",
+              "get_user_id",
+              "listar_saldos_cuenta",
+              "obtener_historial_saldo",
+              "obtener_saldo_actual",
+              "obtener_saldo_total",
+              "require_cuenta_scope"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "base64",
+              "codecs",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "json",
+              "locale",
+              "os",
+              "pytds",
+              "sys",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "write"
+            ],
+            "path": "backend/modules/finanzas/sql_query_worker.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "execute_query",
+              "json_serializer",
+              "main",
+              "parse_connection_string"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "base64",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "json",
+              "pytds",
+              "sys",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "mpro"
+            ],
+            "path": "backend/modules/finanzas/sql_query_worker_secure.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "execute_query",
+              "json_serializer",
+              "main",
+              "parse_connection_string"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "base64",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "json",
+              "logging",
+              "os",
+              "pathlib",
+              "sys",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "mpro",
+              "sync"
+            ],
+            "path": "backend/modules/finanzas/sql_subprocess_helper.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "execute_sql_subprocess",
+              "execute_sql_subprocess_batch",
+              "execute_sql_subprocess_secure"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "logging",
+              "modules.finanzas.canonical_sync_units",
+              "os",
+              "pymssql",
+              "sys",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "idempotencia",
+              "insert",
+              "mpro",
+              "sync",
+              "trazabilidad",
+              "update"
+            ],
+            "path": "backend/modules/finanzas/sync_cortes_mpro.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "calcular_hash_origen_mpro",
+              "extraer_cortes_mpro",
+              "get_edarsahub_connection",
+              "get_mpro_connection",
+              "get_unidad_info_mpro",
+              "registrar_sync_log_mpro",
+              "sincronizar_a_edarsahub_mpro",
+              "sincronizar_todas_unidades_mpro",
+              "sincronizar_unidad_mpro"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.db",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "logging",
+              "modules.finanzas.canonical_sync_units",
+              "os",
+              "pymssql",
+              "pytds",
+              "sys",
+              "typing"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "folio",
+              "idempotencia",
+              "insert",
+              "softrestaurant",
+              "sync",
+              "trazabilidad",
+              "update"
+            ],
+            "path": "backend/modules/finanzas/sync_cortes_softrestaurant.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "calcular_hash_origen",
+              "execute_sr_query",
+              "extraer_turnos_softrestaurant",
+              "get_edarsahub_connection",
+              "get_softrestaurant_connection",
+              "get_unidad_connection_info",
+              "parse_sql_server_host",
+              "registrar_sync_log",
+              "sincronizar_a_edarsahub",
+              "sincronizar_todas_unidades_softrestaurant",
+              "sincronizar_unidad_softrestaurant"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "logging",
+              "modules.finanzas.canonical_sync_units",
+              "os",
+              "pathlib",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "folio",
+              "idempotencia",
+              "insert",
+              "mpro",
+              "sync"
+            ],
+            "path": "backend/modules/finanzas/sync_propinas_mpro.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_load_env",
+              "calcular_hash_propina_mpro",
+              "cargar_propinas_mpro_edarsahub",
+              "extraer_propinas_tpv_mpro",
+              "get_edarsahub_connection",
+              "get_mpro_connection",
+              "get_unidad_mpro_connection_info",
+              "registrar_synclog_propinas_mpro",
+              "sincronizar_propinas_mpro",
+              "sincronizar_todas_unidades_mpro"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.db",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "logging",
+              "modules.finanzas.canonical_sync_units",
+              "os",
+              "pathlib",
+              "pymssql",
+              "pytds",
+              "typing"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "folio",
+              "idempotencia",
+              "insert",
+              "softrestaurant",
+              "sync",
+              "upsert"
+            ],
+            "path": "backend/modules/finanzas/sync_propinas_softrestaurant.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_load_env",
+              "calcular_hash_propina",
+              "cargar_propinas_edarsahub",
+              "execute_sr_query",
+              "extraer_propinas_tpv_softrestaurant",
+              "get_edarsahub_connection",
+              "get_softrestaurant_connection",
+              "get_unidad_connection_info",
+              "parse_sql_server_host",
+              "registrar_synclog_propinas",
+              "sincronizar_propinas_softrestaurant",
+              "sincronizar_todas_unidades_sr"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "base64",
+              "core.auditoria_helpers",
+              "core.security",
+              "datetime",
+              "fastapi",
+              "logging",
+              "os",
+              "repository_cortes_caja_edarsahub",
+              "repository_cortes_z",
+              "repository_cuadres_z_edarsahub",
+              "tesoreria_access",
+              "tesoreria_models",
+              "typing"
+            ],
+            "integrations": [
+              "bbva"
+            ],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "rbac",
+              "sync",
+              "update"
+            ],
+            "path": "backend/modules/finanzas/tesoreria.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/cortes-z",
+              "/cortes-z/{sucursal}/{folio}",
+              "/cuadres",
+              "/cuadres/resumen",
+              "/cuadres/{cuadre_id}",
+              "/cuadres/{cuadre_id}/ficha-deposito",
+              "/cuadres/{cuadre_id}/validar-ficha",
+              "/sucursales"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "actualizar_cuadre",
+              "crear_cuadre",
+              "eliminar_cuadre",
+              "listar_cortes_z",
+              "listar_cuadres",
+              "listar_sucursales",
+              "obtener_corte_z",
+              "obtener_cuadre",
+              "obtener_resumen_cuadres",
+              "subir_ficha_deposito",
+              "validar_ficha_deposito"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.rbac_sql.service",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "dataclasses",
+              "fastapi",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "mpro",
+              "rbac",
+              "softrestaurant"
+            ],
+            "path": "backend/modules/finanzas/tesoreria_access.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TesoreriaAccessResolutionError",
+              "TesoreriaAccessScope",
+              "TesoreriaUnit",
+              "_coerce_rbac_flag",
+              "_extract_values",
+              "_has_global_access",
+              "_load_canonical_units",
+              "_normalize",
+              "_resolve_limited_units",
+              "_resolve_permission_scope",
+              "_resolve_usuario_id",
+              "branch_key",
+              "ensure_any_access",
+              "filter_records",
+              "identifiers",
+              "match_record",
+              "matches_identifier",
+              "matches_server_id",
+              "matches_unit_identifier",
+              "require_record",
+              "require_server_id",
+              "require_tesoreria_access_scope",
+              "require_unit_identifier",
+              "resolve_tesoreria_access_scope",
+              "to_frontend_dict",
+              "to_sucursales",
+              "unit_ids"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Unidades_Negocio",
+              "Usuario_Roles"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "enum",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estado",
+              "folio",
+              "mpro",
+              "softrestaurant",
+              "update"
+            ],
+            "path": "backend/modules/finanzas/tesoreria_models.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConteoBilletes",
+              "ConteoEfectivo",
+              "ConteoMonedas",
+              "CorteZData",
+              "CuadreCorteZCreate",
+              "CuadreCorteZResponse",
+              "CuadreCorteZUpdate",
+              "EstadoCuadre",
+              "FichaDeposito",
+              "monto_a_depositar",
+              "total"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.rh",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "modules.rh.importador.repository",
+              "modules.rh.importador.routes",
+              "modules.rh.repository",
+              "modules.rh.routes",
+              "modules.rh.schemas",
+              "modules.rh.service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "update"
+            ],
+            "path": "backend/modules/rh/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "get_importador_router",
+              "get_router",
+              "init_rh_module"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.rh",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "repository",
+              "schemas",
+              "service"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "estado",
+              "insert",
+              "mpro"
+            ],
+            "path": "backend/modules/rh/importador/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.rh",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "estado",
+              "insert",
+              "mpro",
+              "update"
+            ],
+            "path": "backend/modules/rh/importador/aprobacion_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "aprobar_lote",
+              "aprobar_registro",
+              "escape_sql",
+              "get_hub_connection",
+              "observar_registro",
+              "obtener_estadisticas_staging",
+              "obtener_excluidos",
+              "obtener_incompletos",
+              "obtener_pendientes_aprobacion",
+              "obtener_registro_staging",
+              "rechazar_registro",
+              "registrar_bitacora_aprobacion",
+              "validar_candidato_aprobacion",
+              "verificar_duplicado_en_maestro"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.rh",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "pymssql",
+              "re",
+              "typing",
+              "unicodedata"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "estado",
+              "insert",
+              "mpro",
+              "update"
+            ],
+            "path": "backend/modules/rh/importador/homologacion_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "actualizar_staging_con_ids",
+              "crear_tabla_equivalencias",
+              "ejecutar_homologacion_completa",
+              "escape_sql",
+              "get_hub_connection",
+              "normalizar_texto",
+              "obtener_equivalencias",
+              "obtener_estadisticas_homologacion",
+              "poblar_catalogo_departamentos",
+              "poblar_catalogo_puestos",
+              "poblar_catalogo_sucursales",
+              "verificar_homologacion_completa"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.rh",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "estado",
+              "insert",
+              "mpro",
+              "sync",
+              "trazabilidad",
+              "update"
+            ],
+            "path": "backend/modules/rh/importador/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "actualizar_bitacora",
+              "actualizar_estado_staging",
+              "buscar_coincidencias_parciales",
+              "buscar_duplicados_por_curp",
+              "buscar_duplicados_por_nombre_sucursal",
+              "buscar_duplicados_por_rfc",
+              "crear_tablas_importacion",
+              "escape_sql_string",
+              "execute_hub_query",
+              "get_edarsa_hub_server",
+              "init_importador_repository",
+              "insertar_bitacora",
+              "insertar_staging",
+              "listar_bitacora",
+              "listar_staging"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.rh",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "aprobacion_service",
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "homologacion_service",
+              "logging",
+              "repository",
+              "schemas",
+              "service",
+              "time",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "estado",
+              "insert",
+              "mpro",
+              "rbac",
+              "sync",
+              "update"
+            ],
+            "path": "backend/modules/rh/importador/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/bitacora",
+              "/excel/preview",
+              "/excel/staging",
+              "/homologacion/actualizar-staging",
+              "/homologacion/ejecutar",
+              "/homologacion/equivalencias",
+              "/homologacion/estadisticas",
+              "/homologacion/verificar",
+              "/staging",
+              "/staging/aprobar",
+              "/staging/aprobar-lote",
+              "/staging/aprobar/{staging_id}",
+              "/staging/estadisticas",
+              "/staging/excluidos",
+              "/staging/incompletos",
+              "/staging/observar/{staging_id}",
+              "/staging/pendientes",
+              "/staging/rechazar/{staging_id}",
+              "/staging/{staging_id}",
+              "/tablas/crear",
+              "/tablas/script"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "actualizar_registro_staging",
+              "aprobar_y_cargar_maestro",
+              "cargar_excel_a_staging",
+              "crear_tablas_apoyo",
+              "get_equivalencias",
+              "get_estadisticas_homologacion",
+              "get_estadisticas_staging",
+              "get_excluidos",
+              "get_incompletos",
+              "get_pendientes_aprobacion",
+              "get_registro_detalle",
+              "get_verificar_homologacion",
+              "listar_registros_staging",
+              "obtener_script_tablas",
+              "post_actualizar_staging_ids",
+              "post_aprobar_lote",
+              "post_aprobar_registro",
+              "post_ejecutar_homologacion",
+              "post_observar_registro",
+              "post_rechazar_registro",
+              "preview_importacion_excel",
+              "ver_bitacora"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.rh",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "enum",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "estado",
+              "insert",
+              "mpro",
+              "trazabilidad",
+              "update"
+            ],
+            "path": "backend/modules/rh/importador/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ClasificacionRegistro",
+              "ConfirmarCargaRequest",
+              "ConfirmarCargaResponse",
+              "FiltrosStaging",
+              "ImportacionBitacoraCreate",
+              "ImportacionBitacoraResponse",
+              "ImportacionStagingCreate",
+              "ImportacionStagingResponse",
+              "ImportacionStagingUpdate",
+              "PreviewImportacion",
+              "ResultadoValidacion",
+              "UploadExcelRequest",
+              "clasificacion_valida",
+              "curp_normalize",
+              "estado_valido",
+              "nombre_not_empty",
+              "rfc_normalize",
+              "sexo_normalize"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.rh",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "io",
+              "logging",
+              "openpyxl",
+              "pandas",
+              "re",
+              "repository",
+              "schemas",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "estado",
+              "insert",
+              "sync"
+            ],
+            "path": "backend/modules/rh/importador/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ImportadorExcelService",
+              "__init__",
+              "_cargar_catalogos",
+              "_get_server",
+              "_resolver_puesto_id",
+              "_resolver_sucursal_id",
+              "cargar_a_staging",
+              "extraer_datos_excel",
+              "generar_preview",
+              "validar_curp",
+              "validar_nombre",
+              "validar_rfc",
+              "validar_y_clasificar_registro"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.rh",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.unidades_service",
+              "logging",
+              "os",
+              "re",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "estado",
+              "insert",
+              "mpro",
+              "rbac",
+              "sync",
+              "update"
+            ],
+            "path": "backend/modules/rh/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "escape_sql_string",
+              "execute_hub_query",
+              "execute_hub_query_params",
+              "get_db",
+              "get_edarsa_hub_server",
+              "get_edarsa_hub_server_sync",
+              "get_script_reclutamiento",
+              "init_rh_repository",
+              "query_actualizar_candidato",
+              "query_actualizar_colaborador",
+              "query_actualizar_estatus_flujo",
+              "query_actualizar_puesto",
+              "query_actualizar_tipo_incidencia",
+              "query_actualizar_vacante",
+              "query_asistencias_colaborador",
+              "query_auditoria_colaborador",
+              "query_crear_candidato",
+              "query_crear_colaborador",
+              "query_crear_flujo_nomina",
+              "query_crear_incidencia",
+              "query_crear_puesto",
+              "query_crear_tipo_incidencia",
+              "query_crear_vacante",
+              "query_dar_baja_colaborador",
+              "query_dashboard_reclutamiento",
+              "query_dashboard_rh",
+              "query_desactivar_tipo_incidencia",
+              "query_eliminar_candidato",
+              "query_eliminar_puesto",
+              "query_eliminar_vacante",
+              "query_incidencias_colaborador",
+              "query_insertar_incidencia_importacion",
+              "query_listar_asistencias",
+              "query_listar_auditoria_fiscal",
+              "query_listar_candidatos",
+              "query_listar_colaboradores",
+              "query_listar_flujos_nomina",
+              "query_listar_incidencias",
+              "query_listar_puestos",
+              "query_listar_sucursales",
+              "query_listar_tipos_incidencias",
+              "query_listar_vacantes",
+              "query_obtener_colaborador",
+              "query_obtener_colaboradores_activos_para_importacion",
+              "query_obtener_estatus_flujo",
+              "query_obtener_tipos_incidencias_validos",
+              "query_registrar_asistencia",
+              "query_validar_asistencia",
+              "query_verificar_colaboradores_puesto",
+              "query_verificar_flujo_existente",
+              "validate_identifier"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 100,
+          "scanned_files": 106,
+          "skipped_sensitive": 75
+        },
+        "truncated": true
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-21T20:58:22Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
