@@ -1,0 +1,59 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "backend/tests/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "marketing",
+          "instagram",
+          "facebook",
+          "google",
+          "tripadvisor",
+          "opentable",
+          "sentiment",
+          "benchmark",
+          "oauth",
+          "scheduler",
+          "rbac",
+          "metrics",
+          "snapshot",
+          "brand"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-MARKETING_CX-REPOSITORY_CONTRACT_AUDIT_BOUNDE-098A732A2FF4D8DAB516",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY el estado real de EDARSAHUB BOS para Marketing/CX enfocado en Brand & Competitive Intelligence. Reconciliar infraestructura y contratos existentes antes de cualquier implementación. Identificar REUSE / ALIGN / CANONICALIZE / EXTEND / NEW para conexiones API/OAuth, Empresa/Unidad/Marca, secretos/tokens, RBAC, Scheduler, Universal Worker, Agent Harness Marketing/CX, modelos de métricas/snapshots, tablas o contratos de marketing existentes, AI Provider Router y errores arquitectónicos. Verificar capacidades existentes para Instagram, Facebook, Google Business/Reviews, Google Ads, Meta Ads, GA4, Tripadvisor, OpenTable, web intelligence, sentiment, share of voice y benchmarking competitivo. No modificar Producción ni crear infraestructura.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "MARKETING_CX",
+    "conflict_domains": [
+      "MARKETING_CX"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
