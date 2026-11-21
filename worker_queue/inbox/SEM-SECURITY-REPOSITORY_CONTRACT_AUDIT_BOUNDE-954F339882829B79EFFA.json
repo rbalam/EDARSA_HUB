@@ -1,0 +1,45 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 20,
+        "paths": [
+          "backend/modules/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "p1_validar_operaciones_v2_y_forgot_password.sh",
+          "password",
+          "credential"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-SECURITY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-954F339882829B79EFFA",
+  "mode": "READ_ONLY",
+  "objective": "Auditoría focalizada READ_ONLY de exposición de contraseña literal en script de autenticación versionado en GitHub público. Inspeccionar evidencias y controles existentes sin revelar secretos, probar credenciales, escribir archivos ni tocar Producción. No duplicar auditorías certificadas. Entregar evaluación de riesgo y remediación recomendada para aprobación humana; preservar Universal Worker, Repair Worker y Worker Auditor.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SECURITY",
+    "conflict_domains": [
+      "SECURITY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
