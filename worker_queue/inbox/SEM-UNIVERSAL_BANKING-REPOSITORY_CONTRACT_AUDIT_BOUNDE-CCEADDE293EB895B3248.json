@@ -1,0 +1,64 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/finanzas/",
+          "backend/modules/integrations_center/",
+          "backend/modules/integrations_runtime/",
+          "backend/tests/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "cuentas_bancarias",
+          "repository_bancarios",
+          "cuentas_por_pagar",
+          "Finanzas_CxP_PagosOrigenQueue",
+          "ingresos",
+          "movimientos-banco",
+          "cargar-estado-cuenta",
+          "Servidores_Conexiones",
+          "Sistema_Capacidades",
+          "Sync_Control_Ejecuciones",
+          "Sync_Control_Evidencias",
+          "secret_manager",
+          "scheduler",
+          "feature_flag",
+          "migration",
+          "router",
+          "RBAC",
+          "pytest",
+          "repository_contract_audit"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-UNIVERSAL_BANKING-REPOSITORY_CONTRACT_AUDIT_BOUNDE-CCEADDE293EB895B3248",
+  "mode": "READ_ONLY",
+  "objective": "Cerrar exclusivamente la evidencia faltante del Gate 2 de Universal Banking para definir el plan minimo de implementacion. Auditar solo contratos de routing, repository, migrations, scheduler, feature flags, RBAC, secret_manager, pruebas y puntos de extension de Finanzas e Integrations Runtime. No repetir discovery general, no modificar archivos, no ejecutar SQL, no crear tablas, no tocar Produccion. La salida debe permitir decidir exactamente que se extiende, que se crea minimamente y en que orden futuro.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "UNIVERSAL_BANKING",
+    "conflict_domains": [
+      "UNIVERSAL_BANKING"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
