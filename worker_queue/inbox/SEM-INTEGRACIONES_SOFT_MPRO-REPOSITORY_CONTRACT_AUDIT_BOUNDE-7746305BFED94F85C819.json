@@ -1,0 +1,66 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/automatizacion/",
+          "backend/modules/compras/",
+          "backend/modules/finanzas/",
+          "backend/modules/rh/",
+          "backend/modules/comercial/",
+          "backend/modules/sync_recetas/",
+          "backend/core/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "softrestaurant",
+          "mpro",
+          "cliente",
+          "proveedor",
+          "comentario",
+          "movimiento",
+          "sync",
+          "write",
+          "upsert",
+          "insert",
+          "update",
+          "idempotencia",
+          "rbac",
+          "trazabilidad",
+          "folio",
+          "estado",
+          "integracion"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-INTEGRACIONES_SOFT_MPRO-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7746305BFED94F85C819",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en READ_ONLY los contratos existentes de integracion SoftRestaurant y ManagementPro para el Gate 0 de certificacion de movimientos. Identificar los movimientos previstos y priorizar clientes, proveedores y comentarios; mapear rutas, servicios, repositorios, sincronizaciones, validaciones, RBAC, idempotencia, trazabilidad, estados y dependencias con Finanzas/Compras/RH/Comercial sin ejecutar escrituras en SoftRestaurant o MPRO. Determinar que componentes se reutilizan y donde existen riesgos de duplicidad o acoplamiento. No modificar codigo, SQL, credenciales, integraciones ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INTEGRACIONES_SOFT_MPRO",
+    "conflict_domains": [
+      "INTEGRACIONES_SOFT_MPRO"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
