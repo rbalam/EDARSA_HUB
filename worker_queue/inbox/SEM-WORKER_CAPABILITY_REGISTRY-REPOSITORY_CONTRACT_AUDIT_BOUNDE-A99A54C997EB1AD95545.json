@@ -1,0 +1,42 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "tools/mirror_sync/gate_chain_publisher.py"
+        ],
+        "search_terms": [
+          "capability"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_CAPABILITY_REGISTRY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-A99A54C997EB1AD95545",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en solo lectura el contrato de capability y validacion de paths del Universal Worker V4 para DEVELOPMENT_MUTATION_BOUNDED. No modificar archivos, refs, claims, worktrees, SQL ni Produccion. Identificar la causa de SEMANTIC_DEV_PATH_INVALID para tools/mirror_sync/gate_chain_publisher.py y devolver la regla efectiva de validacion y la siguiente reparacion canonica.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CAPABILITY_REGISTRY",
+    "conflict_domains": [
+      "WORKER_CAPABILITY_REGISTRY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
