@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/comercial/",
+          "backend/core/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "MPRO",
+          "unidad_negocio_id",
+          "ventas_sin_propina",
+          "source_status",
+          "fecha_operativa",
+          "130QRO",
+          "ORIGEN"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMERCIAL_MPRO-REPOSITORY_CONTRACT_AUDIT_BOUNDE-9446C611155B0F6459DE",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY contratos reales del Dashboard Comercial ORIGEN y 130QRO, rutas MPRO, filtros, fechas y fuente SQL canónica; entregar evidencia y causas raíz sin mutaciones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_MPRO",
+    "conflict_domains": [
+      "COMERCIAL_MPRO"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
