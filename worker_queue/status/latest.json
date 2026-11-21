@@ -3,44 +3,50 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "27e7901aec8e42a673206f94a44bb4a3fd26de07",
-  "generated_at_utc": "2026-11-21T06:25:30Z",
+  "development_sha": "9a2fa6e909458b39284e9b17b3d59ff6a6518a00",
+  "generated_at_utc": "2026-11-21T06:27:02Z",
   "history": {
-    "done_total_local": 1971,
+    "done_total_local": 1972,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1380,
-    "results_total_local": 3110
+    "results_total_local": 3111
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2116,
+      "age_seconds": 2208,
       "job_id": "EDARSAHUB-BOS-SEC-WS-AUTH-R5-20261121",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 35,
+      "age_seconds": 127,
       "job_id": "SEM-COMERCIAL_POS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B028739A1DD2E18F597D",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1875,
+      "age_seconds": 33,
+      "job_id": "SEM-SECURITY_RBAC-DEVELOPMENT_MUTATION_BOUNDED-320D904C9F15FE6BB964",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1968,
       "job_id": "SEM-TABLAJERIA-WORKER_RESULT_DETAIL_READ-F4ADB2FAD9DA717C0AAC",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 16,
+      "age_seconds": 108,
       "job_id": "SEM-VENTAS_COMERCIAL_POS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-2F2658B2F7609E542EEC",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "27e7901aec8e42a673206f94a44bb4a3fd26de07",
+  "local_development_sha": "9a2fa6e909458b39284e9b17b3d59ff6a6518a00",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -48,21 +54,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
-  "remote_development_sha": "27e7901aec8e42a673206f94a44bb4a3fd26de07",
+  "remote_development_sha": "9a2fa6e909458b39284e9b17b3d59ff6a6518a00",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-21T06:25:18Z",
-    "last_receive_utc": "2026-11-21T06:25:13Z",
-    "last_terminal_utc": "2026-11-21T06:25:13Z",
+    "last_cycle_utc": "2026-11-21T06:26:47Z",
+    "last_receive_utc": "2026-11-21T06:26:42Z",
+    "last_terminal_utc": "2026-11-21T06:26:29Z",
     "pid": "1055191",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "1d0fbc52710c01a98d7b53291ba10ae01234248b",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "27e7901aec8e42a673206f94a44bb4a3fd26de07",
+      "development_sha": "9a2fa6e909458b39284e9b17b3d59ff6a6518a00",
       "expected_generation": "20261117-universal-job-worker-lifecycle-v4",
       "generation_aligned": true,
       "production_touched": false,
