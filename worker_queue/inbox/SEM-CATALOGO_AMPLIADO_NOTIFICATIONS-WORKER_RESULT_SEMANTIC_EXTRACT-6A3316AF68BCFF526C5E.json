@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/CATALOGO-AMPLIADO-GATE8H-B-CANARY-ENDPOINT-R1-20261120.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CATALOGO_AMPLIADO_NOTIFICATIONS-WORKER_RESULT_SEMANTIC_EXTRACT-6A3316AF68BCFF526C5E",
+  "mode": "READ_ONLY",
+  "objective": "Extraer en modo READ_ONLY la evidencia semantica terminal del Gate 8H-B endpoint integrado para determinar la causa exacta de PENDING_AUDIT_EVIDENCE. No ejecutar canario, no modificar repositorio y no tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CATALOGO_AMPLIADO_NOTIFICATIONS",
+    "conflict_domains": [
+      "CATALOGO_AMPLIADO_NOTIFICATIONS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
