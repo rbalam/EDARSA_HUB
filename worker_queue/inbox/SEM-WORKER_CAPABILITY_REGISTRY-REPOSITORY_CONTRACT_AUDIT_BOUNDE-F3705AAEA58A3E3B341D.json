@@ -1,0 +1,46 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/worker_job_factory.py",
+          "tools/mirror_sync/worker_requester_rbac.py"
+        ],
+        "search_terms": [
+          "change_spec",
+          "allowed_roots"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_CAPABILITY_REGISTRY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-F3705AAEA58A3E3B341D",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en solo lectura los contratos canonicos de tools/mirror_sync para localizar referencias a change_spec y allowed_roots asociadas a DEVELOPMENT_MUTATION_BOUNDED. No modificar archivos, refs, claims, worktrees, SQL ni Produccion. Determinar si la validacion de paths vive en el repositorio o en una capa externa del conector/Capability Registry.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CAPABILITY_REGISTRY",
+    "conflict_domains": [
+      "WORKER_CAPABILITY_REGISTRY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
