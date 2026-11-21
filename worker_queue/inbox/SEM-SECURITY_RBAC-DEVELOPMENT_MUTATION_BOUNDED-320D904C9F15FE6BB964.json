@@ -1,0 +1,70 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "async def calcular_responsabilidad(\n    workflow_id: str,\n    usuario_id: str = Query(..., description=\"ID del usuario que ejecuta el cálculo\"),\n    forzar_recalculo: bool = Query(False, description=\"Forzar recálculo si ya existe\"),\n    current_user: dict = Depends(require_explicit_permission(\"RESPONSABILIDAD_CALCULAR\"))\n):\n    \"\"\"Calcula el impacto económico de un workflow.\"\"\"\n    try:\n        db = get_db()\n        service = ResponsabilidadService(db)\n        \n        resultado = await service.calcular_responsabilidad(\n            workflow_id=workflow_id,\n            usuario_id=usuario_id,\n            forzar_recalculo=forzar_recalculo\n        )\n        \n        return resultado\n        \n    except ModuloDesactivadoError as e:\n        raise HTTPException(status_code=503, detail=\"Error interno del servidor\")\n    except WorkflowNoEncontradoError as e:\n        raise HTTPException(status_code=404, detail=\"Error interno del servidor\")\n    except CalculoYaExisteError as e:\n        raise HTTPException(status_code=409, detail=\"Error interno del servidor\")\n    except SinDiferenciasError as e:\n        raise HTTPException(status_code=400, detail=\"Error interno del servidor\")\n    except Exception as e:\n        raise HTTPException(status_code=500, detail=f\"Error interno\")\n",
+      "path": "backend/modules/fase2_operativo/routes/responsabilidad_routes.py",
+      "replacement": "async def calcular_responsabilidad(\n    workflow_id: str,\n    forzar_recalculo: bool = Query(False, description=\"Forzar recálculo si ya existe\"),\n    current_user: dict = Depends(require_explicit_permission(\"RESPONSABILIDAD_CALCULAR\"))\n):\n    \"\"\"Calcula el impacto económico de un workflow.\"\"\"\n    try:\n        usuario_id, _ = _get_authenticated_responsabilidad_actor(current_user)\n        db = get_db()\n        service = ResponsabilidadService(db)\n        \n        resultado = await service.calcular_responsabilidad(\n            workflow_id=workflow_id,\n            usuario_id=usuario_id,\n            forzar_recalculo=forzar_recalculo\n        )\n        \n        return resultado\n        \n    except ModuloDesactivadoError as e:\n        raise HTTPException(status_code=503, detail=\"Error interno del servidor\")\n    except WorkflowNoEncontradoError as e:\n        raise HTTPException(status_code=404, detail=\"Error interno del servidor\")\n    except CalculoYaExisteError as e:\n        raise HTTPException(status_code=409, detail=\"Error interno del servidor\")\n    except SinDiferenciasError as e:\n        raise HTTPException(status_code=400, detail=\"Error interno del servidor\")\n    except HTTPException:\n        raise\n    except Exception as e:\n        raise HTTPException(status_code=500, detail=f\"Error interno\")\n",
+      "source_sha256": "6406db67bfbe149a45c24fd5e01c2c3e425de7081ecdcfeba380394a975dfb0c",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    def test_calcular_requires_usuario_id(self):\n        \"\"\"Test that calcular endpoint requires usuario_id query param\"\"\"\n        fake_workflow_id = str(uuid.uuid4())\n        \n        # Without usuario_id should fail\n        response = requests.post(f\"{BASE_URL}/api/v2/responsabilidad/calcular/{fake_workflow_id}\")\n        assert response.status_code == 422  # Validation error\n        \n        print(\"✓ Calcular requires usuario_id parameter\")\n    ",
+      "path": "backend/tests/test_responsabilidad_economica.py",
+      "replacement": "    def test_calcular_requires_authentication(self):\n        \"\"\"Unauthenticated calls must be rejected without requiring usuario_id.\"\"\"\n        fake_workflow_id = str(uuid.uuid4())\n\n        response = requests.post(\n            f\"{BASE_URL}/api/v2/responsabilidad/calcular/{fake_workflow_id}\"\n        )\n        assert response.status_code == 401\n\n        print(\"Calcular requires authentication, not a caller-supplied usuario_id\")\n    ",
+      "source_sha256": "c8f7a4d2a035a485078aca8d86737500e7e1c2223a039de9b0357648a8a318c4",
+      "type": "replace_text"
+    },
+    {
+      "content": "\"\"\"Contract regression for trusted identity on responsibility calculation.\n\nIsolates the route functions to avoid touching SQL, HTTP providers or Production.\n\"\"\"\nimport ast\nimport asyncio\nimport inspect\nfrom pathlib import Path\n\nimport pytest\n\n\n_ROUTE = (\n    Path(__file__).resolve().parents[1]\n    / \"modules\"\n    / \"fase2_operativo\"\n    / \"routes\"\n    / \"responsabilidad_routes.py\"\n)\n\n\nclass FakeHTTPException(Exception):\n    def __init__(self, status_code, detail):\n        self.status_code = status_code\n        self.detail = detail\n        super().__init__(str(detail))\n\n\nclass FakeResponsabilidadService:\n    def __init__(self, db):\n        self.db = db\n\n    async def calcular_responsabilidad(self, **kwargs):\n        return kwargs\n\n\ndef _isolated_calcular():\n    tree = ast.parse(_ROUTE.read_text(encoding=\"utf-8\"))\n    selected = [\n        node\n        for node in tree.body\n        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))\n        and node.name in {\n            \"_get_authenticated_responsabilidad_actor\",\n            \"calcular_responsabilidad\",\n        }\n    ]\n    assert len(selected) == 2\n    for node in selected:\n        node.decorator_list = []\n        node.returns = None\n    ns = {\n        \"Query\": lambda *args, **kwargs: False,\n        \"Depends\": lambda dependency: None,\n        \"require_explicit_permission\": lambda code: None,\n        \"get_role_code\": lambda user: user.get(\"role\", \"\"),\n        \"get_db\": object,\n        \"ResponsabilidadService\": FakeResponsabilidadService,\n        \"HTTPException\": FakeHTTPException,\n    }\n    for name in (\n        \"ModuloDesactivadoError\",\n        \"WorkflowNoEncontradoError\",\n        \"CalculoYaExisteError\",\n        \"SinDiferenciasError\",\n    ):\n        ns[name] = type(name, (Exception,), {})\n    module = ast.fix_missing_locations(ast.Module(body=selected, type_ignores=[]))\n    exec(compile(module, str(_ROUTE), \"exec\"), ns)\n    return ns[\"calcular_responsabilidad\"]\n\n\ndef test_calcular_no_longer_accepts_caller_usuario_id():\n    fn = _isolated_calcular()\n    assert \"usuario_id\" not in inspect.signature(fn).parameters\n\n\ndef test_calcular_audits_authenticated_actor_not_spoofed_identity():\n    fn = _isolated_calcular()\n    result = asyncio.run(\n        fn(\n            \"workflow-test\",\n            False,\n            {\"id\": \"trusted-user\", \"user_id\": \"untrusted-alias\", \"role\": \"SUPERADMIN\"},\n        )\n    )\n    assert result[\"workflow_id\"] == \"workflow-test\"\n    assert result[\"usuario_id\"] == \"trusted-user\"\n\n\ndef test_calcular_missing_identity_fails_closed_with_403():\n    fn = _isolated_calcular()\n    with pytest.raises(FakeHTTPException) as exc:\n        asyncio.run(fn(\"workflow-test\", False, {\"role\": \"SUPERADMIN\"}))\n    assert exc.value.status_code == 403\n",
+      "path": "backend/tests/test_responsabilidad_calculo_actor_contract.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/fase2_operativo/routes/responsabilidad_routes.py",
+        "backend/tests/test_responsabilidad_economica.py",
+        "backend/tests/test_responsabilidad_calculo_actor_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_responsabilidad_calculo_actor_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-SECURITY_RBAC-DEVELOPMENT_MUTATION_BOUNDED-320D904C9F15FE6BB964",
+  "mode": "MUTATION",
+  "objective": "Gate P0 atómico autorizado en Desarrollo: corregir la suplantación de usuario_id en POST /responsabilidad/calcular/{workflow_id} derivando la identidad real desde current_user usando el helper RBAC existente, preservar HTTP 403 fail-closed y compatibilidad con callers antiguos que envían query extra; actualizar prueba legacy de 422 a autenticación 401 y agregar tres pruebas de contrato aisladas que comprueban identidad, negativa a parámetro cliente y error 403. Ejecutar py_compile, pytest sobre prueba nueva y git_diff_check. No cambiar SQL, permisos, Producción ni integraciones; rechazar hashes desactualizados y worktree no convergente.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SECURITY_RBAC",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "SECURITY_RBAC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
