@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "27e7901aec8e42a673206f94a44bb4a3fd26de07",
-  "generated_at_utc": "2026-11-21T06:22:09Z",
+  "generated_at_utc": "2026-11-21T06:23:51Z",
   "history": {
     "done_total_local": 1969,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1915,
+      "age_seconds": 2017,
       "job_id": "EDARSAHUB-BOS-SEC-WS-AUTH-R5-20261121",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1675,
+      "age_seconds": 1777,
       "job_id": "SEM-TABLAJERIA-WORKER_RESULT_DETAIL_READ-F4ADB2FAD9DA717C0AAC",
       "reason": null,
       "state": "RESULT_READY"
@@ -42,8 +42,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-21T06:22:09Z",
-    "last_receive_utc": "2026-11-21T06:22:04Z",
+    "last_cycle_utc": "2026-11-21T06:23:26Z",
+    "last_receive_utc": "2026-11-21T06:23:21Z",
     "last_terminal_utc": "2026-11-21T05:54:14Z",
     "pid": "1055191",
     "runtime_fingerprint": {
