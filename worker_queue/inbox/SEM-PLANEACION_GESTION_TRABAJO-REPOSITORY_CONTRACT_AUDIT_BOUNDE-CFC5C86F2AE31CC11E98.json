@@ -1,0 +1,65 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/catalogos_workflow_sql/",
+          "backend/modules/catalogos_workflow_compat/",
+          "backend/modules/auth/",
+          "backend/modules/admin_sql/",
+          "backend/core/rbac/",
+          "backend/core/security.py",
+          "backend/core/rbac_helper_sql.py",
+          "backend/tests/",
+          "frontend/src/config/",
+          "frontend/src/pages/"
+        ],
+        "search_terms": [
+          "listar_tareas",
+          "listar_mis_tareas",
+          "crear_tarea",
+          "get_tareas",
+          "post_tarea",
+          "get_current_user",
+          "require_permission",
+          "EmpresaID",
+          "UnidadNegocioID",
+          "SucursalID",
+          "AsignadoAUsuarioID",
+          "Sistema_Tareas",
+          "PROYECTOS",
+          "menu-permissions",
+          "fail_closed"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-PLANEACION_GESTION_TRABAJO-REPOSITORY_CONTRACT_AUDIT_BOUNDE-CFC5C86F2AE31CC11E98",
+  "mode": "READ_ONLY",
+  "objective": "EDARSAHUB BOS Planeacion y Gestion del Trabajo Gate 2 P0 READ_ONLY. Auditar seguridad real del motor Sistema_Tareas y rutas catalogos_workflow_sql con enfoque fail-closed: comprobar autenticacion, RBAC efectivo, alcance empresa/unidad/sucursal y responsable, validacion de body y campos de propietario, rutas legacy/compat, inyeccion SQL, filtrado de listado, cambios de estado, idempotencia y bitacora. Localizar wrappers/middleware y verificar si hay mitigaciones superiores. Contrastar permiso PROYECTOS y navegacion comingSoon, identificar riesgos explotables vs hallazgos estaticos no confirmados. Entregar rutas, simbolos, contratos, riesgos P0, patch plan atomico reversible y pruebas necesarias. Reutilizar Gate 0 y 1 certificados; no duplicar jobs, no mutaciones, sin SQL LIVE y sin tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "PLANEACION_GESTION_TRABAJO",
+    "conflict_domains": [
+      "PLANEACION_GESTION_TRABAJO"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
