@@ -1,0 +1,61 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/comercial/",
+          "backend/modules/agent_harness/",
+          "backend/modules/api_connections/",
+          "backend/core/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "competidor",
+          "benchmark",
+          "perfil",
+          "marketing",
+          "instagram",
+          "facebook",
+          "google",
+          "tripadvisor",
+          "opentable",
+          "review",
+          "sentiment",
+          "snapshot",
+          "oauth",
+          "scheduler",
+          "rbac",
+          "brand"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-MARKETING_CX-REPOSITORY_CONTRACT_AUDIT_BOUNDE-FA757D188D9D6C738FC3",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 READ_ONLY para EDARSAHUB BOS Marketing / Brand & Competitive Intelligence. Auditar ownership y contratos de datos existentes entre backend/modules/comercial, backend/modules/agent_harness/marketing_cx.py, backend/modules/api_connections, backend/core y frontend relacionado. Determinar con evidencia qué entidades/capacidades de competidores, perfiles digitales, listas de competidores, ingesta de competencia, benchmarks, métricas, snapshots, conexiones API/OAuth, RBAC y scheduler ya existen y cuál debe ser su bounded context propietario. Producir matriz REUSE / ALIGN / CANONICALIZE / EXTEND / NEW y señalar duplicados, acoplamientos o responsabilidades mal ubicadas. Definir propuesta de ownership sin mover archivos ni crear tablas: Comercial conserva pricing/benchmark de precios y Marketing Intelligence consume el catálogo competitivo compartido cuando corresponda; validar o corregir esta hipótesis con evidencia. Identificar únicamente las brechas reales para reputación, reviews, social metrics, sentiment, share of voice, ads intelligence y Brand Digital Score. No modificar Producción, no crear SQL, endpoints, workers, schedulers, secretos, providers ni dependencias nuevas. SQL Server EDARSAHUB sigue siendo única fuente de verdad.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "MARKETING_CX",
+    "conflict_domains": [
+      "MARKETING_CX"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
