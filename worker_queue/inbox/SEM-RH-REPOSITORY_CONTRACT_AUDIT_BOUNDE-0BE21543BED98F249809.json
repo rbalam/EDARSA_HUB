@@ -1,0 +1,46 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "tools/mirror_sync/",
+          "backend/core/"
+        ],
+        "search_terms": [
+          "published_marker",
+          "READ_SOURCE_MISMATCH",
+          "non_mutation",
+          "terminal_result_valid"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH-REPOSITORY_CONTRACT_AUDIT_BOUNDE-0BE21543BED98F249809",
+  "mode": "READ_ONLY",
+  "objective": "Auditar de forma acotada y READ_ONLY el codigo canonico que publica, interpreta y valida resultados del Universal Worker para explicar el estado CONTRADICTORY_RESULT_ARTIFACT del job WORKER-CAPABILITIES-SKILLS-AGENTREACH-OMNIROUTE-GATE1-R2-20260906. Localizar la logica relacionada con published markers, non-mutation/READ_ONLY results y READ_SOURCE_MISMATCH; identificar la condicion exacta que produce published_marker_contradicts_non_mutation_result y proponer una correccion minima y reversible. No leer ni modificar Produccion, no repetir Gate 1, no crear Gate 2, no cambiar credenciales ni crear infraestructura paralela.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH",
+    "conflict_domains": [
+      "RH"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
