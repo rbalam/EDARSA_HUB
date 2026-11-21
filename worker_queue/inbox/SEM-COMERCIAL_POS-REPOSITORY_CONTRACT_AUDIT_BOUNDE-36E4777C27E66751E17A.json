@@ -1,0 +1,58 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/edge/",
+          "backend/modules/comercial_v2/",
+          "backend/modules/finanzas/",
+          "frontend/src/pages/satelites/",
+          "frontend/src/lib/"
+        ],
+        "search_terms": [
+          "comandero",
+          "kds",
+          "offline",
+          "contingencia",
+          "netpay",
+          "terminal",
+          "tpv",
+          "pago",
+          "idempotencia",
+          "sincronizacion",
+          "caja",
+          "reconciliacion",
+          "proveedor"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMERCIAL_POS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-36E4777C27E66751E17A",
+  "mode": "READ_ONLY",
+  "objective": "GATE 1 READ_ONLY FOCALIZADO sobre contratos reales de Comanderos/POS, KDS, operación sin internet y TPV multiproveedor EDARSAHUB BOS. Reutilizar como referencia el Gate 0 ya CERTIFIED_READ_ONLY SEM-COMERCIAL_POS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B028739A1DD2E18F597D sin repetirlo. Inspeccionar específicamente backend/modules/edge (comandero_local_core, terminal UI, orquestador_kds_core, servidor_local_contingencia, sincronización ráfagas, LAN mesh, caja); frontend satélites, interfaces comerciales y finanzas. Verificar rutas, contratos, estados, persistencia SQL, idempotencia, RBAC, manejo de desconexión, pagos sin doble cargo y compatibilidad REAL de adaptadores NetPay/otros proveedores. Clasificar existe/parcial/no probado/falta con evidencia exacta y riesgos. No confundir coincidencia textual con funcionamiento probado. Ningún cambio de código, SQL, producción, credenciales o configuración; entregar plan de siguiente Gate mínimo y comprobable.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
