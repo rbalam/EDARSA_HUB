@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/core/communications/",
+          "backend/core/scheduler/",
+          "backend/core/security.py",
+          "backend/core/db.py",
+          "backend/core/sql_first/no_mongo.py"
+        ],
+        "search_terms": [
+          "mongo_stub",
+          "StubDatabase",
+          "get_stub_database",
+          "get_sync_mongo_db",
+          "_is_stub_db",
+          "_check_is_stub"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_INGRESS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-33E4D2E09214D37B27FB",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY consumidores concretos de Mongo residual en backend/core para distinguir dependencia runtime real de compatibilidad legacy. Revisar comunicaciones, scheduler, security, db y no_mongo. Identificar importaciones, llamadas a get_stub_database, chequeos StubDatabase, funciones get_sync_mongo_db y ramas de fallback. No modificar nada ni tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS",
+    "conflict_domains": [
+      "WORKER_INGRESS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
