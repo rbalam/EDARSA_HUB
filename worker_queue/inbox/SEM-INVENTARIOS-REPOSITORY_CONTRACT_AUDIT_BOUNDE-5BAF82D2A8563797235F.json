@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "rfid",
+          "codigo_barras",
+          "inventario_fisico",
+          "edarsatender",
+          "escanner",
+          "qr"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-INVENTARIOS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-5BAF82D2A8563797235F",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 focalizado READ_ONLY de inventarios Muñeca. Reutilizar Gate 0 certificado SEM-INVENTARIOS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-8DDC29A31B0FBF8583CD sin repetirlo. Inspeccionar contratos reales de EdarsaTender, QR/RFID, captura inventarios físicos, sincronización, RBAC y compatibilidad con escáner wearable; identificar propietario canónico y brechas con evidencia. No modificar código, SQL ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INVENTARIOS",
+    "conflict_domains": [
+      "INVENTARIOS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
