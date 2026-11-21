@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/SEM-FINANZAS-READ_ONLY_CANARY-4DCF6885E2945EBF9752.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-FINANZAS-WORKER_RESULT_SEMANTIC_EXTRACT-15F646EE2090F904DFF7",
+  "mode": "READ_ONLY",
+  "objective": "Extraer en modo READ_ONLY la evidencia semantica del canary SQL certificado de UNIVERSAL-BANKING Gate 2 para congelar el contrato fisico minimo de PaymentRail, BankingChannel, BankingIdentifierModel y BankingExternalEvent, distinguiendo REUSE, EXTEND y CREATE_ONLY_WHEN_PROVEN_MISSING. No ejecutar cambios, no DDL, no DML, no codigo, no Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FINANZAS",
+    "conflict_domains": [
+      "FINANZAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
