@@ -330,15 +330,16 @@ class TestResponsabilidadCalculo:
 class TestResponsabilidadCalcularEndpoint:
     """Tests for POST /api/v2/responsabilidad/calcular/{workflow_id}"""
     
-    def test_calcular_requires_usuario_id(self):
-        """Test that calcular endpoint requires usuario_id query param"""
+    def test_calcular_requires_authentication(self):
+        """Unauthenticated calls must be rejected without requiring usuario_id."""
         fake_workflow_id = str(uuid.uuid4())
-        
-        # Without usuario_id should fail
-        response = requests.post(f"{BASE_URL}/api/v2/responsabilidad/calcular/{fake_workflow_id}")
-        assert response.status_code == 422  # Validation error
-        
-        print("✓ Calcular requires usuario_id parameter")
+
+        response = requests.post(
+            f"{BASE_URL}/api/v2/responsabilidad/calcular/{fake_workflow_id}"
+        )
+        assert response.status_code == 401
+
+        print("Calcular requires authentication, not a caller-supplied usuario_id")
     
     def test_calcular_workflow_not_found(self):
         """Test calcular with non-existing workflow returns 404"""
