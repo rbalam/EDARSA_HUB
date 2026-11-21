@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/worker_ingress/",
+          "backend/modules/worker_mcp/",
+          "backend/tests/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "WorkerObjectiveRequest",
+          "SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED",
+          "SEMANTIC_CONSTRAINTS_UNSUPPORTED",
+          "REPOSITORY_CONTRACT_AUDIT_BOUNDED",
+          "submit_objective"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_INGRESS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-49CDDDCE145B34EDE7C3",
+  "mode": "READ_ONLY",
+  "objective": "READ_ONLY: diagnosticar exclusivamente el contrato de entrada del Universal Worker v4. Auditar el schema WorkerObjectiveRequest, el adaptador MCP v4 y las reglas semanticas de bounded_context, mode, capability y constraints; identificar la causa de los VALIDATION_ERROR_422 anteriores y documentar la correccion minima. No ejecutar Marketing Gate 6, no modificar repositorio, no modificar SQL y no tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS",
+    "conflict_domains": [
+      "WORKER_INGRESS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
