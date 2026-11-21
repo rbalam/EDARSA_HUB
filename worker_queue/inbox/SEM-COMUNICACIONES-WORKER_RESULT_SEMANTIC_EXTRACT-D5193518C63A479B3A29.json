@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/EDARSAHUB-BOS-CONEXIONES-COMUNICACIONES-RECONCILIATION-AUDIT-R1-20261022.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMUNICACIONES-WORKER_RESULT_SEMANTIC_EXTRACT-D5193518C63A479B3A29",
+  "mode": "READ_ONLY",
+  "objective": "Extraer detalle semántico verificable del resultado histórico certificado de reconciliación Conexiones y Comunicaciones, sin reejecutar auditorías, sin modificaciones ni acceso de escritura a Producción. Identificar hallazgos documentados, lagunas de evidencia y siguiente acción mínima.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMUNICACIONES",
+    "conflict_domains": [
+      "COMUNICACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
