@@ -1,0 +1,45 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/core/"
+        ],
+        "search_terms": [
+          "mongo_stub",
+          "StubDatabase",
+          "get_stub_database",
+          "get_sync_mongo_db"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_INGRESS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-1C604342E12F7CC72EF9",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY dentro de backend/core los consumidores concretos de Mongo residual y distinguir dependencia runtime de compatibilidad legacy. Priorizar comunicaciones, scheduler, security y db. No modificar nada ni tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS",
+    "conflict_domains": [
+      "WORKER_INGRESS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
