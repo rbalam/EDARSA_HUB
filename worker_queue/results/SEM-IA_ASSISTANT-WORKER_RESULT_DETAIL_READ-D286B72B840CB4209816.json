@@ -1,0 +1,250 @@
+{
+  "base_sha": "fc147c3c41ce4beef7366949b479830c58769bf3",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-21T05:09:40Z",
+  "execution_base_sha": "fc147c3c41ce4beef7366949b479830c58769bf3",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-IA_ASSISTANT-WORKER_RESULT_DETAIL_READ-D286B72B840CB4209816",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-21T05:13:07Z",
+  "quality_gate": "PASS",
+  "result_detail_evidence": {
+    "checks": [
+      {
+        "blockers": [
+          "slot_release_failed:SlotRuntimeError:SLOT_NOT_FOUND"
+        ],
+        "certification": "NOT_CERTIFIED",
+        "evidence_status": "COMPLETE",
+        "evidence_summary": {
+          "check_count": 1,
+          "entries_returned": 6,
+          "matched_files": 6,
+          "scanned_files": 6,
+          "skipped_sensitive": 0
+        },
+        "evidence_truncated": false,
+        "failed_checks": [],
+        "files_changed": [
+          "backend/modules/ia_assistant/contextual.py",
+          "backend/modules/ia_assistant/routes.py",
+          "backend/modules/ia_assistant/service.py",
+          "backend/tests/test_ia_contextual_comercial_contract.py",
+          "frontend/src/components/comercial/analytics/CanonicalTicketDrilldown.jsx",
+          "frontend/src/components/ia/IAContextual.jsx",
+          "frontend/src/services/iaAssistantApi.js"
+        ],
+        "percent_complete": 95,
+        "production_touched": false,
+        "quality_gate": "FAIL",
+        "repository_contract_evidence": {
+          "checks": [
+            {
+              "evidence": [
+                {
+                  "candidate_ownership": "backend.modules.ia_assistant",
+                  "connections": [],
+                  "helpers": [],
+                  "imports": [
+                    "__future__",
+                    "json",
+                    "re",
+                    "typing"
+                  ],
+                  "integrations": [],
+                  "matched_terms": [
+                    "apply_filters",
+                    "clear_filters",
+                    "open_view"
+                  ],
+                  "path": "backend/modules/ia_assistant/contextual.py",
+                  "rbac_contracts": [],
+                  "routes": [],
+                  "scheduler_contracts": [],
+                  "symbols": [
+                    "_column_keys",
+                    "_safe_key",
+                    "_safe_value",
+                    "action_prompt",
+                    "normalize_view_context",
+                    "parse_actions_response",
+                    "validate_actions"
+                  ],
+                  "tables_referenced": []
+                },
+                {
+                  "candidate_ownership": "backend.modules.ia_assistant",
+                  "connections": [],
+                  "helpers": [],
+                  "imports": [
+                    "__future__",
+                    "core.rbac.middleware",
+                    "fastapi",
+                    "modules.ia_assistant",
+                    "modules.ia_assistant.worker_routes",
+                    "pydantic",
+                    "typing",
+                    "uuid"
+                  ],
+                  "integrations": [
+                    "mpro"
+                  ],
+                  "matched_terms": [
+                    "contexto_vista",
+                    "ia_assistant_ver"
+                  ],
+                  "path": "backend/modules/ia_assistant/routes.py",
+                  "rbac_contracts": [],
+                  "routes": [
+                    "/chat",
+                    "/health",
+                    "/sesiones",
+                    "/sesiones/{sesion_id}",
+                    "/sesiones/{sesion_id}/mensajes"
+                  ],
+                  "scheduler_contracts": [],
+                  "symbols": [
+                    "ChatRequest",
+                    "CrearSesionRequest",
+                    "_current_email",
+                    "_translate_error",
+                    "chat",
+                    "crear_sesion",
+                    "eliminar_sesion",
+                    "health",
+                    "listar_sesiones",
+                    "obtener_mensajes"
+                  ],
+                  "tables_referenced": []
+                },
+                {
+                  "candidate_ownership": "backend.modules.ia_assistant",
+                  "connections": [],
+                  "helpers": [],
+                  "imports": [
+                    "__future__",
+                    "asyncio",
+                    "emergentintegrations.llm.chat",
+                    "json",
+                    "logging",
+                    "modules.ia_assistant",
+                    "os",
+                    "typing"
+                  ],
+                  "integrations": [
+                    "mpro"
+                  ],
+                  "matched_terms": [
+                    "apply_filters",
+                    "clear_filters",
+                    "edarsa_ai_api_key",
+                    "open_view"
+                  ],
+                  "path": "backend/modules/ia_assistant/service.py",
+                  "rbac_contracts": [],
+                  "routes": [],
+                  "scheduler_contracts": [],
+                  "symbols": [
+                    "LLMProviderError",
+                    "LLMTimeoutError",
+                    "SessionNotFoundError",
+                    "_api_key",
+                    "_parse_planner_response",
+                    "_send_llm",
+                    "crear_sesion",
+                    "eliminar_sesion",
+                    "enviar_mensaje",
+                    "health",
+                    "listar_sesiones",
+                    "obtener_mensajes",
+                    "plan_contextual_actions",
+                    "plan_system_queries"
+                  ],
+                  "tables_referenced": []
+                },
+                {
+                  "candidate_ownership": "frontend",
+                  "connections": [],
+                  "helpers": [],
+                  "imports": [],
+                  "integrations": [],
+                  "matched_terms": [
+                    "apply_filters",
+                    "clear_filters",
+                    "iacontextuallauncher",
+                    "open_view"
+                  ],
+                  "path": "frontend/src/components/ia/IAContextual.jsx",
+                  "rbac_contracts": [],
+                  "routes": [],
+                  "scheduler_contracts": [],
+                  "symbols": [],
+                  "tables_referenced": []
+                },
+                {
+                  "candidate_ownership": "frontend",
+                  "connections": [],
+                  "helpers": [],
+                  "imports": [],
+                  "integrations": [],
+                  "matched_terms": [
+                    "contexto_vista"
+                  ],
+                  "path": "frontend/src/services/iaAssistantApi.js",
+                  "rbac_contracts": [],
+                  "routes": [],
+                  "scheduler_contracts": [],
+                  "symbols": [],
+                  "tables_referenced": []
+                },
+                {
+                  "candidate_ownership": "frontend",
+                  "connections": [],
+                  "helpers": [],
+                  "imports": [],
+                  "integrations": [],
+                  "matched_terms": [
+                    "iacontextuallauncher"
+                  ],
+                  "path": "frontend/src/components/comercial/analytics/CanonicalTicketDrilldown.jsx",
+                  "rbac_contracts": [],
+                  "routes": [],
+                  "scheduler_contracts": [],
+                  "symbols": [],
+                  "tables_referenced": []
+                }
+              ],
+              "mode": "READ_ONLY_REPOSITORY",
+              "status": "PASS",
+              "summary": {
+                "matched_files": 6,
+                "scanned_files": 6,
+                "skipped_sensitive": 0
+              },
+              "truncated": false
+            }
+          ]
+        },
+        "result_status": "INTEGRATED",
+        "source_completed_at_utc": "2026-10-01T21:32:34Z",
+        "source_job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-DRILLDOWN-R6-CARLOS-20261001",
+        "source_terminal": true,
+        "tests": "PASS"
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-21T05:09:40Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
