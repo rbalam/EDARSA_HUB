@@ -1,0 +1,67 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/core/inventarios/resolver_canonico.py",
+          "backend/core/inventarios/sync_movimientos_canonico.py",
+          "backend/modules/compras/access.py",
+          "backend/modules/finanzas/access.py",
+          "backend/core/rbac_sql/service.py",
+          "backend/core/utils/operational_window.py",
+          "backend/modules/production_quality/service.py"
+        ],
+        "search_terms": [
+          "Inventario_Movimientos",
+          "Inventario_MovimientosDetalle",
+          "Inventario_TipoMovimiento",
+          "Inventario_Almacenes",
+          "resolver_producto_id",
+          "resolver_almacen_id",
+          "get_operational_window",
+          "can_access_unidad",
+          "can_access_empresa",
+          "costeo",
+          "contabilidad",
+          "poliza",
+          "movimiento",
+          "empresa_id",
+          "unidad_negocio_id",
+          "producto_id",
+          "almacen_id",
+          "readonly",
+          "sql_first",
+          "transaccion"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-PRODUCCION_TABLAJERIA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-C00FECF80867A2B93756",
+  "mode": "READ_ONLY",
+  "objective": "EDARSAHUB BOS TABLAJERIA G1B PARCIAL: conciliacion READ_ONLY de CONTRATOS TRANSVERSALES en repositorio; no es auditoria del esquema fisico SQL Server.\nReutilizar G0 y G1A certificados, evitar duplicados por request_key y solicitudes semanticas equivalentes.\nRevisar exclusivamente los archivos canonicos indicados para: Inventario_Movimientos, Inventario_MovimientosDetalle, Inventario_TipoMovimiento, Inventario_Almacenes, resolver_producto_id/resolver_almacen_id, costeo financiero, contabilidad, RBACSQLService can_access_empresa/unidad, get_operational_window, Compras y Foto Finish; identificar interoperabilidad con backend/modules/tablajeria.\nEntregar evidencia sanitizada por archivo, funciones, tablas y contratos; indicar limites: auditoria de repositorio NO prueba tablas/columnas/constraints/version reales de SQL Server ni permite afirmar conformidad de costeo o contabilidad. Documentar gaps REUTILIZAR/EXTENDER/BLOQUEAR sin prescribir tablas nuevas.\nRiesgos previos existentes en codigo: orden CERRADA previa a Inventarios/Costos, Tablajeria_MovimientosInventario como ledger aislado, Tablajeria_PolizasContables como polizas aisladas, diferencia→merma, SKU kg/pieza, almacen basado en SucursalID, autorizacion RBAC, FechaOperacion. No modificar los artefactos originales.\nSOLO READ_ONLY: no SQL LIVE, no produccion, no DDL/DML, no acciones, no cambios de archivos, no Gate2. Mantener ejecucion de este resultado en Tablajeria 3.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "PRODUCCION_TABLAJERIA",
+    "conflict_domains": [
+      "PRODUCCION_TABLAJERIA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
