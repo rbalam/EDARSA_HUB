@@ -1,0 +1,889 @@
+{
+  "base_sha": "8373aeeeda4109a58e9907dd604b6071f3d2da9a",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-21T09:03:44Z",
+  "execution_base_sha": "8373aeeeda4109a58e9907dd604b6071f3d2da9a",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-CAVA_SOCIOS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-D1DE6611577E4A5D95EE",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-21T09:05:17Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.inventarios.contracts",
+              "math",
+              "modules.cava_socios.blind_audit",
+              "modules.inventarios.bottle_volumetric_engine",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios"
+            ],
+            "path": "backend/tests/test_bottle_volumetric_engine.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_sample_750ml_curve",
+              "_sample_750ml_profile",
+              "test_empirical_accuracy_verification_against_known_volumes",
+              "test_existing_inventarios_contracts_no_regression",
+              "test_opaque_bottle_blocks_visual_and_computes_gravimetric",
+              "test_out_of_range_heights_and_camera_tilt_rejected",
+              "test_pchip_monotonicity_and_zero_overshoot_across_dense_grid",
+              "test_rejects_nan_inf_and_invalid_types",
+              "test_rejects_non_monotonic_and_invalid_anchor_curves",
+              "test_thick_base_and_narrow_neck_geometry_effects",
+              "test_uncertainty_propagation_with_confidence_tilt_and_opacity",
+              "test_unit_conversions_and_inventory_consolidation_requires_human_validation",
+              "test_valid_monotonic_curve_and_exact_nodal_reproduction"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "fastapi",
+              "modules.cava_socios.routes",
+              "modules.cava_socios.service",
+              "pydantic",
+              "pytest",
+              "server",
+              "unittest.mock",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios",
+              "descorche"
+            ],
+            "path": "backend/tests/test_cava_socios.py",
+            "rbac_contracts": [],
+            "routes": [
+              "modules.cava_socios.routes.context_service.get_user_context",
+              "modules.cava_socios.routes.enrich_current_user_with_sql_id"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TestCavaScopeResolution",
+              "TestCavaSociosRouterRegistration",
+              "TestCavaSociosSchemas",
+              "TestCavaSociosService",
+              "test_actualizar_socio_not_found",
+              "test_actualizar_socio_success",
+              "test_botella_create_valid",
+              "test_consumo_create_valid",
+              "test_resolve_cava_scope_accepts_uuid_object",
+              "test_resolve_cava_scope_invalid_uuid_fails_closed",
+              "test_resolve_cava_scope_normalizes_uuid_case",
+              "test_resolve_cava_scope_success",
+              "test_resolve_cava_scope_unauthorized_unit",
+              "test_resolve_cava_scope_uses_unit_when_corporate_empresa_missing",
+              "test_routes_registered_in_app",
+              "test_socio_create_invalid_nombre",
+              "test_socio_create_valid",
+              "test_socio_update_valid"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "modules.cava_socios.adapter_sdk",
+              "modules.cava_socios.migration_engine",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios"
+            ],
+            "path": "backend/tests/test_cava_socios_adapter_sdk.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FakeAdapter",
+              "Invalid",
+              "_record",
+              "capabilities",
+              "discover",
+              "extract_delta",
+              "extract_full",
+              "health",
+              "test_adapter_contract_and_manifest",
+              "test_batch_rejects_duplicate_external_identity",
+              "test_context_requires_timezone_and_instance",
+              "test_delta_requires_checkpoint_capability",
+              "test_fake_adapter_full_and_delta_are_provider_neutral",
+              "test_validate_extraction_rejects_cross_instance_mix",
+              "validate_context"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.cava_socios.blind_audit",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios"
+            ],
+            "path": "backend/tests/test_cava_socios_blind_audit.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_blind_audit_clean_match",
+              "test_blind_audit_detects_missing_and_unexpected",
+              "test_blind_audit_detects_quantity_and_level_mismatch",
+              "test_invalid_percentages_and_confidence_fail_closed",
+              "test_low_recognition_confidence_requires_review_not_auto_match",
+              "test_vision_candidate_filter_does_not_make_canonical_decision",
+              "test_vision_request_is_provider_neutral"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.cava_socios.blind_audit_operational_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios"
+            ],
+            "path": "backend/tests/test_cava_socios_blind_audit_operational_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_service",
+              "test_gate16i_clean_audit_is_confirmed_and_non_mutating",
+              "test_gate16i_difference_never_adjusts_inventory",
+              "test_gate16i_low_confidence_requires_review",
+              "test_gate16i_same_request_has_same_fingerprint"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "importlib.util",
+              "pathlib",
+              "pytest",
+              "sys",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios"
+            ],
+            "path": "backend/tests/test_cava_socios_cienfuegos_legacy_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_install_package",
+              "_load",
+              "test_adapter_reuses_canonical_sdk",
+              "test_attendance_is_not_canonical_sale",
+              "test_deleted_bottle_is_historical_evidence",
+              "test_duplicate_email_never_authorizes_auto_merge",
+              "test_external_record_uses_canonical_contract",
+              "test_identity_key_is_stable",
+              "test_identity_uses_canonical_source_identity",
+              "test_legacy_rbac_is_not_migrated",
+              "test_naive_timestamp_fails_closed",
+              "test_observed_capacities",
+              "test_unknown_bottle_action_fails_closed"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "importlib.util",
+              "pathlib",
+              "sys",
+              "types",
+              "zoneinfo"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios"
+            ],
+            "path": "backend/tests/test_cava_socios_cienfuegos_legacy_dryrun.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_dt",
+              "_install_package",
+              "_load",
+              "_resolver",
+              "test_builds_external_records_and_localizes_legacy_timestamp",
+              "test_deleted_bottle_reference_is_preserved_as_historical_evidence",
+              "test_dry_run_is_review_required_not_execution_ready",
+              "test_reconciliation_requires_explicit_approved_difference",
+              "test_timeless_relation_is_not_fabricated",
+              "test_timezone_is_explicit_mexico_context"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.cava_socios.domain",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios"
+            ],
+            "path": "backend/tests/test_cava_socios_domain.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_bottle_origin_contract_is_explicit",
+              "test_external_bottle_does_not_require_sale_evidence",
+              "test_historical_regularization_requires_reference",
+              "test_observed_consumption_never_becomes_sale_implicitly",
+              "test_product_reference_supports_canonical_and_extended_catalog",
+              "test_transfer_requires_source_assignment",
+              "test_unit_purchase_requires_commercial_evidence"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "modules.cava_socios.evidence_chain",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios"
+            ],
+            "path": "backend/tests/test_cava_socios_evidence_chain.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_build_and_verify_content",
+              "test_chain_detects_reordering_or_missing_link",
+              "test_historical_metadata_preserves_source_and_import_time",
+              "test_invalid_hash_rejected",
+              "test_metadata_change_changes_chain_hash",
+              "test_timestamps_must_be_timezone_aware"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.connection_factory",
+              "fastapi",
+              "modules.cava_socios",
+              "pytest",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios"
+            ],
+            "path": "backend/tests/test_cava_socios_gate12n_uat_controlled.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_cleanup_uat",
+              "_snapshot",
+              "test_gate12n_controlled_uat_exact_candidate_and_cleanup"
+            ],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Gobierno_Persona",
+              "Gobierno_PersonaVinculo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.connection_factory",
+              "fastapi",
+              "modules.cava_socios",
+              "modules.cava_socios.report_service",
+              "modules.cava_socios.service",
+              "pytest",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios",
+              "descorche"
+            ],
+            "path": "backend/tests/test_cava_socios_gate13b_e2e_controlled.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_assert_charge_trace",
+              "_assert_no_residue",
+              "_cleanup",
+              "_conn",
+              "_contains_value",
+              "_snapshot",
+              "test_gate13b_e2e_controlled_r2_instrumented"
+            ],
+            "tables_referenced": [
+              "CavaSocios_Botellas",
+              "CavaSocios_Cargos",
+              "CavaSocios_Movimientos",
+              "CavaSocios_Socios",
+              "Gobierno_Persona",
+              "Gobierno_PersonaVinculo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "modules.cava_socios.domain",
+              "modules.cava_socios.migration_engine",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios"
+            ],
+            "path": "backend/tests/test_cava_socios_migration_engine.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_record",
+              "test_checksum_is_order_independent",
+              "test_dry_run_is_ready_only_without_unresolved_records",
+              "test_dry_run_rejects_duplicate_external_identity",
+              "test_dry_run_requires_review_for_probable_match",
+              "test_historical_projection_preserves_existing_cavas_contract",
+              "test_idempotency_key_is_provider_neutral_and_stable",
+              "test_original_occurred_at_requires_timezone",
+              "test_reconciliation_requires_explicitly_approved_difference"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.cava_socios.persona_link_service",
+              "modules.cava_socios.routes",
+              "pytest",
+              "server",
+              "unittest.mock"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios"
+            ],
+            "path": "backend/tests/test_cava_socios_persona_link.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_desvincular_persona_never_deletes_canonical_records",
+              "test_persona_link_routes_registered",
+              "test_persona_link_schemas_are_explicit",
+              "test_vincular_persona_existing_rejects_implicit_replacement"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.connection_factory",
+              "modules.cava_socios",
+              "os",
+              "pytest",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios"
+            ],
+            "path": "backend/tests/test_cava_socios_persona_link_gate12m_canary.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_cleanup_canary",
+              "_enabled_here",
+              "_fetch_canary_context",
+              "fake_enrich",
+              "fake_get_user_context",
+              "test_gate12m_single_controlled_persona_link_canary"
+            ],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Gobierno_Persona",
+              "Gobierno_PersonaVinculo",
+              "Usuario_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "modules.cavas_corporativas.domain"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cavas_corporativas"
+            ],
+            "path": "backend/tests/test_cavas_corporativas_domain.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_context",
+              "_rule",
+              "test_applicable_requires_explicit_unit_and_scope",
+              "test_configurable_overnight_time_window",
+              "test_configurable_same_day_time_window",
+              "test_hierarchy_scope_matches_exact_reference",
+              "test_reservation_and_guest_limit_are_policy_driven",
+              "test_unauthorized_user_is_rejected",
+              "test_validity_and_weekday_are_enforced_without_hardcodes"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "modules.cavas_corporativas.repository"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cavas_corporativas"
+            ],
+            "path": "backend/tests/test_cavas_corporativas_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_policy_json_maps_to_domain_without_hardcoded_hours",
+              "test_policy_layers_can_override_previous_values"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "fastapi",
+              "fastapi.testclient",
+              "modules.cavas_corporativas.domain",
+              "modules.cavas_corporativas.routes",
+              "modules.cavas_corporativas.service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios",
+              "cavas_corporativas"
+            ],
+            "path": "backend/tests/test_cavas_corporativas_routes.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FakeService",
+              "__init__",
+              "_app",
+              "deny",
+              "evaluate_for_identity",
+              "record_applied_benefit",
+              "test_api_returns_401_when_auth_dependency_denies",
+              "test_api_returns_403_when_rbac_denies",
+              "test_apply_is_idempotent_end_to_end_at_api_boundary",
+              "test_evaluate_returns_200_with_applicable_decision",
+              "test_rbac_contract_reuses_certified_existing_permissions"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "decimal",
+              "modules.cavas_corporativas.domain",
+              "modules.cavas_corporativas.repository",
+              "modules.cavas_corporativas.service",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cavas_corporativas"
+            ],
+            "path": "backend/tests/test_cavas_corporativas_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FakeRepository",
+              "__init__",
+              "context",
+              "find_active_authorized",
+              "load_benefit_rules",
+              "record_application",
+              "test_cannot_record_non_applicable_benefit",
+              "test_record_application_is_idempotent_through_repository_contract",
+              "test_service_returns_no_benefits_for_unknown_identity",
+              "test_service_uses_canonical_authorization_and_rule_engine"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "importlib.util",
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios"
+            ],
+            "path": "backend/tests/test_multiproject_shadow_scheduler.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "row",
+              "test_disjoint_readonly_projects_can_shadow_parallel",
+              "test_global_domain_serializes",
+              "test_legacy_jobs_are_conservative_and_global",
+              "test_project_max_parallelism_is_respected",
+              "test_same_resource_blocks_parallelism",
+              "test_shadow_payload_never_executes_or_mutates",
+              "test_weighted_fairness_changes_order_without_starvation"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [
+              "resolver_canonico"
+            ],
+            "imports": [
+              "__future__",
+              "ast",
+              "contextlib",
+              "core",
+              "datetime",
+              "modules.catalogos",
+              "modules.comercial",
+              "modules.comercial.services",
+              "modules.sync_historicos",
+              "modules.sync_historicos.repository",
+              "os",
+              "pathlib",
+              "pytest",
+              "re",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "cavas_corporativas"
+            ],
+            "path": "backend/tests/test_sql_as_dict_fail_closed_guard_r1.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "StrictAsDictConnection",
+              "StrictAsDictCursor",
+              "StrictPyMssqlAsDictError",
+              "_FakePoolMgr",
+              "__init__",
+              "_extract_string_literal",
+              "_fake_external",
+              "_fake_insert",
+              "_fake_pooled",
+              "_has_unnamed_outer_select",
+              "_patch_pool_and_fallback",
+              "_strict_single",
+              "close",
+              "cursor",
+              "execute",
+              "fetchall",
+              "get_pool_driver",
+              "test_catalogos_verificar_tablas_nuevas_uses_aliased_query",
+              "test_comercial_repository_upserts_use_aliased_existence_checks",
+              "test_execute_query_safe_distinguishes_no_data_from_sql_and_connectivity_errors",
+              "test_execute_sql_direct_with_error_distinguishes_empty_from_errors",
+              "test_execute_sql_query_params_distinguishes_empty_rows_from_errors_and_cooldown",
+              "test_execute_sql_query_strict_rejects_unnamed_select_and_accepts_alias",
+              "test_no_unnamed_outer_select_in_as_dict_backend_modules",
+              "test_pricing_sugerido_es_producto_vino_usa_alias_compatible_as_dict",
+              "test_refresh_tokens_execute_sql_async_propagates_real_sql_errors_and_normalizes_empty",
+              "test_sql_health_check_and_test_sql_connection_fail_closed_on_error_and_empty",
+              "test_sync_historicos_repository_create_tables_uses_aliased_verification",
+              "test_sync_ventas_verificar_estado_sync_usa_alias_compatible_as_dict"
+            ],
+            "tables_referenced": [
+              "Tabla"
+            ]
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "descorche"
+            ],
+            "path": "frontend/src/config/enterpriseMenuConfig.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "auditoria_ciega",
+              "cava_socios"
+            ],
+            "path": "frontend/src/config/enterpriseNavigationRegistry.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios"
+            ],
+            "path": "frontend/src/pages/cava-socios/BlindAuditCava.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios"
+            ],
+            "path": "frontend/src/pages/cava-socios/CavaSociosDashboard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios",
+              "descorche"
+            ],
+            "path": "frontend/src/pages/cava-socios/ConsumosCava.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios",
+              "descorche"
+            ],
+            "path": "frontend/src/pages/cava-socios/InventarioCava.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "cava_socios",
+              "descorche"
+            ],
+            "path": "frontend/src/pages/cava-socios/SocioDetail.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "cava_socios"
+            ],
+            "path": "frontend/src/pages/cava-socios/SocioForm.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios"
+            ],
+            "path": "frontend/src/pages/cava-socios/SociosList.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 29,
+          "scanned_files": 1010,
+          "skipped_sensitive": 14
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-21T09:03:43Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
