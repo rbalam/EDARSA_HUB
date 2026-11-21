@@ -1,0 +1,409 @@
+{
+  "base_sha": "fc147c3c41ce4beef7366949b479830c58769bf3",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-21T05:07:53Z",
+  "execution_base_sha": "fc147c3c41ce4beef7366949b479830c58769bf3",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-AGENT_REACH_EXTERNAL_INTELLIGENC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-58CB4B236542612C782F",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-21T05:09:02Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agent_reach"
+            ],
+            "path": "backend/modules/agent_harness/registry.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AgentRegistry",
+              "AgentSpec",
+              "RegistryError",
+              "SkillRegistry",
+              "SkillSpec",
+              "_Registry",
+              "__init__",
+              "__post_init__",
+              "_clean_token",
+              "_register",
+              "_unique_tokens",
+              "get",
+              "register",
+              "versions"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "agent_reach"
+            ],
+            "path": "backend/tests/agent_reach_live_network_diagnostic_evidence.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "agent-reach"
+            ],
+            "path": "backend/tests/live_canary_requests/gate5g_worker_autotrigger_20260914.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "core.ai_gateway_policy_adapter"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agent-reach",
+              "agent_reach"
+            ],
+            "path": "backend/tests/test_agent_execution_gate_e2e.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "policy_context",
+              "test_e2e_private_data_and_privilege_expansion_fail_closed",
+              "test_e2e_rbac_denial_stops_before_downstream",
+              "test_e2e_rbac_to_agent_reach_prepared_request",
+              "test_e2e_rbac_to_ai_gateway_authorized_route"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.agent_capability_policy",
+              "core.agent_external_research_service",
+              "core.agent_runtime_activation",
+              "pathlib",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agent-reach",
+              "agent_reach"
+            ],
+            "path": "backend/tests/test_agent_external_research_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "context",
+              "lock",
+              "request",
+              "test_ai_capability_cannot_enter_external_research_path",
+              "test_output_limit_is_fail_closed",
+              "test_over_budget_denied_policy_first",
+              "test_production_remains_fail_closed",
+              "test_requester_denial_never_calls_executor",
+              "test_service_chains_authorization_policy_activation_and_executor"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "core.agent_reach_egress_canary",
+              "core.agent_reach_policy_adapter",
+              "core.agent_runtime_activation",
+              "inspect",
+              "pathlib",
+              "pytest",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agent-reach",
+              "agent_reach"
+            ],
+            "path": "backend/tests/test_agent_reach_egress_canary.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "activation",
+              "execution_gate",
+              "fake_run",
+              "policy_context",
+              "reach_decision",
+              "test_canary_fails_closed_on_runtime_and_timeout",
+              "test_canary_requires_policy_and_exactly_one_call",
+              "test_canary_uses_fixed_https_target_and_hardened_argv",
+              "test_no_user_url_or_arbitrary_command_surface",
+              "test_production_remains_denied",
+              "write_lock"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agent-reach",
+              "agent_reach"
+            ],
+            "path": "backend/tests/test_agent_reach_live_canary_workflow_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_live_canary_workflow_is_sha_bound_and_worker_autotrigger_is_one_path_only"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_external_research_service",
+              "json",
+              "pathlib",
+              "shutil"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agent-reach",
+              "agent_reach"
+            ],
+            "path": "backend/tests/test_agent_reach_live_network_canary.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_context",
+              "_request",
+              "test_agent_reach_live_network_canary"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.agent_external_research_service",
+              "json",
+              "pathlib",
+              "shutil",
+              "tests.test_agent_external_research_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agent-reach",
+              "agent_reach"
+            ],
+            "path": "backend/tests/test_agent_reach_live_network_diagnostic.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_diag"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.agent_capability_policy",
+              "core.agent_reach_policy_adapter"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agent-reach",
+              "agent_reach"
+            ],
+            "path": "backend/tests/test_agent_reach_policy_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "context",
+              "request",
+              "test_allows_public_external_research_and_only_prepares_request",
+              "test_blocks_budget_and_risk_overreach",
+              "test_blocks_missing_capability_and_scope",
+              "test_blocks_private_data_egress",
+              "test_blocks_secret_and_data_access_patterns"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "core.agent_reach_policy_adapter",
+              "core.agent_reach_public_search_executor",
+              "core.agent_runtime_activation",
+              "inspect",
+              "pathlib",
+              "pytest",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agent-reach",
+              "agent_reach"
+            ],
+            "path": "backend/tests/test_agent_reach_public_search_executor.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "activation",
+              "execution_gate",
+              "fake_run",
+              "policy_context",
+              "reach_decision",
+              "test_executor_has_no_arbitrary_surface",
+              "test_policy_denial_and_runtime_denial_fail_closed",
+              "test_policy_rejects_over_budget_before_executor",
+              "test_production_and_timeout_remain_fail_closed",
+              "test_query_drives_only_fixed_search_target",
+              "test_requires_canonical_scope",
+              "write_lock"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agent-reach",
+              "agent_reach"
+            ],
+            "path": "backend/tests/test_agent_reach_runtime_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "read",
+              "test_build_and_ci_are_non_publishing_non_deploying",
+              "test_canonical_files_exist",
+              "test_healthcheck_contract",
+              "test_runtime_has_no_direct_backend_sql_or_mongo_contract",
+              "test_versions_and_runtime_isolation"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.agent_execution_gate",
+              "core.agent_reach_runtime_executor",
+              "core.agent_runtime_activation",
+              "pathlib",
+              "pytest",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agent-reach",
+              "agent_reach"
+            ],
+            "path": "backend/tests/test_agent_reach_runtime_executor.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "fake_run",
+              "gate",
+              "local_activation",
+              "test_executor_fail_closed",
+              "test_executor_uses_fixed_networkless_argv",
+              "test_image_loaded_from_lock",
+              "test_local_execute_is_ready_and_execute_contract_stays_denied",
+              "test_production_local_execute_is_denied",
+              "write_lock"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 13,
+          "scanned_files": 1301,
+          "skipped_sensitive": 462
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-21T05:07:52Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
