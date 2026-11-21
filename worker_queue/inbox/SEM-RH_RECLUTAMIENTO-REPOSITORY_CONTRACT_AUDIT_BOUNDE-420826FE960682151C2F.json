@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/rh/",
+          "backend/core/"
+        ],
+        "search_terms": [
+          "query_eliminar_vacante",
+          "query_eliminar_candidato",
+          "query_actualizar_candidato",
+          "get_current_user",
+          "get_user_sucursales_permitidas_rh",
+          "PersonaID",
+          "Contratado"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-RH_RECLUTAMIENTO-REPOSITORY_CONTRACT_AUDIT_BOUNDE-420826FE960682151C2F",
+  "mode": "READ_ONLY",
+  "objective": "HCM Gate 08C READ_ONLY: recuperar y reutilizar evidencia certificada de Gate 08B; verificar RBAC efectivo y aislamiento multiempresa en reclutamiento, contratos de eliminacion de candidatos/vacantes, transicion a Contratado, parametros SQL y vinculacion PersonaID/expediente. Contrastar controles existentes, registrar brechas demostrables y preparar plan atomico reversible con pruebas para Desarrollo. No modificar archivos, SQL, integraciones ni Produccion. No repetir Gate 08B ni crear arquitectura paralela.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH_RECLUTAMIENTO",
+    "conflict_domains": [
+      "RH_RECLUTAMIENTO"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
