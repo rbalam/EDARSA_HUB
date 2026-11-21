@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "whatsapp",
+          "twilio",
+          "ticket",
+          "rag",
+          "escalamiento",
+          "infografia"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMMUNICATIONS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-6632A776DA4453CA81E9",
+  "mode": "READ_ONLY",
+  "objective": "Auditoria funcional READ_ONLY WhatsApp EDARSA: localizar y revisar contratos existentes de protocolos de atencion, infografias, tickets, RAG y conocimiento autorizado, reglas de identidad/RBAC para cancelaciones descuentos bonificaciones reaperturas, escalamiento humano y dependencias Twilio/dispatcher/Scheduler. Entregar evidencia de archivos, brechas y siguiente Gate sin mutaciones, sin conexion LIVE, sin tocar Produccion, sin duplicar infraestructura ni Gates certificados.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMMUNICATIONS",
+    "conflict_domains": [
+      "COMMUNICATIONS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
