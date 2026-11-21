@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "696fc8cf3b4e64f3f800d121c0ac09aaab6a5e9a",
-  "generated_at_utc": "2026-11-21T01:50:16Z",
+  "generated_at_utc": "2026-11-21T01:51:51Z",
   "history": {
     "done_total_local": 1921,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 377,
+      "age_seconds": 472,
       "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M2-CONSOLE-RBAC-SQL-R1-20261120",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 14,
+      "age_seconds": 109,
       "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M2-INCREMENTAL-PROJ-R2-20261120",
       "reason": null,
       "state": "RUNNING"
@@ -42,12 +42,12 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M2-INCREMENTAL-PROJ-R2-20261120",
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-21T01:49:56Z",
-    "last_receive_utc": "2026-11-21T01:49:51Z",
+    "last_cycle_utc": "2026-11-21T01:51:32Z",
+    "last_receive_utc": "2026-11-21T01:51:27Z",
     "last_terminal_utc": "2026-11-21T01:43:58Z",
-    "pid": "160715",
+    "pid": "219513",
     "runtime_fingerprint": {
-      "active_worker_code_tree_sha": "971365236fa1e05226bc9b4fe39fe6e94b2251d8",
+      "active_worker_code_tree_sha": "d7e1c0693f15f646512f12c21bd7636329974d65",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
       "branch": "Edarsahub_Desarrollo",
       "development_sha": "696fc8cf3b4e64f3f800d121c0ac09aaab6a5e9a",
@@ -64,7 +64,7 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": false,
+      "worker_code_tree_aligned": true,
       "worker_code_tree_sha": "d7e1c0693f15f646512f12c21bd7636329974d65"
     }
   },
