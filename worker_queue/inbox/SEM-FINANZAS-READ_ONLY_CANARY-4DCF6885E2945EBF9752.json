@@ -1,0 +1,33 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-FINANZAS-READ_ONLY_CANARY-4DCF6885E2945EBF9752",
+  "mode": "READ_ONLY",
+  "objective": "UNIVERSAL-BANKING Gate 2 SQL physical preflight. Ejecutar exclusivamente READ_ONLY sobre SQL Server EDARSAHUB para confirmar existencia, columnas, tipos, PK/FK, indices y constraints relevantes de las estructuras canonicas que Universal Banking debe reutilizar/extender: Global_Cat_Bancos, Finanzas_Cat_CuentasBancarias, Proveedor_CuentasBancarias, Finanzas_Pagos, Finanzas_EstatusPago, Finanzas_CxP_PagosOrigenQueue, Servidores_Conexiones, Sistema_Capacidades, Sistema_IdentificadoresExternos, Sync_Control_Ejecuciones y Sync_Control_Evidencias. Confirmar tambien ausencia/presencia de PaymentRail, BankingChannel, IBAN, SWIFT/BIC, ABA/Routing, UETR y BankingExternalEvent. No DDL, no DML, no codigo, no conexiones bancarias, no pagos reales, no Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FINANZAS",
+    "conflict_domains": [
+      "FINANZAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
