@@ -1,0 +1,71 @@
+{
+  "actions": [
+    {
+      "expected_sha256": "be19e10e62d2067e20d61b5af1e17c7de6b2a73056df14ca507d430f68a1b8fa",
+      "new": "    try:\n        try:\n            from tools.mirror_sync.worker_sql_projection import project_single_job_best_effort\n        except ModuleNotFoundError:\n            from worker_sql_projection import project_single_job_best_effort\n\n        outcome = project_single_job_best_effort(\n            job_id=job_id,\n            result_payload=public_result,\n            published_commit=published_commit,\n            queue_root=STATE,\n        )",
+      "old": "    try:\n        from worker_sql_projection import project_single_job_best_effort\n\n        outcome = project_single_job_best_effort(\n            job_id=job_id,\n            result_payload=public_result,\n            published_commit=published_commit,\n            queue_root=QUEUE_ROOT,\n        )",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_sha256": "7df50c69d87d9f813c1b1e158fb2fc776c295114bfaeb85dfb2a214229ef5b70",
+      "new": "    assert prod_out[\"projected\"] is False\n    assert prod_out[\"reason\"] == \"PRODUCTION_POLICY_VIOLATION\"\n\n\ndef test_publisher_incremental_projection_hook_uses_canonical_state_dir(monkeypatch, tmp_path):\n    from tools.mirror_sync import universal_job_result_publisher as pub\n\n    fake_env = tmp_path / \"backend\" / \".env\"\n    fake_env.parent.mkdir(parents=True)\n    fake_env.write_text(\"# test marker only\\n\", encoding=\"utf-8\")\n\n    captured = {}\n\n    def fake_project(**kwargs):\n        captured.update(kwargs)\n        return {\"projected\": True, \"job_id\": kwargs[\"job_id\"], \"production_touched\": False}\n\n    monkeypatch.setattr(pub, \"ROOT\", tmp_path)\n    monkeypatch.setattr(pub, \"STATE\", tmp_path / \".git\" / \"universal-worker-queue\")\n    monkeypatch.setattr(proj, \"project_single_job_best_effort\", fake_project)\n\n    pub._project_published_result_to_sql_best_effort(\n        job_id=\"EDARSAHUB-BOS-INC-HOOK-R2\",\n        public_result={\"job_id\": \"EDARSAHUB-BOS-INC-HOOK-R2\", \"certification\": \"CERTIFIED\"},\n        published_commit=\"a\" * 40,\n    )\n    assert captured[\"job_id\"] == \"EDARSAHUB-BOS-INC-HOOK-R2\"\n    assert captured[\"published_commit\"] == \"a\" * 40\n    assert captured[\"queue_root\"] == tmp_path / \".git\" / \"universal-worker-queue\"",
+      "old": "    assert prod_out[\"projected\"] is False\n    assert prod_out[\"reason\"] == \"PRODUCTION_POLICY_VIOLATION\"",
+      "path": "backend/tests/test_worker_gate_m2_console_rbac_sql.py",
+      "type": "replace_text"
+    }
+  ],
+  "base_sha": "696fc8cf3b4e64f3f800d121c0ac09aaab6a5e9a",
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "paths": [
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "backend/tests/test_worker_gate_m2_console_rbac_sql.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_gate_m2_console_rbac_sql.py",
+        "backend/tests/test_universal_job_result_publisher_direct_import_contract.py",
+        "backend/tests/test_worker_frontend_build_result_publisher_contract.py",
+        "backend/tests/test_universal_job_result_publisher_queue_retry.py",
+        "backend/tests/test_worker_result_publisher_marker_idempotency_contract.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "commit_message": "fix(worker-ops): GATE-M2 R2 use canonical STATE dir in incremental SQL projection hook",
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M2-INCREMENTAL-PROJ-R2-20261120",
+  "mode": "MUTATION",
+  "objective": "GATE-M2 Hotfix acotado (R2): corregir NameError queue_root=QUEUE_ROOT -> queue_root=STATE y dual-import en universal_job_result_publisher._project_published_result_to_sql_best_effort() detectado en validación operativa de Preview, más regresión determinista.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "WORKER-OPS-GATE-M2-AGY",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_OPERATIONS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "conflict_scope": [
+      "tools/mirror_sync/universal_job_result_publisher.py",
+      "backend/tests/test_worker_gate_m2_console_rbac_sql.py"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "HIGH",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
