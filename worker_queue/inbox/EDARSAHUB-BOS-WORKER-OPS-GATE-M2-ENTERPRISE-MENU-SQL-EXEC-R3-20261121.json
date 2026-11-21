@@ -1,0 +1,40 @@
+{
+  "actions": [],
+  "base_sha": "43888db9a3dcd3709c9e12756a6ea9cead5ce134",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M2-ENTERPRISE-MENU-SQL-EXEC-R3-20261121",
+  "migration_path": "backend/database/migrations/20261121_001_worker_console_enterprise_menu.sql",
+  "migration_sha256": "be415103cbae35a9fbcb27a87bc666eadc57a6ec886896cfa2d6ddc58dab9d03",
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "objective": "Ejecutar la migracion SQL idempotente y SHA-bound 20261121_001_worker_console_enterprise_menu.sql en EDARSAHUB Desarrollo con preflight y post-audit HRLectura (worker_console_enterprise_menu_v1) para habilitar /worker-console en el menu Enterprise de SUPERADMIN sin tocar Produccion.",
+  "post_audit_profile": "worker_console_enterprise_menu_v1",
+  "preflight_audit_profile": "worker_console_enterprise_menu_v1",
+  "production_allowed": false,
+  "requester": {
+    "chat": "WORKER-OPS-GATE-M2-R3-SQL-AGY",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_OPERATIONS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_OPERATIONS",
+      "EDARSAHUB_SQL_DEV"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "P0",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": [
+      "backend/database/migrations/20261121_001_worker_console_enterprise_menu.sql"
+    ]
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "title": "GATE-M2 R3 Step 2: Registrar sistema.worker_console (/worker-console) en dbo.Sistema_ModulosMenus (Desarrollo)"
+}
