@@ -4,26 +4,38 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "27e7901aec8e42a673206f94a44bb4a3fd26de07",
-  "generated_at_utc": "2026-11-21T06:23:51Z",
+  "generated_at_utc": "2026-11-21T06:25:30Z",
   "history": {
-    "done_total_local": 1969,
+    "done_total_local": 1971,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1380,
-    "results_total_local": 3108
+    "results_total_local": 3110
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2017,
+      "age_seconds": 2116,
       "job_id": "EDARSAHUB-BOS-SEC-WS-AUTH-R5-20261121",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1777,
+      "age_seconds": 35,
+      "job_id": "SEM-COMERCIAL_POS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B028739A1DD2E18F597D",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1875,
       "job_id": "SEM-TABLAJERIA-WORKER_RESULT_DETAIL_READ-F4ADB2FAD9DA717C0AAC",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 16,
+      "job_id": "SEM-VENTAS_COMERCIAL_POS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-2F2658B2F7609E542EEC",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -36,15 +48,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "remote_development_sha": "27e7901aec8e42a673206f94a44bb4a3fd26de07",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-21T06:23:26Z",
-    "last_receive_utc": "2026-11-21T06:23:21Z",
-    "last_terminal_utc": "2026-11-21T05:54:14Z",
+    "last_cycle_utc": "2026-11-21T06:25:18Z",
+    "last_receive_utc": "2026-11-21T06:25:13Z",
+    "last_terminal_utc": "2026-11-21T06:25:13Z",
     "pid": "1055191",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "1d0fbc52710c01a98d7b53291ba10ae01234248b",
