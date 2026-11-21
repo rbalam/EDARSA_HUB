@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 12,
+        "paths": [
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "requisicion",
+          "requisiciones",
+          "orden_compra",
+          "pedido",
+          "pedidos",
+          "proveedor",
+          "presupuesto",
+          "inventario",
+          "selectedUnidad",
+          "unidad_negocio_id"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMPRAS_PEDIDOS_VOZ_FRONTEND_FLO-REPOSITORY_CONTRACT_AUDIT_BOUNDE-BFAA7130C7FAB785B613",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en READ_ONLY exclusivamente el flujo real de Compras frontend relevante para pedidos por voz. Encontrar pantallas, componentes, servicios y estado de requisicion, pedido, orden de compra, proveedor, presupuesto, inventario y Unidad de Negocio. Evitar componentes ajenos a Compras. No modificar archivos, Git, SQL ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMPRAS_PEDIDOS_VOZ_FRONTEND_FLOW",
+    "conflict_domains": [
+      "COMPRAS_PEDIDOS_VOZ_FRONTEND_FLOW"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
