@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_worker_repair_planner_canonical_ingress_capability.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_PYTEST_CERTIFICATION_READ-99B774F21AA3E2F167C5",
+  "mode": "READ_ONLY",
+  "objective": "Re-certificar en solo lectura el pytest fijo del Repair Planner sobre el HEAD actualmente convergente ac0292e3e91291c1e4fb7ea5c720125d6ad5a9f2. No modificar código ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_REPAIR_KNOWLEDGE_LOOP",
+    "conflict_domains": [
+      "WORKER_REPAIR_KNOWLEDGE_LOOP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
