@@ -1,0 +1,47 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/crm/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "mantic",
+          "mantic360",
+          "mantic_360",
+          "vtiger",
+          "vtiger_sync"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CRM-REPOSITORY_CONTRACT_AUDIT_BOUNDE-0C8A00B96873167AEFDE",
+  "mode": "READ_ONLY",
+  "objective": "Auditoria READ_ONLY del dominio CRM: localizar referencias Mantic360/Mantic y Vtiger en codigo de CRM de EDARSAHUB; identificar conectores, rutas, sincronizacion heredada, dependencias e inconsistencias con servicio SQL-first. Entregar evidencia y plan de remocion reversible; no ejecutar modificaciones, no tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CRM",
+    "conflict_domains": [
+      "CRM"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
