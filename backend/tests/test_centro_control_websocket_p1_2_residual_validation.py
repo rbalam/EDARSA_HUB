@@ -1,9 +1,9 @@
-"""P1-2 (READ_ONLY): caracterizacion + criterios de aceptacion de hallazgos residuales H01-H04 del WS /api/centro-control/ws.
+"""WS-AUTH-R5: validacion del cierre de hallazgos residuales H01, H02 y H04 del WS /api/centro-control/ws.
 
-Estas pruebas DOCUMENTAN el comportamiento actual (no lo corrigen). Cada prueba
-afirma lo que el codigo hace hoy; si una correccion futura cambia el
-comportamiento, la prueba correspondiente debe invertirse.
-SQL se simula; no hay acceso a Produccion ni DML/DDL.
+Origen: caracterizacion P1-2 (READ_ONLY). Las pruebas que documentaban las brechas
+se invirtieron para validar el comportamiento seguro y los criterios de aceptacion
+(antes xfail estricto) ahora son pruebas normales. Se conservan todos los controles
+negativos. SQL se simula; no hay acceso SQL LIVE, Produccion ni DML/DDL.
 """
 from __future__ import annotations
 
@@ -75,121 +75,175 @@ def test_h01_cross_origin_against_real_host_is_rejected(state, monkeypatch):
     assert _accepted(_client(), {"origin": "https://evil.test", "host": "app.edarsa.test"}) is False
 
 
-def test_h01_origin_outside_allowlist_accepted_when_it_matches_host(state, monkeypatch):
-    """CONFIRMADO: un Origin fuera de CORS_ORIGINS se acepta si coincide con Host.
-
-    Ocurre cuando el Host llega controlado por el origen (p.ej. DNS rebinding o
-    un vhost/proxy que reenvia Host arbitrario). En DNS rebinding el navegador no
-    envia la cookie de edarsa, por lo que la explotacion real requiere ademas una
-    credencial valida -> riesgo BAJO, pero el allowlist deja de ser la unica autoridad.
-    """
+def test_h01_origin_outside_allowlist_rejected_even_if_matches_host(state, monkeypatch):
+    """R5: un Origin fuera de CORS_ORIGINS se rechaza aunque coincida con Host (DNS rebinding / vhost)."""
     monkeypatch.setenv("CORS_ORIGINS", "https://app.edarsa.test")
-    assert _accepted(_client(), {"origin": "https://evil.test", "host": "evil.test"}) is True
+    assert _accepted(_client(), {"origin": "https://evil.test", "host": "evil.test"}) is False
 
 
-def test_h01_http_scheme_accepted_via_host_match(state, monkeypatch):
-    """CONFIRMADO: el fallback Host acepta tambien http:// aunque el allowlist solo tenga https://."""
+def test_h01_scheme_downgrade_rejected_via_host_match(state, monkeypatch):
+    """R5: http:// no se acepta por coincidir con Host si el allowlist solo tiene https://."""
     monkeypatch.setenv("CORS_ORIGINS", "https://app.edarsa.test")
-    assert _accepted(_client(), {"origin": "http://app.edarsa.test", "host": "app.edarsa.test"}) is True
+    assert _accepted(_client(), {"origin": "http://app.edarsa.test", "host": "app.edarsa.test"}) is False
+
+
+def test_h01_allowlisted_origin_still_accepted(state, monkeypatch):
+    """Compatibilidad: Origin explicitamente configurado (p.ej. Preview) sigue aceptado."""
+    monkeypatch.setenv("CORS_ORIGINS", "https://preview.edarsa.test,https://app.edarsa.test")
+    assert _accepted(_client(), {"origin": "https://preview.edarsa.test", "host": "backend.internal"}) is True
+    assert _accepted(_client(), {"origin": "https://app.edarsa.test/", "host": "app.edarsa.test"}) is True
 
 
 # ---------------------------------------------------------------- H02 CORS vacio
-@pytest.mark.parametrize("raw", [None, "", " , ", "*"])
-def test_h02_empty_or_wildcard_cors_falls_back_to_localhost(state, monkeypatch, raw):
-    """CONFIRMADO: sin CORS_ORIGINS util, el WS acepta http://localhost:3000 (no fail-closed)."""
+@pytest.mark.parametrize("raw", [None, "", " , ", "*", " * , "])
+def test_h02_empty_absent_or_wildcard_cors_is_fail_closed(state, monkeypatch, raw):
+    """R5: sin CORS_ORIGINS util no existe origen implicito (ni localhost:3000)."""
     if raw is None:
         monkeypatch.delenv("CORS_ORIGINS", raising=False)
     else:
         monkeypatch.setenv("CORS_ORIGINS", raw)
-    assert cc_routes._allowed_ws_origins() == {"http://localhost:3000"}
-    assert _accepted(_client(), {"origin": "http://localhost:3000", "host": "app.edarsa.test"}) is True
+    assert cc_routes._allowed_ws_origins() == set()
+    assert _accepted(_client(), {"origin": "http://localhost:3000", "host": "app.edarsa.test"}) is False
+    assert _accepted(_client(), {"origin": "http://localhost:3000", "host": "localhost:3000"}) is False
 
 
 def test_h02_foreign_origin_still_rejected_with_empty_cors(state, monkeypatch):
-    """Alcance real de H02: solo se abre localhost:3000, no cualquier origen."""
     monkeypatch.setenv("CORS_ORIGINS", "")
     assert _accepted(_client(), {"origin": "https://evil.test", "host": "app.edarsa.test"}) is False
 
 
-# ---------------------------------------------------------------- H04 sin revalidacion
-def test_h04_revoked_permission_keeps_session_alive(state, monkeypatch):
-    """CONFIRMADO: tras revocar CENTRO_CONTROL_VER, la sesion abierta sigue respondiendo."""
+def test_h02_explicit_localhost_still_allowed_when_configured(state, monkeypatch):
+    """Compatibilidad local legitima: solo si localhost esta configurado explicitamente."""
+    monkeypatch.setenv("CORS_ORIGINS", "http://localhost:3000")
+    assert _accepted(_client(), {"origin": "http://localhost:3000", "host": "localhost:8001"}) is True
+
+
+def test_bearer_without_origin_allowed_even_with_empty_cors(state, monkeypatch):
+    """Clientes no-navegador con Bearer y sin Origin no dependen de CORS (sin cookie => sin CSWSH)."""
+    monkeypatch.setenv("CORS_ORIGINS", "")
+    client = _client()
+    with client.websocket_connect(WS, headers={"authorization": f"Bearer {_jwt()}"}) as ws:
+        assert ws.receive_json()["tipo"] == "conexion_establecida"
+
+
+def test_cookie_without_origin_rejected_cswsh(state, monkeypatch):
+    """Cookie HttpOnly sin Origin se rechaza siempre (proteccion CSWSH)."""
+    monkeypatch.setenv("CORS_ORIGINS", "https://app.edarsa.test")
+    assert _accepted(_client(), {"host": "app.edarsa.test"}) is False
+
+
+# ---------------------------------------------------------------- H04 revalidacion en sesion activa
+def _open(client):
+    client.cookies.set(AUTH_COOKIE_NAME, _jwt())
+    return client.websocket_connect(WS, headers={"origin": "https://app.edarsa.test"})
+
+
+def _assert_closed_1008(ws):
+    ws.send_json({"tipo": "ping"})
+    with pytest.raises(WebSocketDisconnect) as exc:
+        ws.receive_json()
+    assert exc.value.code == 1008
+
+
+def test_h04_revoked_permission_closes_open_session_1008(state, monkeypatch):
     monkeypatch.setenv("CORS_ORIGINS", "https://app.edarsa.test")
     flags, mgr = state
-    client = _client()
-    client.cookies.set(AUTH_COOKIE_NAME, _jwt())
-    with client.websocket_connect(WS, headers={"origin": "https://app.edarsa.test"}) as ws:
+    with _open(_client()) as ws:
         assert ws.receive_json()["tipo"] == "conexion_establecida"
         flags["perm"] = False  # revocacion en SQL
-        ws.send_json({"tipo": "ping"})
-        assert ws.receive_json()["tipo"] == "pong"
-        assert mgr.connection_count == 1
+        _assert_closed_1008(ws)
+    assert mgr.connection_count == 0
 
 
-def test_h04_deactivated_user_keeps_session_alive(state, monkeypatch):
-    """CONFIRMADO: usuario desactivado en SQL conserva su sesion WS abierta."""
+def test_h04_deactivated_user_closes_open_session_1008(state, monkeypatch):
     monkeypatch.setenv("CORS_ORIGINS", "https://app.edarsa.test")
     flags, mgr = state
-    client = _client()
-    client.cookies.set(AUTH_COOKIE_NAME, _jwt())
-    with client.websocket_connect(WS, headers={"origin": "https://app.edarsa.test"}) as ws:
+    with _open(_client()) as ws:
         ws.receive_json()
         flags["active"] = False
-        ws.send_json({"tipo": "ping"})
-        assert ws.receive_json()["tipo"] == "pong"
+        _assert_closed_1008(ws)
+    assert mgr.connection_count == 0
+
+
+def test_h04_revoked_session_sid_closes_open_session_1008(state, monkeypatch):
+    """Sesion revocada en dbo.Sesiones (helper canonico verify_token_session_active) cierra 1008."""
+    monkeypatch.setenv("CORS_ORIGINS", "https://app.edarsa.test")
+    flags, mgr = state
+    session = {"active": True}
+
+    async def _fake_session_active(payload, expected_user_type=None):
+        return session["active"]
+
+    monkeypatch.setattr("core.security.verify_token_session_active", _fake_session_active)
+    with _open(_client()) as ws:
+        ws.receive_json()
+        session["active"] = False
+        _assert_closed_1008(ws)
+    assert mgr.connection_count == 0
+
+
+def test_h04_sql_error_during_revalidation_is_fail_closed(state, monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", "https://app.edarsa.test")
+    flags, mgr = state
+    with _open(_client()) as ws:
+        ws.receive_json()
+
+        def _boom(email, perm):
+            raise RuntimeError("sql down")
+
+        monkeypatch.setattr(cc_routes, "_has_explicit_ws_permission_sql", _boom)
+        _assert_closed_1008(ws)
+    assert mgr.connection_count == 0
+
+
+def test_h04_authorized_session_keeps_working_and_revalidates_each_message(state, monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", "https://app.edarsa.test")
+    flags, mgr = state
+    calls = {"n": 0}
+
+    def _perm(email, perm):
+        calls["n"] += 1
+        return perm == "CENTRO_CONTROL_VER"
+
+    monkeypatch.setattr(cc_routes, "_has_explicit_ws_permission_sql", _perm)
+    with _open(_client()) as ws:
+        ws.receive_json()
+        for _ in range(3):
+            ws.send_json({"tipo": "ping"})
+            assert ws.receive_json()["tipo"] == "pong"
         assert mgr.connection_count == 1
+    assert calls["n"] == 4  # handshake + 3 revalidaciones
+
+
+def test_h04_idle_connection_revalidated_on_interval(state, monkeypatch):
+    """Conexion inactiva: al vencer el intervalo se revalida y se cierra 1008 si fue revocada."""
+    monkeypatch.setenv("CORS_ORIGINS", "https://app.edarsa.test")
+    monkeypatch.setattr(cc_routes, "_WS_REVALIDATE_INTERVAL_SECONDS", 0.05)
+    flags, mgr = state
+    with _open(_client()) as ws:
+        ws.receive_json()
+        flags["perm"] = False
+        with pytest.raises(WebSocketDisconnect) as exc:
+            ws.receive_json()
+        assert exc.value.code == 1008
+    assert mgr.connection_count == 0
 
 
 def test_h04_new_connection_after_revocation_is_rejected(state, monkeypatch):
-    """Control: la revocacion SI aplica a conexiones nuevas (el hueco es solo en sesiones abiertas)."""
+    """Control: la revocacion aplica a conexiones nuevas."""
     monkeypatch.setenv("CORS_ORIGINS", "https://app.edarsa.test")
     flags, _ = state
     flags["perm"] = False
     assert _accepted(_client(), {"origin": "https://app.edarsa.test"}) is False
 
 
-# =============================================================================
-# CRITERIOS DE ACEPTACION SEGUROS (objetivo R3)
-# Marcados xfail(strict=True): fallan hoy (confirman la brecha) y, cuando una
-# correccion autorizada los satisfaga, xfail estricto obliga a quitar la marca.
-# =============================================================================
-_R3 = "Brecha confirmada en P1-2; se corrige solo en un Gate R3 autorizado"
-
-
-@pytest.mark.xfail(strict=True, reason=_R3)
-def test_accept_h01_origin_outside_allowlist_rejected_even_if_matches_host(state, monkeypatch):
-    monkeypatch.setenv("CORS_ORIGINS", "https://app.edarsa.test")
-    assert _accepted(_client(), {"origin": "https://evil.test", "host": "evil.test"}) is False
-
-
-@pytest.mark.xfail(strict=True, reason=_R3)
-def test_accept_h01_scheme_downgrade_rejected(state, monkeypatch):
-    monkeypatch.setenv("CORS_ORIGINS", "https://app.edarsa.test")
-    assert _accepted(_client(), {"origin": "http://app.edarsa.test", "host": "app.edarsa.test"}) is False
-
-
-@pytest.mark.xfail(strict=True, reason=_R3)
-@pytest.mark.parametrize("raw", [None, "", "*"])
-def test_accept_h02_empty_cors_is_fail_closed(state, monkeypatch, raw):
-    if raw is None:
-        monkeypatch.delenv("CORS_ORIGINS", raising=False)
-    else:
-        monkeypatch.setenv("CORS_ORIGINS", raw)
-    assert _accepted(_client(), {"origin": "http://localhost:3000", "host": "app.edarsa.test"}) is False
-
-
-@pytest.mark.xfail(strict=True, reason=_R3)
-def test_accept_h04_revocation_closes_open_session(state, monkeypatch):
-    """Tras revocar permiso, el siguiente intercambio debe terminar con cierre 1008."""
+def test_h04_authorized_reconnection_after_regrant(state, monkeypatch):
+    """Reconexion autorizada: tras restituir el permiso, una nueva conexion se acepta."""
     monkeypatch.setenv("CORS_ORIGINS", "https://app.edarsa.test")
     flags, mgr = state
-    client = _client()
-    client.cookies.set(AUTH_COOKIE_NAME, _jwt())
-    with client.websocket_connect(WS, headers={"origin": "https://app.edarsa.test"}) as ws:
+    with _open(_client()) as ws:
         ws.receive_json()
         flags["perm"] = False
-        ws.send_json({"tipo": "ping"})
-        with pytest.raises(WebSocketDisconnect) as exc:
-            ws.receive_json()
-        assert exc.value.code == 1008
-    assert mgr.connection_count == 0
+        _assert_closed_1008(ws)
+    flags["perm"] = True
+    assert _accepted(_client(), {"origin": "https://app.edarsa.test"}) is True

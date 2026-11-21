@@ -1193,14 +1193,17 @@ async def obtener_modulos_blindados(current_user: Dict = Depends(require_explici
 # ============================================================================
 
 def _allowed_ws_origins() -> set:
-    """Obtiene los origenes permitidos para WebSocket usando la misma fuente CORS_ORIGINS."""
-    raw = os.environ.get("CORS_ORIGINS", "http://localhost:3000")
-    origins = {
+    """Obtiene los origenes permitidos para WebSocket desde CORS_ORIGINS (fail-closed, WS-AUTH-R5 H02).
+
+    Una configuracion ausente, vacia o solo wildcard no habilita ningun origen
+    implicito: el conjunto queda vacio y todo Origin de navegador es rechazado.
+    """
+    raw = os.environ.get("CORS_ORIGINS") or ""
+    return {
         origin.strip().rstrip("/").lower()
         for origin in raw.split(",")
         if origin.strip() and origin.strip() != "*"
     }
-    return origins or {"http://localhost:3000"}
 
 
 def _is_ws_origin_allowed(websocket: WebSocket, auth_source: str) -> bool:
@@ -1211,14 +1214,9 @@ def _is_ws_origin_allowed(websocket: WebSocket, auth_source: str) -> bool:
         # sesiones por cookie siempre requieren Origin valido.
         return auth_source == "bearer"
 
-    if origin in _allowed_ws_origins():
-        return True
-
-    host = (websocket.headers.get("host") or "").strip().lower()
-    if host and origin in {f"https://{host}", f"http://{host}"}:
-        return True
-
-    return False
+    # WS-AUTH-R5 H01: CORS_ORIGINS es la unica autoridad; coincidir con Host
+    # no habilita un Origin fuera del allowlist (DNS rebinding / downgrade http).
+    return origin in _allowed_ws_origins()
 
 
 def _extract_ws_credential(websocket: WebSocket) -> tuple:
@@ -1279,10 +1277,11 @@ def _has_explicit_ws_permission_sql(email: str, permiso: str) -> bool:
         conn.close()
 
 
-async def _authenticate_ws_connection(websocket: WebSocket) -> Optional[Dict[str, Any]]:
-    """Autentica y autoriza el handshake WebSocket fail-closed antes de accept()."""
-    from core.security import verify_token, verify_token_session_active, _get_user_sql_only
+async def _authenticate_ws_connection(websocket: WebSocket) -> Optional[tuple]:
+    """Autentica y autoriza el handshake WebSocket fail-closed antes de accept().
 
+    Retorna (user, jwt_value) para permitir la revalidacion periodica (H04).
+    """
     jwt_value, auth_source = _extract_ws_credential(websocket)
     if not jwt_value:
         logger.warning("[WS] Conexion rechazada: sin credencial autenticada")
@@ -1294,6 +1293,20 @@ async def _authenticate_ws_connection(websocket: WebSocket) -> Optional[Dict[str
             websocket.headers.get("origin", "<missing>"),
         )
         return None
+
+    user = await _authorize_ws_principal(jwt_value)
+    if not user:
+        return None
+    return user, jwt_value
+
+
+async def _authorize_ws_principal(jwt_value: str) -> Optional[Dict[str, Any]]:
+    """JWT vigente + sesion activa (sid) + usuario SQL activo + CENTRO_CONTROL_VER, fail-closed.
+
+    Usado en el handshake y en cada revalidacion de conexiones activas (WS-AUTH-R5 H04)
+    reutilizando exclusivamente los helpers canonicos existentes.
+    """
+    from core.security import verify_token, verify_token_session_active, _get_user_sql_only
 
     try:
         payload = verify_token(jwt_value)
@@ -1347,6 +1360,9 @@ async def _authenticate_ws_connection(websocket: WebSocket) -> Optional[Dict[str
     return user
 
 
+_WS_REVALIDATE_INTERVAL_SECONDS = 60
+
+
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """
@@ -1356,20 +1372,47 @@ async def websocket_endpoint(websocket: WebSocket):
     - Valida JWT (cookie HttpOnly edarsa_access_token o Authorization: Bearer), nunca query string.
     - Valida Origin permitido (proteccion CSWSH).
     - Valida usuario activo en SQL y permiso explicito CENTRO_CONTROL_VER (fail-closed, codigo 1008).
+
+    Seguridad (WS-AUTH-R5 H04):
+    - Revalida JWT, sesion (sid), usuario activo y CENTRO_CONTROL_VER antes de procesar
+      cada mensaje y, en conexiones inactivas, cada _WS_REVALIDATE_INTERVAL_SECONDS.
+      Cualquier fallo cierra con codigo 1008 sin procesar el mensaje.
     """
-    user = await _authenticate_ws_connection(websocket)
-    if not user:
+    auth = await _authenticate_ws_connection(websocket)
+    if not auth:
         await websocket.close(code=1008)
         return
+    user, jwt_value = auth
 
     manager = get_notification_manager()
     connection_id = await manager.connect(websocket, user_email=user["email"])
-    
+
+    async def _revoke_if_unauthorized() -> bool:
+        if await _authorize_ws_principal(jwt_value):
+            return False
+        logger.warning("[WS] Conexion %s cerrada: autorizacion revocada (1008)", connection_id)
+        manager.disconnect(connection_id)
+        try:
+            await websocket.close(code=1008)
+        except Exception:
+            pass
+        return True
+
     try:
         while True:
-            # Esperar mensajes del cliente (para keep-alive o comandos)
-            data = await websocket.receive_text()
-            
+            # Esperar mensajes del cliente (keep-alive o comandos); revalidar al expirar el intervalo
+            try:
+                data = await asyncio.wait_for(
+                    websocket.receive_text(), timeout=_WS_REVALIDATE_INTERVAL_SECONDS
+                )
+            except asyncio.TimeoutError:
+                if await _revoke_if_unauthorized():
+                    return
+                continue
+
+            if await _revoke_if_unauthorized():
+                return
+
             # Procesar comandos del cliente si es necesario
             try:
                 message = json.loads(data)

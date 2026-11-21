@@ -263,7 +263,12 @@ def test_ws_accepts_authorized_bearer_without_origin_and_same_origin_host(monkey
         msg = ws.receive_json()
         assert msg["tipo"] == "conexion_establecida"
 
-    # 2. Cookie same-origin coincidiendo con Host (compatibilidad SPA Preview/Produccion)
+    # 2. Cookie con Origin de Preview explicitamente configurado en CORS_ORIGINS
+    #    (WS-AUTH-R5 H01: la compatibilidad Preview/Produccion proviene del allowlist, no de Host)
+    monkeypatch.setenv(
+        "CORS_ORIGINS",
+        "https://app.edarsa.test,http://localhost:3000,https://preview.edarsa.local",
+    )
     client.cookies.set(AUTH_COOKIE_NAME, jwt_val)
     with client.websocket_connect(
         "/api/centro-control/ws",
@@ -271,6 +276,16 @@ def test_ws_accepts_authorized_bearer_without_origin_and_same_origin_host(monkey
     ) as ws:
         msg = ws.receive_json()
         assert msg["tipo"] == "conexion_establecida"
+
+    # 3. Control negativo R5: coincidir con Host sin estar en el allowlist se rechaza (1008)
+    monkeypatch.setenv("CORS_ORIGINS", "https://app.edarsa.test,http://localhost:3000")
+    with pytest.raises(WebSocketDisconnect) as exc:
+        with client.websocket_connect(
+            "/api/centro-control/ws",
+            headers={"host": "preview.edarsa.local", "origin": "https://preview.edarsa.local"},
+        ):
+            pass
+    assert exc.value.code == 1008
 
 
 @pytest.mark.asyncio
