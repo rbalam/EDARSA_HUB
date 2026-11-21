@@ -732,6 +732,101 @@ def test_publisher_incremental_projection_hook_uses_canonical_state_dir(monkeypa
     assert captured["queue_root"] == tmp_path / ".git" / "universal-worker-queue"
 
 
+def test_dashboard_preferred_job_orphaned_ignores_historical_archive_and_detects_active_orphan(monkeypatch, tmp_path):
+    _mock_sql_reads(monkeypatch)
+    monkeypatch.setattr(C, "QUEUE_ROOT", tmp_path)
+    monkeypatch.setattr(
+        R,
+        "get_current_user_dual",
+        AsyncMock(return_value={"id": "u-sa", "email": "superadmin@edarsa.com", "role": "SUPERADMIN"}),
+    )
+    monkeypatch.setattr(
+        R,
+        "_check_sql_worker_console_authority",
+        lambda email: {"authorized": True, "is_superadmin": True, "reason": "SQL_SUPERADMIN:SUPERADMIN"},
+    )
+    archive = tmp_path / "runtime" / "orphaned-preferred"
+    (archive / "20260920T191607Z").mkdir(parents=True)
+    (archive / "20260920T192100Z").mkdir(parents=True)
+
+    client = _make_client()
+    r1 = client.get("/api/worker/console/dashboard")
+    assert r1.status_code == 200
+    rt1 = r1.json()["runtime"]
+    assert rt1["preferred_job"] is None
+    assert rt1["preferred_job_orphaned"] is False
+    assert rt1["orphaned_preferred_archive_count"] == 2
+
+    # Si existe un preferred_job.json activo cuyo job_id no está en pending/processing -> True
+    (tmp_path / "runtime" / "preferred_job.json").write_text(
+        '{"job_id": "ORPHAN-ACTIVE-JOB-1", "expires_at_epoch": 9999999999}',
+        encoding="utf-8",
+    )
+    r2 = client.get("/api/worker/console/dashboard")
+    assert r2.status_code == 200
+    assert r2.json()["runtime"]["preferred_job_orphaned"] is True
+
+
+def test_lifecycle_and_result_reconcile_canonical_result_and_preview_validation(monkeypatch, tmp_path):
+    _mock_sql_reads(monkeypatch)
+    monkeypatch.setattr(C, "QUEUE_ROOT", tmp_path)
+    monkeypatch.setattr(
+        R,
+        "get_current_user_dual",
+        AsyncMock(return_value={"id": "u-sa", "email": "superadmin@edarsa.com", "role": "SUPERADMIN"}),
+    )
+    monkeypatch.setattr(
+        R,
+        "_check_sql_worker_console_authority",
+        lambda email: {"authorized": True, "is_superadmin": True, "reason": "SQL_SUPERADMIN:SUPERADMIN"},
+    )
+
+    jid = "EDARSAHUB-BOS-TEST-ACTIVE-PREVIEW-1"
+    (tmp_path / "results").mkdir(parents=True)
+    (tmp_path / "results" / f"{jid}.json").write_text(
+        '{"job_id": "EDARSAHUB-BOS-TEST-ACTIVE-PREVIEW-1", "status": "INTEGRATED", "certification": "PENDING_AUDIT_EVIDENCE"}',
+        encoding="utf-8",
+    )
+    (tmp_path / "preview_validations").mkdir(parents=True)
+    (tmp_path / "preview_validations" / f"{jid}.json").write_text(
+        '{"schema": "edarsahub.preview-operational-validation.v1", "job_id": "EDARSAHUB-BOS-TEST-ACTIVE-PREVIEW-1", "commit_sha": "'
+        + ("a" * 40)
+        + '", "preview_activated": true, "operational_tests": "PASS", "functional_result": "PASS", "validated_at_utc": "2026-11-21T02:30:00Z", "production_touched": false}',
+        encoding="utf-8",
+    )
+
+    class _FakeRead:
+        terminal_result_valid = True
+        payload = {
+            "schema": "edarsahub.worker-result.v1",
+            "completed_at_utc": "2026-11-21T02:25:00Z",
+            "job_id": jid,
+            "percent_complete": 100,
+            "work_completion": "COMPLETE",
+            "status": "INTEGRATED",
+            "certification": "CERTIFIED",
+            "quality_gate": "PASS",
+            "tests": "PASS",
+            "blockers": [],
+            "production_touched": False,
+            "development_sha": "a" * 40,
+            "git_sync_status": "CERTIFIED_GIT_SYNC",
+        }
+
+    monkeypatch.setattr(C, "read_canonical_result", lambda p, *, expected_job_id: _FakeRead())
+
+    client = _make_client()
+    r_lc = client.get(f"/api/worker/console/lifecycle/{jid}")
+    assert r_lc.status_code == 200
+    assert r_lc.json()["interpretation"]["verdict"] == "PASS"
+    assert r_lc.json()["interpretation"]["lifecycle_stage"] == "ACTIVE_IN_PREVIEW"
+
+    r_res = client.get(f"/api/worker/console/result/{jid}")
+    assert r_res.status_code == 200
+    assert r_res.json()["interpretation"]["verdict"] == "PASS"
+    assert r_res.json()["interpretation"]["lifecycle_stage"] == "ACTIVE_IN_PREVIEW"
+
+
 # -----------------------------------------------------------------------------
 # 4. CONTRATO ESTÁTICO DEL FRONTEND WorkerConsole.jsx
 # -----------------------------------------------------------------------------

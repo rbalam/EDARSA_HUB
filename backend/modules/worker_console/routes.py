@@ -259,6 +259,24 @@ def _job_id_from_name(name: str) -> str:
     return re.sub(r"\.(json)(\..*)?$", "", name, flags=re.IGNORECASE)
 
 
+def _read_reconciled_result_doc(job_id: str, path: Path, state: str) -> Optional[Any]:
+    """Lee resultados reconciliados vía worker_result_reader + preview_validations (sin inventar estado)."""
+    if state == "results":
+        try:
+            read_res = C.read_canonical_result(path, expected_job_id=job_id)
+            if getattr(read_res, "terminal_result_valid", False) and isinstance(getattr(read_res, "payload", None), dict):
+                payload = dict(read_res.payload)
+                preview_path = C.QUEUE_ROOT / "preview_validations" / f"{job_id}.json"
+                if preview_path.is_file() and "operational_validation" not in payload:
+                    preview_doc = C.read_json_file(preview_path)
+                    if isinstance(preview_doc, dict):
+                        payload["operational_validation"] = preview_doc
+                return payload
+        except Exception:
+            pass
+    return C.read_json_file(path)
+
+
 def _find_in_state(state: str, job_id: str) -> Optional[Path]:
     d = C.state_dir(state)
     if d is None or not d.exists():
@@ -300,6 +318,22 @@ async def dashboard(
         except Exception:
             return None
 
+    preferred_doc = C.read_json_file(runtime_dir / "preferred_job.json")
+    preferred_job_orphaned = False
+    if isinstance(preferred_doc, dict):
+        pref_jid = str(preferred_doc.get("job_id") or "").strip()
+        exp_epoch = preferred_doc.get("expires_at_epoch")
+        expired = isinstance(exp_epoch, (int, float)) and datetime.now(timezone.utc).timestamp() > float(exp_epoch)
+        in_flight = bool(pref_jid and (_find_in_state("pending", pref_jid) or _find_in_state("processing", pref_jid)))
+        preferred_job_orphaned = bool(not pref_jid or not in_flight or expired)
+
+    orphaned_archive_dir = runtime_dir / "orphaned-preferred"
+    orphaned_archive_count = (
+        sum(1 for entry in orphaned_archive_dir.iterdir())
+        if orphaned_archive_dir.is_dir()
+        else 0
+    )
+
     return {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "source": sql_summary["source"],
@@ -313,8 +347,9 @@ async def dashboard(
             "last_terminal_utc": _read_txt("last_terminal_utc"),
             "control_plane_status": C.read_json_file(runtime_dir / "control_plane_status.json"),
             "reconciler": C.read_json_file(runtime_dir / "reconciler.json"),
-            "preferred_job": C.read_json_file(runtime_dir / "preferred_job.json"),
-            "preferred_job_orphaned": (runtime_dir / "orphaned-preferred").exists(),
+            "preferred_job": preferred_doc,
+            "preferred_job_orphaned": preferred_job_orphaned,
+            "orphaned_preferred_archive_count": orphaned_archive_count,
             "sql_projection_pending": C.read_json_file(runtime_dir / "sql_projection_pending.json"),
         },
         "viewer": {
@@ -525,11 +560,14 @@ async def lifecycle(
                 job_doc = C.extract_job(doc)
 
     result_interp = None
-    rp = _find_in_state("results", job_id) or _find_in_state("done", job_id) or _find_in_state("published", job_id)
-    if rp is not None:
-        doc = C.read_json_file(rp)
+    for st in ("results", "done", "published"):
+        rp = _find_in_state(st, job_id)
+        if rp is None:
+            continue
+        doc = _read_reconciled_result_doc(job_id, rp, st)
         if doc is not None:
             result_interp = C.interpret_result(doc)
+            break
 
     sql_detail = None
     try:
@@ -587,19 +625,7 @@ async def result(
     for st in ("results", "done", "published", "rejected"):
         p = _find_in_state(st, job_id)
         if p is not None:
-            if st == "results":
-                try:
-                    read_res = C.read_canonical_result(p, expected_job_id=job_id)
-                    if getattr(read_res, "terminal_result_valid", False) and isinstance(getattr(read_res, "payload", None), dict):
-                        return {
-                            "job_id": job_id,
-                            "found_in": st,
-                            "interpretation": C.interpret_result(read_res.payload),
-                            "raw": read_res.payload,
-                        }
-                except Exception:
-                    pass
-            doc = C.read_json_file(p)
+            doc = _read_reconciled_result_doc(job_id, p, st)
             return {
                 "job_id": job_id,
                 "found_in": st,
