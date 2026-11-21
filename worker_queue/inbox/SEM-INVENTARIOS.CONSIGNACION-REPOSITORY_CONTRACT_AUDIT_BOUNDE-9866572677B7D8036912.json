@@ -1,0 +1,64 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/inventarios/",
+          "backend/modules/compras/",
+          "backend/modules/proveedores/",
+          "backend/modules/cava_socios/",
+          "backend/modules/cavas_corporativas/",
+          "backend/modules/tablajeria/",
+          "backend/modules/fase2_operativo/",
+          "backend/modules/configuracion/",
+          "backend/core/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "consignacion",
+          "almacen",
+          "inventario",
+          "inventarios",
+          "traspaso",
+          "movimiento",
+          "proveedor",
+          "existencias",
+          "mpro",
+          "softrestaurant",
+          "rbac",
+          "folio",
+          "devolucion",
+          "liquidacion"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-INVENTARIOS.CONSIGNACION-REPOSITORY_CONTRACT_AUDIT_BOUNDE-9866572677B7D8036912",
+  "mode": "READ_ONLY",
+  "objective": "Auditoria READ_ONLY de contratos del repositorio para INVENTARIOS.CONSIGNACION: mapear modulos propietarios, rutas, servicios, repositorios, tablas referenciadas, contratos RBAC, integraciones (MPRO/SoftRestaurant), scheduler y componentes reutilizables de inventarios, almacenes, movimientos, traspasos y consignacion. Sin modificar codigo, SQL, credenciales, integraciones ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INVENTARIOS.CONSIGNACION",
+    "conflict_domains": [
+      "INVENTARIOS.CONSIGNACION"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
