@@ -1,0 +1,115 @@
+{
+  "base_sha": "43888db9a3dcd3709c9e12756a6ea9cead5ce134",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-11-21T02:26:04Z",
+  "execution_base_sha": "43888db9a3dcd3709c9e12756a6ea9cead5ce134",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M2-ENTERPRISE-MENU-SQL-EXEC-R3-20261121",
+  "operation": "SQL_MIGRATION_DEVELOPMENT",
+  "operation_summary": {
+    "credential_source": "canonical",
+    "returncode": 0,
+    "status": "PASS"
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-21T02:27:12Z",
+  "quality_gate": "PASS",
+  "requested_base_sha": "43888db9a3dcd3709c9e12756a6ea9cead5ce134",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "server_name",
+              "db_name",
+              "login_name",
+              "db_user"
+            ],
+            "name": "worker_console_menu_sql_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "ns559627",
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ModuloID",
+              "Codigo",
+              "Nombre",
+              "Orden",
+              "Activo"
+            ],
+            "name": "sistema_module_status",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                27,
+                "SISTEMA",
+                "Administración Sistema",
+                27,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "MenuID",
+              "ModuloID",
+              "modulo_codigo",
+              "menu_codigo",
+              "Nombre",
+              "Icono",
+              "Ruta",
+              "Orden",
+              "RequierePermiso",
+              "Activo"
+            ],
+            "name": "worker_console_menu_row",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1080,
+                27,
+                "SISTEMA",
+                "sistema.worker_console",
+                "Universal Worker Console",
+                "ShieldCheck",
+                "/worker-console",
+                12,
+                "RBAC_ADMIN",
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-11-21T02:25:58Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto preflight SQL HRLectura, una migracion Development versionada y SHA-bound mediante writer dedicado, y post-audit SQL HRLectura. No acepto SQL inline, shell arbitrario ni toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
