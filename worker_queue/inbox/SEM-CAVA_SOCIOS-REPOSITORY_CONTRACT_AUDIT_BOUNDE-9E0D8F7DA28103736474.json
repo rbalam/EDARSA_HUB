@@ -1,0 +1,47 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "CavasCorporativas",
+          "cavas-corporativas",
+          "descorche",
+          "beneficio",
+          "convenio"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CAVA_SOCIOS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-9E0D8F7DA28103736474",
+  "mode": "READ_ONLY",
+  "objective": "Cavas Corporativas: auditar de forma READ_ONLY y focalizada los contratos aún no verificados de convenios, beneficios, autorizados, alcances por unidad y configuración de descorche/cobro, reutilizando Gates certificados y evitando duplicados. Examinar la implementación existente, detectar brechas respaldadas por evidencia y proponer siguiente Gate funcional mínimo. No modificar repositorio, SQL ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CAVA_SOCIOS",
+    "conflict_domains": [
+      "CAVA_SOCIOS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
