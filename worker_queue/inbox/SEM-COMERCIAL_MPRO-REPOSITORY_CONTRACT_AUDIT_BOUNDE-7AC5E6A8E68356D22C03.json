@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 35,
+        "paths": [
+          "backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py",
+          "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+          "backend/modules/comercial/queries/mpro.py",
+          "backend/modules/comercial/service.py",
+          "backend/modules/comercial/routes.py"
+        ],
+        "search_terms": [
+          "get_pos_config_for_unidad",
+          "Sistema_SyncPOS_Config",
+          "Sync_Sales",
+          "unidad_negocio_id",
+          "fecha_operativa",
+          "_resolver_codigo_sucursal_mpro",
+          "get_kpis_mpro"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMERCIAL_MPRO-REPOSITORY_CONTRACT_AUDIT_BOUNDE-7AC5E6A8E68356D22C03",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 READ_ONLY focalizado distinto del Gate 0 ya certificado: examinar contratos de sincronización y mapeo MPRO para ORIGEN y 130QRO; identificar rutas exactas y verificaciones necesarias para SQL Server canónico sin LIVE, sin modificar código ni Producción. Entregar evidencia para definir una conciliación de datos posterior, sin afirmar resultados SQL no consultados.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_MPRO",
+    "conflict_domains": [
+      "COMERCIAL_MPRO"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
