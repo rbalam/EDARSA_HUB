@@ -1,0 +1,136 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "        if selector_type == \"json_path\":\n            normalized[name] = {\n                \"source\": _normalize_source(\n                    raw_spec.get(\"source\")\n                ),\n                \"selector\": _normalize_json_path_selector(\n                    selector\n                ),\n            }\n            continue",
+      "path": "tools/mirror_sync/worker_deliverable_contract.py",
+      "replacement": "        semantic_requirements = normalize_semantic_requirements(\n            raw_spec.get(\"semantic_requirements\")\n        )\n\n        if selector_type == \"json_path\":\n            normalized[name] = {\n                \"source\": _normalize_source(\n                    raw_spec.get(\"source\")\n                ),\n                \"selector\": _normalize_json_path_selector(\n                    selector\n                ),\n                \"semantic_requirements\": semantic_requirements,\n            }\n            continue",
+      "source_sha256": "7656ef5d3dd44eff0e868bc27f66c7b221654d26c828389552ebbeb1d3912b19",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "            normalized[name] = {\n                \"selector\": _normalize_object_selector(\n                    selector\n                )\n            }",
+      "path": "tools/mirror_sync/worker_deliverable_contract.py",
+      "replacement": "            normalized[name] = {\n                \"selector\": _normalize_object_selector(\n                    selector\n                ),\n                \"semantic_requirements\": semantic_requirements,\n            }",
+      "source_sha256": "3b73b7894b6f163c65454f5c052fb4ca851db918c9842c438f3fbc8c3500422f",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "tools/mirror_sync/worker_deliverable_contract.py",
+      "replacement": "\n\n# Optional semantic assertions. Legacy deliverables without assertions retain\n# their historical mechanical-completeness contract.\ndef normalize_semantic_requirements(value: Any) -> list[dict[str, Any]]:\n    if value is None:\n        return []\n    if not isinstance(value, list) or not value or len(value) > 64:\n        raise ValueError(\"SEMANTIC_REQUIREMENTS_INVALID\")\n    normalized: list[dict[str, Any]] = []\n    for rule in value:\n        if not isinstance(rule, dict) or set(rule) - {\"selector\", \"operator\", \"expected\"}:\n            raise ValueError(\"SEMANTIC_REQUIREMENT_INVALID\")\n        selector = _normalize_json_path_selector(rule.get(\"selector\"))\n        operator = rule.get(\"operator\")\n        if operator not in (\"present\", \"non_empty\", \"equals\", \"min_items\"):\n            raise ValueError(\"SEMANTIC_OPERATOR_UNSUPPORTED\")\n        if operator == \"equals\":\n            if \"expected\" not in rule or not isinstance(rule[\"expected\"], (str, int, float, bool, type(None))):\n                raise ValueError(\"SEMANTIC_EXPECTED_INVALID\")\n        elif operator == \"min_items\":\n            if type(rule.get(\"expected\")) is not int or not 1 <= rule[\"expected\"] <= 10000:\n                raise ValueError(\"SEMANTIC_EXPECTED_INVALID\")\n        elif \"expected\" in rule:\n            raise ValueError(\"SEMANTIC_EXPECTED_UNEXPECTED\")\n        normalized.append({\n            \"selector\": selector,\n            \"operator\": operator,\n            **({\"expected\": rule[\"expected\"]} if \"expected\" in rule else {}),\n        })\n    return normalized\n\n\ndef evaluate_semantic_deliverables(\n    required_deliverables: Any,\n    deliverable_specs: Any,\n    deliverables: Any,\n) -> list[str]:\n    \"\"\"Fail closed for declared semantic assertions, without changing legacy jobs.\"\"\"\n    specs = normalize_deliverable_specs(deliverable_specs, required_deliverables)\n    materialized = normalize_materialized_deliverables(deliverables)\n    failures: list[str] = []\n    for name, spec in specs.items():\n        for index, rule in enumerate(spec.get(\"semantic_requirements\", []), 1):\n            reason = None\n            try:\n                value = resolve_json_path(\n                    materialized.get(name),\n                    rule[\"selector\"][\"path\"],\n                )\n            except ValueError:\n                value = None\n                reason = \"PATH_MISSING\"\n            op = rule[\"operator\"]\n            if reason is None:\n                if op == \"present\":\n                    valid = value is not None\n                elif op == \"non_empty\":\n                    valid = deliverable_payload_present(value)\n                elif op == \"equals\":\n                    valid = type(value) is type(rule[\"expected\"]) and value == rule[\"expected\"]\n                elif op == \"min_items\":\n                    valid = isinstance(value, (list, dict)) and len(value) >= rule[\"expected\"]\n                else:\n                    valid = False\n                if not valid:\n                    reason = \"ASSERTION_FAILED\"\n            if reason:\n                failures.append(f\"{name}:{index}:{reason}\")\n    return failures\n",
+      "source_sha256": "8c5ee9b70ed77392a5ac067f89888be665286877c942f1e517ee5273d126fa44",
+      "type": "append_once"
+    },
+    {
+      "expected_occurrences": 2,
+      "old_text": "evaluate_deliverables, materialize_deliverables, normalize_deliverable_specs, normalize_required_deliverables",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "replacement": "evaluate_deliverables, evaluate_semantic_deliverables, materialize_deliverables, normalize_deliverable_specs, normalize_required_deliverables",
+      "source_sha256": "421053bc86456e3a3f36fc98a090cbe63540406798931c76f2a27472cf6a5575",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "            deliverables_complete = (\n                not result.get(\"required_deliverables\")\n                or not result.get(\"missing_deliverables\")\n            )",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "replacement": "            result[\"semantic_failures\"] = evaluate_semantic_deliverables(\n                result.get(\"required_deliverables\"),\n                result.get(\"deliverable_specs\"),\n                result.get(\"deliverables\"),\n            )\n            deliverables_complete = (\n                (not result.get(\"required_deliverables\")\n                 or not result.get(\"missing_deliverables\"))\n                and not result[\"semantic_failures\"]\n            )",
+      "source_sha256": "98051f1a829ec86abd9ae0db86511dd7a518eaa6e414d2c9d5a38269421ebcab",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "            deliverables_complete = (\n                deliverable_evaluation is None\n                or deliverable_evaluation.complete\n            )",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "replacement": "            result[\"semantic_failures\"] = evaluate_semantic_deliverables(\n                result.get(\"required_deliverables\"),\n                result.get(\"deliverable_specs\"),\n                result.get(\"deliverables\"),\n            )\n            deliverables_complete = (\n                (deliverable_evaluation is None\n                 or deliverable_evaluation.complete)\n                and not result[\"semantic_failures\"]\n            )",
+      "source_sha256": "1f6e29c35aec3c83d651c47247e902510e40818950c968d2cbde9433dffb1ced",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 2,
+      "old_text": "                    if objective_pending else \"PENDING_DELIVERABLES\"",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "replacement": "                    if objective_pending else (\n                        \"PENDING_SEMANTIC_DELIVERABLES\"\n                        if result.get(\"semantic_failures\") and not result.get(\"missing_deliverables\")\n                        else \"PENDING_DELIVERABLES\"\n                    )",
+      "source_sha256": "85ba20c17eea5cecadf0f32b3c2c23a0d6e5ea807dc853df1bf13027acb81a5e",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "                result[\"certification\"] = \"PENDING_DELIVERABLES\"\n                result[\"work_completion\"] = \"PENDING_DELIVERABLES\"",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "replacement": "                pending_state = (\n                    \"PENDING_SEMANTIC_DELIVERABLES\"\n                    if result.get(\"semantic_failures\") and not result.get(\"missing_deliverables\")\n                    else \"PENDING_DELIVERABLES\"\n                )\n                result[\"certification\"] = pending_state\n                result[\"work_completion\"] = pending_state",
+      "source_sha256": "2395734e1d318a81f05a068003e5dc34a95dc1c141dd26137a324b71cff3f55e",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 2,
+      "old_text": "import evaluate_deliverables",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "replacement": "import evaluate_deliverables, evaluate_semantic_deliverables",
+      "source_sha256": "cc4ba836ad89c0d2b1865068eeff7a6953677e7734b473df585f4c0a2c388981",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "        if base_pass and (\n            readonly_evidence is not None",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "replacement": "        if required_deliverables is not None and base_pass:\n            semantic_failures = evaluate_semantic_deliverables(\n                required_deliverables,\n                result.get(\"deliverable_specs\"),\n                result.get(\"deliverables\"),\n            )\n            if semantic_failures:\n                return {\n                    \"certified\": False,\n                    \"certification\": \"PENDING_SEMANTIC_DELIVERABLES\",\n                    \"work_completion\": \"PENDING_SEMANTIC_DELIVERABLES\",\n                    \"percent_complete\": min(int(result.get(\"percent_complete\") or 0), 95),\n                    \"semantic_failures\": semantic_failures,\n                    \"certification_basis\": \"SEMANTIC_REQUIREMENTS_NOT_SATISFIED\",\n                }\n        if base_pass and (\n            readonly_evidence is not None",
+      "source_sha256": "b72e878b5c8820154f32924574cd06e9a4e61225bd973128e1fbfcfe7b46d869",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_deliverable_contract.py",
+      "replacement": "\n\ndef test_r4_semantic_validation_positive_and_negative():\n    from tools.mirror_sync.worker_deliverable_contract import (\n        evaluate_semantic_deliverables,\n    )\n    specs = {\"EXAMPLE_OUTPUT\": {\n        \"source\": {\"check_type\": \"repository_contract_audit\", \"occurrence\": 1},\n        \"selector\": {\"type\": \"json_path\", \"path\": [\"payload\"]},\n        \"semantic_requirements\": [\n            {\"selector\": {\"type\": \"json_path\", \"path\": [\"semantic_valid\"]},\n             \"operator\": \"equals\", \"expected\": True},\n            {\"selector\": {\"type\": \"json_path\", \"path\": [\"evidence_refs\"]},\n             \"operator\": \"min_items\", \"expected\": 1},\n        ],\n    }}\n    assert not evaluate_semantic_deliverables(\n        [\"EXAMPLE_OUTPUT\"], specs,\n        {\"EXAMPLE_OUTPUT\": {\"semantic_valid\": True, \"evidence_refs\": [\"repo:path\"]}},\n    )\n    assert evaluate_semantic_deliverables(\n        [\"EXAMPLE_OUTPUT\"], specs,\n        {\"EXAMPLE_OUTPUT\": {\"semantic_valid\": False, \"evidence_refs\": []}},\n    )\n\n\ndef test_r4_unknown_operator_fails_closed():\n    from tools.mirror_sync.worker_deliverable_contract import normalize_deliverable_specs\n    try:\n        normalize_deliverable_specs({\n            \"EXAMPLE_OUTPUT\": {\n                \"source\": {\"check_type\": \"git_diff_check\", \"occurrence\": 1},\n                \"selector\": {\"type\": \"json_path\", \"path\": [\"output\"]},\n                \"semantic_requirements\": [\n                    {\"selector\": {\"type\": \"json_path\", \"path\": [\"output\"]},\n                     \"operator\": \"always_pass\"},\n                ],\n            }\n        }, [\"EXAMPLE_OUTPUT\"])\n    except ValueError as exc:\n        assert str(exc) == \"SEMANTIC_OPERATOR_UNSUPPORTED\"\n    else:\n        raise AssertionError(\"Unknown operator must fail closed\")\n\n\ndef test_r4_publisher_refuses_semantically_invalid_mechanical_completion():\n    publisher = load_module(\n        \"deliverable_publisher_semantic_r4\",\n        \"tools/mirror_sync/universal_job_result_publisher.py\",\n    )\n    result = generic_result()\n    result[\"required_deliverables\"] = [\"EXAMPLE_OUTPUT\"]\n    result[\"deliverables\"] = {\"EXAMPLE_OUTPUT\": {\"semantic_valid\": False}}\n    result[\"deliverable_specs\"] = {\"EXAMPLE_OUTPUT\": {\n        \"source\": {\"check_type\": \"git_diff_check\", \"occurrence\": 1},\n        \"selector\": {\"type\": \"json_path\", \"path\": [\"output\"]},\n        \"semantic_requirements\": [{\n            \"selector\": {\"type\": \"json_path\", \"path\": [\"semantic_valid\"]},\n            \"operator\": \"equals\", \"expected\": True,\n        }],\n    }}\n    evidence = publisher.certification_evidence(result)\n    assert evidence[\"certified\"] is False\n    assert evidence[\"certification\"] == \"PENDING_SEMANTIC_DELIVERABLES\"\n    assert evidence[\"percent_complete\"] <= 95\n",
+      "source_sha256": "22cccd6a0c65c45cfcb4c490a8b93c5b83fe9ce1f9c1c1327f6bf9f65c858f2f",
+      "type": "append_once"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_deliverable_contract.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "backend/tests/test_worker_deliverable_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_deliverable_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-SEMANTIC-DELIVERABLE-CONTRACT-GATE1-MUTATION-R4",
+  "mode": "MUTATION",
+  "objective": "Semantic Deliverable Contract R4: fail-closed generic semantic assertions enforced in schema, dispatcher READ_ONLY/READ_ONLY_SQL and publisher, with regression tests; no production changes.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
