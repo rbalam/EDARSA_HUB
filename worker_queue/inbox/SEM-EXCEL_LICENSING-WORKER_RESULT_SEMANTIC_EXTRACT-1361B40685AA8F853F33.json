@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/SEM-EXCEL_LICENSING-REPOSITORY_CONTRACT_AUDIT_BOUNDE-5889E4B32A0F9EAABA2B.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-EXCEL_LICENSING-WORKER_RESULT_SEMANTIC_EXTRACT-1361B40685AA8F853F33",
+  "mode": "READ_ONLY",
+  "objective": "Recuperar y sintetizar la evidencia terminal existente del Gate 0 de licenciamiento Excel híbrido sin repetir la auditoría. Identificar hallazgos y limitaciones de truncamiento, riesgos y criterios de Gate 1. Exclusivamente READ_ONLY.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "EXCEL_LICENSING",
+    "conflict_domains": [
+      "EXCEL_LICENSING"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
