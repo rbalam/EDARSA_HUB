@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "include_router",
+          "APIRouter",
+          "get_current_user",
+          "require_permission",
+          "get_sql_connection",
+          "writer_connection",
+          "transaction",
+          "COA_ExpedienteReferencias",
+          "Venta_Encabezado",
+          "Cliente_Catalogo"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-E2D91BB299A0B72F8593",
+  "mode": "READ_ONLY",
+  "objective": "COA Gate 6H READ_ONLY. Auditar exclusivamente el patrón canónico para montar un nuevo bounded context backend COA/Fiscal sin duplicaciones: localizar registro/include_router de módulos, patrones de APIRouter, helpers de get_current_user y permisos/RBAC, writer connection SQL-first, transacciones/idempotencia y tests de rutas/repositorios. Confirmar cómo enlazar de forma segura Fiscal_DocumentosEmitidos con Venta_Encabezado, Cliente_Catalogo y COA_ExpedienteReferencias. No modificar archivos ni base de datos. No tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COA",
+    "conflict_domains": [
+      "COA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
