@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/bos_executive/",
+          "backend/tests/test_bos_executive_e3a.py",
+          "backend/tests/test_bos_executive_e3b.py",
+          "backend/tests/test_bos_executive_e3c.py",
+          "backend/tests/test_bos_executive_e3d.py",
+          "frontend/src/pages/TableroEjecutivo.js"
+        ],
+        "search_terms": [
+          "bos_executive",
+          "explain_causal_finding",
+          "aggregate_priorities",
+          "recommend_from_finding",
+          "authorize_recommended_action",
+          "E3E",
+          "E3F"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-BOS_EXECUTIVE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-282A896A59047FF4C68D",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY el estado contractual BOS V1 Gate E3A-E3F en Edarsahub_Desarrollo. Identificar las pruebas E3A-E3D, integración E3E y evidencias de E3F; reportar brechas sin ejecutar mutaciones, sin producción y sin afirmar pytest PASS si no fue ejecutado.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "BOS_EXECUTIVE",
+    "conflict_domains": [
+      "BOS_EXECUTIVE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
