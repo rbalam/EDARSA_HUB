@@ -1,0 +1,55 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/finanzas/",
+          "backend/modules/integrations_center/",
+          "backend/modules/integrations_runtime/"
+        ],
+        "search_terms": [
+          "Finanzas_CxP_PagosOrigenQueue",
+          "repository_bancarios",
+          "cuentas_bancarias",
+          "movimientos-banco",
+          "cargar-estado-cuenta",
+          "Servidores_Conexiones",
+          "Sistema_Capacidades",
+          "Sync_Control_Ejecuciones",
+          "Sync_Control_Evidencias",
+          "scheduler",
+          "secret_manager",
+          "RBAC"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-UNIVERSAL_BANKING-REPOSITORY_CONTRACT_AUDIT_BOUNDE-6B058C2DB9426AEB5AC9",
+  "mode": "READ_ONLY",
+  "objective": "Cerrar Gate 2 de Universal Banking con evidencia final no truncada, limitada exclusivamente a los puntos operativos de extension minima. Auditar solo Finanzas bancario/CxP/ingresos e Integrations Center/Runtime para confirmar ownership, rutas, repositorios, conexiones, scheduler y contratos de sync. No incluir backend/tests, no repetir discovery general, no modificar archivos, no ejecutar SQL ni tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "UNIVERSAL_BANKING",
+    "conflict_domains": [
+      "UNIVERSAL_BANKING"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
