@@ -1,0 +1,33 @@
+{
+  "base_sha": "fc147c3c41ce4beef7366949b479830c58769bf3",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "candidate_sha": "c76bb6114f0707b8d7e8ca082b86a2e1d514301c",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-11-21T05:05:41Z",
+  "execution_base_sha": "fc147c3c41ce4beef7366949b479830c58769bf3",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/coa_fiscal/__init__.py",
+    "backend/modules/coa_fiscal/repository.py",
+    "backend/modules/coa_fiscal/routes.py",
+    "backend/modules/coa_fiscal/schemas.py",
+    "backend/tests/test_coa_fiscal_backend_gate6i.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-COA-GATE6I-FISCAL-BACKEND-R1-20261120",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-11-21T05:16:05Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-21T05:05:26Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
