@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/cava_socios/routes.py",
+          "backend/modules/cava_socios/service.py",
+          "backend/modules/cava_socios/blind_audit_operational_service.py",
+          "backend/modules/cava_socios/blind_audit.py"
+        ],
+        "search_terms": [
+          "aplicar_ajustes_inventario_fisico",
+          "inventario-fisico",
+          "auditorias-ciegas",
+          "CAVA_SOCIOS_EDITAR",
+          "autorizacion",
+          "idempotency_key",
+          "commit"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CAVAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-5D341C3A5A913562CF82",
+  "mode": "READ_ONLY",
+  "objective": "READ_ONLY audit of Cavas inventory physical adjustment and blind reconciliation contracts, RBAC, approval gates, idempotency, and concurrency. Inspect bounded repository paths only. No writes or production access.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CAVAS",
+    "conflict_domains": [
+      "CAVAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
