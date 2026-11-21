@@ -1,0 +1,62 @@
+{
+  "actions": [
+    {
+      "anchor": "# COA Gate 6F - fixed Development SQL seed channel.",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "\n\n# SQL Governance - sealed Development dependency ingress for SQLGlot.\n# This capability owns exactly one requirements mutation and accepts no paths,\n# package names, versions, commands, SQL, or arbitrary Worker actions.\n_SQLGLOT_DEP_CAPABILITY = \"SQLGLOT_DEPENDENCY_DEVELOPMENT\"\n_SQLGLOT_DEP_CONTEXT = \"SQL_GOVERNANCE\"\n_SQLGLOT_DEP_AUTH_REF = \"sqlglot-gate0b-certified-readonly-20261120\"\n_SQLGLOT_DEP_REQUIREMENTS = \"backend/requirements.txt\"\n_SQLGLOT_DEP_LINE = \"sqlglot==30.33.0\\n\"\n\n\ndef _sqlglot_dependency_development_builder(request: Mapping[str, Any]) -> dict[str, Any]:\n    context = _g3_context(request)\n    if context != _SQLGLOT_DEP_CONTEXT:\n        raise SemanticCapabilityError(\"SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED\")\n\n    c = _g3_constraints(request, {\"authorization_ref\"})\n    if c.get(\"authorization_ref\") != _SQLGLOT_DEP_AUTH_REF:\n        raise SemanticCapabilityError(\"SEMANTIC_SQLGLOT_AUTHORIZATION_REQUIRED\")\n\n    requirements_path = _DEV_REPO_ROOT / _SQLGLOT_DEP_REQUIREMENTS\n    if not requirements_path.is_file():\n        raise SemanticCapabilityError(\"SEMANTIC_SQLGLOT_REQUIREMENTS_MISSING\")\n\n    current = requirements_path.read_text(encoding=\"utf-8\")\n    if _SQLGLOT_DEP_LINE.strip() in {line.strip() for line in current.splitlines()}:\n        raise SemanticCapabilityError(\"SEMANTIC_SQLGLOT_DEPENDENCY_ALREADY_PRESENT\")\n    if any(line.strip().lower().startswith(\"sqlglot\") for line in current.splitlines()):\n        raise SemanticCapabilityError(\"SEMANTIC_SQLGLOT_DEPENDENCY_VERSION_CONFLICT\")\n\n    anchor = \"SQLAlchemy==2.0.50\\n\"\n    if current.count(anchor) != 1:\n        raise SemanticCapabilityError(\"SEMANTIC_SQLGLOT_REQUIREMENTS_ANCHOR_DRIFT\")\n\n    updated = current.replace(anchor, anchor + _SQLGLOT_DEP_LINE, 1)\n    source_sha = _gate_b_hashlib.sha256(current.encode(\"utf-8\")).hexdigest()\n\n    return {\n        \"actions\": [{\n            \"type\": \"write_file\",\n            \"path\": _SQLGLOT_DEP_REQUIREMENTS,\n            \"content\": updated,\n            \"source_sha256\": source_sha,\n            \"expected_sha256\": source_sha,\n        }],\n        \"checks\": [{\"type\": \"git_diff_check\"}],\n        \"scheduling\": {\n            **_g3_scheduling(context),\n            \"conflict_domains\": [\"GLOBAL_GIT_WRITER\", context],\n        },\n    }\n\n\nregister_capability(\n    SemanticCapability(\n        code=_SQLGLOT_DEP_CAPABILITY,\n        modes=(\"MUTATION\",),\n        builder=_sqlglot_dependency_development_builder,\n    )\n)\n\n_CAPABILITY_METADATA[_SQLGLOT_DEP_CAPABILITY] = {\n    \"bounded_context_rule\": _SQLGLOT_DEP_CONTEXT,\n    \"allowed_constraints\": (\"authorization_ref\",),\n    \"allowed_path_roots\": (),\n}\n",
+      "source_sha256": "6f6f17d201e137b6ac109f7fef658ffdd42cff9c52aaac618fe67e4c054ecc8c",
+      "type": "insert_before"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_mcp_dev_ingress_gate_b.py",
+      "replacement": "\n\ndef test_sqlglot_dependency_capability_is_sealed_and_fixed(monkeypatch, tmp_path):\n    cap = sem_caps.resolve_capability(\"SQLGLOT_DEPENDENCY_DEVELOPMENT\")\n    assert cap.modes == (\"MUTATION\",)\n\n    requirements = tmp_path / \"requirements.txt\"\n    requirements.write_text(\"SQLAlchemy==2.0.50\\nstarlette==0.37.2\\n\", encoding=\"utf-8\")\n    monkeypatch.setattr(sem_caps, \"_DEV_REPO_ROOT\", tmp_path)\n\n    payload = cap.builder({\n        \"bounded_context\": \"SQL_GOVERNANCE\",\n        \"constraints\": {\n            \"authorization_ref\": \"sqlglot-gate0b-certified-readonly-20261120\",\n        },\n    })\n\n    assert payload[\"actions\"][0][\"path\"] == \"backend/requirements.txt\"\n    assert payload[\"actions\"][0][\"type\"] == \"write_file\"\n    assert \"sqlglot==30.33.0\\n\" in payload[\"actions\"][0][\"content\"]\n    assert payload[\"checks\"] == [{\"type\": \"git_diff_check\"}]\n\n\ndef test_sqlglot_dependency_capability_rejects_arbitrary_constraints():\n    cap = sem_caps.resolve_capability(\"SQLGLOT_DEPENDENCY_DEVELOPMENT\")\n    with pytest.raises(sem_caps.SemanticCapabilityError):\n        cap.builder({\n            \"bounded_context\": \"SQL_GOVERNANCE\",\n            \"constraints\": {\n                \"authorization_ref\": \"sqlglot-gate0b-certified-readonly-20261120\",\n                \"path\": \"backend/requirements.txt\",\n            },\n        })\n",
+      "source_sha256": "951466e2ffa5297efbec7eacbc7adbbd40180a3b404f09f8bf34f8005852bea3",
+      "type": "append_once"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_mcp_dev_ingress_gate_b.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_mcp_dev_ingress_gate_b.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-SQLGLOT-DEPENDENCY-CAPABILITY-GATE1-R1-20261120",
+  "mode": "MUTATION",
+  "objective": "Implementar en Desarrollo una capability semántica sellada SQLGLOT_DEPENDENCY_DEVELOPMENT que únicamente pueda añadir la dependencia fija sqlglot==30.33.0 a backend/requirements.txt bajo autorización exacta del Gate0B certificado. En este Gate NO ejecutar todavía la capability nueva ni modificar requirements.txt. Añadir pruebas contractuales que demuestren bounded_context, versión fija y rechazo de constraints arbitrarios. No tocar Producción, SQL, credenciales, Workers, colas ni publicadores.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SQL_GOVERNANCE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "SQL_GOVERNANCE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
