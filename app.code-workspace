@@ -4,5 +4,12 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"chat.tools.terminal.autoApprove": {
+			"/^git status --short --branch && git rev-parse HEAD && git branch --show-current$/": {
+				"approve": true,
+				"matchCommandLine": true
+			}
+		}
+	}
 }
