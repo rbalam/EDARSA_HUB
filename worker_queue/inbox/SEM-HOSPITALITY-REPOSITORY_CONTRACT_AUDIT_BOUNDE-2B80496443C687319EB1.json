@@ -1,0 +1,57 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/hospitality/",
+          "backend/modules/finanzas/",
+          "backend/modules/cavas_corporativas/",
+          "backend/modules/comercial/",
+          "frontend/src/modules/hospitality/"
+        ],
+        "search_terms": [
+          "hospitality",
+          "reservation",
+          "booking",
+          "guest",
+          "room",
+          "folio",
+          "charge",
+          "checkin",
+          "checkout",
+          "unit",
+          "rbac",
+          "availability"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-HOSPITALITY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-2B80496443C687319EB1",
+  "mode": "READ_ONLY",
+  "objective": "HOSPITALITY DISEÑO 2A — G1 READ_ONLY diferencial: antes de implementar el nucleo operativo hotelero, identificar evidencia real de contratos y ownership para propiedades/unidades, habitaciones/recursos reservables, disponibilidad y concurrencia, reservas/estancias, identidad del huesped, folios/cargos y RBAC. Reutilizar arquitectura Hospitality Book, servicios SQL canónicos y dominios existentes; no modificar archivos, no crear modelos/servicios/Workers ni tocar Producción. Entregar rutas, símbolos, contratos existentes, brechas y riesgos verificables y criterios de Gate G1; no repetir G0 certificado.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "HOSPITALITY",
+    "conflict_domains": [
+      "HOSPITALITY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
