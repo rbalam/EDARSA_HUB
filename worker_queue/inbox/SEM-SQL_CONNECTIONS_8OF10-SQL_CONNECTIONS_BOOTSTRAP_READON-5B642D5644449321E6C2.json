@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 200,
+        "paths": [
+          "backend/core/centro_control/routes.py",
+          "backend/core/config/edarsahub_config.py",
+          "backend/core/sql_first/connection_factory.py",
+          "backend/core/sql_first/db.py",
+          "backend/core/connections/hrlectura_connection_factory.py",
+          "backend/server.py"
+        ],
+        "search_terms": [
+          "get_edarsahub_pymssql_connection",
+          "EDARSAHUB_SQL_HOST",
+          "EDARSAHUB_SQL_PORT",
+          "EDARSAHUB_SQL_DATABASE",
+          "EDARSAHUB_SQL_USER",
+          "EDARSAHUB_SQL_PASSWORD",
+          "_cc_sql_connection",
+          "_cc_sql_env",
+          "pymssql",
+          "get_sql_connection"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-SQL_CONNECTIONS_8OF10-SQL_CONNECTIONS_BOOTSTRAP_READON-5B642D5644449321E6C2",
+  "mode": "READ_ONLY",
+  "objective": "Continuar el frente EDARSAHUB SQL connections 8/10 desde el estado real. Auditar en READ_ONLY los contratos de configuracion SQL canonica, el estado de backend/core/centro_control/routes.py y las referencias a EDARSAHUB_SQL_HOST, EDARSAHUB_SQL_PORT, EDARSAHUB_SQL_DATABASE, EDARSAHUB_SQL_USER y EDARSAHUB_SQL_PASSWORD. No leer secretos, no ejecutar SQL, no reiniciar servicios, no modificar Produccion, no ejecutar 019 y no tocar MongoDB. Entregar evidencia estructurada y siguiente accion concreta.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SQL_CONNECTIONS_8OF10",
+    "conflict_domains": [
+      "SQL_CONNECTIONS_8OF10"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
