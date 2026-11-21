@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "41f7c14b11c33ecdb12d01fed4d2c58fef1679f6",
-  "generated_at_utc": "2026-11-21T03:40:38Z",
+  "generated_at_utc": "2026-11-21T03:42:10Z",
   "history": {
     "done_total_local": 1928,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3126,
+      "age_seconds": 3219,
       "job_id": "EDARSAHUB-BOS-WORKER-OPS-GATE-M2-CONSOLE-RUNTIME-PARITY-R4-20261121",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 45,
+      "age_seconds": 137,
       "job_id": "SEM-CAVAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-5D341C3A5A913562CF82",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 58,
+      "age_seconds": 151,
       "job_id": "SEM-CAVA_SOCIOS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-9E0D8F7DA28103736474",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 125,
+      "age_seconds": 217,
       "job_id": "SEM-CAVA_SOCIOS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B81F37FA98027C476D79",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,8 +54,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-21T03:40:24Z",
-    "last_receive_utc": "2026-11-21T03:40:19Z",
+    "last_cycle_utc": "2026-11-21T03:41:51Z",
+    "last_receive_utc": "2026-11-21T03:41:46Z",
     "last_terminal_utc": "2026-11-21T03:39:52Z",
     "pid": "87",
     "runtime_fingerprint": {
