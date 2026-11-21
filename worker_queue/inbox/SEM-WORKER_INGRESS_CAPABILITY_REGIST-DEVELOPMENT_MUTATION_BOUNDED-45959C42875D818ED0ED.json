@@ -1,0 +1,74 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "_G3_AUDIT_ROOTS = _G3_ROOTS + (\"backend/core/\",)",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "_G3_AUDIT_ROOTS = _G3_ROOTS + (\"backend/core/\", \"backend/database/\",)",
+      "source_sha256": "6f6f17d201e137b6ac109f7fef658ffdd42cff9c52aaac618fe67e4c054ecc8c",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "      paths must start with backend/modules/, backend/tests/, frontend/src/, tools/mirror_sync/, or backend/core/.",
+      "path": "backend/modules/worker_mcp/server.py",
+      "replacement": "      paths must start with backend/modules/, backend/tests/, frontend/src/, tools/mirror_sync/, backend/core/, or backend/database/.",
+      "source_sha256": "363d3d21ed83014f1f28e830d4853d3cbeab88dcdb0cd236196d5dcbe642c963",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    assert \"backend/core/\" in audit[\"allowed_path_roots\"]\n    assert \"backend/core/\" not in mutation[\"allowed_path_roots\"]",
+      "path": "backend/tests/test_worker_remote_semantic_ingress_gate2a.py",
+      "replacement": "    assert \"backend/core/\" in audit[\"allowed_path_roots\"]\n    assert \"backend/database/\" in audit[\"allowed_path_roots\"]\n    assert \"backend/core/\" not in mutation[\"allowed_path_roots\"]\n    assert \"backend/database/\" not in mutation[\"allowed_path_roots\"]",
+      "source_sha256": "3c97f970fb049018b88d97aeb5f89a3d18e4964256954bed65060d418a0c8b9b",
+      "type": "replace_text"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/modules/worker_mcp/server.py",
+        "backend/tests/test_worker_remote_semantic_ingress_gate2a.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_remote_semantic_ingress_gate2a.py",
+        "backend/tests/test_worker_mcp_gate2b.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_INGRESS_CAPABILITY_REGIST-DEVELOPMENT_MUTATION_BOUNDED-45959C42875D818ED0ED",
+  "mode": "MUTATION",
+  "objective": "Extender exclusivamente la auditoría READ_ONLY REPOSITORY_CONTRACT_AUDIT_BOUNDED para inspeccionar backend/database/ y poder certificar reutilización de tablas/esquemas antes de crear objetos nuevos. Mantener DEVELOPMENT_MUTATION_BOUNDED sin acceso a backend/database/ ni backend/core/, actualizar el contrato MCP y reforzar pruebas de regresión. No tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS_CAPABILITY_REGISTRY",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_INGRESS_CAPABILITY_REGISTRY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
