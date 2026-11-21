@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/worker_maintenance_runtime.py",
+          "tools/mirror_sync/worker_repair_auto_loop.py",
+          "tools/mirror_sync/universal_job_worker.sh"
+        ],
+        "search_terms": [
+          "sleep",
+          "interval",
+          "while",
+          "subprocess",
+          "control_plane",
+          "scan"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_RUNTIME_CONTROL_PLANE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-238B802D6F4CA829576C",
+  "mode": "READ_ONLY",
+  "objective": "Diagnostico P0 read-only de consumo CPU de Worker Control Plane en Preview. Auditar bucles, polling, intervalos, subprocess y costos de escaneo en worker_control_plane.py y componentes relacionados; correlacionar solo evidencia del repositorio, identificar causa probable y una unica correccion minima sin modificar archivos, servicios, Git, SQL ni Produccion. Reutilizar capacidad existente y no usar RH.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_RUNTIME_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_RUNTIME_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
