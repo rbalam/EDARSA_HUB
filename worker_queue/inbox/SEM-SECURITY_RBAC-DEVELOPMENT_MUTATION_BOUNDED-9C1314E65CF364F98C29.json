@@ -1,0 +1,102 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "from core.corporate_filters.service import CorporateFilterService\n",
+      "path": "backend/modules/fase2_operativo/services/cargos_service.py",
+      "replacement": "from core.corporate_filters.service import CorporateFilterService\nfrom core.rbac_helper_sql import get_role_level\n",
+      "source_sha256": "899fc966f9b8a4e296049b03b4c22b10d4bb7c23f9dd43befc2ce16e031c22c9",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    # Jerarquía de roles\n    JERARQUIA_ROLES = {\n        \"AFECTADO\": 0,\n        \"SUPERVISOR\": 1,\n        \"GERENTE_OPS\": 2,\n        \"DIRECCION\": 3,\n        \"ADMIN\": 4,\n    }\n    \n",
+      "path": "backend/modules/fase2_operativo/services/cargos_service.py",
+      "replacement": "",
+      "source_sha256": "181ea82505b260bdf51f1eb156054bd7c8a66a5f8e1aa565f18f3876a4522720",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "        # Reversa siempre requiere nivel alto\n        if self.JERARQUIA_ROLES.get(usuario_rol, 0) < self.JERARQUIA_ROLES[\"GERENTE_OPS\"]:\n",
+      "path": "backend/modules/fase2_operativo/services/cargos_service.py",
+      "replacement": "        # Exigir nivel efectivo desde Usuario_Roles (SQL), sin jerarquias paralelas.\n        nivel_usuario = get_role_level({\"role\": usuario_rol})\n        nivel_minimo = get_role_level({\"role\": \"GERENTE_OPS\"})\n        if nivel_usuario <= 0 or nivel_minimo <= 0 or nivel_usuario < nivel_minimo:\n",
+      "source_sha256": "72be0b1c81115a5f48e8074a3e8f52d19e1386d85f38765e552d2d022100bb76",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "        nivel_usuario = self.JERARQUIA_ROLES.get(usuario_rol, 0)\n        nivel_necesario = self.JERARQUIA_ROLES.get(nivel_requerido, 3)\n        \n        if nivel_usuario < nivel_necesario:\n",
+      "path": "backend/modules/fase2_operativo/services/cargos_service.py",
+      "replacement": "        nivel_usuario = get_role_level({\"role\": usuario_rol})\n        nivel_necesario = get_role_level({\"role\": nivel_requerido})\n\n        # Sin jerarquia SQL verificable, denegar incluso si ambos niveles son cero.\n        if nivel_usuario <= 0 or nivel_necesario <= 0 or nivel_usuario < nivel_necesario:\n",
+      "source_sha256": "29239927f170a424577ba8d577a5f1d7f9b552b42fff07e8a0fdf0a061634143",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "from core.corporate_filters.service import CorporateFilterService\n",
+      "path": "backend/modules/fase2_operativo/services/responsabilidad_service.py",
+      "replacement": "from core.corporate_filters.service import CorporateFilterService\nfrom core.rbac_helper_sql import get_role_level\n",
+      "source_sha256": "71863274f427130df03369a9e0ffad492aa29a3b3cdd78d9165398bcbc74728a",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "        # Jerarquía de roles\n        jerarquia = {\n            RolAutorizacion.AFECTADO.value: 0,\n            RolAutorizacion.SUPERVISOR.value: 1,\n            RolAutorizacion.GERENTE_OPS.value: 2,\n            RolAutorizacion.DIRECCION.value: 3,\n        }\n        \n        nivel_usuario = jerarquia.get(usuario_rol, 0)\n        nivel_necesario = jerarquia.get(nivel_requerido.value, 3)\n        \n        # Exonerar siempre requiere nivel superior\n        if accion == AccionResponsabilidad.EXONERAR.value:\n            nivel_necesario = max(nivel_necesario, jerarquia[RolAutorizacion.GERENTE_OPS.value])\n        \n        if nivel_usuario < nivel_necesario:\n",
+      "path": "backend/modules/fase2_operativo/services/responsabilidad_service.py",
+      "replacement": "        # Reutilizar el nivel de Usuario_Roles en SQL en lugar de jerarquias fijas.\n        nivel_usuario = get_role_level({\"role\": usuario_rol})\n        nivel_necesario = get_role_level({\"role\": nivel_requerido.value})\n\n        if nivel_usuario <= 0 or nivel_necesario <= 0:\n            raise PermisoInsuficienteError(\"Jerarquia SQL no disponible para autorizar\")\n\n        # Exonerar siempre requiere nivel de gerente o superior.\n        if accion == AccionResponsabilidad.EXONERAR.value:\n            nivel_gerente = get_role_level({\"role\": RolAutorizacion.GERENTE_OPS.value})\n            if nivel_gerente <= 0:\n                raise PermisoInsuficienteError(\"Jerarquia SQL no disponible para exonerar\")\n            nivel_necesario = max(nivel_necesario, nivel_gerente)\n\n        if nivel_usuario < nivel_necesario:\n",
+      "source_sha256": "7c3d5d3f692dacc5a68f6086a7453333db70b84f88cabf26896937d5cd4027e8",
+      "type": "replace_text"
+    },
+    {
+      "content": "\"\"\"Regresiones aisladas del control de monto basado en Usuario_Roles SQL.\n\nNo abren SQL, no usan credenciales y no alteran Produccion.\n\"\"\"\nimport ast\nimport asyncio\nfrom enum import Enum\nfrom pathlib import Path\nfrom types import SimpleNamespace\n\nimport pytest\n\n\n_ROOT = Path(__file__).resolve().parents[1] / \"modules\" / \"fase2_operativo\" / \"services\"\n_LEVELS = {\n    \"SUPERVISOR\": 50,\n    \"GERENTE_OPS\": 60,\n    \"DIRECCION\": 80,\n    \"ADMIN\": 90,\n    \"SUPERADMIN\": 100,\n}\n\n\nclass PermisoInsuficienteError(Exception):\n    pass\n\n\nclass RolAutorizacion(str, Enum):\n    SUPERVISOR = \"SUPERVISOR\"\n    GERENTE_OPS = \"GERENTE_OPS\"\n    DIRECCION = \"DIRECCION\"\n\n\nclass AccionResponsabilidad(str, Enum):\n    EXONERAR = \"EXONERAR\"\n\n\nclass EstatusCargo(str, Enum):\n    APLICADO = \"APLICADO\"\n    REVERTIDO = \"REVERTIDO\"\n\n\nclass AccionCargo(str, Enum):\n    REVERTIR = \"REVERTIR\"\n\n\ndef _method(filename, class_name, method_name, levels=None):\n    tree = ast.parse((_ROOT / filename).read_text(encoding=\"utf-8\"))\n    cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == class_name)\n    fn = next(\n        n for n in cls.body\n        if isinstance(n, ast.AsyncFunctionDef) and n.name == method_name\n    )\n    fn.decorator_list = []\n    ns = {\n        \"get_role_level\": lambda u: (levels if levels is not None else _LEVELS).get(u.get(\"role\"), 0),\n        \"PermisoInsuficienteError\": PermisoInsuficienteError,\n        \"RolAutorizacion\": RolAutorizacion,\n        \"AccionResponsabilidad\": AccionResponsabilidad,\n        \"EstatusCargo\": EstatusCargo,\n        \"AccionCargo\": AccionCargo,\n        \"CargoAccionResponse\": lambda **kwargs: kwargs,\n        \"Optional\": __import__(\"typing\").Optional,\n        \"datetime\": __import__(\"datetime\").datetime,\n        \"timezone\": __import__(\"datetime\").timezone,\n        \"logger\": SimpleNamespace(warning=lambda *args, **kwargs: None),\n    }\n    exec(compile(ast.fix_missing_locations(ast.Module(body=[fn], type_ignores=[])),\n                 filename, \"exec\"), ns)\n    return ns[method_name]\n\n\nclass _Config:\n    async def get_valor_float(self, name, fallback):\n        return 500 if name.endswith(\"SUPERVISOR\") else 2000\n\n\n@pytest.mark.parametrize(\n    \"role,monto,allowed\",\n    [\n        (\"SUPERVISOR\", 500, True),\n        (\"SUPERVISOR\", 501, False),\n        (\"GERENTE_OPS\", 2000, True),\n        (\"GERENTE_OPS\", 2001, False),\n        (\"DIRECCION\", 2001, True),\n        (\"SUPERADMIN\", 2500, True),\n        (\"ADMIN\", 2500, True),\n        (\"DESCONOCIDO\", 100, False),\n    ],\n)\ndef test_cargos_umbral_con_jerarquia_sql(role, monto, allowed):\n    fn = _method(\"cargos_service.py\", \"CargosService\", \"_validar_permiso_por_monto\")\n    host = SimpleNamespace(UMBRAL_SUPERVISOR=500, UMBRAL_GERENTE=2000)\n    if allowed:\n        asyncio.run(fn(host, monto, role, \"AUTORIZAR\"))\n    else:\n        with pytest.raises(PermisoInsuficienteError):\n            asyncio.run(fn(host, monto, role, \"AUTORIZAR\"))\n\n\n@pytest.mark.parametrize(\n    \"role,monto,allowed\",\n    [\n        (\"SUPERVISOR\", 500, True),\n        (\"SUPERVISOR\", 501, False),\n        (\"GERENTE_OPS\", 2000, True),\n        (\"GERENTE_OPS\", 2001, False),\n        (\"DIRECCION\", 2001, True),\n        (\"SUPERADMIN\", 2500, True),\n        (\"DESCONOCIDO\", 100, False),\n    ],\n)\ndef test_responsabilidad_umbral_con_jerarquia_sql(role, monto, allowed):\n    fn = _method(\"responsabilidad_service.py\", \"ResponsabilidadService\", \"_validar_permiso_por_monto\")\n    host = SimpleNamespace(config_repo=_Config())\n    if allowed:\n        asyncio.run(fn(host, monto, role, \"APROBAR\"))\n    else:\n        with pytest.raises(PermisoInsuficienteError):\n            asyncio.run(fn(host, monto, role, \"APROBAR\"))\n\n\ndef test_exonerar_exige_gerente_sql():\n    fn = _method(\"responsabilidad_service.py\", \"ResponsabilidadService\", \"_validar_permiso_por_monto\")\n    host = SimpleNamespace(config_repo=_Config())\n    with pytest.raises(PermisoInsuficienteError):\n        asyncio.run(fn(host, 100, \"SUPERVISOR\", \"EXONERAR\"))\n    asyncio.run(fn(host, 100, \"SUPERADMIN\", \"EXONERAR\"))\n\n\n@pytest.mark.parametrize(\"filename,cls,host\", [\n    (\"cargos_service.py\", \"CargosService\", SimpleNamespace(UMBRAL_SUPERVISOR=500, UMBRAL_GERENTE=2000)),\n    (\"responsabilidad_service.py\", \"ResponsabilidadService\", SimpleNamespace(config_repo=_Config())),\n])\ndef test_sin_jerarquia_sql_no_hay_autorizacion(filename, cls, host):\n    fn = _method(filename, cls, \"_validar_permiso_por_monto\", levels={})\n    with pytest.raises(PermisoInsuficienteError):\n        asyncio.run(fn(host, 50, \"SUPERADMIN\", \"APROBAR\"))\n\n\nclass _CargoRepo:\n    def __init__(self):\n        self.writes = 0\n\n    async def actualizar_cargo(self, *args, **kwargs):\n        self.writes += 1\n\n\nclass _CargoLog:\n    async def registrar_log(self, **kwargs):\n        return \"log-ok\"\n\n\nclass _CargoHost:\n    def __init__(self):\n        self.cargos_repo = _CargoRepo()\n        self.log_repo = _CargoLog()\n\n    async def _obtener_cargo(self, cargo_id):\n        return {\"estatus_cargo\": \"APLICADO\", \"monto_aplicado\": 1000}\n\n    async def _validar_transicion(self, *args):\n        return None\n\n\n@pytest.mark.parametrize(\"role,allowed\", [\n    (\"SUPERVISOR\", False),\n    (\"GERENTE_OPS\", True),\n    (\"SUPERADMIN\", True),\n    (\"DESCONOCIDO\", False),\n])\ndef test_revertir_cargo_verifica_jerarquia_sql(role, allowed):\n    fn = _method(\"cargos_service.py\", \"CargosService\", \"revertir_cargo\")\n    host = _CargoHost()\n    args = (host, \"cargo-1\", \"actor-1\", role, \"Motivo de reversa suficientemente largo\")\n    if allowed:\n        response = asyncio.run(fn(*args))\n        assert response[\"success\"] is True\n        assert host.cargos_repo.writes == 1\n    else:\n        with pytest.raises(PermisoInsuficienteError):\n            asyncio.run(fn(*args))\n        assert host.cargos_repo.writes == 0\n",
+      "path": "backend/tests/test_fase2_monto_jerarquia_sql_contract.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/fase2_operativo/services/cargos_service.py",
+        "backend/modules/fase2_operativo/services/responsabilidad_service.py",
+        "backend/tests/test_fase2_monto_jerarquia_sql_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_fase2_monto_jerarquia_sql_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-SECURITY_RBAC-DEVELOPMENT_MUTATION_BOUNDED-9C1314E65CF364F98C29",
+  "mode": "MUTATION",
+  "objective": "Corregir exclusivamente en Desarrollo el defecto P0 de autorizacion por monto en Cargos y Responsabilidad: retirar jerarquias locales fijas y reutilizar get_role_level de core.rbac_helper_sql basado en Usuario_Roles.NivelJerarquia; confirmar privilegio funcional SUPERADMIN >= DIRECCION cuando SQL lo respalda, mantener require_explicit_permission SQL en rutas, denegar si SQL no determina nivel o rol desconocido, preservar validacion de exoneracion nivel gerente y reversas, probar limites de monto y no-escritura ante denegacion. Solo 2 servicios y test nuevo, hashes SHA256 y ocurrencias exactas; py_compile, pytest y git_diff_check. No tocar Produccion, migraciones SQL, credenciales, integraciones, ni publicar sin estado Git consistente.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SECURITY_RBAC",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "SECURITY_RBAC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
