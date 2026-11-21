@@ -1,0 +1,22 @@
+{
+  "blockers": [
+    "dispatcher_exception:RuntimeError:GIT_DIVERGENCE_BLOCKED"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-11-21T08:29:19Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-WORKER_CAPABILITY_REGISTRY-DEVELOPMENT_MUTATION_BOUNDED-DAD9170492BF4695F2BE",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-11-21T08:31:20Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-21T08:29:19Z",
+  "status": "GIT_DIVERGENCE_BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
