@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 12,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "SpeechRecognition",
+          "webkitSpeechRecognition",
+          "MediaRecorder",
+          "microphone",
+          "microfono",
+          "voice",
+          "voz",
+          "speech",
+          "audio",
+          "transcripcion",
+          "transcription"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMPRAS_PEDIDOS_VOZ_VOICE_INFRA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-AD6173CA78977B28F0B8",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en READ_ONLY la infraestructura reutilizable existente de voz/audio/transcripcion en EDARSAHUB para soportar Pedidos por Voz en Compras sin crear un motor paralelo. Identificar uso de microphone, MediaRecorder, SpeechRecognition, speech-to-text, transcripcion, audio, voice o voz en backend y frontend. No modificar archivos, Git, SQL ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMPRAS_PEDIDOS_VOZ_VOICE_INFRA",
+    "conflict_domains": [
+      "COMPRAS_PEDIDOS_VOZ_VOICE_INFRA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
