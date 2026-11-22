@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "8373aeeeda4109a58e9907dd604b6071f3d2da9a",
-  "generated_at_utc": "2026-11-21T22:12:07Z",
+  "generated_at_utc": "2026-11-22T03:20:11Z",
   "history": {
     "done_total_local": 2027,
     "pending_total_local": 0,
@@ -14,38 +14,7 @@
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [
-    {
-      "age_seconds": 2546,
-      "job_id": "SEM-INVENTARIOS.CONSIGNACION-REPOSITORY_CONTRACT_AUDIT_BOUNDE-9866572677B7D8036912",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1334,
-      "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-DE0CFAF650C815B1C967",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1347,
-      "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-1293591BABD5AC3580B4",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1245,
-      "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-86809C332F04BEBD837B",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1282,
-      "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_SEMANTIC_EXTRACT-9E5F82A5466E94D48A64",
-      "reason": null,
-      "state": "RESULT_READY"
-    }
-  ],
+  "jobs": [],
   "local_development_sha": "8373aeeeda4109a58e9907dd604b6071f3d2da9a",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
@@ -54,16 +23,16 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 0,
   "queue_running": 0,
   "remote_development_sha": "8373aeeeda4109a58e9907dd604b6071f3d2da9a",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-21T22:11:50Z",
-    "last_receive_utc": "2026-11-21T22:11:45Z",
+    "last_cycle_utc": "2026-11-22T03:20:08Z",
+    "last_receive_utc": "2026-11-22T03:20:03Z",
     "last_terminal_utc": "2026-11-21T21:51:21Z",
-    "pid": "303",
+    "pid": "87",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "1d0fbc52710c01a98d7b53291ba10ae01234248b",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
