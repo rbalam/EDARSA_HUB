@@ -4,17 +4,24 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "8373aeeeda4109a58e9907dd604b6071f3d2da9a",
-  "generated_at_utc": "2026-11-22T03:21:46Z",
+  "generated_at_utc": "2026-11-22T03:23:25Z",
   "history": {
-    "done_total_local": 2027,
+    "done_total_local": 2028,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1389,
-    "results_total_local": 3175
+    "results_total_local": 3176
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [],
+  "jobs": [
+    {
+      "age_seconds": 61,
+      "job_id": "SEM-COMUNICACIONES_CFDI-REPOSITORY_CONTRACT_AUDIT_BOUNDE-6C20255EE8A2520C4C1C",
+      "reason": null,
+      "state": "RESULT_READY"
+    }
+  ],
   "local_development_sha": "8373aeeeda4109a58e9907dd604b6071f3d2da9a",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
@@ -23,15 +30,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 0,
+  "queue_result_ready_recent": 1,
   "queue_running": 0,
   "remote_development_sha": "8373aeeeda4109a58e9907dd604b6071f3d2da9a",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-22T03:21:26Z",
-    "last_receive_utc": "2026-11-22T03:21:21Z",
-    "last_terminal_utc": "2026-11-21T21:51:21Z",
+    "last_cycle_utc": "2026-11-22T03:22:56Z",
+    "last_receive_utc": "2026-11-22T03:23:21Z",
+    "last_terminal_utc": "2026-11-22T03:22:23Z",
     "pid": "87",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "1d0fbc52710c01a98d7b53291ba10ae01234248b",
