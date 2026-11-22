@@ -1,0 +1,59 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/finanzas/",
+          "backend/modules/integrations_center/",
+          "backend/modules/fase2_operativo/services/",
+          "backend/modules/compras/",
+          "backend/tests/",
+          "frontend/src/pages/Compras.js",
+          "frontend/src/pages/Finanzas.js"
+        ],
+        "search_terms": [
+          "cfdi",
+          "xml",
+          "factura",
+          "correo",
+          "email",
+          "adjunto",
+          "compras",
+          "comprobaciones",
+          "cuentas_por_pagar",
+          "ingesta",
+          "idempotencia",
+          "proveedor"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMUNICACIONES_CFDI-REPOSITORY_CONTRACT_AUDIT_BOUNDE-6C20255EE8A2520C4C1C",
+  "mode": "READ_ONLY",
+  "objective": "Auditar SOLO la brecha funcional especifica de ingesta de correo y adjuntos XML/CFDI, validacion y correlacion con Compras, recepciones y CxP dentro de EDARSAHUB BOS. Reutilizar los cinco jobs READ_ONLY historicos certificados sin repetirlos; verificar deduplicacion y contratos en Desarrollo, documentar rutas, servicios, tablas, RBAC, pruebas y brechas realmente comprobadas. Sin acciones de escritura y sin cambios a Produccion. Entregar evidencia y propuesta de siguiente Gate minimo.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMUNICACIONES_CFDI",
+    "conflict_domains": [
+      "COMUNICACIONES_CFDI"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
