@@ -3,80 +3,86 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "7fbe9e73823609a0477b3b581ecc90932aee42de",
-  "generated_at_utc": "2026-11-24T21:41:31Z",
+  "development_sha": "efcab199739a5efcb4316b448229ab6b3e8ee9fc",
+  "generated_at_utc": "2026-11-24T21:42:51Z",
   "history": {
-    "done_total_local": 2054,
+    "done_total_local": 2055,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1392,
-    "results_total_local": 3205
+    "results_total_local": 3206
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1829,
+      "age_seconds": 1909,
       "job_id": "SEM-REQUEST-05AC0E1C8AFBDD9365C51A89",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 329,
+      "age_seconds": 408,
       "job_id": "SEM-REQUEST-0EB9610035A474700FB36733",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1724,
+      "age_seconds": 1803,
       "job_id": "SEM-REQUEST-5D6CF4837578FB30C5B9B71D",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 391,
+      "age_seconds": 470,
       "job_id": "SEM-REQUEST-6E3B3EA07813FC4FF2201B1E",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 517,
+      "age_seconds": 597,
       "job_id": "SEM-REQUEST-72FAF1FE0FDC53C63E057647",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 48,
+      "age_seconds": 127,
       "job_id": "SEM-REQUEST-756B4EB40A7D61C3AA5AB355",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 480,
+      "age_seconds": 560,
       "job_id": "SEM-REQUEST-CF3479EBA8C4308A20E9D7DB",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 561,
+      "age_seconds": 640,
       "job_id": "SEM-REQUEST-E03FE6504825AE0931972167",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 83,
+      "age_seconds": 51,
+      "job_id": "SEM-REQUEST-E9D77D1D9CDC5E7E25035D88",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 162,
       "job_id": "SEM-REQUEST-F2C7B796F808C50EA7100AB9",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1870,
+      "age_seconds": 1950,
       "job_id": "SEM-REQUEST-F9945C9B88B3A690B0B93726",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "7fbe9e73823609a0477b3b581ecc90932aee42de",
+  "local_development_sha": "efcab199739a5efcb4316b448229ab6b3e8ee9fc",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -84,21 +90,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 10,
+  "queue_result_ready_recent": 11,
   "queue_running": 0,
-  "remote_development_sha": "7fbe9e73823609a0477b3b581ecc90932aee42de",
+  "remote_development_sha": "efcab199739a5efcb4316b448229ab6b3e8ee9fc",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-24T21:41:20Z",
-    "last_receive_utc": "2026-11-24T21:41:15Z",
-    "last_terminal_utc": "2026-11-24T21:40:43Z",
+    "last_cycle_utc": "2026-11-24T21:42:38Z",
+    "last_receive_utc": "2026-11-24T21:42:49Z",
+    "last_terminal_utc": "2026-11-24T21:41:59Z",
     "pid": "598018",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "81f1f452875f629141c99c7212475d652d420f86",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "7fbe9e73823609a0477b3b581ecc90932aee42de",
+      "development_sha": "efcab199739a5efcb4316b448229ab6b3e8ee9fc",
       "expected_generation": "20261117-universal-job-worker-lifecycle-v4",
       "generation_aligned": true,
       "production_touched": false,
@@ -112,8 +118,8 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": true,
-      "worker_code_tree_sha": "81f1f452875f629141c99c7212475d652d420f86"
+      "worker_code_tree_aligned": false,
+      "worker_code_tree_sha": "ec798dd2446193d1bf83e7ac5c27870d941f87bb"
     }
   },
   "schema": "edarsahub.worker-health.v3",
