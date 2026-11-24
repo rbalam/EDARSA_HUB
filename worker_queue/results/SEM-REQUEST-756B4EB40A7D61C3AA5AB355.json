@@ -1,0 +1,59 @@
+{
+  "base_sha": "7fbe9e73823609a0477b3b581ecc90932aee42de",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-24T21:40:43Z",
+  "execution_base_sha": "7fbe9e73823609a0477b3b581ecc90932aee42de",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-756B4EB40A7D61C3AA5AB355",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-24T21:41:41Z",
+  "quality_gate": "PASS",
+  "result_detail_evidence": {
+    "checks": [
+      {
+        "blockers": [
+          "check_failed:pytest"
+        ],
+        "certification": "NOT_CERTIFIED",
+        "evidence_status": "FAILED_RESULT_NO_STRUCTURED_EVIDENCE",
+        "evidence_truncated": false,
+        "failed_checks": [
+          {
+            "assertion_lines": [],
+            "output": "ERROR: file or directory not found: tools/tests/test_worker_mcp_gate2b.py\n\n============================= test session starts ==============================\nplatform linux -- Python 3.11.18, pytest-9.0.2, pluggy-1.6.0\nrootdir: /tmp/edarsahub-worker-jobs/SEM-REQUEST-F2C7B796F808C50EA7100AB9/backend\nconfigfile: pytest.ini\nplugins: asyncio-1.4.0, anyio-4.12.1\nasyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollected 0 items\n\n============================ no tests ran in 0.00s =============================",
+            "returncode": 4,
+            "status": "FAIL",
+            "type": "pytest"
+          }
+        ],
+        "files_changed": [
+          "backend/modules/worker_mcp/server.py",
+          "backend/tests/test_worker_maintenance_history_readonly.py",
+          "tools/mirror_sync/worker_maintenance_history_readonly.py"
+        ],
+        "percent_complete": 80,
+        "production_touched": false,
+        "quality_gate": "FAIL",
+        "result_status": "GIT_TESTS_FAILED",
+        "source_completed_at_utc": "2026-11-24T21:40:08Z",
+        "source_job_id": "SEM-REQUEST-F2C7B796F808C50EA7100AB9",
+        "source_terminal": true,
+        "tests": "FAIL"
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-24T21:40:43Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
