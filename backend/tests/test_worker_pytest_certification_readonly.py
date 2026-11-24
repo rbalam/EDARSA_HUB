@@ -111,3 +111,30 @@ def test_ia_global_rbac_readonly_fixed_suite():
 def test_ia_global_rbac_rejects_caller_controlled_checks(unsafe):
     with pytest.raises(SemanticCapabilityError):
         expand(bounded_context="IA_ASSISTANT", constraints=unsafe)
+
+
+def test_bos_executive_readonly_fixed_suite():
+    result = expand(bounded_context="BOS_EXECUTIVE")
+    assert result["actions"] == []
+    assert result["checks"] == [{
+        "type": "pytest",
+        "paths": [
+            "backend/tests/test_bos_executive_e3a.py",
+            "backend/tests/test_bos_executive_e3b.py",
+            "backend/tests/test_bos_executive_e3c.py",
+            "backend/tests/test_bos_executive_e3d.py",
+        ],
+    }]
+    assert result["scheduling"]["bounded_context"] == "BOS_EXECUTIVE"
+
+
+@pytest.mark.parametrize("unsafe", [
+    {"paths": ["backend/tests/test_anything.py"]},
+    {"checks": [{"type": "pytest", "paths": ["backend/tests/test_anything.py"]}]},
+    {"commands": ["python -m pytest"]},
+    {"actions": []},
+    {"production_allowed": True},
+])
+def test_bos_executive_rejects_caller_controlled_checks(unsafe):
+    with pytest.raises(SemanticCapabilityError):
+        expand(bounded_context="BOS_EXECUTIVE", constraints=unsafe)

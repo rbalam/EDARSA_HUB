@@ -440,6 +440,12 @@ _WORKER_PYTEST_FIXED_SUITES = {
         "backend/tests/test_ia_contextual_comercial_contract.py",
         "backend/tests/test_comercial_analytics_tickets.py",
     ),
+    "BOS_EXECUTIVE": (
+        "backend/tests/test_bos_executive_e3a.py",
+        "backend/tests/test_bos_executive_e3b.py",
+        "backend/tests/test_bos_executive_e3c.py",
+        "backend/tests/test_bos_executive_e3d.py",
+    ),
 }
 
 
