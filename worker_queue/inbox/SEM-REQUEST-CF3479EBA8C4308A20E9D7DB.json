@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/SEM-REQUEST-E03FE6504825AE0931972167.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-CF3479EBA8C4308A20E9D7DB",
+  "mode": "READ_ONLY",
+  "objective": "Extraer semanticamente el resultado terminal de la consulta focalizada Knowledge Loop para recuperar la evidencia del check worker_maintenance_history_readonly, especialmente focused_linkage, sin mutaciones ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_REPAIR_KNOWLEDGE_LOOP",
+    "conflict_domains": [
+      "WORKER_REPAIR_KNOWLEDGE_LOOP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
