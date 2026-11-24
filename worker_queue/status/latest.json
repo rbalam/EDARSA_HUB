@@ -4,26 +4,38 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "8373aeeeda4109a58e9907dd604b6071f3d2da9a",
-  "generated_at_utc": "2026-11-24T04:05:09Z",
+  "generated_at_utc": "2026-11-24T04:06:47Z",
   "history": {
-    "done_total_local": 2030,
+    "done_total_local": 2032,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1389,
-    "results_total_local": 3178
+    "results_total_local": 3180
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 863,
+      "age_seconds": 960,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-EFBE5ED844FA2F3EDAE1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 825,
+      "age_seconds": 923,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-EC78ACE64331AB1E874F",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 33,
+      "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-FF8D7A348E645AF9A566",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 11,
+      "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_SEMANTIC_EXTRACT-D12A073F8B6458A93B6A",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -36,15 +48,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "remote_development_sha": "8373aeeeda4109a58e9907dd604b6071f3d2da9a",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-24T04:04:50Z",
-    "last_receive_utc": "2026-11-24T04:04:45Z",
-    "last_terminal_utc": "2026-11-24T03:51:24Z",
+    "last_cycle_utc": "2026-11-24T04:06:41Z",
+    "last_receive_utc": "2026-11-24T04:06:36Z",
+    "last_terminal_utc": "2026-11-24T04:06:35Z",
     "pid": "87",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "1d0fbc52710c01a98d7b53291ba10ae01234248b",
