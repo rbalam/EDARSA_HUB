@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 20,
+        "paths": [
+          "backend/modules/worker_mcp/server.py",
+          "backend/modules/worker_mcp/client.py",
+          "backend/modules/worker_mcp/oauth_security.py",
+          "backend/modules/worker_ingress/routes.py",
+          "backend/modules/worker_ingress/service.py",
+          "backend/modules/worker_ingress/semantic_capabilities.py",
+          "backend/modules/worker_ingress/schemas.py"
+        ],
+        "search_terms": [
+          "preflight",
+          "resolve_go_context",
+          "capability_catalog",
+          "runtime_convergence",
+          "require_tool_scope",
+          "submit_objective_tool",
+          "get_job_status_tool"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-F2D7A9D056F5C86A5265C988",
+  "mode": "READ_ONLY",
+  "objective": "Auditoría focalizada READ_ONLY de la brecha de exposición MCP de Context, Capabilities y Preflight. Reutilizar auditoría certificada SEM-REQUEST-AF7744B75CF6470CCA019A1E, no repetir inventario general. Antes de ejecutar comprobar trabajos equivalentes existentes. Determinar contratos de endpoints existentes, scopes efectivos requeridos, mecanismos de autenticación, sanitización, idempotencia y si ya existe exposición MCP o alternativa canónica; identificar cambios mínimos necesarios sin implementarlos. Distinguir código estático de disponibilidad runtime; no afirmar comprobaciones en vivo no ejecutadas. Exigir actions=[] y production_allowed=false en contrato generado. No modificar archivos ni producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS",
+    "conflict_domains": [
+      "WORKER_INGRESS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
