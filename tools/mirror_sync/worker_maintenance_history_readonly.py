@@ -87,6 +87,163 @@ def _safe_result_summary(repair_job_id: object) -> dict | None:
     }
 
 
+
+def _superseded_linkage(reason: object) -> dict | None:
+    if not isinstance(reason, str) or not reason.strip():
+        return None
+    value = reason.strip()
+    successor_prefix = "SUPERSEDED_BY_CERTIFIED_SUCCESSOR:"
+    incident_prefix = "SUPERSEDED_BY_CERTIFIED_INCIDENT:"
+
+    if value.startswith(successor_prefix):
+        successor_job_id = value[len(successor_prefix):].strip()
+        safe_job_id = (
+            successor_job_id
+            if SAFE_JOB_ID.fullmatch(successor_job_id)
+            else None
+        )
+        result = _safe_result_summary(safe_job_id)
+        return {
+            "reason_class": "CERTIFIED_SUCCESSOR",
+            "successor_job_fingerprint": (
+                _fingerprint(safe_job_id)
+                if safe_job_id
+                else None
+            ),
+            "successor_result": result,
+            "successor_certified": bool(
+                result
+                and result.get("certification") == "CERTIFIED"
+                and result.get("quality_gate") == "PASS"
+                and result.get("tests") == "PASS"
+                and result.get("production_touched") is False
+            ),
+        }
+
+    if value.startswith(incident_prefix):
+        successor_incident_id = value[len(incident_prefix):].strip()
+        return {
+            "reason_class": "CERTIFIED_INCIDENT",
+            "successor_incident_fingerprint": (
+                _fingerprint(successor_incident_id)
+                if successor_incident_id
+                else None
+            ),
+        }
+
+    return {
+        "reason_class": "OTHER",
+        "reason_fingerprint": _fingerprint(value),
+    }
+
+
+def _learned_registry_summary(
+    *,
+    files: list[Path],
+    directory: Path,
+    learned_capabilities: tuple,
+) -> dict:
+    rows: list[dict] = []
+    for file in files:
+        payload = _safe_file(file, directory)
+        inner = payload.get("incident")
+        incident = inner if isinstance(inner, dict) else payload
+        incident_id = incident.get("incident_id") or payload.get("incident_id")
+        if not isinstance(incident_id, str) or not incident_id:
+            continue
+        rows.append({
+            "incident_id": incident_id,
+            "problem_signature": (
+                incident.get("problem_signature")
+                or payload.get("problem_signature")
+            ),
+            "capability_code": (
+                incident.get("capability_code")
+                or payload.get("capability_code")
+            ),
+        })
+
+    capabilities: list[dict] = []
+    for capability in learned_capabilities:
+        code = str(getattr(capability, "code", "") or "")
+        problem_signature = str(
+            getattr(capability, "problem_signature", "") or ""
+        )
+        learned_from = str(
+            getattr(capability, "learned_from_incident", "") or ""
+        )
+        evidence = getattr(capability, "evidence", {}) or {}
+        reuse_rows = [
+            row
+            for row in rows
+            if row["incident_id"] != learned_from
+            and (
+                (code and row["capability_code"] == code)
+                or (
+                    problem_signature
+                    and row["problem_signature"] == problem_signature
+                )
+            )
+        ]
+        source_job_id = evidence.get("source_job_id")
+        repair_job_id = evidence.get("repair_job_id")
+        capabilities.append({
+            "code": _bounded_code(code),
+            "problem_signature": (
+                "SIG:" + _fingerprint(problem_signature)
+                if problem_signature
+                else None
+            ),
+            "learned_from_incident_fingerprint": (
+                _fingerprint(learned_from)
+                if learned_from
+                else None
+            ),
+            "evidence_source_job_fingerprint": (
+                _fingerprint(source_job_id)
+                if isinstance(source_job_id, str) and source_job_id
+                else None
+            ),
+            "evidence_repair_job_fingerprint": (
+                _fingerprint(repair_job_id)
+                if isinstance(repair_job_id, str) and repair_job_id
+                else None
+            ),
+            "evidence_certified": (
+                evidence.get("certified") is True
+                and str(evidence.get("certification") or "").upper()
+                == "CERTIFIED"
+            ),
+            "reusable": bool(
+                getattr(capability, "reusable", False)
+            ),
+            "incident_pattern_count": len(
+                tuple(getattr(capability, "incident_patterns", ()) or ())
+            ),
+            "registered_incident_count": len(
+                tuple(getattr(capability, "incident_ids", ()) or ())
+            ),
+            "reuse_observed": bool(reuse_rows),
+            "reuse_incident_count": len(reuse_rows),
+            "reuse_incident_fingerprints": [
+                _fingerprint(row["incident_id"])
+                for row in reuse_rows[:10]
+            ],
+        })
+
+    return {
+        "count": len(capabilities),
+        "reusable_count": sum(
+            1 for item in capabilities if item["reusable"]
+        ),
+        "reuse_observed_count": sum(
+            1 for item in capabilities if item["reuse_observed"]
+        ),
+        "capabilities": capabilities[:50],
+        "raw_identifiers_exposed": False,
+    }
+
+
 def _focused_linkage(
     source_job_id: str,
     *,
@@ -128,6 +285,10 @@ def _focused_linkage(
             "repair_job_id": (
                 payload.get("repair_job_id")
                 or incident.get("repair_job_id")
+            ),
+            "superseded_reason": (
+                payload.get("superseded_reason")
+                or incident.get("superseded_reason")
             ),
         }
         rows.append(row)
@@ -220,6 +381,9 @@ def _focused_linkage(
             })
 
         repair_summary = _safe_result_summary(effective_repair_job_id)
+        supersession = _superseded_linkage(
+            row.get("superseded_reason")
+        )
         signature = row["problem_signature"]
         capability_code = row["capability_code"]
         matches.append({
@@ -246,6 +410,13 @@ def _focused_linkage(
                 else None
             ),
             "repair_result": repair_summary,
+            "supersession": supersession,
+            "certified_successor_observed": bool(
+                supersession
+                and supersession.get("reason_class")
+                == "CERTIFIED_SUCCESSOR"
+                and supersession.get("successor_certified") is True
+            ),
             "learned_capabilities": capability_rows,
             "linkage_certified": bool(
                 repair_summary
@@ -281,7 +452,10 @@ def collect(source_job_id: str | None = None) -> dict:
 
     # Reuse the registered Repair Planner and persistent Capability Registry.
     builtins = set(planner.registered_capabilities())
-    learned = {cap.code for cap in registry.iter_learned_capabilities()}
+    learned_capabilities = tuple(
+        registry.iter_learned_capabilities()
+    )
+    learned = {cap.code for cap in learned_capabilities}
     known = builtins | learned
     statuses: Counter[str] = Counter()
     signatures: Counter[str] = Counter()
@@ -366,14 +540,17 @@ def collect(source_job_id: str | None = None) -> dict:
         "pending_total": len(pending),
         "pending_sample": pending[:50],
         "production_touched_records": production_flags,
+        "learned_registry": _learned_registry_summary(
+            files=files,
+            directory=directory,
+            learned_capabilities=learned_capabilities,
+        ),
         "focused_linkage": (
             _focused_linkage(
                 source_job_id,
                 files=files,
                 directory=directory,
-                learned_capabilities=tuple(
-                    registry.iter_learned_capabilities()
-                ),
+                learned_capabilities=learned_capabilities,
             )
             if source_job_id
             else None
@@ -381,7 +558,7 @@ def collect(source_job_id: str | None = None) -> dict:
         "limitations": [
             "SUPERSEDED does not prove a certified repair",
             "Missing repair_job_id does not prove that a repair was never attempted",
-            "This inventory does not read or mutate repair result files",
+            "Result artifacts are read only for bounded sanitized summaries; they are never mutated",
             "Only hashes of incident and job identifiers are exported",
         ],
     }

@@ -265,3 +265,161 @@ def test_g4_focused_linkage_is_pseudonymized_and_certification_bound(
 def test_g4_focused_linkage_rejects_invalid_source_job_id():
     with pytest.raises(ValueError, match="G4_SOURCE_JOB_INVALID"):
         audit.collect("../unsafe")
+
+
+def test_g4_superseded_successor_is_projected_without_raw_ids(
+    tmp_path,
+    monkeypatch,
+):
+    incident_dir = tmp_path / "incidents"
+    results_dir = tmp_path / "results"
+    incident_dir.mkdir()
+    results_dir.mkdir()
+
+    source_job_id = "FAILED-SOURCE-JOB-123"
+    incident_id = "FAILED-INCIDENT-456"
+    successor_job_id = "CERTIFIED-SUCCESSOR-JOB-789"
+
+    _write(
+        incident_dir,
+        "superseded.json",
+        {
+            "incident_id": incident_id,
+            "state": "SUPERSEDED",
+            "source_job_id": source_job_id,
+            "superseded_reason": (
+                "SUPERSEDED_BY_CERTIFIED_SUCCESSOR:"
+                + successor_job_id
+            ),
+            "attempts": 0,
+            "production_touched": False,
+        },
+    )
+    _write(
+        results_dir,
+        successor_job_id + ".json",
+        {
+            "job_id": successor_job_id,
+            "status": "INTEGRATED",
+            "certification": "CERTIFIED",
+            "quality_gate": "PASS",
+            "tests": "PASS",
+            "percent_complete": 100,
+            "production_touched": False,
+        },
+    )
+
+    monkeypatch.setattr(maintenance, "INCIDENT_DIR", incident_dir)
+    monkeypatch.setattr(audit, "RESULTS_DIR", results_dir)
+    monkeypatch.setattr(planner, "registered_capabilities", lambda: ())
+    monkeypatch.setattr(
+        registry,
+        "iter_learned_capabilities",
+        lambda: (),
+    )
+
+    report = audit.collect(source_job_id)
+    match = report["focused_linkage"]["matches"][0]
+    assert match["state"] == "SUPERSEDED"
+    assert match["certified_successor_observed"] is True
+    assert (
+        match["supersession"]["reason_class"]
+        == "CERTIFIED_SUCCESSOR"
+    )
+    assert (
+        match["supersession"]["successor_result"]["certification"]
+        == "CERTIFIED"
+    )
+
+    serialized = json.dumps(report)
+    for raw_identifier in (
+        source_job_id,
+        incident_id,
+        successor_job_id,
+    ):
+        assert raw_identifier not in serialized
+
+
+def test_g4_learned_registry_projects_reusable_and_reuse_without_raw_ids(
+    tmp_path,
+    monkeypatch,
+):
+    incident_dir = tmp_path / "incidents"
+    incident_dir.mkdir()
+
+    origin_incident = "ORIGIN-INCIDENT-123"
+    reuse_incident = "REUSE-INCIDENT-456"
+    source_job_id = "ORIGIN-SOURCE-JOB-789"
+    repair_job_id = "ORIGIN-REPAIR-JOB-999"
+
+    _write(
+        incident_dir,
+        "origin.json",
+        {
+            "incident_id": origin_incident,
+            "state": "CERTIFIED",
+            "problem_signature": "REUSABLE_SIGNATURE",
+            "capability_code": "LEARNED_REUSABLE_TEST",
+            "source_job_id": source_job_id,
+            "repair_job_id": repair_job_id,
+            "attempts": 1,
+            "production_touched": False,
+        },
+    )
+    _write(
+        incident_dir,
+        "reuse.json",
+        {
+            "incident_id": reuse_incident,
+            "state": "REPAIR_REQUIRED",
+            "problem_signature": "REUSABLE_SIGNATURE",
+            "capability_code": "LEARNED_REUSABLE_TEST",
+            "source_job_id": "SECOND-SOURCE-JOB-111",
+            "attempts": 0,
+            "production_touched": False,
+        },
+    )
+
+    learned = SimpleNamespace(
+        code="LEARNED_REUSABLE_TEST",
+        problem_signature="REUSABLE_SIGNATURE",
+        incident_ids=(origin_incident,),
+        incident_patterns=(),
+        learned_from_incident=origin_incident,
+        reusable=True,
+        evidence={
+            "source_job_id": source_job_id,
+            "repair_job_id": repair_job_id,
+            "certified": True,
+            "certification": "CERTIFIED",
+        },
+    )
+
+    monkeypatch.setattr(maintenance, "INCIDENT_DIR", incident_dir)
+    monkeypatch.setattr(planner, "registered_capabilities", lambda: ())
+    monkeypatch.setattr(
+        registry,
+        "iter_learned_capabilities",
+        lambda: (learned,),
+    )
+
+    report = audit.collect()
+    summary = report["learned_registry"]
+    assert summary["count"] == 1
+    assert summary["reusable_count"] == 1
+    assert summary["reuse_observed_count"] == 1
+    item = summary["capabilities"][0]
+    assert item["code"] == "LEARNED_REUSABLE_TEST"
+    assert item["evidence_certified"] is True
+    assert item["reusable"] is True
+    assert item["reuse_observed"] is True
+    assert item["reuse_incident_count"] == 1
+
+    serialized = json.dumps(summary)
+    for raw_identifier in (
+        origin_incident,
+        reuse_incident,
+        source_job_id,
+        repair_job_id,
+    ):
+        assert raw_identifier not in serialized

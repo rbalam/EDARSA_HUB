@@ -693,7 +693,8 @@ def submit_objective_tool(
     - SEC_RBAC_SQL_PERMISSION_MATRIX_READONLY (mode=READ_ONLY_SQL, bounded_context="SEC_RBAC"): constraints={}
     - WORKER_RESULT_SEMANTIC_EXTRACT (mode=READ_ONLY): constraints={"source_job_id": "..."}
     - WORKER_RESULT_DETAIL_READ (mode=READ_ONLY): constraints={"source_job_id": "..."}
-    - WORKER_MAINTENANCE_HISTORY_READONLY (mode=READ_ONLY, bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP"): constraints={}
+    - WORKER_MAINTENANCE_HISTORY_READONLY (mode=READ_ONLY, bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP"):
+      constraints={} or constraints={"source_job_id": "..."} for pseudonymized focused linkage
     - WORKER_PYTEST_CERTIFICATION_READONLY (mode=READ_ONLY, bounded_context="IA_ASSISTANT|WORKER_REPAIR_KNOWLEDGE_LOOP"): constraints={}
     - WORKER_REPAIR_BOUNDED (mode=MUTATION, bounded_context="WORKER_RUNTIME_CONVERGENCE"):
       constraints={"incident_id": "...", "capability_code": "..."}
