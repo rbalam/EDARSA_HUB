@@ -1,0 +1,67 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "    \"IA_ASSISTANT\": (\n        \"backend/tests/test_ia_global_rbac_data_scope_r14.py\",\n        \"backend/tests/test_ia_global_authorized_contract.py\",\n        \"backend/tests/test_ia_contextual_comercial_contract.py\",\n        \"backend/tests/test_comercial_analytics_tickets.py\",\n    ),\n}",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "    \"IA_ASSISTANT\": (\n        \"backend/tests/test_ia_global_rbac_data_scope_r14.py\",\n        \"backend/tests/test_ia_global_authorized_contract.py\",\n        \"backend/tests/test_ia_contextual_comercial_contract.py\",\n        \"backend/tests/test_comercial_analytics_tickets.py\",\n    ),\n    \"BOS_EXECUTIVE\": (\n        \"backend/tests/test_bos_executive_e3a.py\",\n        \"backend/tests/test_bos_executive_e3b.py\",\n        \"backend/tests/test_bos_executive_e3c.py\",\n        \"backend/tests/test_bos_executive_e3d.py\",\n    ),\n}",
+      "source_sha256": "2a405169515e81f51acf4bdd1216f2b5656bed7ac195e867229d12d64c8ce77a",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_pytest_certification_readonly.py",
+      "replacement": "\n\ndef test_bos_executive_readonly_fixed_suite():\n    result = expand(bounded_context=\"BOS_EXECUTIVE\")\n    assert result[\"actions\"] == []\n    assert result[\"checks\"] == [{\n        \"type\": \"pytest\",\n        \"paths\": [\n            \"backend/tests/test_bos_executive_e3a.py\",\n            \"backend/tests/test_bos_executive_e3b.py\",\n            \"backend/tests/test_bos_executive_e3c.py\",\n            \"backend/tests/test_bos_executive_e3d.py\",\n        ],\n    }]\n    assert result[\"scheduling\"][\"bounded_context\"] == \"BOS_EXECUTIVE\"\n\n\n@pytest.mark.parametrize(\"unsafe\", [\n    {\"paths\": [\"backend/tests/test_anything.py\"]},\n    {\"checks\": [{\"type\": \"pytest\", \"paths\": [\"backend/tests/test_anything.py\"]}]},\n    {\"commands\": [\"python -m pytest\"]},\n    {\"actions\": []},\n    {\"production_allowed\": True},\n])\ndef test_bos_executive_rejects_caller_controlled_checks(unsafe):\n    with pytest.raises(SemanticCapabilityError):\n        expand(bounded_context=\"BOS_EXECUTIVE\", constraints=unsafe)\n",
+      "source_sha256": "9bbfab9cf3ad10f12ff059f7caa62dea922407375f8444e26a1033cdc375992a",
+      "type": "append_once"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_pytest_certification_readonly.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_pytest_certification_readonly.py",
+        "backend/tests/test_bos_executive_e3a.py",
+        "backend/tests/test_bos_executive_e3b.py",
+        "backend/tests/test_bos_executive_e3c.py",
+        "backend/tests/test_bos_executive_e3d.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-318768E3A6D9B09AF1D04CD3",
+  "mode": "MUTATION",
+  "objective": "EDARSAHUB BOS Autonomous Execution Policy Gate E R2: incorporar el bounded context BOS_EXECUTIVE a la capability canonica WORKER_PYTEST_CERTIFICATION_READONLY con una suite fija e inmutable E3A-E3D, manteniendo READ_ONLY, actions=[], fail-closed y sin permitir paths/comandos/checks controlados por el caller. Extender exclusivamente el contrato de pruebas existente y su test de regresion. No tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
