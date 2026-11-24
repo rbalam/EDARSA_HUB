@@ -4,74 +4,20 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "a94c7b78d399487089865d4818d9fa826489b525",
-  "generated_at_utc": "2026-11-24T04:33:32Z",
+  "generated_at_utc": "2026-11-24T15:08:03Z",
   "history": {
-    "done_total_local": 2038,
+    "done_total_local": 2039,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1389,
-    "results_total_local": 3186
+    "results_total_local": 3187
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 363,
-      "job_id": "SEM-REQUEST-5DF0C692CE67E86EE65422EF",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 469,
-      "job_id": "SEM-WORKER_CONTROL_PLANE-DEVELOPMENT_MUTATION_BOUNDED-9343E29901B81A5AFA26",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1110,
-      "job_id": "SEM-WORKER_CONTROL_PLANE-DEVELOPMENT_MUTATION_BOUNDED-BC29CB4F2F4DCA1A76B1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 691,
-      "job_id": "SEM-WORKER_CONTROL_PLANE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B342BFB8135A81320927",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 991,
-      "job_id": "SEM-WORKER_CONTROL_PLANE-WORKER_RESULT_DETAIL_READ-747479F036A1FF408BBB",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2565,
-      "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-EFBE5ED844FA2F3EDAE1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1577,
-      "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-1D009CB3294719B49E95",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2528,
-      "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-EC78ACE64331AB1E874F",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1638,
-      "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-FF8D7A348E645AF9A566",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1617,
-      "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_SEMANTIC_EXTRACT-D12A073F8B6458A93B6A",
+      "age_seconds": 20,
+      "job_id": "EDARSA-LOGISTICS-GATE4A2-FORWARD-ROLLBACK-READONLY-INSPECTION-R1",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -84,15 +30,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 10,
+  "queue_result_ready_recent": 1,
   "queue_running": 0,
   "remote_development_sha": "a94c7b78d399487089865d4818d9fa826489b525",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-24T04:33:21Z",
-    "last_receive_utc": "2026-11-24T04:33:16Z",
-    "last_terminal_utc": "2026-11-24T04:27:29Z",
+    "last_cycle_utc": "2026-11-24T15:07:30Z",
+    "last_receive_utc": "2026-11-24T15:08:00Z",
+    "last_terminal_utc": "2026-11-24T15:07:42Z",
     "pid": "87",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "1d0fbc52710c01a98d7b53291ba10ae01234248b",
