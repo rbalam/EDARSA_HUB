@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 30,
+        "paths": [
+          "backend/modules/worker_mcp/",
+          "backend/modules/worker_ingress/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "worker",
+          "submit",
+          "autonomous_execution",
+          "idempotency",
+          "ownership",
+          "maintenance_history"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-AF7744B75CF6470CCA019A1E",
+  "mode": "READ_ONLY",
+  "objective": "READ_ONLY exclusivamente. Verificar autonomía multichat del ingreso semántico: evidencia existente de OAuth/RBAC worker:submit, Autonomous Execution Policy, runtime MCP, idempotencia, ownership y resultados terminales de dominios distintos. Comprobar duplicados; reutilizar Gate E R2 SEM-REQUEST-318768E3A6D9B09AF1D04CD3 y Maintenance History R4 SEM-REQUEST-E9D77D1D9CDC5E7E25035D88 sin repetir auditorías. Identificar brechas y distinguir evidencia real de inferencias. Entregar matriz y siguiente acción mínima. Exigir actions=[] y production_allowed=false en contrato generado y checks permitidos; fail-closed si no se garantiza.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS",
+    "conflict_domains": [
+      "WORKER_INGRESS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
