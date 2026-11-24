@@ -1,0 +1,49 @@
+{
+  "base_sha": "bf5e920bd16e9a7d336680e73394013a0cf08bc6",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-24T04:17:00Z",
+  "execution_base_sha": "bf5e920bd16e9a7d336680e73394013a0cf08bc6",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-WORKER_CONTROL_PLANE-WORKER_RESULT_DETAIL_READ-747479F036A1FF408BBB",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-24T04:18:28Z",
+  "quality_gate": "PASS",
+  "result_detail_evidence": {
+    "checks": [
+      {
+        "blockers": [],
+        "certification": "PENDING_AUDIT_EVIDENCE",
+        "evidence_status": "ABSENT",
+        "evidence_truncated": false,
+        "failed_checks": [],
+        "files_changed": [
+          "backend/modules/worker_ingress/routes.py",
+          "backend/modules/worker_ingress/service.py",
+          "backend/tests/test_worker_control_plane_runtime_gate_p0.py"
+        ],
+        "percent_complete": 95,
+        "production_touched": false,
+        "quality_gate": "PASS",
+        "result_status": "INTEGRATED",
+        "source_completed_at_utc": "2026-11-24T04:15:01Z",
+        "source_job_id": "SEM-WORKER_CONTROL_PLANE-DEVELOPMENT_MUTATION_BOUNDED-BC29CB4F2F4DCA1A76B1",
+        "source_terminal": true,
+        "tests": "PASS"
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-24T04:17:00Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
