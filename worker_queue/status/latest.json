@@ -1,10 +1,10 @@
 {
-  "ahead_count": 1,
+  "ahead_count": 0,
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "LOCAL_AHEAD_ONLY",
-  "development_sha": "6849108f45a185d9169d47d50f59e0240bccaa76",
-  "generated_at_utc": "2026-11-24T15:54:24Z",
+  "convergence_status": "SYNC",
+  "development_sha": "a72ef41ba17f11e11d9a6491f59fc804fae62cb3",
+  "generated_at_utc": "2026-11-24T15:55:52Z",
   "history": {
     "done_total_local": 2039,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2801,
+      "age_seconds": 2889,
       "job_id": "EDARSA-LOGISTICS-GATE4A2-FORWARD-ROLLBACK-READONLY-INSPECTION-R1",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "7a12ec679ff845a7a0e9e4c758261e3de2808aaf",
+  "local_development_sha": "a72ef41ba17f11e11d9a6491f59fc804fae62cb3",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -32,19 +32,19 @@
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 1,
   "queue_running": 0,
-  "remote_development_sha": "6849108f45a185d9169d47d50f59e0240bccaa76",
+  "remote_development_sha": "a72ef41ba17f11e11d9a6491f59fc804fae62cb3",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-24T15:54:19Z",
-    "last_receive_utc": "2026-11-24T15:54:14Z",
+    "last_cycle_utc": "2026-11-24T15:55:37Z",
+    "last_receive_utc": "2026-11-24T15:55:32Z",
     "last_terminal_utc": "2026-11-24T15:07:42Z",
     "pid": "87",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "1d0fbc52710c01a98d7b53291ba10ae01234248b",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "7a12ec679ff845a7a0e9e4c758261e3de2808aaf",
+      "development_sha": "a72ef41ba17f11e11d9a6491f59fc804fae62cb3",
       "expected_generation": "20261117-universal-job-worker-lifecycle-v4",
       "generation_aligned": true,
       "production_touched": false,
