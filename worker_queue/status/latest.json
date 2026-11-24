@@ -4,20 +4,26 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "a72ef41ba17f11e11d9a6491f59fc804fae62cb3",
-  "generated_at_utc": "2026-11-24T16:00:37Z",
+  "generated_at_utc": "2026-11-24T16:02:00Z",
   "history": {
-    "done_total_local": 2039,
+    "done_total_local": 2040,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1389,
-    "results_total_local": 3187
+    "results_total_local": 3188
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3175,
+      "age_seconds": 3258,
       "job_id": "EDARSA-LOGISTICS-GATE4A2-FORWARD-ROLLBACK-READONLY-INSPECTION-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 39,
+      "job_id": "SEM-REQUEST-3C5162A2653CC8553D5D4258",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -30,15 +36,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "remote_development_sha": "a72ef41ba17f11e11d9a6491f59fc804fae62cb3",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-24T16:00:31Z",
-    "last_receive_utc": "2026-11-24T16:00:26Z",
-    "last_terminal_utc": "2026-11-24T15:07:42Z",
+    "last_cycle_utc": "2026-11-24T16:01:46Z",
+    "last_receive_utc": "2026-11-24T16:01:59Z",
+    "last_terminal_utc": "2026-11-24T16:01:21Z",
     "pid": "424721",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "1d0fbc52710c01a98d7b53291ba10ae01234248b",
