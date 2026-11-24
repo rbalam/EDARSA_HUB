@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "8373aeeeda4109a58e9907dd604b6071f3d2da9a",
-  "generated_at_utc": "2026-11-24T03:51:56Z",
+  "generated_at_utc": "2026-11-24T04:03:26Z",
   "history": {
     "done_total_local": 2030,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 70,
+      "age_seconds": 759,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-EFBE5ED844FA2F3EDAE1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 32,
+      "age_seconds": 721,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-EC78ACE64331AB1E874F",
       "reason": null,
       "state": "RESULT_READY"
@@ -42,8 +42,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-24T03:51:40Z",
-    "last_receive_utc": "2026-11-24T03:51:54Z",
+    "last_cycle_utc": "2026-11-24T04:03:12Z",
+    "last_receive_utc": "2026-11-24T04:03:07Z",
     "last_terminal_utc": "2026-11-24T03:51:24Z",
     "pid": "87",
     "runtime_fingerprint": {
