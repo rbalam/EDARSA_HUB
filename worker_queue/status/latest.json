@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "7fbe9e73823609a0477b3b581ecc90932aee42de",
-  "generated_at_utc": "2026-11-24T21:37:16Z",
+  "generated_at_utc": "2026-11-24T21:38:39Z",
   "history": {
     "done_total_local": 2053,
     "pending_total_local": 0,
@@ -16,49 +16,49 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1573,
+      "age_seconds": 1656,
       "job_id": "SEM-REQUEST-05AC0E1C8AFBDD9365C51A89",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 73,
+      "age_seconds": 156,
       "job_id": "SEM-REQUEST-0EB9610035A474700FB36733",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1468,
+      "age_seconds": 1551,
       "job_id": "SEM-REQUEST-5D6CF4837578FB30C5B9B71D",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 135,
+      "age_seconds": 218,
       "job_id": "SEM-REQUEST-6E3B3EA07813FC4FF2201B1E",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 262,
+      "age_seconds": 345,
       "job_id": "SEM-REQUEST-72FAF1FE0FDC53C63E057647",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 225,
+      "age_seconds": 308,
       "job_id": "SEM-REQUEST-CF3479EBA8C4308A20E9D7DB",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 305,
+      "age_seconds": 388,
       "job_id": "SEM-REQUEST-E03FE6504825AE0931972167",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1614,
+      "age_seconds": 1697,
       "job_id": "SEM-REQUEST-F9945C9B88B3A690B0B93726",
       "reason": null,
       "state": "RESULT_READY"
@@ -78,8 +78,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-24T21:37:14Z",
-    "last_receive_utc": "2026-11-24T21:37:09Z",
+    "last_cycle_utc": "2026-11-24T21:38:22Z",
+    "last_receive_utc": "2026-11-24T21:38:34Z",
     "last_terminal_utc": "2026-11-24T21:36:02Z",
     "pid": "598018",
     "runtime_fingerprint": {
