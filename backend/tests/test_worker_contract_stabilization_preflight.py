@@ -552,3 +552,125 @@ def test_gate_b_mcp_503_timeout_and_observability_no_duplicate_retries(monkeypat
     assert "fake-bearer-jwt-never-log" not in joined_mcp
     assert "fake-internal-jwt" not in joined_mcp
     assert "SECRET_SPEC_BODY" not in joined_mcp
+
+
+def test_mcp_submit_objective_handles_409_unreachable_and_timeout_budget(monkeypatch):
+    """MCP submit_objective maps HTTP 409, backend unreachable, and 5xx to structured ToolError."""
+    import importlib.util
+    import sys
+    import urllib.error
+
+    if importlib.util.find_spec("mcp") is None:
+        for candidate in sorted(Path("/app/.runtime/worker_mcp/venv/lib").glob("python*/site-packages")):
+            sys.path.append(str(candidate))
+
+    from modules.worker_mcp import server as mcp_server
+    from modules.worker_mcp.config import WorkerMcpConfig
+
+    cfg = WorkerMcpConfig(
+        issuer_url="https://hub.example.test/api/mcp/oauth",
+        resource_url="https://hub.example.test/api/mcp",
+        backend_url="https://hub.example.test",
+        allowed_hosts=("hub.example.test",),
+        allowed_origins=(),
+    )
+    mcp_server.build_mcp_server(cfg)
+    orig_request_json = mcp_client._request_json
+    monkeypatch.setattr(mcp_server, "_authorized_bearer_token", lambda scope: "fake-bearer-jwt-never-log")
+    monkeypatch.setattr(mcp_client, "exchange_service_credential", lambda **kw: "fake-internal-jwt")
+    monkeypatch.setattr(mcp_server, "backend_submit_objective", mcp_client.submit_objective)
+
+    # 1. submit_objective passes an extended timeout budget (>= 45s) for GitHub queue publication
+    captured_timeouts = []
+
+    def _fake_ok(**kwargs):
+        captured_timeouts.append(kwargs.get("timeout"))
+        return 202, {
+            "status": "SUBMITTED",
+            "job_id": "SEM-REQUEST-TIMEOUT-BUDGET",
+            "capability": "READ_ONLY_CANARY",
+            "bounded_context": "WORKER_CONTROL_PLANE",
+            "production_touched": False,
+        }
+
+    monkeypatch.setattr(mcp_client, "_request_json", _fake_ok)
+    ok_res = mcp_server.submit_objective_tool(
+        objective="Timeout budget regression",
+        bounded_context="WORKER_CONTROL_PLANE",
+        mode="READ_ONLY",
+        capability="READ_ONLY_CANARY",
+        request_key="corr-timeout-budget",
+        constraints={},
+    )
+    assert ok_res["status"] == "SUBMITTED"
+    assert captured_timeouts == [45.0]
+
+    # 2. HTTP 409 RUNTIME_NOT_CONVERGED -> structured VALIDATION_ERROR_409 ToolError (never raw internal error)
+    monkeypatch.setattr(
+        mcp_client,
+        "_request_json",
+        lambda **kwargs: (
+            409,
+            {
+                "detail": {
+                    "error_code": "RUNTIME_NOT_CONVERGED",
+                    "rejected_field": "runtime_convergence",
+                    "capability": "DEVELOPMENT_MUTATION_BOUNDED",
+                    "http_status": 409,
+                    "allowed_correction": "Reconcile GET /api/internal/worker/runtime-convergence before retrying.",
+                }
+            },
+        ),
+    )
+    with pytest.raises(mcp_server.ToolError) as exc_409:
+        mcp_server.submit_objective_tool(
+            objective="Gate 3 convergence conflict test",
+            bounded_context="WORKER_CONTROL_PLANE",
+            mode="MUTATION",
+            capability="DEVELOPMENT_MUTATION_BOUNDED",
+            request_key="corr-409-test",
+            constraints={},
+        )
+    assert "VALIDATION_ERROR_409:RUNTIME_NOT_CONVERGED" in str(exc_409.value)
+    assert "field=runtime_convergence" in str(exc_409.value)
+
+    # 3. URLError connection refused -> UPSTREAM_UNAVAILABLE_503:BACKEND_UNREACHABLE (1 call, no auto-retry)
+    unreachable_calls = []
+
+    def _fake_urlopen_refused(req, timeout=15.0):
+        unreachable_calls.append((req.full_url, timeout))
+        raise urllib.error.URLError("Connection refused")
+
+    monkeypatch.setattr(mcp_client.urllib.request, "urlopen", _fake_urlopen_refused)
+    monkeypatch.setattr(mcp_client, "_request_json", orig_request_json)
+    with pytest.raises(mcp_server.ToolError) as exc_unreach:
+        mcp_server.submit_objective_tool(
+            objective="Backend restart window test",
+            bounded_context="WORKER_CONTROL_PLANE",
+            mode="READ_ONLY",
+            capability="READ_ONLY_CANARY",
+            request_key="corr-unreachable-test",
+            constraints={},
+        )
+    assert "UPSTREAM_UNAVAILABLE_503:BACKEND_UNREACHABLE" in str(exc_unreach.value)
+    assert "retryable=true" in str(exc_unreach.value)
+    assert len(unreachable_calls) == 1
+    assert unreachable_calls[0][1] == 45.0
+
+    # 4. Unexpected HTTP 500 -> structured UPSTREAM_ERROR_500 ToolError (never unhandled WorkerMcpBackendError)
+    monkeypatch.setattr(
+        mcp_client,
+        "_request_json",
+        lambda **kwargs: (500, {"detail": "internal"}),
+    )
+    with pytest.raises(mcp_server.ToolError) as exc_500:
+        mcp_server.submit_objective_tool(
+            objective="Unexpected 500 mapping test",
+            bounded_context="WORKER_CONTROL_PLANE",
+            mode="READ_ONLY",
+            capability="READ_ONLY_CANARY",
+            request_key="corr-500-test",
+            constraints={},
+        )
+    assert "UPSTREAM_ERROR_500:SEMANTIC_SUBMIT_FAILED" in str(exc_500.value)
+    assert "retryable=false" in str(exc_500.value)

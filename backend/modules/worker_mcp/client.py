@@ -50,11 +50,12 @@ class WorkerMcpAuthorizationError(WorkerMcpBackendError):
 
 
 _RETRYABLE_503_STATES = frozenset(
-    {"WRITER_BUSY", "CLAIM_BUSY", "REMOTE_MOVED_RETRYABLE"}
+    {"WRITER_BUSY", "CLAIM_BUSY", "REMOTE_MOVED_RETRYABLE", "BACKEND_UNREACHABLE"}
 )
 _KNOWN_503_STATES = _RETRYABLE_503_STATES | frozenset(
     {"RECOVERY_REQUIRED", "BLOCKED_CONVERGENCE"}
 )
+_SUBMIT_OBJECTIVE_TIMEOUT_SECONDS = 45.0
 
 
 class WorkerMcpValidationError(WorkerMcpBackendError):
@@ -249,8 +250,11 @@ def _request_json(
                 reason_code="UPSTREAM_TIMEOUT",
                 retryable=True,
             ) from exc
-        raise WorkerMcpBackendError(
+        raise WorkerMcpUpstreamUnavailableError(
             "BACKEND_UNREACHABLE",
+            status_code=503,
+            reason_code="BACKEND_UNREACHABLE",
+            retryable=True,
         ) from exc
 
     try:
@@ -424,6 +428,7 @@ def submit_objective(
         ),
         token=internal_token,
         payload=payload,
+        timeout=_SUBMIT_OBJECTIVE_TIMEOUT_SECONDS,
     )
     if status_code != 202:
         if status_code in (401, 403):
@@ -432,7 +437,7 @@ def submit_objective(
                 response,
                 "worker:submit",
             )
-        if status_code in (400, 422):
+        if status_code in (400, 409, 422):
             raise WorkerMcpValidationError(
                 "SEMANTIC_VALIDATION_FAILED",
                 status_code=status_code,

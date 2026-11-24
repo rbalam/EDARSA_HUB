@@ -33,6 +33,7 @@ from starlette.routing import Route
 from .auth import EdarsahubTokenVerifier
 from .client import (
     WorkerMcpAuthorizationError,
+    WorkerMcpBackendError,
     WorkerMcpUpstreamUnavailableError,
     WorkerMcpValidationError,
     get_job_status as backend_get_job_status,
@@ -509,6 +510,7 @@ def _raise_mapped_upstream_error(
         WorkerMcpAuthorizationError
         | WorkerMcpValidationError
         | WorkerMcpUpstreamUnavailableError
+        | WorkerMcpBackendError
     ),
     *,
     default_required_scope: str,
@@ -565,6 +567,11 @@ def _raise_mapped_upstream_error(
                 "Upstream timed out; do not auto-retry blindly. Verify status with "
                 "get_job_status or preflight before re-submitting to avoid duplicates."
             )
+        elif reason_code == "BACKEND_UNREACHABLE":
+            hint = (
+                "Backend ingress temporarily unreachable; verify runtime health and "
+                "existing job status before retrying (no automatic duplicate retry performed)."
+            )
         elif reason_code in {"RECOVERY_REQUIRED", "BLOCKED_CONVERGENCE"}:
             hint = (
                 "Worker runtime requires convergence/recovery before accepting mutations; "
@@ -579,6 +586,28 @@ def _raise_mapped_upstream_error(
         if cap_val:
             parts.append(f"capability={cap_val}")
         parts.append(f"hint={hint}")
+        raise ToolError(" | ".join(parts)) from exc
+
+    if not isinstance(exc, WorkerMcpAuthorizationError):
+        status_num = int(exc.status_code or 502)
+        cap_val = _safe_capability_name(capability)
+        reason_code = str(exc.code or "SEMANTIC_SUBMIT_FAILED").strip().upper()
+        _log_mcp_tool_error(
+            tool_name=tool_name,
+            http_status=status_num,
+            error_code=reason_code,
+            rejected_field="upstream_backend",
+            capability=cap_val,
+            correlation_id=correlation_id,
+            retryable=False,
+        )
+        parts = [f"UPSTREAM_ERROR_{status_num}:{reason_code}", "retryable=false"]
+        if cap_val:
+            parts.append(f"capability={cap_val}")
+        parts.append(
+            "hint=Verify GET /api/internal/worker/runtime-convergence and existing job status "
+            "before retrying (no automatic duplicate retry performed)."
+        )
         raise ToolError(" | ".join(parts)) from exc
 
     if exc.status_code == 401 or exc.code == "AUTHENTICATION_REQUIRED":
@@ -711,6 +740,7 @@ def submit_objective_tool(
         WorkerMcpAuthorizationError,
         WorkerMcpValidationError,
         WorkerMcpUpstreamUnavailableError,
+        WorkerMcpBackendError,
     ) as exc:
         _raise_mapped_upstream_error(
             exc,
@@ -746,6 +776,7 @@ def get_job_status_tool(
         WorkerMcpAuthorizationError,
         WorkerMcpValidationError,
         WorkerMcpUpstreamUnavailableError,
+        WorkerMcpBackendError,
     ) as exc:
         _raise_mapped_upstream_error(
             exc,
