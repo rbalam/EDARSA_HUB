@@ -838,7 +838,6 @@ async def registrar_consumo(
 
 # ==================== REPORTES PDF ====================
 
-from .report_service import get_cava_report_service
 
 
 @router.get("/reportes/socio/{socio_id}/ficha", summary="Descargar Ficha de Socio PDF")
@@ -867,6 +866,7 @@ async def descargar_ficha_socio(
             raise HTTPException(status_code=404, detail="Socio no encontrado")
 
         # Generar PDF
+        from .report_service import get_cava_report_service
         report_service = get_cava_report_service()
         pdf_bytes = report_service.generar_ficha_socio(socio)
 
@@ -918,6 +918,7 @@ async def descargar_historial_consumos(
         )
 
         # Generar PDF
+        from .report_service import get_cava_report_service
         report_service = get_cava_report_service()
         pdf_bytes = report_service.generar_historial_consumos(socio, movimientos)
 
@@ -968,6 +969,7 @@ async def descargar_estado_cuenta(
         )
 
         # Generar PDF
+        from .report_service import get_cava_report_service
         report_service = get_cava_report_service()
         pdf_bytes = report_service.generar_estado_cuenta(socio, cargos)
 
@@ -1042,6 +1044,7 @@ async def enviar_reporte_socio(
             raise HTTPException(status_code=400, detail="El socio no tiene teléfono registrado")
 
         # Generar PDF según tipo
+        from .report_service import get_cava_report_service
         report_service = get_cava_report_service()
 
         if data.tipo_reporte == 'ficha':
@@ -1103,6 +1106,7 @@ async def enviar_todos_reportes_socio(
         if not socio:
             raise HTTPException(status_code=404, detail="Socio no encontrado")
 
+        from .report_service import get_cava_report_service
         report_service = get_cava_report_service()
         notification_service = get_notification_service()
 

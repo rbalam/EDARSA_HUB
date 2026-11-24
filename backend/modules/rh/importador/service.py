@@ -28,18 +28,6 @@ from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 import io
 
-# Para lectura de Excel
-try:
-    import openpyxl
-    OPENPYXL_DISPONIBLE = True
-except ImportError:
-    OPENPYXL_DISPONIBLE = False
-
-try:
-    import pandas as pd
-    PANDAS_DISPONIBLE = True
-except ImportError:
-    PANDAS_DISPONIBLE = False
 
 from .schemas import (
     ImportacionStagingCreate,
@@ -293,7 +281,9 @@ class ImportadorExcelService:
         Returns:
             Tuple de (lista de registros, lista de errores)
         """
-        if not PANDAS_DISPONIBLE:
+        try:
+            import pandas as pd
+        except ImportError:
             return [], ["Librería pandas no disponible"]
         
         errores = []

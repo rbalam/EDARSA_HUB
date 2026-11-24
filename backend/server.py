@@ -89,12 +89,6 @@ import jwt
 import pymssql
 import pytds  # Biblioteca alternativa para conexiones SQL Server problemáticas
 import io
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment
-from reportlab.lib.pagesizes import letter, landscape
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
-from reportlab.lib.styles import getSampleStyleSheet
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Attachment
 import base64
@@ -1682,6 +1676,8 @@ def generate_excel(data: List[Dict], filename: str = "reporte.xlsx", metadata: D
     Incluye encabezados con información del servidor, fechas y KPIs visuales.
     Los datos se ordenan por Diferencia_Costo de mayor negativa a mayor positiva.
     """
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
     from openpyxl.styles import Border, Side, NamedStyle
     from openpyxl.formatting.rule import CellIsRule
     from openpyxl.utils import get_column_letter
@@ -1867,6 +1863,10 @@ def generate_excel(data: List[Dict], filename: str = "reporte.xlsx", metadata: D
     return output.getvalue()
 
 def generate_pdf(data: List[Dict], filename: str = "reporte.pdf") -> bytes:
+    from reportlab.lib.pagesizes import letter, landscape
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+    from reportlab.lib.styles import getSampleStyleSheet
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
     elements = []
