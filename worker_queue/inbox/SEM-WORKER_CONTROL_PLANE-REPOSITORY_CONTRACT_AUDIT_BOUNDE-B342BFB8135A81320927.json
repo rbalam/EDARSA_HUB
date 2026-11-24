@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "backend/modules/worker_ingress/service.py",
+          "backend/modules/worker_ingress/routes.py",
+          "backend/tests/test_worker_control_plane_runtime_gate_p0.py"
+        ],
+        "search_terms": [
+          "RUNTIME_NOT_CONVERGED",
+          "enforce_runtime_convergence",
+          "_require_mutation_runtime_convergence",
+          "overall_converged",
+          "PREFLIGHT_REJECTED",
+          "_submit_through_canonical_publisher"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_CONTROL_PLANE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B342BFB8135A81320927",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente el P0 Control Plane Closure ya integrado en commit bf5e920bd16e9a7d336680e73394013a0cf08bc6. Verificar que las mutaciones fallan fail-closed cuando runtime-convergence no esta alineado, que submit_objective no alcanza el publisher en ese caso, que READ_ONLY sigue disponible, y que no se amplio el alcance funcional ni se toco Produccion. Esta es evidencia READ_ONLY para cerrar PENDING_AUDIT_EVIDENCE del job existente; no repetir la mutacion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
