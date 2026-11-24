@@ -1,0 +1,75 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSA-LOGISTICS-GATE4A2-FORWARD-ROLLBACK-READONLY-INSPECTION-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a94c7b78d399487089865d4818d9fa826489b525",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Gate 4A2 READ_ONLY de EDARSA Logistics. Inspeccionar exclusivamente los scripts ya materializados de Gate 4A1, sin ejecutarlos ni modificarlos. Validar estructura forward/rollback, orden de dependencias, DB guard, bloqueo HRLectura, transaccion/XACT_ABORT/TRY-CATCH, FK exactas a maestros BOS, tipos canonicos, idempotencia, indices, seeds propios, reversibilidad, ausencia de DML sobre datos existentes ajenos, ausencia de Mongo/core growth/Production, y riesgos de rollback. Clasificar PASS o BLOCK con hallazgos exactos por archivo y simbolo. No crear archivos, no ejecutar SQL, no migrar, no tocar Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/database/migrations/20260930_001_logistica_multimodal_foundation.sql",
+          "backend/database/migrations/20260930_001_logistica_multimodal_foundation_rollback.sql",
+          "docs/ARCHITECTURE/EDARSA_LOGISTICS_GATE4A1_PHYSICAL_FOUNDATION_SCRIPTS_DESIGN.md"
+        ],
+        "search_terms": [
+          "SET XACT_ABORT ON",
+          "DB_NAME()",
+          "HRLectura",
+          "BEGIN TRANSACTION",
+          "BEGIN TRY",
+          "BEGIN CATCH",
+          "ROLLBACK",
+          "COMMIT",
+          "CREATE TABLE",
+          "DROP TABLE",
+          "INSERT INTO dbo.Logistica_Cat_ModosTransporte",
+          "INSERT INTO dbo.Logistica_Cat_PropositosServicio",
+          "Sistema_Empresas",
+          "Sistema_Sucursales",
+          "Unidades_Negocio",
+          "Usuario_Catalogo",
+          "Cliente_Catalogo",
+          "Proveedor_Catalogo",
+          "ActivoFijo_Activos",
+          "UNIQUE",
+          "FOREIGN KEY",
+          "CREATE INDEX",
+          "IdempotencyKey",
+          "NEWSEQUENTIALID",
+          "SYSUTCDATETIME",
+          "ROAD",
+          "RAIL",
+          "AIR",
+          "MARITIME",
+          "INLAND_WATERWAY",
+          "CARGO",
+          "PASSENGER",
+          "MIXED",
+          "SPECIALIZED",
+          "Mongo",
+          "Production",
+          "Produccion"
+        ],
+        "include_patterns": [
+          "*.sql",
+          "*.md"
+        ],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS / EDARSA Logistics",
+    "chat": "EDARSA Logistics Gate4A2 forward rollback readonly inspection"
+  }
+}
