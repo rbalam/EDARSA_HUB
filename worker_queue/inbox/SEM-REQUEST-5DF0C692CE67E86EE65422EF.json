@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "backend/modules/worker_ingress/service.py",
+          "backend/tests/test_worker_control_plane_idempotency_gate_p0.py"
+        ],
+        "search_terms": [
+          "_semantic_job_id",
+          "_legacy_semantic_job_id",
+          "_resolve_existing_semantic_job",
+          "_assert_idempotent_request_binding",
+          "IDEMPOTENCY_CONFLICT",
+          "IDEMPOTENCY_BINDING_UNVERIFIABLE",
+          "SEM-REQUEST-"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-5DF0C692CE67E86EE65422EF",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente el P0 Gate 2 de idempotencia ya integrado en commit a94c7b78d399487089865d4818d9fa826489b525. Verificar identidad estable requester+request_key para solicitudes nuevas, EXISTS con mismo payload, IDEMPOTENCY_CONFLICT con payload distinto, no llegada al publisher en conflicto, compatibilidad exacta con retries historicos y ausencia de ledger paralelo o cambios funcionales. Esta auditoria READ_ONLY existe solo para cerrar PENDING_AUDIT_EVIDENCE del job integrado; no repetir la mutacion ni tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
