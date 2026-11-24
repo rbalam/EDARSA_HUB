@@ -3,68 +3,74 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "bf5e920bd16e9a7d336680e73394013a0cf08bc6",
-  "generated_at_utc": "2026-11-24T04:25:24Z",
+  "development_sha": "a94c7b78d399487089865d4818d9fa826489b525",
+  "generated_at_utc": "2026-11-24T04:27:05Z",
   "history": {
-    "done_total_local": 2036,
+    "done_total_local": 2037,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1389,
-    "results_total_local": 3184
+    "results_total_local": 3185
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 622,
+      "age_seconds": 82,
+      "job_id": "SEM-WORKER_CONTROL_PLANE-DEVELOPMENT_MUTATION_BOUNDED-9343E29901B81A5AFA26",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 723,
       "job_id": "SEM-WORKER_CONTROL_PLANE-DEVELOPMENT_MUTATION_BOUNDED-BC29CB4F2F4DCA1A76B1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 203,
+      "age_seconds": 304,
       "job_id": "SEM-WORKER_CONTROL_PLANE-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B342BFB8135A81320927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 504,
+      "age_seconds": 604,
       "job_id": "SEM-WORKER_CONTROL_PLANE-WORKER_RESULT_DETAIL_READ-747479F036A1FF408BBB",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2078,
+      "age_seconds": 2178,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_MAINTENANCE_HISTORY_READO-EFBE5ED844FA2F3EDAE1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1089,
+      "age_seconds": 1190,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-1D009CB3294719B49E95",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2040,
+      "age_seconds": 2141,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-EC78ACE64331AB1E874F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1151,
+      "age_seconds": 1251,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_DETAIL_READ-FF8D7A348E645AF9A566",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1129,
+      "age_seconds": 1230,
       "job_id": "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-WORKER_RESULT_SEMANTIC_EXTRACT-D12A073F8B6458A93B6A",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "bf5e920bd16e9a7d336680e73394013a0cf08bc6",
+  "local_development_sha": "a94c7b78d399487089865d4818d9fa826489b525",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -72,21 +78,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 8,
+  "queue_result_ready_recent": 9,
   "queue_running": 0,
-  "remote_development_sha": "bf5e920bd16e9a7d336680e73394013a0cf08bc6",
+  "remote_development_sha": "a94c7b78d399487089865d4818d9fa826489b525",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-24T04:25:10Z",
-    "last_receive_utc": "2026-11-24T04:25:05Z",
-    "last_terminal_utc": "2026-11-24T04:22:01Z",
+    "last_cycle_utc": "2026-11-24T04:26:49Z",
+    "last_receive_utc": "2026-11-24T04:26:44Z",
+    "last_terminal_utc": "2026-11-24T04:25:43Z",
     "pid": "87",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "1d0fbc52710c01a98d7b53291ba10ae01234248b",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "bf5e920bd16e9a7d336680e73394013a0cf08bc6",
+      "development_sha": "a94c7b78d399487089865d4818d9fa826489b525",
       "expected_generation": "20261117-universal-job-worker-lifecycle-v4",
       "generation_aligned": true,
       "production_touched": false,
