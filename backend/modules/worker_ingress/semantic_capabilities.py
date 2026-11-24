@@ -490,6 +490,16 @@ _DEV_FORBIDDEN_PATH_TOKENS = (
     ".env",
 )
 _DEV_TEST_ROOTS = ("backend/tests/", "tools/tests/")
+
+# Reviewed bounded-context ownership for legacy/non-module files.
+# Default mutation scope remains _G3_ROOTS; contexts may only add exact paths.
+_DEV_CONTEXT_PATH_OWNERSHIP: dict[str, frozenset[str]] = {
+    "COMUNICACIONES_CFDI": frozenset({
+        "backend/routes/portal_proveedores.py",
+        "backend/routes/portal_proveedores_repository_sql.py",
+    }),
+}
+
 _DEV_SHA256_RE = _g3_re.compile(r"^[0-9a-f]{64}$")
 _DEV_AUTH_REF_RE = _g3_re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{2,120}$")
 _DEV_MAX_CHANGES = 15
@@ -497,14 +507,31 @@ _DEV_MAX_TESTS = 15
 _DEV_MAX_TEXT_BYTES = 120_000
 
 
-def _dev_validate_path(raw_path: Any, *, allowed_roots: tuple[str, ...] = _G3_ROOTS) -> str:
+def _dev_context_owned_paths(context: str) -> frozenset[str]:
+    return _DEV_CONTEXT_PATH_OWNERSHIP.get(
+        str(context or "").strip().upper(),
+        frozenset(),
+    )
+
+
+def _dev_validate_path(
+    raw_path: Any,
+    *,
+    allowed_roots: tuple[str, ...] = _G3_ROOTS,
+    context: str | None = None,
+) -> str:
     if not isinstance(raw_path, str) or not _G3_PATH.fullmatch(raw_path):
         raise SemanticCapabilityError("SEMANTIC_DEV_PATH_INVALID")
     if raw_path.endswith("/"):
         raise SemanticCapabilityError("SEMANTIC_DEV_PATH_INVALID")
     parts = raw_path.split("/")
+    root_allowed = raw_path.startswith(allowed_roots)
+    exact_context_owned = bool(
+        allowed_roots == _G3_ROOTS
+        and raw_path in _dev_context_owned_paths(context or "")
+    )
     if (
-        not raw_path.startswith(allowed_roots)
+        (not root_allowed and not exact_context_owned)
         or any(p in ("", ".", "..") for p in parts)
         or any(p in _G3_DENIED for p in parts)
         or any(
@@ -607,7 +634,10 @@ def _development_mutation_bounded_builder(request: Mapping[str, Any]) -> dict[st
         if op not in _DEV_ALLOWED_OPERATIONS:
             raise SemanticCapabilityError("SEMANTIC_DEV_OPERATION_FORBIDDEN")
 
-        rel_path = _dev_validate_path(item.get("path"))
+        rel_path = _dev_validate_path(
+            item.get("path"),
+            context=context,
+        )
         disk_path = _DEV_REPO_ROOT / rel_path
 
         if rel_path in virtual_files:
@@ -867,6 +897,7 @@ _CAPABILITY_METADATA: dict[str, dict[str, Any]] = {
             "verification_tests",
         ),
         "allowed_path_roots": _G3_ROOTS,
+        "bounded_context_path_ownership": _DEV_CONTEXT_PATH_OWNERSHIP,
     },
 }
 
@@ -891,6 +922,12 @@ def capability_catalog() -> list[dict[str, Any]]:
                 "allowed_path_roots": list(
                     meta.get("allowed_path_roots", ())
                 ),
+                "bounded_context_path_ownership": {
+                    context: sorted(paths)
+                    for context, paths in (
+                        meta.get("bounded_context_path_ownership", {}) or {}
+                    ).items()
+                },
                 "raw_worker_fields_forbidden": True,
             }
         )
