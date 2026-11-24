@@ -1,10 +1,10 @@
 {
-  "ahead_count": 0,
+  "ahead_count": 1,
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "SYNC",
-  "development_sha": "a94c7b78d399487089865d4818d9fa826489b525",
-  "generated_at_utc": "2026-11-24T15:21:46Z",
+  "convergence_status": "LOCAL_AHEAD_ONLY",
+  "development_sha": "6849108f45a185d9169d47d50f59e0240bccaa76",
+  "generated_at_utc": "2026-11-24T15:23:09Z",
   "history": {
     "done_total_local": 2039,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 844,
+      "age_seconds": 927,
       "job_id": "EDARSA-LOGISTICS-GATE4A2-FORWARD-ROLLBACK-READONLY-INSPECTION-R1",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "a94c7b78d399487089865d4818d9fa826489b525",
+  "local_development_sha": "7a12ec679ff845a7a0e9e4c758261e3de2808aaf",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -32,19 +32,19 @@
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 1,
   "queue_running": 0,
-  "remote_development_sha": "a94c7b78d399487089865d4818d9fa826489b525",
+  "remote_development_sha": "6849108f45a185d9169d47d50f59e0240bccaa76",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-24T15:21:28Z",
-    "last_receive_utc": "2026-11-24T15:21:44Z",
+    "last_cycle_utc": "2026-11-24T15:22:54Z",
+    "last_receive_utc": "2026-11-24T15:23:07Z",
     "last_terminal_utc": "2026-11-24T15:07:42Z",
     "pid": "87",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "1d0fbc52710c01a98d7b53291ba10ae01234248b",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "a94c7b78d399487089865d4818d9fa826489b525",
+      "development_sha": "7a12ec679ff845a7a0e9e4c758261e3de2808aaf",
       "expected_generation": "20261117-universal-job-worker-lifecycle-v4",
       "generation_aligned": true,
       "production_touched": false,
