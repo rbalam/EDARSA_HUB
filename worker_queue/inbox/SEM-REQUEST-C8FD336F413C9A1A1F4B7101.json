@@ -1,0 +1,33 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "worker_maintenance_history_readonly"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-C8FD336F413C9A1A1F4B7101",
+  "mode": "READ_ONLY",
+  "objective": "Knowledge Loop historico: recuperar exclusivamente Maintenance History canonico para identificar relaciones existentes entre source_job, incident, classification, repair_job, execution, certification, learned_from_incident, reusable_capability y reuse. No repetir Gate1, no mutar repo, no tocar Produccion, no inventar capabilities ni enlaces inexistentes.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_REPAIR_KNOWLEDGE_LOOP",
+    "conflict_domains": [
+      "WORKER_REPAIR_KNOWLEDGE_LOOP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
