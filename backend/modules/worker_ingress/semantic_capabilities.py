@@ -396,21 +396,32 @@ register_capability(
 )
 
 # G4 Maintenance history: expose only the already-registered, bounded,
-# sanitizing Worker check. No caller-supplied paths, actions or checks.
+# sanitizing Worker check. The optional selector is a canonical source_job_id;
+# callers still cannot supply paths, actions, commands or arbitrary checks.
 def _maintenance_history_readonly_builder(request: Mapping[str, Any]) -> dict[str, Any]:
     context = str(request.get("bounded_context") or "").strip().upper()
     if context != "WORKER_REPAIR_KNOWLEDGE_LOOP":
         raise SemanticCapabilityError("SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED")
 
-    constraints = request.get("constraints")
-    if constraints is not None and (
-        not isinstance(constraints, Mapping) or bool(constraints)
-    ):
-        raise SemanticCapabilityError("SEMANTIC_CONSTRAINTS_UNSUPPORTED")
+    constraints = _g3_constraints(request, {"source_job_id"})
+    source_job_id = constraints.get("source_job_id")
+    check: dict[str, Any] = {
+        "type": "worker_maintenance_history_readonly",
+    }
+
+    if source_job_id is not None:
+        if (
+            not isinstance(source_job_id, str)
+            or not _G3_JOB_ID.fullmatch(source_job_id.strip())
+        ):
+            raise SemanticCapabilityError("SEMANTIC_SOURCE_JOB_INVALID")
+        check["request"] = {
+            "source_job_id": source_job_id.strip(),
+        }
 
     return {
         "actions": [],
-        "checks": [{"type": "worker_maintenance_history_readonly"}],
+        "checks": [check],
         "scheduling": _g3_scheduling(context),
     }
 
@@ -876,7 +887,7 @@ _CAPABILITY_METADATA: dict[str, dict[str, Any]] = {
     },
     "WORKER_MAINTENANCE_HISTORY_READONLY": {
         "bounded_context_rule": "WORKER_REPAIR_KNOWLEDGE_LOOP",
-        "allowed_constraints": (),
+        "allowed_constraints": ("source_job_id",),
         "allowed_path_roots": (),
     },
     "WORKER_PYTEST_CERTIFICATION_READONLY": {

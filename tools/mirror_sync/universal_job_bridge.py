@@ -266,8 +266,19 @@ def validate_check(check: Any, index: int) -> list[str]:
         if fields is not None and (not isinstance(fields, list) or not all(isinstance(item, str) and item.strip() for item in fields)):
             return [f"{prefix}_REQUIRED_SEMANTIC_FIELDS_INVALID"]
     if kind == "worker_maintenance_history_readonly":
-        if set(check) != {"type"}:
+        if set(check) not in ({"type"}, {"type", "request"}):
             return [f"{prefix}_UNSUPPORTED_FIELDS"]
+        if "request" in check:
+            request = check.get("request")
+            if not isinstance(request, dict):
+                return [f"{prefix}_REQUEST_REQUIRED"]
+            if set(request) != {"source_job_id"}:
+                return [f"{prefix}_REQUEST_FIELDS_INVALID"]
+            source_job_id = str(
+                request.get("source_job_id") or ""
+            ).strip()
+            if not JOB_ID.fullmatch(source_job_id):
+                return [f"{prefix}_SOURCE_JOB_ID_INVALID"]
     if kind == "worker_result_detail_read":
         if set(check) != {"type", "request"}:
             return [f"{prefix}_UNSUPPORTED_FIELDS"]

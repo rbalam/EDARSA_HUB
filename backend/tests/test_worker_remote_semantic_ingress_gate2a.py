@@ -422,6 +422,23 @@ def test_g4_maintenance_history_capability_registered_and_bounded():
     assert job["scheduling"]["bounded_context"] == "WORKER_REPAIR_KNOWLEDGE_LOOP"
 
 
+def test_g4_maintenance_history_accepts_bounded_source_job_selector():
+    job = service.build_semantic_job(
+        _objective(
+            bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP",
+            capability="WORKER_MAINTENANCE_HISTORY_READONLY",
+            constraints={"source_job_id": "WORKER-SOURCE-JOB-123"},
+        ),
+        current_user=_user(),
+    )
+    assert job["actions"] == []
+    assert job["production_allowed"] is False
+    assert job["checks"] == [{
+        "type": "worker_maintenance_history_readonly",
+        "request": {"source_job_id": "WORKER-SOURCE-JOB-123"},
+    }]
+
+
 @pytest.mark.parametrize("override", [
     {"mode": "MUTATION"},
     {"bounded_context": "OTHER_DOMAIN"},

@@ -727,11 +727,18 @@ def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False, bas
         env_extra = {"PYTHONDONTWRITEBYTECODE": "1"}
     elif kind == "worker_maintenance_history_readonly":
         # Local Git common-dir Maintenance history; only the canonical Worker
-        # host can access it. The helper accepts no caller-selected paths.
+        # host can access it. The only optional selector is a validated
+        # source_job_id; arbitrary paths and commands remain impossible.
         helper = worktree / "tools" / "mirror_sync" / "worker_maintenance_history_readonly.py"
         if not helper.is_file():
             raise RuntimeError("G4_HISTORY_HELPER_UNAVAILABLE")
         cmd = [PYTHON_BIN, str(helper)]
+        request = check.get("request") or {}
+        source_job_id = str(
+            request.get("source_job_id") or ""
+        ).strip()
+        if source_job_id:
+            cmd.extend(["--source-job-id", source_job_id])
         cwd = worktree
         env_extra = {"PYTHONDONTWRITEBYTECODE": "1"}
     elif kind == "worker_result_detail_read":
