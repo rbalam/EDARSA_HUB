@@ -1,9 +1,10 @@
 {
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
   "requested_by": "ChatGPT",
-  "reason": "wake canonical Universal Worker to consume existing EDARSAHUB-PROD-DEV-R4-FINAL-EQUIVALENCE-READONLY-R2-20261120 request; no duplicate; no Production",
+  "reason": "Knowledge Loop focused history R2 is CERTIFIED at Development SHA 7fbe9e73823609a0477b3b581ecc90932aee42de, but MCP semantic ingress still serves the previous WORKER_MAINTENANCE_HISTORY_READONLY constraints contract. Trigger canonical Preview runtime recovery/wake so submit_objective reloads the certified semantic capability. Do not create or duplicate functional jobs. Do not touch Production.",
   "target_branch": "Edarsahub_Desarrollo",
-  "target_sha": "9a2fa6e909458b39284e9b17b3d59ff6a6518a00",
+  "target_sha": "7fbe9e73823609a0477b3b581ecc90932aee42de",
   "production_allowed": false,
-  "preferred_job_id": "EDARSAHUB-PROD-DEV-R4-FINAL-EQUIVALENCE-READONLY-R2-20261120",
+  "production_touched": false,
   "attempt": 1
 }
