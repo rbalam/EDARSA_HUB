@@ -1,0 +1,129 @@
+{
+  "actions": [
+    {
+      "anchor": "def _focused_linkage(\n",
+      "path": "tools/mirror_sync/worker_maintenance_history_readonly.py",
+      "replacement": "\ndef _superseded_linkage(reason: object) -> dict | None:\n    if not isinstance(reason, str) or not reason.strip():\n        return None\n    value = reason.strip()\n    successor_prefix = \"SUPERSEDED_BY_CERTIFIED_SUCCESSOR:\"\n    incident_prefix = \"SUPERSEDED_BY_CERTIFIED_INCIDENT:\"\n\n    if value.startswith(successor_prefix):\n        successor_job_id = value[len(successor_prefix):].strip()\n        safe_job_id = (\n            successor_job_id\n            if SAFE_JOB_ID.fullmatch(successor_job_id)\n            else None\n        )\n        result = _safe_result_summary(safe_job_id)\n        return {\n            \"reason_class\": \"CERTIFIED_SUCCESSOR\",\n            \"successor_job_fingerprint\": (\n                _fingerprint(safe_job_id)\n                if safe_job_id\n                else None\n            ),\n            \"successor_result\": result,\n            \"successor_certified\": bool(\n                result\n                and result.get(\"certification\") == \"CERTIFIED\"\n                and result.get(\"quality_gate\") == \"PASS\"\n                and result.get(\"tests\") == \"PASS\"\n                and result.get(\"production_touched\") is False\n            ),\n        }\n\n    if value.startswith(incident_prefix):\n        successor_incident_id = value[len(incident_prefix):].strip()\n        return {\n            \"reason_class\": \"CERTIFIED_INCIDENT\",\n            \"successor_incident_fingerprint\": (\n                _fingerprint(successor_incident_id)\n                if successor_incident_id\n                else None\n            ),\n        }\n\n    return {\n        \"reason_class\": \"OTHER\",\n        \"reason_fingerprint\": _fingerprint(value),\n    }\n\n\ndef _learned_registry_summary(\n    *,\n    files: list[Path],\n    directory: Path,\n    learned_capabilities: tuple,\n) -> dict:\n    rows: list[dict] = []\n    for file in files:\n        payload = _safe_file(file, directory)\n        inner = payload.get(\"incident\")\n        incident = inner if isinstance(inner, dict) else payload\n        incident_id = incident.get(\"incident_id\") or payload.get(\"incident_id\")\n        if not isinstance(incident_id, str) or not incident_id:\n            continue\n        rows.append({\n            \"incident_id\": incident_id,\n            \"problem_signature\": (\n                incident.get(\"problem_signature\")\n                or payload.get(\"problem_signature\")\n            ),\n            \"capability_code\": (\n                incident.get(\"capability_code\")\n                or payload.get(\"capability_code\")\n            ),\n        })\n\n    capabilities: list[dict] = []\n    for capability in learned_capabilities:\n        code = str(getattr(capability, \"code\", \"\") or \"\")\n        problem_signature = str(\n            getattr(capability, \"problem_signature\", \"\") or \"\"\n        )\n        learned_from = str(\n            getattr(capability, \"learned_from_incident\", \"\") or \"\"\n        )\n        evidence = getattr(capability, \"evidence\", {}) or {}\n        reuse_rows = [\n            row\n            for row in rows\n            if row[\"incident_id\"] != learned_from\n            and (\n                (code and row[\"capability_code\"] == code)\n                or (\n                    problem_signature\n                    and row[\"problem_signature\"] == problem_signature\n                )\n            )\n        ]\n        source_job_id = evidence.get(\"source_job_id\")\n        repair_job_id = evidence.get(\"repair_job_id\")\n        capabilities.append({\n            \"code\": _bounded_code(code),\n            \"problem_signature\": (\n                \"SIG:\" + _fingerprint(problem_signature)\n                if problem_signature\n                else None\n            ),\n            \"learned_from_incident_fingerprint\": (\n                _fingerprint(learned_from)\n                if learned_from\n                else None\n            ),\n            \"evidence_source_job_fingerprint\": (\n                _fingerprint(source_job_id)\n                if isinstance(source_job_id, str) and source_job_id\n                else None\n            ),\n            \"evidence_repair_job_fingerprint\": (\n                _fingerprint(repair_job_id)\n                if isinstance(repair_job_id, str) and repair_job_id\n                else None\n            ),\n            \"evidence_certified\": (\n                evidence.get(\"certified\") is True\n                and str(evidence.get(\"certification\") or \"\").upper()\n                == \"CERTIFIED\"\n            ),\n            \"reusable\": bool(\n                getattr(capability, \"reusable\", False)\n            ),\n            \"incident_pattern_count\": len(\n                tuple(getattr(capability, \"incident_patterns\", ()) or ())\n            ),\n            \"registered_incident_count\": len(\n                tuple(getattr(capability, \"incident_ids\", ()) or ())\n            ),\n            \"reuse_observed\": bool(reuse_rows),\n            \"reuse_incident_count\": len(reuse_rows),\n            \"reuse_incident_fingerprints\": [\n                _fingerprint(row[\"incident_id\"])\n                for row in reuse_rows[:10]\n            ],\n        })\n\n    return {\n        \"count\": len(capabilities),\n        \"reusable_count\": sum(\n            1 for item in capabilities if item[\"reusable\"]\n        ),\n        \"reuse_observed_count\": sum(\n            1 for item in capabilities if item[\"reuse_observed\"]\n        ),\n        \"capabilities\": capabilities[:50],\n        \"raw_identifiers_exposed\": False,\n    }\n\n\n",
+      "source_sha256": "128d6cb8b7a7569287e4a50af307a23cfda2eea6409aa849acb2ea47b5f4d30c",
+      "type": "insert_before"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "            \"repair_job_id\": (\n                payload.get(\"repair_job_id\")\n                or incident.get(\"repair_job_id\")\n            ),\n",
+      "path": "tools/mirror_sync/worker_maintenance_history_readonly.py",
+      "replacement": "            \"repair_job_id\": (\n                payload.get(\"repair_job_id\")\n                or incident.get(\"repair_job_id\")\n            ),\n            \"superseded_reason\": (\n                payload.get(\"superseded_reason\")\n                or incident.get(\"superseded_reason\")\n            ),\n",
+      "source_sha256": "96bba10f9eb32b9f5e95ea54eda9cd67e6b26ccac6537422c1f9a935e691a43c",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "        repair_summary = _safe_result_summary(effective_repair_job_id)\n        signature = row[\"problem_signature\"]\n",
+      "path": "tools/mirror_sync/worker_maintenance_history_readonly.py",
+      "replacement": "        repair_summary = _safe_result_summary(effective_repair_job_id)\n        supersession = _superseded_linkage(\n            row.get(\"superseded_reason\")\n        )\n        signature = row[\"problem_signature\"]\n",
+      "source_sha256": "fc9e9455bda24a15a9cc69586da3e0eb44b1eaa6d714278ee8b6cf6d03817032",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "            \"repair_result\": repair_summary,\n            \"learned_capabilities\": capability_rows,\n",
+      "path": "tools/mirror_sync/worker_maintenance_history_readonly.py",
+      "replacement": "            \"repair_result\": repair_summary,\n            \"supersession\": supersession,\n            \"certified_successor_observed\": bool(\n                supersession\n                and supersession.get(\"reason_class\")\n                == \"CERTIFIED_SUCCESSOR\"\n                and supersession.get(\"successor_certified\") is True\n            ),\n            \"learned_capabilities\": capability_rows,\n",
+      "source_sha256": "76fb9ebaa38677242410fc79a5c58dbfe8a9ff8573c11f4214ad16519165a478",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    learned = {cap.code for cap in registry.iter_learned_capabilities()}\n    known = builtins | learned\n",
+      "path": "tools/mirror_sync/worker_maintenance_history_readonly.py",
+      "replacement": "    learned_capabilities = tuple(\n        registry.iter_learned_capabilities()\n    )\n    learned = {cap.code for cap in learned_capabilities}\n    known = builtins | learned\n",
+      "source_sha256": "9084f806ed46877423c2d3f59383c2c9e06e8dc66b5fd2f99a50e2d4946cd45e",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "                learned_capabilities=tuple(\n                    registry.iter_learned_capabilities()\n                ),\n",
+      "path": "tools/mirror_sync/worker_maintenance_history_readonly.py",
+      "replacement": "                learned_capabilities=learned_capabilities,\n",
+      "source_sha256": "9a258710f98efda3b67a98b3f2c3ac1e84e8e8d7236a708bb8f0757b13f9c7af",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "        \"production_touched_records\": production_flags,\n        \"focused_linkage\": (\n",
+      "path": "tools/mirror_sync/worker_maintenance_history_readonly.py",
+      "replacement": "        \"production_touched_records\": production_flags,\n        \"learned_registry\": _learned_registry_summary(\n            files=files,\n            directory=directory,\n            learned_capabilities=learned_capabilities,\n        ),\n        \"focused_linkage\": (\n",
+      "source_sha256": "d5baa71f24a4eaa0d7e9eead5f3059cff63d3a4d2379b310c03897971e286ddd",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "            \"This inventory does not read or mutate repair result files\",\n",
+      "path": "tools/mirror_sync/worker_maintenance_history_readonly.py",
+      "replacement": "            \"Result artifacts are read only for bounded sanitized summaries; they are never mutated\",\n",
+      "source_sha256": "20e4a79b868cb802b06135fbef905bc465415a3611808f8485a7d8da42f1a449",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    - WORKER_MAINTENANCE_HISTORY_READONLY (mode=READ_ONLY, bounded_context=\"WORKER_REPAIR_KNOWLEDGE_LOOP\"): constraints={}\n",
+      "path": "backend/modules/worker_mcp/server.py",
+      "replacement": "    - WORKER_MAINTENANCE_HISTORY_READONLY (mode=READ_ONLY, bounded_context=\"WORKER_REPAIR_KNOWLEDGE_LOOP\"):\n      constraints={} or constraints={\"source_job_id\": \"...\"} for pseudonymized focused linkage\n",
+      "source_sha256": "5a0a839f95ca9ae383e34f74a36f041b9e90950a8a8ca66471ecc85c0f3126fa",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_maintenance_history_readonly.py",
+      "replacement": "\n\ndef test_g4_superseded_successor_is_projected_without_raw_ids(\n    tmp_path,\n    monkeypatch,\n):\n    incident_dir = tmp_path / \"incidents\"\n    results_dir = tmp_path / \"results\"\n    incident_dir.mkdir()\n    results_dir.mkdir()\n\n    source_job_id = \"FAILED-SOURCE-JOB-123\"\n    incident_id = \"FAILED-INCIDENT-456\"\n    successor_job_id = \"CERTIFIED-SUCCESSOR-JOB-789\"\n\n    _write(\n        incident_dir,\n        \"superseded.json\",\n        {\n            \"incident_id\": incident_id,\n            \"state\": \"SUPERSEDED\",\n            \"source_job_id\": source_job_id,\n            \"superseded_reason\": (\n                \"SUPERSEDED_BY_CERTIFIED_SUCCESSOR:\"\n                + successor_job_id\n            ),\n            \"attempts\": 0,\n            \"production_touched\": False,\n        },\n    )\n    _write(\n        results_dir,\n        successor_job_id + \".json\",\n        {\n            \"job_id\": successor_job_id,\n            \"status\": \"INTEGRATED\",\n            \"certification\": \"CERTIFIED\",\n            \"quality_gate\": \"PASS\",\n            \"tests\": \"PASS\",\n            \"percent_complete\": 100,\n            \"production_touched\": False,\n        },\n    )\n\n    monkeypatch.setattr(maintenance, \"INCIDENT_DIR\", incident_dir)\n    monkeypatch.setattr(audit, \"RESULTS_DIR\", results_dir)\n    monkeypatch.setattr(planner, \"registered_capabilities\", lambda: ())\n    monkeypatch.setattr(\n        registry,\n        \"iter_learned_capabilities\",\n        lambda: (),\n    )\n\n    report = audit.collect(source_job_id)\n    match = report[\"focused_linkage\"][\"matches\"][0]\n    assert match[\"state\"] == \"SUPERSEDED\"\n    assert match[\"certified_successor_observed\"] is True\n    assert (\n        match[\"supersession\"][\"reason_class\"]\n        == \"CERTIFIED_SUCCESSOR\"\n    )\n    assert (\n        match[\"supersession\"][\"successor_result\"][\"certification\"]\n        == \"CERTIFIED\"\n    )\n\n    serialized = json.dumps(report)\n    for raw_identifier in (\n        source_job_id,\n        incident_id,\n        successor_job_id,\n    ):\n        assert raw_identifier not in serialized\n\n\ndef test_g4_learned_registry_projects_reusable_and_reuse_without_raw_ids(\n    tmp_path,\n    monkeypatch,\n):\n    incident_dir = tmp_path / \"incidents\"\n    incident_dir.mkdir()\n\n    origin_incident = \"ORIGIN-INCIDENT-123\"\n    reuse_incident = \"REUSE-INCIDENT-456\"\n    source_job_id = \"ORIGIN-SOURCE-JOB-789\"\n    repair_job_id = \"ORIGIN-REPAIR-JOB-999\"\n\n    _write(\n        incident_dir,\n        \"origin.json\",\n        {\n            \"incident_id\": origin_incident,\n            \"state\": \"CERTIFIED\",\n            \"problem_signature\": \"REUSABLE_SIGNATURE\",\n            \"capability_code\": \"LEARNED_REUSABLE_TEST\",\n            \"source_job_id\": source_job_id,\n            \"repair_job_id\": repair_job_id,\n            \"attempts\": 1,\n            \"production_touched\": False,\n        },\n    )\n    _write(\n        incident_dir,\n        \"reuse.json\",\n        {\n            \"incident_id\": reuse_incident,\n            \"state\": \"REPAIR_REQUIRED\",\n            \"problem_signature\": \"REUSABLE_SIGNATURE\",\n            \"capability_code\": \"LEARNED_REUSABLE_TEST\",\n            \"source_job_id\": \"SECOND-SOURCE-JOB-111\",\n            \"attempts\": 0,\n            \"production_touched\": False,\n        },\n    )\n\n    learned = SimpleNamespace(\n        code=\"LEARNED_REUSABLE_TEST\",\n        problem_signature=\"REUSABLE_SIGNATURE\",\n        incident_ids=(origin_incident,),\n        incident_patterns=(),\n        learned_from_incident=origin_incident,\n        reusable=True,\n        evidence={\n            \"source_job_id\": source_job_id,\n            \"repair_job_id\": repair_job_id,\n            \"certified\": True,\n            \"certification\": \"CERTIFIED\",\n        },\n    )\n\n    monkeypatch.setattr(maintenance, \"INCIDENT_DIR\", incident_dir)\n    monkeypatch.setattr(planner, \"registered_capabilities\", lambda: ())\n    monkeypatch.setattr(\n        registry,\n        \"iter_learned_capabilities\",\n        lambda: (learned,),\n    )\n\n    report = audit.collect()\n    summary = report[\"learned_registry\"]\n    assert summary[\"count\"] == 1\n    assert summary[\"reusable_count\"] == 1\n    assert summary[\"reuse_observed_count\"] == 1\n    item = summary[\"capabilities\"][0]\n    assert item[\"code\"] == \"LEARNED_REUSABLE_TEST\"\n    assert item[\"evidence_certified\"] is True\n    assert item[\"reusable\"] is True\n    assert item[\"reuse_observed\"] is True\n    assert item[\"reuse_incident_count\"] == 1\n\n    serialized = json.dumps(summary)\n    for raw_identifier in (\n        origin_incident,\n        reuse_incident,\n        source_job_id,\n        repair_job_id,\n    ):\n        assert raw_identifier not in serialized\n",
+      "source_sha256": "a053e4d9fa70a4cbe9371b0947ce6df8a240df5e23f9796da393b64ae66c0005",
+      "type": "append_once"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_maintenance_history_readonly.py",
+        "backend/modules/worker_mcp/server.py",
+        "backend/tests/test_worker_maintenance_history_readonly.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_maintenance_history_readonly.py",
+        "backend/tests/test_worker_remote_semantic_ingress_gate2a.py",
+        "tools/tests/test_worker_mcp_gate2b.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-F2C7B796F808C50EA7100AB9",
+  "mode": "MUTATION",
+  "objective": "Knowledge Loop historical linkage projection R3: extender exclusivamente la observabilidad READ_ONLY existente para proyectar de forma pseudonimizada superseded_reason cuando enlace a CERTIFIED_SUCCESSOR o CERTIFIED_INCIDENT, leer solo resumen sanitizado del resultado sucesor y exponer un resumen seguro de las learned capabilities registradas con evidence_certified, reusable y reuse_observed. No reabrir ni modificar incidentes historicos, no crear capabilities, Workers, colas o registries paralelos. Corregir la documentacion MCP estatica para reflejar source_job_id opcional ya certificado en R2. Produccion prohibida.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
