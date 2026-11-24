@@ -249,11 +249,12 @@ def submit_job(
     return safe
 
 
-def _semantic_job_id(
+def _legacy_semantic_job_id(
     request_payload: Mapping[str, Any],
     *,
     requester_email: str,
 ) -> str:
+    """Pre-Gate2 semantic id retained only for exact historical retries."""
     bounded_context = _clean(request_payload.get("bounded_context")).upper()
     capability = _clean(request_payload.get("capability")).upper()
     request_key = _clean(request_payload.get("request_key"))
@@ -277,6 +278,151 @@ def _semantic_job_id(
     prefix = re.sub(r"[^A-Z0-9._-]+", "-", bounded_context)[:32] or "EDARSAHUB"
     cap = re.sub(r"[^A-Z0-9._-]+", "-", capability)[:32] or "CAPABILITY"
     return f"SEM-{prefix}-{cap}-{digest}"[:121]
+
+
+def _semantic_job_id(
+    request_payload: Mapping[str, Any],
+    *,
+    requester_email: str,
+) -> str:
+    """Bind new semantic requests to requester+request_key, independent of payload drift."""
+    request_key = _clean(request_payload.get("request_key"))
+    if not request_key:
+        return _legacy_semantic_job_id(
+            request_payload,
+            requester_email=requester_email,
+        )
+
+    identity = {
+        "requester": requester_email.lower(),
+        "request_key": request_key,
+    }
+    digest = hashlib.sha256(
+        json.dumps(
+            identity,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()[:24].upper()
+    return f"SEM-REQUEST-{digest}"
+
+
+_IDEMPOTENCY_COMPARE_FIELDS = (
+    "objective",
+    "mode",
+    "actions",
+    "checks",
+    "requester",
+    "scheduling",
+    "target_repo",
+    "target_branch",
+    "production_allowed",
+    "schema",
+)
+
+
+def _canonical_request_fingerprint(job: Mapping[str, Any]) -> str:
+    payload = {
+        key: job.get(key)
+        for key in _IDEMPOTENCY_COMPARE_FIELDS
+    }
+    return hashlib.sha256(
+        json.dumps(
+            payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def _read_existing_request_job(job_id: str) -> dict[str, Any] | None:
+    """Read the already-published canonical request; never mutates queue state."""
+    import subprocess
+
+    for directory in ("processing", "pending", "done", "drafts", "published"):
+        path = STATE_ROOT / directory / f"{job_id}.json"
+        if path.is_file():
+            payload = _read_json_if_object(path)
+            if payload:
+                return payload
+
+    git_dir = STATE_ROOT.parent
+    if not (git_dir / "HEAD").is_file():
+        return None
+
+    spec = f"origin/worker/requests:worker_queue/inbox/{job_id}.json"
+    try:
+        proc = subprocess.run(
+            ["git", f"--git-dir={git_dir}", "cat-file", "-p", spec],
+            capture_output=True,
+            check=False,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if proc.returncode != 0 or not proc.stdout:
+        return None
+    try:
+        payload = json.loads(proc.stdout.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _assert_idempotent_request_binding(
+    canonical_job: Mapping[str, Any],
+    *,
+    request_key: str,
+) -> None:
+    if not request_key:
+        return
+    existing = _read_existing_request_job(str(canonical_job.get("job_id") or ""))
+    if existing is None:
+        raise WorkerIngressError("IDEMPOTENCY_BINDING_UNVERIFIABLE")
+    if _canonical_request_fingerprint(existing) != _canonical_request_fingerprint(canonical_job):
+        raise WorkerIngressError("IDEMPOTENCY_CONFLICT")
+
+
+def _resolve_existing_semantic_job(
+    canonical_job: Mapping[str, Any],
+    *,
+    request_payload: Mapping[str, Any],
+    requester_email: str,
+) -> tuple[str, str] | None:
+    """Resolve stable-id jobs first, then exact legacy retries, and fail closed on drift."""
+    request_key = _clean(request_payload.get("request_key"))
+    stable_job_id = str(canonical_job.get("job_id") or "")
+    stable_state = _find_existing_job_state(stable_job_id)
+    if stable_state is not None:
+        _assert_idempotent_request_binding(
+            canonical_job,
+            request_key=request_key,
+        )
+        return stable_job_id, stable_state
+
+    if not request_key:
+        return None
+
+    legacy_job_id = _legacy_semantic_job_id(
+        request_payload,
+        requester_email=requester_email,
+    )
+    if legacy_job_id == stable_job_id:
+        return None
+
+    legacy_state = _find_existing_job_state(legacy_job_id)
+    if legacy_state is None:
+        return None
+
+    legacy_job = dict(canonical_job)
+    legacy_job["job_id"] = legacy_job_id
+    _assert_idempotent_request_binding(
+        legacy_job,
+        request_key=request_key,
+    )
+    return legacy_job_id, legacy_state
 
 
 def build_semantic_job(
@@ -430,11 +576,16 @@ def submit_objective(
         payload,
         current_user=current_user,
     )
-    existing_state = _find_existing_job_state(canonical_job["job_id"])
-    if existing_state is not None:
+    existing = _resolve_existing_semantic_job(
+        canonical_job,
+        request_payload=payload,
+        requester_email=requester["email"],
+    )
+    if existing is not None:
+        existing_job_id, existing_state = existing
         return {
             "status": "EXISTS",
-            "job_id": canonical_job["job_id"],
+            "job_id": existing_job_id,
             "existing_lifecycle": existing_state,
             "duplicate_prevented": True,
             "production_touched": False,
@@ -1038,6 +1189,22 @@ def build_semantic_diagnostic(
             "Do not publish the mutation. Reconcile GET /api/internal/worker/runtime-convergence "
             "until overall_converged=true, then retry the same request_key."
         )
+    elif code == "IDEMPOTENCY_CONFLICT":
+        classification = "IDEMPOTENCY_CONFLICT"
+        rejected_field = "request_key"
+        http_status = 409
+        allowed_correction = (
+            "Reuse the exact original semantic payload for this request_key, or use a new "
+            "request_key only for a genuinely distinct objective."
+        )
+    elif code == "IDEMPOTENCY_BINDING_UNVERIFIABLE":
+        classification = "IDEMPOTENCY_STATE_ERROR"
+        rejected_field = "request_key"
+        http_status = 409
+        allowed_correction = (
+            "Do not republish. Reconcile the existing canonical request artifact for this "
+            "request_key/job before retrying."
+        )
     elif code in {"SEMANTIC_CONSTRAINTS_UNSUPPORTED", "SEMANTIC_CONSTRAINTS_INVALID"}:
         rejected_field = "constraints"
         allowed_keys = cap_meta.get("allowed_constraints", []) if cap_meta else []
@@ -1315,13 +1482,22 @@ def preflight_semantic_objective(
             }
 
         canonical_job = build_semantic_job(payload, current_user=current_user)
-        existing_state = _find_existing_job_state(canonical_job["job_id"])
-        if existing_state is not None:
+        requester = _requester_from_authenticated_user(
+            current_user,
+            project="EDARSAHUB",
+        )
+        existing = _resolve_existing_semantic_job(
+            canonical_job,
+            request_payload=payload,
+            requester_email=requester["email"],
+        )
+        if existing is not None:
+            existing_job_id, existing_state = existing
             return {
                 "schema": "edarsahub.worker-semantic-preflight.v1",
                 "ok": True,
                 "status": "EXISTS",
-                "job_id": canonical_job["job_id"],
+                "job_id": existing_job_id,
                 "existing_lifecycle": existing_state,
                 "duplicate_detected": True,
                 "duplicate_prevented": True,
