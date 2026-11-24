@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "a94c7b78d399487089865d4818d9fa826489b525",
-  "generated_at_utc": "2026-11-24T15:11:17Z",
+  "generated_at_utc": "2026-11-24T15:12:57Z",
   "history": {
     "done_total_local": 2039,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 215,
+      "age_seconds": 314,
       "job_id": "EDARSA-LOGISTICS-GATE4A2-FORWARD-ROLLBACK-READONLY-INSPECTION-R1",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,8 +36,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-24T15:11:01Z",
-    "last_receive_utc": "2026-11-24T15:10:56Z",
+    "last_cycle_utc": "2026-11-24T15:12:30Z",
+    "last_receive_utc": "2026-11-24T15:12:53Z",
     "last_terminal_utc": "2026-11-24T15:07:42Z",
     "pid": "87",
     "runtime_fingerprint": {
