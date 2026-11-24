@@ -322,4 +322,5 @@ def preflight_worker_objective(
     return preflight_semantic_objective(
         request.model_dump(exclude_none=True),
         current_user=current_user,
+        enforce_runtime_convergence=True,
     )

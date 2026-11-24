@@ -377,6 +377,17 @@ def submit_objective(
         project="EDARSAHUB",
     )
 
+    if requested_mode == "MUTATION":
+        preflight = preflight_semantic_objective(
+            payload,
+            current_user=current_user,
+            enforce_runtime_convergence=True,
+        )
+        if preflight.get("ok") is not True:
+            raise WorkerIngressError(
+                str(preflight.get("error_code") or "PREFLIGHT_REJECTED")
+            )
+
     if capability.submitter is not None:
         try:
             result = capability.submitter(payload, requester)
@@ -1019,6 +1030,14 @@ def build_semantic_diagnostic(
         rejected_field = "mode"
         modes = ", ".join(cap_meta.get("modes", [])) if cap_meta else "READ_ONLY"
         allowed_correction = f"Use an allowed mode for {capability or 'capability'}: {modes}."
+    elif code == "RUNTIME_NOT_CONVERGED":
+        classification = "RUNTIME_DRIFT_ERROR"
+        rejected_field = "runtime_convergence"
+        http_status = 409
+        allowed_correction = (
+            "Do not publish the mutation. Reconcile GET /api/internal/worker/runtime-convergence "
+            "until overall_converged=true, then retry the same request_key."
+        )
     elif code in {"SEMANTIC_CONSTRAINTS_UNSUPPORTED", "SEMANTIC_CONSTRAINTS_INVALID"}:
         rejected_field = "constraints"
         allowed_keys = cap_meta.get("allowed_constraints", []) if cap_meta else []
@@ -1210,12 +1229,25 @@ def _verify_authorization_scope(
             raise WorkerIngressError("SCOPE_AUTHORIZATION_DENIED")
 
 
+def _require_mutation_runtime_convergence() -> dict[str, Any]:
+    """Fail closed before any mutation publication when the active runtime is stale."""
+    from tools.mirror_sync.worker_runtime_fingerprint import (
+        build_mcp_runtime_convergence_report,
+    )
+
+    report = build_mcp_runtime_convergence_report()
+    if report.get("overall_converged") is not True:
+        raise WorkerIngressError("RUNTIME_NOT_CONVERGED")
+    return report
+
+
 def preflight_semantic_objective(
     request_payload: Mapping[str, Any],
     *,
     current_user: Mapping[str, Any],
     authorization_scope: Mapping[str, Any] | None = None,
     loaded_capabilities: tuple[str, ...] | list[str] | None = None,
+    enforce_runtime_convergence: bool = False,
 ) -> dict[str, Any]:
     """Canonical pre-publication semantic preflight validating contract, RBAC, scope, SHA-256, and duplicates."""
     payload = dict(request_payload) if isinstance(request_payload, Mapping) else {}
@@ -1253,6 +1285,8 @@ def preflight_semantic_objective(
         _requester_from_authenticated_user(current_user, project="EDARSAHUB")
         if requested_mode == "MUTATION":
             _assert_mutation_rbac(current_user)
+            if enforce_runtime_convergence:
+                _require_mutation_runtime_convergence()
 
         if capability.submitter is not None:
             # Direct-submitter capability (e.g. WORKER_REPAIR_BOUNDED): validate context & constraints without mutating
