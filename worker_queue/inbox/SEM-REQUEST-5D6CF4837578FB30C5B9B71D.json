@@ -1,0 +1,162 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "    \"WORKER_MAINTENANCE_HISTORY_READONLY\": {\n        \"bounded_context_rule\": \"WORKER_REPAIR_KNOWLEDGE_LOOP\",\n        \"allowed_constraints\": (),\n        \"allowed_path_roots\": (),\n    },",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "    \"WORKER_MAINTENANCE_HISTORY_READONLY\": {\n        \"bounded_context_rule\": \"WORKER_REPAIR_KNOWLEDGE_LOOP\",\n        \"allowed_constraints\": (\"source_job_id\",),\n        \"allowed_path_roots\": (),\n    },",
+      "source_sha256": "b3da3ae0a7e725a0b07ebead104ef1a72cd0a98d1d93d8571437356280a077c3",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "# G4 Maintenance history: expose only the already-registered, bounded,\n# sanitizing Worker check. No caller-supplied paths, actions or checks.\ndef _maintenance_history_readonly_builder(request: Mapping[str, Any]) -> dict[str, Any]:\n    context = str(request.get(\"bounded_context\") or \"\").strip().upper()\n    if context != \"WORKER_REPAIR_KNOWLEDGE_LOOP\":\n        raise SemanticCapabilityError(\"SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED\")\n\n    constraints = request.get(\"constraints\")\n    if constraints is not None and (\n        not isinstance(constraints, Mapping) or bool(constraints)\n    ):\n        raise SemanticCapabilityError(\"SEMANTIC_CONSTRAINTS_UNSUPPORTED\")\n\n    return {\n        \"actions\": [],\n        \"checks\": [{\"type\": \"worker_maintenance_history_readonly\"}],\n        \"scheduling\": _g3_scheduling(context),\n    }\n",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "# G4 Maintenance history: expose only the already-registered, bounded,\n# sanitizing Worker check. The optional selector is a canonical source_job_id;\n# callers still cannot supply paths, actions, commands or arbitrary checks.\ndef _maintenance_history_readonly_builder(request: Mapping[str, Any]) -> dict[str, Any]:\n    context = str(request.get(\"bounded_context\") or \"\").strip().upper()\n    if context != \"WORKER_REPAIR_KNOWLEDGE_LOOP\":\n        raise SemanticCapabilityError(\"SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED\")\n\n    constraints = _g3_constraints(request, {\"source_job_id\"})\n    source_job_id = constraints.get(\"source_job_id\")\n    check: dict[str, Any] = {\n        \"type\": \"worker_maintenance_history_readonly\",\n    }\n\n    if source_job_id is not None:\n        if (\n            not isinstance(source_job_id, str)\n            or not _G3_JOB_ID.fullmatch(source_job_id.strip())\n        ):\n            raise SemanticCapabilityError(\"SEMANTIC_SOURCE_JOB_INVALID\")\n        check[\"request\"] = {\n            \"source_job_id\": source_job_id.strip(),\n        }\n\n    return {\n        \"actions\": [],\n        \"checks\": [check],\n        \"scheduling\": _g3_scheduling(context),\n    }\n",
+      "source_sha256": "722df70aa912f4636e67ae0de0294bf4cac24135c709d2d3d33160106e3b864b",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    if kind == \"worker_maintenance_history_readonly\":\n        if set(check) != {\"type\"}:\n            return [f\"{prefix}_UNSUPPORTED_FIELDS\"]\n",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "replacement": "    if kind == \"worker_maintenance_history_readonly\":\n        if set(check) not in ({\"type\"}, {\"type\", \"request\"}):\n            return [f\"{prefix}_UNSUPPORTED_FIELDS\"]\n        if \"request\" in check:\n            request = check.get(\"request\")\n            if not isinstance(request, dict):\n                return [f\"{prefix}_REQUEST_REQUIRED\"]\n            if set(request) != {\"source_job_id\"}:\n                return [f\"{prefix}_REQUEST_FIELDS_INVALID\"]\n            source_job_id = str(\n                request.get(\"source_job_id\") or \"\"\n            ).strip()\n            if not JOB_ID.fullmatch(source_job_id):\n                return [f\"{prefix}_SOURCE_JOB_ID_INVALID\"]\n",
+      "source_sha256": "6186f3173f807f723d45e7c0b0a0d2052350e05ec37dc289f0ae1f400173fcbb",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    elif kind == \"worker_maintenance_history_readonly\":\n        # Local Git common-dir Maintenance history; only the canonical Worker\n        # host can access it. The helper accepts no caller-selected paths.\n        helper = worktree / \"tools\" / \"mirror_sync\" / \"worker_maintenance_history_readonly.py\"\n        if not helper.is_file():\n            raise RuntimeError(\"G4_HISTORY_HELPER_UNAVAILABLE\")\n        cmd = [PYTHON_BIN, str(helper)]\n        cwd = worktree\n        env_extra = {\"PYTHONDONTWRITEBYTECODE\": \"1\"}\n",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "replacement": "    elif kind == \"worker_maintenance_history_readonly\":\n        # Local Git common-dir Maintenance history; only the canonical Worker\n        # host can access it. The only optional selector is a validated\n        # source_job_id; arbitrary paths and commands remain impossible.\n        helper = worktree / \"tools\" / \"mirror_sync\" / \"worker_maintenance_history_readonly.py\"\n        if not helper.is_file():\n            raise RuntimeError(\"G4_HISTORY_HELPER_UNAVAILABLE\")\n        cmd = [PYTHON_BIN, str(helper)]\n        request = check.get(\"request\") or {}\n        source_job_id = str(\n            request.get(\"source_job_id\") or \"\"\n        ).strip()\n        if source_job_id:\n            cmd.extend([\"--source-job-id\", source_job_id])\n        cwd = worktree\n        env_extra = {\"PYTHONDONTWRITEBYTECODE\": \"1\"}\n",
+      "source_sha256": "421053bc86456e3a3f36fc98a090cbe63540406798931c76f2a27472cf6a5575",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "MAX_BYTES = 1_000_000\nSAFE_CODE = re.compile(r\"^[A-Z][A-Z0-9_.:-]{2,119}$\")\n",
+      "path": "tools/mirror_sync/worker_maintenance_history_readonly.py",
+      "replacement": "MAX_BYTES = 1_000_000\nSAFE_CODE = re.compile(r\"^[A-Z][A-Z0-9_.:-]{2,119}$\")\nSAFE_JOB_ID = re.compile(r\"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$\")\nRESULTS_DIR = (\n    maintenance.GIT_COMMON_DIR\n    / \"universal-worker-queue\"\n    / \"results\"\n)\n",
+      "source_sha256": "43e12219c6392ba357b932219a9bae58ee40d25755af37470a4c052a51f0968e",
+      "type": "replace_text"
+    },
+    {
+      "anchor": "def collect() -> dict:\n",
+      "path": "tools/mirror_sync/worker_maintenance_history_readonly.py",
+      "replacement": "\ndef _safe_result_summary(repair_job_id: object) -> dict | None:\n    if not isinstance(repair_job_id, str) or not SAFE_JOB_ID.fullmatch(repair_job_id):\n        return None\n    path = RESULTS_DIR / f\"{repair_job_id}.json\"\n    if (\n        path.is_symlink()\n        or not path.is_file()\n        or path.parent != RESULTS_DIR\n        or path.stat().st_size > MAX_BYTES\n    ):\n        return None\n    try:\n        payload = json.loads(path.read_text(encoding=\"utf-8\"))\n    except (OSError, json.JSONDecodeError):\n        return None\n    if not isinstance(payload, dict):\n        return None\n    percent = payload.get(\"percent_complete\")\n    return {\n        \"status\": _bounded_code(payload.get(\"status\")),\n        \"certification\": _bounded_code(payload.get(\"certification\")),\n        \"quality_gate\": _bounded_code(payload.get(\"quality_gate\")),\n        \"tests\": _bounded_code(payload.get(\"tests\")),\n        \"percent_complete\": (\n            percent if type(percent) is int and 0 <= percent <= 100 else None\n        ),\n        \"production_touched\": payload.get(\"production_touched\") is True,\n    }\n\n\ndef _focused_linkage(\n    source_job_id: str,\n    *,\n    files: list[Path],\n    directory: Path,\n    learned_capabilities: tuple,\n) -> dict:\n    if not SAFE_JOB_ID.fullmatch(source_job_id):\n        raise ValueError(\"G4_SOURCE_JOB_INVALID\")\n\n    rows: list[dict] = []\n    by_incident: dict[str, dict] = {}\n    for file in files:\n        payload = _safe_file(file, directory)\n        inner = payload.get(\"incident\")\n        incident = inner if isinstance(inner, dict) else payload\n        incident_id = incident.get(\"incident_id\") or payload.get(\"incident_id\")\n        if not isinstance(incident_id, str) or not incident_id:\n            continue\n        row = {\n            \"incident_id\": incident_id,\n            \"source_job_id\": (\n                incident.get(\"source_job_id\")\n                or payload.get(\"source_job_id\")\n            ),\n            \"state\": str(\n                payload.get(\"state\")\n                or incident.get(\"state\")\n                or \"UNKNOWN\"\n            ).upper(),\n            \"problem_signature\": (\n                incident.get(\"problem_signature\")\n                or payload.get(\"problem_signature\")\n            ),\n            \"capability_code\": (\n                incident.get(\"capability_code\")\n                or payload.get(\"capability_code\")\n            ),\n            \"repair_job_id\": (\n                payload.get(\"repair_job_id\")\n                or incident.get(\"repair_job_id\")\n            ),\n        }\n        rows.append(row)\n        by_incident[incident_id] = row\n\n    selected_ids = {\n        row[\"incident_id\"]\n        for row in rows\n        if row[\"source_job_id\"] == source_job_id\n    }\n    for capability in learned_capabilities:\n        evidence = getattr(capability, \"evidence\", {}) or {}\n        learned_from = str(\n            getattr(capability, \"learned_from_incident\", \"\") or \"\"\n        )\n        if evidence.get(\"source_job_id\") == source_job_id and learned_from:\n            selected_ids.add(learned_from)\n\n    known_codes = set(planner.registered_capabilities()) | {\n        str(getattr(capability, \"code\", \"\") or \"\")\n        for capability in learned_capabilities\n    }\n    matches: list[dict] = []\n    for incident_id in sorted(selected_ids):\n        row = by_incident.get(incident_id)\n        if row is None:\n            continue\n\n        capability_rows = []\n        effective_repair_job_id = row[\"repair_job_id\"]\n        for capability in learned_capabilities:\n            learned_from_match = (\n                getattr(capability, \"learned_from_incident\", None)\n                == incident_id\n            )\n            incident_ids = tuple(\n                getattr(capability, \"incident_ids\", ()) or ()\n            )\n            if not learned_from_match and incident_id not in incident_ids:\n                continue\n\n            evidence = getattr(capability, \"evidence\", {}) or {}\n            if not effective_repair_job_id:\n                candidate_repair = evidence.get(\"repair_job_id\")\n                if (\n                    isinstance(candidate_repair, str)\n                    and SAFE_JOB_ID.fullmatch(candidate_repair)\n                ):\n                    effective_repair_job_id = candidate_repair\n\n            code = str(getattr(capability, \"code\", \"\") or \"\")\n            problem_signature = str(\n                getattr(capability, \"problem_signature\", \"\") or \"\"\n            )\n            reuse_rows = [\n                other\n                for other in rows\n                if other[\"incident_id\"] != incident_id\n                and (\n                    other[\"capability_code\"] == code\n                    or (\n                        problem_signature\n                        and other[\"problem_signature\"] == problem_signature\n                    )\n                )\n            ]\n            capability_rows.append({\n                \"code\": _bounded_code(code),\n                \"learned_from_incident_match\": learned_from_match,\n                \"evidence_source_job_match\": (\n                    evidence.get(\"source_job_id\") == source_job_id\n                ),\n                \"evidence_repair_job_match\": (\n                    isinstance(effective_repair_job_id, str)\n                    and evidence.get(\"repair_job_id\")\n                    == effective_repair_job_id\n                ),\n                \"evidence_certified\": (\n                    evidence.get(\"certified\") is True\n                    and str(evidence.get(\"certification\") or \"\").upper()\n                    == \"CERTIFIED\"\n                ),\n                \"reusable\": bool(getattr(capability, \"reusable\", False)),\n                \"reuse_observed\": bool(reuse_rows),\n                \"reuse_incident_count\": len(reuse_rows),\n                \"reuse_incident_fingerprints\": [\n                    _fingerprint(other[\"incident_id\"])\n                    for other in reuse_rows[:10]\n                ],\n            })\n\n        repair_summary = _safe_result_summary(effective_repair_job_id)\n        signature = row[\"problem_signature\"]\n        capability_code = row[\"capability_code\"]\n        matches.append({\n            \"incident_fingerprint\": _fingerprint(incident_id),\n            \"state\": _bounded_code(row[\"state\"]),\n            \"signature\": (\n                \"SIG:\" + _fingerprint(signature)\n                if isinstance(signature, str) and signature\n                else None\n            ),\n            \"capability\": (\n                _bounded_code(capability_code)\n                if isinstance(capability_code, str) and capability_code\n                else None\n            ),\n            \"capability_registered\": (\n                isinstance(capability_code, str)\n                and capability_code in known_codes\n            ),\n            \"repair_job_fingerprint\": (\n                _fingerprint(effective_repair_job_id)\n                if isinstance(effective_repair_job_id, str)\n                and effective_repair_job_id\n                else None\n            ),\n            \"repair_result\": repair_summary,\n            \"learned_capabilities\": capability_rows,\n            \"linkage_certified\": bool(\n                repair_summary\n                and repair_summary.get(\"certification\") == \"CERTIFIED\"\n                and repair_summary.get(\"quality_gate\") == \"PASS\"\n                and repair_summary.get(\"tests\") == \"PASS\"\n                and repair_summary.get(\"production_touched\") is False\n                and any(\n                    item[\"learned_from_incident_match\"]\n                    and item[\"evidence_source_job_match\"]\n                    and item[\"evidence_certified\"]\n                    and item[\"evidence_repair_job_match\"]\n                    for item in capability_rows\n                )\n            ),\n        })\n\n    return {\n        \"source_job_fingerprint\": _fingerprint(source_job_id),\n        \"match_count\": len(matches),\n        \"matches\": matches,\n        \"raw_identifiers_exposed\": False,\n    }\n\n\n",
+      "source_sha256": "fc170b74b08b73572083e353340498b942ad2b43788bb48a55e6fe93f23fa553",
+      "type": "insert_before"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "def collect() -> dict:\n",
+      "path": "tools/mirror_sync/worker_maintenance_history_readonly.py",
+      "replacement": "def collect(source_job_id: str | None = None) -> dict:\n",
+      "source_sha256": "a60fea192c3c796c3b2c5e88da20c0239b6bcc8d7129c7cbd486f3dc9c23a107",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "        \"production_touched_records\": production_flags,\n        \"limitations\": [\n",
+      "path": "tools/mirror_sync/worker_maintenance_history_readonly.py",
+      "replacement": "        \"production_touched_records\": production_flags,\n        \"focused_linkage\": (\n            _focused_linkage(\n                source_job_id,\n                files=files,\n                directory=directory,\n                learned_capabilities=tuple(\n                    registry.iter_learned_capabilities()\n                ),\n            )\n            if source_job_id\n            else None\n        ),\n        \"limitations\": [\n",
+      "source_sha256": "62195527d87c6663b76dbf83d973e9931eedc593ca234b57fb7e65b0c08a6c8b",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "def main() -> int:\n    parser = argparse.ArgumentParser()\n    parser.parse_args()  # no caller-controlled paths or selectors\n    try:\n        result = collect()\n",
+      "path": "tools/mirror_sync/worker_maintenance_history_readonly.py",
+      "replacement": "def main() -> int:\n    parser = argparse.ArgumentParser()\n    parser.add_argument(\"--source-job-id\")\n    args = parser.parse_args()\n    try:\n        result = collect(args.source_job_id)\n",
+      "source_sha256": "3215fd3a5cf6d82d3e0b3170cb00036c6407e25fc0ff8ffcd36659b454716bf9",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "import json\nfrom pathlib import Path\n",
+      "path": "backend/tests/test_worker_maintenance_history_readonly.py",
+      "replacement": "import json\nfrom pathlib import Path\nfrom types import SimpleNamespace\n",
+      "source_sha256": "359a8afcf06e8f83bd9ccdb45dc80c0c3fdd4768e31c7fff4cf4cca4501ca77e",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "def test_g4_request_contract_accepted_only_with_zero_parameters():\n    from tools.mirror_sync import universal_job_bridge as bridge\n    check = {\"type\": \"worker_maintenance_history_readonly\"}\n    assert bridge.validate_check(check, 0) == []\n    assert bridge.validate_check({**check, \"path\": \"/etc\"}, 0)\n    assert check[\"type\"] in bridge.READ_ONLY_CHECKS\n    assert check[\"type\"] in bridge.ALLOWED_CHECKS\n",
+      "path": "backend/tests/test_worker_maintenance_history_readonly.py",
+      "replacement": "def test_g4_request_contract_accepts_only_optional_source_job_selector():\n    from tools.mirror_sync import universal_job_bridge as bridge\n    check = {\"type\": \"worker_maintenance_history_readonly\"}\n    focused = {\n        **check,\n        \"request\": {\"source_job_id\": \"WORKER-SOURCE-JOB-123\"},\n    }\n    assert bridge.validate_check(check, 0) == []\n    assert bridge.validate_check(focused, 0) == []\n    assert bridge.validate_check({**check, \"path\": \"/etc\"}, 0)\n    assert bridge.validate_check(\n        {**check, \"request\": {\"path\": \"/etc\"}},\n        0,\n    )\n    assert bridge.validate_check(\n        {**check, \"request\": {\"source_job_id\": \"../unsafe\"}},\n        0,\n    )\n    assert check[\"type\"] in bridge.READ_ONLY_CHECKS\n    assert check[\"type\"] in bridge.ALLOWED_CHECKS\n",
+      "source_sha256": "e7e0823ce5a0670e84eb227018cff4b32fe6f36289214a624fb09bc8de131eb5",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    assert 'elif kind == \"worker_maintenance_history_readonly\":' in source\n    assert 'response[\"maintenance_history_evidence\"]' in source\n",
+      "path": "backend/tests/test_worker_maintenance_history_readonly.py",
+      "replacement": "    assert 'elif kind == \"worker_maintenance_history_readonly\":' in source\n    assert '\"--source-job-id\"' in source\n    assert 'response[\"maintenance_history_evidence\"]' in source\n",
+      "source_sha256": "6bd146f9c992430b8f9d2a308a4d4402212c1c1067b8dfc69a557e2a6f5321ae",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_maintenance_history_readonly.py",
+      "replacement": "\n\ndef test_g4_focused_linkage_is_pseudonymized_and_certification_bound(\n    tmp_path,\n    monkeypatch,\n):\n    incident_dir = tmp_path / \"incidents\"\n    results_dir = tmp_path / \"results\"\n    incident_dir.mkdir()\n    results_dir.mkdir()\n\n    source_job_id = \"SOURCE-JOB-EXACT-123\"\n    incident_id = \"INCIDENT-EXACT-456\"\n    repair_job_id = \"REPAIR-JOB-EXACT-789\"\n\n    _write(\n        incident_dir,\n        \"one.json\",\n        {\n            \"incident_id\": incident_id,\n            \"state\": \"CERTIFIED\",\n            \"problem_signature\": \"KNOWN_FAILURE\",\n            \"source_job_id\": source_job_id,\n            \"capability_code\": \"LEARNED_TEST\",\n            \"repair_job_id\": repair_job_id,\n            \"attempts\": 1,\n            \"production_touched\": False,\n        },\n    )\n    _write(\n        results_dir,\n        repair_job_id + \".json\",\n        {\n            \"job_id\": repair_job_id,\n            \"status\": \"INTEGRATED\",\n            \"certification\": \"CERTIFIED\",\n            \"quality_gate\": \"PASS\",\n            \"tests\": \"PASS\",\n            \"percent_complete\": 100,\n            \"production_touched\": False,\n        },\n    )\n\n    learned = SimpleNamespace(\n        code=\"LEARNED_TEST\",\n        problem_signature=\"KNOWN_FAILURE\",\n        incident_ids=(incident_id,),\n        learned_from_incident=incident_id,\n        reusable=True,\n        evidence={\n            \"source_job_id\": source_job_id,\n            \"repair_job_id\": repair_job_id,\n            \"certified\": True,\n            \"certification\": \"CERTIFIED\",\n        },\n    )\n\n    monkeypatch.setattr(maintenance, \"INCIDENT_DIR\", incident_dir)\n    monkeypatch.setattr(audit, \"RESULTS_DIR\", results_dir)\n    monkeypatch.setattr(planner, \"registered_capabilities\", lambda: ())\n    monkeypatch.setattr(\n        registry,\n        \"iter_learned_capabilities\",\n        lambda: (learned,),\n    )\n\n    report = audit.collect(source_job_id)\n    focused = report[\"focused_linkage\"]\n    assert focused[\"match_count\"] == 1\n    assert focused[\"raw_identifiers_exposed\"] is False\n    match = focused[\"matches\"][0]\n    assert match[\"repair_result\"][\"certification\"] == \"CERTIFIED\"\n    assert match[\"linkage_certified\"] is True\n    assert match[\"learned_capabilities\"][0][\n        \"learned_from_incident_match\"\n    ] is True\n    assert match[\"learned_capabilities\"][0][\n        \"evidence_repair_job_match\"\n    ] is True\n\n    serialized = json.dumps(focused)\n    for raw_identifier in (\n        source_job_id,\n        incident_id,\n        repair_job_id,\n    ):\n        assert raw_identifier not in serialized\n\n\ndef test_g4_focused_linkage_rejects_invalid_source_job_id():\n    with pytest.raises(ValueError, match=\"G4_SOURCE_JOB_INVALID\"):\n        audit.collect(\"../unsafe\")\n",
+      "source_sha256": "a7fc85a222926affd470d8d8d5405d8c93fa668d60f26f5bbc192e3e58490b26",
+      "type": "append_once"
+    },
+    {
+      "anchor": "@pytest.mark.parametrize(\"override\", [\n",
+      "path": "backend/tests/test_worker_remote_semantic_ingress_gate2a.py",
+      "replacement": "def test_g4_maintenance_history_accepts_bounded_source_job_selector():\n    job = service.build_semantic_job(\n        _objective(\n            bounded_context=\"WORKER_REPAIR_KNOWLEDGE_LOOP\",\n            capability=\"WORKER_MAINTENANCE_HISTORY_READONLY\",\n            constraints={\"source_job_id\": \"WORKER-SOURCE-JOB-123\"},\n        ),\n        current_user=_user(),\n    )\n    assert job[\"actions\"] == []\n    assert job[\"production_allowed\"] is False\n    assert job[\"checks\"] == [{\n        \"type\": \"worker_maintenance_history_readonly\",\n        \"request\": {\"source_job_id\": \"WORKER-SOURCE-JOB-123\"},\n    }]\n\n\n",
+      "source_sha256": "3c97f970fb049018b88d97aeb5f89a3d18e4964256954bed65060d418a0c8b9b",
+      "type": "insert_before"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/worker_maintenance_history_readonly.py",
+        "backend/tests/test_worker_maintenance_history_readonly.py",
+        "backend/tests/test_worker_remote_semantic_ingress_gate2a.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_maintenance_history_readonly.py",
+        "backend/tests/test_worker_remote_semantic_ingress_gate2a.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-5D6CF4837578FB30C5B9B71D",
+  "mode": "MUTATION",
+  "objective": "Knowledge Loop focused history R2: successor del R1 fallido unicamente por colocacion incorrecta de un test parametrizado. Implementar la misma observabilidad focalizada READ_ONLY para source_job_id, pseudonimizada y enlazada a incident, repair result y learned capability, sin nueva infraestructura, sin Produccion. R1 permanece historico NOT_CERTIFIED.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
