@@ -110,12 +110,18 @@ def cycle_chain(chain:dict[str,Any],state_root:Path,persist_root:Path,publish_en
     return result
 def run_cycle(config_dir:Path,state_root:Path,persist_root:Path,publish_enabled:bool=False)->dict[str,Any]:
     rows=[]
+    isolated_errors=[]
     if config_dir.exists():
         for path in sorted(config_dir.glob('*.json')):
-            chain=load_json(path)
-            if chain.get('enabled') is True:
-                rows.append(cycle_chain(chain,state_root,persist_root,publish_enabled))
-    return {'schema':'edarsahub.gate-orchestrator-cycle.v1','generated_at_utc':now(),'publish_enabled':publish_enabled,'chains':rows,'production_touched':False}
+            try:
+                chain=load_json(path)
+                if chain.get('enabled') is True:
+                    rows.append(cycle_chain(chain,state_root,persist_root,publish_enabled))
+            except Exception as exc:
+                err_row={'chain_id':path.stem,'action':'CHAIN_ISOLATED_ERROR','reason':f'{type(exc).__name__}:{str(exc)[:120]}','published':False,'isolated':True,'production_touched':False}
+                rows.append(err_row)
+                isolated_errors.append(path.stem)
+    return {'schema':'edarsahub.gate-orchestrator-cycle.v1','generated_at_utc':now(),'publish_enabled':publish_enabled,'chain_isolation_active':True,'isolated_error_chains':isolated_errors,'chains':rows,'production_touched':False}
 def main()->int:
     p=argparse.ArgumentParser(); p.add_argument('--config-dir',default=str(ROOT/'worker_queue'/'config'/'gate_chains')); p.add_argument('--state-root',default=str(ROOT/'.git'/'universal-worker-queue')); p.add_argument('--persist-root',default=str(ROOT/'.git'/'universal-worker-queue'/'orchestrator')); p.add_argument('--publish',action='store_true'); p.add_argument('--once',action='store_true'); p.add_argument('--interval',type=int,default=30); a=p.parse_args()
     if a.interval<10: raise SystemExit('INTERVAL_TOO_LOW')

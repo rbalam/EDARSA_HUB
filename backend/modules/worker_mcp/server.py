@@ -4,6 +4,8 @@ from contextvars import ContextVar
 from datetime import datetime, timezone
 import json
 import logging
+import os
+from pathlib import Path
 import re
 import time
 from typing import Any
@@ -36,12 +38,14 @@ from .client import (
     WorkerMcpBackendError,
     WorkerMcpUpstreamUnavailableError,
     WorkerMcpValidationError,
+    classify_mcp_connector_incident_family,
     extract_safe_publication_diagnostic,
     get_go_context as backend_get_go_context,
     get_job_status as backend_get_job_status,
     get_runtime_convergence as backend_get_runtime_convergence,
     list_capabilities as backend_list_capabilities,
     preflight_objective as backend_preflight_objective,
+    record_mcp_connector_incident,
     submit_objective as backend_submit_objective,
 )
 from .config import WorkerMcpConfig
@@ -512,6 +516,14 @@ def _log_mcp_tool_error(
         _safe_correlation_id(correlation_id) or "none",
         "none" if retryable is None else ("true" if retryable else "false"),
     )
+    record_mcp_connector_incident(
+        tool_name=tool_name,
+        http_status=http_status,
+        error_code=error_code,
+        capability=capability,
+        correlation_id=correlation_id,
+        retryable=retryable,
+    )
 
 
 def _raise_mapped_upstream_error(
@@ -734,6 +746,8 @@ def submit_objective_tool(
     - REPOSITORY_CONTRACT_AUDIT (mode=READ_ONLY, bounded_context="RH" only): constraints={}
     - SQL_CONNECTIONS_BOOTSTRAP_READONLY (mode=READ_ONLY, bounded_context="SQL_CONNECTIONS_8OF10"): constraints={}
     - SEC_RBAC_SQL_PERMISSION_MATRIX_READONLY (mode=READ_ONLY_SQL, bounded_context="SEC_RBAC"): constraints={}
+    - SQL_READONLY_PROFILE_AUDIT (mode=READ_ONLY_SQL, any authorized domain for profile):
+      constraints={"profile_code": "..."} selecting an audited HRLectura READ_ONLY SQL profile from list_capabilities.
     - WORKER_RESULT_SEMANTIC_EXTRACT (mode=READ_ONLY): constraints={"source_job_id": "..."}
     - WORKER_RESULT_DETAIL_READ (mode=READ_ONLY): constraints={"source_job_id": "..."}
     - WORKER_MAINTENANCE_HISTORY_READONLY (mode=READ_ONLY, bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP"):

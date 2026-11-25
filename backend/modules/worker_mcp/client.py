@@ -1,7 +1,10 @@
 """HTTP bridge from MCP to the certified EDARSAHUB semantic ingress."""
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import json
+import os
+from pathlib import Path
 import re
 import socket
 import time
@@ -99,6 +102,117 @@ class WorkerMcpUpstreamUnavailableError(WorkerMcpBackendError):
 
 
 _SAFE_JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
+_SAFE_MCP_CORR_RE = re.compile(r"^[A-Za-z0-9._:-]{1,80}$")
+_SAFE_MCP_CAP_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{1,119}$")
+_MCP_INCIDENT_LOG_PATH = (
+    Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
+    / ".git"
+    / "universal-worker-queue"
+    / "maintenance"
+    / "mcp_connector_incidents.jsonl"
+)
+_MCP_INCIDENT_FAMILIES = frozenset({
+    "MCP_CONNECTOR_INTERNAL_ERROR",
+    "MCP_CONNECTOR_UPSTREAM_TIMEOUT",
+    "MCP_CONNECTOR_UPSTREAM_UNAVAILABLE",
+    "MCP_CONNECTOR_PROTOCOL_ERROR",
+})
+_MCP_TELEMETRY_SENSITIVE = (
+    "secret", "token", "password", "credential", "jwt", "bearer", "api_key", "apikey",
+)
+
+
+def classify_mcp_connector_incident_family(
+    *,
+    http_status: int,
+    error_code: str,
+) -> str | None:
+    """Map an MCP connector error to its canonical incident family (None for normal 401/403/422)."""
+    code = str(error_code or "").strip().upper()
+    status_num = int(http_status or 0)
+    if status_num in (401, 403, 422):
+        return None
+    if status_num == 504 or "TIMEOUT" in code:
+        return "MCP_CONNECTOR_UPSTREAM_TIMEOUT"
+    if status_num in (502, 503) or any(
+        tok in code for tok in ("BACKEND_UNREACHABLE", "UPSTREAM_UNAVAILABLE", "SERVICE_CREDENTIAL_EXCHANGE_FAILED")
+    ):
+        return "MCP_CONNECTOR_UPSTREAM_UNAVAILABLE"
+    if any(
+        tok in code for tok in ("INTERNAL_ERROR", "-32603", "MCP_TOOL_INTERNAL", "MCP_UPSTREAM_500")
+    ) or status_num >= 500:
+        return "MCP_CONNECTOR_INTERNAL_ERROR"
+    if status_num == 400 and any(
+        tok in code for tok in ("SESSION_ID_MISSING", "CONTENT_TYPE_INVALID", "PARSE_ERROR", "INVALID_REQUEST", "METHOD_NOT_FOUND")
+    ):
+        return "MCP_CONNECTOR_PROTOCOL_ERROR"
+    return None
+
+
+def record_mcp_connector_incident(
+    *,
+    tool_name: str,
+    http_status: int,
+    error_code: str,
+    capability: str | None = None,
+    correlation_id: str | None = None,
+    retryable: bool | None = None,
+    incident_family: str | None = None,
+    log_path: Path | None = None,
+) -> dict[str, Any] | None:
+    """Append one secret-free MCP connector internal incident record without ever raising."""
+    family = (
+        incident_family
+        if incident_family in _MCP_INCIDENT_FAMILIES
+        else classify_mcp_connector_incident_family(
+            http_status=http_status,
+            error_code=error_code,
+        )
+    )
+    if family is None:
+        return None
+
+    clean_code = re.sub(r"[^A-Za-z0-9_.:-]+", "_", str(error_code or family).strip().upper())[:80] or family
+    if any(tok in clean_code.lower() for tok in _MCP_TELEMETRY_SENSITIVE):
+        clean_code = family
+
+    raw_corr = str(correlation_id or "").strip()
+    safe_corr = (
+        raw_corr
+        if raw_corr
+        and _SAFE_MCP_CORR_RE.fullmatch(raw_corr)
+        and not any(tok in raw_corr.lower() for tok in _MCP_TELEMETRY_SENSITIVE)
+        else None
+    )
+    raw_cap = str(capability or "").strip().upper()
+    safe_cap = raw_cap if raw_cap and _SAFE_MCP_CAP_RE.fullmatch(raw_cap) else None
+
+    record = {
+        "schema": "edarsahub.mcp-connector-incident.v1",
+        "timestamp_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "epoch": round(time.time(), 3),
+        "tool": re.sub(r"[^A-Za-z0-9._:/-]+", "_", str(tool_name or "mcp_connector").strip())[:64] or "mcp_connector",
+        "http_status": int(http_status),
+        "error_code": clean_code,
+        "incident_family": family,
+        "capability": safe_cap,
+        "correlation_id": safe_corr,
+        "retryable": bool(retryable) if retryable is not None else (family in {
+            "MCP_CONNECTOR_UPSTREAM_TIMEOUT",
+            "MCP_CONNECTOR_UPSTREAM_UNAVAILABLE",
+        }),
+        "non_blocking_isolation": True,
+        "production_touched": False,
+    }
+    target = log_path or _MCP_INCIDENT_LOG_PATH
+    try:
+        if target.parent.parent.is_dir() or log_path is not None:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with target.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+    except OSError:
+        pass
+    return record
 _SAFE_PUB_CATEGORIES = frozenset({
     "GIT_AUTH_FAILURE",
     "CONVERGENCE_FAILURE",
@@ -655,6 +769,7 @@ def get_go_context(
             + urllib.parse.urlencode(query)
         ),
         token=internal_token,
+        timeout=25.0,
     )
     if status_code != 200:
         _handle_readonly_status_error(status_code, response, error_code="GO_CONTEXT_READ")

@@ -996,3 +996,124 @@ def query_capabilities(
         "offset": safe_offset,
         "items": [_serialize_capability_row(r) for r in rows],
     }
+
+
+def get_worker_self_healing_snapshot(*, queue_root: Optional[Path] = None) -> Dict[str, Any]:
+    """Resumen canónico READ_ONLY de autorrecuperación, desbloqueo, MCP y Knowledge Loop para Centro de Control."""
+    qroot = queue_root or QUEUE_ROOT
+    cp_status = read_json_file(qroot / "runtime" / "control_plane_status.json")
+    cp = cp_status if isinstance(cp_status, dict) else {}
+
+    runtime_info = cp.get("runtime") if isinstance(cp.get("runtime"), dict) else {}
+    ff_info = cp.get("ff") if isinstance(cp.get("ff"), dict) else {}
+    detection = cp.get("lifecycle_detection") if isinstance(cp.get("lifecycle_detection"), dict) else {}
+    recovery = cp.get("lifecycle_recovery") if isinstance(cp.get("lifecycle_recovery"), dict) else {}
+    counts = detection.get("counts") if isinstance(detection.get("counts"), dict) else {}
+
+    # MCP connector incident summary (direct read so telemetry is always fresh)
+    mcp_summary: Dict[str, Any] = {
+        "health": "UNKNOWN",
+        "total_recent": 0,
+        "by_family": {},
+        "by_tool": {},
+        "non_blocking_isolation": True,
+    }
+    try:
+        from tools.mirror_sync import worker_lifecycle_recovery as _lr
+
+        mcp_summary = _lr.summarize_mcp_connector_incidents(state_root=qroot)
+    except Exception:
+        if isinstance(detection.get("mcp_connector_incidents"), dict):
+            mcp_summary = dict(detection["mcp_connector_incidents"])
+
+    # Open circuit breakers count (read-only)
+    cb_dir = qroot / "maintenance" / "circuit_breakers"
+    open_circuits = 0
+    total_circuits = 0
+    if cb_dir.is_dir():
+        for cb_path in cb_dir.glob("*.json"):
+            doc = _safe_json(cb_path)
+            if not isinstance(doc, dict):
+                continue
+            total_circuits += 1
+            if int(doc.get("consecutive_failures") or 0) >= 3:
+                open_circuits += 1
+
+    # Knowledge Loop lessons & extensible capabilities counts (read-only)
+    lessons_count = 0
+    try:
+        from tools.mirror_sync import worker_repair_auto_loop as _al
+
+        lessons_count = len(_al.list_knowledge_lessons(lessons_dir=qroot / "maintenance" / "knowledge_lessons"))
+    except Exception:
+        pass
+
+    capabilities_summary: Dict[str, Any] = {
+        "semantic_capabilities_count": 0,
+        "pytest_suites_count": 0,
+        "sql_readonly_profiles_count": 0,
+        "sql_readonly_profiles": [],
+    }
+    try:
+        from modules.worker_ingress import semantic_capabilities as _sc
+
+        capabilities_summary = {
+            "semantic_capabilities_count": len(_sc.registered_capabilities()),
+            "pytest_suites_count": len(_sc.pytest_certification_suites()),
+            "sql_readonly_profiles_count": len(_sc.sql_readonly_profiles()),
+            "sql_readonly_profiles": sorted(_sc.sql_readonly_profiles()),
+        }
+    except Exception:
+        pass
+
+    system_degraded = bool(detection.get("system_degraded") is True or runtime_info.get("runtime_repair_needed") is True)
+    mcp_degraded = str(mcp_summary.get("health") or "").upper() == "DEGRADED"
+    if system_degraded:
+        overall = "DEGRADED"
+    elif mcp_degraded or open_circuits > 0 or int(counts.get("corrupt_drafts") or 0) > 0:
+        overall = "ATTENTION_REQUIRED"
+    else:
+        overall = "HEALTHY"
+
+    return {
+        "schema": "edarsahub.worker-self-healing-snapshot.v1",
+        "generated_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "overall_status": overall,
+        "domain_isolation_active": True,
+        "control_plane_at_utc": cp.get("at_utc"),
+        "runtime": {
+            "pid_alive": bool(runtime_info.get("pid_alive", False)),
+            "generation_expected": runtime_info.get("expected_generation"),
+            "generation_actual": runtime_info.get("actual_generation"),
+            "runtime_repair_needed": bool(runtime_info.get("runtime_repair_needed", False)),
+            "current_job_id": runtime_info.get("current_job_id"),
+            "git_ff_status": ff_info.get("ff"),
+            "local_head": ff_info.get("local"),
+        },
+        "lifecycle": {
+            "system_degraded": system_degraded,
+            "recovery_status": recovery.get("status"),
+            "persistent_drafts": int(counts.get("persistent_drafts") or 0),
+            "transient_drafts": int(counts.get("transient_drafts") or 0),
+            "corrupt_drafts": int(counts.get("corrupt_drafts") or 0),
+            "orphan_claims": int(counts.get("orphan_claims") or 0),
+            "orphan_branches": int(counts.get("orphan_branches") or 0),
+            "pending_audit_stale": int(counts.get("pending_audit_stale") or 0),
+            "persistent_drafts_by_domain": detection.get("persistent_drafts_by_domain") or {},
+            "isolated_failed_domains": recovery.get("isolated_failed_domains") or [],
+        },
+        "mcp_connector": {
+            "health": mcp_summary.get("health"),
+            "total_recent_incidents": int(mcp_summary.get("total_recent") or 0),
+            "by_family": mcp_summary.get("by_family") or {},
+            "by_tool": mcp_summary.get("by_tool") or {},
+            "non_blocking_isolation": True,
+        },
+        "knowledge_loop": {
+            "certified_lessons_count": lessons_count,
+            "circuit_breakers_total": total_circuits,
+            "circuit_breakers_open": open_circuits,
+        },
+        "extensible_capabilities": capabilities_summary,
+        "production_touched": False,
+    }

@@ -11,6 +11,8 @@ import hashlib
 import json
 import logging
 import re
+import threading
+import time
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -1320,6 +1322,104 @@ def _extract_envelope_job(payload: Mapping[str, Any] | None) -> dict[str, Any]:
     return dict(payload)
 
 
+_GO_CONTEXT_CACHE_LOCK = threading.Lock()
+_GO_CONTEXT_CACHE: dict[str, dict[str, Any]] = {}
+
+
+def _queue_dir_signature(folder: Path) -> str:
+    """Fast directory signature (mtime_ns + json file count) for zero-stale cache invalidation."""
+    try:
+        if not folder.is_dir():
+            return "ABSENT"
+        st = folder.stat()
+        # os.scandir is ~10x faster than Path.glob() in CPython
+        import os
+
+        count = 0
+        latest_mtime = st.st_mtime_ns
+        with os.scandir(folder) as it:
+            for entry in it:
+                if entry.name.endswith(".json") and entry.is_file(follow_symlinks=False):
+                    count += 1
+        return f"{latest_mtime}:{count}"
+    except OSError:
+        return "ERROR"
+
+
+def _load_cached_queue_snapshot(state_root: Path) -> tuple[dict[str, Any], bool]:
+    """Return a cached, directory-signature-validated snapshot of queue indexes.
+
+    Eliminates redundant multi-thousand-file JSON parsing on every get_go_context call
+    while guaranteeing immediate invalidation whenever any queue artifact changes.
+    """
+    dirs = ("done", "processing", "pending", "drafts", "rejected", "results", "published")
+    sig = tuple((d, _queue_dir_signature(state_root / d)) for d in dirs)
+    cache_key = str(state_root)
+
+    with _GO_CONTEXT_CACHE_LOCK:
+        entry = _GO_CONTEXT_CACHE.get(cache_key)
+        if entry is not None and entry.get("sig") == sig:
+            return entry["snapshot"], True
+
+    request_index = _load_canonical_request_index(state_root)
+
+    known_non_draft_ids: set[str] = set()
+    for dirname in ("results", "done", "rejected", "processing", "pending"):
+        folder = state_root / dirname
+        if folder.is_dir():
+            for path in folder.glob("*.json"):
+                known_non_draft_ids.add(path.stem)
+
+    # Pre-index unpublished drafts once per directory change
+    unpublished_drafts: list[tuple[str, dict[str, Any]]] = []
+    drafts_dir = state_root / "drafts"
+    if drafts_dir.is_dir():
+        for path in sorted(drafts_dir.glob("*.json"), key=lambda p: p.name):
+            jid_stem = path.stem
+            if jid_stem in known_non_draft_ids:
+                continue
+            payload = _read_json_if_object(path)
+            if not payload:
+                continue
+            jid = _clean(payload.get("job_id")) or jid_stem
+            if not jid or jid in known_non_draft_ids:
+                continue
+            unpublished_drafts.append((jid, payload))
+
+    # Pre-index result headers (bounded_context / job_id) once per directory change so domain
+    # lookups NEVER re-read non-matching JSON files on every get_go_context call!
+    results_dir = state_root / "results"
+    result_index_by_domain: dict[str, list[tuple[str, Path, str]]] = {}
+    legacy_result_stems: list[tuple[str, Path]] = []
+    if results_dir.is_dir():
+        for path in sorted(results_dir.glob("*.json"), key=lambda p: p.name):
+            jid = path.stem
+            req_entry = request_index.get(jid)
+            req_bc = _clean(req_entry.get("bounded_context")).upper() if isinstance(req_entry, Mapping) else ""
+            if req_bc:
+                result_index_by_domain.setdefault(req_bc, []).append((jid, path, "REQUEST_SCHEDULING"))
+                continue
+            raw = _read_json_if_object(path)
+            payload_bc = _extract_bounded_context(raw) if raw else ""
+            if payload_bc:
+                result_index_by_domain.setdefault(payload_bc, []).append((jid, path, "PAYLOAD_SCHEDULING"))
+            else:
+                legacy_result_stems.append((jid, path))
+
+    snapshot = {
+        "request_index": request_index,
+        "known_non_draft_ids": known_non_draft_ids,
+        "unpublished_drafts": unpublished_drafts,
+        "result_index_by_domain": result_index_by_domain,
+        "legacy_result_stems": legacy_result_stems,
+    }
+    with _GO_CONTEXT_CACHE_LOCK:
+        if len(_GO_CONTEXT_CACHE) >= 16:
+            _GO_CONTEXT_CACHE.clear()
+        _GO_CONTEXT_CACHE[cache_key] = {"sig": sig, "snapshot": snapshot}
+    return snapshot, False
+
+
 def _load_canonical_request_index(state_root: Path) -> dict[str, dict[str, Any]]:
     """Build read-only request index associating job_id with canonical scheduling & metadata."""
     index: dict[str, dict[str, Any]] = {}
@@ -1470,6 +1570,7 @@ def _load_certified_domain_results(
     state_root: Path,
     domain_upper: str,
     request_index: Mapping[str, Mapping[str, Any]],
+    snapshot: Mapping[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Return certified results for one domain sorted deterministically by verifiable UTC timestamps."""
     from tools.mirror_sync.worker_result_reader import parse_published_marker
@@ -1480,20 +1581,29 @@ def _load_certified_domain_results(
     published_dir = state_root / "published"
     entries: list[tuple[tuple[int, datetime, int, datetime, str], dict[str, Any]]] = []
 
-    for path in sorted(results_dir.glob("*.json"), key=lambda p: p.name):
-        jid = path.stem
-        raw = _read_json_if_object(path)
-        if not raw:
-            continue
-        matched, binding_source = _resolve_job_domain(
-            jid,
-            raw,
-            domain_upper,
-            request_index=request_index,
-        )
-        if not matched:
-            continue
+    candidates: list[tuple[str, Path, str | None]] = []
+    if isinstance(snapshot, Mapping):
+        for jid, path, source in (snapshot.get("result_index_by_domain") or {}).get(domain_upper, ()):
+            candidates.append((jid, path, source))
+        for jid, path in snapshot.get("legacy_result_stems") or ():
+            if _legacy_job_id_matches_domain(jid, domain_upper):
+                candidates.append((jid, path, "LEGACY_JOB_ID_TOKEN"))
+    else:
+        for path in sorted(results_dir.glob("*.json"), key=lambda p: p.name):
+            jid = path.stem
+            raw = _read_json_if_object(path)
+            if not raw:
+                continue
+            matched, binding_source = _resolve_job_domain(
+                jid,
+                raw,
+                domain_upper,
+                request_index=request_index,
+            )
+            if matched:
+                candidates.append((jid, path, binding_source))
 
+    for jid, path, binding_source in candidates:
         read = read_canonical_result(path, expected_job_id=jid)
         if not read.terminal_result_valid or not isinstance(read.payload, dict):
             continue
@@ -1639,16 +1749,11 @@ def resolve_go_context(
             "production_touched": False,
         }
 
-    # Build canonical request index to associate SEM-REQUEST-* & named jobs strictly with domain
-    request_index = _load_canonical_request_index(STATE_ROOT)
-
-    # Track terminal/known lifecycle sets to distinguish unpublished DRAFT vs PENDING vs PROCESSING vs RESULT
-    known_non_draft_ids: set[str] = set()
-    for dirname in ("results", "done", "rejected", "processing", "pending"):
-        folder = STATE_ROOT / dirname
-        if folder.is_dir():
-            for path in folder.glob("*.json"):
-                known_non_draft_ids.add(path.stem)
+    t_start = time.monotonic()
+    # Build or reuse directory-signature-validated queue snapshot (eliminates 504 timeouts!)
+    snapshot, cache_hit = _load_cached_queue_snapshot(STATE_ROOT)
+    request_index = snapshot["request_index"]
+    known_non_draft_ids = snapshot["known_non_draft_ids"]
 
     # Discover domain-scoped in-flight jobs (PROCESSING / PENDING) strictly separated by lifecycle
     processing_ids: list[str] = []
@@ -1686,36 +1791,29 @@ def resolve_go_context(
     # Discover domain-scoped unpublished drafts pending idempotent recovery (DRAFT)
     pending_drafts: list[dict[str, Any]] = []
     draft_ids: list[str] = []
-    drafts_dir = STATE_ROOT / "drafts"
-    if drafts_dir.is_dir():
-        for path in sorted(drafts_dir.glob("*.json"), key=lambda p: p.name):
-            payload = _read_json_if_object(path)
-            if not payload:
-                continue
-            jid = _clean(payload.get("job_id")) or path.stem
-            if not jid or jid in known_non_draft_ids:
-                continue
-            matched, binding_source = _resolve_job_domain(
-                jid,
-                payload,
-                domain_upper,
-                request_index=request_index,
-            )
-            if matched:
-                draft_ids.append(jid)
-                pending_drafts.append({
-                    "job_id": jid,
-                    "lifecycle": "DRAFT",
-                    "recovery_required": True,
-                    "draft_fingerprint": _canonical_request_fingerprint(payload),
-                    "domain_binding_source": binding_source,
-                })
+    for jid, payload in snapshot["unpublished_drafts"]:
+        matched, binding_source = _resolve_job_domain(
+            jid,
+            payload,
+            domain_upper,
+            request_index=request_index,
+        )
+        if matched:
+            draft_ids.append(jid)
+            pending_drafts.append({
+                "job_id": jid,
+                "lifecycle": "DRAFT",
+                "recovery_required": True,
+                "draft_fingerprint": _canonical_request_fingerprint(payload),
+                "domain_binding_source": binding_source,
+            })
 
     # Discover certified results for this domain ordered by verifiable UTC timestamp (never mtime)
     certified_results = _load_certified_domain_results(
         state_root=STATE_ROOT,
         domain_upper=domain_upper,
         request_index=request_index,
+        snapshot=snapshot,
     )
     last_certified: dict[str, Any] | None = certified_results[0] if certified_results else None
     certified_successors: list[dict[str, Any]] = certified_results[:5]
@@ -1922,6 +2020,26 @@ def resolve_go_context(
     if policy_tier != "DEVELOPMENT_MUTATION" or not (identity_verified and rbac_mutation_ok and effective_explicit_mutation):
         mutation_allowed = False
 
+    resolution_ms = round((time.monotonic() - t_start) * 1000.0, 2)
+    resume_from_job_id = (
+        pending_jobs[0]["job_id"]
+        if pending_jobs
+        else (
+            pending_drafts[0]["job_id"]
+            if pending_drafts
+            else (last_certified["job_id"] if isinstance(last_certified, dict) else None)
+        )
+    )
+    continuity = {
+        "schema": "edarsahub.worker-objective-continuity.v1",
+        "isolated_from_other_domains": True,
+        "recommended_next_step": next_action,
+        "resume_from_job_id": resume_from_job_id,
+        "cache_hit": cache_hit,
+        "resolution_ms": resolution_ms,
+        "production_touched": False,
+    }
+
     return {
         "schema": "edarsahub.worker-go-context.v1",
         "project": project_clean,
@@ -1952,6 +2070,7 @@ def resolve_go_context(
             "chain_authorization_status": chain_auth_reason,
         },
         "gate_dependencies": gate_dependencies,
+        "continuity": continuity,
         "policy_tier": policy_tier,
         "mutation_allowed": mutation_allowed,
         "next_allowed_action": next_action,
@@ -2087,6 +2206,17 @@ def build_semantic_diagnostic(
         allowed_correction = (
             "Provide constraints.source_job_id as a valid Worker job_id matching "
             "^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$."
+        )
+    elif code in {"SEMANTIC_SQL_PROFILE_INVALID", "SEMANTIC_SQL_PROFILE_UNKNOWN"}:
+        rejected_field = "constraints.profile_code"
+        allowed_correction = (
+            "Select a registered READ_ONLY SQL profile_code from list_capabilities "
+            "(SQL_READONLY_PROFILE_AUDIT); arbitrary SQL is forbidden."
+        )
+    elif code == "SEMANTIC_SQL_PROFILE_DOMAIN_FORBIDDEN":
+        rejected_field = "bounded_context"
+        allowed_correction = (
+            "Use a bounded_context authorized for the selected SQL_READONLY_PROFILE_AUDIT profile_code."
         )
     elif code == "SEMANTIC_PATHS_INVALID":
         rejected_field = "constraints.paths"

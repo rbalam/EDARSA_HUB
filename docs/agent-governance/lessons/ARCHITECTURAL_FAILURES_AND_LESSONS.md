@@ -54,3 +54,12 @@ Backend y Worker usan /root/.venv; edarsahub-worker-mcp y Gate2B usan /app/.runt
 
 ## Aislamiento de stubs en pruebas de gateway MCP
 Nunca mutar atributos de gateway_router sin restaurar en finally; stubs async deben reflejar Discovery V2 y scopes worker:status/worker:submit.
+
+## Claims huerfanos queue-publisher-* bloquean worker_queue_publication
+reconcile_agent_guard_orphans debe reconocer tanto prefijo worker-* como queue-publisher-* y remover solo worktrees limpios para evitar bloqueos transversales entre dominios.
+
+## Indice en memoria invalidado por firma de directorios en resolve_go_context
+resolve_go_context no debe re-parsear miles de archivos JSON en cada llamada; usar snapshot cache invalidado por mtime/conteo de directorios evita timeouts HTTP 504 en MCP multichat.
+
+## Familia de incidentes de errores internos del conector MCP
+Errores internos del conector MCP (504 timeout, 502/503 upstream, JSON-RPC -32603, protocolo) se registran sin secretos en mcp_connector_incidents.jsonl, se clasifican en la taxonomia canonica y se aislan por herramienta/dominio sin detener todo el proyecto.

@@ -50,6 +50,10 @@ SCHEMA_DETECTION = "edarsahub.worker-lifecycle-detection.v1"
 SCHEMA_RECOVERY = "edarsahub.worker-lifecycle-recovery.v1"
 SCHEMA_DIAGNOSTIC = "edarsahub.worker-unknown-incident-diagnostic.v1"
 SCHEMA_FORENSIC = "edarsahub.worker-corrupt-draft-forensic.v1"
+SCHEMA_MCP_CONNECTOR_INCIDENTS = "edarsahub.mcp-connector-incident-summary.v1"
+
+MCP_INCIDENTS_FILENAME = "mcp_connector_incidents.jsonl"
+MCP_INCIDENT_WINDOW_SECONDS = int(os.environ.get("EDARSAHUB_MCP_INCIDENT_WINDOW_SECONDS", "3600"))
 
 DRAFT_GRACE_SECONDS = int(os.environ.get("EDARSAHUB_DRAFT_PERSISTENCE_GRACE_SECONDS", "300"))
 PENDING_AUDIT_GRACE_SECONDS = int(os.environ.get("EDARSAHUB_PENDING_AUDIT_GRACE_SECONDS", "180"))
@@ -276,6 +280,205 @@ def classify_recovery_category(
     }
 
 
+def summarize_mcp_connector_incidents(
+    *,
+    state_root: Path,
+    now_epoch: float | None = None,
+    window_seconds: int = MCP_INCIDENT_WINDOW_SECONDS,
+    max_recent: int = 25,
+) -> dict[str, Any]:
+    """Read and classify recent secret-free MCP connector internal errors without halting unrelated domains."""
+    now_ts = float(now_epoch if now_epoch is not None else time.time())
+    incidents_path = state_root / "maintenance" / MCP_INCIDENTS_FILENAME
+    by_family: dict[str, int] = {}
+    by_tool: dict[str, int] = {}
+    recent: list[dict[str, Any]] = []
+    total_recent = 0
+
+    if incidents_path.is_file():
+        try:
+            lines = incidents_path.read_text(encoding="utf-8", errors="replace").splitlines()[-400:]
+        except OSError:
+            lines = []
+        for raw_line in lines:
+            raw_line = raw_line.strip()
+            if not raw_line:
+                continue
+            try:
+                ev = json.loads(raw_line)
+            except Exception:
+                continue
+            if not isinstance(ev, dict):
+                continue
+            ts_val = ev.get("epoch")
+            if isinstance(ts_val, (int, float)) and not isinstance(ts_val, bool):
+                if (now_ts - float(ts_val)) > window_seconds:
+                    continue
+            else:
+                raw_ts = str(ev.get("timestamp_utc") or "").strip()
+                if raw_ts:
+                    try:
+                        dt = datetime.fromisoformat(raw_ts.replace("Z", "+00:00"))
+                        if (now_ts - dt.timestamp()) > window_seconds:
+                            continue
+                    except ValueError:
+                        pass
+            err_code = str(ev.get("error_code") or "MCP_CONNECTOR_INTERNAL_ERROR").strip().upper()
+            tool = str(ev.get("tool") or "mcp_gateway").strip()
+            tax = auto_loop.classify_failure_taxonomy(
+                error_code=err_code,
+                blockers=[str(ev.get("incident_family") or "")],
+                causal_evidence={"tool": tool, "http_status": ev.get("http_status")},
+            )
+            family = str(ev.get("incident_family") or tax.get("failure_class") or "MCP_CONNECTOR_INTERNAL_ERROR")
+            by_family[family] = by_family.get(family, 0) + 1
+            by_tool[tool] = by_tool.get(tool, 0) + 1
+            total_recent += 1
+            recent.append({
+                "timestamp_utc": ev.get("timestamp_utc"),
+                "tool": tool,
+                "http_status": ev.get("http_status"),
+                "error_code": err_code,
+                "incident_family": family,
+                "taxonomy_class": tax.get("failure_class"),
+                "retryable": bool(ev.get("retryable", False)),
+                "isolated_scope": ev.get("correlation_id") or tool,
+            })
+
+    health = "HEALTHY" if total_recent == 0 else ("DEGRADED" if total_recent >= 5 else "OBSERVED_ISOLATED")
+    return {
+        "schema": SCHEMA_MCP_CONNECTOR_INCIDENTS,
+        "window_seconds": int(window_seconds),
+        "total_recent": total_recent,
+        "health": health,
+        "non_blocking_isolation": True,
+        "by_family": dict(sorted(by_family.items())),
+        "by_tool": dict(sorted(by_tool.items())),
+        "recent": recent[-max_recent:],
+        "production_touched": False,
+    }
+
+
+def prune_settled_orphan_publisher_branches(
+    *,
+    repo_root: Path,
+    state_root: Path,
+    claims_dir: Path,
+    remote_inbox_ids: set[str] | None = None,
+    remote_result_ids: set[str] | None = None,
+    max_prune_per_cycle: int = 5,
+) -> dict[str, Any]:
+    """Safely prune ONLY orphan agent/queue-publisher/* branches with no active claim/worktree and already settled."""
+    orphans = _list_orphan_publisher_branches(repo_root, claims_dir)
+    if not orphans:
+        return {"pruned": [], "skipped": 0, "production_touched": False}
+
+    # Discover branches currently attached to any git worktree (never touch active worktrees)
+    wt_branches: set[str] = set()
+    wt_proc = subprocess.run(
+        ["git", "-C", str(repo_root), "worktree", "list", "--porcelain"],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=15,
+        env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+    )
+    if wt_proc.returncode == 0:
+        for line in wt_proc.stdout.splitlines():
+            if line.startswith("branch refs/heads/"):
+                wt_branches.add(line.split("branch refs/heads/", 1)[1].strip())
+
+    settled_ids: set[str] = set()
+    for sub in ("results", "done", "rejected"):
+        d = state_root / sub
+        if d.is_dir():
+            settled_ids.update(p.stem for p in d.glob("*.json"))
+    if remote_inbox_ids:
+        settled_ids.update(remote_inbox_ids)
+    if remote_result_ids:
+        settled_ids.update(remote_result_ids)
+
+    pruned: list[str] = []
+    skipped = 0
+    for item in orphans:
+        if len(pruned) >= max(1, int(max_prune_per_cycle)):
+            break
+        branch = str(item.get("branch") or "").strip()
+        if not branch.startswith("agent/queue-publisher/"):
+            skipped += 1
+            continue
+        if branch in wt_branches:
+            skipped += 1
+            continue
+        job_id = branch.split("agent/queue-publisher/", 1)[1]
+        if job_id not in settled_ids:
+            skipped += 1
+            continue
+        res = subprocess.run(
+            ["git", "-C", str(repo_root), "branch", "-D", branch],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=15,
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+        )
+        if res.returncode == 0:
+            pruned.append(branch)
+        else:
+            skipped += 1
+
+    return {"pruned": pruned, "skipped": skipped, "production_touched": False}
+
+
+def reconcile_converged_runtime_incidents(
+    *,
+    state_root: Path | None = None,
+    convergence_report: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Supersede stale RUNTIME_NOT_CONVERGED incidents once runtime convergence is verified True."""
+    qroot = state_root or (Path(os.environ.get("EDARSAHUB_ROOT", "/app")) / ".git" / "universal-worker-queue")
+    incidents_dir = qroot / "maintenance" / "incidents"
+    if not incidents_dir.is_dir():
+        return {"superseded": [], "checked": 0, "production_touched": False}
+
+    report = dict(convergence_report) if isinstance(convergence_report, Mapping) else None
+    if report is None:
+        try:
+            from tools.mirror_sync import worker_runtime_fingerprint as fp
+            report = fp.build_mcp_runtime_convergence_report()
+        except Exception:
+            report = {}
+
+    if report.get("overall_converged") is not True:
+        return {"superseded": [], "checked": 0, "converged": False, "production_touched": False}
+
+    superseded: list[str] = []
+    checked = 0
+    for inc_path in sorted(incidents_dir.glob("*.json")):
+        inc = _read_json_safe(inc_path)
+        if not isinstance(inc, dict):
+            continue
+        checked += 1
+        state = str(inc.get("state") or "").strip().upper()
+        if state in {"CERTIFIED", "SUPERSEDED", "ESCALATED_HUMAN_REQUIRED"}:
+            continue
+        src_status = str(inc.get("source_status") or "").strip().upper()
+        prob_sig = str(inc.get("problem_signature") or "").strip().upper()
+        if src_status == "RUNTIME_NOT_CONVERGED" or "WORKER_CODE_TREE_DRIFT" in prob_sig:
+            inc["state"] = "SUPERSEDED"
+            inc["superseded_reason"] = "RUNTIME_CONVERGENCE_VERIFIED_ALIGNED"
+            inc["superseded_at_utc"] = utc_now()
+            inc["converged_head"] = report.get("local_head")
+            inc["production_touched"] = False
+            try:
+                _atomic_write_json(inc_path, inc)
+                superseded.append(str(inc.get("incident_id") or inc_path.stem))
+            except OSError:
+                continue
+
+    return {"superseded": superseded, "checked": checked, "converged": True, "production_touched": False}
+
+
 def scan_global_lifecycle_blockers(
     *,
     repo_root: Path | None = None,
@@ -488,14 +691,20 @@ def scan_global_lifecycle_blockers(
                 unknown_failures += 1
             else:
                 known_failures += 1
-            if fc in {"UNKNOWN_MCP_CAPABILITY", "CONNECTION_LOSS"}:
+            if fc in {"UNKNOWN_MCP_CAPABILITY", "CONNECTION_LOSS", "MCP_CONNECTOR_INTERNAL_ERROR", "MCP_CONNECTOR_UPSTREAM_TIMEOUT", "MCP_CONNECTOR_UPSTREAM_UNAVAILABLE", "MCP_CONNECTOR_PROTOCOL_ERROR"}:
                 mcp_failures += 1
-            if fc in {"GIT_MIRROR_DIVERGENCE", "CONCURRENCY_CONFLICT", "INCOMPLETE_PUBLICATION"}:
+            if fc in {"GIT_MIRROR_DIVERGENCE", "CONCURRENCY_CONFLICT", "INCOMPLETE_PUBLICATION", "ORPHAN_PUBLISHER_CLAIM_DEADLOCK"}:
                 git_mirror_failures += 1
             if fc in {"RUNTIME_RESTART_OR_TRANSIENT", "STUCK_OR_EXPIRED_JOB"}:
                 runtime_failures += 1
             if fc == "MISSING_DEPENDENCY":
                 dependency_failures += 1
+
+    mcp_connector_summary = summarize_mcp_connector_incidents(
+        state_root=qroot,
+        now_epoch=now_ts,
+    )
+    mcp_failures += int(mcp_connector_summary.get("total_recent") or 0)
 
     degraded = bool(
         (isinstance(runtime, Mapping) and runtime.get("runtime_repair_needed") is True)
@@ -514,6 +723,7 @@ def scan_global_lifecycle_blockers(
         "scan_mode": scan_mode,
         "duration_ms": round((time.monotonic() - t0) * 1000.0, 2),
         "system_degraded": degraded,
+        "domain_isolation_active": True,
         "counts": {
             "persistent_drafts": len(persistent_drafts),
             "transient_drafts": len(transient_drafts),
@@ -523,12 +733,14 @@ def scan_global_lifecycle_blockers(
             "orphan_branches": len(orphan_branches),
             "pending_audit_stale": len(pending_audit_stale),
             "mcp_failures": mcp_failures,
+            "mcp_connector_recent_incidents": int(mcp_connector_summary.get("total_recent") or 0),
             "git_mirror_failures": git_mirror_failures,
             "runtime_failures": runtime_failures,
             "dependency_failures": dependency_failures,
             "known_failures": known_failures,
             "unknown_failures": unknown_failures,
         },
+        "mcp_connector_incidents": mcp_connector_summary,
         "persistent_drafts_by_domain": dict(sorted(by_domain.items())),
         "persistent_drafts": persistent_drafts[:100],
         "transient_drafts": transient_drafts[:50],
@@ -817,6 +1029,11 @@ def recover_persistent_readonly_draft(
             "production_touched": False,
         }
 
+    pub_reason_raw = str((pub or {}).get("reason") or "").strip()
+    pub_reason_safe = pub_reason_raw[:160] if pub_reason_raw and not any(
+        tok in pub_reason_raw.lower() for tok in ("ghp_", "token", "password", "secret", "bearer ")
+    ) else None
+
     auto_loop.record_circuit_outcome(
         cb_key,
         certified_success=False,
@@ -830,6 +1047,7 @@ def recover_persistent_readonly_draft(
         "action": "RECOVERY_REJECTED",
         "job_id": check["job_id"],
         "publication_status": pub_status,
+        "publication_reason": pub_reason_safe,
         "production_touched": False,
     }
 
@@ -1032,16 +1250,38 @@ def advance_lifecycle_recovery(
     attempted = 0
     succeeded = 0
     budget = max(1, int(max_recoveries_per_cycle))
+    isolated_failed_domains: set[str] = set()
 
+    # Order persistent drafts round-robin by domain so a failing domain never starves other domains
+    by_dom_buckets: dict[str, list[dict[str, Any]]] = {}
     for item in detection.get("persistent_drafts") or []:
-        if attempted >= budget:
-            break
         if not isinstance(item, dict):
             continue
-        jid = str(item.get("job_id") or "").strip()
-        if not jid:
-            continue
         if item.get("recovery_category") != "OPERATIONAL_IDEMPOTENT_RECOVERY":
+            continue
+        dom = str(item.get("domain") or "UNBOUNDED_LEGACY").strip().upper()
+        by_dom_buckets.setdefault(dom, []).append(item)
+
+    ordered_candidates: list[dict[str, Any]] = []
+    dom_keys = sorted(by_dom_buckets)
+    idx = 0
+    while True:
+        added_any = False
+        for dom in dom_keys:
+            bucket = by_dom_buckets[dom]
+            if idx < len(bucket):
+                ordered_candidates.append(bucket[idx])
+                added_any = True
+        if not added_any:
+            break
+        idx += 1
+
+    for item in ordered_candidates:
+        if attempted >= budget:
+            break
+        jid = str(item.get("job_id") or "").strip()
+        dom = str(item.get("domain") or "UNBOUNDED_LEGACY").strip().upper()
+        if not jid or dom in isolated_failed_domains:
             continue
         draft_path = qroot / "drafts" / f"{jid}.json"
         outcome = recover_persistent_readonly_draft(
@@ -1067,12 +1307,16 @@ def advance_lifecycle_recovery(
             if outcome.get("recovered") is True:
                 succeeded += 1
                 rem_in.add(jid)
-            actions_log.append(outcome)
+            else:
+                isolated_failed_domains.add(dom)
+            actions_log.append({**outcome, "domain": dom})
 
     return {
         "schema": SCHEMA_RECOVERY,
         "at_utc": utc_now(),
         "status": "ACTIVE",
+        "domain_isolation_active": True,
+        "isolated_failed_domains": sorted(isolated_failed_domains),
         "max_recoveries_per_cycle": budget,
         "recoveries_attempted": attempted,
         "recoveries_succeeded": succeeded,

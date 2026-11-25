@@ -597,6 +597,45 @@ register_pytest_certification_suite(
         isolation="HERMETIC_READONLY",
     )
 )
+register_pytest_certification_suite(
+    PytestCertificationSuite(
+        bounded_context="WORKER_SELF_HEALING",
+        paths=(
+            "backend/tests/test_worker_autonomous_self_healing_master.py",
+            "backend/tests/test_worker_knowledge_loop_taxonomy_gate_d.py",
+        ),
+        isolation="HERMETIC_READONLY",
+    )
+)
+register_pytest_certification_suite(
+    PytestCertificationSuite(
+        bounded_context="WORKER_CONSOLE",
+        paths=(
+            "backend/tests/test_worker_console_contract.py",
+            "backend/tests/test_worker_gate_m2_console_rbac_sql.py",
+        ),
+        isolation="HERMETIC_READONLY",
+    )
+)
+register_pytest_certification_suite(
+    PytestCertificationSuite(
+        bounded_context="WORKER_INGRESS",
+        paths=(
+            "backend/tests/test_worker_mcp_dev_ingress_gate_b.py",
+        ),
+        isolation="HERMETIC_READONLY",
+    )
+)
+register_pytest_certification_suite(
+    PytestCertificationSuite(
+        bounded_context="CENTRO_CONTROL_SECURITY",
+        paths=(
+            "backend/tests/test_centro_control_websocket_auth_rbac_p1.py",
+            "backend/tests/test_centro_control_p2b_sql_persistence_contract.py",
+        ),
+        isolation="HERMETIC_READONLY",
+    )
+)
 
 
 def _worker_pytest_certification_readonly_builder(request):
@@ -1279,6 +1318,40 @@ def _capability_contract_details(code: str, meta: Mapping[str, Any]) -> dict[str
             },
         }
 
+    if code == "SQL_READONLY_PROFILE_AUDIT":
+        profiles_meta = {
+            p_code: {
+                "bounded_contexts": list(prof.bounded_contexts),
+                "source": prof.source,
+                "login_policy": prof.login_policy,
+                "query_count": len(prof.queries),
+                "description": prof.description,
+            }
+            for p_code, prof in sorted(_SQL_READONLY_PROFILES.items())
+        }
+        ownership["registered_sql_readonly_profiles"] = sorted(_SQL_READONLY_PROFILES)
+        ownership["sql_readonly_profiles"] = profiles_meta
+        return {
+            "required_fields": list(_BASE_REQUIRED_OBJECTIVE_FIELDS),
+            "required_constraints": ["profile_code"],
+            "allowed_operations": [],
+            "formats": {"profile_code": _SQL_PROFILE_CODE_RE.pattern},
+            "limits": {
+                "arbitrary_sql_forbidden": True,
+                "login_policy": "HRLectura",
+                "source": "EDARSAHUB",
+                "registered_profiles_count": len(_SQL_READONLY_PROFILES),
+            },
+            "ownership": ownership,
+            "safe_example": {
+                "objective": "Ejecutar perfil SQL READ_ONLY reutilizable certificado bajo HRLectura.",
+                "bounded_context": "UNIDADES_NEGOCIO",
+                "mode": "READ_ONLY_SQL",
+                "capability": code,
+                "constraints": {"profile_code": "UNIDADES_NEGOCIO_CANONICAL_CATALOG"},
+            },
+        }
+
     if code == "SQL_CONNECTIONS_BOOTSTRAP_READONLY":
         return {
             "required_fields": list(_BASE_REQUIRED_OBJECTIVE_FIELDS),
@@ -1617,5 +1690,250 @@ register_capability(
 _CAPABILITY_METADATA["SEC_RBAC_SQL_PERMISSION_MATRIX_READONLY"] = {
     "bounded_context_rule": "SEC_RBAC",
     "allowed_constraints": (),
+    "allowed_path_roots": (),
+}
+
+
+# Extensible declarative reusable READ_ONLY SQL profile registry (HRLectura / EDARSAHUB only).
+# Callers can NEVER supply arbitrary SQL; they may only select an audited profile_code.
+_SQL_PROFILE_CODE_RE = _g3_re.compile(r"^[A-Z0-9][A-Z0-9_]{2,79}$")
+_SQL_QUERY_NAME_RE = _g3_re.compile(r"^[a-z0-9][a-z0-9_]{1,79}$")
+_SQL_FORBIDDEN_DML_DDL_RE = _g3_re.compile(
+    r"\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|MERGE|EXEC|EXECUTE|"
+    r"GRANT|REVOKE|DENY|INTO|DBCC|SHUTDOWN|BACKUP|RESTORE|OPENROWSET|"
+    r"OPENDATASOURCE|BULK|XP_[A-Z0-9_]+|SP_[A-Z0-9_]+)\b",
+    _g3_re.IGNORECASE,
+)
+
+
+@dataclass(frozen=True)
+class SqlReadonlyProfile:
+    profile_code: str
+    description: str
+    bounded_contexts: tuple[str, ...]
+    queries: tuple[dict[str, str], ...]
+    source: str = "EDARSAHUB"
+    login_policy: str = "HRLectura"
+    read_only: bool = True
+
+
+_SQL_READONLY_PROFILES: dict[str, SqlReadonlyProfile] = {}
+
+
+def _validate_readonly_sql_query(raw_query: Mapping[str, Any]) -> dict[str, str]:
+    if not isinstance(raw_query, Mapping):
+        raise SemanticCapabilityError("SQL_PROFILE_QUERY_INVALID")
+    name = str(raw_query.get("name") or "").strip().lower()
+    sql = " ".join(str(raw_query.get("sql") or "").strip().split())
+    if not _SQL_QUERY_NAME_RE.fullmatch(name):
+        raise SemanticCapabilityError(f"SQL_PROFILE_QUERY_NAME_INVALID:{name}")
+    if not sql or len(sql) > 4000:
+        raise SemanticCapabilityError("SQL_PROFILE_QUERY_TEXT_INVALID")
+    if ";" in sql or "--" in sql or "/*" in sql or "*/" in sql:
+        raise SemanticCapabilityError("SQL_PROFILE_MULTI_OR_COMMENT_FORBIDDEN")
+    upper_sql = sql.upper()
+    if not (upper_sql.startswith("SELECT ") or upper_sql.startswith("WITH ")):
+        raise SemanticCapabilityError("SQL_PROFILE_MUST_BE_SELECT_ONLY")
+    if _SQL_FORBIDDEN_DML_DDL_RE.search(sql):
+        raise SemanticCapabilityError("SQL_PROFILE_NON_READONLY_KEYWORD_FORBIDDEN")
+    if _g3_re.fullmatch(r"SELECT\s+(?:TOP\s+\d+\s+)?1\b.*", upper_sql) and " AS " not in upper_sql:
+        raise SemanticCapabilityError("SQL_PROFILE_UNNAMED_COLUMN_FORBIDDEN")
+    return {"name": name, "sql": sql}
+
+
+def register_sql_readonly_profile(profile: SqlReadonlyProfile) -> SqlReadonlyProfile:
+    """Register one immutable, audited, fail-closed READ_ONLY_SQL profile under HRLectura."""
+    if not isinstance(profile, SqlReadonlyProfile):
+        raise SemanticCapabilityError("SQL_PROFILE_INVALID")
+    code = str(profile.profile_code or "").strip().upper()
+    if not _SQL_PROFILE_CODE_RE.fullmatch(code):
+        raise SemanticCapabilityError(f"SQL_PROFILE_CODE_INVALID:{code}")
+    if code in _SQL_READONLY_PROFILES:
+        raise SemanticCapabilityError(f"SQL_PROFILE_DUPLICATE:{code}")
+    if profile.read_only is not True:
+        raise SemanticCapabilityError("SQL_PROFILE_MUST_BE_READ_ONLY")
+    if str(profile.source or "").strip().upper() != "EDARSAHUB":
+        raise SemanticCapabilityError("SQL_PROFILE_SOURCE_MUST_BE_EDARSAHUB")
+    if str(profile.login_policy or "").strip() != "HRLectura":
+        raise SemanticCapabilityError("SQL_PROFILE_LOGIN_MUST_BE_HRLECTURA")
+    if not profile.bounded_contexts:
+        raise SemanticCapabilityError("SQL_PROFILE_BOUNDED_CONTEXTS_REQUIRED")
+    clean_contexts = tuple(
+        sorted({str(c).strip().upper() for c in profile.bounded_contexts if str(c).strip()})
+    )
+    if not clean_contexts:
+        raise SemanticCapabilityError("SQL_PROFILE_BOUNDED_CONTEXTS_REQUIRED")
+    if not profile.queries or len(profile.queries) > 10:
+        raise SemanticCapabilityError("SQL_PROFILE_QUERIES_INVALID")
+    normalized_queries = tuple(_validate_readonly_sql_query(q) for q in profile.queries)
+    normalized = SqlReadonlyProfile(
+        profile_code=code,
+        description=str(profile.description or "").strip()[:240],
+        bounded_contexts=clean_contexts,
+        queries=normalized_queries,
+        source="EDARSAHUB",
+        login_policy="HRLectura",
+        read_only=True,
+    )
+    _SQL_READONLY_PROFILES[code] = normalized
+    return normalized
+
+
+def sql_readonly_profiles() -> dict[str, SqlReadonlyProfile]:
+    return dict(_SQL_READONLY_PROFILES)
+
+
+register_sql_readonly_profile(
+    SqlReadonlyProfile(
+        profile_code="SEC_RBAC_PERMISSION_MATRIX",
+        description="Auditoria sellada de permisos efectivos RBAC, jerarquia de roles e identidad publica activa.",
+        bounded_contexts=("SEC_RBAC", "AUTH_RBAC", "SEGURIDAD"),
+        queries=_SEC_RBAC_GATE1B_QUERIES,
+    )
+)
+register_sql_readonly_profile(
+    SqlReadonlyProfile(
+        profile_code="UNIDADES_NEGOCIO_CANONICAL_CATALOG",
+        description="Catalogo canonico READ_ONLY de dbo.Unidades_Negocio y distribucion por sistema.",
+        bounded_contexts=("*",),
+        queries=(
+            {
+                "name": "unidades_negocio_activas_resumen",
+                "sql": (
+                    "SELECT COUNT_BIG(*) AS total_unidades, "
+                    "COALESCE(SUM(CASE WHEN ISNULL(activo, 1) = 1 THEN 1 ELSE 0 END), 0) AS unidades_activas, "
+                    "COALESCE(SUM(CASE WHEN ISNULL(activo, 1) = 0 THEN 1 ELSE 0 END), 0) AS unidades_inactivas "
+                    "FROM dbo.Unidades_Negocio"
+                ),
+            },
+            {
+                "name": "unidades_negocio_por_sistema",
+                "sql": (
+                    "SELECT ISNULL(system_type, 'NO_DEFINIDO') AS system_type, "
+                    "COUNT_BIG(*) AS total_activas "
+                    "FROM dbo.Unidades_Negocio "
+                    "WHERE ISNULL(activo, 1) = 1 "
+                    "GROUP BY ISNULL(system_type, 'NO_DEFINIDO') "
+                    "ORDER BY system_type"
+                ),
+            },
+        ),
+    )
+)
+register_sql_readonly_profile(
+    SqlReadonlyProfile(
+        profile_code="WORKER_OPERATIONS_STATE_SUMMARY",
+        description="Resumen canonico READ_ONLY de dbo.Sys_Worker_Jobs, Sys_Worker_Incidents y Sys_Worker_Capabilities.",
+        bounded_contexts=("WORKER_OPERATIONS", "WORKER_CONSOLE", "WORKER_SELF_HEALING", "CENTRO_CONTROL"),
+        queries=(
+            {
+                "name": "worker_jobs_by_stage",
+                "sql": (
+                    "SELECT LifecycleStage, CertificationStatus, COUNT_BIG(*) AS total_jobs "
+                    "FROM dbo.Sys_Worker_Jobs "
+                    "GROUP BY LifecycleStage, CertificationStatus "
+                    "ORDER BY LifecycleStage, CertificationStatus"
+                ),
+            },
+            {
+                "name": "worker_incidents_by_state",
+                "sql": (
+                    "SELECT IncidentState, Severity, COUNT_BIG(*) AS total_incidents "
+                    "FROM dbo.Sys_Worker_Incidents "
+                    "GROUP BY IncidentState, Severity "
+                    "ORDER BY IncidentState, Severity"
+                ),
+            },
+            {
+                "name": "worker_capabilities_summary",
+                "sql": (
+                    "SELECT CapabilityKind, CertificationStatus, COUNT_BIG(*) AS total_capabilities "
+                    "FROM dbo.Sys_Worker_Capabilities "
+                    "GROUP BY CapabilityKind, CertificationStatus "
+                    "ORDER BY CapabilityKind, CertificationStatus"
+                ),
+            },
+        ),
+    )
+)
+register_sql_readonly_profile(
+    SqlReadonlyProfile(
+        profile_code="CENTRO_CONTROL_ALERTS_SUMMARY",
+        description="Resumen READ_ONLY de alertas activas e historicas en dbo.Alertas_Sistema.",
+        bounded_contexts=("CENTRO_CONTROL", "WORKER_OPERATIONS", "WORKER_CONSOLE"),
+        queries=(
+            {
+                "name": "alertas_sistema_por_severidad",
+                "sql": (
+                    "SELECT ISNULL(Severidad, 'info') AS severidad, "
+                    "ISNULL(Modulo, 'sistema') AS modulo, "
+                    "COUNT_BIG(*) AS total_alertas, "
+                    "COALESCE(SUM(CASE WHEN ISNULL(Acknowledged, 0) = 0 THEN 1 ELSE 0 END), 0) AS activas "
+                    "FROM dbo.Alertas_Sistema "
+                    "GROUP BY ISNULL(Severidad, 'info'), ISNULL(Modulo, 'sistema') "
+                    "ORDER BY severidad, modulo"
+                ),
+            },
+        ),
+    )
+)
+register_sql_readonly_profile(
+    SqlReadonlyProfile(
+        profile_code="AUTH_ACTIVE_SESSIONS_SUMMARY",
+        description="Agregados READ_ONLY de sesiones activas/revocadas en dbo.Sesiones sin exponer PII ni tokens.",
+        bounded_contexts=("SEC_RBAC", "AUTH_RBAC", "SEGURIDAD", "CENTRO_CONTROL"),
+        queries=(
+            {
+                "name": "sesiones_agregado_por_tipo",
+                "sql": (
+                    "SELECT ISNULL(TipoUsuario, 'desconocido') AS tipo_usuario, "
+                    "COUNT_BIG(*) AS total_sesiones, "
+                    "COALESCE(SUM(CASE WHEN EstaActiva = 1 AND FechaRevocacion IS NULL "
+                    "AND FechaExpiracion > GETUTCDATE() THEN 1 ELSE 0 END), 0) AS sesiones_activas, "
+                    "COALESCE(SUM(CASE WHEN FechaRevocacion IS NOT NULL THEN 1 ELSE 0 END), 0) AS sesiones_revocadas "
+                    "FROM dbo.Sesiones "
+                    "GROUP BY ISNULL(TipoUsuario, 'desconocido') "
+                    "ORDER BY tipo_usuario"
+                ),
+            },
+        ),
+    )
+)
+
+
+def _sql_readonly_profile_audit_builder(request: Mapping[str, Any]) -> dict[str, Any]:
+    context = _g3_context(request)
+    c = _g3_constraints(request, {"profile_code"})
+    raw_code = c.get("profile_code")
+    if not isinstance(raw_code, str) or not _SQL_PROFILE_CODE_RE.fullmatch(raw_code.strip().upper()):
+        raise SemanticCapabilityError("SEMANTIC_SQL_PROFILE_INVALID")
+    code = raw_code.strip().upper()
+    profile = _SQL_READONLY_PROFILES.get(code)
+    if profile is None:
+        raise SemanticCapabilityError("SEMANTIC_SQL_PROFILE_UNKNOWN")
+    if "*" not in profile.bounded_contexts and context not in profile.bounded_contexts:
+        raise SemanticCapabilityError("SEMANTIC_SQL_PROFILE_DOMAIN_FORBIDDEN")
+    return {
+        "actions": [],
+        "checks": [{
+            "type": "sql_readonly_audit",
+            "source": profile.source,
+            "profile_code": profile.profile_code,
+            "queries": [dict(q) for q in profile.queries],
+        }],
+        "scheduling": _g3_scheduling(context),
+    }
+
+
+register_capability(
+    SemanticCapability(
+        code="SQL_READONLY_PROFILE_AUDIT",
+        modes=("READ_ONLY_SQL",),
+        builder=_sql_readonly_profile_audit_builder,
+    )
+)
+_CAPABILITY_METADATA["SQL_READONLY_PROFILE_AUDIT"] = {
+    "bounded_context_rule": "ANY_VALID_TOKEN",
+    "allowed_constraints": ("profile_code",),
     "allowed_path_roots": (),
 }

@@ -1019,3 +1019,52 @@ def test_g3_r2_submit_objective_tool_rejects_non_dict_constraints():
             capability="READ_ONLY_CANARY",
             constraints=["invalid"],  # type: ignore[arg-type]
         )
+
+
+def test_mcp_connector_internal_error_family_recording_and_secret_free(tmp_path):
+    log_path = tmp_path / "mcp_connector_incidents.jsonl"
+
+    # Normal 401/403/422 are NOT recorded as MCP connector internal errors
+    assert (
+        server.record_mcp_connector_incident(
+            tool_name="submit_objective",
+            http_status=401,
+            error_code="AUTHENTICATION_REQUIRED",
+            log_path=log_path,
+        )
+        is None
+    )
+    assert (
+        server.record_mcp_connector_incident(
+            tool_name="submit_objective",
+            http_status=422,
+            error_code="SEMANTIC_CONSTRAINTS_UNSUPPORTED",
+            log_path=log_path,
+        )
+        is None
+    )
+
+    # 504 timeout and 500 internal error ARE recorded cleanly without secrets
+    rec_504 = server.record_mcp_connector_incident(
+        tool_name="get_go_context",
+        http_status=504,
+        error_code="UPSTREAM_TIMEOUT",
+        correlation_id="RH",
+        log_path=log_path,
+    )
+    rec_500 = server.record_mcp_connector_incident(
+        tool_name="gateway:tools/call",
+        http_status=500,
+        error_code="JSONRPC_INTERNAL_ERROR",
+        correlation_id="secret_token_leaked",
+        log_path=log_path,
+    )
+    assert rec_504 is not None
+    assert rec_504["incident_family"] == "MCP_CONNECTOR_UPSTREAM_TIMEOUT"
+    assert rec_504["production_touched"] is False
+    assert rec_500 is not None
+    assert rec_500["incident_family"] == "MCP_CONNECTOR_INTERNAL_ERROR"
+    assert rec_500["correlation_id"] is None  # Secret-bearing correlation stripped!
+    assert log_path.is_file()
+    lines = log_path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 2

@@ -743,6 +743,18 @@ async def obtener_estado_general(current_user: Dict = Depends(require_explicit_p
         # 4. Métricas derivadas de evidencia SQL persistente
         metricas_sql = cc_store.metrics()
         bitacora_sql = cc_store.bitacora_summary()
+
+        # 5. Estado READ_ONLY del Universal Autonomous Worker (autorrecuperación, MCP, Knowledge Loop)
+        worker_autonomo: Dict[str, Any] = {
+            "overall_status": "UNAVAILABLE",
+            "production_touched": False,
+        }
+        try:
+            from modules.worker_console.contract import get_worker_self_healing_snapshot
+
+            worker_autonomo = get_worker_self_healing_snapshot()
+        except Exception as worker_exc:
+            logger.warning(f"[CENTRO CONTROL] Snapshot worker_autonomo no disponible: {worker_exc}")
         
         return {
             "centro_control": "CENTRO DE CONTROL EDARSA",
@@ -766,7 +778,17 @@ async def obtener_estado_general(current_user: Dict = Depends(require_explicit_p
                 },
                 "jobs": jobs_status,
                 "bitacora": bitacora_sql,
-                "metricas": metricas_sql
+                "metricas": metricas_sql,
+                "worker_autonomo": {
+                    "overall_status": worker_autonomo.get("overall_status"),
+                    "domain_isolation_active": worker_autonomo.get("domain_isolation_active", True),
+                    "mcp_connector_health": (worker_autonomo.get("mcp_connector") or {}).get("health"),
+                    "mcp_recent_incidents": (worker_autonomo.get("mcp_connector") or {}).get("total_recent_incidents", 0),
+                    "persistent_drafts": (worker_autonomo.get("lifecycle") or {}).get("persistent_drafts", 0),
+                    "certified_lessons_count": (worker_autonomo.get("knowledge_loop") or {}).get("certified_lessons_count", 0),
+                    "sql_readonly_profiles_count": (worker_autonomo.get("extensible_capabilities") or {}).get("sql_readonly_profiles_count", 0),
+                    "production_touched": False,
+                },
             },
             "modulos": health_summary.get("modules_summary", []),
             "fuentes": health_summary.get("sources_summary", [])
@@ -775,6 +797,21 @@ async def obtener_estado_general(current_user: Dict = Depends(require_explicit_p
     except Exception as e:
         logger.error(f"[CENTRO CONTROL] Error en estado general: {e}")
         raise HTTPException(status_code=500, detail=f"Error")
+
+
+@router.get("/worker-salud")
+async def obtener_salud_worker_autonomo(
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER")),
+):
+    """Expone en Centro de Control la salud READ_ONLY del Universal Autonomous Worker, incidentes MCP y Knowledge Loop."""
+    del current_user
+    try:
+        from modules.worker_console.contract import get_worker_self_healing_snapshot
+
+        return get_worker_self_healing_snapshot()
+    except Exception as e:
+        logger.error(f"[CENTRO CONTROL] Error obteniendo salud del worker autonomo: {e}")
+        raise HTTPException(status_code=500, detail="Error obteniendo salud del worker autonomo")
 
 # ============================================================================
 # ENDPOINTS: JOBS Y AUTOMATIZACIONES

@@ -798,3 +798,12 @@ async def audit(
             "sql_projection_pending.json": sql_projection_pending,
         },
     }
+
+
+@router.get("/self-healing")
+async def worker_self_healing_overview(
+    current_user: dict = Depends(require_worker_console_access),
+):
+    """Telemetría READ_ONLY de autorrecuperación, desbloqueo por dominio, incidentes MCP y Knowledge Loop."""
+    del current_user
+    return C.get_worker_self_healing_snapshot()

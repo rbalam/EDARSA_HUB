@@ -177,19 +177,55 @@ def _header_categories(request: Request) -> dict[str, str]:
     }
 
 
+def _record_gateway_incident(
+    *,
+    http_status: int,
+    error_code: str,
+    rpc_method: str = "gateway",
+    incident_family: str | None = None,
+) -> None:
+    """Record secret-free MCP gateway internal error into canonical connector telemetry."""
+    try:
+        from .client import record_mcp_connector_incident
+
+        record_mcp_connector_incident(
+            tool_name=f"gateway:{rpc_method}",
+            http_status=http_status,
+            error_code=error_code,
+            incident_family=incident_family,
+        )
+    except Exception:  # noqa: BLE001 - telemetry must never affect proxied traffic
+        pass
+
+
 def _log_upstream_400(request: Request, request_body: bytes, response_body: bytes) -> None:
     """Observability only: values come from fixed vocabularies, never from payloads."""
     try:
         error_class, code = _classify_400(response_body)
         cats = _header_categories(request)
+        rpc_method = _request_rpc_method(request_body)
         logger.warning(
             "mcp_upstream_400 method=%s rpc_method=%s content_type=%s accept=%s "
             "protocol_version=%s has_session=%s has_auth=%s request_bytes=%d "
             "error_class=%s jsonrpc_code=%s",
-            request.method, _request_rpc_method(request_body), cats["content_type"],
+            request.method, rpc_method, cats["content_type"],
             cats["accept"], cats["protocol_version"], cats["has_session"],
             cats["has_auth"], len(request_body), error_class, code,
         )
+        if error_class == "internal_error" or code == -32603:
+            _record_gateway_incident(
+                http_status=500,
+                error_code="JSONRPC_INTERNAL_ERROR",
+                rpc_method=rpc_method,
+                incident_family="MCP_CONNECTOR_INTERNAL_ERROR",
+            )
+        elif error_class in {"session_id_missing", "content_type_invalid", "parse_error", "invalid_request", "method_not_found"}:
+            _record_gateway_incident(
+                http_status=400,
+                error_code=error_class.upper(),
+                rpc_method=rpc_method,
+                incident_family="MCP_CONNECTOR_PROTOCOL_ERROR",
+            )
     except Exception:  # noqa: BLE001 - logging must never alter the proxied response
         pass
 
@@ -288,7 +324,20 @@ async def mcp_gateway(request: Request):
         reply = await client.send(outgoing, stream=True)
     except httpx.RequestError:
         await client.aclose()
+        _record_gateway_incident(
+            http_status=502,
+            error_code="MCP_UPSTREAM_UNAVAILABLE",
+            rpc_method=_request_rpc_method(request_body),
+            incident_family="MCP_CONNECTOR_UPSTREAM_UNAVAILABLE",
+        )
         return Response(status_code=502, content="MCP upstream unavailable")
+
+    if reply.status_code >= 500:
+        _record_gateway_incident(
+            http_status=reply.status_code,
+            error_code=f"MCP_UPSTREAM_{reply.status_code}",
+            rpc_method=_request_rpc_method(request_body),
+        )
 
     response_headers = {
         name: value for name, value in reply.headers.items()

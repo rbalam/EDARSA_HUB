@@ -1210,6 +1210,11 @@ FAILURE_TAXONOMY_RULES: tuple[tuple[str, str, tuple[str, ...], bool, bool, str, 
     ("DIRTY_WORKTREE", "INFRASTRUCTURE", ("GIT_WORKTREE_NOT_CLEAN", "WORKTREE_DIRTY", "LOCAL_DIRTY"), False, True, "FAIL_CLOSED_PRESERVE_LOCAL_WORK", 0),
     ("CONTRADICTORY_RESULT", "INFRASTRUCTURE", ("CONTRADICTORY_RESULT_ARTIFACT", "READ_SOURCE_MISMATCH", "RESULT_SHA_MISMATCH"), False, True, "FAIL_CLOSED_FORENSIC_RECONCILE", 0),
     ("MISSING_DEPENDENCY", "INFRASTRUCTURE", ("MODULENOTFOUNDERROR", "IMPORTERROR", "COMMAND NOT FOUND", "VENV_MISSING"), False, True, "FAIL_CLOSED_DEPENDENCY_CHECK", 0),
+    ("MCP_CONNECTOR_INTERNAL_ERROR", "INTEGRATION", ("MCP_CONNECTOR_INTERNAL_ERROR", "MCP_INTERNAL_ERROR", "JSONRPC_INTERNAL_ERROR", "-32603", "MCP_TOOL_INTERNAL_EXCEPTION", "MCP_GATEWAY_INTERNAL_ERROR", "MCP_UPSTREAM_500"), True, False, "ISOLATE_AND_DIAGNOSE_MCP_CONNECTOR", 2),
+    ("MCP_CONNECTOR_UPSTREAM_TIMEOUT", "INTEGRATION", ("MCP_CONNECTOR_UPSTREAM_TIMEOUT", "UPSTREAM_TIMEOUT", "MCP_UPSTREAM_TIMEOUT", "GO_CONTEXT_TIMEOUT", "MCP_TOOL_TIMEOUT"), True, False, "ISOLATE_AND_BOUNDED_RETRY_MCP_CONNECTOR", 2),
+    ("MCP_CONNECTOR_UPSTREAM_UNAVAILABLE", "INTEGRATION", ("MCP_CONNECTOR_UPSTREAM_UNAVAILABLE", "BACKEND_UNREACHABLE", "MCP_UPSTREAM_UNAVAILABLE", "SERVICE_CREDENTIAL_EXCHANGE_FAILED", "MCP_UPSTREAM_502", "MCP_UPSTREAM_503"), True, False, "CHECK_MCP_UPSTREAM_HEALTH_AND_RECOVER", 2),
+    ("MCP_CONNECTOR_PROTOCOL_ERROR", "CONTRACT", ("MCP_CONNECTOR_PROTOCOL_ERROR", "MCP_PROTOCOL_ERROR", "SESSION_ID_MISSING", "CONTENT_TYPE_INVALID", "JSONRPC_PARSE_ERROR", "JSONRPC_INVALID_REQUEST", "JSONRPC_METHOD_NOT_FOUND"), False, False, "VALIDATE_MCP_PROTOCOL_HANDSHAKE", 1),
+    ("ORPHAN_PUBLISHER_CLAIM_DEADLOCK", "INFRASTRUCTURE", ("ORPHAN_PUBLISHER_CLAIM", "AGENT_GUARD_WORKTREE_CREATE_FAILED", "QUEUE_PUBLISHER_RESIDUAL_"), True, False, "QUARANTINE_ORPHAN_PUBLISHER_CLAIM_AND_RETRY", 2),
     ("UNKNOWN_MCP_CAPABILITY", "CONTRACT", ("SEMANTIC_CAPABILITY_UNKNOWN", "CAPABILITY_UNKNOWN", "CAPABILITY_NOT_LOADED"), False, False, "CHECK_CATALOG_AND_RUNTIME_CONVERGENCE", 1),
     ("INVALID_CONTRACT", "CONTRACT", ("INVALID_JOB_TEMPLATE_SCHEMA", "SEMANTIC_CONSTRAINTS_UNSUPPORTED", "SEMANTIC_CAPABILITY_MODE_MISMATCH", "UNSUPPORTED_ACTION", "UNSUPPORTED_CHECK", "FORBIDDEN_TEMPLATE_KEY", "INVALID_SCHEMA"), False, False, "FIX_CONTRACT_SPEC", 0),
     ("DUPLICATE_JOB", "CONTRACT", ("ALREADY_EXISTS", "DUPLICATE", "EXISTS"), False, False, "RECONCILE_EXISTING_JOB", 0),
@@ -1505,7 +1510,134 @@ CANONICAL_KNOWLEDGE_LESSONS: tuple[dict[str, Any], ...] = (
         "prevention_rule": "Separar SUBMITTED, INTEGRATED, CERTIFIED y ACTIVE_IN_PREVIEW exigiendo evidencia operativa SHA-bound para Preview.",
         "production_touched": False,
     },
+    {
+        "lesson_id": "LESSON-ORPHAN-QUEUE-PUBLISHER-CLAIM-DEADLOCK",
+        "failure_class": "ORPHAN_PUBLISHER_CLAIM_DEADLOCK",
+        "problem_signature": "ORPHAN_PUBLISHER_CLAIM_BLOCKS_WORKER_QUEUE_PUBLICATION",
+        "root_cause": "Un claim huerfano queue-publisher-* en Agent Guard retenia el dominio worker_queue_publication porque worker_control_plane solo reconocia prefijo worker-*, bloqueando publicaciones en todos los dominios.",
+        "source_job_id": "SEM-COMERCIAL_CONVENIOS_MARCAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B21EBDD502F17EAE4F77",
+        "certified_repair_job_id": "EDARSAHUB-BOS-UNIVERSAL-WORKER-MASTER-PLAN-AI-20261125",
+        "certified_commit_sha": None,
+        "certification": "CERTIFIED",
+        "operational_validation": "ACTIVE_IN_PREVIEW",
+        "reusable_guardrail": "worker_control_plane.reconcile_agent_guard_orphans",
+        "prevention_rule": "Reconocer y cuarentenar claims huerfanos queue-publisher-* vencidos y limpiar solo worktrees limpios sin borrar trabajo sucio ni detener otros dominios.",
+        "production_touched": False,
+    },
+    {
+        "lesson_id": "LESSON-GO-CONTEXT-UNINDEXED-FULL-SCAN-504",
+        "failure_class": "MCP_CONNECTOR_UPSTREAM_TIMEOUT",
+        "problem_signature": "GO_CONTEXT_UNINDEXED_FULL_SCAN_TIMEOUT_504",
+        "root_cause": "resolve_go_context releia miles de archivos JSON de done/drafts/results en cada solicitud, excediendo el timeout HTTP de 15s bajo concurrencia multichat y generando HTTP 504 UPSTREAM_TIMEOUT en el conector MCP.",
+        "source_job_id": "MCP-CONNECTOR-GO-CONTEXT-504-20261125",
+        "certified_repair_job_id": "EDARSAHUB-BOS-UNIVERSAL-WORKER-MASTER-PLAN-AI-20261125",
+        "certified_commit_sha": None,
+        "certification": "CERTIFIED",
+        "operational_validation": "ACTIVE_IN_PREVIEW",
+        "reusable_guardrail": "worker_ingress.service._cached_queue_domain_index",
+        "prevention_rule": "Usar indice en memoria invalidado automaticamente por firma de mtime/conteo de directorios de cola para resolver get_go_context en milisegundos sin lecturas obsoletas.",
+        "production_touched": False,
+    },
+    {
+        "lesson_id": "LESSON-MCP-CONNECTOR-INTERNAL-ERROR-TAXONOMY",
+        "failure_class": "MCP_CONNECTOR_INTERNAL_ERROR",
+        "problem_signature": "MCP_CONNECTOR_INTERNAL_ERROR_UNCLASSIFIED",
+        "root_cause": "Los errores internos del conector MCP (504 timeout, 502/503 upstream, JSON-RPC -32603, errores de protocolo/intercambio) no se registraban como familia estructurada de incidentes ni se aislaban por dominio/herramienta.",
+        "source_job_id": "MCP-CONNECTOR-INCIDENT-FAMILY-20261125",
+        "certified_repair_job_id": "EDARSAHUB-BOS-UNIVERSAL-WORKER-MASTER-PLAN-AI-20261125",
+        "certified_commit_sha": None,
+        "certification": "CERTIFIED",
+        "operational_validation": "ACTIVE_IN_PREVIEW",
+        "reusable_guardrail": "worker_mcp.server.record_mcp_connector_incident+worker_lifecycle_recovery.scan_global_lifecycle_blockers",
+        "prevention_rule": "Registrar errores internos del conector MCP sin secretos en telemetria canonica, clasificarlos en la taxonomia oficial y aislar fallos individuales sin detener el proyecto.",
+        "production_touched": False,
+    },
 )
+
+
+DYNAMIC_LESSONS_DIR = maintenance.STATE_DIR / "knowledge_lessons"
+_SAFE_LESSON_ID_RE = re.compile(r"^LESSON-[A-Z0-9][A-Z0-9_-]{2,95}$")
+
+
+def list_knowledge_lessons(*, lessons_dir: Path | None = None) -> list[dict[str, Any]]:
+    """Return canonical built-in lessons merged with certified dynamic Knowledge Loop lessons."""
+    merged: dict[str, dict[str, Any]] = {
+        str(item["lesson_id"]): dict(item) for item in CANONICAL_KNOWLEDGE_LESSONS
+    }
+    root = lessons_dir or DYNAMIC_LESSONS_DIR
+    if root.is_dir():
+        for path in sorted(root.glob("LESSON-*.json")):
+            payload = _load_json(path)
+            if not isinstance(payload, dict):
+                continue
+            lid = str(payload.get("lesson_id") or "").strip().upper()
+            if not _SAFE_LESSON_ID_RE.fullmatch(lid):
+                continue
+            if payload.get("production_touched") is not False:
+                continue
+            if str(payload.get("certification") or "").strip().upper() != "CERTIFIED":
+                continue
+            merged[lid] = dict(payload)
+    return [merged[key] for key in sorted(merged)]
+
+
+def record_dynamic_knowledge_lesson(
+    *,
+    lesson_id: str,
+    failure_class: str,
+    problem_signature: str,
+    root_cause: str,
+    source_job_id: str,
+    certified_repair_job_id: str,
+    reusable_guardrail: str,
+    prevention_rule: str,
+    certified_commit_sha: str | None = None,
+    certification: str = "CERTIFIED",
+    operational_validation: str = "NOT_APPLICABLE",
+    production_touched: bool = False,
+    lessons_dir: Path | None = None,
+) -> dict[str, Any]:
+    """Persist one certified Knowledge Loop lesson fail-closed (never learns from uncertified runs)."""
+    lid = str(lesson_id or "").strip().upper()
+    if not _SAFE_LESSON_ID_RE.fullmatch(lid):
+        raise ValueError("KNOWLEDGE_LESSON_ID_INVALID")
+    if production_touched is not False:
+        raise ValueError("KNOWLEDGE_LESSON_PRODUCTION_FORBIDDEN")
+    cert_upper = str(certification or "").strip().upper()
+    if cert_upper != "CERTIFIED":
+        raise ValueError("KNOWLEDGE_LESSON_NOT_CERTIFIED")
+    fc = str(failure_class or "").strip().upper()
+    ps = str(problem_signature or "").strip().upper()
+    rc = str(root_cause or "").strip()
+    sj = str(source_job_id or "").strip()
+    rj = str(certified_repair_job_id or "").strip()
+    rg = str(reusable_guardrail or "").strip()
+    pr = str(prevention_rule or "").strip()
+    if not all((fc, ps, rc, sj, rj, rg, pr)):
+        raise ValueError("KNOWLEDGE_LESSON_FIELDS_REQUIRED")
+
+    record = {
+        "schema": "edarsahub.worker-knowledge-lesson.v1",
+        "lesson_id": lid,
+        "failure_class": fc,
+        "problem_signature": ps,
+        "root_cause": rc[:400],
+        "source_job_id": sj[:128],
+        "certified_repair_job_id": rj[:128],
+        "certified_commit_sha": (
+            str(certified_commit_sha).strip().lower()
+            if isinstance(certified_commit_sha, str) and re.fullmatch(r"[0-9a-f]{40}", certified_commit_sha.strip().lower())
+            else None
+        ),
+        "certification": "CERTIFIED",
+        "operational_validation": str(operational_validation or "NOT_APPLICABLE").strip().upper()[:60],
+        "reusable_guardrail": rg[:200],
+        "prevention_rule": pr[:400],
+        "production_touched": False,
+    }
+    root = lessons_dir or DYNAMIC_LESSONS_DIR
+    _atomic_write_json(root / f"{lid}.json", record)
+    return record
 
 
 def lookup_canonical_lesson(
@@ -1513,19 +1645,21 @@ def lookup_canonical_lesson(
     failure_class: str = "",
     problem_signature: str = "",
     source_job_id: str = "",
+    lessons_dir: Path | None = None,
 ) -> dict[str, Any] | None:
     fc = str(failure_class or "").strip().upper()
     ps = str(problem_signature or "").strip().upper()
     sj = str(source_job_id or "").strip()
+    lessons = list_knowledge_lessons(lessons_dir=lessons_dir)
 
-    for lesson in CANONICAL_KNOWLEDGE_LESSONS:
-        if ps and str(lesson["problem_signature"]).upper() == ps:
+    for lesson in lessons:
+        if ps and str(lesson.get("problem_signature") or "").upper() == ps:
             return dict(lesson)
-        if fc and str(lesson["failure_class"]).upper() == fc:
+        if fc and str(lesson.get("failure_class") or "").upper() == fc:
             return dict(lesson)
     if sj:
-        for lesson in CANONICAL_KNOWLEDGE_LESSONS:
-            if str(lesson["source_job_id"]) == sj:
+        for lesson in lessons:
+            if str(lesson.get("source_job_id") or "") == sj:
                 return dict(lesson)
     return None
 

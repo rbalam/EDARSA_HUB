@@ -82,7 +82,7 @@ OPERATIONAL_PROCESSING_MODES = {
 WORKER_SERVICE = os.environ.get("EDARSAHUB_UNIVERSAL_WORKER_SERVICE", "edarsahub-universal-worker")
 EXPECTED_GENERATION_RE = re.compile(r'^RUNTIME_GENERATION="([^"]+)"', re.MULTILINE)
 PID_RE = re.compile(r'(?i)["\']?pid["\']?\s*[:=]\s*["\']?(\d+)')
-WORKER_TOKEN_RE = re.compile(r"worker-[A-Za-z0-9._-]{3,160}")
+WORKER_TOKEN_RE = re.compile(r"(?:worker|queue-publisher)-[A-Za-z0-9._-]{3,160}")
 
 BOOTSTRAP_STATE = Path(
     os.environ.get(
@@ -439,8 +439,50 @@ def claim_candidates() -> list[Path]:
     return candidates
 
 
+def _cleanup_orphan_publisher_worktree_from_claim(claim_text: str) -> dict[str, Any] | None:
+    """Safely remove a clean orphan queue-publisher worktree when its claim is quarantined."""
+    try:
+        claim_data = json.loads(claim_text)
+    except Exception:
+        return None
+    if not isinstance(claim_data, dict):
+        return None
+    agent_id = str(claim_data.get("agent_id") or "").strip()
+    if not agent_id.startswith("queue-publisher-"):
+        return None
+    wt_raw = str(claim_data.get("worktree") or "").strip()
+    branch = str(claim_data.get("branch") or "").strip()
+    outcome: dict[str, Any] = {"agent_id": agent_id, "worktree_removed": False, "branch_removed": False}
+    if wt_raw:
+        wt_path = Path(wt_raw)
+        expected_root = (GIT / "agent-worktrees").resolve()
+        try:
+            resolved_wt = wt_path.resolve()
+        except OSError:
+            resolved_wt = wt_path
+        if resolved_wt.is_dir() and expected_root in resolved_wt.parents:
+            dirty_proc = subprocess.run(
+                ["git", "-C", str(resolved_wt), "status", "--porcelain=v1", "--untracked-files=all"],
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                timeout=20,
+                check=False,
+                env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+            )
+            if dirty_proc.returncode == 0 and not (dirty_proc.stdout or "").strip():
+                rem = run(["git", "worktree", "remove", str(resolved_wt)], timeout=30)
+                outcome["worktree_removed"] = rem.returncode == 0
+                if rem.returncode == 0 and branch.startswith("agent/queue-publisher/"):
+                    del_br = run(["git", "branch", "-D", branch], timeout=20)
+                    outcome["branch_removed"] = del_br.returncode == 0
+            else:
+                outcome["dirty_preserved"] = True
+    return outcome
+
+
 def reconcile_agent_guard_orphans() -> dict[str, int]:
-    live = recent = quarantined = 0
+    live = recent = quarantined = publisher_worktrees_cleaned = 0
     now_ts = epoch()
     for path in claim_candidates():
         try:
@@ -448,6 +490,12 @@ def reconcile_agent_guard_orphans() -> dict[str, int]:
         except OSError:
             continue
         text = read_text(path)
+        try:
+            parsed_claim = json.loads(text) if text.startswith("{") else {}
+        except Exception:
+            parsed_claim = {}
+        if isinstance(parsed_claim, dict) and str(parsed_claim.get("status") or "").strip().upper() == "RELEASED":
+            continue
         pids = {int(value) for value in PID_RE.findall(text)}
         if any(pid_alive(pid) for pid in pids):
             live += 1
@@ -462,16 +510,25 @@ def reconcile_agent_guard_orphans() -> dict[str, int]:
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(path), str(destination))
             quarantined += 1
+            wt_cleanup = _cleanup_orphan_publisher_worktree_from_claim(text)
+            if isinstance(wt_cleanup, dict) and wt_cleanup.get("worktree_removed"):
+                publisher_worktrees_cleaned += 1
             audit(
                 "AGENT_GUARD_ORPHAN_QUARANTINED",
                 source=str(path),
                 destination=str(destination),
                 age_seconds=int(age),
                 pids=sorted(pids),
+                publisher_worktree_cleanup=wt_cleanup,
             )
         except Exception as exc:
             audit("AGENT_GUARD_QUARANTINE_FAILED", source=str(path), error=str(exc))
-    return {"live": live, "recent": recent, "quarantined": quarantined}
+    return {
+        "live": live,
+        "recent": recent,
+        "quarantined": quarantined,
+        "publisher_worktrees_cleaned": publisher_worktrees_cleaned,
+    }
 
 
 def active_execution_ownership(
@@ -1850,6 +1907,22 @@ def _run_global_lifecycle_cycle(
     except ModuleNotFoundError:
         import worker_lifecycle_recovery as _lr
 
+    # Safely reconcile stale converged runtime-drift incidents & settled orphan publisher branches
+    try:
+        converged_reconcile = _lr.reconcile_converged_runtime_incidents(state_root=STATE)
+    except Exception as exc:
+        converged_reconcile = {"error": type(exc).__name__, "superseded": []}
+
+    try:
+        pruned_branches = _lr.prune_settled_orphan_publisher_branches(
+            repo_root=ROOT,
+            state_root=STATE,
+            claims_dir=AGENT_GUARD / "state" / "claims",
+            max_prune_per_cycle=5,
+        )
+    except Exception as exc:
+        pruned_branches = {"error": type(exc).__name__, "pruned": []}
+
     detection = _lr.scan_global_lifecycle_blockers(
         repo_root=ROOT,
         state_root=STATE,
@@ -1866,6 +1939,8 @@ def _run_global_lifecycle_cycle(
         claims_dir=AGENT_GUARD / "state" / "claims",
         automation_state=automation_state,
     )
+    recovery["converged_runtime_incidents_reconciled"] = converged_reconcile
+    recovery["orphan_publisher_branches_pruned"] = pruned_branches
     return detection, recovery
 
 
