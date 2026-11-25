@@ -1,0 +1,59 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Validacion de contexto y catalogos para preparar registros de Cajas V1.\n\nEsta capa recibe datos previamente resueltos por servicios canonicos.\nNo consulta SQL, no crea catalogos ni realiza operaciones externas.\nLa unicidad de idempotencia DEBE imponerse transaccionalmente en SQL.\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom hashlib import sha256\nfrom typing import Iterable\n\nfrom modules.finanzas.incidencias_caja_contracts import IncidenciaCajaCreate\n\n\nclass CajasContextError(ValueError):\n    \"\"\"Contexto no autorizado, catalogo no validado o entrada incompatible.\"\"\"\n\n\n@dataclass(frozen=True)\nclass AlcanceCaja:\n    empresa_id: str\n    unidad_id: str\n    sucursal_id: str\n    usuario_id: int\n    sistema_origen: str\n    server_id: str\n\n\n@dataclass(frozen=True)\nclass MotivoCajaCatalogo:\n    codigo_canonico: str\n    codigo_origen: str | None\n    sistema_origen: str | None\n    empresa_id: str | None\n    unidad_id: str | None\n    sucursal_id: str | None\n    activo: bool = True\n\n\n@dataclass(frozen=True)\nclass RegistroCajaValidado:\n    alcance: AlcanceCaja\n    motivo_codigo_canonico: str\n    motivo_codigo_origen: str | None\n    idempotencia_ambito: str\n    solicitud: IncidenciaCajaCreate\n\n\ndef preparar_registro_caja(\n    *,\n    solicitud: IncidenciaCajaCreate,\n    alcance: AlcanceCaja,\n    contextos_permitidos: Iterable[tuple[str, str, str]],\n    motivos_vigentes: Iterable[MotivoCajaCatalogo],\n) -> RegistroCajaValidado:\n    \"\"\"Rechaza entradas ambiguas o fuera de alcance, sin efectos secundarios.\n\n    contextos_permitidos debe provenir del resolver de relaciones\n    empresa/unidad/sucursal y RBAC/RLS de EDARSAHUB, nunca del navegador.\n    motivos_vigentes debe provenir del Maestro de Catalogos homologado.\n    \"\"\"\n    if not (\n        alcance.empresa_id and alcance.unidad_id and alcance.sucursal_id\n        and alcance.sistema_origen and alcance.server_id and alcance.usuario_id > 0\n    ):\n        raise CajasContextError(\"CONTEXTO_CANONICO_INCOMPLETO\")\n    if (\n        alcance.empresa_id, alcance.unidad_id, alcance.sucursal_id\n    ) not in frozenset(contextos_permitidos):\n        raise CajasContextError(\"EMPRESA_UNIDAD_SUCURSAL_NO_AUTORIZADA\")\n\n    matches = []\n    for motivo in motivos_vigentes:\n        if not motivo.activo:\n            continue\n        if motivo.codigo_canonico != solicitud.motivo_codigo:\n            continue\n        if motivo.empresa_id is not None and motivo.empresa_id != alcance.empresa_id:\n            continue\n        if motivo.unidad_id is not None and motivo.unidad_id != alcance.unidad_id:\n            continue\n        if motivo.sucursal_id is not None and motivo.sucursal_id != alcance.sucursal_id:\n            continue\n        if motivo.sistema_origen is not None and motivo.sistema_origen != alcance.sistema_origen:\n            continue\n        matches.append(motivo)\n    if not matches:\n        raise CajasContextError(\"MOTIVO_NO_DISPONIBLE_EN_CONTEXTO\")\n    # Prioridad a catalogos de mayor especificidad; sin desempates arbitrarios.\n    specificity = lambda m: sum(\n        v is not None for v in\n        (m.empresa_id, m.unidad_id, m.sucursal_id, m.sistema_origen)\n    )\n    max_specificity = max(specificity(m) for m in matches)\n    selected = [m for m in matches if specificity(m) == max_specificity]\n    if len(selected) != 1:\n        raise CajasContextError(\"MOTIVO_HOMOLOGACION_AMBIGUA\")\n\n    # Namespace estable: NO sustituye una constraint UNIQUE en SQL.\n    namespace = \"\\x1f\".join((\n        alcance.empresa_id,\n        alcance.unidad_id,\n        alcance.sucursal_id,\n        alcance.sistema_origen,\n        alcance.server_id,\n        str(alcance.usuario_id),\n        solicitud.solicitud_idempotencia,\n    ))\n    return RegistroCajaValidado(\n        alcance=alcance,\n        motivo_codigo_canonico=selected[0].codigo_canonico,\n        motivo_codigo_origen=selected[0].codigo_origen,\n        idempotencia_ambito=sha256(namespace.encode(\"utf-8\")).hexdigest(),\n        solicitud=solicitud,\n    )\n",
+      "path": "backend/modules/finanzas/incidencias_caja_context.py",
+      "type": "write_file"
+    },
+    {
+      "content": "import pytest\n\nfrom modules.finanzas.incidencias_caja_contracts import IncidenciaCajaCreate\nfrom modules.finanzas.incidencias_caja_context import (\n    AlcanceCaja, CajasContextError, MotivoCajaCatalogo, preparar_registro_caja\n)\n\n\ndef _context(**kw):\n    fields=dict(empresa_id=\"e1\", unidad_id=\"u1\", sucursal_id=\"s1\",\n                usuario_id=42, sistema_origen=\"POS\", server_id=\"srv1\")\n    fields.update(kw)\n    return AlcanceCaja(**fields)\n\n\ndef _solicitud(**kw):\n    fields=dict(tipo=\"CANCELACION\", motivo_codigo=\"ERROR_CAPTURA\",\n                descripcion=\"Incidencia de prueba\", solicitud_idempotencia=\"request-123\")\n    fields.update(kw)\n    return IncidenciaCajaCreate(**fields)\n\n\ndef _motivo(**kw):\n    fields=dict(codigo_canonico=\"ERROR_CAPTURA\", codigo_origen=\"C01\",\n                sistema_origen=\"POS\", empresa_id=\"e1\", unidad_id=\"u1\",\n                sucursal_id=None, activo=True)\n    fields.update(kw)\n    return MotivoCajaCatalogo(**fields)\n\n\ndef _preparar(**kw):\n    fields=dict(solicitud=_solicitud(), alcance=_context(),\n                contextos_permitidos=[(\"e1\", \"u1\", \"s1\")],\n                motivos_vigentes=[_motivo()])\n    fields.update(kw)\n    return preparar_registro_caja(**fields)\n\n\ndef test_registro_validado_preserva_equivalencia_y_solicitud():\n    result=_preparar()\n    assert result.motivo_codigo_canonico==\"ERROR_CAPTURA\"\n    assert result.motivo_codigo_origen==\"C01\"\n    assert result.solicitud.tipo.value==\"CANCELACION\"\n    assert len(result.idempotencia_ambito)==64\n\n\ndef test_sucursal_ajena_se_rechaza_aunque_empresa_y_unidad_coincidan():\n    with pytest.raises(CajasContextError, match=\"NO_AUTORIZADA\"):\n        _preparar(alcance=_context(sucursal_id=\"s2\"))\n\n\ndef test_motivo_de_otro_origen_no_se_puede_utilizar():\n    with pytest.raises(CajasContextError, match=\"MOTIVO_NO_DISPONIBLE\"):\n        _preparar(motivos_vigentes=[_motivo(sistema_origen=\"OTRO_POS\")])\n\n\ndef test_motivo_inactivo_rechazado():\n    with pytest.raises(CajasContextError, match=\"MOTIVO_NO_DISPONIBLE\"):\n        _preparar(motivos_vigentes=[_motivo(activo=False)])\n\n\ndef test_duplicidad_equivalencia_ambigua_bloquea():\n    with pytest.raises(CajasContextError, match=\"AMBIGUA\"):\n        _preparar(motivos_vigentes=[_motivo(codigo_origen=\"C01\"), _motivo(codigo_origen=\"C99\")])\n\n\ndef test_catalogo_especifico_prevalece_sobre_global():\n    result=_preparar(motivos_vigentes=[\n        _motivo(empresa_id=None, unidad_id=None, sistema_origen=None, codigo_origen=None),\n        _motivo(codigo_origen=\"C01\")])\n    assert result.motivo_codigo_origen==\"C01\"\n\n\ndef test_idempotencia_estable_y_aislada_por_usuario_y_contexto():\n    a=_preparar().idempotencia_ambito\n    assert a==_preparar().idempotencia_ambito\n    assert a!=_preparar(alcance=_context(usuario_id=43)).idempotencia_ambito\n    assert a!=_preparar(solicitud=_solicitud(solicitud_idempotencia=\"request-456\")).idempotencia_ambito\n\n\ndef test_identidad_invalida_rechazada():\n    with pytest.raises(CajasContextError, match=\"INCOMPLETO\"):\n        _preparar(alcance=_context(usuario_id=0))\n",
+      "path": "backend/tests/test_incidencias_caja_context.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/finanzas/incidencias_caja_context.py",
+        "backend/tests/test_incidencias_caja_context.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_incidencias_caja_context.py",
+        "backend/tests/test_incidencias_caja_policy.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-AA1970654779466DBE5F8DD1",
+  "mode": "MUTATION",
+  "objective": "CAJAS V1 Gate3 validar contexto canonico empresa-unidad-sucursal, homologacion de motivos y namespace de idempotencia, modulo puro para integracion posterior con SQL; prohibido operar POS externo o inventar catalogos; pruebas hermeticas",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
