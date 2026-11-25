@@ -594,7 +594,7 @@ def _raise_mapped_upstream_error(
             )
         elif category == "GIT_AUTH_FAILURE":
             hint = (
-                "Git push authentication failed (e.g. credential.useHttpPath mismatch); "
+                "Upstream Git remote authentication failed (e.g. credential.useHttpPath mismatch); "
                 "do not duplicate job or modify credentials; recover existing draft canonically."
             )
         elif category == "CONVERGENCE_FAILURE" or reason_code == "BLOCKED_CONVERGENCE":

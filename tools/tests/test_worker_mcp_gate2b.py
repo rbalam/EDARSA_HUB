@@ -62,10 +62,14 @@ async def test_mcp_exposes_exactly_authorized_public_tools_with_least_privilege(
 
     by_name = {tool.name: tool for tool in result.tools}
     assert set(by_name) == EXPECTED_AUTHORIZED_MCP_TOOLS
-    assert by_name["submit_objective"].annotations.readOnlyHint is False
+    def _ann(tool, snake: str, camel: str):
+        ann = tool.annotations
+        return getattr(ann, snake, getattr(ann, camel, None))
+
+    assert _ann(by_name["submit_objective"], "read_only_hint", "readOnlyHint") is False
     for ro_name in EXPECTED_AUTHORIZED_MCP_TOOLS - {"submit_objective"}:
-        assert by_name[ro_name].annotations.readOnlyHint is True
-        assert by_name[ro_name].annotations.destructiveHint is False
+        assert _ann(by_name[ro_name], "read_only_hint", "readOnlyHint") is True
+        assert _ann(by_name[ro_name], "destructive_hint", "destructiveHint") is False
 
 
 def test_config_fails_closed_without_required_env(monkeypatch):
