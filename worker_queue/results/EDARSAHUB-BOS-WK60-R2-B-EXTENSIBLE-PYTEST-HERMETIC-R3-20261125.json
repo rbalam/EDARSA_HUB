@@ -2,8 +2,11 @@
   "base_sha": "40d3292f0e361cd55fe2aec567a29afa3954cad0",
   "blockers": [],
   "candidate_sha": "98a0b8d0ea8c0e7616c06839b90acf2dc3390f7e",
-  "certification": "PENDING_AUDIT_EVIDENCE",
+  "certification": "CERTIFIED",
+  "certification_basis": "SHA_BOUND_ATTESTATION_PLUS_ARTIFACT_CONVERGENCE",
+  "certified_source_sha": "98a0b8d0ea8c0e7616c06839b90acf2dc3390f7e",
   "completed_at_utc": "2026-11-25T07:39:56Z",
+  "converged_head": "98a0b8d0ea8c0e7616c06839b90acf2dc3390f7e",
   "development_sha": "98a0b8d0ea8c0e7616c06839b90acf2dc3390f7e",
   "execution_base_sha": "40d3292f0e361cd55fe2aec567a29afa3954cad0",
   "executor": "chatgpt-deterministic",
@@ -18,9 +21,9 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "EDARSAHUB-BOS-WK60-R2-B-EXTENSIBLE-PYTEST-HERMETIC-R3-20261125",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-11-25T07:40:51Z",
+  "published_at_utc": "2026-11-25T07:42:07Z",
   "quality_gate": "PASS",
   "requested_base_sha": "40d3292f0e361cd55fe2aec567a29afa3954cad0",
   "schema": "edarsahub.worker-result.v2",
@@ -30,5 +33,5 @@
   "status": "INTEGRATED",
   "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
   "tests": "PASS",
-  "work_completion": "PENDING_CERTIFICATION"
+  "work_completion": "COMPLETE"
 }
