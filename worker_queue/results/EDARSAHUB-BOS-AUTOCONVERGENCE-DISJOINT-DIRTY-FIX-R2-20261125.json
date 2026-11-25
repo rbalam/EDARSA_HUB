@@ -1,0 +1,29 @@
+{
+  "base_sha": "fcb6fad63c465a75af66f8a5356db5d80c6a273e",
+  "blockers": [],
+  "candidate_sha": "16d628f5953622b58f1371a5f0b8f89cdc1dff22",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-11-25T14:43:34Z",
+  "development_sha": "16d628f5953622b58f1371a5f0b8f89cdc1dff22",
+  "execution_base_sha": "fcb6fad63c465a75af66f8a5356db5d80c6a273e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_worker_autoconvergence_disjoint_dirty.py",
+    "tools/mirror_sync/worker_control_plane.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-AUTOCONVERGENCE-DISJOINT-DIRTY-FIX-R2-20261125",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-11-25T14:44:30Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-25T14:43:14Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
