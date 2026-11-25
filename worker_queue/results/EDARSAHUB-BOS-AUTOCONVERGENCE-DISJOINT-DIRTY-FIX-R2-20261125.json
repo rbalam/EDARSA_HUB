@@ -19,7 +19,7 @@
   "job_id": "EDARSAHUB-BOS-AUTOCONVERGENCE-DISJOINT-DIRTY-FIX-R2-20261125",
   "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-11-25T14:45:24Z",
+  "published_at_utc": "2026-11-25T14:45:44Z",
   "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
