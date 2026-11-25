@@ -459,3 +459,50 @@ def test_build_plan_rejects_stale_tampered_or_unauthorized_ready_decision():
     with ThreadPoolExecutor(max_workers=8) as pool:
         results = list(pool.map(lambda _: build_plan(cfg2, valid_decision, set()), range(16)))
     assert all(r["status"] == "READY_TO_PUBLISH" and r["job_id"] == "job-next" for r in results)
+
+
+def test_orphan_publisher_branch_recycling_is_strictly_fail_closed(monkeypatch, tmp_path):
+    import json
+    from types import SimpleNamespace
+    from tools.mirror_sync import gate_chain_publisher as gcp
+
+    claims_dir = tmp_path / ".git" / "agent-guard" / "state" / "claims"
+    claims_dir.mkdir(parents=True)
+    monkeypatch.setattr(gcp, "ROOT", tmp_path)
+
+    rel = "worker_queue/inbox/SEM-REQUEST-TEST.json"
+    expected = '{"job_id":"SEM-REQUEST-TEST"}\n'
+    branch = "agent/queue-publisher/SEM-REQUEST-TEST"
+    agent_id = "queue-publisher-SEM-REQUEST-TEST"
+    sha_head = "a" * 40
+    sha_parent = "b" * 40
+
+    def fake_git(*args, **_kwargs):
+        if args == ("rev-parse", branch):
+            return SimpleNamespace(returncode=0, stdout=sha_head + "\n")
+        if args == ("rev-list", "--parents", "-n", "1", sha_head):
+            return SimpleNamespace(returncode=0, stdout=f"{sha_head} {sha_parent}\n")
+        if args == ("diff", "--name-only", f"{sha_parent}..{sha_head}"):
+            return SimpleNamespace(returncode=0, stdout=rel + "\n")
+        if args == ("show", f"{sha_head}:{rel}"):
+            return SimpleNamespace(returncode=0, stdout=expected)
+        return SimpleNamespace(returncode=1, stdout="")
+
+    monkeypatch.setattr(gcp, "git", fake_git)
+
+    # Released claim + exact payload + single-file scope -> recyclable
+    (claims_dir / f"{agent_id}.json").write_text(json.dumps({"status": "RELEASED"}), encoding="utf-8")
+    assert gcp._can_recycle_orphan_publisher_branch(
+        branch=branch, rel=rel, expected_payload=expected, agent_id=agent_id
+    ) is True
+
+    # Payload mismatch -> fail closed
+    assert gcp._can_recycle_orphan_publisher_branch(
+        branch=branch, rel=rel, expected_payload='{"job_id":"DRIFT"}\n', agent_id=agent_id
+    ) is False
+
+    # Active claim -> fail closed
+    (claims_dir / f"{agent_id}.json").write_text(json.dumps({"status": "ACTIVE"}), encoding="utf-8")
+    assert gcp._can_recycle_orphan_publisher_branch(
+        branch=branch, rel=rel, expected_payload=expected, agent_id=agent_id
+    ) is False

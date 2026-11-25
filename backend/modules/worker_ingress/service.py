@@ -493,6 +493,34 @@ def _read_existing_request_job(job_id: str) -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) else None
 
 
+def _read_unpublished_draft(job_id: str) -> dict[str, Any] | None:
+    """Read a local unpublished draft without mutating queue state."""
+    if not job_id:
+        return None
+    path = STATE_ROOT / "drafts" / f"{job_id}.json"
+    if not path.is_file():
+        return None
+    payload = _read_json_if_object(path)
+    return payload or None
+
+
+def _check_unpublished_draft_idempotency(
+    canonical_job: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    """Fail closed if an unpublished draft drifts; surface recovery metadata if exact."""
+    existing = _read_unpublished_draft(str(canonical_job.get("job_id") or ""))
+    if existing is None:
+        return None
+    existing_fp = _canonical_request_fingerprint(existing)
+    candidate_fp = _canonical_request_fingerprint(canonical_job)
+    if existing_fp != candidate_fp or existing.get("base_sha") != canonical_job.get("base_sha"):
+        raise WorkerIngressError("IDEMPOTENCY_CONFLICT")
+    return {
+        "unpublished_draft_recovery": True,
+        "draft_fingerprint": existing_fp,
+    }
+
+
 def _assert_idempotent_request_binding(
     canonical_job: Mapping[str, Any],
     *,
@@ -714,6 +742,8 @@ def submit_objective(
             "capability": capability_code,
             "bounded_context": _clean(payload.get("bounded_context")).upper(),
         }
+
+    _check_unpublished_draft_idempotency(canonical_job)
 
     result = _submit_through_canonical_publisher(canonical_job)
     if not isinstance(result, dict):
@@ -1650,7 +1680,8 @@ def preflight_semantic_objective(
                 "production_touched": False,
             }
 
-        return {
+        draft_recovery = _check_unpublished_draft_idempotency(canonical_job)
+        preflight_ready: dict[str, Any] = {
             "schema": "edarsahub.worker-semantic-preflight.v1",
             "ok": True,
             "status": "PREFLIGHT_READY",
@@ -1664,6 +1695,9 @@ def preflight_semantic_objective(
             "production_allowed": False,
             "production_touched": False,
         }
+        if draft_recovery is not None:
+            preflight_ready.update(draft_recovery)
+        return preflight_ready
     except WorkerIngressError as exc:
         diag = build_semantic_diagnostic(
             str(exc),

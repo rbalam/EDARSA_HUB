@@ -169,3 +169,60 @@ def test_exact_legacy_retry_resolves_existing_legacy_job(monkeypatch):
     assert result["status"] == "EXISTS"
     assert result["job_id"] == legacy_id
     assert result["existing_lifecycle"] == "REMOTE_RESULT"
+
+
+def test_unpublished_draft_conflict_fails_closed_before_publisher(monkeypatch, tmp_path):
+    original_req = _request("original unpublished draft")
+    changed_req = _request("drifted retry objective")
+    original_job = service.build_semantic_job(original_req, current_user=_admin())
+
+    drafts_dir = tmp_path / "drafts"
+    drafts_dir.mkdir(parents=True)
+    import json
+    (drafts_dir / f"{original_job['job_id']}.json").write_text(
+        json.dumps(original_job, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(service, "STATE_ROOT", tmp_path)
+    monkeypatch.setattr(service, "_find_existing_job_state", lambda _job_id: None)
+
+    preflight = service.preflight_semantic_objective(changed_req, current_user=_admin())
+    assert preflight["ok"] is False
+    assert preflight["status"] == "PREFLIGHT_REJECTED"
+    assert preflight["error_code"] == "IDEMPOTENCY_CONFLICT"
+    assert preflight["http_status"] == 409
+
+    published = {"called": False}
+
+    def _forbidden_publish(_job):
+        published["called"] = True
+        raise AssertionError("publisher must not be called on unpublished draft conflict")
+
+    monkeypatch.setattr(service, "_submit_through_canonical_publisher", _forbidden_publish)
+    with pytest.raises(service.WorkerIngressError, match="IDEMPOTENCY_CONFLICT"):
+        service.submit_objective(changed_req, current_user=_admin())
+    assert published["called"] is False
+
+
+def test_unpublished_draft_exact_retry_reports_recovery_ready(monkeypatch, tmp_path):
+    req = _request("exact unpublished draft")
+    canonical = service.build_semantic_job(req, current_user=_admin())
+
+    drafts_dir = tmp_path / "drafts"
+    drafts_dir.mkdir(parents=True)
+    import json
+    (drafts_dir / f"{canonical['job_id']}.json").write_text(
+        json.dumps(canonical, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(service, "STATE_ROOT", tmp_path)
+    monkeypatch.setattr(service, "_find_existing_job_state", lambda _job_id: None)
+
+    preflight = service.preflight_semantic_objective(req, current_user=_admin())
+    assert preflight["ok"] is True
+    assert preflight["status"] == "PREFLIGHT_READY"
+    assert preflight["job_id"] == canonical["job_id"]
+    assert preflight["unpublished_draft_recovery"] is True
+    assert preflight["draft_fingerprint"] == service._canonical_request_fingerprint(canonical)

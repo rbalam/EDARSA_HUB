@@ -368,11 +368,59 @@ def _release_agent_guard(agent_id: str) -> tuple[bool, str]:
     )
 
 
+def _agent_guard_claim_active(agent_id: str) -> bool:
+    """Return True unless the Agent Guard claim is absent or explicitly RELEASED."""
+    claim_path = ROOT / ".git" / "agent-guard" / "state" / "claims" / f"{agent_id}.json"
+    if not claim_path.is_file():
+        return False
+    try:
+        claim = json.loads(claim_path.read_text(encoding="utf-8"))
+    except Exception:
+        return True
+    if not isinstance(claim, dict):
+        return True
+    return str(claim.get("status") or "").strip().upper() != "RELEASED"
+
+
+def _can_recycle_orphan_publisher_branch(
+    *,
+    branch: str,
+    rel: str,
+    expected_payload: str | None,
+    agent_id: str,
+) -> bool:
+    """Verify an orphan local publisher branch matches the exact canonical draft."""
+    if expected_payload is None:
+        return False
+    if _agent_guard_claim_active(agent_id):
+        return False
+    branch_sha = git("rev-parse", branch, check=False).stdout.strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", branch_sha):
+        return False
+    parents_res = git("rev-list", "--parents", "-n", "1", branch_sha, check=False)
+    if parents_res.returncode != 0:
+        return False
+    parents = parents_res.stdout.strip().split()
+    if len(parents) != 2 or not re.fullmatch(r"[0-9a-f]{40}", parents[1]):
+        return False
+    diff_res = git("diff", "--name-only", f"{parents[1]}..{branch_sha}", check=False)
+    if diff_res.returncode != 0:
+        return False
+    changed = [line.strip() for line in diff_res.stdout.splitlines() if line.strip()]
+    if changed != [rel]:
+        return False
+    blob = git("show", f"{branch_sha}:{rel}", check=False)
+    if blob.returncode != 0:
+        return False
+    return blob.stdout == expected_payload
+
+
 def _prepare_queue_worktree(
     *,
     job_id: str,
     queue_base: str,
     rel: str,
+    expected_payload: str | None = None,
 ) -> tuple[Path, str, str, str]:
     if not AGENT_GUARD.is_file():
         raise RuntimeError("AGENT_GUARD_NOT_FOUND")
@@ -396,6 +444,17 @@ def _prepare_queue_worktree(
     ).returncode == 0
 
     worktree_exists = worktree.exists()
+
+    if branch_exists and not worktree_exists:
+        if _can_recycle_orphan_publisher_branch(
+            branch=branch,
+            rel=rel,
+            expected_payload=expected_payload,
+            agent_id=agent_id,
+        ):
+            deleted = git("branch", "-D", branch, check=False)
+            if deleted.returncode == 0:
+                branch_exists = False
 
     if branch_exists or worktree_exists:
         if not (branch_exists and worktree_exists):
@@ -620,10 +679,21 @@ def publish(
             "result": "REMOTE_JOB=EXISTS",
         }
 
+    expected_payload = (
+        json.dumps(
+            template,
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    )
+
     worktree, branch, agent_id, task_id = _prepare_queue_worktree(
         job_id=job_id,
         queue_base=queue_base,
         rel=rel,
+        expected_payload=expected_payload,
     )
 
     current_head = git(
@@ -639,16 +709,6 @@ def publish(
 
     try:
         target = worktree / rel
-
-        expected_payload = (
-            json.dumps(
-                template,
-                ensure_ascii=False,
-                indent=2,
-                sort_keys=True,
-            )
-            + "\n"
-        )
 
         if resumed_existing:
             if not target.is_file():
