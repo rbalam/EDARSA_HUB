@@ -1,0 +1,58 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "GO_WK50_R2_STATUS=R2_0_GOVERNANCE_REGISTERED\nNEXT=WK50_R2_A_WORKER_MCP_OWNERSHIP\nCXP_CURRENT_MD_MODIFIED=NO\nCXP_NEXT_MODIFIED=NO\nPARALLEL_EXECUTION=NO\nMAXIMUM_WRITERS=1\nIMPLEMENTATION_AUTHORIZED=YES\nTECHNICAL_MCP_JOB_AUTHORIZED=NO\nMCP_INPROCESS_ENABLED=NO\nPRODUCTION_TOUCHED=NO",
+      "path": "docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md",
+      "replacement": "GO_WK50_R2_STATUS=R2_0_TO_R2_F_COMPLETE_PENDIENTE_OAUTH_PKCE_LIVE_CHATGPT\nGO_WK50_R2_FASE1_PROMOTED_SHA=59e78c983eebeaec5e8ff7235b639a5ce0273eda\nGO_WK50_R2_0_CERTIFIED_JOB=EDARSAHUB-BOS-WK50-R2-0-GOVERNANCE-20261125\nGO_WK50_R2_0_CERTIFIED_SHA=48a485212a1ea504f19d47e68048a83e96835ce1\nGO_WK50_R2_A_CERTIFIED_JOB=EDARSAHUB-BOS-WK50-R2-A-OWNERSHIP-20261125\nGO_WK50_R2_A_CERTIFIED_SHA=444a753c98bb076b475c7b69d300c1bf851c05aa\nGO_WK50_R2_B_R3_INTEGRATED_JOB=EDARSAHUB-BOS-WK50-R2-B-MCP-TOOLS-CATALOG-DIAG-R3-20261125\nGO_WK50_R2_B_R3_INTEGRATED_SHA=7b105449a1e02ee05170d9964305c6db508b269d\nGO_WK50_R2_B_R4_CERTIFIED_JOB=EDARSAHUB-BOS-WK50-R2-B-GATE2B-PARITY-R4-20261125\nGO_WK50_R2_B_R4_CERTIFIED_SHA=6beb91ca2c5497646c5851fa17d8da37454ac482\nGO_WK50_R2_E_DOMAIN1_CERTIFIED_JOB=SEM-REQUEST-25EEDF38645B905D3EBAEB30\nGO_WK50_R2_E_DOMAIN2_CERTIFIED_JOB=SEM-REQUEST-E533AF2577C3A8A1639824FC\nGO_WK50_R2_F_LEARNED_CAPABILITY=PUBLISHER_GIT_AUTH_USEHTTPPATH_PROPAGATION\nNEXT=WK50_LIVE_CHATGPT_OAUTH_PKCE_SMOKE_ON_6_MCP_TOOLS\nCXP_CURRENT_MD_MODIFIED=NO\nCXP_NEXT_MODIFIED=NO\nPARALLEL_EXECUTION=NO\nMAXIMUM_WRITERS=1\nIMPLEMENTATION_AUTHORIZED=NO\nTECHNICAL_MCP_JOB_AUTHORIZED=NO\nMCP_INPROCESS_ENABLED=NO\nPRODUCTION_TOUCHED=NO",
+      "source_sha256": "90269a85d8b17fb64f064d7e3188ed05fc254320dca28b7dc92f5e8e2bd48538",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "## Estados abiertos\nUn resultado desconocido nunca debe convertirse implícitamente en éxito.",
+      "path": "docs/agent-governance/lessons/ARCHITECTURAL_FAILURES_AND_LESSONS.md",
+      "replacement": "## Estados abiertos\nUn resultado desconocido nunca debe convertirse implícitamente en éxito.\n\n## Propagar overrides Git useHttpPath en publishers\nSi git credential reject borra credenciales con path y queda entrada host-only, los publishers deben propagar credential.<url>.useHttpPath=false sin tocar credenciales.\n\n## Dos venvs Python en MCP vs Backend\nBackend y Worker usan /root/.venv; edarsahub-worker-mcp y Gate2B usan /app/.runtime/worker_mcp/venv (mcp 2.x con ToolAnnotations snake_case).\n\n## Aislamiento de stubs en pruebas de gateway MCP\nNunca mutar atributos de gateway_router sin restaurar en finally; stubs async deben reflejar Discovery V2 y scopes worker:status/worker:submit.",
+      "source_sha256": "d282ab519a8a6503ffdcb900107ca309e951383020670c218305c13fdf8210d0",
+      "type": "replace_text"
+    }
+  ],
+  "base_sha": "6beb91ca2c5497646c5851fa17d8da37454ac482",
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_mcp_r2_b_autonomous_tools_contract.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WK50-R2-F-CHECKPOINT-CLOSE-20261125",
+  "mode": "MUTATION",
+  "objective": "R2-F Knowledge Loop and governance closure under GO-WK50-MCP-AUTONOMOUS-CONTEXT-PREFLIGHT-R2: record R2 operational lessons in ARCHITECTURAL_FAILURES_AND_LESSONS.md and close MCP_UNIVERSAL_WORKER.md with certified R2-0..R2-F jobs and SHAs while preserving CURRENT.md.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_GOVERNANCE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_GOVERNANCE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
