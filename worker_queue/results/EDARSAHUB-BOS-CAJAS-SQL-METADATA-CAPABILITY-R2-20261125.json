@@ -1,0 +1,22 @@
+{
+  "blockers": [
+    "dispatcher_exception:RuntimeError:CONCURRENT_SCOPE_CONFLICT:expected=9d88e1c52167491bd7d8476d189e54c7edb31eec:actual=3483f481acf5c9ef2efce1668bf1ba2208b943ae:paths=backend/modules/worker_ingress/semantic_capabilities.py"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-11-25T13:50:35Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-CAJAS-SQL-METADATA-CAPABILITY-R2-20261125",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-11-25T13:51:36Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-25T13:50:35Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
