@@ -1,0 +1,63 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "new": "def resolve_runtime_git_url_use_http_path() -> tuple[str, str] | None:\n    \"\"\"Propagate any explicit per-URL credential.useHttpPath setting from local repo config.\"\"\"\n    remote_url = subprocess.run(\n        [\"git\", \"remote\", \"get-url\", REMOTE],\n        cwd=str(ROOT),\n        stdout=subprocess.PIPE,\n        stderr=subprocess.PIPE,\n        text=True,\n        check=False,\n    ).stdout.strip()\n    if not remote_url:\n        return None\n    override = subprocess.run(\n        [\n            \"git\",\n            \"config\",\n            \"--local\",\n            \"--get\",\n            f\"credential.{remote_url}.useHttpPath\",\n        ],\n        cwd=str(ROOT),\n        stdout=subprocess.PIPE,\n        stderr=subprocess.PIPE,\n        text=True,\n        check=False,\n    ).stdout.strip()\n    if override in {\"true\", \"false\"}:\n        return remote_url, override\n    return None\n\n\ndef runtime_git_command(*args: str) -> list[str]:\n    helper = resolve_runtime_git_credential_helper()\n    cmd = [\n        \"git\",\n        \"-c\",\n        \"credential.helper=\",\n    ]\n    if helper:\n        cmd.extend(\n            [\n                \"-c\",\n                f\"credential.helper={helper}\",\n                \"-c\",\n                \"credential.useHttpPath=true\",\n            ]\n        )\n        url_override = resolve_runtime_git_url_use_http_path()\n        if url_override:\n            remote_url, use_http_path = url_override\n            cmd.extend(\n                [\n                    \"-c\",\n                    f\"credential.{remote_url}.useHttpPath={use_http_path}\",\n                ]\n            )\n    cmd.extend(args)\n    return cmd",
+      "old": "def runtime_git_command(*args: str) -> list[str]:\n    helper = resolve_runtime_git_credential_helper()\n    cmd = [\n        \"git\",\n        \"-c\",\n        \"credential.helper=\",\n    ]\n    if helper:\n        cmd.extend(\n            [\n                \"-c\",\n                f\"credential.helper={helper}\",\n                \"-c\",\n                \"credential.useHttpPath=true\",\n            ]\n        )\n    cmd.extend(args)\n    return cmd",
+      "path": "tools/mirror_sync/runtime_health_publisher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "def resolve_runtime_git_url_use_http_path() -> tuple[str, str] | None:\n    \"\"\"Propagate any explicit per-URL credential.useHttpPath setting from local repo config.\"\"\"\n    remote_url = subprocess.run(\n        [\"git\", \"remote\", \"get-url\", REMOTE],\n        cwd=str(ROOT),\n        stdout=subprocess.PIPE,\n        stderr=subprocess.PIPE,\n        text=True,\n        check=False,\n    ).stdout.strip()\n    if not remote_url:\n        return None\n    override = subprocess.run(\n        [\n            \"git\",\n            \"config\",\n            \"--local\",\n            \"--get\",\n            f\"credential.{remote_url}.useHttpPath\",\n        ],\n        cwd=str(ROOT),\n        stdout=subprocess.PIPE,\n        stderr=subprocess.PIPE,\n        text=True,\n        check=False,\n    ).stdout.strip()\n    if override in {\"true\", \"false\"}:\n        return remote_url, override\n    return None\n\n\ndef runtime_git_command(*args: str) -> list[str]:\n    helper = resolve_runtime_git_credential_helper()\n\n    cmd = [\n        \"git\",\n        \"-c\",\n        \"credential.helper=\",\n    ]\n\n    if helper:\n        cmd.extend(\n            [\n                \"-c\",\n                f\"credential.helper={helper}\",\n                \"-c\",\n                \"credential.useHttpPath=true\",\n            ]\n        )\n        url_override = resolve_runtime_git_url_use_http_path()\n        if url_override:\n            remote_url, use_http_path = url_override\n            cmd.extend(\n                [\n                    \"-c\",\n                    f\"credential.{remote_url}.useHttpPath={use_http_path}\",\n                ]\n            )\n\n    cmd.extend(args)\n    return cmd",
+      "old": "def runtime_git_command(*args: str) -> list[str]:\n    helper = resolve_runtime_git_credential_helper()\n\n    cmd = [\n        \"git\",\n        \"-c\",\n        \"credential.helper=\",\n    ]\n\n    if helper:\n        cmd.extend(\n            [\n                \"-c\",\n                f\"credential.helper={helper}\",\n                \"-c\",\n                \"credential.useHttpPath=true\",\n            ]\n        )\n\n    cmd.extend(args)\n    return cmd",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "type": "replace_text"
+    }
+  ],
+  "base_sha": "59e78c983eebeaec5e8ff7235b639a5ce0273eda",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/runtime_health_publisher.py",
+        "tools/mirror_sync/universal_job_result_publisher.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_runtime_health_publisher_git_auth_contract.py",
+        "backend/tests/test_universal_job_result_publisher_git_auth_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "WORKER-REPAIR-5767c5f798722d07d19e-A1",
+  "mode": "MUTATION",
+  "objective": "Propagate explicit per-URL credential.<remote_url>.useHttpPath overrides from local repository Git config into temporary publisher clones so host-wide credentials remain usable after path-entry rejection without modifying credentials.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
