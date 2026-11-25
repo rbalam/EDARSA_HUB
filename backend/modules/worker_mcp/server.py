@@ -860,6 +860,13 @@ def get_job_status_tool(
         "maintenance_history_evidence": result.get(
             "maintenance_history_evidence"
         ),
+        "sql_readonly_evidence": result.get(
+            "sql_readonly_evidence"
+        ),
+        "worker_result_semantic_evidence": result.get(
+            "worker_result_semantic_evidence"
+        ),
+        "evidence_availability": result.get("evidence_availability"),
         "evidence_status": result.get("evidence_status"),
         "evidence_truncated": result.get("evidence_truncated"),
     }

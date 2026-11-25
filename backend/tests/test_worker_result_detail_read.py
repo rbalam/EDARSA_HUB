@@ -780,3 +780,400 @@ def test_legacy_detail_reader_compatibility_and_rbac_scope_rejection(monkeypatch
             authorization="Bearer invalid-scope-token",
         )
     assert exc_info.value.status_code == 403
+
+
+def _make_sql_audit_payload(
+    job_id: str,
+    *,
+    published_shape: bool = False,
+    rows: list[list] | None = None,
+    columns: list[str] | None = None,
+    mode: str = "READ_ONLY_SQL",
+    connection: str = "readonly_sql_connection:default",
+    extra_entry_fields: dict | None = None,
+) -> dict:
+    entry = {
+        "name": "sensitive_role_permissions",
+        "columns": columns if columns is not None else ["CodigoRol", "PermissionCode", "PermisoActivo"],
+        "rows": rows if rows is not None else [["SUPERADMIN", "RBAC_ADMIN", 1], ["ADMIN", "RBAC_ADMIN", 0]],
+        "row_count_returned": len(rows) if rows is not None else 2,
+        "truncated": False,
+    }
+    if extra_entry_fields:
+        entry.update(extra_entry_fields)
+    sql_block = {
+        "status": "PASS",
+        "mode": mode,
+        "connection": connection,
+        "evidence": [entry],
+    }
+    base = {
+        "schema": "edarsahub.worker-result.v2",
+        "job_id": job_id,
+        "status": "READ_ONLY_COMPLETE",
+        "quality_gate": "PASS",
+        "tests": "PASS",
+        "certification": "CERTIFIED_READ_ONLY",
+        "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+        "work_completion": "COMPLETE",
+        "percent_complete": 100,
+        "completed_at_utc": "2026-11-21T04:00:00Z",
+        "blockers": [],
+        "files_changed": [],
+        "production_touched": False,
+    }
+    if published_shape:
+        base["sql_readonly_evidence"] = {"checks": [sql_block]}
+    else:
+        base["checks"] = [
+            {
+                "type": "sql_readonly_audit",
+                "status": "PASS",
+                "returncode": 0,
+                "sql_evidence": sql_block,
+            }
+        ]
+    return base
+
+
+def _make_semantic_extract_payload(
+    job_id: str,
+    *,
+    published_shape: bool = False,
+) -> dict:
+    sem_payload = {
+        "status": "PASS",
+        "mode": "READ_ONLY_WORKER_RESULT_SEMANTIC_EXTRACT",
+        "bridge_verdict": "SOURCE_SEMANTIC_FIELDS_DERIVED_FAIL_CLOSED",
+        "runtime_gap_confirmed": False,
+        "can_emit_semantic_fields_from_source_result": True,
+        "can_read_worker_results_by_branch_path": True,
+        "can_read_worker_results_by_blob_sha": False,
+        "source_semantic_fields_complete": False,
+        "semantic_fields_complete": True,
+        "missing_semantic_fields": [],
+        "source_missing_semantic_fields": ["gate3_allowed", "real_implementation_percent"],
+        "source_explicit_missing_semantic_fields": ["gate3_allowed", "real_implementation_percent"],
+        "semantic_field_provenance": {
+            "gate3_allowed": {
+                "status": "MISSING_IN_SOURCE",
+                "source_key": None,
+                "derivation": "FAIL_CLOSED_DEFAULT",
+            },
+            "real_implementation_percent": {
+                "status": "MISSING_IN_SOURCE",
+                "source_key": None,
+                "derivation": "FAIL_CLOSED_DEFAULT",
+            },
+        },
+        "semantic_fields": {
+            "gate3_allowed": False,
+            "last_gate_executed": "SRC-GATE-R1",
+            "last_gate_certified": False,
+            "real_implementation_percent": None,
+            "next_allowed_gate": "GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS",
+            "blocking_reason_if_any": "SOURCE_SEMANTIC_FIELDS_MISSING",
+        },
+        "gate3_allowed": False,
+        "source_status": "GIT_TESTS_FAILED",
+        "source_quality_gate": "FAIL",
+        "source_certification": "NOT_CERTIFIED",
+        "source_work_completion": "NOT_CERTIFIED",
+        "source_percent_complete": 80,
+        "source_production_touched": False,
+        "source_result_read_status": "RESULT_READ_OK",
+        "source_result_branch": "worker/results",
+        "source_result_path": "worker_queue/results/SRC-GATE-R1.json",
+        "source_result_size_bytes": 1229,
+        "read_attempts": [{"method": "git_show", "detail": "raw internal log must not be exported"}],
+    }
+    base = {
+        "schema": "edarsahub.worker-result.v2",
+        "job_id": job_id,
+        "status": "READ_ONLY_COMPLETE",
+        "quality_gate": "PASS",
+        "tests": "PASS",
+        "certification": "CERTIFIED_READ_ONLY",
+        "certification_basis": "READ_ONLY_SEMANTIC_EXTRACT_PASS_PLUS_SANITIZED_EVIDENCE",
+        "work_completion": "COMPLETE",
+        "percent_complete": 100,
+        "completed_at_utc": "2026-11-24T04:06:35Z",
+        "blockers": [],
+        "files_changed": [],
+        "production_touched": False,
+    }
+    if published_shape:
+        base["worker_result_semantic_evidence"] = {
+            "checks": [{"status": "PASS", "returncode": 0, "payload": sem_payload}],
+            "bridge_verdict": sem_payload["bridge_verdict"],
+            "gate3_allowed": False,
+        }
+    else:
+        base["checks"] = [
+            {
+                "type": "worker_result_semantic_extract",
+                "status": "PASS",
+                "returncode": 0,
+                "output": json.dumps(sem_payload),
+            }
+        ]
+    return base
+
+
+def test_r2_d2_recovers_sql_and_semantic_evidence_local_and_published_and_mcp(tmp_path, monkeypatch):
+    import sys
+    from modules.worker_ingress import service as ingress_service
+    from tools.mirror_sync import universal_job_result_publisher as pub
+
+    state_root = tmp_path / ".git" / "universal-worker-queue"
+    results = state_root / "results"
+    results.mkdir(parents=True)
+    monkeypatch.setattr(detail, "RESULTS", results)
+    monkeypatch.setattr(ingress_service, "STATE_ROOT", state_root)
+
+    sql_local_id = "SEM-SEC_RBAC-SQL-LOCAL-001"
+    sql_pub_id = "SEM-SEC_RBAC-SQL-PUB-001"
+    sem_local_id = "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-SEM-LOCAL-001"
+    sem_pub_id = "SEM-WORKER_REPAIR_KNOWLEDGE_LOOP-SEM-PUB-001"
+
+    sql_local_raw = json.dumps(_make_sql_audit_payload(sql_local_id, published_shape=False))
+    (results / f"{sql_local_id}.json").write_text(sql_local_raw, encoding="utf-8")
+    (results / f"{sql_pub_id}.json").write_text(
+        json.dumps(_make_sql_audit_payload(sql_pub_id, published_shape=True)), encoding="utf-8"
+    )
+    (results / f"{sem_local_id}.json").write_text(
+        json.dumps(_make_semantic_extract_payload(sem_local_id, published_shape=False)), encoding="utf-8"
+    )
+    (results / f"{sem_pub_id}.json").write_text(
+        json.dumps(_make_semantic_extract_payload(sem_pub_id, published_shape=True)), encoding="utf-8"
+    )
+
+    # Local + Published SQL recovery + NOT_APPLICABLE vs COMPLETE differentiation
+    for jid in (sql_local_id, sql_pub_id):
+        rep = detail.collect(jid)
+        assert rep["evidence_status"] == "COMPLETE"
+        assert rep["evidence_availability"]["sql_readonly_evidence"] == "COMPLETE"
+        assert rep["evidence_availability"]["repository_contract_evidence"] == "NOT_APPLICABLE"
+        assert rep["evidence_availability"]["worker_result_semantic_evidence"] == "NOT_APPLICABLE"
+        assert rep["evidence_availability"]["maintenance_history_evidence"] == "NOT_APPLICABLE"
+        assert rep["sql_readonly_evidence"]["checks"][0]["evidence"][0]["rows"][0] == ["SUPERADMIN", "RBAC_ADMIN", 1]
+
+        st = ingress_service.get_job_status(jid, current_user={"email": "admin@edarsa.mx", "role": "SUPERADMIN"})
+        assert st["evidence_status"] == "COMPLETE"
+        assert st["evidence_availability"]["sql_readonly_evidence"] == "COMPLETE"
+        assert st["evidence_availability"]["repository_contract_evidence"] == "NOT_APPLICABLE"
+        assert st["sql_readonly_evidence"]["checks"][0]["evidence"][0]["name"] == "sensitive_role_permissions"
+
+    # Historical artifact immutability guaranteed
+    assert (results / f"{sql_local_id}.json").read_text(encoding="utf-8") == sql_local_raw
+
+    # Local + Published Semantic recovery preserves provenance, unknown None, and certification
+    for jid in (sem_local_id, sem_pub_id):
+        rep = detail.collect(jid)
+        assert rep["evidence_status"] == "COMPLETE"
+        assert rep["evidence_availability"]["worker_result_semantic_evidence"] == "COMPLETE"
+        assert rep["evidence_availability"]["sql_readonly_evidence"] == "NOT_APPLICABLE"
+        sem = rep["worker_result_semantic_evidence"]
+        assert sem["bridge_verdict"] == "SOURCE_SEMANTIC_FIELDS_DERIVED_FAIL_CLOSED"
+        assert sem["gate3_allowed"] is False
+        assert sem["source_certification"] == "NOT_CERTIFIED"
+        assert sem["semantic_fields"]["real_implementation_percent"] is None
+        assert sem["semantic_field_provenance"]["gate3_allowed"]["status"] == "MISSING_IN_SOURCE"
+        assert "read_attempts" not in json.dumps(sem)
+
+        st = ingress_service.get_job_status(jid, current_user={"email": "admin@edarsa.mx", "role": "SUPERADMIN"})
+        assert st["evidence_status"] == "COMPLETE"
+        assert st["worker_result_semantic_evidence"]["source_certification"] == "NOT_CERTIFIED"
+
+    # Generic non-audit job differentiates NOT_APPLICABLE on get_job_status vs ABSENT when audit check lacks payload
+    gen_id = "SEM-CAVA_SOCIOS-GENERIC-PYTEST-001"
+    (results / f"{gen_id}.json").write_text(
+        json.dumps({
+            "schema": "edarsahub.worker-result.v2",
+            "job_id": gen_id,
+            "status": "READ_ONLY_COMPLETE",
+            "quality_gate": "PASS",
+            "tests": "PASS",
+            "certification": "CERTIFIED_READ_ONLY",
+            "work_completion": "COMPLETE",
+            "percent_complete": 100,
+            "completed_at_utc": "2026-11-25T07:00:00Z",
+            "blockers": [],
+            "files_changed": [],
+            "production_touched": False,
+            "checks": [{"type": "pytest", "status": "PASS"}],
+        }),
+        encoding="utf-8",
+    )
+    st_gen = ingress_service.get_job_status(gen_id)
+    assert st_gen["evidence_status"] == "NOT_APPLICABLE"
+    assert all(v == "NOT_APPLICABLE" for v in st_gen["evidence_availability"].values())
+
+    absent_sql_id = "SEM-SEC_RBAC-SQL-ABSENT-001"
+    (results / f"{absent_sql_id}.json").write_text(
+        json.dumps({
+            "schema": "edarsahub.worker-result.v2",
+            "job_id": absent_sql_id,
+            "status": "READ_ONLY_COMPLETE",
+            "quality_gate": "PASS",
+            "tests": "PASS",
+            "certification": "CERTIFIED_READ_ONLY",
+            "work_completion": "COMPLETE",
+            "percent_complete": 100,
+            "completed_at_utc": "2026-11-25T07:00:00Z",
+            "blockers": [],
+            "files_changed": [],
+            "production_touched": False,
+            "checks": [{"type": "sql_readonly_audit", "status": "PASS"}],
+        }),
+        encoding="utf-8",
+    )
+    st_abs = ingress_service.get_job_status(absent_sql_id)
+    assert st_abs["evidence_status"] == "ABSENT"
+    assert st_abs["evidence_availability"]["sql_readonly_evidence"] == "ABSENT"
+    assert st_abs["evidence_availability"]["repository_contract_evidence"] == "NOT_APPLICABLE"
+
+    # MCP get_job_status_tool exposes sql_readonly_evidence, worker_result_semantic_evidence, evidence_availability
+    for candidate in sorted(Path("/app/.runtime/worker_mcp/venv/lib").glob("python*/site-packages")):
+        if str(candidate) not in sys.path:
+            sys.path.append(str(candidate))
+    from mcp.server.auth.provider import AccessToken
+    from modules.worker_mcp import server as mcp_server
+    from modules.worker_mcp.config import WorkerMcpConfig
+
+    mcp_server.build_mcp_server(
+        WorkerMcpConfig(
+            issuer_url="https://auth.example.test",
+            resource_url="https://mcp.example.test/mcp",
+            backend_url="https://hub.example.test",
+            allowed_hosts=("mcp.example.test",),
+            allowed_origins=("https://chat.example.test",),
+        )
+    )
+    monkeypatch.setattr(
+        mcp_server,
+        "get_access_token",
+        lambda: AccessToken(
+            token="opaque-test-token",
+            client_id="edarsahub-authenticated-user",
+            scopes=["worker:status"],
+            resource="https://mcp.example.test/mcp",
+        ),
+    )
+    monkeypatch.setattr(
+        mcp_server,
+        "backend_get_job_status",
+        lambda *, backend_url, token, job_id: ingress_service.get_job_status(job_id),
+    )
+    mcp_sql = mcp_server.get_job_status_tool(sql_pub_id)
+    assert mcp_sql["evidence_status"] == "COMPLETE"
+    assert mcp_sql["sql_readonly_evidence"]["checks"][0]["evidence"][0]["rows"][0] == ["SUPERADMIN", "RBAC_ADMIN", 1]
+    assert mcp_sql["evidence_availability"]["sql_readonly_evidence"] == "COMPLETE"
+
+    mcp_sem = mcp_server.get_job_status_tool(sem_pub_id)
+    assert mcp_sem["evidence_status"] == "COMPLETE"
+    assert mcp_sem["worker_result_semantic_evidence"]["source_certification"] == "NOT_CERTIFIED"
+    assert mcp_sem["evidence_availability"]["worker_result_semantic_evidence"] == "COMPLETE"
+
+    # Verify sanitize_result_detail_evidence preserves typed SQL & semantic evidence
+    pub_detail = pub.sanitize_result_detail_evidence({
+        "checks": [{
+            "type": "worker_result_detail_read",
+            "status": "PASS",
+            "result_detail_evidence": detail.collect(sql_local_id),
+        }]
+    })
+    assert pub_detail is not None
+    assert pub_detail["checks"][0]["sql_readonly_evidence"] is not None
+    assert pub_detail["checks"][0]["evidence_availability"]["sql_readonly_evidence"] == "COMPLETE"
+
+
+def test_r2_d2_sql_strict_allowlist_rejects_unsafe_values_nested_types_and_truncates_oversized(tmp_path, monkeypatch):
+    from modules.worker_ingress import service as ingress_service
+
+    state_root = tmp_path / ".git" / "universal-worker-queue"
+    results = state_root / "results"
+    results.mkdir(parents=True)
+    monkeypatch.setattr(detail, "RESULTS", results)
+    monkeypatch.setattr(ingress_service, "STATE_ROOT", state_root)
+
+    # 1. Secret embedded in innocent column name -> REJECTED fail-closed (not reliant on column name!)
+    leak_id = "SEM-SEC_RBAC-SQL-LEAK-001"
+    (results / f"{leak_id}.json").write_text(
+        json.dumps(_make_sql_audit_payload(
+            leak_id,
+            columns=["nota_publica"],
+            rows=[["token=SUPER_LEAKED_VALUE_999"]],
+        )),
+        encoding="utf-8",
+    )
+    st_leak = ingress_service.get_job_status(leak_id)
+    assert st_leak["evidence_status"] == "REJECTED_UNSAFE_OR_OVERSIZED"
+    assert st_leak["evidence_availability"]["sql_readonly_evidence"] == "REJECTED_UNSAFE_OR_OVERSIZED"
+    assert "sql_readonly_evidence" not in st_leak
+    assert "SUPER_LEAKED_VALUE_999" not in json.dumps(st_leak)
+
+    # 2. Nested dict/list cell or unknown extra key or unsafe connection string -> REJECTED
+    for suffix, kw in (
+        ("NESTED", {"columns": ["col"], "rows": [[{"nested": "bad"}]]}),
+        ("EXTRAKEY", {"extra_entry_fields": {"raw_sql": "SELECT 1"}}),
+        ("BADCONN", {"connection": "mssql://sa:Pass123@10.0.0.1/db"}),
+        ("BADMODE", {"mode": "READ_WRITE_SQL"}),
+    ):
+        jid = f"SEM-SEC_RBAC-SQL-{suffix}-001"
+        (results / f"{jid}.json").write_text(json.dumps(_make_sql_audit_payload(jid, **kw)), encoding="utf-8")
+        st = ingress_service.get_job_status(jid)
+        assert st["evidence_status"] == "REJECTED_UNSAFE_OR_OVERSIZED", suffix
+        assert "sql_readonly_evidence" not in st
+
+    # 3. Large safe SQL rows (> 64KB) -> truncated cleanly with TRUNCATED status
+    big_id = "SEM-SEC_RBAC-SQL-TRUNC-001"
+    big_rows = [[f"ROLE_{i}", "PERM_" + ("X" * 180), i] for i in range(450)]
+    (results / f"{big_id}.json").write_text(
+        json.dumps(_make_sql_audit_payload(big_id, rows=big_rows)),
+        encoding="utf-8",
+    )
+    st_big = ingress_service.get_job_status(big_id)
+    assert st_big["evidence_status"] == "TRUNCATED"
+    assert st_big["evidence_truncated"] is True
+    assert st_big["sql_readonly_evidence"]["checks"][0]["evidence"][0]["truncated"] is True
+    assert 0 < len(st_big["sql_readonly_evidence"]["checks"][0]["evidence"][0]["rows"]) < 450
+
+
+def test_r2_d2_rbac_and_domain_access_enforcement(tmp_path, monkeypatch):
+    from modules.worker_ingress import service as ingress_service
+
+    state_root = tmp_path / ".git" / "universal-worker-queue"
+    results = state_root / "results"
+    results.mkdir(parents=True)
+    monkeypatch.setattr(ingress_service, "STATE_ROOT", state_root)
+
+    sql_id = "SEM-SEC_RBAC-SQL-RBAC-001"
+    (results / f"{sql_id}.json").write_text(
+        json.dumps(_make_sql_audit_payload(sql_id)), encoding="utf-8"
+    )
+
+    # Unprivileged operator without worker:status -> forbidden
+    with pytest.raises(ingress_service.WorkerIngressError, match="RBAC_STATUS_READ_FORBIDDEN"):
+        ingress_service.get_job_status(sql_id, current_user={"email": "op@edarsa.mx", "role": "Operador"})
+
+    # Non-admin with worker:status still denied restricted SEC_RBAC / SQL domain
+    with pytest.raises(ingress_service.WorkerIngressError, match="RBAC_DOMAIN_ACCESS_FORBIDDEN"):
+        ingress_service.get_job_status(
+            sql_id,
+            current_user={"email": "viewer@edarsa.mx", "role": "Analista", "permissions": ["worker:status"]},
+        )
+
+    # Admin with domain restriction excluding SEC_RBAC -> denied
+    with pytest.raises(ingress_service.WorkerIngressError, match="RBAC_DOMAIN_ACCESS_FORBIDDEN"):
+        ingress_service.get_job_status(
+            sql_id,
+            current_user={"email": "admin@edarsa.mx", "role": "SUPERADMIN", "allowed_domains": ["CAVA_SOCIOS"]},
+        )
+
+    # Authorized SUPERADMIN -> succeeds
+    ok = ingress_service.get_job_status(
+        sql_id,
+        current_user={"email": "admin@edarsa.mx", "role": "SUPERADMIN"},
+    )
+    assert ok["evidence_status"] == "COMPLETE"

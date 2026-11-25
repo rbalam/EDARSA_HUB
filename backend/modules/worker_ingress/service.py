@@ -70,6 +70,10 @@ _SAFE_RESULT_KEYS = {
     "summary_es",
     "result_detail_evidence",
     "repository_contract_evidence",
+    "sql_readonly_evidence",
+    "worker_result_semantic_evidence",
+    "maintenance_history_evidence",
+    "evidence_availability",
     "evidence_status",
     "evidence_truncated",
     "operational_validation",
@@ -767,11 +771,105 @@ def _read_json_if_object(path: Path) -> dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
+_RESTRICTED_EVIDENCE_DOMAINS = frozenset({"SEC_RBAC"})
+_STATUS_READ_PERMS = frozenset({"rbac_admin", "worker:status", "worker.status", "worker:read", "*"})
+
+
+def _extract_user_roles_and_perms(current_user: Mapping[str, Any]) -> tuple[set[str], set[str]]:
+    role = _clean(
+        current_user.get("role")
+        or current_user.get("rol")
+        or current_user.get("sec_perfil")
+    ).lower()
+    raw_roles = current_user.get("roles") or current_user.get("sec_roles") or ()
+    roles = {role} if role else set()
+    if isinstance(raw_roles, (list, tuple, set, frozenset)):
+        roles.update(_clean(r).lower() for r in raw_roles if _clean(r))
+    raw_perms = current_user.get("permissions") or current_user.get("permisos") or ()
+    perms = (
+        {_clean(p).lower() for p in raw_perms if _clean(p)}
+        if isinstance(raw_perms, (list, tuple, set, frozenset))
+        else set()
+    )
+    return roles, perms
+
+
+def _infer_canonical_job_domain(
+    job_id: str,
+    payload: Mapping[str, Any] | None = None,
+) -> str | None:
+    req_index = _load_canonical_request_index(STATE_ROOT)
+    req_entry = req_index.get(job_id)
+    if isinstance(req_entry, Mapping):
+        req_bc = _clean(req_entry.get("bounded_context")).upper()
+        if req_bc:
+            return req_bc
+    payload_bc = _extract_bounded_context(payload)
+    if payload_bc:
+        return payload_bc
+    upper = _clean(job_id).upper()
+    if upper.startswith("SEM-"):
+        rest = upper[4:]
+        if not rest.startswith("REQUEST-"):
+            head = rest.split("-", 1)[0].strip()
+            if head:
+                return head
+    return None
+
+
+def assert_status_read_access(
+    job_id: str,
+    *,
+    current_user: Mapping[str, Any],
+    payload: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Fail-closed RBAC and domain access verification for reading job status/evidence."""
+    if not isinstance(current_user, Mapping):
+        raise WorkerIngressError("RBAC_STATUS_READ_FORBIDDEN")
+    actor_id = _clean(
+        current_user.get("email")
+        or current_user.get("id")
+        or current_user.get("user_id")
+    )
+    if not actor_id:
+        raise WorkerIngressError("RBAC_STATUS_READ_FORBIDDEN")
+    roles, perms = _extract_user_roles_and_perms(current_user)
+    is_admin = bool(roles & _ADMIN_MUTATION_ROLES) or bool(perms & {"rbac_admin", "*"})
+    if not is_admin and not (perms & _STATUS_READ_PERMS):
+        raise WorkerIngressError("RBAC_STATUS_READ_FORBIDDEN")
+
+    domain = _infer_canonical_job_domain(job_id, payload)
+    raw_allowed = (
+        current_user.get("allowed_domains")
+        or current_user.get("domains")
+        or current_user.get("bounded_contexts")
+    )
+    if isinstance(raw_allowed, (list, tuple, set, frozenset)):
+        allowed_set = {_clean(d).upper() for d in raw_allowed if _clean(d)}
+        if "*" not in allowed_set:
+            if not domain or domain not in allowed_set:
+                raise WorkerIngressError("RBAC_DOMAIN_ACCESS_FORBIDDEN")
+
+    has_sql = isinstance(payload, Mapping) and (
+        payload.get("sql_readonly_evidence") is not None
+        or any(
+            isinstance(c, Mapping) and c.get("type") == "sql_readonly_audit"
+            for c in (payload.get("checks") or [])
+        )
+    )
+    if (domain in _RESTRICTED_EVIDENCE_DOMAINS or has_sql) and not is_admin:
+        raise WorkerIngressError("RBAC_DOMAIN_ACCESS_FORBIDDEN")
+
+    return {"authorized": True, "domain": domain, "is_admin": is_admin}
+
+
 def _safe_terminal_fields(payload: Mapping[str, Any]) -> dict[str, Any]:
     from tools.mirror_sync.universal_job_result_publisher import (
         sanitize_maintenance_history_evidence,
+        sanitize_readonly_evidence,
         sanitize_repository_evidence,
         sanitize_result_detail_evidence,
+        sanitize_semantic_evidence,
     )
     from tools.mirror_sync.worker_result_semantic_extract import (
         sanitize_repository_contract_payload,
@@ -782,53 +880,196 @@ def _safe_terminal_fields(payload: Mapping[str, Any]) -> dict[str, Any]:
         for key in _SAFE_RESULT_KEYS
         if key in payload
     }
-    payload_dict = dict(payload)
+    # Never expose raw un-revalidated typed evidence directly from payload copy.
+    for typed_key in (
+        "sql_readonly_evidence",
+        "worker_result_semantic_evidence",
+        "maintenance_history_evidence",
+        "repository_contract_evidence",
+        "result_detail_evidence",
+        "evidence_availability",
+    ):
+        fields.pop(typed_key, None)
 
-    # Reuse the canonical publisher sanitizer for local and published results.
+    payload_dict = dict(payload)
+    checks_list = payload_dict.get("checks") if isinstance(payload_dict.get("checks"), list) else []
+    check_types = {
+        str(c.get("type") or "").strip()
+        for c in checks_list
+        if isinstance(c, Mapping)
+    }
+    basis = _clean(payload_dict.get("certification_basis")).upper()
+
+    # 1. Maintenance history evidence (local checks[] or published payload)
+    maint_applicable = (
+        "worker_maintenance_history_readonly" in check_types
+        or "maintenance_history_evidence" in payload_dict
+        or "MAINTENANCE_HISTORY" in basis
+    )
+    maint_raw_seen = (
+        payload_dict.get("maintenance_history_evidence") is not None
+        or any(
+            isinstance(c, Mapping)
+            and c.get("type") == "worker_maintenance_history_readonly"
+            and (c.get("maintenance_history_evidence") is not None or bool(_clean(c.get("output"))))
+            for c in checks_list
+        )
+    )
     maintenance = sanitize_maintenance_history_evidence(payload_dict)
     if maintenance is None:
-        published = payload.get("maintenance_history_evidence")
-        if isinstance(published, Mapping):
-            checks = published.get("checks")
-            if isinstance(checks, list) and len(checks) == 1:
+        published_maint = payload_dict.get("maintenance_history_evidence")
+        if isinstance(published_maint, Mapping):
+            m_checks = published_maint.get("checks")
+            if isinstance(m_checks, list) and m_checks:
                 maintenance = sanitize_maintenance_history_evidence({
-                    "checks": [{
-                        "type": "worker_maintenance_history_readonly",
-                        "maintenance_history_evidence": checks[0],
-                    }],
+                    "checks": [
+                        {
+                            "type": "worker_maintenance_history_readonly",
+                            "maintenance_history_evidence": item,
+                        }
+                        for item in m_checks
+                        if isinstance(item, Mapping)
+                    ],
                 })
     if maintenance is not None:
         fields["maintenance_history_evidence"] = maintenance
-        fields.setdefault("evidence_status", "COMPLETE")
-        fields.setdefault("evidence_truncated", False)
 
-    if fields.get("result_detail_evidence") is None:
-        extracted = sanitize_result_detail_evidence(payload_dict)
-        if extracted is not None:
-            fields["result_detail_evidence"] = extracted
+    # 2. Result detail evidence (re-sanitized for both local and published shapes)
+    extracted_detail = sanitize_result_detail_evidence(payload_dict)
+    if extracted_detail is None and isinstance(payload_dict.get("result_detail_evidence"), Mapping):
+        pub_detail_checks = payload_dict["result_detail_evidence"].get("checks")
+        if isinstance(pub_detail_checks, list) and pub_detail_checks:
+            extracted_detail = sanitize_result_detail_evidence({
+                "checks": [
+                    {
+                        "type": "worker_result_detail_read",
+                        "status": "PASS",
+                        "result_detail_evidence": {"status": "PASS", **item},
+                    }
+                    for item in pub_detail_checks
+                    if isinstance(item, Mapping)
+                ]
+            })
+    if extracted_detail is not None:
+        fields["result_detail_evidence"] = extracted_detail
 
-    if fields.get("repository_contract_evidence") is not None:
-        validated_repo = sanitize_repository_contract_payload(
-            fields["repository_contract_evidence"]
+    # 3. Repository contract evidence
+    repo_applicable = (
+        "repository_contract_audit" in check_types
+        or "repository_contract_evidence" in payload_dict
+        or "REPOSITORY" in basis
+    )
+    repo_raw_seen = (
+        payload_dict.get("repository_contract_evidence") is not None
+        or any(
+            isinstance(c, Mapping)
+            and c.get("type") == "repository_contract_audit"
+            and c.get("repository_evidence") is not None
+            for c in checks_list
         )
-        if validated_repo is not None:
-            fields["repository_contract_evidence"] = validated_repo
-        else:
-            fields.pop("repository_contract_evidence", None)
-            fields["evidence_status"] = "REJECTED_UNSAFE_OR_OVERSIZED"
+    )
+    repo_ev: dict[str, Any] | None = None
+    if payload_dict.get("repository_contract_evidence") is not None:
+        repo_ev = sanitize_repository_contract_payload(payload_dict["repository_contract_evidence"])
     else:
-        extracted_repo = sanitize_repository_evidence(payload_dict)
-        if extracted_repo is not None:
-            fields["repository_contract_evidence"] = extracted_repo
-
-    repo_ev = fields.get("repository_contract_evidence")
-    if isinstance(repo_ev, dict):
-        is_trunc = any(
+        repo_ev = sanitize_repository_evidence(payload_dict)
+    if repo_ev is not None:
+        fields["repository_contract_evidence"] = repo_ev
+    repo_truncated = bool(
+        isinstance(repo_ev, dict)
+        and any(
             isinstance(item, dict) and item.get("truncated") is True
             for item in (repo_ev.get("checks") or [])
         )
-        fields.setdefault("evidence_truncated", is_trunc)
-        fields.setdefault("evidence_status", "TRUNCATED" if is_trunc else "COMPLETE")
+    )
+
+    # 4. SQL readonly evidence (local checks[] or published sql_readonly_evidence)
+    sql_applicable = (
+        "sql_readonly_audit" in check_types
+        or "sql_readonly_evidence" in payload_dict
+        or "READ_ONLY_SQL" in basis
+    )
+    sql_raw_seen = (
+        payload_dict.get("sql_readonly_evidence") is not None
+        or any(
+            isinstance(c, Mapping)
+            and c.get("type") == "sql_readonly_audit"
+            and (c.get("sql_evidence") is not None or bool(_clean(c.get("output"))))
+            for c in checks_list
+        )
+    )
+    sql_ev = sanitize_readonly_evidence(payload_dict) if sql_applicable else None
+    if sql_ev is not None:
+        fields["sql_readonly_evidence"] = sql_ev
+    sql_truncated = bool(
+        isinstance(sql_ev, dict)
+        and any(
+            isinstance(entry, dict) and entry.get("truncated") is True
+            for chk in (sql_ev.get("checks") or [])
+            if isinstance(chk, dict)
+            for entry in (chk.get("evidence") or [])
+        )
+    )
+
+    # 5. Semantic extract evidence (local checks[] or published worker_result_semantic_evidence)
+    sem_applicable = (
+        "worker_result_semantic_extract" in check_types
+        or "worker_result_semantic_evidence" in payload_dict
+        or "SEMANTIC_EXTRACT" in basis
+    )
+    sem_raw_seen = (
+        payload_dict.get("worker_result_semantic_evidence") is not None
+        or any(
+            isinstance(c, Mapping)
+            and c.get("type") == "worker_result_semantic_extract"
+            and (c.get("semantic_evidence") is not None or bool(_clean(c.get("output"))))
+            for c in checks_list
+        )
+    )
+    sem_ev = sanitize_semantic_evidence(payload_dict) if sem_applicable else None
+    if sem_ev is not None:
+        fields["worker_result_semantic_evidence"] = sem_ev
+
+    def _ev_channel(ev: dict[str, Any] | None, *, applicable: bool, raw_seen: bool, truncated: bool = False) -> str:
+        if ev is not None:
+            return "TRUNCATED" if truncated else "COMPLETE"
+        if raw_seen:
+            return "REJECTED_UNSAFE_OR_OVERSIZED"
+        if applicable:
+            return "ABSENT"
+        return "NOT_APPLICABLE"
+
+    availability = {
+        "repository_contract_evidence": _ev_channel(
+            repo_ev, applicable=repo_applicable, raw_seen=repo_raw_seen, truncated=repo_truncated
+        ),
+        "sql_readonly_evidence": _ev_channel(
+            sql_ev, applicable=sql_applicable, raw_seen=sql_raw_seen, truncated=sql_truncated
+        ),
+        "worker_result_semantic_evidence": _ev_channel(
+            sem_ev, applicable=sem_applicable, raw_seen=sem_raw_seen, truncated=False
+        ),
+        "maintenance_history_evidence": _ev_channel(
+            maintenance, applicable=maint_applicable, raw_seen=maint_raw_seen, truncated=False
+        ),
+    }
+    fields["evidence_availability"] = availability
+
+    any_recovered = any(x is not None for x in (repo_ev, sql_ev, sem_ev, maintenance))
+    any_rejected = any(v == "REJECTED_UNSAFE_OR_OVERSIZED" for v in availability.values())
+    any_absent = any(v == "ABSENT" for v in availability.values())
+    any_truncated = bool(repo_truncated or sql_truncated)
+
+    if any_rejected and not any_recovered:
+        fields["evidence_status"] = "REJECTED_UNSAFE_OR_OVERSIZED"
+        fields["evidence_truncated"] = False
+    elif any_recovered:
+        fields["evidence_truncated"] = any_truncated
+        fields["evidence_status"] = (
+            "REJECTED_UNSAFE_OR_OVERSIZED"
+            if any_rejected
+            else ("TRUNCATED" if any_truncated else "COMPLETE")
+        )
     elif isinstance(fields.get("result_detail_evidence"), dict):
         detail_checks = fields["result_detail_evidence"].get("checks") or []
         if detail_checks and isinstance(detail_checks[0], dict):
@@ -837,6 +1078,13 @@ def _safe_terminal_fields(payload: Mapping[str, Any]) -> dict[str, Any]:
                 fields.setdefault("evidence_status", first["evidence_status"])
             if "evidence_truncated" in first:
                 fields.setdefault("evidence_truncated", first["evidence_truncated"])
+            if isinstance(first.get("evidence_availability"), dict):
+                fields["evidence_availability"] = dict(first["evidence_availability"])
+        fields.setdefault("evidence_status", "ABSENT" if any_absent else "NOT_APPLICABLE")
+        fields.setdefault("evidence_truncated", False)
+    else:
+        fields["evidence_status"] = "ABSENT" if any_absent else "NOT_APPLICABLE"
+        fields["evidence_truncated"] = False
 
     return fields
 
@@ -898,10 +1146,16 @@ def _read_remote_worker_result(job_id: str) -> dict[str, Any] | None:
     return response
 
 
-def get_job_status(job_id: str) -> dict[str, Any]:
+def get_job_status(
+    job_id: str,
+    *,
+    current_user: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     value = _clean(job_id)
     if not JOB_ID_RE.fullmatch(value):
         raise WorkerIngressError("JOB_ID_INVALID")
+    if current_user is not None:
+        assert_status_read_access(value, current_user=current_user)
 
     preview_path = STATE_ROOT / "preview_validations" / f"{value}.json"
     preview_evidence = (
@@ -923,6 +1177,12 @@ def get_job_status(job_id: str) -> dict[str, Any]:
         if result_read.terminal_result_valid and isinstance(
             result_read.payload, dict
         ):
+            if current_user is not None:
+                assert_status_read_access(
+                    value,
+                    current_user=current_user,
+                    payload=result_read.payload,
+                )
             status.update(_safe_terminal_fields(result_read.payload))
             if not status.get("commit_sha"):
                 commit_sha = (

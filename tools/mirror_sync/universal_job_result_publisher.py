@@ -17,6 +17,7 @@ except ModuleNotFoundError:
 
 import fcntl
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -268,10 +269,157 @@ def _sensitive_column(name: Any) -> bool:
     return any(token in normalized for token in SENSITIVE_COLUMN_TOKENS)
 
 
+_SQL_CHECK_ALLOWED_KEYS = frozenset({"status", "mode", "connection", "evidence"})
+_SQL_ENTRY_ALLOWED_KEYS = frozenset({"name", "columns", "rows", "row_count_returned", "truncated"})
+_SQL_MAX_CHECKS = 20
+_SQL_MAX_ENTRIES = 50
+_SQL_MAX_COLUMNS = 64
+_SQL_MAX_ROWS_PER_ENTRY = 500
+_SQL_MAX_CELL_LENGTH = 512
+_SQL_MAX_LABEL_LENGTH = 128
+
+
+def _sanitize_sql_connection(value: Any) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str) or "\x00" in value:
+        return None
+    cleaned = value.strip()
+    if not cleaned or len(cleaned) > _SQL_MAX_LABEL_LENGTH:
+        return None
+    lowered = cleaned.lower()
+    if (
+        "://" in cleaned
+        or "=" in cleaned
+        or ";" in cleaned
+        or has_sensitive_marker(cleaned)
+        or any(tok in lowered for tok in SENSITIVE_COLUMN_TOKENS)
+    ):
+        return None
+    return cleaned
+
+
+def _sanitize_sql_cell(value: Any, *, sensitive_col: bool) -> tuple[Any, bool]:
+    if sensitive_col:
+        return "[REDACTED]", True
+    if value is None or isinstance(value, bool):
+        return value, True
+    if isinstance(value, int):
+        if abs(value) > 10**18:
+            return None, False
+        return value, True
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            return None, False
+        return value, True
+    if isinstance(value, str):
+        if "\x00" in value or len(value) > _SQL_MAX_CELL_LENGTH:
+            return None, False
+        if has_sensitive_marker(value):
+            return None, False
+        return value, True
+    return None, False
+
+
+def _sanitize_sql_payload_item(payload: Any) -> dict[str, Any] | None:
+    if not isinstance(payload, dict):
+        return None
+    if not set(payload.keys()).issubset(_SQL_CHECK_ALLOWED_KEYS):
+        return None
+    if payload.get("status") != "PASS":
+        return None
+    if payload.get("mode") != "READ_ONLY_SQL":
+        return None
+    raw_conn = payload.get("connection")
+    clean_conn = _sanitize_sql_connection(raw_conn)
+    if raw_conn is not None and clean_conn is None:
+        return None
+    raw_evidence = payload.get("evidence")
+    if not isinstance(raw_evidence, list) or not raw_evidence or len(raw_evidence) > _SQL_MAX_ENTRIES:
+        return None
+
+    entries: list[dict[str, Any]] = []
+    for entry in raw_evidence:
+        if not isinstance(entry, dict) or not set(entry.keys()).issubset(_SQL_ENTRY_ALLOWED_KEYS):
+            return None
+        raw_name = entry.get("name")
+        if (
+            not isinstance(raw_name, str)
+            or not FIELD_NAME_RE.fullmatch(raw_name.strip())
+            or len(raw_name.strip()) > _SQL_MAX_LABEL_LENGTH
+            or is_sensitive_key(raw_name)
+            or has_sensitive_marker(raw_name)
+        ):
+            return None
+        clean_name = raw_name.strip()
+
+        raw_cols = entry.get("columns")
+        if not isinstance(raw_cols, list) or len(raw_cols) > _SQL_MAX_COLUMNS:
+            return None
+        columns: list[str] = []
+        for col in raw_cols:
+            if not isinstance(col, str) or "\x00" in col:
+                return None
+            c_clean = col.strip()
+            if not c_clean or len(c_clean) > _SQL_MAX_LABEL_LENGTH or has_sensitive_marker(c_clean):
+                return None
+            columns.append(c_clean)
+
+        raw_rows = entry.get("rows")
+        if not isinstance(raw_rows, list):
+            return None
+        entry_truncated = entry.get("truncated", False)
+        if not isinstance(entry_truncated, bool):
+            return None
+        max_row_width = len(columns) if columns else _SQL_MAX_COLUMNS
+        rows: list[list[Any]] = []
+        source_rows = raw_rows
+        if len(source_rows) > _SQL_MAX_ROWS_PER_ENTRY:
+            source_rows = source_rows[:_SQL_MAX_ROWS_PER_ENTRY]
+            entry_truncated = True
+        for row in source_rows:
+            if not isinstance(row, list) or len(row) > max_row_width:
+                return None
+            clean_row: list[Any] = []
+            for index, cell in enumerate(row):
+                col_sensitive = index < len(columns) and (
+                    _sensitive_column(columns[index]) or is_sensitive_key(columns[index])
+                )
+                clean_cell, cell_ok = _sanitize_sql_cell(cell, sensitive_col=col_sensitive)
+                if not cell_ok:
+                    return None
+                clean_row.append(clean_cell)
+            rows.append(clean_row)
+
+        raw_count = entry.get("row_count_returned")
+        if raw_count is None:
+            row_count = len(rows)
+        elif isinstance(raw_count, bool) or not isinstance(raw_count, int) or raw_count < 0 or raw_count > 1_000_000:
+            return None
+        else:
+            row_count = len(rows) if entry_truncated and raw_count > len(rows) else raw_count
+
+        entries.append({
+            "name": clean_name,
+            "columns": columns,
+            "rows": rows,
+            "row_count_returned": row_count,
+            "truncated": entry_truncated,
+        })
+
+    return {
+        "status": "PASS",
+        "mode": "READ_ONLY_SQL",
+        "connection": clean_conn,
+        "evidence": entries,
+    }
+
+
 def sanitize_readonly_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
-    checks = result.get("checks") or []
-    sanitized_checks = []
-    for check in checks:
+    if not isinstance(result, dict):
+        return None
+    raw_candidates: list[dict[str, Any]] = []
+    for check in (result.get("checks") or [])[:_SQL_MAX_CHECKS]:
         if not isinstance(check, dict) or check.get("type") != "sql_readonly_audit":
             continue
         payload = check.get("sql_evidence")
@@ -284,35 +432,55 @@ def sanitize_readonly_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
                     candidate = None
                 if isinstance(candidate, dict):
                     payload = candidate
-        if not isinstance(payload, dict) or payload.get("status") != "PASS":
-            continue
-        entries = []
-        for entry in payload.get("evidence") or []:
-            if not isinstance(entry, dict):
-                continue
-            columns = [str(value) for value in (entry.get("columns") or [])]
-            rows = []
-            for row in entry.get("rows") or []:
-                if not isinstance(row, list):
+        if not isinstance(payload, dict):
+            return None
+        raw_candidates.append(payload)
+
+    if not raw_candidates:
+        published = result.get("sql_readonly_evidence")
+        if isinstance(published, dict):
+            pub_checks = published.get("checks")
+            if not isinstance(pub_checks, list) or not pub_checks or len(pub_checks) > _SQL_MAX_CHECKS:
+                return None
+            for item in pub_checks:
+                if not isinstance(item, dict):
+                    return None
+                raw_candidates.append(item)
+        elif published is not None:
+            return None
+
+    if not raw_candidates:
+        return None
+
+    sanitized_checks: list[dict[str, Any]] = []
+    for candidate in raw_candidates:
+        clean_item = _sanitize_sql_payload_item(candidate)
+        if clean_item is None:
+            return None
+        sanitized_checks.append(clean_item)
+
+    output = {"checks": sanitized_checks}
+    encoded = json.dumps(output, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    if len(encoded) > MAX_SERIALIZED_BYTES:
+        for chk in reversed(sanitized_checks):
+            for entry in reversed(chk.get("evidence") or []):
+                rows = entry.get("rows")
+                if not isinstance(rows, list):
                     continue
-                rows.append([
-                    "[REDACTED]" if index < len(columns) and _sensitive_column(columns[index]) else value
-                    for index, value in enumerate(row)
-                ])
-            entries.append({
-                "name": entry.get("name"),
-                "columns": columns,
-                "rows": rows,
-                "row_count_returned": entry.get("row_count_returned"),
-                "truncated": entry.get("truncated"),
-            })
-        sanitized_checks.append({
-            "status": "PASS",
-            "mode": payload.get("mode"),
-            "connection": payload.get("connection"),
-            "evidence": entries,
-        })
-    return {"checks": sanitized_checks} if sanitized_checks else None
+                while rows and len(encoded) > MAX_SERIALIZED_BYTES:
+                    rows.pop()
+                    entry["truncated"] = True
+                    entry["row_count_returned"] = len(rows)
+                    encoded = json.dumps(output, ensure_ascii=False, sort_keys=True).encode("utf-8")
+                if len(encoded) <= MAX_SERIALIZED_BYTES:
+                    break
+            if len(encoded) <= MAX_SERIALIZED_BYTES:
+                break
+        if len(encoded) > MAX_SERIALIZED_BYTES:
+            return None
+    if has_sensitive_marker(encoded.decode("utf-8")):
+        return None
+    return output
 
 
 def sanitize_repository_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
@@ -478,6 +646,7 @@ def sanitize_semantic_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
     promoted: dict[str, Any] = {}
     any_check_failed = False
 
+    raw_sem_checks: list[tuple[Any, Any, dict[str, Any] | None]] = []
     for check in result.get("checks") or []:
         if not isinstance(check, dict) or check.get("type") != "worker_result_semantic_extract":
             continue
@@ -491,6 +660,27 @@ def sanitize_semantic_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
                     candidate = None
                 if isinstance(candidate, dict):
                     payload = candidate
+        raw_sem_checks.append((check.get("status"), check.get("returncode"), payload if isinstance(payload, dict) else None))
+
+    if not raw_sem_checks:
+        published_sem = result.get("worker_result_semantic_evidence")
+        if isinstance(published_sem, dict):
+            pub_checks = published_sem.get("checks")
+            if isinstance(pub_checks, list) and 0 < len(pub_checks) <= MAX_CONTAINER_ITEMS:
+                for item in pub_checks:
+                    if not isinstance(item, dict):
+                        return None
+                    nested = item.get("payload") if isinstance(item.get("payload"), dict) else None
+                    if nested is None:
+                        return None
+                    raw_sem_checks.append((item.get("status", "PASS"), item.get("returncode", 0), nested))
+            elif pub_checks is not None:
+                return None
+        elif published_sem is not None:
+            return None
+
+    for check_status, check_rc, payload in raw_sem_checks:
+        check = {"status": check_status, "returncode": check_rc}
         if not isinstance(payload, dict):
             any_check_failed = True
             continue
@@ -658,7 +848,25 @@ def sanitize_semantic_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
                 merged_sem_fields["next_allowed_gate"] = "GATE3_HOLD_SEMANTIC_FIELDS_COMPLETE_NOT_ALLOWED"
         promoted["semantic_fields"] = merged_sem_fields
 
-    return {"checks": checks, **promoted}
+    for chk in checks:
+        pl = chk.get("payload")
+        if not isinstance(pl, dict):
+            return None
+        sp = pl.get("source_percent_complete")
+        if sp is not None and (isinstance(sp, bool) or not isinstance(sp, (int, float)) or not math.isfinite(float(sp)) or float(sp) < 0 or float(sp) > 100):
+            return None
+        spt = pl.get("source_production_touched")
+        if spt is not None and not isinstance(spt, bool):
+            return None
+        ssz = pl.get("source_result_size_bytes")
+        if ssz is not None and (isinstance(ssz, bool) or not isinstance(ssz, int) or ssz < 0):
+            return None
+
+    final_sem = {"checks": checks, **promoted}
+    encoded_sem = json.dumps(final_sem, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    if len(encoded_sem) > MAX_SERIALIZED_BYTES or has_sensitive_marker(encoded_sem.decode("utf-8")):
+        return None
+    return final_sem
 
 
 
@@ -894,6 +1102,7 @@ def sanitize_result_detail_evidence(
                 "PARTIAL_WITH_FAILURES",
                 "FAILED_RESULT_NO_STRUCTURED_EVIDENCE",
                 "ABSENT",
+                "NOT_APPLICABLE",
                 "REJECTED_UNSAFE_OR_OVERSIZED",
                 "NON_TERMINAL_SOURCE",
             }
@@ -905,6 +1114,21 @@ def sanitize_result_detail_evidence(
         if isinstance(payload.get("evidence_truncated"), bool):
             safe_item["evidence_truncated"] = payload["evidence_truncated"]
 
+        raw_ev_avail = payload.get("evidence_availability")
+        if isinstance(raw_ev_avail, dict):
+            clean_avail: dict[str, str] = {}
+            for ev_key in (
+                "repository_contract_evidence",
+                "sql_readonly_evidence",
+                "worker_result_semantic_evidence",
+                "maintenance_history_evidence",
+            ):
+                ev_state = str(raw_ev_avail.get(ev_key) or "").strip().upper()
+                if ev_state in allowed_evidence_statuses:
+                    clean_avail[ev_key] = ev_state
+            if clean_avail:
+                safe_item["evidence_availability"] = clean_avail
+
         raw_ev_summary = payload.get("evidence_summary")
         if isinstance(raw_ev_summary, dict):
             clean_summary: dict[str, int] = {}
@@ -914,6 +1138,12 @@ def sanitize_result_detail_evidence(
                 "matched_files",
                 "skipped_sensitive",
                 "entries_returned",
+                "sql_check_count",
+                "sql_query_count",
+                "sql_rows_returned",
+                "semantic_check_count",
+                "semantic_fields_count",
+                "maintenance_check_count",
             ):
                 val = raw_ev_summary.get(key)
                 if isinstance(val, int) and not isinstance(val, bool) and val >= 0:
@@ -952,6 +1182,63 @@ def sanitize_result_detail_evidence(
                     safe_item["evidence_status"] = "REJECTED_UNSAFE_OR_OVERSIZED"
             else:
                 safe_item["evidence_status"] = "REJECTED_UNSAFE_OR_OVERSIZED"
+
+        raw_sql_ev = payload.get("sql_readonly_evidence")
+        if raw_sql_ev is not None:
+            sanitized_sql = sanitize_readonly_evidence({"sql_readonly_evidence": raw_sql_ev})
+            if sanitized_sql is not None:
+                safe_item["sql_readonly_evidence"] = sanitized_sql
+                if len(json.dumps(safe_item, ensure_ascii=False, sort_keys=True).encode("utf-8")) > MAX_SERIALIZED_BYTES:
+                    safe_item.pop("sql_readonly_evidence", None)
+                    safe_item["evidence_status"] = "REJECTED_UNSAFE_OR_OVERSIZED"
+                    if isinstance(safe_item.get("evidence_availability"), dict):
+                        safe_item["evidence_availability"]["sql_readonly_evidence"] = "REJECTED_UNSAFE_OR_OVERSIZED"
+            else:
+                safe_item["evidence_status"] = "REJECTED_UNSAFE_OR_OVERSIZED"
+                if isinstance(safe_item.get("evidence_availability"), dict):
+                    safe_item["evidence_availability"]["sql_readonly_evidence"] = "REJECTED_UNSAFE_OR_OVERSIZED"
+
+        raw_sem_ev = payload.get("worker_result_semantic_evidence")
+        if raw_sem_ev is not None:
+            sanitized_sem = sanitize_semantic_evidence({"worker_result_semantic_evidence": raw_sem_ev})
+            if sanitized_sem is not None:
+                safe_item["worker_result_semantic_evidence"] = sanitized_sem
+                if len(json.dumps(safe_item, ensure_ascii=False, sort_keys=True).encode("utf-8")) > MAX_SERIALIZED_BYTES:
+                    safe_item.pop("worker_result_semantic_evidence", None)
+                    safe_item["evidence_status"] = "REJECTED_UNSAFE_OR_OVERSIZED"
+                    if isinstance(safe_item.get("evidence_availability"), dict):
+                        safe_item["evidence_availability"]["worker_result_semantic_evidence"] = "REJECTED_UNSAFE_OR_OVERSIZED"
+            else:
+                safe_item["evidence_status"] = "REJECTED_UNSAFE_OR_OVERSIZED"
+                if isinstance(safe_item.get("evidence_availability"), dict):
+                    safe_item["evidence_availability"]["worker_result_semantic_evidence"] = "REJECTED_UNSAFE_OR_OVERSIZED"
+
+        raw_maint_ev = payload.get("maintenance_history_evidence")
+        if raw_maint_ev is not None:
+            maint_checks = raw_maint_ev.get("checks") if isinstance(raw_maint_ev, dict) else None
+            sanitized_maint = None
+            if isinstance(maint_checks, list) and maint_checks:
+                sanitized_maint = sanitize_maintenance_history_evidence({
+                    "checks": [
+                        {
+                            "type": "worker_maintenance_history_readonly",
+                            "maintenance_history_evidence": item,
+                        }
+                        for item in maint_checks
+                        if isinstance(item, dict)
+                    ]
+                })
+            if sanitized_maint is not None:
+                safe_item["maintenance_history_evidence"] = sanitized_maint
+                if len(json.dumps(safe_item, ensure_ascii=False, sort_keys=True).encode("utf-8")) > MAX_SERIALIZED_BYTES:
+                    safe_item.pop("maintenance_history_evidence", None)
+                    safe_item["evidence_status"] = "REJECTED_UNSAFE_OR_OVERSIZED"
+                    if isinstance(safe_item.get("evidence_availability"), dict):
+                        safe_item["evidence_availability"]["maintenance_history_evidence"] = "REJECTED_UNSAFE_OR_OVERSIZED"
+            else:
+                safe_item["evidence_status"] = "REJECTED_UNSAFE_OR_OVERSIZED"
+                if isinstance(safe_item.get("evidence_availability"), dict):
+                    safe_item["evidence_availability"]["maintenance_history_evidence"] = "REJECTED_UNSAFE_OR_OVERSIZED"
 
         safe_checks.append(safe_item)
 

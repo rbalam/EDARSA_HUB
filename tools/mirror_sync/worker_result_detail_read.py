@@ -12,16 +12,37 @@ import json
 import os
 from pathlib import Path
 import re
+import subprocess
 from typing import Any
 
-from tools.mirror_sync.worker_result_integrity import (
-    is_terminal_status,
-)
-from tools.mirror_sync.worker_result_semantic_extract import (
-    has_sensitive_marker,
-    redact_sensitive_text,
-    sanitize_repository_contract_payload,
-)
+try:
+    from tools.mirror_sync.worker_result_integrity import (
+        is_terminal_status,
+    )
+    from tools.mirror_sync.worker_result_semantic_extract import (
+        has_sensitive_marker,
+        redact_sensitive_text,
+        sanitize_repository_contract_payload,
+    )
+    from tools.mirror_sync.universal_job_result_publisher import (
+        sanitize_maintenance_history_evidence,
+        sanitize_readonly_evidence,
+        sanitize_semantic_evidence,
+    )
+except ModuleNotFoundError:
+    from worker_result_integrity import (
+        is_terminal_status,
+    )
+    from worker_result_semantic_extract import (
+        has_sensitive_marker,
+        redact_sensitive_text,
+        sanitize_repository_contract_payload,
+    )
+    from universal_job_result_publisher import (
+        sanitize_maintenance_history_evidence,
+        sanitize_readonly_evidence,
+        sanitize_semantic_evidence,
+    )
 
 _SUCCESS_TERMINAL_STATUSES = frozenset(
     {
@@ -231,6 +252,212 @@ def _extract_repository_contract_evidence(
     return combined, True, summary, truncated
 
 
+def _read_published_result_fallback(job_id: str) -> dict[str, Any] | None:
+    """Read-only fallback to origin/worker/results when absent locally without mutating history."""
+    git_dir = RESULTS.parent.parent
+    if not (git_dir / "HEAD").is_file():
+        return None
+    spec = f"origin/worker/results:worker_queue/results/{job_id}.json"
+    try:
+        proc = subprocess.run(
+            ["git", f"--git-dir={git_dir}", "cat-file", "-p", spec],
+            capture_output=True,
+            check=False,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if proc.returncode != 0 or not proc.stdout:
+        return None
+    if len(proc.stdout) > MAX_RESULT_BYTES:
+        raise ValueError("RESULT_DETAIL_RESULT_TOO_LARGE")
+    try:
+        loaded = json.loads(proc.stdout.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("RESULT_DETAIL_RESULT_INVALID_JSON") from exc
+    if not isinstance(loaded, dict):
+        raise ValueError("RESULT_DETAIL_RESULT_NOT_OBJECT")
+    return loaded
+
+
+def _extract_typed_evidence(
+    payload: dict[str, Any],
+    checks: list[Any],
+    *,
+    source_failed: bool,
+) -> dict[str, Any]:
+    """Recover and sanitize repository, SQL, semantic, and maintenance evidence cleanly."""
+    basis = str(payload.get("certification_basis") or "").strip().upper()
+    check_types = {
+        str(c.get("type") or "").strip()
+        for c in checks
+        if isinstance(c, dict)
+    }
+
+    repo_ev, raw_repo_seen, repo_summary, repo_truncated = _extract_repository_contract_evidence(payload, checks)
+    repo_applicable = (
+        "repository_contract_audit" in check_types
+        or "repository_contract_evidence" in payload
+        or "repository_evidence" in payload
+        or "REPOSITORY" in basis
+    )
+
+    sql_applicable = (
+        "sql_readonly_audit" in check_types
+        or "sql_readonly_evidence" in payload
+        or "READ_ONLY_SQL" in basis
+    )
+    sql_raw_seen = (
+        payload.get("sql_readonly_evidence") is not None
+        or any(
+            isinstance(c, dict)
+            and c.get("type") == "sql_readonly_audit"
+            and (c.get("sql_evidence") is not None or bool(str(c.get("output") or "").strip()))
+            for c in checks
+        )
+    )
+    sql_ev = sanitize_readonly_evidence(payload) if sql_applicable else None
+    sql_truncated = bool(
+        isinstance(sql_ev, dict)
+        and any(
+            isinstance(entry, dict) and entry.get("truncated") is True
+            for chk in (sql_ev.get("checks") or [])
+            if isinstance(chk, dict)
+            for entry in (chk.get("evidence") or [])
+        )
+    )
+
+    sem_applicable = (
+        "worker_result_semantic_extract" in check_types
+        or "worker_result_semantic_evidence" in payload
+        or "SEMANTIC_EXTRACT" in basis
+    )
+    sem_raw_seen = (
+        payload.get("worker_result_semantic_evidence") is not None
+        or any(
+            isinstance(c, dict)
+            and c.get("type") == "worker_result_semantic_extract"
+            and (c.get("semantic_evidence") is not None or bool(str(c.get("output") or "").strip()))
+            for c in checks
+        )
+    )
+    sem_ev = sanitize_semantic_evidence(payload) if sem_applicable else None
+
+    maint_applicable = (
+        "worker_maintenance_history_readonly" in check_types
+        or "maintenance_history_evidence" in payload
+        or "MAINTENANCE_HISTORY" in basis
+    )
+    maint_raw_seen = (
+        payload.get("maintenance_history_evidence") is not None
+        or any(
+            isinstance(c, dict)
+            and c.get("type") == "worker_maintenance_history_readonly"
+            and (c.get("maintenance_history_evidence") is not None or bool(str(c.get("output") or "").strip()))
+            for c in checks
+        )
+    )
+    maint_ev = None
+    if maint_applicable:
+        maint_ev = sanitize_maintenance_history_evidence(payload)
+        if maint_ev is None and isinstance(payload.get("maintenance_history_evidence"), dict):
+            pub_checks = payload["maintenance_history_evidence"].get("checks")
+            if isinstance(pub_checks, list) and pub_checks:
+                maint_ev = sanitize_maintenance_history_evidence({
+                    "checks": [
+                        {
+                            "type": "worker_maintenance_history_readonly",
+                            "maintenance_history_evidence": item,
+                        }
+                        for item in pub_checks
+                        if isinstance(item, dict)
+                    ]
+                })
+
+    def _channel_state(
+        ev: dict[str, Any] | None,
+        *,
+        applicable: bool,
+        raw_seen: bool,
+        truncated: bool = False,
+    ) -> str:
+        if ev is not None:
+            if source_failed:
+                return "PARTIAL_WITH_FAILURES"
+            return "TRUNCATED" if truncated else "COMPLETE"
+        if raw_seen:
+            return "REJECTED_UNSAFE_OR_OVERSIZED"
+        if applicable:
+            return "ABSENT"
+        return "NOT_APPLICABLE"
+
+    availability = {
+        "repository_contract_evidence": _channel_state(
+            repo_ev, applicable=repo_applicable, raw_seen=raw_repo_seen, truncated=repo_truncated
+        ),
+        "sql_readonly_evidence": _channel_state(
+            sql_ev, applicable=sql_applicable, raw_seen=sql_raw_seen, truncated=sql_truncated
+        ),
+        "worker_result_semantic_evidence": _channel_state(
+            sem_ev, applicable=sem_applicable, raw_seen=sem_raw_seen, truncated=False
+        ),
+        "maintenance_history_evidence": _channel_state(
+            maint_ev, applicable=maint_applicable, raw_seen=maint_raw_seen, truncated=False
+        ),
+    }
+
+    summary: dict[str, int] = dict(repo_summary or {})
+    if isinstance(sql_ev, dict):
+        sql_checks = [c for c in (sql_ev.get("checks") or []) if isinstance(c, dict)]
+        sql_queries = [
+            e for c in sql_checks for e in (c.get("evidence") or []) if isinstance(e, dict)
+        ]
+        summary["sql_check_count"] = len(sql_checks)
+        summary["sql_query_count"] = len(sql_queries)
+        summary["sql_rows_returned"] = sum(
+            len(e.get("rows") or []) for e in sql_queries if isinstance(e.get("rows"), list)
+        )
+    if isinstance(sem_ev, dict):
+        sem_checks = [c for c in (sem_ev.get("checks") or []) if isinstance(c, dict)]
+        sem_fields = sem_ev.get("semantic_fields")
+        summary["semantic_check_count"] = len(sem_checks)
+        summary["semantic_fields_count"] = len(sem_fields) if isinstance(sem_fields, dict) else 0
+    if isinstance(maint_ev, dict):
+        maint_checks = [c for c in (maint_ev.get("checks") or []) if isinstance(c, dict)]
+        summary["maintenance_check_count"] = len(maint_checks)
+
+    any_recovered = any(x is not None for x in (repo_ev, sql_ev, sem_ev, maint_ev))
+    any_rejected = any(v == "REJECTED_UNSAFE_OR_OVERSIZED" for v in availability.values())
+    any_truncated = bool(repo_truncated or sql_truncated)
+
+    if any_recovered:
+        if source_failed:
+            overall_status = "PARTIAL_WITH_FAILURES"
+        elif any_rejected:
+            overall_status = "REJECTED_UNSAFE_OR_OVERSIZED"
+        elif any_truncated:
+            overall_status = "TRUNCATED"
+        else:
+            overall_status = "COMPLETE"
+    elif any_rejected:
+        overall_status = "REJECTED_UNSAFE_OR_OVERSIZED"
+    elif source_failed:
+        overall_status = "FAILED_RESULT_NO_STRUCTURED_EVIDENCE"
+    else:
+        overall_status = "ABSENT"
+
+    return {
+        "repository_contract_evidence": repo_ev,
+        "sql_readonly_evidence": sql_ev,
+        "worker_result_semantic_evidence": sem_ev,
+        "maintenance_history_evidence": maint_ev,
+        "evidence_availability": availability,
+        "evidence_summary": summary or None,
+        "evidence_truncated": any_truncated,
+        "evidence_status": overall_status,
+    }
+
+
 def collect(job_id: str) -> dict[str, Any]:
     if not JOB_ID_RE.fullmatch(job_id):
         raise ValueError("RESULT_DETAIL_JOB_ID_INVALID")
@@ -244,28 +471,20 @@ def collect(job_id: str) -> dict[str, Any]:
         )
 
     path = RESULTS / f"{job_id}.json"
+    if path.parent != RESULTS or path.is_symlink():
+        raise ValueError("RESULT_DETAIL_RESULT_NOT_FOUND")
 
-    if (
-        path.parent != RESULTS
-        or path.is_symlink()
-        or not path.is_file()
-    ):
-        raise ValueError(
-            "RESULT_DETAIL_RESULT_NOT_FOUND"
-        )
-
-    stat = path.stat()
-
-    if stat.st_size > MAX_RESULT_BYTES:
-        raise ValueError(
-            "RESULT_DETAIL_RESULT_TOO_LARGE"
-        )
-
-    with path.open(
-        "r",
-        encoding="utf-8",
-    ) as handle:
-        payload = json.load(handle)
+    if path.is_file():
+        stat = path.stat()
+        if stat.st_size > MAX_RESULT_BYTES:
+            raise ValueError("RESULT_DETAIL_RESULT_TOO_LARGE")
+        with path.open("r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+    else:
+        fallback = _read_published_result_fallback(job_id)
+        if fallback is None:
+            raise ValueError("RESULT_DETAIL_RESULT_NOT_FOUND")
+        payload = fallback
 
     if not isinstance(payload, dict):
         raise ValueError(
@@ -385,37 +604,31 @@ def collect(job_id: str) -> dict[str, Any]:
             "evidence_status": "NON_TERMINAL_SOURCE",
             "evidence_truncated": False,
             "evidence_summary": None,
+            "evidence_availability": {
+                "repository_contract_evidence": "NON_TERMINAL_SOURCE",
+                "sql_readonly_evidence": "NON_TERMINAL_SOURCE",
+                "worker_result_semantic_evidence": "NON_TERMINAL_SOURCE",
+                "maintenance_history_evidence": "NON_TERMINAL_SOURCE",
+            },
             "repository_contract_evidence": None,
+            "sql_readonly_evidence": None,
+            "worker_result_semantic_evidence": None,
+            "maintenance_history_evidence": None,
             "production_touched": (
                 production_touched
             ),
             "production_allowed": False,
         }
 
-    (
-        repository_contract_evidence,
-        raw_repo_seen,
-        evidence_summary,
-        evidence_truncated,
-    ) = _extract_repository_contract_evidence(payload, checks)
-
     source_failed = bool(failed_checks) or (
         str(raw_status or "").strip().upper()
         not in _SUCCESS_TERMINAL_STATUSES
     )
-    if repository_contract_evidence is not None:
-        if source_failed:
-            evidence_status = "PARTIAL_WITH_FAILURES"
-        elif evidence_truncated:
-            evidence_status = "TRUNCATED"
-        else:
-            evidence_status = "COMPLETE"
-    elif raw_repo_seen:
-        evidence_status = "REJECTED_UNSAFE_OR_OVERSIZED"
-    elif source_failed:
-        evidence_status = "FAILED_RESULT_NO_STRUCTURED_EVIDENCE"
-    else:
-        evidence_status = "ABSENT"
+    typed = _extract_typed_evidence(
+        payload,
+        checks,
+        source_failed=source_failed,
+    )
 
     return {
         "schema": (
@@ -452,10 +665,14 @@ def collect(job_id: str) -> dict[str, Any]:
         "failed_check_count": len(
             failed_checks
         ),
-        "evidence_status": evidence_status,
-        "evidence_truncated": evidence_truncated,
-        "evidence_summary": evidence_summary,
-        "repository_contract_evidence": repository_contract_evidence,
+        "evidence_status": typed["evidence_status"],
+        "evidence_truncated": typed["evidence_truncated"],
+        "evidence_summary": typed["evidence_summary"],
+        "evidence_availability": typed["evidence_availability"],
+        "repository_contract_evidence": typed["repository_contract_evidence"],
+        "sql_readonly_evidence": typed["sql_readonly_evidence"],
+        "worker_result_semantic_evidence": typed["worker_result_semantic_evidence"],
+        "maintenance_history_evidence": typed["maintenance_history_evidence"],
         "production_touched": (
             production_touched
         ),

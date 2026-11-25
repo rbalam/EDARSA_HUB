@@ -53,8 +53,9 @@ SENSITIVE_TOKENS = (
 )
 SECRET_PATTERNS = (
     re.compile(
-        r"(?i)\b(?:secret|password|passwd|token|credential|credencial|api_key|apikey|private_key|access_key|authorization|cookie|bearer)\b\s*[:=]\s*\S+"
+        r"(?i)\b(?:secret|password|passwd|token|credential|credencial|api_key|apikey|private_key|access_key|authorization|cookie|bearer|pwd)\b\s*[:=]\s*\S+"
     ),
+    re.compile(r"(?i)\b(?:mssql|sqlserver|postgres|postgresql|mongodb(?:\+srv)?|mysql)://[^/\s]+:[^@\s]+@"),
     re.compile(r"(?i)\b(?:ghp_[A-Za-z0-9_]+|github_pat_[A-Za-z0-9_]+|sk-[A-Za-z0-9_-]{16,})\b"),
     re.compile(r"(?i)-----BEGIN (?:[A-Z0-9_-]+\s+)*PRIVATE\s+KEY-----"),
 )
