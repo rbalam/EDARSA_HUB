@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "4ea5c0f364aa6ad983fb1120f4bfc04db8057f88",
-  "generated_at_utc": "2026-11-25T03:45:02Z",
+  "generated_at_utc": "2026-11-25T04:06:50Z",
   "history": {
     "done_total_local": 2067,
     "pending_total_local": 0,
@@ -14,14 +14,7 @@
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [
-    {
-      "age_seconds": 3150,
-      "job_id": "EDARSAHUB-BOS-WK50-R2-F-CHECKPOINT-CLOSE-20261125",
-      "reason": null,
-      "state": "RESULT_READY"
-    }
-  ],
+  "jobs": [],
   "local_development_sha": "4ea5c0f364aa6ad983fb1120f4bfc04db8057f88",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
@@ -30,16 +23,16 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 0,
   "queue_running": 0,
   "remote_development_sha": "4ea5c0f364aa6ad983fb1120f4bfc04db8057f88",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-25T03:44:48Z",
-    "last_receive_utc": "2026-11-25T03:45:01Z",
+    "last_cycle_utc": "2026-11-25T04:06:44Z",
+    "last_receive_utc": "2026-11-25T04:06:39Z",
     "last_terminal_utc": "2026-11-25T02:52:32Z",
-    "pid": "408197",
+    "pid": "88",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "2198632e2d3b3f10f5d993bf31375a449c5a4928",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
