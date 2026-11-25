@@ -1901,6 +1901,22 @@ register_sql_readonly_profile(
 )
 
 
+register_sql_readonly_profile(
+    SqlReadonlyProfile(
+        profile_code="CAJAS_INCIDENCIAS_SCHEMA_METADATA",
+        description="Metadatos de cinco tablas de incidencias de caja, sin filas de negocio.",
+        bounded_contexts=("COMERCIAL_POS",),
+        queries=(
+            {"name": "cajas_identity", "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS database_user"},
+            {"name": "cajas_columns", "sql": "SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS type_name,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity,c.is_computed FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name = 'dbo' AND t.name IN ('Finanzas_CortesCaja','Finanzas_CuadresZ','Usuario_Autorizaciones','Sistema_Tareas','Operativo_Notificaciones_Queue') ORDER BY t.name,c.column_id"},
+            {"name": "cajas_indexes", "sql": "SELECT t.name AS table_name,i.name AS index_name,i.type_desc,i.is_unique,i.is_primary_key,i.is_unique_constraint,ic.key_ordinal,ic.is_included_column,c.name AS column_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE s.name = 'dbo' AND t.name IN ('Finanzas_CortesCaja','Finanzas_CuadresZ','Usuario_Autorizaciones','Sistema_Tareas','Operativo_Notificaciones_Queue') ORDER BY t.name,i.index_id,ic.index_column_id"},
+            {"name": "cajas_relationships", "sql": "SELECT t.name AS table_name,fk.name AS foreign_key_name,c.name AS column_name,rs.name AS referenced_schema,rt.name AS referenced_table,rc.name AS referenced_column,fk.is_disabled FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.foreign_keys fk ON fk.parent_object_id=t.object_id JOIN sys.foreign_key_columns fc ON fc.constraint_object_id=fk.object_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=fc.parent_column_id JOIN sys.tables rt ON rt.object_id=fc.referenced_object_id JOIN sys.schemas rs ON rs.schema_id=rt.schema_id JOIN sys.columns rc ON rc.object_id=rt.object_id AND rc.column_id=fc.referenced_column_id WHERE s.name = 'dbo' AND t.name IN ('Finanzas_CortesCaja','Finanzas_CuadresZ','Usuario_Autorizaciones','Sistema_Tareas','Operativo_Notificaciones_Queue') ORDER BY t.name,fk.name,fc.constraint_column_id"},
+            {"name": "cajas_dependencies", "sql": "SELECT t.name AS table_name,OBJECT_SCHEMA_NAME(d.referencing_id) AS referencing_schema,OBJECT_NAME(d.referencing_id) AS referencing_object,o.type_desc FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.sql_expression_dependencies d ON d.referenced_id=t.object_id JOIN sys.objects o ON o.object_id=d.referencing_id WHERE s.name = 'dbo' AND t.name IN ('Finanzas_CortesCaja','Finanzas_CuadresZ','Usuario_Autorizaciones','Sistema_Tareas','Operativo_Notificaciones_Queue') ORDER BY t.name,referencing_schema,referencing_object"},
+        ),
+    )
+)
+
+
 def _sql_readonly_profile_audit_builder(request: Mapping[str, Any]) -> dict[str, Any]:
     context = _g3_context(request)
     c = _g3_constraints(request, {"profile_code"})
