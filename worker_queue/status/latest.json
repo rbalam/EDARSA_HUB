@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "18e319b43dc247be0d82305553bc4f757275d66e",
-  "generated_at_utc": "2026-11-25T22:36:38Z",
+  "generated_at_utc": "2026-11-25T22:38:07Z",
   "history": {
     "done_total_local": 2123,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 226,
+      "age_seconds": 316,
       "job_id": "EDARSAHUB-BOS-UNIVERSAL-MULTICHAT-HANDOFF-P0-R1-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 296,
+      "age_seconds": 386,
       "job_id": "SEM-REQUEST-0D479ACE3BFE0AF0F79A1A9A",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 82,
+      "age_seconds": 171,
       "job_id": "SEM-REQUEST-7C8F49AB3F82E102426174EE",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 717,
+      "age_seconds": 807,
       "job_id": "SEM-REQUEST-AA1970654779466DBE5F8DD1",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,8 +54,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-25T22:36:25Z",
-    "last_receive_utc": "2026-11-25T22:36:20Z",
+    "last_cycle_utc": "2026-11-25T22:38:03Z",
+    "last_receive_utc": "2026-11-25T22:37:58Z",
     "last_terminal_utc": "2026-11-25T22:35:15Z",
     "pid": "295706",
     "runtime_fingerprint": {
