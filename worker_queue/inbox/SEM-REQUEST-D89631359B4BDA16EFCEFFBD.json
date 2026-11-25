@@ -1,0 +1,55 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "antigravity",
+          "agy",
+          "claude",
+          "codex",
+          "provider_adapter",
+          "agent_registry",
+          "execution_bridge",
+          "delegation",
+          "quota",
+          "autonomous_execution_policy",
+          "capability_registry",
+          "knowledge_loop"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-D89631359B4BDA16EFCEFFBD",
+  "mode": "READ_ONLY",
+  "objective": "WK70 G0 READ_ONLY inventario de contratos existentes de integracion de agentes externos, adaptadores, delegacion, aislamiento, cuotas y reutilizacion de Worker, sin ejecutar proveedores ni repetir canary AGY o WK60 R2-D",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "UNIVERSAL_AI_INTEGRATION",
+    "conflict_domains": [
+      "UNIVERSAL_AI_INTEGRATION"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
