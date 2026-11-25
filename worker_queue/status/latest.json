@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "98a0b8d0ea8c0e7616c06839b90acf2dc3390f7e",
-  "generated_at_utc": "2026-11-25T07:56:02Z",
+  "generated_at_utc": "2026-11-25T07:57:22Z",
   "history": {
     "done_total_local": 2081,
     "pending_total_local": 0,
@@ -16,49 +16,49 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1326,
+      "age_seconds": 1406,
       "job_id": "EDARSAHUB-BOS-WK60-R2-B-EXTENSIBLE-PYTEST-HERMETIC-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1064,
+      "age_seconds": 1145,
       "job_id": "EDARSAHUB-BOS-WK60-R2-B-EXTENSIBLE-PYTEST-HERMETIC-R2-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 965,
+      "age_seconds": 1045,
       "job_id": "EDARSAHUB-BOS-WK60-R2-B-EXTENSIBLE-PYTEST-HERMETIC-R3-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3322,
+      "age_seconds": 3402,
       "job_id": "EDARSAHUB-BOS-WK60-R2-C-CANONICAL-GO-CONTEXT-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3176,
+      "age_seconds": 3256,
       "job_id": "EDARSAHUB-BOS-WK60-R2-C-CANONICAL-GO-CONTEXT-R2-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2905,
+      "age_seconds": 2985,
       "job_id": "EDARSAHUB-BOS-WK60-R2-C-CANONICAL-GO-CONTEXT-R3-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 441,
+      "age_seconds": 521,
       "job_id": "SEM-REQUEST-5739637C4CFFFCEA3B0857AB",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 411,
+      "age_seconds": 491,
       "job_id": "SEM-REQUEST-82E1470F6EA733E571F58342",
       "reason": null,
       "state": "RESULT_READY"
@@ -78,8 +78,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-25T07:55:52Z",
-    "last_receive_utc": "2026-11-25T07:55:47Z",
+    "last_cycle_utc": "2026-11-25T07:57:11Z",
+    "last_receive_utc": "2026-11-25T07:57:06Z",
     "last_terminal_utc": "2026-11-25T07:49:11Z",
     "pid": "2463303",
     "runtime_fingerprint": {
