@@ -1,0 +1,64 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 30,
+        "paths": [
+          "backend/modules/finanzas/repository_cortes_caja_edarsahub.py",
+          "backend/modules/finanzas/repository_cuadres_z_edarsahub.py",
+          "backend/modules/finanzas/repository_cortes_z.py",
+          "backend/modules/comercial_analytics/repository_tickets.py",
+          "backend/modules/comercial_v2/ticket_contract.py",
+          "backend/modules/fase2_operativo/routes/tarea_routes.py",
+          "backend/modules/fase2_operativo/services/notification_service.py",
+          "backend/modules/finanzas/propinas_tpv/routes.py",
+          "backend/modules/auth/routes.py"
+        ],
+        "search_terms": [
+          "corte",
+          "folio",
+          "ticket",
+          "cuenta",
+          "sucursal",
+          "unidad",
+          "autorizacion",
+          "incidencia",
+          "evidencia",
+          "tarea",
+          "cancelacion",
+          "reapertura",
+          "bonificacion",
+          "notificacion",
+          "rbac"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-C9CD56A71900DB43A9B436B0",
+  "mode": "READ_ONLY",
+  "objective": "GATE CONTRATOS EXACTOS READ_ONLY / INCIDENCIAS CAJA. Reutilizar resultado certificado SEM-REQUEST-FC0457AFBE643EC37E2B5766, sin repetir auditoría general. Verificar exclusivamente la trazabilidad de captura de incidencias de cancelación, reapertura, bonificación y diferencia a cuenta/folio, turno, corte X/Z y ventas previamente sincronizadas por unidad; verificar modelos, endpoints y helpers ya existentes de finanzas, comercial, tareas, notificaciones y autenticación. Identificar contratos de identidad canónica, permisos RBAC, estado pendiente de conciliación sin enlaces por coincidencias ambiguas, documentos evidencia y Scheduler; especificar punto mínimo de inserción para formulario WhatsApp mediante enlace con login EDARSAHUB y reportes IA solo sobre hechos verificables. Entrega: archivos, funciones, endpoints, tablas referenciadas, vacíos y tests recomendados. No código/SQL/Producción, ninguna consulta LIVE origen externo, ningún proceso externo, ni otro gateway o tabla duplicada.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
