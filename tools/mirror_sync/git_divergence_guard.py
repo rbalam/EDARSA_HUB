@@ -146,6 +146,13 @@ def inspect_repository(repo: Path, *, fetch: bool = True) -> dict[str, Any]:
     local_only = _run(repo, "log", "--format=%H", "--max-count=20", local, "--not", remote, check=False).stdout.splitlines(); remote_only = _run(repo, "log", "--format=%H", "--max-count=20", remote, "--not", local, check=False).stdout.splitlines()
     return {"current_branch": branch, "local_head": local, "remote_head": remote, "merge_base": merge_base, "ahead_count": ahead, "behind_count": behind, **dirty, "classification": classification, "local_only_commits": local_only, "remote_only_commits": remote_only}
 
+def _normalize_rel_path(path: Any) -> str:
+    raw = str(path or "").strip().replace("\\", "/")
+    while raw.startswith("./"):
+        raw = raw[2:]
+    return raw.rstrip("/")
+
+
 def mutation_policy(
     state: dict[str, Any],
     *,
@@ -158,8 +165,8 @@ def mutation_policy(
     if state.get("worktree_dirty"):
         if isolated_worktree:
             ahead_count = int(state.get("ahead_count") or 0)
-            dirty_set = {str(p).strip() for p in (state.get("dirty_paths") or ()) if str(p).strip()}
-            req_set = {str(p).strip() for p in (requested_paths or ()) if str(p).strip()}
+            dirty_set = {_normalize_rel_path(p) for p in (state.get("dirty_paths") or ()) if _normalize_rel_path(p)}
+            req_set = {_normalize_rel_path(p) for p in (requested_paths or ()) if _normalize_rel_path(p)}
             if ahead_count == 0 and dirty_set and req_set:
                 conflicts = sorted(dirty_set & req_set)
                 if not conflicts:
@@ -713,18 +720,30 @@ def classify_submit_convergence(
     }
 
     if worktree_dirty:
-        dirty_set = {str(p).strip() for p in (dirty_paths or ()) if str(p).strip()}
-        req_set = {str(p).strip() for p in (requested_paths or ()) if str(p).strip()}
-        if dirty_set and req_set and dirty_set.isdisjoint(req_set) and mirror == development:
-            return {
-                **evidence,
-                "status": "CONVERGED_ISOLATED_LOCAL_DIRTY_DISJOINT",
-                "converged": True,
-                "safe": True,
-                "local_checkout_refresh_deferred": True,
-                "dirty_paths_preserved": sorted(dirty_set),
-                "scope_conflicts": [],
-            }
+        dirty_set = {_normalize_rel_path(p) for p in (dirty_paths or ()) if _normalize_rel_path(p)}
+        req_set = {_normalize_rel_path(p) for p in (requested_paths or ()) if _normalize_rel_path(p)}
+        if dirty_set and req_set and dirty_set.isdisjoint(req_set):
+            if mirror == development:
+                return {
+                    **evidence,
+                    "status": "CONVERGED_ISOLATED_LOCAL_DIRTY_DISJOINT",
+                    "converged": True,
+                    "safe": True,
+                    "local_checkout_refresh_deferred": True,
+                    "dirty_paths_preserved": sorted(dirty_set),
+                    "scope_conflicts": [],
+                }
+            if mirror_merge_base == mirror:
+                return {
+                    **evidence,
+                    "mirror_fast_forward_safe": True,
+                    "status": "SAFE_MIRROR_FF_ISOLATED_LOCAL_DIRTY_DISJOINT",
+                    "converged": False,
+                    "safe": True,
+                    "local_checkout_refresh_deferred": True,
+                    "dirty_paths_preserved": sorted(dirty_set),
+                    "scope_conflicts": [],
+                }
         conflicts = sorted(dirty_set & req_set) if (dirty_set and req_set) else []
         return {
             **evidence,
@@ -869,6 +888,66 @@ def ensure_submit_convergence(
                 "mirror_after": mirror_before,
                 "auto_fix_applied": False,
             }
+
+        if decision["status"] == "SAFE_MIRROR_FF_ISOLATED_LOCAL_DIRTY_DISJOINT":
+            token = acquire_writer_lock(
+                repo,
+                job_id=job_id,
+                owner=owner,
+                owner_pid=owner_pid,
+            )
+            try:
+                push = authorized_push(
+                    repo,
+                    args=[
+                        "push",
+                        remote,
+                        f"{development}:refs/heads/{MIRROR_BRANCH}",
+                    ],
+                    job_id=job_id,
+                    owner=owner,
+                )
+                if push.returncode != 0:
+                    return {
+                        "status": "BLOCKED_PUSH_REJECTED",
+                        "converged": False,
+                        "safe": False,
+                        "auto_fix_applied": False,
+                        "local": local,
+                        "development": development,
+                        "mirror_before": mirror_before,
+                        "mirror_after": mirror_before,
+                        "push_output": (push.stdout or "")[-2000:],
+                    }
+                _run(repo, "fetch", remote, MIRROR_BRANCH)
+                mirror_after = _run(
+                    repo,
+                    "rev-parse",
+                    f"{remote}/{MIRROR_BRANCH}",
+                ).stdout.strip()
+                if mirror_after != development:
+                    return {
+                        "status": "BLOCKED_PUSH_REJECTED",
+                        "converged": False,
+                        "safe": False,
+                        "auto_fix_applied": False,
+                        "local": local,
+                        "development": development,
+                        "mirror_before": mirror_before,
+                        "mirror_after": mirror_after,
+                    }
+                return {
+                    **decision,
+                    "status": "CONVERGED_ISOLATED_LOCAL_DIRTY_DISJOINT",
+                    "converged": True,
+                    "safe": True,
+                    "mirror": mirror_after,
+                    "mirror_before": mirror_before,
+                    "mirror_after": mirror_after,
+                    "auto_fix_applied": True,
+                }
+            finally:
+                release_writer_lock(repo, token)
 
         if (
             decision["status"] == "BLOCKED_DIVERGENCE"

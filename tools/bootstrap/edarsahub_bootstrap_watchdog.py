@@ -132,6 +132,10 @@ CONTROL_PLANE_IDENTITY_PATHS = (
     "tools/mirror_sync/worker_maintenance_contract.py",
     "tools/mirror_sync/worker_auditor.py",
     "tools/mirror_sync/worker_repair.py",
+    "tools/mirror_sync/worker_lifecycle_recovery.py",
+    "tools/mirror_sync/git_divergence_guard.py",
+    "tools/mirror_sync/worker_repair_auto_loop.py",
+    "tools/mirror_sync/worker_runtime_fingerprint.py",
 )
 
 

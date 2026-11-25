@@ -621,8 +621,11 @@ def scan_global_lifecycle_blockers(
             if age_s >= 120:
                 stale_processing.append({"job_id": path.stem, "age_seconds": int(age_s)})
 
-    # Pending audit evidence certifications
+    # Pending audit evidence certifications (excluding items already reconciled in the historical ledger)
+    hist_ledger = _load_historical_reconciliation_ledger(qroot)
+    hist_pa_map = hist_ledger.get("pending_audit_reconciled") if isinstance(hist_ledger.get("pending_audit_reconciled"), Mapping) else {}
     pending_audit_stale: list[dict[str, Any]] = []
+    historical_reconciled_pa_count = 0
     if published_dir.is_dir():
         for path in sorted(published_dir.glob("*.json")):
             try:
@@ -631,10 +634,13 @@ def scan_global_lifecycle_blockers(
                 continue
             if "certification=PENDING_AUDIT_EVIDENCE" not in txt:
                 continue
+            jid = path.stem
+            if jid in hist_pa_map:
+                historical_reconciled_pa_count += 1
+                continue
             age_s = max(0.0, now_ts - path.stat().st_mtime)
             if age_s < pending_audit_grace_seconds:
                 continue
-            jid = path.stem
             res_obj = _read_json_safe(results_dir / f"{jid}.json") or {}
             dev_sha = str(
                 res_obj.get("development_sha")
@@ -749,6 +755,8 @@ def scan_global_lifecycle_blockers(
         "orphan_branches": orphan_branches[:50],
         "pending_audit_stale_count": len(pending_audit_stale),
         "pending_audit_with_attestation_count": sum(1 for x in pending_audit_stale if x["has_attestation"]),
+        "historical_reconciled_pending_audit_count": historical_reconciled_pa_count,
+        "historical_reconciled_drafts_count": int(hist_ledger.get("historical_drafts_classified_count") or 0),
         "production_touched": False,
     }
 
@@ -1367,17 +1375,353 @@ def advance_lifecycle_recovery(
 
 SCHEMA_GATE_AUTHORIZATION = "edarsahub.gate-authorization.v1"
 SCHEMA_CONCURRENCY_RESUME = "edarsahub.worker-concurrency-resume.v1"
+SCHEMA_HISTORICAL_RECONCILIATION = "edarsahub.worker-historical-reconciliation.v1"
+HISTORICAL_RECONCILIATION_FILENAME = "historical_reconciliation_ledger.json"
+HISTORICAL_DRAFT_AGE_SECONDS = int(os.environ.get("EDARSAHUB_HISTORICAL_DRAFT_AGE_SECONDS", str(86400 * 3)))
 CONCURRENCY_BLOCKED_STATUSES = frozenset({
     "GIT_WORKTREE_NOT_CLEAN",
     "BLOCKED_LOCAL_DIRTY",
     "CONCURRENT_SCOPE_CONFLICT",
     "GIT_LOCK_BUSY",
+    "BLOCKED_CONVERGENCE",
+    "RUNTIME_NOT_CONVERGED",
 })
 MAX_CONCURRENCY_RESUMES_PER_JOB = 2
 
 
 def _authorization_dir(state_root: Path) -> Path:
     return state_root / "maintenance" / "authorizations"
+
+
+def _parse_iso_utc_dt(value: Any) -> datetime | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    try:
+        dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def list_active_gate_authorizations(
+    *,
+    state_root: Path | None = None,
+    now_utc: datetime | None = None,
+) -> list[dict[str, Any]]:
+    """Return all currently valid, non-expired, non-revoked, non-production materialized Gate authorizations."""
+    qroot = state_root or (Path(os.environ.get("EDARSAHUB_ROOT", "/app")) / ".git" / "universal-worker-queue")
+    adir = _authorization_dir(qroot)
+    if not adir.is_dir():
+        return []
+    now = now_utc or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+
+    active: list[dict[str, Any]] = []
+    for path in sorted(adir.glob("*.json")):
+        raw = _read_json_safe(path)
+        if not isinstance(raw, dict) or raw.get("schema") != SCHEMA_GATE_AUTHORIZATION:
+            continue
+        if raw.get("production_allowed") is not False:
+            continue
+        if raw.get("revoked") is True:
+            continue
+        auth_id = str(raw.get("authorization_id") or raw.get("authorization_ref") or "").strip()
+        if not auth_id:
+            continue
+        expires_dt = _parse_iso_utc_dt(raw.get("expires_at_utc"))
+        if expires_dt is None or expires_dt <= now:
+            continue
+        scope = raw.get("scope") if isinstance(raw.get("scope"), Mapping) else {}
+        domains = [
+            str(d).strip().upper()
+            for d in (scope.get("domains") or ())
+            if str(d).strip() and str(d).strip() != "*"
+        ]
+        if not domains:
+            continue
+        active.append({**raw, "authorization_path": str(path)})
+    return active
+
+
+def resolve_active_domain_authorization(
+    domain: str,
+    *,
+    state_root: Path | None = None,
+    required_class: str = "DEVELOPMENT_MUTATION",
+    requested_paths: list[str] | tuple[str, ...] | set[str] | None = None,
+    now_utc: datetime | None = None,
+) -> dict[str, Any] | None:
+    """Resolve the newest valid materialized Gate authorization matching a specific domain (fail-closed)."""
+    dom = str(domain or "").strip().upper()
+    if not dom or dom == "*":
+        return None
+    req_paths = {str(p).strip().lstrip("./") for p in (requested_paths or ()) if str(p).strip()}
+    candidates: list[dict[str, Any]] = []
+    for auth in list_active_gate_authorizations(state_root=state_root, now_utc=now_utc):
+        scope = auth.get("scope") if isinstance(auth.get("scope"), Mapping) else {}
+        domains = {str(d).strip().upper() for d in (scope.get("domains") or ()) if str(d).strip()}
+        if dom not in domains or "*" in domains:
+            continue
+        allowed_paths = {str(p).strip().lstrip("./") for p in (scope.get("allowed_paths") or ()) if str(p).strip()}
+        if req_paths and allowed_paths and not req_paths.issubset(allowed_paths):
+            continue
+        ver = verify_gate_authorization(
+            str(auth.get("gate_id") or ""),
+            domain=dom,
+            required_class=required_class,
+            state_root=state_root,
+            now_utc=now_utc,
+        )
+        if ver.get("authorized") is True:
+            candidates.append(auth)
+    if not candidates:
+        return None
+    candidates.sort(key=lambda a: str(a.get("granted_at_utc") or ""), reverse=True)
+    return candidates[0]
+
+
+def _load_historical_reconciliation_ledger(state_root: Path) -> dict[str, Any]:
+    path = state_root / "maintenance" / HISTORICAL_RECONCILIATION_FILENAME
+    data = _read_json_safe(path)
+    if isinstance(data, dict) and data.get("schema") == SCHEMA_HISTORICAL_RECONCILIATION:
+        return data
+    return {}
+
+
+def reconcile_historical_queue_artifacts(
+    *,
+    repo_root: Path | None = None,
+    state_root: Path | None = None,
+    claims_dir: Path | None = None,
+    attestations_dir: Path | None = None,
+    now_epoch: float | None = None,
+    historical_draft_age_seconds: int = HISTORICAL_DRAFT_AGE_SECONDS,
+    force_refresh: bool = False,
+) -> dict[str, Any]:
+    """Non-destructive historical reconciliation ledger for superseded PENDING_AUDIT_EVIDENCE, legacy drafts, and abandoned publisher branches.
+
+    Safety invariants:
+    - NEVER deletes or alters historical results or corrupt drafts.
+    - NEVER fabricates CERTIFIED status; records exact Git ancestry + attestation proof.
+    - Only prunes abandoned local agent/queue-publisher/* branches with NO active claim and NO attached worktree,
+      recording their commit SHA in the ledger first.
+    """
+    root = repo_root or Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
+    qroot = state_root or (root / ".git" / "universal-worker-queue")
+    cdir = claims_dir or (root / ".git" / "agent-guard" / "state" / "claims")
+    adir = attestations_dir or (root / ".git" / "mirror-sync" / "reporting" / "test_attestations")
+    now_ts = float(now_epoch if now_epoch is not None else time.time())
+
+    ledger_path = qroot / "maintenance" / HISTORICAL_RECONCILIATION_FILENAME
+    pub_dir = qroot / "published"
+    res_dir = qroot / "results"
+    drafts_dir = qroot / "drafts"
+    done_dir = qroot / "done"
+    rejected_dir = qroot / "rejected"
+    pending_dir = qroot / "pending"
+    processing_dir = qroot / "processing"
+
+    def _dsig(d: Path) -> str:
+        if not d.is_dir():
+            return "ABSENT"
+        st = d.stat()
+        return f"{st.st_mtime_ns}:{sum(1 for _ in d.iterdir())}"
+
+    sigs = {
+        "published": _dsig(pub_dir),
+        "drafts": _dsig(drafts_dir),
+        "results": _dsig(res_dir),
+    }
+    prior = _load_historical_reconciliation_ledger(qroot)
+    if not force_refresh and prior and prior.get("dir_signatures") == sigs:
+        return {**prior, "ledger_path": str(ledger_path), "cached": True}
+
+    def _is_ancestor(sha: str, ref: str) -> bool:
+        proc = subprocess.run(
+            ["git", "-C", str(root), "merge-base", "--is-ancestor", sha, ref],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+        )
+        return proc.returncode == 0
+
+    def _files_identical(sha: str, ref: str, files: list[str]) -> bool:
+        if not files:
+            return False
+        proc = subprocess.run(
+            ["git", "-C", str(root), "diff", "--quiet", sha, ref, "--", *files],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+        )
+        return proc.returncode == 0
+
+    # 1. Reconcile historical PENDING_AUDIT_EVIDENCE markers
+    pending_reconciled: dict[str, dict[str, Any]] = {}
+    live_pending_audit: list[str] = []
+    if pub_dir.is_dir():
+        for p in sorted(pub_dir.glob("*.json")):
+            try:
+                txt = p.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            if "certification=PENDING_AUDIT_EVIDENCE" not in txt:
+                continue
+            jid = p.stem
+            res_obj = _read_json_safe(res_dir / f"{jid}.json") or {}
+            dev_sha = str(
+                res_obj.get("development_sha")
+                or res_obj.get("candidate_sha")
+                or res_obj.get("commit_created")
+                or ""
+            ).strip().lower()
+            files_changed = [str(f).strip() for f in (res_obj.get("files_changed") or []) if str(f).strip()]
+            if not _SHA_RE.fullmatch(dev_sha):
+                pending_reconciled[jid] = {
+                    "classification": "HISTORICAL_LEGACY_NO_SHA",
+                    "development_sha": None,
+                    "has_attestation": False,
+                    "reconciled_at_utc": utc_now(),
+                }
+                continue
+            in_dev = _is_ancestor(dev_sha, "origin/Edarsahub_Desarrollo")
+            in_mir = _is_ancestor(dev_sha, "origin/mirror/emergent-live")
+            has_att = (adir / f"{dev_sha}.json").is_file()
+            if in_dev and in_mir:
+                if has_att and not _files_identical(dev_sha, "origin/Edarsahub_Desarrollo", files_changed):
+                    pending_reconciled[jid] = {
+                        "classification": "HISTORICAL_SUPERSEDED_ATTESTED",
+                        "development_sha": dev_sha,
+                        "in_development_history": True,
+                        "in_mirror_history": True,
+                        "has_attestation": True,
+                        "files_superseded_by_later_commits": True,
+                        "reconciled_at_utc": utc_now(),
+                    }
+                elif not has_att:
+                    pending_reconciled[jid] = {
+                        "classification": "HISTORICAL_INTEGRATED_PRE_ATTESTATION",
+                        "development_sha": dev_sha,
+                        "in_development_history": True,
+                        "in_mirror_history": True,
+                        "has_attestation": False,
+                        "reconciled_at_utc": utc_now(),
+                    }
+                else:
+                    live_pending_audit.append(jid)
+            else:
+                live_pending_audit.append(jid)
+
+    # 2. Classify historical abandoned drafts (> historical_draft_age_seconds, no active claim, untouched on disk)
+    settled_ids: set[str] = set()
+    for d in (res_dir, done_dir, rejected_dir, pending_dir, processing_dir):
+        if d.is_dir():
+            settled_ids.update(p.stem for p in d.glob("*.json"))
+    active_claims = _active_publisher_claim_ids(cdir)
+
+    historical_drafts: dict[str, dict[str, Any]] = {}
+    if drafts_dir.is_dir():
+        for dp in sorted(drafts_dir.glob("*.json")):
+            jid = dp.stem
+            if jid in settled_ids:
+                continue
+            try:
+                age_s = max(0.0, now_ts - dp.stat().st_mtime)
+            except OSError:
+                continue
+            if age_s < historical_draft_age_seconds:
+                continue
+            if f"queue-publisher-{_safe_id(jid)}" in active_claims:
+                continue
+            raw_obj = _read_json_safe(dp)
+            if not isinstance(raw_obj, dict):
+                continue
+            mode = str(raw_obj.get("mode") or "UNKNOWN").upper()
+            dom = str((raw_obj.get("scheduling") or {}).get("bounded_context") or "UNBOUNDED_LEGACY").strip().upper()
+            historical_drafts[jid] = {
+                "classification": "HISTORICAL_ABANDONED_DRAFT_PRESERVED",
+                "domain": dom,
+                "mode": mode,
+                "age_seconds": int(age_s),
+                "preserved_untouched": True,
+                "reconciled_at_utc": utc_now(),
+            }
+
+    # 3. Safely prune abandoned orphan publisher branches (no active claim, no attached worktree, draft > historical_draft_age_seconds or settled)
+    abandoned_branches_pruned: list[dict[str, Any]] = list(prior.get("abandoned_branches_pruned") or [])
+    wt_branches: set[str] = set()
+    wt_proc = subprocess.run(
+        ["git", "-C", str(root), "worktree", "list", "--porcelain"],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=15,
+        env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+    )
+    if wt_proc.returncode == 0:
+        for line in wt_proc.stdout.splitlines():
+            if line.startswith("branch refs/heads/"):
+                wt_branches.add(line.split("branch refs/heads/", 1)[1].strip())
+
+    for item in _list_orphan_publisher_branches(root, cdir):
+        branch = str(item.get("branch") or "").strip()
+        if not branch.startswith("agent/queue-publisher/") or branch in wt_branches:
+            continue
+        jid = branch.split("agent/queue-publisher/", 1)[1]
+        if jid not in settled_ids and jid not in historical_drafts:
+            continue
+        sha_proc = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", branch],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+        )
+        branch_sha = (sha_proc.stdout or "").strip()
+        del_proc = subprocess.run(
+            ["git", "-C", str(root), "branch", "-D", branch],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=15,
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+        )
+        if del_proc.returncode == 0:
+            abandoned_branches_pruned.append({
+                "branch": branch,
+                "job_id": jid,
+                "preserved_sha": branch_sha or None,
+                "reason": "SETTLED" if jid in settled_ids else "HISTORICAL_ABANDONED_NO_CLAIM_NO_WORKTREE",
+                "pruned_at_utc": utc_now(),
+            })
+
+    ledger: dict[str, Any] = {
+        "schema": SCHEMA_HISTORICAL_RECONCILIATION,
+        "reconciled_at_utc": utc_now(),
+        "dir_signatures": sigs,
+        "pending_audit_reconciled": pending_reconciled,
+        "pending_audit_reconciled_count": len(pending_reconciled),
+        "live_pending_audit_remaining": live_pending_audit,
+        "historical_drafts_classified": historical_drafts,
+        "historical_drafts_classified_count": len(historical_drafts),
+        "abandoned_branches_pruned": abandoned_branches_pruned[-100:],
+        "abandoned_branches_pruned_count": len(abandoned_branches_pruned),
+        "production_touched": False,
+    }
+    try:
+        _atomic_write_json(ledger_path, ledger)
+    except OSError:
+        pass
+    return {**ledger, "ledger_path": str(ledger_path), "cached": False}
 
 
 def materialize_gate_authorization(
@@ -1627,13 +1971,21 @@ def resume_authorized_concurrency_blocked_objective(
     mode = str(payload.get("mode") or "MUTATION").strip().upper()
     req_paths = _extract_job_requested_paths(payload)
 
-    # Non-READ_ONLY mutations require explicit traceable authorization or explicit authorized_resume_job_ids
+    # Non-READ_ONLY mutations require explicit traceable authorization (inline, active materialized Gate, or explicit authorized_resume_job_ids)
+    effective_auth = authorization_context
     if mode != "READ_ONLY":
         explicit_id_ok = bool(authorized_resume_job_ids and source_job_id in authorized_resume_job_ids)
+        dom = str((payload.get("scheduling") or {}).get("bounded_context") or "WORKER_CONTROL_PLANE").strip().upper()
+        if effective_auth is None:
+            effective_auth = resolve_active_domain_authorization(
+                dom,
+                state_root=qroot,
+                required_class="DEVELOPMENT_MUTATION",
+                requested_paths=req_paths,
+            )
         auth_ok = False
         auth_reason = "EXPLICIT_MUTATION_AUTHORIZATION_REQUIRED"
-        if isinstance(authorization_context, Mapping) and authorization_context:
-            dom = str((payload.get("scheduling") or {}).get("bounded_context") or "WORKER_CONTROL_PLANE").strip().upper()
+        if isinstance(effective_auth, Mapping) and effective_auth:
             gate_spec = {
                 "gate_id": f"RESUME-{source_job_id[:36]}",
                 "mutation_class": "CODE_MUTATION",
@@ -1644,9 +1996,20 @@ def resume_authorized_concurrency_blocked_objective(
             }
             auth_ok, auth_reason = policy_ctrl.evaluate_gate_authorization(
                 gate_spec,
-                authorization_classes=authorization_context.get("authorization_classes") or (),
-                authorization_context=authorization_context,
+                authorization_classes=effective_auth.get("authorization_classes") or (),
+                authorization_context=effective_auth,
             )
+            if auth_ok:
+                allowed_paths = {
+                    str(p).strip().lstrip("./")
+                    for p in ((effective_auth.get("scope") or {}).get("allowed_paths") or ())
+                    if str(p).strip()
+                }
+                if req_paths and allowed_paths:
+                    norm_req = {str(p).strip().lstrip("./") for p in req_paths if str(p).strip()}
+                    if not norm_req.issubset(allowed_paths):
+                        auth_ok = False
+                        auth_reason = "SCOPE_PATHS_OUTSIDE_GATE_AUTHORIZATION"
         if not auth_ok and not explicit_id_ok:
             return {"resumed": False, "action": "ESCALATE_POLICY", "reason": str(auth_reason), "source_job_id": source_job_id, "production_touched": False}
 
@@ -1733,7 +2096,7 @@ def resume_authorized_concurrency_blocked_objective(
     meta["resume_attempt"] = next_attempt
     resumed_payload["metadata"] = meta
 
-    publisher = submit_fn or gate_publisher.submit
+    publisher = submit_fn or gcp.submit
     try:
         pub_out = publisher(resumed_payload, require_convergence=False)
     except Exception as exc:

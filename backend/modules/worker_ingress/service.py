@@ -1324,6 +1324,8 @@ def _extract_envelope_job(payload: Mapping[str, Any] | None) -> dict[str, Any]:
 
 _GO_CONTEXT_CACHE_LOCK = threading.Lock()
 _GO_CONTEXT_CACHE: dict[str, dict[str, Any]] = {}
+_GO_CONTEXT_DISK_INDEX_SCHEMA = "edarsahub.go-context-snapshot-index.v1"
+_GO_CONTEXT_DISK_INDEX_NAME = "go_context_snapshot_index.v1.json"
 
 
 def _queue_dir_signature(folder: Path) -> str:
@@ -1332,7 +1334,6 @@ def _queue_dir_signature(folder: Path) -> str:
         if not folder.is_dir():
             return "ABSENT"
         st = folder.stat()
-        # os.scandir is ~10x faster than Path.glob() in CPython
         import os
 
         count = 0
@@ -1346,11 +1347,82 @@ def _queue_dir_signature(folder: Path) -> str:
         return "ERROR"
 
 
-def _load_cached_queue_snapshot(state_root: Path) -> tuple[dict[str, Any], bool]:
-    """Return a cached, directory-signature-validated snapshot of queue indexes.
+def _scan_json_dir_stats(folder: Path) -> dict[str, tuple[int, int]]:
+    """Fast os.scandir map of stem -> (mtime_ns, size) for incremental disk-index validation."""
+    import os
 
-    Eliminates redundant multi-thousand-file JSON parsing on every get_go_context call
-    while guaranteeing immediate invalidation whenever any queue artifact changes.
+    out: dict[str, tuple[int, int]] = {}
+    if not folder.is_dir():
+        return out
+    try:
+        with os.scandir(folder) as it:
+            for entry in it:
+                name = entry.name
+                if not name.endswith(".json"):
+                    continue
+                try:
+                    st = entry.stat(follow_symlinks=False)
+                except OSError:
+                    continue
+                if entry.is_file(follow_symlinks=False):
+                    out[name[:-5]] = (int(st.st_mtime_ns), int(st.st_size))
+    except OSError:
+        return out
+    return out
+
+
+def _fast_extract_result_bounded_context(path: Path) -> str:
+    """Avoid parsing multi-megabyte result JSONs unless they actually contain 'bounded_context'."""
+    try:
+        raw_bytes = path.read_bytes()
+    except OSError:
+        return ""
+    if b"bounded_context" not in raw_bytes:
+        return ""
+    try:
+        obj = json.loads(raw_bytes.decode("utf-8", errors="replace"))
+    except (ValueError, json.JSONDecodeError):
+        return ""
+    return _extract_bounded_context(obj) if isinstance(obj, Mapping) else ""
+
+
+def _read_disk_snapshot_index(state_root: Path) -> dict[str, Any]:
+    path = state_root / "runtime" / _GO_CONTEXT_DISK_INDEX_NAME
+    if not path.is_file():
+        return {}
+    data = _read_json_if_object(path)
+    if data.get("schema") != _GO_CONTEXT_DISK_INDEX_SCHEMA:
+        return {}
+    return data
+
+
+def _write_disk_snapshot_index_best_effort(state_root: Path, payload: dict[str, Any]) -> None:
+    import os
+    import tempfile
+
+    runtime_dir = state_root / "runtime"
+    try:
+        runtime_dir.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=runtime_dir,
+            prefix="go_context_idx_",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            json.dump(payload, handle, ensure_ascii=False, separators=(",", ":"))
+            tmp_name = handle.name
+        os.replace(tmp_name, runtime_dir / _GO_CONTEXT_DISK_INDEX_NAME)
+    except OSError:
+        return
+
+
+def _load_cached_queue_snapshot(state_root: Path) -> tuple[dict[str, Any], bool]:
+    """Return a cached, directory-signature-validated snapshot with incremental disk persistence.
+
+    Eliminates both warm-cache and cold-cache 504 timeouts across MCP/backend restarts while
+    guaranteeing immediate invalidation whenever any individual queue artifact changes.
     """
     dirs = ("done", "processing", "pending", "drafts", "rejected", "results", "published")
     sig = tuple((d, _queue_dir_signature(state_root / d)) for d in dirs)
@@ -1361,50 +1433,128 @@ def _load_cached_queue_snapshot(state_root: Path) -> tuple[dict[str, Any], bool]
         if entry is not None and entry.get("sig") == sig:
             return entry["snapshot"], True
 
-    request_index = _load_canonical_request_index(state_root)
+    disk_idx = _read_disk_snapshot_index(state_root)
+    disk_req_entries = disk_idx.get("req_entries") if isinstance(disk_idx.get("req_entries"), dict) else {}
+    disk_res_entries = disk_idx.get("res_entries") if isinstance(disk_idx.get("res_entries"), dict) else {}
+    disk_dirty = not bool(disk_idx)
 
-    known_non_draft_ids: set[str] = set()
-    for dirname in ("results", "done", "rejected", "processing", "pending"):
+    # 1. Build lightweight request_index incrementally using per-file (mtime_ns, size)
+    request_index: dict[str, dict[str, Any]] = {}
+    new_req_entries: dict[str, list[Any]] = {}
+    for source_name, dirname in (
+        ("DONE", "done"),
+        ("PROCESSING", "processing"),
+        ("PENDING", "pending"),
+        ("DRAFT", "drafts"),
+    ):
         folder = state_root / dirname
-        if folder.is_dir():
-            for path in folder.glob("*.json"):
-                known_non_draft_ids.add(path.stem)
+        stats = _scan_json_dir_stats(folder)
+        for stem in sorted(stats):
+            mtime_ns, size = stats[stem]
+            dkey = f"{dirname}/{stem}"
+            cached = disk_req_entries.get(dkey)
+            if (
+                isinstance(cached, list)
+                and len(cached) == 6
+                and cached[0] == mtime_ns
+                and cached[1] == size
+            ):
+                jid, bc, mode, objective = cached[2], cached[3], cached[4], cached[5]
+            else:
+                disk_dirty = True
+                raw = _read_json_if_object(folder / f"{stem}.json")
+                if not raw:
+                    new_req_entries[dkey] = [mtime_ns, size, "", "", None, None]
+                    continue
+                inner = _extract_envelope_job(raw)
+                jid = _clean(inner.get("job_id") or raw.get("job_id")) or stem
+                if not jid:
+                    new_req_entries[dkey] = [mtime_ns, size, "", "", None, None]
+                    continue
+                bc = _extract_bounded_context(raw)
+                mode = _clean(inner.get("mode")).upper() or None
+                objective = _clean(inner.get("objective"))[:240] or None
+                cached = [mtime_ns, size, jid, bc, mode, objective]
+            new_req_entries[dkey] = cached
+            if not jid:
+                continue
+            existing = request_index.get(jid)
+            if existing is None or (not existing.get("bounded_context") and bc):
+                request_index[jid] = {
+                    "job_id": jid,
+                    "bounded_context": bc,
+                    "request_source": source_name,
+                    "mode": mode,
+                    "objective": objective,
+                }
 
-    # Pre-index unpublished drafts once per directory change
+    # 2. Collect known non-draft stems via fast scandir
+    res_stats = _scan_json_dir_stats(state_root / "results")
+    done_stats = _scan_json_dir_stats(state_root / "done")
+    rej_stats = _scan_json_dir_stats(state_root / "rejected")
+    proc_stats = _scan_json_dir_stats(state_root / "processing")
+    pend_stats = _scan_json_dir_stats(state_root / "pending")
+    known_non_draft_ids: set[str] = (
+        set(res_stats) | set(done_stats) | set(rej_stats) | set(proc_stats) | set(pend_stats)
+    )
+
+    # 3. Pre-index unpublished drafts (typically < 50 files)
     unpublished_drafts: list[tuple[str, dict[str, Any]]] = []
     drafts_dir = state_root / "drafts"
-    if drafts_dir.is_dir():
-        for path in sorted(drafts_dir.glob("*.json"), key=lambda p: p.name):
-            jid_stem = path.stem
-            if jid_stem in known_non_draft_ids:
-                continue
-            payload = _read_json_if_object(path)
-            if not payload:
-                continue
-            jid = _clean(payload.get("job_id")) or jid_stem
-            if not jid or jid in known_non_draft_ids:
-                continue
-            unpublished_drafts.append((jid, payload))
+    draft_stats = _scan_json_dir_stats(drafts_dir)
+    for jid_stem in sorted(draft_stats):
+        if jid_stem in known_non_draft_ids:
+            continue
+        payload = _read_json_if_object(drafts_dir / f"{jid_stem}.json")
+        if not payload:
+            continue
+        jid = _clean(payload.get("job_id")) or jid_stem
+        if not jid or jid in known_non_draft_ids:
+            continue
+        unpublished_drafts.append((jid, payload))
 
-    # Pre-index result headers (bounded_context / job_id) once per directory change so domain
-    # lookups NEVER re-read non-matching JSON files on every get_go_context call!
+    # 4. Pre-index result headers incrementally (zero re-reading of unchanged results across cold starts!)
     results_dir = state_root / "results"
     result_index_by_domain: dict[str, list[tuple[str, Path, str]]] = {}
     legacy_result_stems: list[tuple[str, Path]] = []
-    if results_dir.is_dir():
-        for path in sorted(results_dir.glob("*.json"), key=lambda p: p.name):
-            jid = path.stem
-            req_entry = request_index.get(jid)
-            req_bc = _clean(req_entry.get("bounded_context")).upper() if isinstance(req_entry, Mapping) else ""
-            if req_bc:
-                result_index_by_domain.setdefault(req_bc, []).append((jid, path, "REQUEST_SCHEDULING"))
-                continue
-            raw = _read_json_if_object(path)
-            payload_bc = _extract_bounded_context(raw) if raw else ""
-            if payload_bc:
-                result_index_by_domain.setdefault(payload_bc, []).append((jid, path, "PAYLOAD_SCHEDULING"))
-            else:
-                legacy_result_stems.append((jid, path))
+    new_res_entries: dict[str, list[Any]] = {}
+    for jid in sorted(res_stats):
+        path = results_dir / f"{jid}.json"
+        req_entry = request_index.get(jid)
+        req_bc = _clean(req_entry.get("bounded_context")).upper() if isinstance(req_entry, Mapping) else ""
+        if req_bc:
+            result_index_by_domain.setdefault(req_bc, []).append((jid, path, "REQUEST_SCHEDULING"))
+            continue
+        mtime_ns, size = res_stats[jid]
+        cached_res = disk_res_entries.get(jid)
+        if (
+            isinstance(cached_res, list)
+            and len(cached_res) == 3
+            and cached_res[0] == mtime_ns
+            and cached_res[1] == size
+        ):
+            payload_bc = str(cached_res[2] or "")
+        else:
+            disk_dirty = True
+            payload_bc = _fast_extract_result_bounded_context(path)
+            cached_res = [mtime_ns, size, payload_bc]
+        new_res_entries[jid] = cached_res
+        if payload_bc:
+            result_index_by_domain.setdefault(payload_bc, []).append((jid, path, "PAYLOAD_SCHEDULING"))
+        else:
+            legacy_result_stems.append((jid, path))
+
+    if disk_dirty or len(new_req_entries) != len(disk_req_entries) or len(new_res_entries) != len(disk_res_entries):
+        _write_disk_snapshot_index_best_effort(
+            state_root,
+            {
+                "schema": _GO_CONTEXT_DISK_INDEX_SCHEMA,
+                "updated_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "req_entries": new_req_entries,
+                "res_entries": new_res_entries,
+                "production_touched": False,
+            },
+        )
 
     snapshot = {
         "request_index": request_index,
@@ -1412,6 +1562,7 @@ def _load_cached_queue_snapshot(state_root: Path) -> tuple[dict[str, Any], bool]
         "unpublished_drafts": unpublished_drafts,
         "result_index_by_domain": result_index_by_domain,
         "legacy_result_stems": legacy_result_stems,
+        "disk_index_reused": bool(disk_idx and not disk_dirty),
     }
     with _GO_CONTEXT_CACHE_LOCK:
         if len(_GO_CONTEXT_CACHE) >= 16:
@@ -1789,7 +1940,16 @@ def resolve_go_context(
                     pending_ids.append(jid)
 
     # Discover domain-scoped unpublished drafts pending idempotent recovery (DRAFT)
+    # Exclude drafts explicitly recorded as historical abandoned in the canonical reconciliation ledger
+    # so ancient abandoned drafts do not hijack active domain continuity.
+    hist_ledger = _read_json_if_object(STATE_ROOT / "maintenance" / "historical_reconciliation_ledger.json")
+    hist_drafts_map = (
+        hist_ledger.get("historical_drafts_classified")
+        if isinstance(hist_ledger.get("historical_drafts_classified"), Mapping)
+        else {}
+    )
     pending_drafts: list[dict[str, Any]] = []
+    historical_reconciled_drafts: list[dict[str, Any]] = []
     draft_ids: list[str] = []
     for jid, payload in snapshot["unpublished_drafts"]:
         matched, binding_source = _resolve_job_domain(
@@ -1799,6 +1959,14 @@ def resolve_go_context(
             request_index=request_index,
         )
         if matched:
+            if jid in hist_drafts_map:
+                historical_reconciled_drafts.append({
+                    "job_id": jid,
+                    "lifecycle": "HISTORICAL_DRAFT_RECONCILED",
+                    "classification": hist_drafts_map[jid].get("classification"),
+                    "domain_binding_source": binding_source,
+                })
+                continue
             draft_ids.append(jid)
             pending_drafts.append({
                 "job_id": jid,
@@ -1900,10 +2068,36 @@ def resolve_go_context(
                 elif policy_tier == "DEVELOPMENT_MUTATION":
                     chain_mutation_authorized = True
 
+    effective_authorization_context = authorization_context
+    materialized_gate_auth: dict[str, Any] | None = None
+    if effective_authorization_context is None:
+        try:
+            from tools.mirror_sync.worker_lifecycle_recovery import (
+                resolve_active_domain_authorization,
+            )
+
+            resolved_gate = resolve_active_domain_authorization(
+                domain_upper,
+                state_root=STATE_ROOT,
+                required_class="DEVELOPMENT_MUTATION",
+            )
+            if isinstance(resolved_gate, Mapping):
+                effective_authorization_context = resolved_gate
+                materialized_gate_auth = {
+                    "gate_id": resolved_gate.get("gate_id"),
+                    "authorization_id": resolved_gate.get("authorization_id"),
+                    "expires_at_utc": resolved_gate.get("expires_at_utc"),
+                    "allowed_paths": list(((resolved_gate.get("scope") or {}).get("allowed_paths") or [])),
+                }
+        except Exception:
+            effective_authorization_context = None
+
     explicit_auth_ok, explicit_auth_reason, explicit_auth_id = _evaluate_explicit_mutation_authorization(
         domain_upper=domain_upper,
-        authorization_context=authorization_context,
+        authorization_context=effective_authorization_context,
     )
+    if explicit_auth_ok and materialized_gate_auth is not None:
+        explicit_auth_reason = "MATERIALIZED_GATE_AUTHORIZATION_VERIFIED"
 
     # Decide next_allowed_action fail-closed.
     # NEVER infer DEVELOPMENT_MUTATION or mutation_allowed from RBAC + objective_hint text.
@@ -2036,6 +2230,7 @@ def resolve_go_context(
         "recommended_next_step": next_action,
         "resume_from_job_id": resume_from_job_id,
         "cache_hit": cache_hit,
+        "disk_index_reused": bool(snapshot.get("disk_index_reused", False)),
         "resolution_ms": resolution_ms,
         "production_touched": False,
     }
@@ -2050,6 +2245,7 @@ def resolve_go_context(
         "certified_successors": certified_successors,
         "pending_jobs": pending_jobs,
         "pending_drafts": pending_drafts,
+        "historical_reconciled_drafts": historical_reconciled_drafts,
         "lifecycle_summary": {
             "DRAFT": draft_ids,
             "PENDING": pending_ids,
@@ -2067,6 +2263,7 @@ def resolve_go_context(
                 else explicit_auth_reason
             ),
             "explicit_authorization_id": explicit_auth_id,
+            "materialized_gate_authorization": materialized_gate_auth,
             "chain_authorization_status": chain_auth_reason,
         },
         "gate_dependencies": gate_dependencies,

@@ -75,7 +75,20 @@ run_tool() {
     return "$RC"
 }
 
-write_runtime_identity() { printf '%s\n' "$$" > "$RUNTIME_STATE/pid"; printf '%s\n' "$RUNTIME_GENERATION" > "$RUNTIME_STATE/generation"; }
+write_runtime_identity() {
+    printf '%s\n' "$$" > "$RUNTIME_STATE/pid"
+    printf '%s\n' "$RUNTIME_GENERATION" > "$RUNTIME_STATE/generation"
+    local CURRENT_BRANCH TREE_SHA TMP_TREE
+    CURRENT_BRANCH="$(git -C "$ROOT" branch --show-current 2>/dev/null || true)"
+    if [ "$CURRENT_BRANCH" = "Edarsahub_Desarrollo" ]; then
+        TREE_SHA="$(git -C "$ROOT" rev-parse HEAD:tools/mirror_sync 2>/dev/null | tr '[:upper:]' '[:lower:]' || true)"
+        if [[ "$TREE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            TMP_TREE="$RUNTIME_STATE/active_worker_code_tree_sha.tmp.$$"
+            printf '%s\n' "$TREE_SHA" > "$TMP_TREE"
+            mv -f "$TMP_TREE" "$RUNTIME_STATE/active_worker_code_tree_sha"
+        fi
+    fi
+}
 receive_once() { [ -f "$BRIDGE" ] || { log "UNIVERSAL_JOB_BRIDGE_AVAILABLE=NO"; return 0; }; if run_tool "UNIVERSAL_JOB_BRIDGE" 45 "$PYTHON_BIN" "$BRIDGE" receive; then printf '%s\n' "$(now_utc)" > "$RUNTIME_STATE/last_receive_utc"; log "UNIVERSAL_JOB_BRIDGE_STATE=READY"; else log "UNIVERSAL_JOB_BRIDGE_STATE=ERROR"; fi; }
 dispatch_once() { [ -f "$DISPATCHER" ] || { log "UNIVERSAL_JOB_DISPATCHER_AVAILABLE=NO"; return 0; }; if run_tool "UNIVERSAL_JOB_DISPATCHER" "${UNIVERSAL_DISPATCH_TIMEOUT_SECONDS:-1900}" "$PYTHON_BIN" "$DISPATCHER"; then log "UNIVERSAL_JOB_DISPATCHER_STATE=READY"; else log "UNIVERSAL_JOB_DISPATCHER_STATE=ERROR"; fi; }
 publish_results_once() { [ -f "$RESULT_PUBLISHER" ] || { log "UNIVERSAL_JOB_RESULT_PUBLISHER_AVAILABLE=NO"; return 0; }; if run_tool "UNIVERSAL_JOB_RESULT_PUBLISHER" "${UNIVERSAL_RESULT_PUBLISH_TIMEOUT_SECONDS:-180}" "$PYTHON_BIN" "$RESULT_PUBLISHER"; then log "UNIVERSAL_JOB_RESULT_PUBLISHER_STATE=READY"; else log "UNIVERSAL_JOB_RESULT_PUBLISHER_STATE=ERROR"; fi; }

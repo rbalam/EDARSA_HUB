@@ -63,3 +63,9 @@ resolve_go_context no debe re-parsear miles de archivos JSON en cada llamada; us
 
 ## Familia de incidentes de errores internos del conector MCP
 Errores internos del conector MCP (504 timeout, 502/503 upstream, JSON-RPC -32603, protocolo) se registran sin secretos en mcp_connector_incidents.jsonl, se clasifican en la taxonomia canonica y se aislan por herramienta/dominio sin detener todo el proyecto.
+
+## Autoconvergencia permanente del runtime sin intervencion externa
+universal_job_worker.sh debe registrar HEAD:tools/mirror_sync en runtime/active_worker_code_tree_sha al iniciar, worker_control_plane.py debe auto-converger Worker/Mirror/Backend/MCP cuando el arbol de codigo cambia sin jobs activos, y edarsahub_bootstrap_watchdog.py debe incluir worker_lifecycle_recovery.py, git_divergence_guard.py, worker_repair_auto_loop.py y worker_runtime_fingerprint.py en CONTROL_PLANE_IDENTITY_PATHS.
+
+## Indice incremental persistente en disco para cold-cache MCP
+Un cache solo en memoria sigue provocando latencia alta tras reinicios de backend o MCP cuando existen miles de resultados historicos (~230 MB); persistir runtime/go_context_snapshot_index.v1.json validado por (mtime_ns, size) y evitar parsear resultados sin bounded_context reduce cold-cache en mas de 10x sin servir datos obsoletos.

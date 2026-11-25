@@ -151,6 +151,29 @@ CONTROL_PLANE_IDENTITY_PATHS = (
     "tools/mirror_sync/worker_maintenance_contract.py",
     "tools/mirror_sync/worker_auditor.py",
     "tools/mirror_sync/worker_repair.py",
+    "tools/mirror_sync/worker_lifecycle_recovery.py",
+    "tools/mirror_sync/git_divergence_guard.py",
+    "tools/mirror_sync/worker_repair_auto_loop.py",
+    "tools/mirror_sync/worker_runtime_fingerprint.py",
+)
+
+BACKEND_SERVICE = os.environ.get("EDARSAHUB_BACKEND_SERVICE", "backend")
+MCP_SERVICE = os.environ.get("EDARSAHUB_MCP_SERVICE", "edarsahub-worker-mcp")
+AUTOCONVERGENCE_STATE = RUNTIME / "autoconvergence_state.json"
+ACTIVE_MCP_BACKEND_TREE = RUNTIME / "active_mcp_backend_tree_sha"
+MCP_BACKEND_IDENTITY_PATHS = (
+    "backend/modules/worker_ingress",
+    "backend/modules/worker_mcp",
+    "tools/mirror_sync/worker_runtime_fingerprint.py",
+)
+AUTOCONVERGENCE_WORKER_COOLDOWN_SECONDS = int(
+    os.environ.get("EDARSAHUB_AUTOCONVERGENCE_WORKER_COOLDOWN_SECONDS", "45")
+)
+AUTOCONVERGENCE_MCP_BACKEND_COOLDOWN_SECONDS = int(
+    os.environ.get("EDARSAHUB_AUTOCONVERGENCE_MCP_BACKEND_COOLDOWN_SECONDS", "90")
+)
+AUTOCONVERGENCE_MIRROR_COOLDOWN_SECONDS = int(
+    os.environ.get("EDARSAHUB_AUTOCONVERGENCE_MIRROR_COOLDOWN_SECONDS", "60")
 )
 
 
@@ -1896,6 +1919,301 @@ def maintenance_runtime_summary() -> dict[str, Any]:
         "production_touched": False,
     }
 
+def _is_production_env() -> bool:
+    env_name = (
+        os.environ.get("EDARSA_ENV")
+        or os.environ.get("APP_ENV")
+        or os.environ.get("ENVIRONMENT")
+        or "PREVIEW"
+    ).upper()
+    return "PROD" in env_name
+
+
+def _read_autoconvergence_state() -> dict[str, Any]:
+    try:
+        data = json.loads(AUTOCONVERGENCE_STATE.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def _write_autoconvergence_state(payload: dict[str, Any]) -> None:
+    record = {
+        "schema": "edarsahub.worker-autoconvergence-state.v1",
+        **payload,
+        "updated_at_utc": utc_now(),
+        "production_touched": False,
+    }
+    atomic_json(AUTOCONVERGENCE_STATE, record)
+
+
+def _compute_mcp_backend_tree_identity() -> str | None:
+    components: list[str] = []
+    for rel in MCP_BACKEND_IDENTITY_PATHS:
+        proc = run(["git", "rev-parse", f"HEAD:{rel}"], timeout=20)
+        sha = (proc.stdout or "").strip().lower()
+        if proc.returncode != 0 or not re.fullmatch(r"[0-9a-f]{40}", sha):
+            return None
+        components.append(f"{rel}={sha}")
+    return hashlib.sha256(("\n".join(components) + "\n").encode("utf-8")).hexdigest()
+
+
+def _probe_local_backend_health() -> bool:
+    proc = run(
+        [
+            "curl",
+            "--silent",
+            "--connect-timeout",
+            "2",
+            "--max-time",
+            "5",
+            "--output",
+            "/dev/null",
+            "--write-out",
+            "%{http_code}",
+            "http://127.0.0.1:8001/api/health",
+        ],
+        timeout=10,
+    )
+    code = (proc.stdout or "").strip()[-3:]
+    return proc.returncode == 0 and len(code) == 3 and code.isdigit() and code[0] in {"2", "3", "4"}
+
+
+def _supervisor_service_running(service: str) -> bool:
+    proc = run(["supervisorctl", "status", service], timeout=15)
+    return proc.returncode == 0 and "RUNNING" in (proc.stdout or "")
+
+
+def _restart_service(service: str, reason: str) -> bool:
+    if _is_production_env():
+        audit("AUTOCONVERGENCE_RESTART_BLOCKED_PRODUCTION_ENV", service=service, reason=reason)
+        return False
+    res = run(["supervisorctl", "restart", service], timeout=60)
+    ok = res.returncode == 0
+    audit(
+        "AUTOCONVERGENCE_SERVICE_RESTARTED",
+        service=service,
+        reason=reason,
+        ok=ok,
+        output=(res.stdout or "")[-800:],
+    )
+    return ok
+
+
+def converge_runtime_permanently(
+    *,
+    ff: dict[str, Any],
+    runtime: dict[str, Any],
+) -> dict[str, Any]:
+    """Permanent self-healing autoconvergence across Worker, Mirror, Backend, and MCP.
+
+    Eliminates recurring runtime divergences after commits land on Edarsahub_Desarrollo
+    without external intervention. Strictly fail-closed in Production, never force-pushes,
+    and defers restarts while a job holds active execution ownership.
+    """
+    if _is_production_env():
+        return {
+            "schema": "edarsahub.worker-autoconvergence.v1",
+            "status": "BLOCKED_PRODUCTION_ENV",
+            "production_touched": False,
+        }
+
+    now_ts = epoch()
+    state = _read_autoconvergence_state()
+    state_changed = False
+    actions: list[dict[str, Any]] = []
+
+    branch = run(["git", "branch", "--show-current"], timeout=15).stdout.strip()
+    local_head = run(["git", "rev-parse", "HEAD"], timeout=15).stdout.strip().lower()
+    remote_head = run(["git", "rev-parse", f"{REMOTE}/{DEV_BRANCH}"], timeout=15).stdout.strip().lower()
+    head_aligned = bool(
+        branch == DEV_BRANCH
+        and re.fullmatch(r"[0-9a-f]{40}", local_head)
+        and local_head == remote_head
+    )
+    dirty_effective = ""
+    try:
+        dirty_effective = effective_git_status()
+    except Exception:
+        dirty_effective = "__STATUS_FAILED__"
+    clean_checkout = dirty_effective == ""
+
+    # Determine if a mutation job is currently executing so we never disrupt in-flight work.
+    current_job_id = str(runtime.get("current_job_id") or "").strip()
+    job_active = False
+    if current_job_id:
+        ownership = active_execution_ownership(
+            current_job_id,
+            heartbeat_stale_seconds=PROCESSING_GRACE,
+        )
+        job_active = ownership.get("active") is True
+
+    # 1. Worker code-tree autoconvergence (HEAD:tools/mirror_sync vs active_worker_code_tree_sha)
+    expected_worker_tree = run(["git", "rev-parse", "HEAD:tools/mirror_sync"], timeout=15).stdout.strip().lower()
+    active_worker_tree = read_text(RUNTIME / "active_worker_code_tree_sha").lower()
+    worker_tree_aligned = bool(
+        re.fullmatch(r"[0-9a-f]{40}", expected_worker_tree)
+        and active_worker_tree == expected_worker_tree
+    )
+    worker_action = "ALIGNED"
+    if not worker_tree_aligned and re.fullmatch(r"[0-9a-f]{40}", expected_worker_tree):
+        last_worker_restart = float(state.get("last_worker_tree_restart_epoch") or 0.0)
+        if not head_aligned or not clean_checkout:
+            worker_action = "DEFERRED_NON_CANONICAL_CHECKOUT"
+        elif job_active:
+            worker_action = "DEFERRED_ACTIVE_JOB"
+        elif (now_ts - last_worker_restart) < AUTOCONVERGENCE_WORKER_COOLDOWN_SECONDS:
+            worker_action = "COOLDOWN"
+        else:
+            ok = request_universal_restart("WORKER_CODE_TREE_DRIFT_AUTOCONVERGENCE")
+            state["last_worker_tree_restart_epoch"] = now_ts
+            state["last_worker_tree_target"] = expected_worker_tree
+            state_changed = True
+            if ok:
+                # Wait briefly for universal_job_worker.sh write_runtime_identity() ack
+                deadline = time.time() + 10.0
+                while time.time() < deadline:
+                    time.sleep(0.5)
+                    if read_text(RUNTIME / "active_worker_code_tree_sha").lower() == expected_worker_tree:
+                        worker_tree_aligned = True
+                        break
+                worker_action = "RECOVERED_AUTO" if worker_tree_aligned else "RESTART_REQUESTED_PENDING_ACK"
+            else:
+                worker_action = "RESTART_FAILED"
+            actions.append({
+                "component": WORKER_SERVICE,
+                "action": worker_action,
+                "expected_tree": expected_worker_tree,
+                "active_tree": read_text(RUNTIME / "active_worker_code_tree_sha").lower() or None,
+            })
+
+    # 2. Mirror fast-forward autoconvergence (strictly safe FF only when behind Development)
+    mirror_action = "ALIGNED"
+    mirror_aligned = False
+    if head_aligned:
+        mirror_branch = os.environ.get("EDARSAHUB_MIRROR_BRANCH", "mirror/emergent-live")
+        run(["git", "fetch", "--quiet", REMOTE, mirror_branch], timeout=45)
+        mirror_sha = run(["git", "rev-parse", f"{REMOTE}/{mirror_branch}"], timeout=15).stdout.strip().lower()
+        mirror_aligned = mirror_sha == remote_head
+        if not mirror_aligned and re.fullmatch(r"[0-9a-f]{40}", mirror_sha):
+            mb = run(["git", "merge-base", mirror_sha, remote_head], timeout=15).stdout.strip().lower()
+            writer_lock_exists = (STATE / "git-writer.lock.d").exists()
+            last_mirror_attempt = float(state.get("last_mirror_ff_epoch") or 0.0)
+            if mb != mirror_sha:
+                mirror_action = "DEFERRED_NON_FF_MIRROR"
+            elif writer_lock_exists or job_active:
+                mirror_action = "DEFERRED_WRITER_BUSY"
+            elif not clean_checkout:
+                mirror_action = "DEFERRED_LOCAL_DIRTY"
+            elif (now_ts - last_mirror_attempt) < AUTOCONVERGENCE_MIRROR_COOLDOWN_SECONDS:
+                mirror_action = "COOLDOWN"
+            else:
+                state["last_mirror_ff_epoch"] = now_ts
+                state_changed = True
+                try:
+                    try:
+                        from tools.mirror_sync import git_divergence_guard as _gdg
+                    except ModuleNotFoundError:
+                        import git_divergence_guard as _gdg
+                    conv = _gdg.ensure_submit_convergence(
+                        ROOT,
+                        job_id="CONTROL-PLANE-AUTOCONVERGENCE",
+                        owner="worker-control-plane",
+                        owner_pid=os.getpid(),
+                    )
+                    if conv.get("converged") is True:
+                        mirror_aligned = True
+                        mirror_action = "MIRROR_FF_CONVERGED_AUTO"
+                    else:
+                        mirror_action = f"MIRROR_DEFERRED:{conv.get('status')}"
+                except Exception as exc:
+                    mirror_action = f"MIRROR_ERROR:{type(exc).__name__}"
+                actions.append({
+                    "component": "mirror/emergent-live",
+                    "action": mirror_action,
+                    "development_sha": remote_head,
+                })
+    else:
+        mirror_action = "DEFERRED_HEAD_NOT_ALIGNED"
+
+    # 3. Backend + MCP code-tree autoconvergence (keeps capability catalog & cold-cache service aligned)
+    expected_mcp_tree = _compute_mcp_backend_tree_identity()
+    active_mcp_tree = read_text(ACTIVE_MCP_BACKEND_TREE).lower()
+    mcp_backend_aligned = bool(expected_mcp_tree and active_mcp_tree == expected_mcp_tree)
+    mcp_backend_action = "ALIGNED"
+    if expected_mcp_tree and not mcp_backend_aligned:
+        if not active_mcp_tree and head_aligned and clean_checkout:
+            # First-time baseline bootstrap when services are already healthy on current HEAD
+            if _probe_local_backend_health() and _supervisor_service_running(MCP_SERVICE):
+                atomic_json_marker_tmp = ACTIVE_MCP_BACKEND_TREE.with_name(
+                    f"active_mcp_backend_tree_sha.tmp.{os.getpid()}"
+                )
+                atomic_json_marker_tmp.write_text(expected_mcp_tree + "\n", encoding="utf-8")
+                os.replace(atomic_json_marker_tmp, ACTIVE_MCP_BACKEND_TREE)
+                mcp_backend_aligned = True
+                mcp_backend_action = "BASELINE_RECORDED"
+            else:
+                mcp_backend_action = "DEFERRED_SERVICES_UNHEALTHY"
+        elif not head_aligned or not clean_checkout:
+            mcp_backend_action = "DEFERRED_NON_CANONICAL_CHECKOUT"
+        elif job_active:
+            mcp_backend_action = "DEFERRED_ACTIVE_JOB"
+        elif (now_ts - float(state.get("last_mcp_backend_restart_epoch") or 0.0)) < AUTOCONVERGENCE_MCP_BACKEND_COOLDOWN_SECONDS:
+            mcp_backend_action = "COOLDOWN"
+        else:
+            state["last_mcp_backend_restart_epoch"] = now_ts
+            state_changed = True
+            backend_ok = _restart_service(BACKEND_SERVICE, "MCP_BACKEND_CODE_TREE_DRIFT_AUTOCONVERGENCE")
+            ready = False
+            if backend_ok:
+                deadline = time.time() + 25.0
+                while time.time() < deadline:
+                    if _probe_local_backend_health():
+                        ready = True
+                        break
+                    time.sleep(1.0)
+            mcp_ok = _restart_service(MCP_SERVICE, "MCP_BACKEND_CODE_TREE_DRIFT_AUTOCONVERGENCE") if ready else False
+            if ready and mcp_ok and _supervisor_service_running(MCP_SERVICE):
+                tmp_marker = ACTIVE_MCP_BACKEND_TREE.with_name(
+                    f"active_mcp_backend_tree_sha.tmp.{os.getpid()}"
+                )
+                tmp_marker.write_text(expected_mcp_tree + "\n", encoding="utf-8")
+                os.replace(tmp_marker, ACTIVE_MCP_BACKEND_TREE)
+                mcp_backend_aligned = True
+                mcp_backend_action = "RECOVERED_AUTO"
+            else:
+                mcp_backend_action = "RESTART_INCOMPLETE"
+            actions.append({
+                "component": f"{BACKEND_SERVICE}+{MCP_SERVICE}",
+                "action": mcp_backend_action,
+                "backend_ready": ready,
+                "mcp_restarted": mcp_ok,
+            })
+
+    if state_changed:
+        try:
+            _write_autoconvergence_state(state)
+        except OSError:
+            pass
+
+    overall = bool(head_aligned and worker_tree_aligned and mirror_aligned and mcp_backend_aligned)
+    return {
+        "schema": "edarsahub.worker-autoconvergence.v1",
+        "at_utc": utc_now(),
+        "head_aligned": head_aligned,
+        "clean_checkout": clean_checkout,
+        "worker_code_tree_aligned": worker_tree_aligned,
+        "worker_action": worker_action,
+        "mirror_aligned": mirror_aligned,
+        "mirror_action": mirror_action,
+        "mcp_backend_tree_aligned": mcp_backend_aligned,
+        "mcp_backend_action": mcp_backend_action,
+        "overall_autoconverged": overall,
+        "actions": actions,
+        "production_touched": False,
+    }
+
+
 def _run_global_lifecycle_cycle(
     *,
     ff: dict[str, Any],
@@ -1907,7 +2225,7 @@ def _run_global_lifecycle_cycle(
     except ModuleNotFoundError:
         import worker_lifecycle_recovery as _lr
 
-    # Safely reconcile stale converged runtime-drift incidents & settled orphan publisher branches
+    # Safely reconcile stale converged runtime-drift incidents & settled/abandoned orphan publisher branches
     try:
         converged_reconcile = _lr.reconcile_converged_runtime_incidents(state_root=STATE)
     except Exception as exc:
@@ -1922,6 +2240,20 @@ def _run_global_lifecycle_cycle(
         )
     except Exception as exc:
         pruned_branches = {"error": type(exc).__name__, "pruned": []}
+
+    try:
+        historical_reconciliation = _lr.reconcile_historical_queue_artifacts(
+            repo_root=ROOT,
+            state_root=STATE,
+            claims_dir=AGENT_GUARD / "state" / "claims",
+        )
+    except Exception as exc:
+        historical_reconciliation = {"error": type(exc).__name__, "production_touched": False}
+
+    try:
+        active_authorizations = _lr.list_active_gate_authorizations(state_root=STATE)
+    except Exception:
+        active_authorizations = []
 
     detection = _lr.scan_global_lifecycle_blockers(
         repo_root=ROOT,
@@ -1947,14 +2279,41 @@ def _run_global_lifecycle_cycle(
     except Exception as exc:
         resumable_concurrency = [{"error": type(exc).__name__}]
     detection["resumable_concurrency_objectives"] = resumable_concurrency
+    detection["active_gate_authorizations"] = [
+        {
+            "gate_id": a.get("gate_id"),
+            "authorization_id": a.get("authorization_id"),
+            "domains": (a.get("scope") or {}).get("domains") or [],
+            "expires_at_utc": a.get("expires_at_utc"),
+        }
+        for a in active_authorizations
+    ]
     recovery["converged_runtime_incidents_reconciled"] = converged_reconcile
     recovery["orphan_publisher_branches_pruned"] = pruned_branches
+    recovery["historical_reconciliation"] = {
+        "schema": historical_reconciliation.get("schema"),
+        "pending_audit_reconciled_count": historical_reconciliation.get("pending_audit_reconciled_count", 0),
+        "historical_drafts_classified_count": historical_reconciliation.get("historical_drafts_classified_count", 0),
+        "abandoned_branches_pruned_count": historical_reconciliation.get("abandoned_branches_pruned_count", 0),
+        "ledger_path": historical_reconciliation.get("ledger_path"),
+        "production_touched": False,
+    }
     return detection, recovery
 
 
 def cycle() -> dict[str, Any]:
     ff = preserve_and_fast_forward()
     runtime = heal_runtime_generation_and_heartbeat()
+    try:
+        autoconvergence = converge_runtime_permanently(ff=ff, runtime=runtime)
+    except Exception as exc:
+        audit("AUTOCONVERGENCE_CYCLE_EXCEPTION", error=str(exc))
+        autoconvergence = {
+            "schema": "edarsahub.worker-autoconvergence.v1",
+            "status": "ERROR_FAIL_CLOSED",
+            "error": type(exc).__name__,
+            "production_touched": False,
+        }
     claims = reconcile_agent_guard_orphans()
     requeued = requeue_stale_processing()
     automatic_repair = automatic_repair_orchestration()
@@ -1976,6 +2335,7 @@ def cycle() -> dict[str, Any]:
         "at_utc": utc_now(),
         "ff": ff,
         "runtime": runtime,
+        "autoconvergence": autoconvergence,
         "agent_guard": claims,
         "stale_processing_requeued": requeued,
         "maintenance": maintenance_runtime_summary(),
