@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "backend/core/scheduler/jobs/netpay_sync_job.py",
+          "backend/core/scheduler/scheduler_manager.py",
+          "backend/core/centro_control/routes.py",
+          "frontend/src/pages/Scheduler.jsx"
+        ],
+        "search_terms": [
+          "netpay",
+          "DETALLE_TRANSACCIONES",
+          "DETALLE_DEPOSITOS_MOVIMIENTOS",
+          "FechaFin",
+          "EstatusValidacion",
+          "Finanzas_Adquirente"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-NETPAY-REPOSITORY_CONTRACT_AUDIT_BOUNDE-C70173D2C20FC1777DC6",
+  "mode": "READ_ONLY",
+  "objective": "NetPay Gate READ_ONLY repository contract audit. Before any next Gate review existing results and avoid duplicates. Inspect supported canonical paths to establish NetPay scheduler, routes and frontend report integration, date range contracts, readiness and errors. Historical SQL June 2026: 46 robot executions INICIADO, 37 PENDIENTE; 3308 transactions, 43 deposits. Do not assert current SQL sync or operational certification from repo audit alone. No actions, no production writes, no robot runs. Deliver exact job JSON/checks and blockers. NetPay robot directory outside allowed roots, mark as coverage gap requiring separate authorized audit.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "NETPAY",
+    "conflict_domains": [
+      "NETPAY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
