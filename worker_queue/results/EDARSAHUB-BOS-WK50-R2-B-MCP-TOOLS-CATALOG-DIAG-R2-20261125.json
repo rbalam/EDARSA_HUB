@@ -1,0 +1,36 @@
+{
+  "base_sha": "444a753c98bb076b475c7b69d300c1bf851c05aa",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "candidate_sha": "dc1e9efbd90cb57203fd4fda358836656c936c3b",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-11-25T02:32:42Z",
+  "execution_base_sha": "444a753c98bb076b475c7b69d300c1bf851c05aa",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/worker_ingress/semantic_capabilities.py",
+    "backend/modules/worker_ingress/service.py",
+    "backend/modules/worker_mcp/client.py",
+    "backend/modules/worker_mcp/server.py",
+    "backend/tests/test_worker_mcp_gateway_400_observability.py",
+    "backend/tests/test_worker_mcp_r2_b_autonomous_tools_contract.py",
+    "tools/tests/test_worker_mcp_gate2b.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-WK50-R2-B-MCP-TOOLS-CATALOG-DIAG-R2-20261125",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-11-25T02:33:38Z",
+  "quality_gate": "FAIL",
+  "requested_base_sha": "444a753c98bb076b475c7b69d300c1bf851c05aa",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-25T02:32:23Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
