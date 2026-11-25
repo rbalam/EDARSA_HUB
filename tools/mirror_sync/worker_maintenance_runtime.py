@@ -95,6 +95,7 @@ class RuntimeIncidentState:
     capability_code: str | None = None
     requester: dict[str, Any] | None = None
     superseded_reason: str | None = None
+    escalation_reason: str | None = None
 
 
 def _incident_path(incident_id: str) -> Path:
@@ -243,6 +244,10 @@ def _build_runtime_state(
             str(state.get("superseded_reason") or "").strip()
             or None
         ),
+        escalation_reason=(
+            str(state.get("escalation_reason") or "").strip()
+            or None
+        ),
     )
 
 
@@ -374,6 +379,32 @@ def supersede_runtime_incident(
         incident_id,
         state,
     )
+
+
+def escalate_runtime_incident(
+    incident_id: str,
+    *,
+    reason: str = "ESCALATED_HUMAN_REQUIRED",
+    diagnostic_ref: str | None = None,
+) -> RuntimeIncidentState:
+    """Transition a stuck/exhausted/unauthorized incident to ESCALATED_HUMAN_REQUIRED preserving full history."""
+    state = _load_state(incident_id)
+    if state is None:
+        raise ValueError("MAINTENANCE_INCIDENT_NOT_FOUND")
+    if state.get("production_touched") is not False:
+        raise ValueError("MAINTENANCE_ESCALATION_PRODUCTION_FORBIDDEN")
+    if state.get("state") in {
+        MaintenanceState.CERTIFIED.value,
+        MaintenanceState.SUPERSEDED.value,
+    }:
+        raise ValueError("MAINTENANCE_ESCALATION_INVALID_STATE")
+    state["state"] = MaintenanceState.ESCALATED_HUMAN_REQUIRED.value
+    state["cooldown_until_epoch"] = None
+    state["escalation_reason"] = str(reason or "ESCALATED_HUMAN_REQUIRED").strip()[:256]
+    if diagnostic_ref:
+        state["diagnostic_ref"] = str(diagnostic_ref).strip()[:256]
+    _atomic_json(_incident_path(incident_id), state)
+    return _build_runtime_state(incident_id, state)
 
 
 def repair_attempt_allowed(

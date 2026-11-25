@@ -1839,6 +1839,36 @@ def maintenance_runtime_summary() -> dict[str, Any]:
         "production_touched": False,
     }
 
+def _run_global_lifecycle_cycle(
+    *,
+    ff: dict[str, Any],
+    runtime: dict[str, Any],
+    claims: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    try:
+        from tools.mirror_sync import worker_lifecycle_recovery as _lr
+    except ModuleNotFoundError:
+        import worker_lifecycle_recovery as _lr
+
+    detection = _lr.scan_global_lifecycle_blockers(
+        repo_root=ROOT,
+        state_root=STATE,
+        claims_dir=AGENT_GUARD / "state" / "claims",
+        ff=ff,
+        runtime=runtime,
+        claims_summary=claims,
+    )
+    automation_state = load_repair_automation_state()
+    recovery = _lr.advance_lifecycle_recovery(
+        detection,
+        repo_root=ROOT,
+        state_root=STATE,
+        claims_dir=AGENT_GUARD / "state" / "claims",
+        automation_state=automation_state,
+    )
+    return detection, recovery
+
+
 def cycle() -> dict[str, Any]:
     ff = preserve_and_fast_forward()
     runtime = heal_runtime_generation_and_heartbeat()
@@ -1848,6 +1878,16 @@ def cycle() -> dict[str, Any]:
     automatic_repair_execution = advance_repair_automation(
         automatic_repair
     )
+    try:
+        lifecycle_detection, lifecycle_recovery = _run_global_lifecycle_cycle(
+            ff=ff,
+            runtime=runtime,
+            claims=claims,
+        )
+    except Exception as exc:
+        audit("LIFECYCLE_CYCLE_EXCEPTION", error=str(exc))
+        lifecycle_detection = {"schema": "edarsahub.worker-lifecycle-detection.v1", "error": type(exc).__name__, "production_touched": False}
+        lifecycle_recovery = {"schema": "edarsahub.worker-lifecycle-recovery.v1", "status": "ERROR_FAIL_CLOSED", "production_touched": False}
     payload = {
         "schema": "edarsahub.worker-control-plane.v1",
         "at_utc": utc_now(),
@@ -1858,6 +1898,8 @@ def cycle() -> dict[str, Any]:
         "maintenance": maintenance_runtime_summary(),
         "automatic_repair": automatic_repair,
         "automatic_repair_execution": automatic_repair_execution,
+        "lifecycle_detection": lifecycle_detection,
+        "lifecycle_recovery": lifecycle_recovery,
         "production_touched": False,
     }
     atomic_json(STATUS, payload)

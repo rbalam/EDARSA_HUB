@@ -40,6 +40,7 @@ class MaintenanceState(str, Enum):
     CERTIFIED = "CERTIFIED"
     REJECTED = "REJECTED"
     SUPERSEDED = "SUPERSEDED"
+    ESCALATED_HUMAN_REQUIRED = "ESCALATED_HUMAN_REQUIRED"
 
 
 @dataclass(frozen=True)
@@ -243,6 +244,7 @@ def audit_incident(
     if incident.state in {
         MaintenanceState.REJECTED,
         MaintenanceState.SUPERSEDED,
+        MaintenanceState.ESCALATED_HUMAN_REQUIRED,
     }:
         return MaintenanceDecision(
             incident_id=incident.incident_id,

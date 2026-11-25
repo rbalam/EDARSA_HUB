@@ -820,6 +820,7 @@ def advance_repair_automation(
         if state.state in {
             "CERTIFIED",
             "SUPERSEDED",
+            "ESCALATED_HUMAN_REQUIRED",
         }:
             rows.append(
                 {
@@ -1064,6 +1065,84 @@ def advance_repair_automation(
                 )
                 continue
 
+        cb_dir = maintenance.INCIDENT_DIR.parent / "circuit_breakers"
+        sig_key = f"incident:{incident_id[:100]}"
+        prior_cb = _load_json(_circuit_path(sig_key, state_dir=cb_dir)) or {}
+        consec_fail = int(prior_cb.get("consecutive_failures") or 0)
+        exp_cooldown = min(3600, 60 * (2 ** min(max(0, consec_fail - 1), 10))) if consec_fail > 0 else 900
+        kl_assessment = assess_knowledge_loop_cycle(
+            incident_id=sig_key,
+            status=str((source or {}).get("status") or getattr(state, "source_status", "") or ""),
+            blockers=list((source or {}).get("blockers") or []),
+            error_code=str(
+                (learned.problem_signature if learned is not None else getattr(state, "problem_signature", None))
+                or ""
+            ),
+            source_job_id=source_job_id,
+            target_paths=list(getattr(state, "target_paths", ()) or ()),
+            causal_evidence={"incident_id": incident_id, "source_job_id": source_job_id},
+            max_failures=3,
+            cooldown_seconds=max(900, exp_cooldown),
+            state_dir=cb_dir,
+        )
+        cb_state = kl_assessment.get("circuit_breaker") or {}
+        if cb_state.get("allow_attempt") is False:
+            rows.append(
+                {
+                    "incident_id": incident_id,
+                    "source_job_id": source_job_id,
+                    "action": "CIRCUIT_OPEN_WAIT",
+                    "reason": cb_state.get("reason") or "CIRCUIT_OPEN_MAX_FAILURES",
+                    "cooldown_remaining_seconds": cb_state.get("cooldown_remaining_seconds", 0),
+                    "knowledge_loop_next_step": kl_assessment.get("next_step"),
+                    "production_touched": False,
+                }
+            )
+            continue
+
+        tax_class = kl_assessment.get("classification") or {}
+        if tax_class.get("category") in {"SECURITY", "BUSINESS"}:
+            rows.append(
+                {
+                    "incident_id": incident_id,
+                    "source_job_id": source_job_id,
+                    "action": "ESCALATED_HUMAN_REQUIRED",
+                    "reason": f"POLICY_HUMAN_APPROVAL_REQUIRED:{tax_class.get('failure_class')}",
+                    "knowledge_loop_next_step": kl_assessment.get("next_step"),
+                    "production_touched": False,
+                }
+            )
+            continue
+
+        try:
+            from tools.mirror_sync import gate_chain_controller as _policy_ctrl
+        except ModuleNotFoundError:
+            import gate_chain_controller as _policy_ctrl
+        policy_eval = _policy_ctrl.evaluate_autonomous_policy(
+            {
+                "gate_id": f"REPAIR-{incident_id[:48]}",
+                "job_id": incident_id,
+                "mutation_class": "CODE_MUTATION",
+                "authorization_class": "DEV_AUTONOMOUS",
+                "production_allowed": False,
+            },
+            retry_count=int(getattr(state, "attempts", 0) or 0),
+            consecutive_failures=consec_fail,
+            authorization_classes=("DEV_AUTONOMOUS",),
+        )
+        if not policy_eval.get("allowed"):
+            rows.append(
+                {
+                    "incident_id": incident_id,
+                    "source_job_id": source_job_id,
+                    "action": "POLICY_BLOCKED",
+                    "reason": str(policy_eval.get("reason") or "POLICY_DENIED"),
+                    "policy_tier": policy_eval.get("policy_tier"),
+                    "production_touched": False,
+                }
+            )
+            continue
+
         try:
             publication = planner.publish_planned_repair(
                 incident_id,
@@ -1080,6 +1159,12 @@ def advance_repair_automation(
                 requester=requester,
             )
         except Exception as exc:
+            record_circuit_outcome(
+                sig_key,
+                certified_success=False,
+                failure_class=f"{type(exc).__name__}:{str(exc)[:80]}",
+                state_dir=cb_dir,
+            )
             rows.append(
                 {
                     "incident_id": incident_id,
@@ -1139,6 +1224,8 @@ FAILURE_TAXONOMY_RULES: tuple[tuple[str, str, tuple[str, ...], bool, bool, str, 
     ("ABSENT_OR_TRUNCATED_EVIDENCE", "CONTRACT", ("EVIDENCE_ABSENT", "EVIDENCE_TRUNCATED", "RESULT_ABSENT"), False, False, "BOUNDED_REQUERY", 1),
     ("GIT_MIRROR_DIVERGENCE", "INFRASTRUCTURE", ("GIT_DIVERGENCE_BLOCKED", "DIVERGENCE", "NON_FAST_FORWARD", "GUARD_CLI_EXIT_MISMATCH", "FINALIZE_SYSTEM_DEPS_DRIFT"), True, False, "CANONICAL_DIVERGENCE_GUARD", 2),
     ("CONTRADICTORY_NOT_FOUND", "INFRASTRUCTURE", ("NOT_FOUND", "BLOB_MISSING", "RESULT_REF_MISSING"), True, False, "RECONCILE_REMOTE_RESULTS", 1),
+    ("CORRUPT_DRAFT", "NON_RECOVERABLE", ("CORRUPT_DRAFT", "JSONDECODEERROR", "DRAFT_NOT_JSON_OBJECT"), False, True, "PRESERVE_FORENSIC_ESCALATE_HUMAN", 0),
+    ("PERSISTENT_UNPUBLISHED_DRAFT", "TRANSIENT", ("PERSISTENT_UNPUBLISHED_DRAFT", "JOB_DRAFT_IDEMPOTENCY_CONFLICT", "UNPUBLISHED_DRAFT"), True, False, "IDEMPOTENT_DRAFT_RECOVERY", 2),
     ("INCOMPLETE_PUBLICATION", "TRANSIENT", ("PUBLICATION_INCOMPLETE", "PUSH_FAILED", "GIT_PUSH_FAILED"), True, False, "RECONCILE_AND_REPUBLISH", 2),
     ("PENDING_ATTESTATION", "TRANSIENT", ("PENDING_AUDIT_EVIDENCE", "ATTESTATION_MISSING", "PENDING_CERTIFICATION"), True, False, "WAIT_ATTESTATION_CYCLE", 2),
     ("CONCURRENCY_CONFLICT", "TRANSIENT", ("CONCURRENT_SCOPE_CONFLICT", "GIT_LOCK_BUSY", "INDEX.LOCK", "WRITER_LOCK"), True, False, "BOUNDED_RETRY", 2),
