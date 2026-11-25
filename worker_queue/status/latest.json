@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "444a753c98bb076b475c7b69d300c1bf851c05aa",
-  "generated_at_utc": "2026-11-25T02:28:34Z",
+  "generated_at_utc": "2026-11-25T02:29:59Z",
   "history": {
     "done_total_local": 2062,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 315,
+      "age_seconds": 400,
       "job_id": "EDARSAHUB-BOS-WK50-R2-0-GOVERNANCE-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 227,
+      "age_seconds": 311,
       "job_id": "EDARSAHUB-BOS-WK50-R2-A-OWNERSHIP-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1524,
+      "age_seconds": 1609,
       "job_id": "SEM-REQUEST-ED69DAC9190C370E171CE5E0",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 118,
+      "age_seconds": 203,
       "job_id": "WORKER-REPAIR-4bce9340cca11bc84f05-A2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 455,
+      "age_seconds": 540,
       "job_id": "WORKER-REPAIR-5767c5f798722d07d19e-A1",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-25T02:28:28Z",
-    "last_receive_utc": "2026-11-25T02:28:23Z",
+    "last_cycle_utc": "2026-11-25T02:29:41Z",
+    "last_receive_utc": "2026-11-25T02:29:54Z",
     "last_terminal_utc": "2026-11-25T02:26:35Z",
     "pid": "408197",
     "runtime_fingerprint": {
