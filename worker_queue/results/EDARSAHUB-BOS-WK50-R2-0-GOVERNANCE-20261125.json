@@ -1,0 +1,31 @@
+{
+  "base_sha": "59e78c983eebeaec5e8ff7235b639a5ce0273eda",
+  "blockers": [],
+  "candidate_sha": "48a485212a1ea504f19d47e68048a83e96835ce1",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-11-25T02:23:18Z",
+  "development_sha": "48a485212a1ea504f19d47e68048a83e96835ce1",
+  "execution_base_sha": "59e78c983eebeaec5e8ff7235b639a5ce0273eda",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/agent-governance/AGENT_POLICY.md",
+    "docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md",
+    "docs/agent-governance/decisions/ACTIVE_DECISIONS.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-WK50-R2-0-GOVERNANCE-20261125",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-11-25T02:24:24Z",
+  "quality_gate": "PASS",
+  "requested_base_sha": "59e78c983eebeaec5e8ff7235b639a5ce0273eda",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-25T02:23:11Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
