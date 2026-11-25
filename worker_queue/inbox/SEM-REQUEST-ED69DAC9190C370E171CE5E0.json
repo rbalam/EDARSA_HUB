@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_job_id": "EDARSAHUB-BOS-GATE3I-OAUTH-MCP-SCOPE-ENFORCEMENT-20261115"
+      },
+      "type": "worker_maintenance_history_readonly"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-ED69DAC9190C370E171CE5E0",
+  "mode": "READ_ONLY",
+  "objective": "Recuperar exclusivamente Maintenance History del Gate 3I histórico EDARSAHUB-BOS-GATE3I-OAUTH-MCP-SCOPE-ENFORCEMENT-20261115, commit 7784855e9b5ac46530d027d49d4f60beb62f6a4b. Identificar evidencia disponible del mecanismo de publicación y autorización de gobernanza; no repetir Gate 3I ni modificar permisos, archivos o Producción. Distinguir ausencia de evidencia de fallo. Comprobar duplicados antes de ejecutar. READ_ONLY, actions=[], production_allowed=false en contrato generado.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_REPAIR_KNOWLEDGE_LOOP",
+    "conflict_domains": [
+      "WORKER_REPAIR_KNOWLEDGE_LOOP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
