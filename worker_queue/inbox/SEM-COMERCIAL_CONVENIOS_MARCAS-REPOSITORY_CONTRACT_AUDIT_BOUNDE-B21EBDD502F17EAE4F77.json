@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "convenio",
+          "marca",
+          "distribuidor",
+          "bonificacion",
+          "rebate",
+          "presupuesto",
+          "contabilidad",
+          "compras",
+          "almacen",
+          "rbac"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMERCIAL_CONVENIOS_MARCAS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B21EBDD502F17EAE4F77",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en modo READ_ONLY el repositorio de EDARSAHUB BOS para identificar componentes existentes reutilizables para Convenios Comerciales con Marcas: marcas y distribuidores, compras y entradas, metas, bonificaciones, presupuesto, contabilidad y RBAC. Devolver evidencia y brechas sin modificar archivos ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_CONVENIOS_MARCAS",
+    "conflict_domains": [
+      "COMERCIAL_CONVENIOS_MARCAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
