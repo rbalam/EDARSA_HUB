@@ -1,0 +1,528 @@
+{
+  "base_sha": "a9cd5649c70dd199ee7945d93d6b52e66e3b5fa8",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-25T08:43:29Z",
+  "execution_base_sha": "a9cd5649c70dd199ee7945d93d6b52e66e3b5fa8",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-C9CD56A71900DB43A9B436B0",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-25T08:45:22Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_registry",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "time",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "corte",
+              "cuenta",
+              "folio",
+              "sucursal",
+              "unidad"
+            ],
+            "path": "backend/modules/finanzas/repository_cortes_caja_edarsahub.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CortesCajaRepositoryError",
+              "RepositoryCortesCajaEdarsahub",
+              "__init__",
+              "_formatear_corte",
+              "calcular_fecha_deposito_esperada",
+              "contar_cortes",
+              "get_cortes_caja_repository_sql",
+              "get_edarsahub_connection",
+              "listar_cortes_caja",
+              "listar_cortes_por_server_id",
+              "obtener_cortes_todos_servidores"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "logging",
+              "os",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "corte",
+              "cuenta",
+              "folio",
+              "sucursal",
+              "unidad"
+            ],
+            "path": "backend/modules/finanzas/repository_cuadres_z_edarsahub.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RepositoryCuadresZEdarsahub",
+              "__init__",
+              "_formatear_cuadre",
+              "_mapear_estatus_cuadre",
+              "_mapear_estatus_tesoreria",
+              "actualizar_cuadre_z",
+              "calcular_hash_origen",
+              "crear_cuadre_z",
+              "get_cuadres_z_repository_sql",
+              "get_edarsahub_connection",
+              "listar_cuadres_z",
+              "listar_cuadres_z_por_server_id",
+              "obtener_cuadre_z",
+              "obtener_estatus_cuadre_z",
+              "obtener_estatus_tesoreria",
+              "obtener_resumen_cuadres_z",
+              "obtener_resumen_por_server_id",
+              "registrar_log_operacion",
+              "resolver_server_id_a_unidad",
+              "validar_hash_origen"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.source_resolver",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "server",
+              "time",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "corte",
+              "folio",
+              "sucursal",
+              "unidad"
+            ],
+            "path": "backend/modules/finanzas/repository_cortes_z.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RepositoryCortesZ",
+              "__init__",
+              "_execute_query_with_server_id",
+              "_find_server_id_by_name",
+              "_get_active_server_ids",
+              "_get_cortes_mpro_by_server",
+              "_get_cortes_softrest_by_server",
+              "_get_server_config",
+              "get_all_cortes_z",
+              "get_all_cortes_z_from_servers",
+              "get_all_cortes_z_with_status",
+              "get_cortes_z_by_server_id",
+              "get_cortes_z_mpro",
+              "get_cortes_z_repository",
+              "get_cortes_z_softrestaurant"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial_analytics",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.db",
+              "core.server_registry",
+              "datetime",
+              "modules.comercial.ticket_service",
+              "modules.comercial_v2.ticket_contract",
+              "ticket_identity",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cuenta",
+              "folio",
+              "rbac",
+              "sucursal",
+              "ticket",
+              "unidad"
+            ],
+            "path": "backend/modules/comercial_analytics/repository_tickets.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_date_string",
+              "_ensure_unit_allowed",
+              "_execute",
+              "_execute_readonly_query_params",
+              "_fallback_ticket_from_comercial",
+              "_latest_snapshot_operation_date",
+              "_list_current_day_with_comercial_merge",
+              "_normalize_allowed_units",
+              "_required",
+              "get_ticket_detail",
+              "list_discounts",
+              "list_tickets",
+              "summarize_current_day_tickets"
+            ],
+            "tables_referenced": [
+              "Comercial_Ventas_Dia_Abiertas_v2"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial_v2",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "cancelacion",
+              "sucursal",
+              "ticket"
+            ],
+            "path": "backend/modules/comercial_v2/ticket_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "discount_comment",
+              "fields_from",
+              "header_from",
+              "visible_sale_from_pos_total"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "api_schemas",
+              "core.corporate_filters.request_resolver",
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "db_utils",
+              "fastapi",
+              "schemas.enums",
+              "services.tarea_service",
+              "services.workflow_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac",
+              "sucursal",
+              "tarea",
+              "unidad"
+            ],
+            "path": "backend/modules/fase2_operativo/routes/tarea_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/marcar-vencidas",
+              "/{tarea_id}",
+              "/{tarea_id}/asignar",
+              "/{tarea_id}/completar",
+              "/{tarea_id}/en-progreso",
+              "/{tarea_id}/historial",
+              "/{tarea_id}/reasignar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "asignar_tarea",
+              "completar_tarea",
+              "crear_tarea",
+              "get_db",
+              "listar_tareas",
+              "marcar_en_progreso",
+              "marcar_tareas_vencidas",
+              "obtener_historial_tarea",
+              "obtener_tarea",
+              "reasignar_tarea"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "email_service",
+              "logging",
+              "repositories.sql_base_repository",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "cuenta",
+              "notificacion",
+              "sucursal",
+              "tarea",
+              "unidad"
+            ],
+            "path": "backend/modules/fase2_operativo/services/notification_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "NotificationService",
+              "__init__",
+              "_generar_html_cargo_aplicado",
+              "_generar_html_tarea_asignada",
+              "_generar_html_tarea_vencida",
+              "_generar_html_workflow_creado",
+              "_registrar_notificacion",
+              "get_notification_service",
+              "notificar_cargo_aplicado",
+              "notificar_tarea_asignada",
+              "notificar_tarea_vencida",
+              "notificar_workflow_creado"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.security",
+              "core.server_registry",
+              "core.unidades_service",
+              "fastapi",
+              "logging",
+              "models",
+              "server",
+              "service",
+              "typing"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "corte",
+              "rbac",
+              "sucursal",
+              "unidad"
+            ],
+            "path": "backend/modules/finanzas/propinas_tpv/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/config",
+              "/config/all",
+              "/config/{config_id}",
+              "/detectar-esquema-todos",
+              "/detectar-esquema/{server_id}",
+              "/health",
+              "/inicializar",
+              "/preview",
+              "/resumen",
+              "/sincronizar",
+              "/{propina_id}",
+              "/{propina_id}/pago"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_empresas_codigos_sql",
+              "_get_server_from_registry",
+              "_list_softrestaurant_servers",
+              "actualizar_config",
+              "crear_config",
+              "detectar_esquema",
+              "detectar_esquema_todos",
+              "get_db",
+              "get_user_server_ids_permitidos",
+              "health_check",
+              "inicializar_modulo",
+              "listar_configs",
+              "listar_propinas",
+              "obtener_config",
+              "obtener_propina",
+              "preview_propinas",
+              "registrar_pago",
+              "resumen_propinas",
+              "sincronizar_propinas"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.corporate_filters.service",
+              "core.rbac.service",
+              "core.rbac_sql.service",
+              "core.refresh_tokens",
+              "core.security",
+              "core.unidades_service",
+              "core.user_access_context",
+              "fastapi",
+              "logging",
+              "modules.auth",
+              "modules.auth.password_reset",
+              "modules.auth.schemas",
+              "modules.auth.service",
+              "modules.rbac_context_sql.context_service",
+              "os",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbac",
+              "sucursal",
+              "tarea",
+              "unidad"
+            ],
+            "path": "backend/modules/auth/routes.py",
+            "rbac_contracts": [
+              "get_current_user",
+              "menu-permissions"
+            ],
+            "routes": [
+              "/auth/context",
+              "/auth/empresas",
+              "/auth/forgot-password",
+              "/auth/login",
+              "/auth/logout",
+              "/auth/logout-all",
+              "/auth/me",
+              "/auth/me/access-context",
+              "/auth/me/context",
+              "/auth/me/effective-permissions",
+              "/auth/me/menu-permissions",
+              "/auth/refresh",
+              "/auth/register",
+              "/auth/reset-password",
+              "/roles",
+              "/roles/modulos",
+              "/roles/{role_id}",
+              "/users",
+              "/users/{user_id}",
+              "/users/{user_id}/permissions"
+            ],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "ForgotPasswordRequest",
+              "ResetPasswordRequest",
+              "_build_effective_permissions_payload",
+              "_build_menu_permissions",
+              "_canonical_session_user_ids",
+              "_extract_request_access_token",
+              "_group_permissions_by_module",
+              "_normalize_permission_codes",
+              "_p5_extract_usuario_id_from_payload",
+              "change_context",
+              "create_role",
+              "create_user_admin",
+              "delete_role",
+              "delete_user",
+              "forgot_password",
+              "get_me",
+              "get_modulos_disponibles",
+              "get_my_access_context",
+              "get_my_context",
+              "get_my_effective_permissions",
+              "get_my_empresas",
+              "get_my_menu_permissions",
+              "get_roles",
+              "get_user_dual",
+              "get_users",
+              "login",
+              "logout",
+              "logout_all_sessions",
+              "refresh_tokens",
+              "register",
+              "reset_password_endpoint",
+              "update_role",
+              "update_user",
+              "update_user_permissions"
+            ],
+            "tables_referenced": [
+              "Sesiones"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 9,
+          "scanned_files": 9,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-25T08:43:29Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
