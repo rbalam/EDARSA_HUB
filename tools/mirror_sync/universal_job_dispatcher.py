@@ -1240,7 +1240,19 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                     result["status"] = exc.code
                     result["git_guard_error"] = exc.evidence
                     raise RuntimeError(exc.code) from exc
-            git_policy = mutation_policy(git_state)
+            git_policy = mutation_policy(
+                git_state,
+                requested_paths=requested_paths,
+                isolated_worktree=True,
+            )
+            result["multiagent_concurrency_isolation"] = {
+                "isolated_worktree": True,
+                "decision": git_policy.get("terminal_status"),
+                "reason": git_policy.get("reason"),
+                "local_checkout_refresh_deferred": bool(git_policy.get("local_checkout_refresh_deferred")),
+                "dirty_paths_preserved": list(git_policy.get("dirty_paths_preserved") or []),
+                "scope_conflicts": list(git_policy.get("scope_conflicts") or []),
+            }
             if not git_policy["allowed"]:
                 result["status"] = git_policy["terminal_status"]; result["git_guard_reason"] = git_policy["reason"]; raise RuntimeError(git_policy["reason"])
             current_head = git_state["remote_head"]

@@ -24,7 +24,7 @@ import re
 import subprocess
 import tempfile
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -1311,15 +1311,455 @@ def advance_lifecycle_recovery(
                 isolated_failed_domains.add(dom)
             actions_log.append({**outcome, "domain": dom})
 
+    # Bounded authorized auto-resume for concurrency-blocked objectives (shares cycle budget)
+    resumable_candidates = scan_resumable_concurrency_blocked_objectives(
+        repo_root=root,
+        state_root=qroot,
+        now_epoch=now_epoch,
+    )
+    authorized_resume_ids = set((automation_state or {}).get("authorized_resume_job_ids") or ())
+    resumes_evaluated = 0
+    for cand in resumable_candidates:
+        if attempted >= budget:
+            break
+        if cand.get("already_has_resume"):
+            continue
+        resumes_evaluated += 1
+        r_out = resume_authorized_concurrency_blocked_objective(
+            str(cand["job_id"]),
+            repo_root=root,
+            state_root=qroot,
+            circuit_state_dir=cb_dir,
+            authorization_context=authorization_context,
+            authorized_resume_job_ids=authorized_resume_ids,
+            submit_fn=submit_fn,
+            now_epoch=now_epoch,
+        )
+        if r_out.get("action") in {
+            "RESUMED_VIA_CANONICAL_PUBLISHER",
+            "RESUME_FAILED_RECORDED",
+            "RESUME_REJECTED",
+        }:
+            attempted += 1
+            if r_out.get("resumed") is True:
+                succeeded += 1
+            actions_log.append(r_out)
+
     return {
         "schema": SCHEMA_RECOVERY,
         "at_utc": utc_now(),
         "status": "ACTIVE",
         "domain_isolation_active": True,
         "isolated_failed_domains": sorted(isolated_failed_domains),
+        "resumable_concurrency_candidates": len(resumable_candidates),
+        "resumes_evaluated": resumes_evaluated,
         "max_recoveries_per_cycle": budget,
         "recoveries_attempted": attempted,
         "recoveries_succeeded": succeeded,
         "actions": actions_log,
+        "production_touched": False,
+    }
+
+
+# ============================================================================
+# Gate P2D — Canonical Gate Authorization & Authorized Concurrency Auto-Resume
+# ============================================================================
+
+SCHEMA_GATE_AUTHORIZATION = "edarsahub.gate-authorization.v1"
+SCHEMA_CONCURRENCY_RESUME = "edarsahub.worker-concurrency-resume.v1"
+CONCURRENCY_BLOCKED_STATUSES = frozenset({
+    "GIT_WORKTREE_NOT_CLEAN",
+    "BLOCKED_LOCAL_DIRTY",
+    "CONCURRENT_SCOPE_CONFLICT",
+    "GIT_LOCK_BUSY",
+})
+MAX_CONCURRENCY_RESUMES_PER_JOB = 2
+
+
+def _authorization_dir(state_root: Path) -> Path:
+    return state_root / "maintenance" / "authorizations"
+
+
+def materialize_gate_authorization(
+    *,
+    gate_id: str,
+    authorization_id: str,
+    granted_by: str,
+    domains: list[str] | tuple[str, ...],
+    allowed_paths: list[str] | tuple[str, ...] = (),
+    authorization_classes: list[str] | tuple[str, ...] = ("DEVELOPMENT_MUTATION",),
+    actor_roles: list[str] | tuple[str, ...] = ("SUPERADMIN",),
+    actor_permissions: list[str] | tuple[str, ...] = ("*",),
+    ttl_hours: int = 24,
+    base_head_sha: str = "",
+    state_root: Path | None = None,
+    production_allowed: bool = False,
+) -> dict[str, Any]:
+    """Materialize a traceable, time-bounded, fail-closed Gate authorization artifact."""
+    if production_allowed is not False:
+        raise ValueError("PRODUCTION_AUTHORIZATION_FORBIDDEN")
+    clean_gate = _safe_id(gate_id)
+    clean_auth = str(authorization_id or "").strip()
+    if not clean_gate or not clean_auth:
+        raise ValueError("GATE_AUTHORIZATION_ID_REQUIRED")
+    clean_domains = sorted({str(d).strip().upper() for d in domains if str(d).strip() and str(d).strip() != "*"})
+    if not clean_domains:
+        raise ValueError("EXPLICIT_NON_WILDCARD_DOMAIN_REQUIRED")
+    clean_classes = sorted({str(c).strip().upper() for c in authorization_classes if str(c).strip() and str(c).strip().upper() != "PRODUCTION"})
+    if not clean_classes:
+        raise ValueError("AUTHORIZATION_CLASSES_REQUIRED")
+
+    now_dt = datetime.now(timezone.utc)
+    expires_dt = now_dt + timedelta(hours=max(1, min(int(ttl_hours), 168)))
+    qroot = state_root or (Path(os.environ.get("EDARSAHUB_ROOT", "/app")) / ".git" / "universal-worker-queue")
+    payload: dict[str, Any] = {
+        "schema": SCHEMA_GATE_AUTHORIZATION,
+        "gate_id": clean_gate,
+        "authorization_id": clean_auth,
+        "authorization_ref": clean_auth,
+        "authorization_classes": clean_classes,
+        "mutation_authorized": bool(set(clean_classes) & {"DEVELOPMENT_MUTATION", "PREAUTHORIZED_CODE_MUTATION"}),
+        "production_allowed": False,
+        "revoked": False,
+        "granted_by": str(granted_by or "").strip() or "human_responsible_explicit_go",
+        "granted_at_utc": now_dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "expires_at_utc": expires_dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "base_head_sha": str(base_head_sha or "").strip(),
+        "target_branch": "Edarsahub_Desarrollo",
+        "actor_roles": [str(r).strip() for r in actor_roles if str(r).strip()],
+        "actor_permissions": [str(p).strip() for p in actor_permissions if str(p).strip()],
+        "scope": {
+            "domains": clean_domains,
+            "allowed_paths": sorted({str(p).strip() for p in allowed_paths if str(p).strip()}),
+        },
+        "production_touched": False,
+    }
+    path = _authorization_dir(qroot) / f"{clean_gate}.json"
+    _atomic_write_json(path, payload)
+    return {**payload, "authorization_path": str(path)}
+
+
+def verify_gate_authorization(
+    gate_id: str,
+    *,
+    domain: str,
+    required_class: str = "DEVELOPMENT_MUTATION",
+    mutation_class: str = "CODE_MUTATION",
+    state_root: Path | None = None,
+    now_utc: datetime | None = None,
+) -> dict[str, Any]:
+    """Fail-closed verification of a materialized Gate authorization via gate_chain_controller."""
+    qroot = state_root or (Path(os.environ.get("EDARSAHUB_ROOT", "/app")) / ".git" / "universal-worker-queue")
+    clean_gate = _safe_id(gate_id)
+    path = _authorization_dir(qroot) / f"{clean_gate}.json"
+    raw = _read_json_safe(path)
+    if not isinstance(raw, dict) or raw.get("schema") != SCHEMA_GATE_AUTHORIZATION:
+        return {"authorized": False, "reason": "GATE_AUTHORIZATION_NOT_FOUND", "gate_id": clean_gate, "production_touched": False}
+    if raw.get("production_allowed") is True:
+        return {"authorized": False, "reason": "PRODUCTION_FORBIDDEN", "gate_id": clean_gate, "production_touched": False}
+    gate_spec = {
+        "gate_id": clean_gate,
+        "mutation_class": mutation_class,
+        "authorization_class": required_class,
+        "require_traceable_authorization": True,
+        "production_allowed": False,
+        "required_scope": {"domain": [str(domain or "").strip().upper()]},
+    }
+    ok, reason = policy_ctrl.evaluate_gate_authorization(
+        gate_spec,
+        authorization_classes=raw.get("authorization_classes") or (),
+        authorization_context=raw,
+        now_utc=now_utc,
+    )
+    return {
+        "authorized": bool(ok),
+        "reason": str(reason),
+        "gate_id": clean_gate,
+        "authorization_id": raw.get("authorization_id"),
+        "authorization_path": str(path),
+        "production_touched": False,
+    }
+
+
+def _extract_job_requested_paths(payload: Mapping[str, Any]) -> list[str]:
+    paths: set[str] = set()
+    for action in payload.get("actions") or ():
+        if isinstance(action, Mapping):
+            p = str(action.get("path") or "").strip()
+            if p:
+                paths.add(p)
+    return sorted(paths)
+
+
+def _git_diff_names_between(repo_root: Path, base_sha: str, target_ref: str = "HEAD") -> set[str] | None:
+    if not base_sha or len(base_sha) != 40:
+        return None
+    anc = subprocess.run(
+        ["git", "-C", str(repo_root), "merge-base", "--is-ancestor", base_sha, target_ref],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=15,
+    )
+    if anc.returncode != 0:
+        return None
+    diff = subprocess.run(
+        ["git", "-C", str(repo_root), "diff", "--name-only", f"{base_sha}..{target_ref}"],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=15,
+    )
+    if diff.returncode != 0:
+        return None
+    return {ln.strip() for ln in (diff.stdout or "").splitlines() if ln.strip()}
+
+
+def scan_resumable_concurrency_blocked_objectives(
+    *,
+    repo_root: Path | None = None,
+    state_root: Path | None = None,
+    max_age_seconds: int = 86400 * 7,
+    now_epoch: float | None = None,
+) -> list[dict[str, Any]]:
+    """Find recent terminal results blocked strictly by multiagent concurrency/dirty worktree."""
+    root = repo_root or Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
+    qroot = state_root or (root / ".git" / "universal-worker-queue")
+    now_ts = float(now_epoch if now_epoch is not None else time.time())
+    results_dir = qroot / "results"
+    drafts_dir = qroot / "drafts"
+    if not results_dir.is_dir():
+        return []
+
+    # Collect existing resumed_from_job_id links and active pending/processing stems
+    active_ids = (
+        {p.stem for p in (qroot / "pending").glob("*.json")}
+        | {p.stem for p in (qroot / "processing").glob("*.json")}
+    )
+    resumed_parents: set[str] = set()
+    for p in list(drafts_dir.glob("*.json")) + list(results_dir.glob("*.json")):
+        if "-RESUME-" in p.stem:
+            parent = p.stem.split("-RESUME-", 1)[0]
+            resumed_parents.add(parent)
+
+    candidates: list[dict[str, Any]] = []
+    for rp in sorted(results_dir.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+        try:
+            age = now_ts - rp.stat().st_mtime
+        except OSError:
+            continue
+        if age > max_age_seconds:
+            continue
+        res = _read_json_safe(rp)
+        if not isinstance(res, dict):
+            continue
+        status = str(res.get("status") or "").strip().upper()
+        if status not in CONCURRENCY_BLOCKED_STATUSES:
+            continue
+        if str(res.get("certification") or "").strip().upper().startswith("CERTIFIED"):
+            continue
+        if res.get("production_touched") is not False:
+            continue
+        jid = str(res.get("job_id") or rp.stem).strip()
+        if not jid or "-RESUME-" in jid:
+            continue
+        draft_path = drafts_dir / f"{jid}.json"
+        if not draft_path.is_file():
+            continue
+        if jid in active_ids or any(a.startswith(f"{jid}-RESUME-") for a in active_ids):
+            continue
+        candidates.append({
+            "job_id": jid,
+            "blocked_status": status,
+            "completed_at_utc": res.get("completed_at_utc"),
+            "base_sha": res.get("execution_base_sha") or res.get("base_sha") or res.get("local_at_start") or res.get("remote_at_start") or "",
+            "already_has_resume": jid in resumed_parents,
+            "draft_path": str(draft_path),
+            "production_touched": False,
+        })
+    return candidates
+
+
+def resume_authorized_concurrency_blocked_objective(
+    source_job_id: str,
+    *,
+    repo_root: Path | None = None,
+    state_root: Path | None = None,
+    circuit_state_dir: Path | None = None,
+    authorization_context: Mapping[str, Any] | None = None,
+    authorized_resume_job_ids: set[str] | None = None,
+    git_state_override: Mapping[str, Any] | None = None,
+    submit_fn: Any = None,
+    now_epoch: float | None = None,
+) -> dict[str, Any]:
+    """Fail-closed idempotent resumption of an explicitly authorized concurrency-blocked job."""
+    root = repo_root or Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
+    qroot = state_root or (root / ".git" / "universal-worker-queue")
+    now_ts = float(now_epoch if now_epoch is not None else time.time())
+    cb_dir = circuit_state_dir or (qroot / "maintenance" / "circuit_breakers")
+
+    result_path = qroot / "results" / f"{source_job_id}.json"
+    draft_path = qroot / "drafts" / f"{source_job_id}.json"
+    source_result = _read_json_safe(result_path)
+    payload = _read_json_safe(draft_path)
+    if not isinstance(source_result, dict) or not isinstance(payload, dict):
+        return {"resumed": False, "action": "ESCALATE_MISSING_ARTIFACT", "reason": "SOURCE_RESULT_OR_DRAFT_MISSING", "source_job_id": source_job_id, "production_touched": False}
+
+    blocked_status = str(source_result.get("status") or "").strip().upper()
+    if blocked_status not in CONCURRENCY_BLOCKED_STATUSES:
+        return {"resumed": False, "action": "SKIP_NOT_CONCURRENCY_BLOCKED", "reason": f"STATUS_NOT_RESUMABLE:{blocked_status}", "source_job_id": source_job_id, "production_touched": False}
+    if payload.get("production_allowed") is not False:
+        return {"resumed": False, "action": "ESCALATE_POLICY", "reason": "PRODUCTION_FORBIDDEN", "source_job_id": source_job_id, "production_touched": False}
+
+    # Explicit revocation check always fails closed
+    if isinstance(authorization_context, Mapping) and authorization_context.get("revoked") is True:
+        return {"resumed": False, "action": "ESCALATE_POLICY", "reason": "AUTHORIZATION_REVOKED", "source_job_id": source_job_id, "production_touched": False}
+
+    # Contract & requester validation
+    validation_errors = job_bridge.validate(payload)
+    if validation_errors:
+        return {"resumed": False, "action": "ESCALATE_CONTRACT", "reason": "INVALID_DRAFT_CONTRACT:" + ",".join(validation_errors[:5]), "source_job_id": source_job_id, "production_touched": False}
+    requester = payload.get("requester")
+    req_email = str(requester.get("email") or "").strip().lower() if isinstance(requester, Mapping) else ""
+    if not req_email or "@" not in req_email:
+        return {"resumed": False, "action": "ESCALATE_RBAC", "reason": "REQUESTER_IDENTITY_MISSING", "source_job_id": source_job_id, "production_touched": False}
+
+    mode = str(payload.get("mode") or "MUTATION").strip().upper()
+    req_paths = _extract_job_requested_paths(payload)
+
+    # Non-READ_ONLY mutations require explicit traceable authorization or explicit authorized_resume_job_ids
+    if mode != "READ_ONLY":
+        explicit_id_ok = bool(authorized_resume_job_ids and source_job_id in authorized_resume_job_ids)
+        auth_ok = False
+        auth_reason = "EXPLICIT_MUTATION_AUTHORIZATION_REQUIRED"
+        if isinstance(authorization_context, Mapping) and authorization_context:
+            dom = str((payload.get("scheduling") or {}).get("bounded_context") or "WORKER_CONTROL_PLANE").strip().upper()
+            gate_spec = {
+                "gate_id": f"RESUME-{source_job_id[:36]}",
+                "mutation_class": "CODE_MUTATION",
+                "authorization_class": "DEVELOPMENT_MUTATION",
+                "require_traceable_authorization": True,
+                "production_allowed": False,
+                "required_scope": {"domain": [dom]},
+            }
+            auth_ok, auth_reason = policy_ctrl.evaluate_gate_authorization(
+                gate_spec,
+                authorization_classes=authorization_context.get("authorization_classes") or (),
+                authorization_context=authorization_context,
+            )
+        if not auth_ok and not explicit_id_ok:
+            return {"resumed": False, "action": "ESCALATE_POLICY", "reason": str(auth_reason), "source_job_id": source_job_id, "production_touched": False}
+
+    # Check if already certified or already resumed up to max attempts
+    existing_resumes = sorted(
+        {
+            p.stem
+            for sub in ("drafts", "pending", "processing", "results", "published")
+            for p in (qroot / sub).glob(f"{source_job_id}-RESUME-*.json")
+        }
+    )
+    for r_id in existing_resumes:
+        rp = qroot / "results" / f"{r_id}.json"
+        if rp.is_file():
+            rr = _read_json_safe(rp) or {}
+            if str(rr.get("status") or "").upper() in {"INTEGRATED", "READ_ONLY_COMPLETE", "OPERATIONAL_COMPLETE"}:
+                return {"resumed": False, "action": "ALREADY_SUPERSEDED_OR_RESUMED", "reason": f"EXISTING_SUCCESSOR:{r_id}", "source_job_id": source_job_id, "production_touched": False}
+        if (qroot / "pending" / f"{r_id}.json").is_file() or (qroot / "processing" / f"{r_id}.json").is_file():
+            return {"resumed": False, "action": "SKIP_RESUME_IN_FLIGHT", "reason": f"RESUME_IN_FLIGHT:{r_id}", "source_job_id": source_job_id, "production_touched": False}
+
+    next_attempt = len(existing_resumes) + 1
+    if next_attempt > MAX_CONCURRENCY_RESUMES_PER_JOB:
+        return {"resumed": False, "action": "ESCALATE_MAX_RESUMES_EXCEEDED", "reason": f"MAX_CONCURRENCY_RESUMES_EXCEEDED:{MAX_CONCURRENCY_RESUMES_PER_JOB}", "source_job_id": source_job_id, "production_touched": False}
+
+    # Circuit breaker + exponential backoff check
+    cb_key = f"concurrency_resume:{source_job_id[:72]}"
+    cb_prior = _read_json_safe(auto_loop._circuit_path(cb_key, state_dir=cb_dir)) or {}
+    consec_fail = int(cb_prior.get("consecutive_failures") or 0)
+    backoff_s = compute_exponential_backoff(consec_fail)
+    circuit = auto_loop.evaluate_circuit_breaker(
+        cb_key,
+        max_failures=MAX_CONCURRENCY_RESUMES_PER_JOB,
+        cooldown_seconds=max(120, backoff_s),
+        now_epoch=now_ts,
+        state_dir=cb_dir,
+    )
+    if not circuit.get("allow_attempt"):
+        return {"resumed": False, "action": "CIRCUIT_OPEN", "reason": str(circuit.get("reason") or "CIRCUIT_OPEN"), "source_job_id": source_job_id, "production_touched": False}
+
+    # Check live git concurrency state (either clean or isolated disjoint from local dirty)
+    try:
+        from tools.mirror_sync import git_divergence_guard as gdg
+    except ModuleNotFoundError:
+        import git_divergence_guard as gdg
+    git_state = dict(git_state_override) if isinstance(git_state_override, Mapping) else gdg.inspect_repository(root, fetch=False)
+    policy = gdg.mutation_policy(git_state, requested_paths=req_paths, isolated_worktree=(mode != "READ_ONLY"))
+    if mode != "READ_ONLY" and not policy.get("allowed"):
+        return {
+            "resumed": False,
+            "action": "DEFER_CONCURRENCY_STILL_ACTIVE",
+            "reason": str(policy.get("reason") or "GIT_WORKTREE_NOT_CLEAN"),
+            "scope_conflicts": policy.get("scope_conflicts") or [],
+            "source_job_id": source_job_id,
+            "production_touched": False,
+        }
+
+    # Scope drift check: if target files changed between original base_sha and current HEAD, fail closed!
+    orig_base = str(payload.get("base_sha") or source_result.get("execution_base_sha") or source_result.get("local_at_start") or source_result.get("remote_at_start") or "").strip()
+    current_head = str(git_state.get("remote_head") or git_state.get("local_head") or "").strip()
+    if mode != "READ_ONLY" and orig_base and current_head and orig_base != current_head and req_paths:
+        changed_since_base = _git_diff_names_between(root, orig_base, current_head)
+        if changed_since_base is None:
+            return {"resumed": False, "action": "ESCALATE_SCOPE_DRIFT", "reason": "RESUME_BLOCKED_BASE_NOT_ANCESTOR", "source_job_id": source_job_id, "production_touched": False}
+        drift = sorted(changed_since_base & set(req_paths))
+        if drift:
+            return {
+                "resumed": False,
+                "action": "ESCALATE_SCOPE_DRIFT",
+                "reason": "RESUME_BLOCKED_SCOPE_DRIFT",
+                "drifted_paths": drift,
+                "source_job_id": source_job_id,
+                "production_touched": False,
+            }
+
+    resume_job_id = f"{source_job_id}-RESUME-{next_attempt}"
+    resumed_payload = dict(payload)
+    resumed_payload["job_id"] = resume_job_id
+    if current_head and len(current_head) == 40:
+        resumed_payload["base_sha"] = current_head
+    resumed_payload["production_allowed"] = False
+    meta = dict(resumed_payload.get("metadata") or {}) if isinstance(resumed_payload.get("metadata"), Mapping) else {}
+    meta["resumed_from_job_id"] = source_job_id
+    meta["resume_reason"] = blocked_status
+    meta["resume_attempt"] = next_attempt
+    resumed_payload["metadata"] = meta
+
+    publisher = submit_fn or gate_publisher.submit
+    try:
+        pub_out = publisher(resumed_payload, require_convergence=False)
+    except Exception as exc:
+        auto_loop.record_circuit_outcome(cb_key, certified_success=False, failure_class=f"RESUME_SUBMIT_EXC:{type(exc).__name__}", now_epoch=now_ts, state_dir=cb_dir)
+        return {"resumed": False, "action": "RESUME_FAILED_RECORDED", "reason": f"SUBMIT_EXCEPTION:{type(exc).__name__}", "source_job_id": source_job_id, "resume_job_id": resume_job_id, "production_touched": False}
+
+    pub_status = str((pub_out or {}).get("status") or "").strip().upper()
+    if pub_status in {"SUBMITTED", "ALREADY_SUBMITTED", "PUBLISHED"}:
+        auto_loop.record_circuit_outcome(cb_key, certified_success=True, now_epoch=now_ts, state_dir=cb_dir)
+        return {
+            "schema": SCHEMA_CONCURRENCY_RESUME,
+            "resumed": True,
+            "action": "RESUMED_VIA_CANONICAL_PUBLISHER",
+            "source_job_id": source_job_id,
+            "resume_job_id": resume_job_id,
+            "publication_status": pub_status,
+            "independent_certification_pending": True,
+            "production_touched": False,
+        }
+    auto_loop.record_circuit_outcome(cb_key, certified_success=False, failure_class=f"RESUME_STATUS:{pub_status or 'UNKNOWN'}", now_epoch=now_ts, state_dir=cb_dir)
+    return {
+        "schema": SCHEMA_CONCURRENCY_RESUME,
+        "resumed": False,
+        "action": "RESUME_REJECTED",
+        "source_job_id": source_job_id,
+        "resume_job_id": resume_job_id,
+        "publication_status": pub_status,
         "production_touched": False,
     }

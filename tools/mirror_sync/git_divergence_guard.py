@@ -89,10 +89,30 @@ def _git_dir(repo: Path) -> Path:
     raw = _run(repo, "rev-parse", "--git-dir").stdout.strip(); p = Path(raw)
     return (repo / p).resolve() if not p.is_absolute() else p.resolve()
 
+def _parse_porcelain_paths(lines: list[str]) -> list[str]:
+    paths: list[str] = []
+    for raw in lines:
+        if len(raw) < 4:
+            continue
+        body = raw[3:].strip()
+        if " -> " in body:
+            left, right = body.split(" -> ", 1)
+            for part in (left.strip(), right.strip()):
+                cleaned = part.strip('"')
+                if cleaned:
+                    paths.append(cleaned)
+        else:
+            cleaned = body.strip('"')
+            if cleaned:
+                paths.append(cleaned)
+    return sorted(set(paths))
+
+
 def _status_counts(repo: Path) -> dict[str, Any]:
     staged = unstaged = untracked = 0
     ignored_platform_drift = _expected_platform_system_deps_drift(repo)
-    for line in _effective_status_lines(repo):
+    effective_lines = _effective_status_lines(repo)
+    for line in effective_lines:
         if line.startswith("??"):
             untracked += 1
             continue
@@ -101,11 +121,13 @@ def _status_counts(repo: Path) -> dict[str, Any]:
                 staged += 1
             if line[1] != " ":
                 unstaged += 1
+    dirty_paths = _parse_porcelain_paths(effective_lines)
     return {
         "worktree_dirty": bool(staged or unstaged or untracked),
         "staged_count": staged,
         "unstaged_count": unstaged,
         "untracked_count": untracked,
+        "dirty_paths": dirty_paths,
         "platform_managed_system_deps_drift_ignored": ignored_platform_drift,
     }
 
@@ -124,16 +146,52 @@ def inspect_repository(repo: Path, *, fetch: bool = True) -> dict[str, Any]:
     local_only = _run(repo, "log", "--format=%H", "--max-count=20", local, "--not", remote, check=False).stdout.splitlines(); remote_only = _run(repo, "log", "--format=%H", "--max-count=20", remote, "--not", local, check=False).stdout.splitlines()
     return {"current_branch": branch, "local_head": local, "remote_head": remote, "merge_base": merge_base, "ahead_count": ahead, "behind_count": behind, **dirty, "classification": classification, "local_only_commits": local_only, "remote_only_commits": remote_only}
 
-def mutation_policy(state: dict[str, Any], *, allow_local_ahead: bool = False) -> dict[str, Any]:
-    if state.get("current_branch") != DEV_BRANCH: return {"allowed": False, "terminal_status": "GIT_DIVERGENCE_BLOCKED", "reason": "WRONG_CANONICAL_BRANCH"}
-    if state.get("worktree_dirty"): return {"allowed": False, "terminal_status": "GIT_WORKTREE_NOT_CLEAN", "reason": "GIT_WORKTREE_NOT_CLEAN"}
+def mutation_policy(
+    state: dict[str, Any],
+    *,
+    allow_local_ahead: bool = False,
+    requested_paths: list[str] | tuple[str, ...] | set[str] | None = None,
+    isolated_worktree: bool = False,
+) -> dict[str, Any]:
+    if state.get("current_branch") != DEV_BRANCH:
+        return {"allowed": False, "terminal_status": "GIT_DIVERGENCE_BLOCKED", "reason": "WRONG_CANONICAL_BRANCH"}
+    if state.get("worktree_dirty"):
+        if isolated_worktree:
+            ahead_count = int(state.get("ahead_count") or 0)
+            dirty_set = {str(p).strip() for p in (state.get("dirty_paths") or ()) if str(p).strip()}
+            req_set = {str(p).strip() for p in (requested_paths or ()) if str(p).strip()}
+            if ahead_count == 0 and dirty_set and req_set:
+                conflicts = sorted(dirty_set & req_set)
+                if not conflicts:
+                    return {
+                        "allowed": True,
+                        "terminal_status": "ISOLATED_WORKTREE_DISJOINT_DIRTY",
+                        "reason": "ISOLATED_EXECUTION_DISJOINT_FROM_LOCAL_DIRTY",
+                        "isolated_worktree": True,
+                        "local_checkout_refresh_deferred": True,
+                        "dirty_paths_preserved": sorted(dirty_set),
+                        "scope_conflicts": [],
+                    }
+                return {
+                    "allowed": False,
+                    "terminal_status": "GIT_WORKTREE_NOT_CLEAN",
+                    "reason": "GIT_WORKTREE_CONCURRENT_SCOPE_CONFLICT",
+                    "isolated_worktree": True,
+                    "scope_conflicts": conflicts,
+                    "dirty_paths_preserved": sorted(dirty_set),
+                }
+        return {"allowed": False, "terminal_status": "GIT_WORKTREE_NOT_CLEAN", "reason": "GIT_WORKTREE_NOT_CLEAN"}
     c = state.get("classification")
-    if c == "SYNC": return {"allowed": True, "terminal_status": "CERTIFIED_GIT_SYNC", "reason": "SYNC"}
+    if c == "SYNC":
+        return {"allowed": True, "terminal_status": "CERTIFIED_GIT_SYNC", "reason": "SYNC"}
     if c == "LOCAL_AHEAD_ONLY":
-        if allow_local_ahead: return {"allowed": True, "terminal_status": "LOCAL_AHEAD_ONLY", "reason": "EXPLICIT_LOCAL_OWNER_POLICY"}
+        if allow_local_ahead:
+            return {"allowed": True, "terminal_status": "LOCAL_AHEAD_ONLY", "reason": "EXPLICIT_LOCAL_OWNER_POLICY"}
         return {"allowed": False, "terminal_status": "GIT_DIVERGENCE_BLOCKED", "reason": "LOCAL_AHEAD_OWNERSHIP_UNPROVEN"}
-    if c == "REMOTE_AHEAD_ONLY": return {"allowed": False, "terminal_status": "GIT_DIVERGENCE_BLOCKED", "reason": "NEEDS_FAST_FORWARD_REFRESH"}
-    if c == "DIVERGED": return {"allowed": False, "terminal_status": "GIT_DIVERGENCE_BLOCKED", "reason": "GIT_DIVERGENCE_BLOCKED"}
+    if c == "REMOTE_AHEAD_ONLY":
+        return {"allowed": False, "terminal_status": "GIT_DIVERGENCE_BLOCKED", "reason": "NEEDS_FAST_FORWARD_REFRESH"}
+    if c == "DIVERGED":
+        return {"allowed": False, "terminal_status": "GIT_DIVERGENCE_BLOCKED", "reason": "GIT_DIVERGENCE_BLOCKED"}
     return {"allowed": False, "terminal_status": "GIT_DIVERGENCE_BLOCKED", "reason": "UNKNOWN_GIT_STATE"}
 
 def requires_writer_lock(mode: str) -> bool:
@@ -640,6 +698,8 @@ def classify_submit_convergence(
     local_merge_base: str,
     mirror_merge_base: str,
     worktree_dirty: bool,
+    dirty_paths: list[str] | tuple[str, ...] | set[str] | None = None,
+    requested_paths: list[str] | tuple[str, ...] | set[str] | None = None,
 ) -> dict[str, Any]:
     evidence = {
         "local": local,
@@ -653,11 +713,25 @@ def classify_submit_convergence(
     }
 
     if worktree_dirty:
+        dirty_set = {str(p).strip() for p in (dirty_paths or ()) if str(p).strip()}
+        req_set = {str(p).strip() for p in (requested_paths or ()) if str(p).strip()}
+        if dirty_set and req_set and dirty_set.isdisjoint(req_set) and mirror == development:
+            return {
+                **evidence,
+                "status": "CONVERGED_ISOLATED_LOCAL_DIRTY_DISJOINT",
+                "converged": True,
+                "safe": True,
+                "local_checkout_refresh_deferred": True,
+                "dirty_paths_preserved": sorted(dirty_set),
+                "scope_conflicts": [],
+            }
+        conflicts = sorted(dirty_set & req_set) if (dirty_set and req_set) else []
         return {
             **evidence,
             "status": "BLOCKED_LOCAL_DIRTY",
             "converged": False,
             "safe": False,
+            "scope_conflicts": conflicts,
         }
 
     # Never move local when MIRROR is already ahead/diverged.
@@ -723,6 +797,7 @@ def ensure_submit_convergence(
     owner: str,
     remote: str = REMOTE,
     owner_pid: int | None = None,
+    requested_paths: list[str] | tuple[str, ...] | set[str] | None = None,
 ) -> dict[str, Any]:
     if remote != REMOTE:
         return {
@@ -784,7 +859,16 @@ def ensure_submit_convergence(
             local_merge_base=local_merge_base,
             mirror_merge_base=mirror_merge_base,
             worktree_dirty=bool(state.get("worktree_dirty")),
+            dirty_paths=state.get("dirty_paths"),
+            requested_paths=requested_paths,
         )
+        if decision["status"] == "CONVERGED_ISOLATED_LOCAL_DIRTY_DISJOINT":
+            return {
+                **decision,
+                "mirror_before": mirror_before,
+                "mirror_after": mirror_before,
+                "auto_fix_applied": False,
+            }
 
         if (
             decision["status"] == "BLOCKED_DIVERGENCE"

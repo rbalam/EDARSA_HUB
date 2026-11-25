@@ -1939,6 +1939,14 @@ def _run_global_lifecycle_cycle(
         claims_dir=AGENT_GUARD / "state" / "claims",
         automation_state=automation_state,
     )
+    try:
+        resumable_concurrency = _lr.scan_resumable_concurrency_blocked_objectives(
+            repo_root=ROOT,
+            state_root=STATE,
+        )
+    except Exception as exc:
+        resumable_concurrency = [{"error": type(exc).__name__}]
+    detection["resumable_concurrency_objectives"] = resumable_concurrency
     recovery["converged_runtime_incidents_reconciled"] = converged_reconcile
     recovery["orphan_publisher_branches_pruned"] = pruned_branches
     return detection, recovery
