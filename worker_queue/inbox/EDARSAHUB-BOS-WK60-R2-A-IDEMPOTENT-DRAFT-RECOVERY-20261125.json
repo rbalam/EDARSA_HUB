@@ -1,0 +1,110 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "def _assert_idempotent_request_binding(\n    canonical_job: Mapping[str, Any],\n    *,\n    request_key: str,\n) -> None:\n    if not request_key:\n        return\n    existing = _read_existing_request_job(str(canonical_job.get(\"job_id\") or \"\"))\n    if existing is None:\n        raise WorkerIngressError(\"IDEMPOTENCY_BINDING_UNVERIFIABLE\")\n    if _canonical_request_fingerprint(existing) != _canonical_request_fingerprint(canonical_job):\n        raise WorkerIngressError(\"IDEMPOTENCY_CONFLICT\")",
+      "path": "backend/modules/worker_ingress/service.py",
+      "replacement": "def _read_unpublished_draft(job_id: str) -> dict[str, Any] | None:\n    \"\"\"Read a local unpublished draft without mutating queue state.\"\"\"\n    if not job_id:\n        return None\n    path = STATE_ROOT / \"drafts\" / f\"{job_id}.json\"\n    if not path.is_file():\n        return None\n    payload = _read_json_if_object(path)\n    return payload or None\n\n\ndef _check_unpublished_draft_idempotency(\n    canonical_job: Mapping[str, Any],\n) -> dict[str, Any] | None:\n    \"\"\"Fail closed if an unpublished draft drifts; surface recovery metadata if exact.\"\"\"\n    existing = _read_unpublished_draft(str(canonical_job.get(\"job_id\") or \"\"))\n    if existing is None:\n        return None\n    existing_fp = _canonical_request_fingerprint(existing)\n    candidate_fp = _canonical_request_fingerprint(canonical_job)\n    if existing_fp != candidate_fp or existing.get(\"base_sha\") != canonical_job.get(\"base_sha\"):\n        raise WorkerIngressError(\"IDEMPOTENCY_CONFLICT\")\n    return {\n        \"unpublished_draft_recovery\": True,\n        \"draft_fingerprint\": existing_fp,\n    }\n\n\ndef _assert_idempotent_request_binding(\n    canonical_job: Mapping[str, Any],\n    *,\n    request_key: str,\n) -> None:\n    if not request_key:\n        return\n    existing = _read_existing_request_job(str(canonical_job.get(\"job_id\") or \"\"))\n    if existing is None:\n        raise WorkerIngressError(\"IDEMPOTENCY_BINDING_UNVERIFIABLE\")\n    if _canonical_request_fingerprint(existing) != _canonical_request_fingerprint(canonical_job):\n        raise WorkerIngressError(\"IDEMPOTENCY_CONFLICT\")",
+      "source_sha256": "67c02ca290db9180f323bbbdaad0f50f5f8faaae4962aeab341057c8ce85983b",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    if existing is not None:\n        existing_job_id, existing_state = existing\n        return {\n            \"status\": \"EXISTS\",\n            \"job_id\": existing_job_id,\n            \"existing_lifecycle\": existing_state,\n            \"duplicate_prevented\": True,\n            \"production_touched\": False,\n            \"capability\": capability_code,\n            \"bounded_context\": _clean(payload.get(\"bounded_context\")).upper(),\n        }\n\n    result = _submit_through_canonical_publisher(canonical_job)",
+      "path": "backend/modules/worker_ingress/service.py",
+      "replacement": "    if existing is not None:\n        existing_job_id, existing_state = existing\n        return {\n            \"status\": \"EXISTS\",\n            \"job_id\": existing_job_id,\n            \"existing_lifecycle\": existing_state,\n            \"duplicate_prevented\": True,\n            \"production_touched\": False,\n            \"capability\": capability_code,\n            \"bounded_context\": _clean(payload.get(\"bounded_context\")).upper(),\n        }\n\n    _check_unpublished_draft_idempotency(canonical_job)\n\n    result = _submit_through_canonical_publisher(canonical_job)",
+      "source_sha256": "1054ca49abb524d549fa98ebd09f651190d193f64599a3128a3b2be63eafeda5",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "        return {\n            \"schema\": \"edarsahub.worker-semantic-preflight.v1\",\n            \"ok\": True,\n            \"status\": \"PREFLIGHT_READY\",\n            \"job_id\": canonical_job[\"job_id\"],\n            \"capability\": capability.code,\n            \"bounded_context\": bounded_context,\n            \"mode\": requested_mode,\n            \"action_count\": len(canonical_job.get(\"actions\") or []),\n            \"check_types\": [c.get(\"type\") for c in (canonical_job.get(\"checks\") or []) if isinstance(c, dict)],\n            \"duplicate_detected\": False,\n            \"production_allowed\": False,\n            \"production_touched\": False,\n        }",
+      "path": "backend/modules/worker_ingress/service.py",
+      "replacement": "        draft_recovery = _check_unpublished_draft_idempotency(canonical_job)\n        preflight_ready: dict[str, Any] = {\n            \"schema\": \"edarsahub.worker-semantic-preflight.v1\",\n            \"ok\": True,\n            \"status\": \"PREFLIGHT_READY\",\n            \"job_id\": canonical_job[\"job_id\"],\n            \"capability\": capability.code,\n            \"bounded_context\": bounded_context,\n            \"mode\": requested_mode,\n            \"action_count\": len(canonical_job.get(\"actions\") or []),\n            \"check_types\": [c.get(\"type\") for c in (canonical_job.get(\"checks\") or []) if isinstance(c, dict)],\n            \"duplicate_detected\": False,\n            \"production_allowed\": False,\n            \"production_touched\": False,\n        }\n        if draft_recovery is not None:\n            preflight_ready.update(draft_recovery)\n        return preflight_ready",
+      "source_sha256": "c985d4e4f63388db40cd6d4d495edbba141d8cfb757f8412b0c1f3d750d98a2a",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "def _prepare_queue_worktree(\n    *,\n    job_id: str,\n    queue_base: str,\n    rel: str,\n) -> tuple[Path, str, str, str]:\n    if not AGENT_GUARD.is_file():\n        raise RuntimeError(\"AGENT_GUARD_NOT_FOUND\")\n\n    safe_id = _safe_id(job_id)\n\n    branch = f\"agent/queue-publisher/{safe_id}\"\n    agent_id = f\"queue-publisher-{safe_id}\"\n    task_id = f\"QUEUE-PUBLISH-{safe_id}\"\n\n    worktree = AGENT_WORKTREES / f\"queue-publisher-{safe_id}\"\n\n    branch_ref = f\"refs/heads/{branch}\"\n\n    branch_exists = git(\n        \"show-ref\",\n        \"--verify\",\n        \"--quiet\",\n        branch_ref,\n        check=False,\n    ).returncode == 0\n\n    worktree_exists = worktree.exists()\n\n    if branch_exists or worktree_exists:",
+      "path": "tools/mirror_sync/gate_chain_publisher.py",
+      "replacement": "def _agent_guard_claim_active(agent_id: str) -> bool:\n    \"\"\"Return True unless the Agent Guard claim is absent or explicitly RELEASED.\"\"\"\n    claim_path = ROOT / \".git\" / \"agent-guard\" / \"state\" / \"claims\" / f\"{agent_id}.json\"\n    if not claim_path.is_file():\n        return False\n    try:\n        claim = json.loads(claim_path.read_text(encoding=\"utf-8\"))\n    except Exception:\n        return True\n    if not isinstance(claim, dict):\n        return True\n    return str(claim.get(\"status\") or \"\").strip().upper() != \"RELEASED\"\n\n\ndef _can_recycle_orphan_publisher_branch(\n    *,\n    branch: str,\n    rel: str,\n    expected_payload: str | None,\n    agent_id: str,\n) -> bool:\n    \"\"\"Verify an orphan local publisher branch matches the exact canonical draft.\"\"\"\n    if expected_payload is None:\n        return False\n    if _agent_guard_claim_active(agent_id):\n        return False\n    branch_sha = git(\"rev-parse\", branch, check=False).stdout.strip()\n    if not re.fullmatch(r\"[0-9a-f]{40}\", branch_sha):\n        return False\n    parents_res = git(\"rev-list\", \"--parents\", \"-n\", \"1\", branch_sha, check=False)\n    if parents_res.returncode != 0:\n        return False\n    parents = parents_res.stdout.strip().split()\n    if len(parents) != 2 or not re.fullmatch(r\"[0-9a-f]{40}\", parents[1]):\n        return False\n    diff_res = git(\"diff\", \"--name-only\", f\"{parents[1]}..{branch_sha}\", check=False)\n    if diff_res.returncode != 0:\n        return False\n    changed = [line.strip() for line in diff_res.stdout.splitlines() if line.strip()]\n    if changed != [rel]:\n        return False\n    blob = git(\"show\", f\"{branch_sha}:{rel}\", check=False)\n    if blob.returncode != 0:\n        return False\n    return blob.stdout == expected_payload\n\n\ndef _prepare_queue_worktree(\n    *,\n    job_id: str,\n    queue_base: str,\n    rel: str,\n    expected_payload: str | None = None,\n) -> tuple[Path, str, str, str]:\n    if not AGENT_GUARD.is_file():\n        raise RuntimeError(\"AGENT_GUARD_NOT_FOUND\")\n\n    safe_id = _safe_id(job_id)\n\n    branch = f\"agent/queue-publisher/{safe_id}\"\n    agent_id = f\"queue-publisher-{safe_id}\"\n    task_id = f\"QUEUE-PUBLISH-{safe_id}\"\n\n    worktree = AGENT_WORKTREES / f\"queue-publisher-{safe_id}\"\n\n    branch_ref = f\"refs/heads/{branch}\"\n\n    branch_exists = git(\n        \"show-ref\",\n        \"--verify\",\n        \"--quiet\",\n        branch_ref,\n        check=False,\n    ).returncode == 0\n\n    worktree_exists = worktree.exists()\n\n    if branch_exists and not worktree_exists:\n        if _can_recycle_orphan_publisher_branch(\n            branch=branch,\n            rel=rel,\n            expected_payload=expected_payload,\n            agent_id=agent_id,\n        ):\n            deleted = git(\"branch\", \"-D\", branch, check=False)\n            if deleted.returncode == 0:\n                branch_exists = False\n\n    if branch_exists or worktree_exists:",
+      "source_sha256": "af9a19d68fc845be78dc5bae2c7304af50d73ff7a5873f3d2d0ac5061f3feead",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    worktree, branch, agent_id, task_id = _prepare_queue_worktree(\n        job_id=job_id,\n        queue_base=queue_base,\n        rel=rel,\n    )\n\n    current_head = git(\n        \"rev-parse\",\n        \"HEAD\",\n        cwd=worktree,\n    ).stdout.strip()\n\n    resumed_existing = current_head != queue_base\n\n    success = False\n    cleanup_errors: list[str] = []\n\n    try:\n        target = worktree / rel\n\n        expected_payload = (\n            json.dumps(\n                template,\n                ensure_ascii=False,\n                indent=2,\n                sort_keys=True,\n            )\n            + \"\\n\"\n        )",
+      "path": "tools/mirror_sync/gate_chain_publisher.py",
+      "replacement": "    expected_payload = (\n        json.dumps(\n            template,\n            ensure_ascii=False,\n            indent=2,\n            sort_keys=True,\n        )\n        + \"\\n\"\n    )\n\n    worktree, branch, agent_id, task_id = _prepare_queue_worktree(\n        job_id=job_id,\n        queue_base=queue_base,\n        rel=rel,\n        expected_payload=expected_payload,\n    )\n\n    current_head = git(\n        \"rev-parse\",\n        \"HEAD\",\n        cwd=worktree,\n    ).stdout.strip()\n\n    resumed_existing = current_head != queue_base\n\n    success = False\n    cleanup_errors: list[str] = []\n\n    try:\n        target = worktree / rel",
+      "source_sha256": "6646521aeb52ea2b032c5e1cac6fb38481848bd31aeee5af2fc78e50985d1781",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    assert result[\"job_id\"] == legacy_id\n    assert result[\"existing_lifecycle\"] == \"REMOTE_RESULT\"",
+      "path": "backend/tests/test_worker_control_plane_idempotency_gate_p0.py",
+      "replacement": "    assert result[\"job_id\"] == legacy_id\n    assert result[\"existing_lifecycle\"] == \"REMOTE_RESULT\"\n\n\ndef test_unpublished_draft_conflict_fails_closed_before_publisher(monkeypatch, tmp_path):\n    original_req = _request(\"original unpublished draft\")\n    changed_req = _request(\"drifted retry objective\")\n    original_job = service.build_semantic_job(original_req, current_user=_admin())\n\n    drafts_dir = tmp_path / \"drafts\"\n    drafts_dir.mkdir(parents=True)\n    import json\n    (drafts_dir / f\"{original_job['job_id']}.json\").write_text(\n        json.dumps(original_job, ensure_ascii=False, indent=2, sort_keys=True) + \"\\n\",\n        encoding=\"utf-8\",\n    )\n\n    monkeypatch.setattr(service, \"STATE_ROOT\", tmp_path)\n    monkeypatch.setattr(service, \"_find_existing_job_state\", lambda _job_id: None)\n\n    preflight = service.preflight_semantic_objective(changed_req, current_user=_admin())\n    assert preflight[\"ok\"] is False\n    assert preflight[\"status\"] == \"PREFLIGHT_REJECTED\"\n    assert preflight[\"error_code\"] == \"IDEMPOTENCY_CONFLICT\"\n    assert preflight[\"http_status\"] == 409\n\n    published = {\"called\": False}\n\n    def _forbidden_publish(_job):\n        published[\"called\"] = True\n        raise AssertionError(\"publisher must not be called on unpublished draft conflict\")\n\n    monkeypatch.setattr(service, \"_submit_through_canonical_publisher\", _forbidden_publish)\n    with pytest.raises(service.WorkerIngressError, match=\"IDEMPOTENCY_CONFLICT\"):\n        service.submit_objective(changed_req, current_user=_admin())\n    assert published[\"called\"] is False\n\n\ndef test_unpublished_draft_exact_retry_reports_recovery_ready(monkeypatch, tmp_path):\n    req = _request(\"exact unpublished draft\")\n    canonical = service.build_semantic_job(req, current_user=_admin())\n\n    drafts_dir = tmp_path / \"drafts\"\n    drafts_dir.mkdir(parents=True)\n    import json\n    (drafts_dir / f\"{canonical['job_id']}.json\").write_text(\n        json.dumps(canonical, ensure_ascii=False, indent=2, sort_keys=True) + \"\\n\",\n        encoding=\"utf-8\",\n    )\n\n    monkeypatch.setattr(service, \"STATE_ROOT\", tmp_path)\n    monkeypatch.setattr(service, \"_find_existing_job_state\", lambda _job_id: None)\n\n    preflight = service.preflight_semantic_objective(req, current_user=_admin())\n    assert preflight[\"ok\"] is True\n    assert preflight[\"status\"] == \"PREFLIGHT_READY\"\n    assert preflight[\"job_id\"] == canonical[\"job_id\"]\n    assert preflight[\"unpublished_draft_recovery\"] is True\n    assert preflight[\"draft_fingerprint\"] == service._canonical_request_fingerprint(canonical)",
+      "source_sha256": "958338b6934881ab5524ed9cd7813bde8332ddd38c3ea1b4ff44c91220d59238",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    with ThreadPoolExecutor(max_workers=8) as pool:\n        results = list(pool.map(lambda _: build_plan(cfg2, valid_decision, set()), range(16)))\n    assert all(r[\"status\"] == \"READY_TO_PUBLISH\" and r[\"job_id\"] == \"job-next\" for r in results)",
+      "path": "backend/tests/test_gate_chain_publisher.py",
+      "replacement": "    with ThreadPoolExecutor(max_workers=8) as pool:\n        results = list(pool.map(lambda _: build_plan(cfg2, valid_decision, set()), range(16)))\n    assert all(r[\"status\"] == \"READY_TO_PUBLISH\" and r[\"job_id\"] == \"job-next\" for r in results)\n\n\ndef test_orphan_publisher_branch_recycling_is_strictly_fail_closed(monkeypatch, tmp_path):\n    import json\n    from types import SimpleNamespace\n    from tools.mirror_sync import gate_chain_publisher as gcp\n\n    claims_dir = tmp_path / \".git\" / \"agent-guard\" / \"state\" / \"claims\"\n    claims_dir.mkdir(parents=True)\n    monkeypatch.setattr(gcp, \"ROOT\", tmp_path)\n\n    rel = \"worker_queue/inbox/SEM-REQUEST-TEST.json\"\n    expected = '{\"job_id\":\"SEM-REQUEST-TEST\"}\\n'\n    branch = \"agent/queue-publisher/SEM-REQUEST-TEST\"\n    agent_id = \"queue-publisher-SEM-REQUEST-TEST\"\n    sha_head = \"a\" * 40\n    sha_parent = \"b\" * 40\n\n    def fake_git(*args, **_kwargs):\n        if args == (\"rev-parse\", branch):\n            return SimpleNamespace(returncode=0, stdout=sha_head + \"\\n\")\n        if args == (\"rev-list\", \"--parents\", \"-n\", \"1\", sha_head):\n            return SimpleNamespace(returncode=0, stdout=f\"{sha_head} {sha_parent}\\n\")\n        if args == (\"diff\", \"--name-only\", f\"{sha_parent}..{sha_head}\"):\n            return SimpleNamespace(returncode=0, stdout=rel + \"\\n\")\n        if args == (\"show\", f\"{sha_head}:{rel}\"):\n            return SimpleNamespace(returncode=0, stdout=expected)\n        return SimpleNamespace(returncode=1, stdout=\"\")\n\n    monkeypatch.setattr(gcp, \"git\", fake_git)\n\n    # Released claim + exact payload + single-file scope -> recyclable\n    (claims_dir / f\"{agent_id}.json\").write_text(json.dumps({\"status\": \"RELEASED\"}), encoding=\"utf-8\")\n    assert gcp._can_recycle_orphan_publisher_branch(\n        branch=branch, rel=rel, expected_payload=expected, agent_id=agent_id\n    ) is True\n\n    # Payload mismatch -> fail closed\n    assert gcp._can_recycle_orphan_publisher_branch(\n        branch=branch, rel=rel, expected_payload='{\"job_id\":\"DRIFT\"}\\n', agent_id=agent_id\n    ) is False\n\n    # Active claim -> fail closed\n    (claims_dir / f\"{agent_id}.json\").write_text(json.dumps({\"status\": \"ACTIVE\"}), encoding=\"utf-8\")\n    assert gcp._can_recycle_orphan_publisher_branch(\n        branch=branch, rel=rel, expected_payload=expected, agent_id=agent_id\n    ) is False",
+      "source_sha256": "e54b7f8a64422df340646cee1c7333f13c45de1f653a41f0255848dca2e2b85c",
+      "type": "replace_text"
+    }
+  ],
+  "base_sha": "690c3b9dcf2bee179fd3b31211b37f56ed0e3ef3",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/service.py",
+        "tools/mirror_sync/gate_chain_publisher.py",
+        "backend/tests/test_worker_control_plane_idempotency_gate_p0.py",
+        "backend/tests/test_gate_chain_publisher.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_control_plane_idempotency_gate_p0.py",
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_prepublish_contract_parity_align1.py",
+        "backend/tests/test_worker_maintenance_history_readonly.py",
+        "backend/tests/test_worker_mcp_r2_b_autonomous_tools_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WK60-R2-A-IDEMPOTENT-DRAFT-RECOVERY-20261125",
+  "mode": "MUTATION",
+  "objective": "WK60 R2-A: endurecer la deteccion fail-closed de drafts no publicados en worker_ingress (preflight y submit) y permitir el reciclaje verificado y fail-closed de ramas residuales huerfanas en gate_chain_publisher cuando coinciden byte-a-byte con el draft canonico y el claim esta RELEASED, con pruebas de regresion y preservando R2-D CERTIFIED 100%.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
