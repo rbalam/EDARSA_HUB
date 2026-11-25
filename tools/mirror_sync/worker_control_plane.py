@@ -142,7 +142,52 @@ def effective_git_status() -> str:
             line for line in lines
             if line != " M .emergent/system_deps.txt"
         ]
-    return "\n".join(lines).strip()
+    return "\n".join(line for line in lines if line.strip())
+
+
+def _parse_porcelain_dirty_paths(porcelain_text: str) -> set[str]:
+    """Extract normalized repo-relative paths from git status --porcelain=v1 output."""
+    paths: set[str] = set()
+    for raw_line in (porcelain_text or "").splitlines():
+        if not raw_line.strip():
+            continue
+        if len(raw_line) >= 4 and raw_line[2] == " ":
+            path_part = raw_line[3:].strip()
+        elif len(raw_line) >= 3 and raw_line[1] == " ":
+            path_part = raw_line[2:].strip()
+        else:
+            parts = raw_line.strip().split(None, 1)
+            path_part = parts[1].strip() if len(parts) == 2 else ""
+        if not path_part:
+            continue
+        if " -> " in path_part:
+            for seg in path_part.split(" -> "):
+                norm = seg.strip().strip('"').lstrip("./")
+                if norm:
+                    paths.add(norm)
+        else:
+            norm = path_part.strip('"').lstrip("./")
+            if norm:
+                paths.add(norm)
+    return paths
+
+
+def _dirty_paths_overlap_prefixes(
+    dirty_paths: set[str],
+    prefixes: tuple[str, ...] | list[str],
+) -> bool:
+    """Fail-closed check: True if any dirty path equals or lives under any protected prefix."""
+    for dp in dirty_paths:
+        norm_dp = dp.strip().lstrip("./").rstrip("/")
+        if not norm_dp:
+            return True
+        for pref in prefixes:
+            norm_p = pref.strip().lstrip("./").rstrip("/")
+            if not norm_p:
+                continue
+            if norm_dp == norm_p or norm_dp.startswith(norm_p + "/"):
+                return True
+    return False
 
 CONTROL_PLANE_IDENTITY_PATHS = (
     "tools/mirror_sync/worker_control_plane.py",
@@ -425,15 +470,46 @@ def preserve_and_fast_forward() -> dict[str, Any]:
 
         dirty = effective_git_status()
         stash_ref = None
+        dirty_paths: set[str] = set()
         if dirty:
-            audit("FAST_FORWARD_DEFERRED_LOCAL_DIRTY")
-            return {"ff": "DEFER_LOCAL_DIRTY"}
+            dirty_paths = _parse_porcelain_dirty_paths(dirty)
+            upstream_diff = run(
+                ["git", "diff", "--name-only", f"HEAD..{REMOTE}/{DEV_BRANCH}"],
+                timeout=30,
+            )
+            if upstream_diff.returncode != 0 or not dirty_paths:
+                audit("FAST_FORWARD_DEFERRED_LOCAL_DIRTY")
+                return {"ff": "DEFER_LOCAL_DIRTY"}
+            upstream_paths = {
+                ln.strip().lstrip("./")
+                for ln in (upstream_diff.stdout or "").splitlines()
+                if ln.strip()
+            }
+            conflicts = sorted(dirty_paths & upstream_paths)
+            if conflicts or not upstream_paths:
+                audit("FAST_FORWARD_DEFERRED_LOCAL_DIRTY", scope_conflicts=conflicts)
+                return {"ff": "DEFER_LOCAL_DIRTY", "scope_conflicts": conflicts}
 
         ff = run(["git", "merge", "--ff-only", f"{REMOTE}/{DEV_BRANCH}"], timeout=60)
         if ff.returncode != 0:
             audit("FAST_FORWARD_FAILED", output=ff.stdout[-1200:], stash=stash_ref)
             return {"ff": "FAILED", "stash": stash_ref}
         new_head = git_output("rev-parse", "HEAD")
+        if dirty_paths:
+            preserved = sorted(dirty_paths)
+            audit(
+                "FAST_FORWARD_APPLIED_DISJOINT_DIRTY",
+                from_sha=local,
+                to_sha=new_head,
+                dirty_paths_preserved=preserved,
+            )
+            return {
+                "ff": "APPLIED",
+                "from": local,
+                "to": new_head,
+                "disjoint_dirty_preserved": True,
+                "dirty_paths_preserved": preserved,
+            }
         audit("FAST_FORWARD_APPLIED", from_sha=local, to_sha=new_head)
         return {"ff": "APPLIED", "from": local, "to": new_head}
     except Exception as exc:
@@ -2036,7 +2112,17 @@ def converge_runtime_permanently(
         dirty_effective = effective_git_status()
     except Exception:
         dirty_effective = "__STATUS_FAILED__"
-    clean_checkout = dirty_effective == ""
+    status_ok = dirty_effective != "__STATUS_FAILED__"
+    clean_checkout = status_ok and dirty_effective == ""
+    dirty_paths = _parse_porcelain_dirty_paths(dirty_effective) if (status_ok and dirty_effective) else set()
+    worker_paths_clean = status_ok and (
+        clean_checkout
+        or (bool(dirty_paths) and not _dirty_paths_overlap_prefixes(dirty_paths, ("tools/mirror_sync",)))
+    )
+    mcp_backend_paths_clean = status_ok and (
+        clean_checkout
+        or (bool(dirty_paths) and not _dirty_paths_overlap_prefixes(dirty_paths, MCP_BACKEND_IDENTITY_PATHS))
+    )
 
     # Determine if a mutation job is currently executing so we never disrupt in-flight work.
     current_job_id = str(runtime.get("current_job_id") or "").strip()
@@ -2058,7 +2144,7 @@ def converge_runtime_permanently(
     worker_action = "ALIGNED"
     if not worker_tree_aligned and re.fullmatch(r"[0-9a-f]{40}", expected_worker_tree):
         last_worker_restart = float(state.get("last_worker_tree_restart_epoch") or 0.0)
-        if not head_aligned or not clean_checkout:
+        if not head_aligned or not worker_paths_clean:
             worker_action = "DEFERRED_NON_CANONICAL_CHECKOUT"
         elif job_active:
             worker_action = "DEFERRED_ACTIVE_JOB"
@@ -2103,7 +2189,7 @@ def converge_runtime_permanently(
                 mirror_action = "DEFERRED_NON_FF_MIRROR"
             elif writer_lock_exists or job_active:
                 mirror_action = "DEFERRED_WRITER_BUSY"
-            elif not clean_checkout:
+            elif not status_ok:
                 mirror_action = "DEFERRED_LOCAL_DIRTY"
             elif (now_ts - last_mirror_attempt) < AUTOCONVERGENCE_MIRROR_COOLDOWN_SECONDS:
                 mirror_action = "COOLDOWN"
@@ -2115,17 +2201,47 @@ def converge_runtime_permanently(
                         from tools.mirror_sync import git_divergence_guard as _gdg
                     except ModuleNotFoundError:
                         import git_divergence_guard as _gdg
-                    conv = _gdg.ensure_submit_convergence(
-                        ROOT,
-                        job_id="CONTROL-PLANE-AUTOCONVERGENCE",
-                        owner="worker-control-plane",
-                        owner_pid=os.getpid(),
-                    )
-                    if conv.get("converged") is True:
-                        mirror_aligned = True
-                        mirror_action = "MIRROR_FF_CONVERGED_AUTO"
+                    if clean_checkout:
+                        conv = _gdg.ensure_submit_convergence(
+                            ROOT,
+                            job_id="CONTROL-PLANE-AUTOCONVERGENCE",
+                            owner="worker-control-plane",
+                            owner_pid=os.getpid(),
+                        )
+                        if conv.get("converged") is True:
+                            mirror_aligned = True
+                            mirror_action = "MIRROR_FF_CONVERGED_AUTO"
+                        else:
+                            mirror_action = f"MIRROR_DEFERRED:{conv.get('status')}"
                     else:
-                        mirror_action = f"MIRROR_DEFERRED:{conv.get('status')}"
+                        tok = _gdg.acquire_writer_lock(
+                            ROOT,
+                            job_id="CONTROL-PLANE-AUTOCONVERGENCE",
+                            owner="worker-control-plane",
+                            owner_pid=os.getpid(),
+                        )
+                        try:
+                            push = _gdg.authorized_push(
+                                ROOT,
+                                args=["push", REMOTE, f"{remote_head}:refs/heads/{mirror_branch}"],
+                                job_id="CONTROL-PLANE-AUTOCONVERGENCE",
+                                owner="worker-control-plane",
+                            )
+                            if push.returncode == 0:
+                                run(["git", "fetch", "--quiet", REMOTE, mirror_branch], timeout=45)
+                                post_mirror = run(
+                                    ["git", "rev-parse", f"{REMOTE}/{mirror_branch}"],
+                                    timeout=15,
+                                ).stdout.strip().lower()
+                                if post_mirror == remote_head:
+                                    mirror_aligned = True
+                                    mirror_action = "MIRROR_FF_CONVERGED_DISJOINT_DIRTY_AUTO"
+                                else:
+                                    mirror_action = "MIRROR_DEFERRED:POSTCHECK_MISMATCH"
+                            else:
+                                mirror_action = "MIRROR_DEFERRED:BLOCKED_PUSH_REJECTED"
+                        finally:
+                            _gdg.release_writer_lock(ROOT, tok)
                 except Exception as exc:
                     mirror_action = f"MIRROR_ERROR:{type(exc).__name__}"
                 actions.append({
@@ -2142,7 +2258,7 @@ def converge_runtime_permanently(
     mcp_backend_aligned = bool(expected_mcp_tree and active_mcp_tree == expected_mcp_tree)
     mcp_backend_action = "ALIGNED"
     if expected_mcp_tree and not mcp_backend_aligned:
-        if not active_mcp_tree and head_aligned and clean_checkout:
+        if not active_mcp_tree and head_aligned and mcp_backend_paths_clean:
             # First-time baseline bootstrap when services are already healthy on current HEAD
             if _probe_local_backend_health() and _supervisor_service_running(MCP_SERVICE):
                 atomic_json_marker_tmp = ACTIVE_MCP_BACKEND_TREE.with_name(
@@ -2154,7 +2270,7 @@ def converge_runtime_permanently(
                 mcp_backend_action = "BASELINE_RECORDED"
             else:
                 mcp_backend_action = "DEFERRED_SERVICES_UNHEALTHY"
-        elif not head_aligned or not clean_checkout:
+        elif not head_aligned or not mcp_backend_paths_clean:
             mcp_backend_action = "DEFERRED_NON_CANONICAL_CHECKOUT"
         elif job_active:
             mcp_backend_action = "DEFERRED_ACTIVE_JOB"
