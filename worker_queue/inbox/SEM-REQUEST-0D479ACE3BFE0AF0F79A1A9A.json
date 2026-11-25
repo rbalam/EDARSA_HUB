@@ -1,0 +1,60 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Vista de seguimiento de Cajas V1 a partir de estados canonicos.\n\nNo crea, resuelve ni reemplaza autorizaciones o tareas.\nLos estados provienen del motor de autorizaciones y servicios canonicos.\nNo ejecuta operaciones externas ni escribe en SQL.\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom enum import Enum\n\nfrom modules.finanzas.incidencias_caja_policy import (\n    MomentoAutorizacion, PermisoOrigen, evaluar_operacion,\n)\n\n\nclass EstadoVistoBueno(str, Enum):\n    NO_REQUERIDO = \"NO_REQUERIDO\"\n    PENDIENTE = \"PENDIENTE\"\n    OTORGADO = \"OTORGADO\"\n    RECHAZADO = \"RECHAZADO\"\n    OBSERVADO = \"OBSERVADO\"\n\n\nclass EstadoAutorizacion(str, Enum):\n    NO_REQUERIDA = \"NO_REQUERIDA\"\n    PENDIENTE = \"PENDIENTE\"\n    EN_PROCESO = \"EN_PROCESO\"\n    APROBADA = \"APROBADA\"\n    RECHAZADA = \"RECHAZADA\"\n    VENCIDA = \"VENCIDA\"\n\n\nclass EstadoOperacion(str, Enum):\n    NO_EJECUTADA = \"NO_EJECUTADA\"\n    REPORTADA_EN_ORIGEN = \"REPORTADA_EN_ORIGEN\"\n    VERIFICADA_EN_ORIGEN = \"VERIFICADA_EN_ORIGEN\"\n    RESULTADO_DESCONOCIDO = \"RESULTADO_DESCONOCIDO\"\n    FALLIDA = \"FALLIDA\"\n    NO_APLICA = \"NO_APLICA\"\n\n\nclass EstadoConciliacion(str, Enum):\n    PENDIENTE = \"PENDIENTE\"\n    EN_REVISION = \"EN_REVISION\"\n    CONCILIADA = \"CONCILIADA\"\n    CON_DIFERENCIA = \"CON_DIFERENCIA\"\n    NO_APLICA = \"NO_APLICA\"\n\n\n@dataclass(frozen=True)\nclass SituacionIncidenciaCaja:\n    \"\"\"Estados provenientes de repositorios/servicios autorizados.\"\"\"\n    visto_bueno: EstadoVistoBueno\n    autorizacion: EstadoAutorizacion\n    operacion: EstadoOperacion\n    conciliacion: EstadoConciliacion\n    momento_autorizacion: MomentoAutorizacion\n    diferimiento_permitido: bool\n    permiso_origen: PermisoOrigen\n    permiso_edarsahub: bool\n    alcance_valido: bool\n    autorizacion_ref: str | None = None\n    visto_bueno_ref: str | None = None\n\n\n@dataclass(frozen=True)\nclass SeguimientoIncidenciaCaja:\n    puede_consultar: bool\n    puede_continuar: bool\n    puede_cerrar: bool\n    puede_ejecutar_en_origen: bool\n    pendiente: str | None\n    estado_general: str\n\n\ndef evaluar_seguimiento_v1(s: SituacionIncidenciaCaja) -> SeguimientoIncidenciaCaja:\n    \"\"\"Calcula seguimiento sin alterar el motor canonico ni el POS.\n\n    Autorizaciones posteriores pendientes no se marcan como aprobadas.\n    El cierre exige un estado operativo verificable y conciliacion resuelta.\n    \"\"\"\n    if not s.permiso_edarsahub or not s.alcance_valido:\n        return SeguimientoIncidenciaCaja(False, False, False, False,\n                                        \"RBAC_RLS_DENEGADO\", \"ACCESO_DENEGADO\")\n\n    if s.visto_bueno in (EstadoVistoBueno.PENDIENTE, EstadoVistoBueno.OBSERVADO):\n        return SeguimientoIncidenciaCaja(True, False, False, False,\n                                        \"VISTO_BUENO_PENDIENTE\", \"EN_GESTION\")\n    if s.visto_bueno == EstadoVistoBueno.RECHAZADO:\n        return SeguimientoIncidenciaCaja(True, False, False, False,\n                                        \"VISTO_BUENO_RECHAZADO\", \"OBSERVADA\")\n    if s.visto_bueno == EstadoVistoBueno.OTORGADO and not s.visto_bueno_ref:\n        return SeguimientoIncidenciaCaja(True, False, False, False,\n                                        \"VISTO_BUENO_SIN_EVIDENCIA\", \"EN_GESTION\")\n\n    if s.autorizacion in (EstadoAutorizacion.RECHAZADA, EstadoAutorizacion.VENCIDA):\n        return SeguimientoIncidenciaCaja(True, False, False, False,\n                                        \"AUTORIZACION_NO_VIGENTE\", \"OBSERVADA\")\n    if s.autorizacion == EstadoAutorizacion.APROBADA and not s.autorizacion_ref:\n        return SeguimientoIncidenciaCaja(True, False, False, False,\n                                        \"AUTORIZACION_SIN_REFERENCIA\", \"EN_GESTION\")\n\n    autorizacion_ok = s.autorizacion in (\n        EstadoAutorizacion.APROBADA, EstadoAutorizacion.NO_REQUERIDA\n    )\n    vb_ok = s.visto_bueno in (\n        EstadoVistoBueno.OTORGADO, EstadoVistoBueno.NO_REQUERIDO\n    )\n    decision = evaluar_operacion(\n        permiso_edarsahub=s.permiso_edarsahub,\n        permiso_origen=s.permiso_origen,\n        tiene_alcance_unidad=s.alcance_valido,\n        visto_bueno=vb_ok,\n        autorizacion_concedida=autorizacion_ok,\n        momento=s.momento_autorizacion,\n        diferimiento_permitido=s.diferimiento_permitido\n          and s.autorizacion in (EstadoAutorizacion.PENDIENTE, EstadoAutorizacion.EN_PROCESO),\n        ejecucion_externa_habilitada=False,\n    )\n    # El cierre NO esta autorizado con pendiente posterior aun si hay continuidad.\n    if not autorizacion_ok:\n        return SeguimientoIncidenciaCaja(True, decision.puede_continuar,\n                                        False, False,\n                                        \"AUTORIZACION_POSTERIOR_PENDIENTE\"\n                                        if decision.puede_continuar else \"AUTORIZACION_PENDIENTE\",\n                                        \"EN_GESTION\")\n\n    if not decision.puede_continuar:\n        return SeguimientoIncidenciaCaja(True, False, False, False,\n                                        decision.motivo, \"OBSERVADA\")\n\n    if s.operacion in (\n        EstadoOperacion.NO_EJECUTADA, EstadoOperacion.REPORTADA_EN_ORIGEN,\n        EstadoOperacion.RESULTADO_DESCONOCIDO,\n    ):\n        return SeguimientoIncidenciaCaja(True, True, False, False,\n                                        \"OPERACION_PENDIENTE_VERIFICACION\", \"EN_GESTION\")\n    if s.operacion == EstadoOperacion.FALLIDA:\n        return SeguimientoIncidenciaCaja(True, True, False, False,\n                                        \"OPERACION_FALLIDA\", \"OBSERVADA\")\n    if s.conciliacion in (\n        EstadoConciliacion.PENDIENTE, EstadoConciliacion.EN_REVISION\n    ):\n        return SeguimientoIncidenciaCaja(True, True, False, False,\n                                        \"CONCILIACION_PENDIENTE\", \"EN_GESTION\")\n    if s.conciliacion == EstadoConciliacion.CON_DIFERENCIA:\n        return SeguimientoIncidenciaCaja(True, True, False, False,\n                                        \"DIFERENCIA_PENDIENTE_RESOLUCION\", \"OBSERVADA\")\n    return SeguimientoIncidenciaCaja(True, True, True, False, None, \"LISTA_PARA_CIERRE\")\n",
+      "path": "backend/modules/finanzas/incidencias_caja_workflow.py",
+      "type": "write_file"
+    },
+    {
+      "content": "from dataclasses import replace\n\nfrom modules.finanzas.incidencias_caja_policy import MomentoAutorizacion, PermisoOrigen\nfrom modules.finanzas.incidencias_caja_workflow import (\n    EstadoVistoBueno, EstadoAutorizacion, EstadoOperacion,\n    EstadoConciliacion, SituacionIncidenciaCaja, evaluar_seguimiento_v1,\n)\n\n\ndef base():\n    return SituacionIncidenciaCaja(\n        visto_bueno=EstadoVistoBueno.OTORGADO,\n        autorizacion=EstadoAutorizacion.APROBADA,\n        operacion=EstadoOperacion.VERIFICADA_EN_ORIGEN,\n        conciliacion=EstadoConciliacion.CONCILIADA,\n        momento_autorizacion=MomentoAutorizacion.PREVIA,\n        diferimiento_permitido=False,\n        permiso_origen=PermisoOrigen.PERMITIDO,\n        permiso_edarsahub=True,\n        alcance_valido=True,\n        autorizacion_ref=\"auth-1\",\n        visto_bueno_ref=\"vb-1\",\n    )\n\n\ndef test_cierre_solo_si_verificado_y_conciliado():\n    d=evaluar_seguimiento_v1(base())\n    assert d.puede_cerrar and d.puede_consultar\n    assert not d.puede_ejecutar_en_origen\n\n\ndef test_autorizacion_posterior_no_es_aprobacion_ni_cierre():\n    s=replace(base(), autorizacion=EstadoAutorizacion.PENDIENTE,\n              autorizacion_ref=None, momento_autorizacion=MomentoAutorizacion.POSTERIOR,\n              diferimiento_permitido=True)\n    d=evaluar_seguimiento_v1(s)\n    assert d.puede_continuar and not d.puede_cerrar\n    assert d.pendiente==\"AUTORIZACION_POSTERIOR_PENDIENTE\"\n\n\ndef test_previa_pendiente_bloquea_continuidad():\n    s=replace(base(), autorizacion=EstadoAutorizacion.PENDIENTE,\n              autorizacion_ref=None)\n    assert not evaluar_seguimiento_v1(s).puede_continuar\n\n\ndef test_autorizacion_rechazada_no_se_convierte_en_aprobacion():\n    s=replace(base(), autorizacion=EstadoAutorizacion.RECHAZADA,\n              momento_autorizacion=MomentoAutorizacion.POSTERIOR,\n              diferimiento_permitido=True)\n    d=evaluar_seguimiento_v1(s)\n    assert not d.puede_cerrar and not d.puede_continuar\n\n\ndef test_no_requerida_es_estado_explicito():\n    s=replace(base(), autorizacion=EstadoAutorizacion.NO_REQUERIDA,\n              autorizacion_ref=None)\n    assert evaluar_seguimiento_v1(s).puede_cerrar\n\n\ndef test_vobo_rechazado_bloquea_cierre():\n    s=replace(base(), visto_bueno=EstadoVistoBueno.RECHAZADO)\n    assert not evaluar_seguimiento_v1(s).puede_cerrar\n\n\ndef test_vobo_otorgado_sin_evidencia_bloquea():\n    s=replace(base(), visto_bueno_ref=None)\n    assert evaluar_seguimiento_v1(s).pendiente==\"VISTO_BUENO_SIN_EVIDENCIA\"\n\n\ndef test_autorizacion_aprobada_sin_referencia_bloquea():\n    s=replace(base(), autorizacion_ref=None)\n    assert evaluar_seguimiento_v1(s).pendiente==\"AUTORIZACION_SIN_REFERENCIA\"\n\n\ndef test_rls_denegado_niega_hasta_lectura():\n    s=replace(base(), alcance_valido=False)\n    d=evaluar_seguimiento_v1(s)\n    assert not d.puede_consultar and not d.puede_cerrar\n\n\ndef test_origen_desconocido_no_es_inexistente():\n    s=replace(base(), permiso_origen=PermisoOrigen.DESCONOCIDO)\n    d=evaluar_seguimiento_v1(s)\n    assert not d.puede_cerrar and not d.puede_continuar\n\n\ndef test_resultado_origen_no_confirmado_impide_cerrar():\n    s=replace(base(), operacion=EstadoOperacion.RESULTADO_DESCONOCIDO)\n    assert evaluar_seguimiento_v1(s).pendiente==\"OPERACION_PENDIENTE_VERIFICACION\"\n\n\ndef test_diferencia_no_conciliada_impide_cerrar():\n    s=replace(base(), conciliacion=EstadoConciliacion.CON_DIFERENCIA)\n    assert not evaluar_seguimiento_v1(s).puede_cerrar\n\n\ndef test_v1_nunca_ejecuta_pos_externo():\n    for estado in EstadoOperacion:\n        s=replace(base(), operacion=estado)\n        assert not evaluar_seguimiento_v1(s).puede_ejecutar_en_origen\n",
+      "path": "backend/tests/test_incidencias_caja_workflow.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/finanzas/incidencias_caja_workflow.py",
+        "backend/tests/test_incidencias_caja_workflow.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_incidencias_caja_workflow.py",
+        "backend/tests/test_incidencias_caja_policy.py",
+        "backend/tests/test_incidencias_caja_context.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-0D479ACE3BFE0AF0F79A1A9A",
+  "mode": "MUTATION",
+  "objective": "CAJAS V1 Gate4: vista pura de seguimiento del expediente, estados diferenciados VoBo, autorizacion canonica, operacion y conciliacion; no motor paralelo, no SQL, sin escritura externa; casos hermeticos previa/posterior, rechazo, RLS fail closed y cierre verificable",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
