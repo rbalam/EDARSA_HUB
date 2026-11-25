@@ -1,34 +1,40 @@
 {
   "ahead_count": 0,
-  "behind_count": 0,
+  "behind_count": 1,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "SYNC",
-  "development_sha": "58a449d749f200dc70140039dbb078bd30755e60",
-  "generated_at_utc": "2026-11-25T22:33:43Z",
+  "convergence_status": "REMOTE_AHEAD_ONLY",
+  "development_sha": "18e319b43dc247be0d82305553bc4f757275d66e",
+  "generated_at_utc": "2026-11-25T22:35:16Z",
   "history": {
-    "done_total_local": 2122,
+    "done_total_local": 2123,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1411,
-    "results_total_local": 3292
+    "results_total_local": 3293
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 51,
+      "age_seconds": 145,
       "job_id": "EDARSAHUB-BOS-UNIVERSAL-MULTICHAT-HANDOFF-P0-R1-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 121,
+      "age_seconds": 214,
       "job_id": "SEM-REQUEST-0D479ACE3BFE0AF0F79A1A9A",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 542,
+      "age_seconds": 0,
+      "job_id": "SEM-REQUEST-7C8F49AB3F82E102426174EE",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 636,
       "job_id": "SEM-REQUEST-AA1970654779466DBE5F8DD1",
       "reason": null,
       "state": "RESULT_READY"
@@ -42,15 +48,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
-  "remote_development_sha": "58a449d749f200dc70140039dbb078bd30755e60",
+  "remote_development_sha": "18e319b43dc247be0d82305553bc4f757275d66e",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-25T22:33:36Z",
-    "last_receive_utc": "2026-11-25T22:33:31Z",
-    "last_terminal_utc": "2026-11-25T22:32:51Z",
+    "last_cycle_utc": "2026-11-25T22:35:05Z",
+    "last_receive_utc": "2026-11-25T22:35:00Z",
+    "last_terminal_utc": "2026-11-25T22:35:15Z",
     "pid": "295706",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "df6b87e752ac90b2d124b80d60c0c7841729c29c",
