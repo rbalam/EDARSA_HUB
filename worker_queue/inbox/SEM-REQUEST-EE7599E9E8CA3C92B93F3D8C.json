@@ -1,0 +1,58 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Reglas puras de seguridad para incidencias de caja complementarias.\n\nNo consulta sistemas de origen, no concede permisos tecnicos externos y no escribe SQL.\nEl llamador debe resolver identidad, alcances y permisos desde servicios canonicos.\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom enum import Enum\n\n\nclass PermisoOrigen(str, Enum):\n    PERMITIDO = \"PERMITIDO\"\n    DENEGADO = \"DENEGADO\"\n    NO_SOPORTADO = \"NO_SOPORTADO\"\n    DESCONOCIDO = \"DESCONOCIDO\"\n\n\nclass MomentoAutorizacion(str, Enum):\n    PREVIA = \"PREVIA\"\n    POSTERIOR = \"POSTERIOR\"\n\n\n@dataclass(frozen=True)\nclass DecisionOperacionCaja:\n    puede_registrar: bool\n    puede_continuar: bool\n    puede_ejecutar_en_origen: bool\n    motivo: str\n\n\ndef evaluar_operacion(\n    *,\n    permiso_edarsahub: bool,\n    permiso_origen: PermisoOrigen,\n    tiene_alcance_unidad: bool,\n    visto_bueno: bool,\n    autorizacion_concedida: bool,\n    momento: MomentoAutorizacion,\n    diferimiento_permitido: bool,\n    ejecucion_externa_habilitada: bool = False,\n) -> DecisionOperacionCaja:\n    \"\"\"Evalua continuidad y ejecucion por separado; nunca autoriza escritura por si sola.\"\"\"\n    if not permiso_edarsahub or not tiene_alcance_unidad:\n        return DecisionOperacionCaja(False, False, False, \"EDARSAHUB_RBAC_RLS_DENEGADO\")\n    # El registro interno puede permitirse aun cuando la operacion externa este bloqueada.\n    if permiso_origen == PermisoOrigen.DENEGADO:\n        return DecisionOperacionCaja(True, False, False, \"ORIGEN_DENEGADO\")\n    if permiso_origen == PermisoOrigen.DESCONOCIDO:\n        return DecisionOperacionCaja(True, False, False, \"ORIGEN_NO_VERIFICABLE\")\n    if not visto_bueno:\n        return DecisionOperacionCaja(True, False, False, \"VISTO_BUENO_PENDIENTE\")\n    autorizado = autorizacion_concedida or (\n        momento == MomentoAutorizacion.POSTERIOR and diferimiento_permitido\n    )\n    if not autorizado:\n        return DecisionOperacionCaja(True, False, False, \"AUTORIZACION_REQUERIDA\")\n    # NO_SOPORTADO habilita suplencia funcional de EDARSAHUB, no poderes externos.\n    ejecutar = (\n        ejecucion_externa_habilitada\n        and autorizacion_concedida\n        and permiso_origen == PermisoOrigen.PERMITIDO\n    )\n    return DecisionOperacionCaja(\n        True,\n        True,\n        ejecutar,\n        \"CONTINUIDAD_POSTERIOR\" if not autorizacion_concedida else \"AUTORIZACION_VIGENTE\",\n    )\n\n\ndef validar_alcance_empresa_unidad(\n    *,\n    empresa_solicitada: str,\n    unidad_solicitada: str,\n    empresas_autorizadas: frozenset[str],\n    unidades_autorizadas: frozenset[str],\n) -> bool:\n    \"\"\"Alcances provenientes de servicios RBAC, nunca del formulario del cliente.\"\"\"\n    return bool(\n        empresa_solicitada\n        and unidad_solicitada\n        and empresa_solicitada in empresas_autorizadas\n        and unidad_solicitada in unidades_autorizadas\n    )\n",
+      "path": "backend/modules/finanzas/incidencias_caja_policy.py",
+      "type": "write_file"
+    },
+    {
+      "content": "from modules.finanzas.incidencias_caja_policy import (\n    MomentoAutorizacion, PermisoOrigen, evaluar_operacion,\n    validar_alcance_empresa_unidad,\n)\n\n\ndef _evaluar(**kw):\n    data = dict(\n        permiso_edarsahub=True,\n        permiso_origen=PermisoOrigen.PERMITIDO,\n        tiene_alcance_unidad=True,\n        visto_bueno=True,\n        autorizacion_concedida=False,\n        momento=MomentoAutorizacion.POSTERIOR,\n        diferimiento_permitido=True,\n        ejecucion_externa_habilitada=True,\n    )\n    data.update(kw)\n    return evaluar_operacion(**data)\n\n\ndef test_operacion_posterior_permite_continuidad_sin_ejecutar_origen():\n    d = _evaluar()\n    assert d.puede_registrar and d.puede_continuar\n    assert not d.puede_ejecutar_en_origen\n    assert d.motivo == \"CONTINUIDAD_POSTERIOR\"\n\n\ndef test_autorizacion_previa_obligatoria_bloquea_continuidad():\n    d = _evaluar(momento=MomentoAutorizacion.PREVIA)\n    assert d.puede_registrar and not d.puede_continuar\n\n\ndef test_origen_denegado_no_se_suple():\n    d = _evaluar(permiso_origen=PermisoOrigen.DENEGADO, autorizacion_concedida=True)\n    assert d.puede_registrar and not d.puede_continuar\n    assert not d.puede_ejecutar_en_origen\n\n\ndef test_origen_desconocido_no_se_suple():\n    d = _evaluar(permiso_origen=PermisoOrigen.DESCONOCIDO)\n    assert d.puede_registrar and not d.puede_continuar\n\n\ndef test_permiso_inexistente_usa_suplencia_sin_escritura_externa():\n    d = _evaluar(permiso_origen=PermisoOrigen.NO_SOPORTADO, autorizacion_concedida=True)\n    assert d.puede_registrar and d.puede_continuar\n    assert not d.puede_ejecutar_en_origen\n\n\ndef test_permiso_edarsahub_y_rls_son_obligatorios():\n    for kw in ({\"permiso_edarsahub\": False}, {\"tiene_alcance_unidad\": False}):\n        d = _evaluar(**kw)\n        assert not d.puede_registrar and not d.puede_continuar\n\n\ndef test_visto_bueno_antecede_autorizacion():\n    d = _evaluar(visto_bueno=False, autorizacion_concedida=True)\n    assert not d.puede_continuar\n\n\ndef test_ejecucion_origen_solo_autorizada_en_v2():\n    d = _evaluar(autorizacion_concedida=True, ejecucion_externa_habilitada=False)\n    assert d.puede_continuar and not d.puede_ejecutar_en_origen\n    d = _evaluar(autorizacion_concedida=True)\n    assert d.puede_ejecutar_en_origen\n\n\ndef test_rls_rechaza_unidad_ajena():\n    assert not validar_alcance_empresa_unidad(\n        empresa_solicitada=\"e1\", unidad_solicitada=\"u2\",\n        empresas_autorizadas=frozenset({\"e1\"}),\n        unidades_autorizadas=frozenset({\"u1\"}),\n    )\n",
+      "path": "backend/tests/test_incidencias_caja_policy.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/finanzas/incidencias_caja_policy.py",
+        "backend/tests/test_incidencias_caja_policy.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_incidencias_caja_policy.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-EE7599E9E8CA3C92B93F3D8C",
+  "mode": "MUTATION",
+  "objective": "CAJAS P0 Gate2 reglas puras de seguridad/continuidad complementaria: RBAC y alcance unidad, permisos origen denegado/desconocido/no soportado, Vo.Bo. previo, autorizacion previa o posterior, sin escritura externa V1; pruebas de regresion hermeticas. No SQL, no servicios paralelos, no Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
