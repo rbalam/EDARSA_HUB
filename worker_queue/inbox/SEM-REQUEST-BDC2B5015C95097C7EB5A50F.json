@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "backend/modules/worker_ingress/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "get_go_context",
+          "last_certified_gate",
+          "JOB_DRAFT_IDEMPOTENCY_CONFLICT",
+          "evidence_status",
+          "worker_repair_planner",
+          "worker_repair_execution_bridge",
+          "pending_jobs",
+          "request_key"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-BDC2B5015C95097C7EB5A50F",
+  "mode": "READ_ONLY",
+  "objective": "Diagnóstico transversal WK6 Multichat Hardening R1: localizar contratos de asociación dominio/request_key/job_id/chain_id y selección de último certificado, tratamiento de drafts y conflictos idempotentes, y proyección de evidence_status ABSENT; identificar Repair Planner y Execution Bridge existentes. Solo lectura de código; no repetir auditorías funcionales certificadas.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_MCP",
+    "conflict_domains": [
+      "WORKER_MCP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
