@@ -1,0 +1,46 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Contratos de incidencias de caja; sin SQL ni efectos secundarios.\"\"\"\nfrom __future__ import annotations\nfrom decimal import Decimal\nfrom enum import Enum\nfrom typing import Optional\nfrom pydantic import BaseModel, Field\n\nclass TipoIncidenciaCaja(str, Enum):\n    CANCELACION = \"CANCELACION\"\n    REAPERTURA = \"REAPERTURA\"\n    BONIFICACION = \"BONIFICACION\"\n    DESCUENTO = \"DESCUENTO\"\n    DIFERENCIA = \"DIFERENCIA\"\n    ERROR_TPV = \"ERROR_TPV\"\n    OTRO = \"OTRO\"\n\nclass IncidenciaCajaCreate(BaseModel):\n    tipo: TipoIncidenciaCaja\n    cuenta_folio: Optional[str] = Field(default=None, max_length=100)\n    corte_caja_id: Optional[int] = Field(default=None, ge=1)\n    importe_involucrado: Optional[Decimal] = Field(default=None, ge=0, max_digits=18, decimal_places=2)\n    motivo_codigo: str = Field(min_length=1, max_length=100)\n    descripcion: str = Field(min_length=1, max_length=2000)\n    solicitud_idempotencia: str = Field(min_length=8, max_length=128)\n\nclass IncidenciaCajaRead(BaseModel):\n    folio: str\n    tipo: TipoIncidenciaCaja\n    estado: str\n    conciliacion_estado: str\n    unidad_negocio_id: str\n    solicitante_usuario_id: int\n",
+      "path": "backend/modules/finanzas/incidencias_caja_contracts.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/finanzas/incidencias_caja_contracts.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-1C72A8F884887DBD38D3911A",
+  "mode": "MUTATION",
+  "objective": "CAJAS P0 implementacion atomica 1: definir contratos tipados del expediente de incidencias de caja dentro de Finanzas/Tesoreria, sin persistencia ni efectos secundarios, para reutilizarlos en formulario movil y endpoints del siguiente Gate. No toca tablas, notificaciones, movimientos ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
