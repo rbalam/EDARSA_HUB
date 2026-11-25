@@ -1010,22 +1010,299 @@ def get_job_status(job_id: str) -> dict[str, Any]:
 
 _AMBIGUOUS_DOMAINS = frozenset({"", "*", "ALL", "ANY", "GENERAL", "GLOBAL", "UNKNOWN", "DEFAULT", "MISC"})
 _DOMAIN_TOKEN_RE = re.compile(r"^[A-Z0-9][A-Z0-9._-]{1,119}$")
+_CERTIFIED_CONTEXT_STATES = frozenset({
+    "CERTIFIED",
+    "CERTIFIED_READ_ONLY",
+    "CERTIFIED_OPERATIONAL",
+    "CERTIFIED_FRONTEND_BUILD",
+})
+_EPOCH_ZERO_UTC = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 
-def _job_matches_domain(job_id: str, payload: Mapping[str, Any], domain_upper: str) -> bool:
-    """Strictly isolate jobs by domain so RRHH, CRM, Finanzas, etc. are never mixed."""
+def _parse_utc_timestamp(value: Any) -> datetime | None:
+    raw = _clean(value)
+    if not raw:
+        return None
+    try:
+        dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _extract_bounded_context(payload: Mapping[str, Any] | None) -> str:
+    """Extract canonical bounded_context from either raw job or worker queue envelope."""
+    if not isinstance(payload, Mapping):
+        return ""
     scheduling = payload.get("scheduling")
     if isinstance(scheduling, Mapping):
         bc = _clean(scheduling.get("bounded_context")).upper()
-        if bc == domain_upper:
-            return True
+        if bc:
+            return bc
+    inner = payload.get("job")
+    if isinstance(inner, Mapping):
+        inner_sched = inner.get("scheduling")
+        if isinstance(inner_sched, Mapping):
+            bc = _clean(inner_sched.get("bounded_context")).upper()
+            if bc:
+                return bc
+    return ""
+
+
+def _extract_envelope_job(payload: Mapping[str, Any] | None) -> dict[str, Any]:
+    if not isinstance(payload, Mapping):
+        return {}
+    inner = payload.get("job")
+    if isinstance(inner, Mapping):
+        return dict(inner)
+    return dict(payload)
+
+
+def _load_canonical_request_index(state_root: Path) -> dict[str, dict[str, Any]]:
+    """Build read-only request index associating job_id with canonical scheduling & metadata."""
+    index: dict[str, dict[str, Any]] = {}
+    for source_name, dirname in (
+        ("DONE", "done"),
+        ("PROCESSING", "processing"),
+        ("PENDING", "pending"),
+        ("DRAFT", "drafts"),
+    ):
+        folder = state_root / dirname
+        if not folder.is_dir():
+            continue
+        for path in sorted(folder.glob("*.json"), key=lambda p: p.name):
+            raw = _read_json_if_object(path)
+            if not raw:
+                continue
+            inner = _extract_envelope_job(raw)
+            jid = _clean(inner.get("job_id") or raw.get("job_id")) or path.stem
+            if not jid:
+                continue
+            bc = _extract_bounded_context(raw)
+            existing = index.get(jid)
+            if existing is None or (not existing.get("bounded_context") and bc):
+                index[jid] = {
+                    "job_id": jid,
+                    "bounded_context": bc,
+                    "request_source": source_name,
+                    "mode": _clean(inner.get("mode")).upper() or None,
+                    "objective": _clean(inner.get("objective")) or None,
+                    "job": inner,
+                }
+    return index
+
+
+def _legacy_job_id_matches_domain(job_id: str, domain_upper: str) -> bool:
     jid_upper = job_id.upper()
-    tokens = [tok for tok in re.split(r"[^A-Z0-9]+", jid_upper) if tok]
     if f"SEM-{domain_upper}-" in jid_upper:
         return True
     if f"-{domain_upper}-" in jid_upper or jid_upper.startswith(f"{domain_upper}-"):
         return True
+    tokens = [tok for tok in re.split(r"[^A-Z0-9]+", jid_upper) if tok]
     return domain_upper in tokens
+
+
+def _resolve_job_domain(
+    job_id: str,
+    payload: Mapping[str, Any] | None,
+    domain_upper: str,
+    *,
+    request_index: Mapping[str, Mapping[str, Any]] | None = None,
+) -> tuple[bool, str | None]:
+    """Strictly isolate jobs by canonical request binding before any legacy fallback."""
+    if isinstance(request_index, Mapping):
+        req_entry = request_index.get(job_id)
+        if isinstance(req_entry, Mapping):
+            req_bc = _clean(req_entry.get("bounded_context")).upper()
+            if req_bc:
+                return (req_bc == domain_upper, "REQUEST_SCHEDULING" if req_bc == domain_upper else None)
+    payload_bc = _extract_bounded_context(payload)
+    if payload_bc:
+        return (payload_bc == domain_upper, "PAYLOAD_SCHEDULING" if payload_bc == domain_upper else None)
+    if _legacy_job_id_matches_domain(job_id, domain_upper):
+        return (True, "LEGACY_JOB_ID_TOKEN")
+    return (False, None)
+
+
+def _job_matches_domain(
+    job_id: str,
+    payload: Mapping[str, Any],
+    domain_upper: str,
+    *,
+    request_index: Mapping[str, Mapping[str, Any]] | None = None,
+) -> bool:
+    """Strictly isolate jobs by domain so RRHH, CRM, Finanzas, etc. are never mixed."""
+    matched, _ = _resolve_job_domain(
+        job_id,
+        payload,
+        domain_upper,
+        request_index=request_index,
+    )
+    return matched
+
+
+def _evaluate_explicit_mutation_authorization(
+    *,
+    domain_upper: str,
+    authorization_context: Mapping[str, Any] | None,
+    now_utc: datetime | None = None,
+) -> tuple[bool, str, str | None]:
+    """Require explicit, traceable, non-revoked, non-expired, domain-scoped mutation auth.
+
+    Never infers mutation authorization from RBAC alone or from objective_hint text.
+    """
+    if not isinstance(authorization_context, Mapping) or not authorization_context:
+        return False, "NO_EXPLICIT_MUTATION_AUTHORIZATION", None
+
+    auth_id = _clean(
+        authorization_context.get("authorization_id")
+        or authorization_context.get("authorization_ref")
+    )
+    if authorization_context.get("production_allowed") is True:
+        return False, "PRODUCTION_FORBIDDEN", auth_id or None
+    if authorization_context.get("revoked") is True:
+        return False, "AUTHORIZATION_REVOKED", auth_id or None
+    if not auth_id:
+        return False, "AUTHORIZATION_NOT_TRACEABLE", None
+
+    now = now_utc or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    expires_raw = authorization_context.get("expires_at_utc")
+    if expires_raw is not None:
+        expires_dt = _parse_utc_timestamp(expires_raw)
+        if expires_dt is None or expires_dt <= now:
+            return False, "AUTHORIZATION_EXPIRED", auth_id
+
+    raw_classes = authorization_context.get("authorization_classes") or ()
+    auth_classes = {
+        _clean(c).upper()
+        for c in (raw_classes if isinstance(raw_classes, (list, tuple, set, frozenset)) else (raw_classes,))
+        if _clean(c)
+    }
+    explicitly_granted = (
+        authorization_context.get("mutation_authorized") is True
+        or bool(auth_classes & {"DEVELOPMENT_MUTATION", "PREAUTHORIZED_CODE_MUTATION"})
+    )
+    if not explicitly_granted:
+        return False, "MUTATION_NOT_EXPLICITLY_AUTHORIZED", auth_id
+
+    scope_obj = authorization_context.get("scope")
+    granted_scope = scope_obj if isinstance(scope_obj, Mapping) else authorization_context
+    raw_domains = granted_scope.get("domains")
+    if raw_domains is None:
+        raw_domains = granted_scope.get("domain")
+    if isinstance(raw_domains, (list, tuple, set, frozenset)):
+        domain_vals = {_clean(d).upper() for d in raw_domains if _clean(d)}
+    else:
+        single = _clean(raw_domains).upper()
+        domain_vals = {single} if single else set()
+    if not domain_vals or "*" in domain_vals or domain_upper not in domain_vals:
+        return False, "SCOPE_AUTHORIZATION_DENIED", auth_id
+
+    return True, "EXPLICIT_AUTHORIZATION_VERIFIED", auth_id
+
+
+def _load_certified_domain_results(
+    *,
+    state_root: Path,
+    domain_upper: str,
+    request_index: Mapping[str, Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Return certified results for one domain sorted deterministically by verifiable UTC timestamps."""
+    from tools.mirror_sync.worker_result_reader import parse_published_marker
+
+    results_dir = state_root / "results"
+    if not results_dir.is_dir():
+        return []
+    published_dir = state_root / "published"
+    entries: list[tuple[tuple[int, datetime, int, datetime, str], dict[str, Any]]] = []
+
+    for path in sorted(results_dir.glob("*.json"), key=lambda p: p.name):
+        jid = path.stem
+        raw = _read_json_if_object(path)
+        if not raw:
+            continue
+        matched, binding_source = _resolve_job_domain(
+            jid,
+            raw,
+            domain_upper,
+            request_index=request_index,
+        )
+        if not matched:
+            continue
+
+        read = read_canonical_result(path, expected_job_id=jid)
+        if not read.terminal_result_valid or not isinstance(read.payload, dict):
+            continue
+
+        payload = read.payload
+        if payload.get("production_touched") is not False:
+            continue
+        if _clean(payload.get("tests")).upper() != "PASS" or _clean(payload.get("quality_gate")).upper() != "PASS":
+            continue
+        if payload.get("blockers"):
+            continue
+
+        cert = _clean(payload.get("certification")).upper()
+        completed_at_utc = _clean(payload.get("completed_at_utc")) or None
+        certified_at_utc = completed_at_utc
+        published_commit = _clean(payload.get("published_result_commit")) or None
+        cert_source = "CANONICAL_RESULT"
+
+        marker_path = published_dir / f"{jid}.json"
+        if marker_path.is_file():
+            marker = parse_published_marker(marker_path)
+            if isinstance(marker, dict) and "_invalid" not in marker:
+                m_cert = _clean(marker.get("certification")).upper()
+                if m_cert in _CERTIFIED_CONTEXT_STATES:
+                    cert = m_cert
+                    cert_source = "PUBLISHED_MARKER"
+                    m_pub = _clean(marker.get("published"))
+                    if m_pub:
+                        certified_at_utc = m_pub
+                    m_commit = _clean(marker.get("commit"))
+                    if m_commit:
+                        published_commit = m_commit
+
+        if cert not in _CERTIFIED_CONTEXT_STATES:
+            continue
+
+        cert_dt = _parse_utc_timestamp(certified_at_utc)
+        comp_dt = _parse_utc_timestamp(completed_at_utc)
+        req_entry = request_index.get(jid) or {}
+        record = {
+            "job_id": jid,
+            "status": payload.get("status"),
+            "certification": cert,
+            "certification_source": cert_source,
+            "commit_sha": (
+                payload.get("certified_source_sha")
+                or payload.get("development_sha")
+                or payload.get("candidate_sha")
+                or payload.get("commit_sha")
+            ),
+            "published_result_commit": published_commit,
+            "completed_at_utc": completed_at_utc,
+            "certified_at_utc": certified_at_utc,
+            "certified_timestamp_verified": cert_dt is not None,
+            "mode": req_entry.get("mode") or _clean(payload.get("mode")).upper() or None,
+            "domain_binding_source": binding_source,
+            "lifecycle": "RESULT",
+        }
+        sort_key = (
+            1 if cert_dt is not None else 0,
+            cert_dt or _EPOCH_ZERO_UTC,
+            1 if comp_dt is not None else 0,
+            comp_dt or _EPOCH_ZERO_UTC,
+            jid,
+        )
+        entries.append((sort_key, record))
+
+    entries.sort(key=lambda pair: pair[0], reverse=True)
+    return [record for _, record in entries]
 
 
 def resolve_go_context(
@@ -1041,7 +1318,8 @@ def resolve_go_context(
     """Canonical GO context resolver across chats using only existing queue & gate-chain registries.
 
     Never creates per-chat databases or parallel operational memory.
-    Fails closed (mutation_allowed=False) when context is ambiguous or authorization is unverified.
+    Fails closed (mutation_allowed=False) when context is ambiguous, drafts are pending recovery,
+    policy_tier is READ_ONLY, or explicit mutation authorization is absent/unverified.
     """
     from tools.mirror_sync.gate_chain_controller import (
         classify_policy_tier,
@@ -1079,11 +1357,18 @@ def resolve_go_context(
             "active_objective": hint_clean or None,
             "chain_id": chain_clean or None,
             "last_certified_gate": None,
+            "certified_successors": [],
             "pending_jobs": [],
+            "pending_drafts": [],
+            "lifecycle_summary": {"DRAFT": [], "PENDING": [], "PROCESSING": [], "RESULT": []},
             "active_authorizations": {
                 "identity_verified": identity_verified,
                 "actor_email": requester.get("email") or None,
                 "rbac_mutation_authorized": rbac_mutation_ok,
+                "explicit_mutation_authorized": False,
+                "explicit_authorization_status": "AMBIGUOUS_DOMAIN_CONTEXT",
+                "explicit_authorization_id": None,
+                "chain_authorization_status": "NOT_EVALUATED",
             },
             "gate_dependencies": [],
             "policy_tier": "HUMAN_APPROVAL_REQUIRED",
@@ -1094,61 +1379,101 @@ def resolve_go_context(
             "production_touched": False,
         }
 
-    # Discover domain-scoped in-flight jobs (PENDING / PROCESSING)
+    # Build canonical request index to associate SEM-REQUEST-* & named jobs strictly with domain
+    request_index = _load_canonical_request_index(STATE_ROOT)
+
+    # Track terminal/known lifecycle sets to distinguish unpublished DRAFT vs PENDING vs PROCESSING vs RESULT
+    known_non_draft_ids: set[str] = set()
+    for dirname in ("results", "done", "rejected", "processing", "pending"):
+        folder = STATE_ROOT / dirname
+        if folder.is_dir():
+            for path in folder.glob("*.json"):
+                known_non_draft_ids.add(path.stem)
+
+    # Discover domain-scoped in-flight jobs (PROCESSING / PENDING) strictly separated by lifecycle
+    processing_ids: list[str] = []
+    pending_ids: list[str] = []
     pending_jobs: list[dict[str, Any]] = []
+    seen_in_flight: set[str] = set()
     for lifecycle, dirname in (("PROCESSING", "processing"), ("PENDING", "pending")):
         folder = STATE_ROOT / dirname
         if not folder.is_dir():
             continue
-        for path in sorted(folder.glob("*.json")):
+        for path in sorted(folder.glob("*.json"), key=lambda p: p.name):
             payload = _read_json_if_object(path)
-            jid = _clean(payload.get("job_id")) or path.stem
-            if jid and _job_matches_domain(jid, payload, domain_upper):
-                pending_jobs.append({"job_id": jid, "lifecycle": lifecycle})
-
-    # Discover latest certified gate strictly within this domain
-    last_certified: dict[str, Any] | None = None
-    results_dir = STATE_ROOT / "results"
-    if results_dir.is_dir():
-        candidates = sorted(
-            results_dir.glob("*.json"),
-            key=lambda p: p.stat().st_mtime,
-            reverse=True,
-        )
-        for path in candidates:
-            jid = path.stem
-            # Fast pre-check by filename or lightweight JSON read
-            raw = _read_json_if_object(path)
-            if not raw or not _job_matches_domain(jid, raw, domain_upper):
+            inner = _extract_envelope_job(payload)
+            jid = _clean(inner.get("job_id") or payload.get("job_id")) or path.stem
+            if not jid or jid in seen_in_flight:
                 continue
-            read = read_canonical_result(path, expected_job_id=jid)
-            if not read.terminal_result_valid or not isinstance(read.payload, dict):
-                continue
-            cert = _clean(read.payload.get("certification")).upper()
-            if cert in {"CERTIFIED", "CERTIFIED_READ_ONLY", "CERTIFIED_OPERATIONAL", "CERTIFIED_FRONTEND_BUILD"}:
-                last_certified = {
+            matched, binding_source = _resolve_job_domain(
+                jid,
+                payload,
+                domain_upper,
+                request_index=request_index,
+            )
+            if matched:
+                seen_in_flight.add(jid)
+                pending_jobs.append({
                     "job_id": jid,
-                    "status": read.payload.get("status"),
-                    "certification": cert,
-                    "commit_sha": (
-                        read.payload.get("certified_source_sha")
-                        or read.payload.get("development_sha")
-                        or read.payload.get("commit_sha")
-                    ),
-                    "completed_at_utc": read.payload.get("completed_at_utc"),
-                }
-                break
+                    "lifecycle": lifecycle,
+                    "domain_binding_source": binding_source,
+                })
+                if lifecycle == "PROCESSING":
+                    processing_ids.append(jid)
+                else:
+                    pending_ids.append(jid)
 
-    # Optional registered gate-chain reconciliation (read-only)
+    # Discover domain-scoped unpublished drafts pending idempotent recovery (DRAFT)
+    pending_drafts: list[dict[str, Any]] = []
+    draft_ids: list[str] = []
+    drafts_dir = STATE_ROOT / "drafts"
+    if drafts_dir.is_dir():
+        for path in sorted(drafts_dir.glob("*.json"), key=lambda p: p.name):
+            payload = _read_json_if_object(path)
+            if not payload:
+                continue
+            jid = _clean(payload.get("job_id")) or path.stem
+            if not jid or jid in known_non_draft_ids:
+                continue
+            matched, binding_source = _resolve_job_domain(
+                jid,
+                payload,
+                domain_upper,
+                request_index=request_index,
+            )
+            if matched:
+                draft_ids.append(jid)
+                pending_drafts.append({
+                    "job_id": jid,
+                    "lifecycle": "DRAFT",
+                    "recovery_required": True,
+                    "draft_fingerprint": _canonical_request_fingerprint(payload),
+                    "domain_binding_source": binding_source,
+                })
+
+    # Discover certified results for this domain ordered by verifiable UTC timestamp (never mtime)
+    certified_results = _load_certified_domain_results(
+        state_root=STATE_ROOT,
+        domain_upper=domain_upper,
+        request_index=request_index,
+    )
+    last_certified: dict[str, Any] | None = certified_results[0] if certified_results else None
+    certified_successors: list[dict[str, Any]] = certified_results[:5]
+    certified_by_job_id = {row["job_id"]: row for row in certified_results}
+
+    # Optional registered gate-chain reconciliation (read-only) with strict domain validation
     chains_root = config_dir or (REPO_ROOT / "worker_queue" / "config" / "gate_chains")
     matched_chain: dict[str, Any] | None = None
     chain_reconcile: dict[str, Any] | None = None
+    chain_error: str | None = None
     gate_dependencies: list[dict[str, Any]] = []
     policy_tier = "READ_ONLY"
-    chain_auth_reason = "AUTHORIZED"
+    chain_auth_reason = "NOT_APPLICABLE"
 
+    domain_enabled_chains: list[dict[str, Any]] = []
+    requested_chain_cfg: dict[str, Any] | None = None
     if chains_root.is_dir():
-        for cpath in sorted(chains_root.glob("*.json")):
+        for cpath in sorted(chains_root.glob("*.json"), key=lambda p: p.name):
             cfg = _read_json_if_object(cpath)
             if not cfg or cfg.get("schema") != "edarsahub.gate-chain.v1":
                 continue
@@ -1156,25 +1481,55 @@ def resolve_go_context(
             cfg_domain = _clean(cfg.get("domain") or cfg.get("bounded_context")).upper()
             if chain_clean:
                 if cid == chain_clean:
-                    matched_chain = cfg
+                    requested_chain_cfg = cfg
                     break
             elif cfg_domain == domain_upper and cfg.get("enabled") is True:
-                matched_chain = cfg
-                break
+                domain_enabled_chains.append(cfg)
+
+    if chain_clean:
+        if requested_chain_cfg is None:
+            chain_error = "CHAIN_NOT_FOUND"
+        else:
+            cfg_domain = _clean(
+                requested_chain_cfg.get("domain") or requested_chain_cfg.get("bounded_context")
+            ).upper()
+            if not cfg_domain or cfg_domain != domain_upper:
+                chain_error = "CHAIN_DOMAIN_MISMATCH"
+            else:
+                matched_chain = requested_chain_cfg
+    elif len(domain_enabled_chains) > 1:
+        chain_error = "AMBIGUOUS_DOMAIN_CHAINS"
+    elif len(domain_enabled_chains) == 1:
+        matched_chain = domain_enabled_chains[0]
 
     active_objective = hint_clean or None
+    chain_mutation_authorized = False
     if matched_chain is not None:
         chain_clean = _clean(matched_chain.get("chain_id"))
         active_objective = active_objective or _clean(matched_chain.get("objective")) or None
         chain_reconcile = reconcile_chain(matched_chain, STATE_ROOT)
+        chain_auth_reason = "AUTHORIZED"
         next_gid = _clean(chain_reconcile.get("next_gate_id"))
         cur_gid = _clean(chain_reconcile.get("current_gate_id"))
+        gates_by_id = {
+            _clean(g.get("gate_id")): g
+            for g in (matched_chain.get("gates") or [])
+            if isinstance(g, Mapping) and _clean(g.get("gate_id"))
+        }
         if next_gid:
-            gate_dependencies.append({"requires_certified_gate": cur_gid or None, "next_gate_id": next_gid})
-            target_gate = next(
-                (g for g in matched_chain.get("gates") or [] if _clean(g.get("gate_id")) == next_gid),
-                None,
-            )
+            cur_gate = gates_by_id.get(cur_gid) if cur_gid else None
+            cur_job_id = _clean(cur_gate.get("job_id")) if isinstance(cur_gate, Mapping) else ""
+            cur_cert = certified_by_job_id.get(cur_job_id) if cur_job_id else None
+            target_gate = gates_by_id.get(next_gid)
+            next_job_id = _clean(target_gate.get("job_id")) if isinstance(target_gate, Mapping) else ""
+            gate_dependencies.append({
+                "requires_certified_gate": cur_gid or None,
+                "predecessor_job_id": cur_job_id or None,
+                "predecessor_verified": (cur_cert is not None) if cur_gid else True,
+                "predecessor_certified_at_utc": cur_cert.get("certified_at_utc") if cur_cert else None,
+                "next_gate_id": next_gid,
+                "next_job_id": next_job_id or None,
+            })
             if isinstance(target_gate, Mapping):
                 policy_tier, _ = classify_policy_tier(target_gate)
                 auth_ok, chain_auth_reason = evaluate_gate_authorization(
@@ -1184,25 +1539,65 @@ def resolve_go_context(
                 )
                 if not auth_ok:
                     policy_tier = "HUMAN_APPROVAL_REQUIRED"
-    elif rbac_mutation_ok and active_objective:
-        policy_tier = "DEVELOPMENT_MUTATION"
+                elif policy_tier == "DEVELOPMENT_MUTATION":
+                    chain_mutation_authorized = True
 
-    # Decide next_allowed_action fail-closed
+    explicit_auth_ok, explicit_auth_reason, explicit_auth_id = _evaluate_explicit_mutation_authorization(
+        domain_upper=domain_upper,
+        authorization_context=authorization_context,
+    )
+
+    # Decide next_allowed_action fail-closed.
+    # NEVER infer DEVELOPMENT_MUTATION or mutation_allowed from RBAC + objective_hint text.
     missing_fields: list[str] = []
+    mutation_allowed = False
     if pending_jobs:
         next_action = "WAIT_FOR_IN_FLIGHT_JOB"
         reason = "DOMAIN_HAS_IN_FLIGHT_JOB"
         mutation_allowed = False
+    elif pending_drafts:
+        next_action = "RECOVER_PENDING_DRAFT"
+        policy_tier = "READ_ONLY"
+        reason = "DOMAIN_HAS_UNPUBLISHED_DRAFT_PENDING_RECOVERY"
+        mutation_allowed = False
     elif not identity_verified:
         next_action = "HUMAN_APPROVAL_REQUIRED"
+        policy_tier = "HUMAN_APPROVAL_REQUIRED"
         reason = "AUTHENTICATED_IDENTITY_UNVERIFIED"
         missing_fields.append("authenticated_user")
+        mutation_allowed = False
+    elif chain_error == "CHAIN_NOT_FOUND":
+        next_action = "REQUEST_MINIMUM_INFO"
+        policy_tier = "READ_ONLY"
+        reason = "CHAIN_NOT_FOUND"
+        missing_fields.append("chain_id")
+        chain_auth_reason = "CHAIN_NOT_FOUND"
+        mutation_allowed = False
+    elif chain_error == "CHAIN_DOMAIN_MISMATCH":
+        next_action = "HUMAN_APPROVAL_REQUIRED"
+        policy_tier = "HUMAN_APPROVAL_REQUIRED"
+        reason = "CHAIN_DOMAIN_MISMATCH"
+        chain_auth_reason = "CHAIN_DOMAIN_MISMATCH"
+        mutation_allowed = False
+    elif chain_error == "AMBIGUOUS_DOMAIN_CHAINS":
+        next_action = "REQUEST_MINIMUM_INFO"
+        policy_tier = "HUMAN_APPROVAL_REQUIRED"
+        reason = "AMBIGUOUS_DOMAIN_CHAINS"
+        missing_fields.append("chain_id")
+        chain_auth_reason = "AMBIGUOUS_DOMAIN_CHAINS"
         mutation_allowed = False
     elif chain_reconcile is not None:
         cstate = _clean(chain_reconcile.get("state")).upper()
         if cstate == "COMPLETE":
             next_action = "COMPLETE"
+            policy_tier = "READ_ONLY"
             reason = "CHAIN_COMPLETE"
+            mutation_allowed = False
+        elif cstate == "DISABLED":
+            next_action = "HUMAN_APPROVAL_REQUIRED"
+            policy_tier = "HUMAN_APPROVAL_REQUIRED"
+            reason = "CHAIN_DISABLED"
+            chain_auth_reason = "CHAIN_DISABLED"
             mutation_allowed = False
         elif cstate == "WAIT":
             next_action = "WAIT_FOR_IN_FLIGHT_JOB"
@@ -1210,35 +1605,62 @@ def resolve_go_context(
             mutation_allowed = False
         elif cstate == "STOP" or policy_tier == "HUMAN_APPROVAL_REQUIRED" or chain_auth_reason != "AUTHORIZED":
             next_action = "HUMAN_APPROVAL_REQUIRED"
-            reason = chain_auth_reason if chain_auth_reason != "AUTHORIZED" else (_clean(chain_reconcile.get("reason")) or "CHAIN_STOPPED")
+            reason = (
+                chain_auth_reason
+                if chain_auth_reason != "AUTHORIZED"
+                else (_clean(chain_reconcile.get("reason")) or "CHAIN_STOPPED")
+            )
             mutation_allowed = False
         elif cstate == "READY":
             if policy_tier == "DEVELOPMENT_MUTATION" and not rbac_mutation_ok:
                 next_action = "HUMAN_APPROVAL_REQUIRED"
                 reason = "RBAC_MUTATION_FORBIDDEN"
                 mutation_allowed = False
-            else:
+            elif policy_tier == "DEVELOPMENT_MUTATION":
                 next_action = "CONTINUE_AUTONOMOUS"
                 reason = "CHAIN_TRANSITION_READY"
-                mutation_allowed = policy_tier == "DEVELOPMENT_MUTATION" and rbac_mutation_ok
+                mutation_allowed = True
+            else:
+                next_action = "CONTINUE_AUTONOMOUS"
+                policy_tier = "READ_ONLY"
+                reason = "CHAIN_READ_ONLY_TRANSITION_READY"
+                mutation_allowed = False
         else:
             next_action = "REQUEST_MINIMUM_INFO"
             reason = f"CHAIN_STATE_{cstate or 'UNKNOWN'}"
             mutation_allowed = False
+    elif authorization_context is not None and not explicit_auth_ok:
+        next_action = "HUMAN_APPROVAL_REQUIRED"
+        policy_tier = "HUMAN_APPROVAL_REQUIRED"
+        reason = explicit_auth_reason
+        mutation_allowed = False
+    elif explicit_auth_ok:
+        if not rbac_mutation_ok:
+            next_action = "HUMAN_APPROVAL_REQUIRED"
+            policy_tier = "HUMAN_APPROVAL_REQUIRED"
+            reason = "RBAC_MUTATION_FORBIDDEN"
+            mutation_allowed = False
+        else:
+            next_action = "CONTINUE_AUTONOMOUS"
+            policy_tier = "DEVELOPMENT_MUTATION"
+            reason = "EXPLICIT_MUTATION_AUTHORIZATION_VERIFIED"
+            mutation_allowed = True
     elif not active_objective and last_certified is None:
         next_action = "REQUEST_MINIMUM_INFO"
+        policy_tier = "READ_ONLY"
         reason = "NO_ACTIVE_OBJECTIVE_OR_PRIOR_GATE"
         missing_fields.append("objective_hint")
         mutation_allowed = False
-    elif not rbac_mutation_ok:
-        next_action = "CONTINUE_AUTONOMOUS"
-        policy_tier = "READ_ONLY"
-        reason = "READ_ONLY_ONLY_WITHOUT_MUTATION_RBAC"
-        mutation_allowed = False
     else:
         next_action = "CONTINUE_AUTONOMOUS"
-        reason = "AUTHORIZED_CONTEXT_RESOLVED"
-        mutation_allowed = True
+        policy_tier = "READ_ONLY"
+        reason = "READ_ONLY_CONTEXT_RESOLVED" if rbac_mutation_ok else "READ_ONLY_ONLY_WITHOUT_MUTATION_RBAC"
+        mutation_allowed = False
+
+    # Hard fail-closed invariant: READ_ONLY or unverified context NEVER permits mutation.
+    effective_explicit_mutation = chain_mutation_authorized or explicit_auth_ok
+    if policy_tier != "DEVELOPMENT_MUTATION" or not (identity_verified and rbac_mutation_ok and effective_explicit_mutation):
+        mutation_allowed = False
 
     return {
         "schema": "edarsahub.worker-go-context.v1",
@@ -1247,11 +1669,26 @@ def resolve_go_context(
         "active_objective": active_objective,
         "chain_id": chain_clean or None,
         "last_certified_gate": last_certified,
+        "certified_successors": certified_successors,
         "pending_jobs": pending_jobs,
+        "pending_drafts": pending_drafts,
+        "lifecycle_summary": {
+            "DRAFT": draft_ids,
+            "PENDING": pending_ids,
+            "PROCESSING": processing_ids,
+            "RESULT": [row["job_id"] for row in certified_results[:10]],
+        },
         "active_authorizations": {
             "identity_verified": identity_verified,
             "actor_email": requester.get("email") or None,
             "rbac_mutation_authorized": rbac_mutation_ok,
+            "explicit_mutation_authorized": effective_explicit_mutation,
+            "explicit_authorization_status": (
+                "CHAIN_GATE_AUTHORIZED"
+                if chain_mutation_authorized
+                else explicit_auth_reason
+            ),
+            "explicit_authorization_id": explicit_auth_id,
             "chain_authorization_status": chain_auth_reason,
         },
         "gate_dependencies": gate_dependencies,
