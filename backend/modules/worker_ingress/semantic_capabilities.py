@@ -515,6 +515,9 @@ _DEV_CONTEXT_PATH_OWNERSHIP: dict[str, frozenset[str]] = {
         "backend/routes/portal_proveedores.py",
         "backend/routes/portal_proveedores_repository_sql.py",
     }),
+    "WORKER_MCP": frozenset({
+        "tools/tests/test_worker_mcp_gate2b.py",
+    }),
 }
 
 _DEV_SHA256_RE = _g3_re.compile(r"^[0-9a-f]{64}$")
