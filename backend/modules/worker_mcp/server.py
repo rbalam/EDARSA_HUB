@@ -761,6 +761,9 @@ def submit_objective_tool(
       constraints={"change_spec": [...], "verification_tests": [...], "authorization_ref": "...", "job_id_override": "..."}
       Allowed operations: replace_text, insert_before, insert_after, append_once, write_file (no delete_file, shell or SQL).
       Requires live source_sha256 for existing files and authorized admin/worker:submit RBAC.
+    - CROSS_DOMAIN_HANDOFF_REGISTER (mode=READ_ONLY|MUTATION, any valid source bounded_context, requires request_key):
+      constraints={"target_domain": "...", "requested_capability": "...", "requested_constraints": {...}, "source_job_id": "...", "incident_id": "...", "dependency_id": "...", "authorization_ref": "...", "acceptance_criteria": [...], "delegation_chain": [...], "priority_class": "...", "auto_dispatch": true|false, "resolution_job_id": "..."}
+      Registers a structured cross-domain need without granting permissions to target_domain; classifies, deduplicates, and returns certified evidence in get_go_context.
     """
     safe_corr = _safe_correlation_id(request_key)
     if constraints is not None and not isinstance(constraints, dict):
@@ -808,7 +811,7 @@ def submit_objective_tool(
             correlation_id=safe_corr,
         )
 
-    return {
+    response: dict[str, Any] = {
         "status": result.get("status"),
         "job_id": result.get("job_id"),
         "capability": result.get("capability"),
@@ -817,6 +820,19 @@ def submit_objective_tool(
             result.get("production_touched", False)
         ),
     }
+    if result.get("handoff_id"):
+        for extra_key in (
+            "handoff_id",
+            "dependency_id",
+            "target_domain",
+            "classification",
+            "lifecycle_state",
+            "certification",
+            "next_allowed_action",
+        ):
+            if extra_key in result:
+                response[extra_key] = result.get(extra_key)
+    return response
 
 
 def get_job_status_tool(

@@ -69,19 +69,30 @@ def cycle_chain(chain:dict[str,Any],state_root:Path,persist_root:Path,publish_en
             circuit_breaker_threshold=int(raw_limits.get('circuit_breaker_threshold',3)),
         )
         if target_gate is not None:
-            policy_record=evaluate_autonomous_policy(
-                target_gate,
-                limits=limits,
-                hop_count=int(row.get('hop_count') or 0),
-                retry_count=int(retry_counts.get(next_gate_id,0)),
-                consecutive_failures=consecutive_failures,
-                authorization_classes=chain.get('authorization_classes',[]),
-                authorization_context=chain.get('authorization_context'),
-            )
-            result['policy_decision']=policy_record
-            if not policy_record['allowed']:
-                result['action']=policy_record['action']
-                result['reason']=policy_record['reason']
+            try:
+                from tools.mirror_sync.worker_cross_domain_handoff import check_gate_handoff_dependencies
+            except ModuleNotFoundError:
+                from worker_cross_domain_handoff import check_gate_handoff_dependencies
+
+            handoff_deps = check_gate_handoff_dependencies(target_gate, state_root=state_root)
+            if handoff_deps.get('satisfied') is not True:
+                result['action'] = 'WAIT'
+                result['reason'] = 'HANDOFF_DEPENDENCY_UNSATISFIED'
+                result['handoff_dependencies'] = handoff_deps
+            else:
+                policy_record=evaluate_autonomous_policy(
+                    target_gate,
+                    limits=limits,
+                    hop_count=int(row.get('hop_count') or 0),
+                    retry_count=int(retry_counts.get(next_gate_id,0)),
+                    consecutive_failures=consecutive_failures,
+                    authorization_classes=chain.get('authorization_classes',[]),
+                    authorization_context=chain.get('authorization_context'),
+                )
+                result['policy_decision']=policy_record
+                if not policy_record['allowed']:
+                    result['action']=policy_record['action']
+                    result['reason']=policy_record['reason']
         if result['action']=='READY':
             plan=build_plan(chain,row,existing_ids(state_root))
             result['plan_status']=plan.get('status')

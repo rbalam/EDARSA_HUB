@@ -197,6 +197,7 @@ CONTROL_PLANE_IDENTITY_PATHS = (
     "tools/mirror_sync/worker_auditor.py",
     "tools/mirror_sync/worker_repair.py",
     "tools/mirror_sync/worker_lifecycle_recovery.py",
+    "tools/mirror_sync/worker_cross_domain_handoff.py",
     "tools/mirror_sync/git_divergence_guard.py",
     "tools/mirror_sync/worker_repair_auto_loop.py",
     "tools/mirror_sync/worker_runtime_fingerprint.py",
@@ -2381,6 +2382,23 @@ def _run_global_lifecycle_cycle(
     except Exception:
         active_authorizations = []
 
+    try:
+        try:
+            from tools.mirror_sync import worker_cross_domain_handoff as _handoff_mod
+        except ModuleNotFoundError:
+            import worker_cross_domain_handoff as _handoff_mod
+
+        cross_domain_handoffs = _handoff_mod.reconcile_cross_domain_handoffs(
+            state_root=STATE,
+            repo_root=ROOT,
+        )
+    except Exception as exc:
+        cross_domain_handoffs = {
+            "schema": "edarsahub.cross-domain-handoff-reconcile.v1",
+            "error": type(exc).__name__,
+            "production_touched": False,
+        }
+
     detection = _lr.scan_global_lifecycle_blockers(
         repo_root=ROOT,
         state_root=STATE,
@@ -2424,6 +2442,7 @@ def _run_global_lifecycle_cycle(
         "ledger_path": historical_reconciliation.get("ledger_path"),
         "production_touched": False,
     }
+    recovery["cross_domain_handoffs"] = cross_domain_handoffs
     return detection, recovery
 
 

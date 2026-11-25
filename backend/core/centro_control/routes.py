@@ -787,6 +787,9 @@ async def obtener_estado_general(current_user: Dict = Depends(require_explicit_p
                     "persistent_drafts": (worker_autonomo.get("lifecycle") or {}).get("persistent_drafts", 0),
                     "certified_lessons_count": (worker_autonomo.get("knowledge_loop") or {}).get("certified_lessons_count", 0),
                     "sql_readonly_profiles_count": (worker_autonomo.get("extensible_capabilities") or {}).get("sql_readonly_profiles_count", 0),
+                    "handoffs_active": ((worker_autonomo.get("cross_domain_handoffs") or {}).get("counts") or {}).get("active", 0),
+                    "handoffs_returned_certified": ((worker_autonomo.get("cross_domain_handoffs") or {}).get("counts") or {}).get("returned_certified", 0),
+                    "handoffs_human_intervention_required": ((worker_autonomo.get("cross_domain_handoffs") or {}).get("counts") or {}).get("human_intervention_required", 0),
                     "production_touched": False,
                 },
             },
@@ -812,6 +815,23 @@ async def obtener_salud_worker_autonomo(
     except Exception as e:
         logger.error(f"[CENTRO CONTROL] Error obteniendo salud del worker autonomo: {e}")
         raise HTTPException(status_code=500, detail="Error obteniendo salud del worker autonomo")
+
+
+@router.get("/worker-handoffs")
+async def obtener_handoffs_worker_autonomo(
+    domain: Optional[str] = Query(default=None),
+    state: Optional[str] = Query(default=None),
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER")),
+):
+    """Expone en Centro de Control solicitudes, dependencias, responsables, resoluciones y excepciones entre dominios (READ_ONLY)."""
+    del current_user
+    try:
+        from modules.worker_console.contract import get_cross_domain_handoffs_overview
+
+        return get_cross_domain_handoffs_overview(domain=domain, state=state)
+    except Exception as e:
+        logger.error(f"[CENTRO CONTROL] Error obteniendo handoffs entre dominios: {e}")
+        raise HTTPException(status_code=500, detail="Error obteniendo handoffs entre dominios")
 
 # ============================================================================
 # ENDPOINTS: JOBS Y AUTOMATIZACIONES

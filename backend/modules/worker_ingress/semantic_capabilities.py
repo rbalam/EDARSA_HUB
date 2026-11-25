@@ -1386,6 +1386,45 @@ def _capability_contract_details(code: str, meta: Mapping[str, Any]) -> dict[str
             },
         }
 
+    if code == "CROSS_DOMAIN_HANDOFF_REGISTER":
+        return {
+            "required_fields": [*_BASE_REQUIRED_OBJECTIVE_FIELDS, "request_key"],
+            "required_constraints": ["target_domain"],
+            "allowed_operations": [],
+            "formats": {
+                "target_domain": r"^[A-Z0-9][A-Z0-9._-]{1,119}$",
+                "source_job_id": _G3_JOB_ID.pattern,
+                "incident_id": _G3_JOB_ID.pattern,
+                "resolution_job_id": _G3_JOB_ID.pattern,
+                "authorization_ref": _DEV_AUTH_REF_RE.pattern,
+            },
+            "limits": {
+                "max_delegation_depth": 3,
+                "max_acceptance_criteria": 12,
+                "grants_target_permissions": False,
+                "production_allowed": False,
+            },
+            "ownership": ownership,
+            "safe_example": {
+                "objective": "Solicitar auditoria o recuperacion transversal certificada al dominio receptor.",
+                "bounded_context": "COMERCIAL_POS",
+                "mode": "READ_ONLY",
+                "capability": "CROSS_DOMAIN_HANDOFF_REGISTER",
+                "request_key": "handoff-comercial-pos-control-plane-r1",
+                "constraints": {
+                    "target_domain": "WORKER_CONTROL_PLANE",
+                    "requested_capability": "READ_ONLY_CANARY",
+                    "requested_constraints": {},
+                    "acceptance_criteria": [
+                        "terminal_certification_valid",
+                        "tests_pass",
+                        "quality_gate_pass",
+                        "production_touched_false",
+                    ],
+                },
+            },
+        }
+
     return {
         "required_fields": list(_BASE_REQUIRED_OBJECTIVE_FIELDS),
         "required_constraints": [],
@@ -1951,5 +1990,60 @@ register_capability(
 _CAPABILITY_METADATA["SQL_READONLY_PROFILE_AUDIT"] = {
     "bounded_context_rule": "ANY_VALID_TOKEN",
     "allowed_constraints": ("profile_code",),
+    "allowed_path_roots": (),
+}
+
+
+# Universal Multichat Coordination & Autonomous Cross-Domain Handoff capability.
+# Declarative extension of the existing Capability Registry (no parallel MCP server/tool).
+# A handoff request NEVER grants permissions to target_domain.
+_CROSS_DOMAIN_HANDOFF_ALLOWED_CONSTRAINTS: tuple[str, ...] = (
+    "acceptance_criteria",
+    "authorization_ref",
+    "auto_dispatch",
+    "delegation_chain",
+    "dependency_id",
+    "incident_id",
+    "priority_class",
+    "requested_capability",
+    "requested_constraints",
+    "resolution_job_id",
+    "source_job_id",
+    "target_domain",
+)
+
+
+def _cross_domain_handoff_register_submitter(
+    request: Mapping[str, Any],
+    requester: Mapping[str, Any],
+) -> dict[str, Any]:
+    from tools.mirror_sync import worker_cross_domain_handoff as handoff_mod
+    from . import service as ingress_service
+
+    current_user = request.get("_current_user") if isinstance(request.get("_current_user"), Mapping) else None
+    clean_req = {k: v for k, v in request.items() if not str(k).startswith("_")}
+    try:
+        return handoff_mod.register_cross_domain_handoff(
+            clean_req,
+            current_user=current_user,
+            requester=dict(requester),
+            state_root=ingress_service.STATE_ROOT,
+            repo_root=ingress_service.REPO_ROOT,
+            submit_fn=ingress_service._submit_through_canonical_publisher,
+        )
+    except handoff_mod.HandoffError as exc:
+        raise SemanticCapabilityError(str(exc)) from exc
+
+
+register_capability(
+    SemanticCapability(
+        code="CROSS_DOMAIN_HANDOFF_REGISTER",
+        modes=("READ_ONLY", "MUTATION"),
+        submitter=_cross_domain_handoff_register_submitter,
+    )
+)
+_CAPABILITY_METADATA["CROSS_DOMAIN_HANDOFF_REGISTER"] = {
+    "bounded_context_rule": "ANY_VALID_TOKEN",
+    "allowed_constraints": _CROSS_DOMAIN_HANDOFF_ALLOWED_CONSTRAINTS,
     "allowed_path_roots": (),
 }

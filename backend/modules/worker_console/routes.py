@@ -807,3 +807,18 @@ async def worker_self_healing_overview(
     """Telemetría READ_ONLY de autorrecuperación, desbloqueo por dominio, incidentes MCP y Knowledge Loop."""
     del current_user
     return C.get_worker_self_healing_snapshot()
+
+
+@router.get("/handoffs")
+async def worker_cross_domain_handoffs_overview(
+    domain: Optional[str] = Query(default=None),
+    state: Optional[str] = Query(default=None),
+    current_user: dict = Depends(require_worker_console_access),
+):
+    """Vista READ_ONLY de solicitudes entre dominios, dependencias, responsables, resoluciones y excepciones."""
+    allowed_domains = current_user.get("allowed_bounded_contexts")
+    return C.get_cross_domain_handoffs_overview(
+        domain=domain,
+        state=state,
+        allowed_domains=allowed_domains,
+    )

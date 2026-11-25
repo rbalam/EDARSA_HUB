@@ -1066,11 +1066,15 @@ def get_worker_self_healing_snapshot(*, queue_root: Optional[Path] = None) -> Di
     except Exception:
         pass
 
+    # Cross-domain handoffs read-only telemetry (Fase 6)
+    handoffs_overview = get_cross_domain_handoffs_overview(queue_root=qroot)
+
     system_degraded = bool(detection.get("system_degraded") is True or runtime_info.get("runtime_repair_needed") is True)
     mcp_degraded = str(mcp_summary.get("health") or "").upper() == "DEGRADED"
+    handoff_human_req = int((handoffs_overview.get("counts") or {}).get("human_intervention_required") or 0)
     if system_degraded:
         overall = "DEGRADED"
-    elif mcp_degraded or open_circuits > 0 or int(counts.get("corrupt_drafts") or 0) > 0:
+    elif mcp_degraded or open_circuits > 0 or int(counts.get("corrupt_drafts") or 0) > 0 or handoff_human_req > 0:
         overall = "ATTENTION_REQUIRED"
     else:
         overall = "HEALTHY"
@@ -1115,5 +1119,54 @@ def get_worker_self_healing_snapshot(*, queue_root: Optional[Path] = None) -> Di
             "circuit_breakers_open": open_circuits,
         },
         "extensible_capabilities": capabilities_summary,
+        "cross_domain_handoffs": {
+            "counts": handoffs_overview.get("counts") or {},
+            "owners_by_domain": handoffs_overview.get("owners_by_domain") or [],
+            "exceptions": handoffs_overview.get("exceptions") or [],
+            "human_intervention_required": handoffs_overview.get("human_intervention_required") or [],
+            "human_escalation_policy": handoffs_overview.get("human_escalation_policy", "ONLY_WHEN_INDISPENSABLE"),
+        },
         "production_touched": False,
     }
+
+
+def get_cross_domain_handoffs_overview(
+    *,
+    queue_root: Optional[Path] = None,
+    domain: Optional[str] = None,
+    state: Optional[str] = None,
+    allowed_domains: Optional[Sequence[str]] = None,
+) -> Dict[str, Any]:
+    """Resumen canónico READ_ONLY de solicitudes, dependencias, responsables, resoluciones y excepciones entre dominios."""
+    qroot = queue_root or QUEUE_ROOT
+    try:
+        from tools.mirror_sync import worker_cross_domain_handoff as _handoff_mod
+
+        return _handoff_mod.build_control_center_handoffs_summary(
+            state_root=qroot,
+            domain=domain,
+            state=state,
+            allowed_domains=allowed_domains,
+        )
+    except Exception:
+        return {
+            "schema": "edarsahub.cross-domain-handoff-overview.v1",
+            "generated_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "total_handoffs": 0,
+            "counts": {
+                "total": 0,
+                "active": 0,
+                "returned_certified": 0,
+                "unsatisfied_dependencies": 0,
+                "exceptions": 0,
+                "human_intervention_required": 0,
+            },
+            "handoffs": [],
+            "dependencies": [],
+            "owners_by_domain": [],
+            "resolutions": [],
+            "exceptions": [],
+            "human_intervention_required": [],
+            "human_escalation_policy": "ONLY_WHEN_INDISPENSABLE",
+            "production_touched": False,
+        }

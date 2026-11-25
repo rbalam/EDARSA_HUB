@@ -691,13 +691,40 @@ def submit_objective(
             )
 
     if capability.submitter is not None:
+        submit_payload = (
+            {**payload, "_current_user": dict(current_user)}
+            if capability_code == "CROSS_DOMAIN_HANDOFF_REGISTER"
+            else payload
+        )
         try:
-            result = capability.submitter(payload, requester)
+            result = capability.submitter(submit_payload, requester)
         except SemanticCapabilityError as exc:
             raise WorkerIngressError(str(exc)) from exc
 
         if not isinstance(result, dict):
             raise WorkerIngressError("SEMANTIC_CAPABILITY_INVALID_RESPONSE")
+
+        if capability_code == "CROSS_DOMAIN_HANDOFF_REGISTER":
+            handoff_id = _clean(result.get("handoff_id"))
+            if not handoff_id:
+                raise WorkerIngressError("HANDOFF_ID_INVALID")
+            return {
+                "status": _clean(result.get("status")) or "REGISTERED",
+                "job_id": _clean(result.get("job_id")) or handoff_id,
+                "handoff_id": handoff_id,
+                "dependency_id": result.get("dependency_id"),
+                "source_domain": result.get("source_domain") or bounded_context,
+                "target_domain": result.get("target_domain"),
+                "classification": result.get("classification"),
+                "lifecycle_state": result.get("lifecycle_state"),
+                "certification": result.get("certification"),
+                "next_allowed_action": result.get("next_allowed_action"),
+                "duplicate_prevented": bool(result.get("duplicate_prevented", False)),
+                "reused_certified_resolution": bool(result.get("reused_certified_resolution", False)),
+                "production_touched": False,
+                "capability": capability_code,
+                "bounded_context": bounded_context,
+            }
 
         publication = result.get("publication")
         if not isinstance(publication, dict):
@@ -2099,6 +2126,32 @@ def resolve_go_context(
     if explicit_auth_ok and materialized_gate_auth is not None:
         explicit_auth_reason = "MATERIALIZED_GATE_AUTHORIZATION_VERIFIED"
 
+    # Cross-domain handoffs & autonomous resolution return (Fase 4)
+    cross_domain_handoffs: dict[str, Any] = {
+        "schema": "edarsahub.worker-go-context-handoffs.v1",
+        "domain": domain_upper,
+        "outgoing_handoffs": [],
+        "incoming_handoffs": [],
+        "satisfied_resolutions": [],
+        "unsatisfied_dependencies": [],
+        "counts": {
+            "outgoing": 0,
+            "incoming": 0,
+            "satisfied_resolutions": 0,
+            "unsatisfied_dependencies": 0,
+        },
+        "production_touched": False,
+    }
+    try:
+        from tools.mirror_sync import worker_cross_domain_handoff as _handoff_mod
+
+        cross_domain_handoffs = _handoff_mod.summarize_handoffs_for_domain(
+            domain_upper,
+            state_root=STATE_ROOT,
+        )
+    except Exception:
+        pass
+
     # Decide next_allowed_action fail-closed.
     # NEVER infer DEVELOPMENT_MUTATION or mutation_allowed from RBAC + objective_hint text.
     missing_fields: list[str] = []
@@ -2197,6 +2250,15 @@ def resolve_go_context(
             policy_tier = "DEVELOPMENT_MUTATION"
             reason = "EXPLICIT_MUTATION_AUTHORIZATION_VERIFIED"
             mutation_allowed = True
+    elif cross_domain_handoffs["satisfied_resolutions"] or cross_domain_handoffs["incoming_handoffs"]:
+        next_action = "CONTINUE_AUTONOMOUS"
+        policy_tier = "READ_ONLY"
+        reason = (
+            "CROSS_DOMAIN_HANDOFF_RESOLUTION_AVAILABLE"
+            if cross_domain_handoffs["satisfied_resolutions"]
+            else "CROSS_DOMAIN_INCOMING_HANDOFF_AVAILABLE"
+        )
+        mutation_allowed = False
     elif not active_objective and last_certified is None:
         next_action = "REQUEST_MINIMUM_INFO"
         policy_tier = "READ_ONLY"
@@ -2267,6 +2329,7 @@ def resolve_go_context(
             "chain_authorization_status": chain_auth_reason,
         },
         "gate_dependencies": gate_dependencies,
+        "cross_domain_handoffs": cross_domain_handoffs,
         "continuity": continuity,
         "policy_tier": policy_tier,
         "mutation_allowed": mutation_allowed,
@@ -2287,6 +2350,16 @@ _SECURITY_ERROR_PREFIXES = (
     "SEMANTIC_DEV_PATH_FORBIDDEN",
     "SEMANTIC_DEV_OPERATION_FORBIDDEN",
     "SEMANTIC_REPAIR_PRODUCTION_POLICY_VIOLATION",
+    "HANDOFF_SECRET_TRANSFER_FORBIDDEN",
+    "HANDOFF_UNTRUSTED_PROMPT_BLOCKED",
+    "HANDOFF_CIRCULAR_DEPENDENCY",
+    "HANDOFF_MAX_DELEGATION_DEPTH_EXCEEDED",
+    "HANDOFF_PRODUCTION_FORBIDDEN",
+    "HANDOFF_AUTHORIZATION_",
+    "HANDOFF_RBAC_",
+    "HANDOFF_SOURCE_DOMAIN_FORBIDDEN",
+    "HANDOFF_TARGET_DOMAIN_RESTRICTED",
+    "HANDOFF_RECURSIVE_CAPABILITY_FORBIDDEN",
 )
 
 
@@ -2505,6 +2578,30 @@ def build_semantic_diagnostic(
     elif code == "SENSITIVE_FIELD_FORBIDDEN":
         rejected_field = "request"
         allowed_correction = "Remove sensitive credential/secret/token keys from the request payload."
+    elif code == "HANDOFF_SECRET_TRANSFER_FORBIDDEN":
+        rejected_field = "constraints"
+        http_status = 403
+        allowed_correction = "Remove secrets, credentials, tokens, or private keys from cross-domain handoff payloads."
+    elif code == "HANDOFF_UNTRUSTED_PROMPT_BLOCKED":
+        rejected_field = "objective"
+        http_status = 403
+        allowed_correction = "Remove untrusted prompt override or policy-bypass text from the handoff request."
+    elif code in {"HANDOFF_CIRCULAR_DEPENDENCY", "HANDOFF_MAX_DELEGATION_DEPTH_EXCEEDED", "HANDOFF_RECURSIVE_CAPABILITY_FORBIDDEN"}:
+        rejected_field = "constraints.target_domain"
+        http_status = 409
+        allowed_correction = "Break circular or recursive cross-domain delegation before registering the handoff."
+    elif code == "HANDOFF_RATE_LIMIT_EXCEEDED":
+        rejected_field = "request_key"
+        http_status = 429
+        allowed_correction = "Wait for the handoff rate-limit window to reset or reuse an existing active handoff."
+    elif code.startswith("HANDOFF_AUTHORIZATION_") or code.startswith("HANDOFF_RBAC_") or code in {"HANDOFF_SOURCE_DOMAIN_FORBIDDEN", "HANDOFF_TARGET_DOMAIN_RESTRICTED"}:
+        rejected_field = "constraints.authorization_ref"
+        http_status = 403
+        allowed_correction = "Provide a valid, non-expired, non-revoked materialized authorization scoped to the domain."
+    elif code.startswith("HANDOFF_"):
+        rejected_field = "constraints"
+        http_status = 422
+        allowed_correction = "Validate target_domain, request_key, acceptance_criteria, and constraints against list_capabilities (CROSS_DOMAIN_HANDOFF_REGISTER)."
     elif code == "SCHEMA_VALIDATION_ERROR":
         rejected_field = "request_schema"
         allowed_correction = (
@@ -2652,7 +2749,7 @@ def preflight_semantic_objective(
                 _require_mutation_runtime_convergence()
 
         if capability.submitter is not None:
-            # Direct-submitter capability (e.g. WORKER_REPAIR_BOUNDED): validate context & constraints without mutating
+            # Direct-submitter capability (e.g. WORKER_REPAIR_BOUNDED, CROSS_DOMAIN_HANDOFF_REGISTER): validate without mutating
             constraints = payload.get("constraints")
             if not isinstance(constraints, Mapping):
                 raise WorkerIngressError("SEMANTIC_CONSTRAINTS_INVALID")
@@ -2665,6 +2762,53 @@ def preflight_semantic_objective(
             allowed_keys = set(meta.get("allowed_constraints", ()))
             if set(constraints.keys()) - allowed_keys:
                 raise WorkerIngressError("SEMANTIC_CONSTRAINTS_UNSUPPORTED")
+            if capability.code == "CROSS_DOMAIN_HANDOFF_REGISTER":
+                from tools.mirror_sync import worker_cross_domain_handoff as handoff_mod
+
+                try:
+                    checked = handoff_mod.validate_handoff_constraints(
+                        payload,
+                        current_user=current_user,
+                        state_root=STATE_ROOT,
+                        dry_run=True,
+                    )
+                except handoff_mod.HandoffError as exc:
+                    raise WorkerIngressError(str(exc)) from exc
+                if checked.get("duplicate") is True:
+                    existing_h = checked["existing_handoff"]
+                    return {
+                        "schema": "edarsahub.worker-semantic-preflight.v1",
+                        "ok": True,
+                        "status": "EXISTS",
+                        "handoff_id": existing_h["handoff_id"],
+                        "job_id": existing_h.get("resolution_job_id") or existing_h["handoff_id"],
+                        "lifecycle_state": existing_h.get("lifecycle_state"),
+                        "duplicate_detected": True,
+                        "duplicate_prevented": True,
+                        "capability": capability.code,
+                        "bounded_context": bounded_context,
+                        "mode": requested_mode,
+                        "production_allowed": False,
+                        "production_touched": False,
+                    }
+                cls = checked["classification"]
+                return {
+                    "schema": "edarsahub.worker-semantic-preflight.v1",
+                    "ok": True,
+                    "status": "PREFLIGHT_READY",
+                    "handoff_id": checked["handoff_id"],
+                    "dependency_id": checked["dependency_id"],
+                    "target_domain": checked["target_domain"],
+                    "classification": cls["classification"],
+                    "lifecycle_state": cls["lifecycle_state"],
+                    "next_allowed_action": cls["next_allowed_action"],
+                    "duplicate_detected": False,
+                    "capability": capability.code,
+                    "bounded_context": bounded_context,
+                    "mode": requested_mode,
+                    "production_allowed": False,
+                    "production_touched": False,
+                }
             return {
                 "schema": "edarsahub.worker-semantic-preflight.v1",
                 "ok": True,
