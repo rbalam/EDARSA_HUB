@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/fase2_operativo/services/cargos_service.py",
+          "backend/modules/fase2_operativo/services/responsabilidad_service.py",
+          "backend/modules/fase2_operativo/routes/cargos_routes.py",
+          "backend/modules/fase2_operativo/routes/responsabilidad_routes.py",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "SUPERADMIN",
+          "usuario_id",
+          "JERARQUIA_ROLES",
+          "_validar_permiso_por_monto",
+          "require_explicit_permission"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-SECURITY_RBAC-REPOSITORY_CONTRACT_AUDIT_BOUNDE-232FA8562BDEE0C8466D",
+  "mode": "READ_ONLY",
+  "objective": "Auditoria READ_ONLY acotada de autorizacion RBAC en Cargos y Responsabilidad; verificar jerarquias SUPERADMIN frente a limites por monto, derivacion de identidad real JWT frente a usuario_id manipulable en calculo de responsabilidad, porteros explicitos y pruebas existentes. Solo informar evidencia, no modificar archivos, bases SQL ni Produccion, no duplicar gates ni migraciones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SECURITY_RBAC",
+    "conflict_domains": [
+      "SECURITY_RBAC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
