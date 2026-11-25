@@ -922,12 +922,269 @@ _CAPABILITY_METADATA: dict[str, dict[str, Any]] = {
 }
 
 
+_BASE_REQUIRED_OBJECTIVE_FIELDS: tuple[str, ...] = (
+    "objective",
+    "bounded_context",
+    "mode",
+    "capability",
+)
+
+
+def _capability_contract_details(code: str, meta: Mapping[str, Any]) -> dict[str, Any]:
+    """Derive dynamic contract metadata strictly from canonical validation rules."""
+    ownership_map = {
+        context: sorted(paths)
+        for context, paths in (
+            meta.get("bounded_context_path_ownership", {}) or {}
+        ).items()
+    }
+    allowed_roots = list(meta.get("allowed_path_roots", ()))
+    ownership: dict[str, Any] = {
+        "allowed_path_roots": allowed_roots,
+        "bounded_context_path_ownership": ownership_map,
+    }
+
+    if code == "DEVELOPMENT_MUTATION_BOUNDED":
+        return {
+            "required_fields": list(_BASE_REQUIRED_OBJECTIVE_FIELDS),
+            "required_constraints": ["change_spec"],
+            "allowed_operations": sorted(_DEV_ALLOWED_OPERATIONS),
+            "formats": {
+                "source_sha256": _DEV_SHA256_RE.pattern,
+                "expected_sha256": _DEV_SHA256_RE.pattern,
+                "authorization_ref": _DEV_AUTH_REF_RE.pattern,
+                "job_id_override": _G3_JOB_ID.pattern,
+                "path": _G3_PATH.pattern,
+            },
+            "limits": {
+                "max_changes": _DEV_MAX_CHANGES,
+                "max_verification_tests": _DEV_MAX_TESTS,
+                "max_text_bytes": _DEV_MAX_TEXT_BYTES,
+                "expected_occurrences_range": [1, 20],
+                "verification_test_roots": list(_DEV_TEST_ROOTS),
+                "write_file_large_shrink_min_ratio": 0.75,
+            },
+            "ownership": ownership,
+            "safe_example": {
+                "objective": "Aplicar cambio acotado y validado en Desarrollo.",
+                "bounded_context": "WORKER_MCP",
+                "mode": "MUTATION",
+                "capability": "DEVELOPMENT_MUTATION_BOUNDED",
+                "request_key": "example-dev-mutation-r1",
+                "constraints": {
+                    "authorization_ref": "GO-EXAMPLE-REF",
+                    "change_spec": [
+                        {
+                            "operation": "replace_text",
+                            "path": "backend/modules/worker_mcp/server.py",
+                            "source_sha256": "0" * 64,
+                            "old_text": "OLD",
+                            "replacement": "NEW",
+                            "expected_occurrences": 1,
+                        }
+                    ],
+                    "verification_tests": ["backend/tests/test_worker_mcp_dev_ingress_gate_b.py"],
+                },
+            },
+        }
+
+    if code == "REPOSITORY_CONTRACT_AUDIT_BOUNDED":
+        return {
+            "required_fields": list(_BASE_REQUIRED_OBJECTIVE_FIELDS),
+            "required_constraints": ["paths", "search_terms"],
+            "allowed_operations": [],
+            "formats": {
+                "path": _G3_PATH.pattern,
+                "search_term": _G3_TERM.pattern,
+            },
+            "limits": {
+                "paths_count_range": [1, 20],
+                "search_terms_count_range": [1, 20],
+                "max_results_range": [1, 100],
+            },
+            "ownership": ownership,
+            "safe_example": {
+                "objective": "Auditar contratos en modo READ_ONLY.",
+                "bounded_context": "WORKER_INGRESS",
+                "mode": "READ_ONLY",
+                "capability": "REPOSITORY_CONTRACT_AUDIT_BOUNDED",
+                "constraints": {
+                    "paths": ["backend/modules/worker_ingress/routes.py"],
+                    "search_terms": ["preflight_semantic_objective"],
+                    "max_results": 20,
+                },
+            },
+        }
+
+    if code in {"WORKER_RESULT_SEMANTIC_EXTRACT", "WORKER_RESULT_DETAIL_READ"}:
+        return {
+            "required_fields": list(_BASE_REQUIRED_OBJECTIVE_FIELDS),
+            "required_constraints": ["source_job_id"],
+            "allowed_operations": [],
+            "formats": {"source_job_id": _G3_JOB_ID.pattern},
+            "limits": {},
+            "ownership": ownership,
+            "safe_example": {
+                "objective": "Leer evidencia terminal sanitizada de un job.",
+                "bounded_context": "WORKER_REPAIR_KNOWLEDGE_LOOP",
+                "mode": "READ_ONLY",
+                "capability": code,
+                "constraints": {"source_job_id": "SEM-REQUEST-EXAMPLE0001"},
+            },
+        }
+
+    if code == "WORKER_MAINTENANCE_HISTORY_READONLY":
+        return {
+            "required_fields": list(_BASE_REQUIRED_OBJECTIVE_FIELDS),
+            "required_constraints": [],
+            "allowed_operations": [],
+            "formats": {"source_job_id": _G3_JOB_ID.pattern},
+            "limits": {},
+            "ownership": ownership,
+            "safe_example": {
+                "objective": "Consultar Maintenance History pseudonimizado.",
+                "bounded_context": "WORKER_REPAIR_KNOWLEDGE_LOOP",
+                "mode": "READ_ONLY",
+                "capability": code,
+                "constraints": {"source_job_id": "SEM-REQUEST-EXAMPLE0001"},
+            },
+        }
+
+    if code == "WORKER_PYTEST_CERTIFICATION_READONLY":
+        ownership["fixed_suites"] = {
+            ctx: list(paths) for ctx, paths in sorted(_WORKER_PYTEST_FIXED_SUITES.items())
+        }
+        return {
+            "required_fields": list(_BASE_REQUIRED_OBJECTIVE_FIELDS),
+            "required_constraints": [],
+            "allowed_operations": [],
+            "formats": {},
+            "limits": {"fixed_suites_only": True},
+            "ownership": ownership,
+            "safe_example": {
+                "objective": "Ejecutar suite pytest fija certificada READ_ONLY.",
+                "bounded_context": _WORKER_PYTEST_CONTEXT,
+                "mode": "READ_ONLY",
+                "capability": code,
+                "constraints": {},
+            },
+        }
+
+    if code == "WORKER_REPAIR_BOUNDED":
+        return {
+            "required_fields": list(_BASE_REQUIRED_OBJECTIVE_FIELDS),
+            "required_constraints": ["incident_id", "capability_code"],
+            "allowed_operations": [],
+            "formats": {
+                "incident_id": _G3_JOB_ID.pattern,
+                "capability_code": _WORKER_REPAIR_CODE.pattern,
+            },
+            "limits": {},
+            "ownership": ownership,
+            "safe_example": {
+                "objective": "Ejecutar reparacion declarativa registrada.",
+                "bounded_context": _WORKER_REPAIR_CONTEXT,
+                "mode": "MUTATION",
+                "capability": code,
+                "constraints": {
+                    "incident_id": "INCIDENT-EXAMPLE-R1",
+                    "capability_code": "CAPABILITY_EXAMPLE",
+                },
+            },
+        }
+
+    if code == _COA_GATE6F_CAPABILITY:
+        return {
+            "required_fields": list(_BASE_REQUIRED_OBJECTIVE_FIELDS),
+            "required_constraints": ["authorization_ref"],
+            "allowed_operations": [],
+            "formats": {"authorization_ref": _DEV_AUTH_REF_RE.pattern},
+            "limits": {},
+            "ownership": ownership,
+            "safe_example": {
+                "objective": "Ejecutar seed fiscal COA autorizado en Desarrollo.",
+                "bounded_context": _COA_GATE6F_CONTEXT,
+                "mode": "MUTATION",
+                "capability": code,
+                "constraints": {"authorization_ref": _COA_GATE6F_AUTH_REF},
+            },
+        }
+
+    if code == "SEC_RBAC_SQL_PERMISSION_MATRIX_READONLY":
+        return {
+            "required_fields": list(_BASE_REQUIRED_OBJECTIVE_FIELDS),
+            "required_constraints": [],
+            "allowed_operations": [],
+            "formats": {},
+            "limits": {"fixed_readonly_sql_queries": len(_SEC_RBAC_GATE1B_QUERIES)},
+            "ownership": ownership,
+            "safe_example": {
+                "objective": "Auditar matriz RBAC SQL en modo READ_ONLY_SQL.",
+                "bounded_context": "SEC_RBAC",
+                "mode": "READ_ONLY_SQL",
+                "capability": code,
+                "constraints": {},
+            },
+        }
+
+    if code == "SQL_CONNECTIONS_BOOTSTRAP_READONLY":
+        return {
+            "required_fields": list(_BASE_REQUIRED_OBJECTIVE_FIELDS),
+            "required_constraints": [],
+            "allowed_operations": [],
+            "formats": {},
+            "limits": {"max_results": _SQL_CONNECTIONS_BOOTSTRAP_REQUEST["max_results"]},
+            "ownership": ownership,
+            "safe_example": {
+                "objective": "Auditar bootstrap de conexiones SQL en modo READ_ONLY.",
+                "bounded_context": _SQL_CONNECTIONS_BOOTSTRAP_CONTEXT,
+                "mode": "READ_ONLY",
+                "capability": code,
+                "constraints": {},
+            },
+        }
+
+    if code == "REPOSITORY_CONTRACT_AUDIT":
+        return {
+            "required_fields": list(_BASE_REQUIRED_OBJECTIVE_FIELDS),
+            "required_constraints": [],
+            "allowed_operations": [],
+            "formats": {},
+            "limits": {"max_results": _RH_OFFBOARDING_AUDIT_REQUEST["max_results"]},
+            "ownership": ownership,
+            "safe_example": {
+                "objective": "Auditar contratos RH en modo READ_ONLY.",
+                "bounded_context": "RH",
+                "mode": "READ_ONLY",
+                "capability": code,
+                "constraints": {},
+            },
+        }
+
+    return {
+        "required_fields": list(_BASE_REQUIRED_OBJECTIVE_FIELDS),
+        "required_constraints": [],
+        "allowed_operations": [],
+        "formats": {},
+        "limits": {},
+        "ownership": ownership,
+        "safe_example": {
+            "objective": "Verificar salud de ingreso semantico READ_ONLY.",
+            "bounded_context": "WORKER_INGRESS",
+            "mode": "READ_ONLY",
+            "capability": code,
+            "constraints": {},
+        },
+    }
+
+
 def capability_catalog() -> list[dict[str, Any]]:
     """Return read-only declarative metadata for all registered semantic capabilities."""
     items: list[dict[str, Any]] = []
     for code in registered_capabilities():
         cap = _CAPABILITIES[code]
         meta = _CAPABILITY_METADATA.get(code, {})
+        details = _capability_contract_details(cap.code, meta)
         items.append(
             {
                 "code": cap.code,
@@ -949,6 +1206,7 @@ def capability_catalog() -> list[dict[str, Any]]:
                     ).items()
                 },
                 "raw_worker_fields_forbidden": True,
+                **details,
             }
         )
     return items

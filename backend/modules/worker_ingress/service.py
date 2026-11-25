@@ -163,6 +163,127 @@ def _find_existing_job_state(job_id: str) -> str | None:
     return None
 
 
+_PUBLICATION_FAILURE_STATUSES = frozenset({
+    "RECOVERY_REQUIRED",
+    "WRITER_BUSY",
+    "CLAIM_BUSY",
+    "REMOTE_MOVED_RETRYABLE",
+    "BLOCKED_CONVERGENCE",
+})
+
+
+def classify_publication_diagnostic(
+    result: Mapping[str, Any],
+    *,
+    job_id: str | None = None,
+) -> dict[str, Any]:
+    """Build a secret-free, fail-closed publication diagnostic from publisher output."""
+    state = _clean(result.get("status")).upper() or "RECOVERY_REQUIRED"
+    raw_reason = _clean(result.get("reason"))
+    upper_reason = raw_reason.upper()
+    safe_job_id = _clean(job_id or result.get("job_id"))
+    if safe_job_id and not JOB_ID_RE.fullmatch(safe_job_id):
+        safe_job_id = ""
+
+    if any(
+        marker in upper_reason
+        for marker in (
+            "COULD NOT READ USERNAME",
+            "AUTHENTICATION FAILED",
+            "TERMINAL PROMPTS DISABLED",
+            "HTTP 401",
+            "HTTP 403",
+            "ACCESS DENIED",
+            "CREDENTIAL",
+        )
+    ):
+        category = "GIT_AUTH_FAILURE"
+        error_code = "GIT_AUTH_FAILED"
+        retryable = False
+        recovery_required = True
+        recommended_action = (
+            "Verify non-interactive Git credential helper / per-URL useHttpPath config "
+            "without modifying credentials, then recover the existing draft via gate_chain_publisher.submit()."
+        )
+    elif state == "BLOCKED_CONVERGENCE" or "CONVERGENCE" in upper_reason or "DIVERGENCE" in upper_reason:
+        category = "CONVERGENCE_FAILURE"
+        error_code = "BLOCKED_CONVERGENCE"
+        retryable = False
+        recovery_required = True
+        recommended_action = (
+            "Inspect GET /api/internal/worker/runtime-convergence and reconcile "
+            "Development/Mirror before retrying."
+        )
+    elif state in {"WRITER_BUSY", "CLAIM_BUSY", "REMOTE_MOVED_RETRYABLE"}:
+        category = "CONFLICT_OR_CONTENTION"
+        error_code = state
+        retryable = True
+        recovery_required = False
+        recommended_action = (
+            "Check get_job_status for the existing job_id; if still unpublished, "
+            "retry manually once writer/claim contention clears."
+        )
+    elif (
+        "IDEMPOTENCY_CONFLICT" in upper_reason
+        or "RESIDUAL_STATE_INCOMPLETE" in upper_reason
+        or "QUEUE_PUBLISHER_RESIDUAL_" in upper_reason
+        or "LOCK_BUSY" in upper_reason
+    ):
+        category = "CONFLICT_OR_CONTENTION"
+        if "IDEMPOTENCY_CONFLICT" in upper_reason:
+            error_code = "JOB_DRAFT_IDEMPOTENCY_CONFLICT"
+        elif "RESIDUAL_STATE_INCOMPLETE" in upper_reason:
+            error_code = "QUEUE_PUBLISHER_RESIDUAL_STATE_INCOMPLETE"
+        elif "LOCK_BUSY" in upper_reason:
+            error_code = "GIT_LOCK_BUSY"
+        else:
+            error_code = "QUEUE_PUBLISHER_RESIDUAL_CONFLICT"
+        retryable = False
+        recovery_required = True
+        recommended_action = (
+            "Do not duplicate the job; inspect existing draft/worktree state and "
+            "recover the same job_id canonically."
+        )
+    else:
+        category = "PUBLICATION_FAILURE"
+        if "PUSH_FAILED" in upper_reason:
+            error_code = "PUSH_FAILED"
+        elif "AGENT_GUARD" in upper_reason:
+            error_code = "AGENT_GUARD_WORKTREE_FAILED"
+        elif "QUEUE_REMOTE_HEAD" in upper_reason:
+            error_code = "QUEUE_REMOTE_HEAD_UNAVAILABLE"
+        else:
+            error_code = state if re.fullmatch(r"[A-Z][A-Z0-9_]{1,80}", state) else "RECOVERY_REQUIRED"
+        retryable = False
+        recovery_required = True
+        recommended_action = (
+            "Inspect GET /api/internal/worker/runtime-convergence and existing job_id "
+            "draft state before recovering via gate_chain_publisher.submit()."
+        )
+
+    return {
+        "schema": "edarsahub.worker-publication-diagnostic.v1",
+        "category": category,
+        "error_code": error_code,
+        "status": state,
+        "job_id": safe_job_id or None,
+        "retryable": retryable,
+        "recovery_required": recovery_required,
+        "recommended_action": recommended_action,
+        "production_touched": False,
+    }
+
+
+def _attach_publication_diagnostic(safe: dict[str, Any]) -> None:
+    state = _clean(safe.get("status")).upper()
+    if state not in _PUBLICATION_FAILURE_STATUSES:
+        return
+    diag = classify_publication_diagnostic(safe, job_id=_clean(safe.get("job_id")))
+    safe["publication_diagnostic"] = diag
+    if "reason" in safe:
+        safe["reason"] = diag["error_code"]
+
+
 def _submit_through_canonical_publisher(canonical_job: dict[str, Any]) -> dict[str, Any]:
     import inspect
 
@@ -246,6 +367,7 @@ def submit_job(
     safe["job_id"] = _clean(result.get("job_id")) or canonical_job["job_id"]
     safe["production_touched"] = bool(result.get("production_touched", False))
     safe.pop("template", None)
+    _attach_publication_diagnostic(safe)
     return safe
 
 
@@ -603,6 +725,7 @@ def submit_objective(
     safe["capability"] = capability_code
     safe["bounded_context"] = _clean(payload.get("bounded_context")).upper()
     safe.pop("template", None)
+    _attach_publication_diagnostic(safe)
     return safe
 
 

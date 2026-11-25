@@ -36,7 +36,12 @@ from .client import (
     WorkerMcpBackendError,
     WorkerMcpUpstreamUnavailableError,
     WorkerMcpValidationError,
+    extract_safe_publication_diagnostic,
+    get_go_context as backend_get_go_context,
     get_job_status as backend_get_job_status,
+    get_runtime_convergence as backend_get_runtime_convergence,
+    list_capabilities as backend_list_capabilities,
+    preflight_objective as backend_preflight_objective,
     submit_objective as backend_submit_objective,
 )
 from .config import WorkerMcpConfig
@@ -51,6 +56,10 @@ GET_JOB_STATUS_SCOPE = "worker:status"
 TOOL_REQUIRED_SCOPES: dict[str, str] = {
     "submit_objective": SUBMIT_OBJECTIVE_SCOPE,
     "get_job_status": GET_JOB_STATUS_SCOPE,
+    "get_go_context": GET_JOB_STATUS_SCOPE,
+    "list_capabilities": GET_JOB_STATUS_SCOPE,
+    "preflight_objective": GET_JOB_STATUS_SCOPE,
+    "get_runtime_convergence": GET_JOB_STATUS_SCOPE,
 }
 ADVERTISED_MCP_SCOPE_STRING = " ".join(MCP_SCOPES)
 _MAX_INSPECT_BODY_BYTES = 262144
@@ -547,11 +556,20 @@ def _raise_mapped_upstream_error(
         status_num = int(exc.status_code or 503)
         cap_val = _safe_capability_name(capability)
         reason_code = str(exc.reason_code or "UPSTREAM_UNAVAILABLE").strip().upper()
-        retryable = bool(exc.retryable)
+        pub_diag = extract_safe_publication_diagnostic(exc.payload)
+        retryable = (
+            bool(pub_diag["retryable"])
+            if isinstance(pub_diag.get("retryable"), bool)
+            else bool(exc.retryable)
+        )
+        category = pub_diag.get("category")
+        pub_error_code = pub_diag.get("error_code")
+        pub_job_id = pub_diag.get("job_id")
+        recovery_required = pub_diag.get("recovery_required")
         _log_mcp_tool_error(
             tool_name=tool_name,
             http_status=status_num,
-            error_code=reason_code,
+            error_code=pub_error_code or reason_code,
             rejected_field="upstream_runtime",
             capability=cap_val,
             correlation_id=correlation_id,
@@ -562,20 +580,37 @@ def _raise_mapped_upstream_error(
             if reason_code == "UPSTREAM_TIMEOUT"
             else f"UPSTREAM_UNAVAILABLE_{status_num}:{reason_code}"
         )
-        if reason_code == "UPSTREAM_TIMEOUT":
+        if pub_diag.get("recommended_action"):
+            hint = str(pub_diag["recommended_action"])
+        elif reason_code == "UPSTREAM_TIMEOUT":
             hint = (
                 "Upstream timed out; do not auto-retry blindly. Verify status with "
-                "get_job_status or preflight before re-submitting to avoid duplicates."
+                "get_job_status or preflight_objective before re-submitting to avoid duplicates."
             )
         elif reason_code == "BACKEND_UNREACHABLE":
             hint = (
                 "Backend ingress temporarily unreachable; verify runtime health and "
                 "existing job status before retrying (no automatic duplicate retry performed)."
             )
-        elif reason_code in {"RECOVERY_REQUIRED", "BLOCKED_CONVERGENCE"}:
+        elif category == "GIT_AUTH_FAILURE":
+            hint = (
+                "Git push authentication failed (e.g. credential.useHttpPath mismatch); "
+                "do not duplicate job or modify credentials; recover existing draft canonically."
+            )
+        elif category == "CONVERGENCE_FAILURE" or reason_code == "BLOCKED_CONVERGENCE":
+            hint = (
+                "Worker runtime requires convergence/recovery; inspect get_runtime_convergence "
+                "or GET /api/internal/worker/runtime-convergence."
+            )
+        elif category == "CONFLICT_OR_CONTENTION" and not retryable:
+            hint = (
+                "Existing draft or publisher residual conflict detected; inspect existing job_id "
+                "and recover canonically without creating a duplicate job."
+            )
+        elif reason_code == "RECOVERY_REQUIRED":
             hint = (
                 "Worker runtime requires convergence/recovery before accepting mutations; "
-                "inspect GET /api/internal/worker/runtime-convergence."
+                "inspect get_runtime_convergence or GET /api/internal/worker/runtime-convergence."
             )
         else:
             hint = (
@@ -583,6 +618,14 @@ def _raise_mapped_upstream_error(
                 "existing job status (no automatic duplicate retry performed)."
             )
         parts = [prefix, f"retryable={'true' if retryable else 'false'}"]
+        if category:
+            parts.append(f"category={category}")
+        if pub_error_code and pub_error_code != reason_code:
+            parts.append(f"cause={pub_error_code}")
+        if pub_job_id:
+            parts.append(f"job_id={pub_job_id}")
+        if isinstance(recovery_required, bool):
+            parts.append(f"recovery_required={'true' if recovery_required else 'false'}")
         if cap_val:
             parts.append(f"capability={cap_val}")
         parts.append(f"hint={hint}")
@@ -819,6 +862,139 @@ def get_job_status_tool(
     }
 
 
+def get_go_context_tool(
+    domain: str,
+    project: str = "EDARSAHUB",
+    chain_id: str | None = None,
+    objective_hint: str | None = None,
+) -> dict[str, Any]:
+    """Read canonical GO context for cross-chat continuity (READ_ONLY, worker:status)."""
+    token = _authorized_bearer_token(GET_JOB_STATUS_SCOPE)
+    try:
+        return backend_get_go_context(
+            backend_url=_backend_url(),
+            token=token,
+            domain=domain,
+            project=project,
+            chain_id=chain_id,
+            objective_hint=objective_hint,
+        )
+    except (
+        WorkerMcpAuthorizationError,
+        WorkerMcpValidationError,
+        WorkerMcpUpstreamUnavailableError,
+        WorkerMcpBackendError,
+    ) as exc:
+        _raise_mapped_upstream_error(
+            exc,
+            default_required_scope=GET_JOB_STATUS_SCOPE,
+            tool_name="get_go_context",
+            correlation_id=_safe_correlation_id(domain),
+        )
+    raise RuntimeError("UNREACHABLE")
+
+
+def list_capabilities_tool() -> dict[str, Any]:
+    """Read the dynamic canonical semantic capability catalog (READ_ONLY, worker:status)."""
+    token = _authorized_bearer_token(GET_JOB_STATUS_SCOPE)
+    try:
+        return backend_list_capabilities(
+            backend_url=_backend_url(),
+            token=token,
+        )
+    except (
+        WorkerMcpAuthorizationError,
+        WorkerMcpValidationError,
+        WorkerMcpUpstreamUnavailableError,
+        WorkerMcpBackendError,
+    ) as exc:
+        _raise_mapped_upstream_error(
+            exc,
+            default_required_scope=GET_JOB_STATUS_SCOPE,
+            tool_name="list_capabilities",
+        )
+    raise RuntimeError("UNREACHABLE")
+
+
+def preflight_objective_tool(
+    objective: str,
+    bounded_context: str,
+    mode: str,
+    capability: str,
+    request_key: str | None = None,
+    constraints: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Validate an objective against contract, RBAC, ownership, SHA-256, and duplicates without publishing (READ_ONLY, worker:status)."""
+    safe_corr = _safe_correlation_id(request_key)
+    if constraints is not None and not isinstance(constraints, dict):
+        _log_mcp_tool_error(
+            tool_name="preflight_objective",
+            http_status=422,
+            error_code="SEMANTIC_CONSTRAINTS_INVALID",
+            rejected_field="constraints",
+            capability=capability,
+            correlation_id=safe_corr,
+            retryable=False,
+        )
+        raise ToolError(
+            "VALIDATION_ERROR_422:SEMANTIC_CONSTRAINTS_INVALID | field=constraints | "
+            "hint=Pass constraints as a JSON object matching list_capabilities."
+        )
+    payload: dict[str, Any] = {
+        "objective": objective,
+        "bounded_context": bounded_context,
+        "mode": mode,
+        "capability": capability,
+        "constraints": constraints or {},
+    }
+    if request_key:
+        payload["request_key"] = request_key
+
+    token = _authorized_bearer_token(GET_JOB_STATUS_SCOPE)
+    try:
+        return backend_preflight_objective(
+            backend_url=_backend_url(),
+            token=token,
+            payload=payload,
+        )
+    except (
+        WorkerMcpAuthorizationError,
+        WorkerMcpValidationError,
+        WorkerMcpUpstreamUnavailableError,
+        WorkerMcpBackendError,
+    ) as exc:
+        _raise_mapped_upstream_error(
+            exc,
+            default_required_scope=GET_JOB_STATUS_SCOPE,
+            tool_name="preflight_objective",
+            capability=capability,
+            correlation_id=safe_corr,
+        )
+    raise RuntimeError("UNREACHABLE")
+
+
+def get_runtime_convergence_tool() -> dict[str, Any]:
+    """Read canonical Git/Worker/MCP runtime convergence report (READ_ONLY, worker:status)."""
+    token = _authorized_bearer_token(GET_JOB_STATUS_SCOPE)
+    try:
+        return backend_get_runtime_convergence(
+            backend_url=_backend_url(),
+            token=token,
+        )
+    except (
+        WorkerMcpAuthorizationError,
+        WorkerMcpValidationError,
+        WorkerMcpUpstreamUnavailableError,
+        WorkerMcpBackendError,
+    ) as exc:
+        _raise_mapped_upstream_error(
+            exc,
+            default_required_scope=GET_JOB_STATUS_SCOPE,
+            tool_name="get_runtime_convergence",
+        )
+    raise RuntimeError("UNREACHABLE")
+
+
 def build_mcp_server(
     config: WorkerMcpConfig,
     *,
@@ -836,8 +1012,9 @@ def build_mcp_server(
     mcp = MCPServer(
         "EDARSAHUB Universal Worker",
         instructions=(
-            "Use submit_objective to send approved semantic objectives to "
-            "EDARSAHUB. Use get_job_status to read their canonical status. "
+            "Use get_go_context, list_capabilities, get_runtime_convergence, and "
+            "preflight_objective (READ_ONLY, worker:status) before invoking "
+            "submit_objective (worker:submit). Use get_job_status to read canonical status. "
             "No low-level worker actions are exposed."
         ),
         token_verifier=verifier,
@@ -873,6 +1050,50 @@ def build_mcp_server(
             openWorldHint=False,
         ),
     )(get_job_status_tool)
+
+    mcp.tool(
+        name="get_go_context",
+        title="Get EDARSAHUB GO context",
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )(get_go_context_tool)
+
+    mcp.tool(
+        name="list_capabilities",
+        title="List EDARSAHUB semantic capabilities",
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )(list_capabilities_tool)
+
+    mcp.tool(
+        name="preflight_objective",
+        title="Preflight EDARSAHUB semantic objective",
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )(preflight_objective_tool)
+
+    mcp.tool(
+        name="get_runtime_convergence",
+        title="Get EDARSAHUB Worker runtime convergence",
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )(get_runtime_convergence_tool)
 
     orig_streamable_http_app = mcp.streamable_http_app
 

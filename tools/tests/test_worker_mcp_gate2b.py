@@ -43,17 +43,29 @@ def _access_token() -> AccessToken:
     )
 
 
+EXPECTED_AUTHORIZED_MCP_TOOLS = {
+    "submit_objective",
+    "get_job_status",
+    "get_go_context",
+    "list_capabilities",
+    "preflight_objective",
+    "get_runtime_convergence",
+}
+
+
 @pytest.mark.asyncio
-async def test_mcp_exposes_exactly_two_public_tools():
+async def test_mcp_exposes_exactly_authorized_public_tools_with_least_privilege():
     mcp = server.build_mcp_server(_config())
 
     async with Client(mcp) as mcp_client:
         result = await mcp_client.list_tools()
 
-    assert {tool.name for tool in result.tools} == {
-        "submit_objective",
-        "get_job_status",
-    }
+    by_name = {tool.name: tool for tool in result.tools}
+    assert set(by_name) == EXPECTED_AUTHORIZED_MCP_TOOLS
+    assert by_name["submit_objective"].annotations.readOnlyHint is False
+    for ro_name in EXPECTED_AUTHORIZED_MCP_TOOLS - {"submit_objective"}:
+        assert by_name[ro_name].annotations.readOnlyHint is True
+        assert by_name[ro_name].annotations.destructiveHint is False
 
 
 def test_config_fails_closed_without_required_env(monkeypatch):
@@ -366,7 +378,7 @@ def test_refresh_token_session_types_are_isolated_from_mcp_service():
     assert "LOWER(LTRIM(RTRIM(ISNULL(TipoUsuario, ''))))" in refresh_text
     assert routes_text.count(
         'validate_and_get_session(refresh_token, expected_user_type="interno")'
-    ) == 2
+    ) == 3
     assert 'expected_user_type="interno"' in routes_text
     assert 'user_type="interno"' in routes_text
 
@@ -974,14 +986,14 @@ def test_client_differentiates_http_403_auth_from_http_422_validation(
 
 
 @pytest.mark.asyncio
-async def test_g3_r2_submit_objective_tool_advertises_capability_contract_and_keeps_two_tools():
+async def test_g3_r2_submit_objective_tool_advertises_capability_contract_and_keeps_authorized_tools():
     mcp = server.build_mcp_server(_config())
 
     async with Client(mcp) as mcp_client:
         result = await mcp_client.list_tools()
 
     by_name = {tool.name: tool for tool in result.tools}
-    assert set(by_name) == {"submit_objective", "get_job_status"}
+    assert set(by_name) == EXPECTED_AUTHORIZED_MCP_TOOLS
     description = by_name["submit_objective"].description or ""
     assert "REPOSITORY_CONTRACT_AUDIT_BOUNDED" in description
     assert "paths" in description

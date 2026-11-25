@@ -98,6 +98,31 @@ class WorkerMcpUpstreamUnavailableError(WorkerMcpBackendError):
         self.retryable = bool(retryable)
 
 
+_SAFE_JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
+_SAFE_PUB_CATEGORIES = frozenset({
+    "GIT_AUTH_FAILURE",
+    "CONVERGENCE_FAILURE",
+    "CONFLICT_OR_CONTENTION",
+    "PUBLICATION_FAILURE",
+})
+_DIAG_SENSITIVE_MARKERS = (
+    "ghp_", "gho_", "ghu_", "ghs_", "github_pat_", "bearer ",
+    "password", "passwd", "secret", "token", "api_key", "apikey", "://",
+)
+
+
+def _sanitize_diagnostic_hint(raw: Any) -> str | None:
+    if not isinstance(raw, str):
+        return None
+    text = " ".join(raw.strip().split())
+    if not text:
+        return None
+    low = text.lower()
+    if any(marker in low for marker in _DIAG_SENSITIVE_MARKERS):
+        return None
+    return text[:240]
+
+
 def _extract_unavailable_reason(payload: Mapping[str, Any]) -> tuple[str, bool]:
     detail = payload.get("detail")
     candidate = ""
@@ -108,6 +133,68 @@ def _extract_unavailable_reason(payload: Mapping[str, Any]) -> tuple[str, bool]:
     if candidate in _KNOWN_503_STATES:
         return candidate, candidate in _RETRYABLE_503_STATES
     return "UPSTREAM_UNAVAILABLE", True
+
+
+def extract_safe_publication_diagnostic(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Extract sanitized publication failure details (category, job_id, recoverability) without leaking secrets."""
+    detail = payload.get("detail")
+    out: dict[str, Any] = {}
+    if not isinstance(detail, Mapping):
+        return out
+
+    raw_job = str(detail.get("job_id") or "").strip()
+    pub_diag = detail.get("publication_diagnostic")
+    if isinstance(pub_diag, Mapping):
+        if not raw_job:
+            raw_job = str(pub_diag.get("job_id") or "").strip()
+        cat = str(pub_diag.get("category") or "").strip().upper()
+        if cat in _SAFE_PUB_CATEGORIES:
+            out["category"] = cat
+        err = str(pub_diag.get("error_code") or "").strip().upper()
+        if _SAFE_REASON_CODE_RE.fullmatch(err):
+            out["error_code"] = err
+        if isinstance(pub_diag.get("retryable"), bool):
+            out["retryable"] = pub_diag["retryable"]
+        if isinstance(pub_diag.get("recovery_required"), bool):
+            out["recovery_required"] = pub_diag["recovery_required"]
+        hint = _sanitize_diagnostic_hint(pub_diag.get("recommended_action"))
+        if hint:
+            out["recommended_action"] = hint
+    else:
+        state = str(detail.get("status") or "").strip().upper()
+        raw_reason = str(detail.get("reason") or "").strip().upper()
+        if any(
+            m in raw_reason
+            for m in ("COULD NOT READ USERNAME", "HTTP 401", "HTTP 403", "AUTHENTICATION FAILED", "CREDENTIAL")
+        ):
+            out["category"] = "GIT_AUTH_FAILURE"
+            out["error_code"] = "GIT_AUTH_FAILED"
+            out["retryable"] = False
+            out["recovery_required"] = True
+        elif state == "BLOCKED_CONVERGENCE" or "CONVERGENCE" in raw_reason or "DIVERGENCE" in raw_reason:
+            out["category"] = "CONVERGENCE_FAILURE"
+            out["error_code"] = "BLOCKED_CONVERGENCE"
+            out["retryable"] = False
+            out["recovery_required"] = True
+        elif state in {"WRITER_BUSY", "CLAIM_BUSY", "REMOTE_MOVED_RETRYABLE"}:
+            out["category"] = "CONFLICT_OR_CONTENTION"
+            out["error_code"] = state
+            out["retryable"] = True
+            out["recovery_required"] = False
+        elif "IDEMPOTENCY_CONFLICT" in raw_reason or "RESIDUAL" in raw_reason:
+            out["category"] = "CONFLICT_OR_CONTENTION"
+            out["error_code"] = "JOB_DRAFT_IDEMPOTENCY_CONFLICT" if "IDEMPOTENCY_CONFLICT" in raw_reason else "QUEUE_PUBLISHER_RESIDUAL_CONFLICT"
+            out["retryable"] = False
+            out["recovery_required"] = True
+        elif state == "RECOVERY_REQUIRED":
+            out["category"] = "PUBLICATION_FAILURE"
+            out["error_code"] = "PUSH_FAILED" if "PUSH_FAILED" in raw_reason else "RECOVERY_REQUIRED"
+            out["retryable"] = False
+            out["recovery_required"] = True
+
+    if raw_job and _SAFE_JOB_ID_RE.fullmatch(raw_job):
+        out["job_id"] = raw_job
+    return out
 
 
 def _extract_validation_reason(payload: Mapping[str, Any]) -> str:
@@ -504,4 +591,130 @@ def get_job_status(
         detail = response.get("detail")
         if isinstance(detail, Mapping):
             return dict(detail)
+    return response
+
+
+def _handle_readonly_status_error(
+    status_code: int,
+    response: Mapping[str, Any],
+    *,
+    error_code: str,
+) -> None:
+    if status_code in (401, 403):
+        raise _extract_auth_error(
+            status_code,
+            response,
+            "worker:status",
+        )
+    if status_code in (400, 409, 422):
+        raise WorkerMcpValidationError(
+            f"{error_code}_VALIDATION_FAILED",
+            status_code=status_code,
+            reason_code=_extract_validation_reason(response),
+            payload=response,
+        )
+    if status_code == 503:
+        reason_code, retryable = _extract_unavailable_reason(response)
+        raise WorkerMcpUpstreamUnavailableError(
+            f"{error_code}_UNAVAILABLE",
+            status_code=503,
+            reason_code=reason_code,
+            retryable=retryable,
+            payload=response,
+        )
+    raise WorkerMcpBackendError(
+        f"{error_code}_FAILED",
+        status_code=status_code,
+        payload=response,
+    )
+
+
+def get_go_context(
+    *,
+    backend_url: str,
+    token: str,
+    domain: str,
+    project: str = "EDARSAHUB",
+    chain_id: str | None = None,
+    objective_hint: str | None = None,
+) -> dict[str, Any]:
+    internal_token = exchange_service_credential(
+        backend_url=backend_url,
+        credential=token,
+    )
+    query: dict[str, str] = {"domain": domain, "project": project or "EDARSAHUB"}
+    if chain_id:
+        query["chain_id"] = chain_id
+    if objective_hint:
+        query["objective_hint"] = objective_hint
+    status_code, response = _request_json(
+        method="GET",
+        url=(
+            backend_url.rstrip("/")
+            + "/api/internal/worker/context?"
+            + urllib.parse.urlencode(query)
+        ),
+        token=internal_token,
+    )
+    if status_code != 200:
+        _handle_readonly_status_error(status_code, response, error_code="GO_CONTEXT_READ")
+    return response
+
+
+def list_capabilities(
+    *,
+    backend_url: str,
+    token: str,
+) -> dict[str, Any]:
+    internal_token = exchange_service_credential(
+        backend_url=backend_url,
+        credential=token,
+    )
+    status_code, response = _request_json(
+        method="GET",
+        url=backend_url.rstrip("/") + "/api/internal/worker/capabilities",
+        token=internal_token,
+    )
+    if status_code != 200:
+        _handle_readonly_status_error(status_code, response, error_code="CAPABILITIES_READ")
+    return response
+
+
+def preflight_objective(
+    *,
+    backend_url: str,
+    token: str,
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    internal_token = exchange_service_credential(
+        backend_url=backend_url,
+        credential=token,
+    )
+    status_code, response = _request_json(
+        method="POST",
+        url=backend_url.rstrip("/") + "/api/internal/worker/objectives/preflight",
+        token=internal_token,
+        payload=payload,
+    )
+    if status_code != 200:
+        _handle_readonly_status_error(status_code, response, error_code="OBJECTIVE_PREFLIGHT")
+    return response
+
+
+def get_runtime_convergence(
+    *,
+    backend_url: str,
+    token: str,
+) -> dict[str, Any]:
+    internal_token = exchange_service_credential(
+        backend_url=backend_url,
+        credential=token,
+    )
+    status_code, response = _request_json(
+        method="GET",
+        url=backend_url.rstrip("/") + "/api/internal/worker/runtime-convergence",
+        token=internal_token,
+    )
+    if status_code != 200:
+        _handle_readonly_status_error(status_code, response, error_code="RUNTIME_CONVERGENCE_READ")
     return response

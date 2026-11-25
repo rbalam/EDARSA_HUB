@@ -16,8 +16,15 @@ def _load_gateway():
     """Import the gateway with OAuth router stubbed so the test needs no SQL config."""
     oauth_name, gateway_name = "modules.worker_mcp.oauth_server", "modules.worker_mcp.gateway_router"
     saved = {name: sys.modules.get(name) for name in (oauth_name, gateway_name)}
+    async def _stub_oauth_metadata(*args, **kwargs):
+        return {}
+
     stub = types.ModuleType(oauth_name)
     stub.router = APIRouter()
+    stub.oauth_authorization_metadata = _stub_oauth_metadata
+    pkg = sys.modules.get("modules.worker_mcp")
+    had_pkg_attr = pkg is not None and hasattr(pkg, "gateway_router")
+    old_pkg_attr = getattr(pkg, "gateway_router", None) if had_pkg_attr else None
     sys.modules[oauth_name] = stub
     sys.modules.pop(gateway_name, None)
     try:
@@ -28,6 +35,12 @@ def _load_gateway():
                 sys.modules.pop(name, None)
             else:
                 sys.modules[name] = module
+        pkg_after = sys.modules.get("modules.worker_mcp")
+        if pkg_after is not None:
+            if had_pkg_attr:
+                setattr(pkg_after, "gateway_router", old_pkg_attr)
+            elif hasattr(pkg_after, "gateway_router"):
+                delattr(pkg_after, "gateway_router")
 
 
 gateway_router = _load_gateway()
@@ -192,7 +205,7 @@ class _StubTokenVerifier:
         return AccessToken(
             token=token,
             client_id="user-1",
-            scopes=["mcp:tools"],
+            scopes=["worker:status", "worker:submit"],
             expires_at=None,
             resource="https://edarsahub.example.com/api/mcp",
         )
@@ -306,7 +319,14 @@ def test_gateway_handshake_initialized_and_tools_list_discovery(monkeypatch):
         )
         assert tools_reply.status_code == 200
         tools = {tool["name"]: tool for tool in tools_reply.json()["result"]["tools"]}
-        assert set(tools.keys()) == {"submit_objective", "get_job_status"}
+        assert set(tools.keys()) == {
+            "submit_objective",
+            "get_job_status",
+            "get_go_context",
+            "list_capabilities",
+            "preflight_objective",
+            "get_runtime_convergence",
+        }
         assert "objective" in tools["submit_objective"]["inputSchema"]["properties"]
         assert "job_id" in tools["get_job_status"]["inputSchema"]["properties"]
 
@@ -350,7 +370,14 @@ def test_gateway_forwards_modern_mcp_method_header(monkeypatch):
         )
     assert reply.status_code == 200
     tools = {tool["name"] for tool in reply.json()["result"]["tools"]}
-    assert tools == {"submit_objective", "get_job_status"}
+    assert tools == {
+        "submit_objective",
+        "get_job_status",
+        "get_go_context",
+        "list_capabilities",
+        "preflight_objective",
+        "get_runtime_convergence",
+    }
 
 
 def test_gateway_validates_external_origin_and_strips_it_before_loopback(monkeypatch):
