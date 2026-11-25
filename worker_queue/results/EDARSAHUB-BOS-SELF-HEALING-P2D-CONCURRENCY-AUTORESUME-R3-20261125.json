@@ -2,8 +2,11 @@
   "base_sha": "67c3ce746e36f6b6dd6d61fdbbe6276e6d5b21fd",
   "blockers": [],
   "candidate_sha": "84cfe3423d299c7ce23ef50853667bc3e5f7efbc",
-  "certification": "PENDING_AUDIT_EVIDENCE",
+  "certification": "CERTIFIED",
+  "certification_basis": "SHA_BOUND_ATTESTATION_PLUS_ARTIFACT_CONVERGENCE",
+  "certified_source_sha": "84cfe3423d299c7ce23ef50853667bc3e5f7efbc",
   "completed_at_utc": "2026-11-25T09:36:48Z",
+  "converged_head": "84cfe3423d299c7ce23ef50853667bc3e5f7efbc",
   "development_sha": "84cfe3423d299c7ce23ef50853667bc3e5f7efbc",
   "execution_base_sha": "67c3ce746e36f6b6dd6d61fdbbe6276e6d5b21fd",
   "executor": "chatgpt-deterministic",
@@ -19,9 +22,9 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "EDARSAHUB-BOS-SELF-HEALING-P2D-CONCURRENCY-AUTORESUME-R3-20261125",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-11-25T09:39:06Z",
+  "published_at_utc": "2026-11-25T09:41:32Z",
   "quality_gate": "PASS",
   "requested_base_sha": "67c3ce746e36f6b6dd6d61fdbbe6276e6d5b21fd",
   "schema": "edarsahub.worker-result.v2",
@@ -31,5 +34,5 @@
   "status": "INTEGRATED",
   "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
   "tests": "PASS",
-  "work_completion": "PENDING_CERTIFICATION"
+  "work_completion": "COMPLETE"
 }
