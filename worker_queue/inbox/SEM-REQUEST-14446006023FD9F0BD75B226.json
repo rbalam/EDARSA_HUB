@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_job_id": "EDARSAHUB-WORKER-REPAIR-PLANNER-CANONICAL-INGRESS-R2-BINDING-R1-20261106"
+      },
+      "type": "worker_maintenance_history_readonly"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-14446006023FD9F0BD75B226",
+  "mode": "READ_ONLY",
+  "objective": "Knowledge Loop G4: reconciliacion historica READ_ONLY focalizada del resultado fallido R2 CANONICAL INGRESS del 2026-11-06. Consultar Maintenance History existente con el source_job_id indicado; recuperar solo evidencia sanitizada de incident, repair_job, certified_successor y learned_from_incident. No ejecutar reparaciones, no repetir auditorias agregadas, no tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_REPAIR_KNOWLEDGE_LOOP",
+    "conflict_domains": [
+      "WORKER_REPAIR_KNOWLEDGE_LOOP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
