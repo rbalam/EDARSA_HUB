@@ -1,0 +1,82 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "    from tools.mirror_sync.universal_job_result_publisher import (\n        sanitize_repository_evidence,\n        sanitize_result_detail_evidence,\n    )",
+      "path": "backend/modules/worker_ingress/service.py",
+      "replacement": "    from tools.mirror_sync.universal_job_result_publisher import (\n        sanitize_maintenance_history_evidence,\n        sanitize_repository_evidence,\n        sanitize_result_detail_evidence,\n    )",
+      "source_sha256": "9ecda57a1e953bce0d9fbf9fd88d3a0b3486f4f1da901471337d92aab37fb786",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    payload_dict = dict(payload)\n\n    if fields.get(\"result_detail_evidence\") is None:",
+      "path": "backend/modules/worker_ingress/service.py",
+      "replacement": "    payload_dict = dict(payload)\n\n    # Reuse the canonical publisher sanitizer for local and published results.\n    maintenance = sanitize_maintenance_history_evidence(payload_dict)\n    if maintenance is None:\n        published = payload.get(\"maintenance_history_evidence\")\n        if isinstance(published, Mapping):\n            checks = published.get(\"checks\")\n            if isinstance(checks, list) and len(checks) == 1:\n                maintenance = sanitize_maintenance_history_evidence({\n                    \"checks\": [{\n                        \"type\": \"worker_maintenance_history_readonly\",\n                        \"maintenance_history_evidence\": checks[0],\n                    }],\n                })\n    if maintenance is not None:\n        fields[\"maintenance_history_evidence\"] = maintenance\n        fields.setdefault(\"evidence_status\", \"COMPLETE\")\n        fields.setdefault(\"evidence_truncated\", False)\n\n    if fields.get(\"result_detail_evidence\") is None:",
+      "source_sha256": "8bb1931f957a2de26d70cb3611fb76e73ff20ee8d992b9af3a3500ea8882b15d",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "        \"evidence_status\": result.get(\"evidence_status\"),",
+      "path": "backend/modules/worker_mcp/server.py",
+      "replacement": "        \"maintenance_history_evidence\": result.get(\n            \"maintenance_history_evidence\"\n        ),\n        \"evidence_status\": result.get(\"evidence_status\"),",
+      "source_sha256": "8da46f0362dd71902f5f09706b7fce79932711bb7eacf9b4fe56fd7204cd6e64",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "def test_g4_focused_linkage_is_pseudonymized_and_certification_bound(",
+      "path": "backend/tests/test_worker_maintenance_history_readonly.py",
+      "replacement": "def test_ingress_preserves_sanitized_maintenance_evidence():\n    from modules.worker_ingress.service import _safe_terminal_fields\n\n    evidence = {\n        \"schema\": \"edarsahub.worker-maintenance-history-readonly.v1\",\n        \"mode\": \"READ_ONLY\",\n        \"status\": \"PASS\",\n        \"production_allowed\": False,\n        \"incident_count\": 3,\n        \"focused_linkage\": {\"match_count\": 1, \"raw_identifiers_exposed\": False},\n    }\n    local = {\"checks\": [{\n        \"type\": \"worker_maintenance_history_readonly\",\n        \"maintenance_history_evidence\": evidence,\n    }]}\n    published = {\"maintenance_history_evidence\": {\"checks\": [evidence]}}\n    for result in (local, published):\n        fields = _safe_terminal_fields(result)\n        assert fields[\"maintenance_history_evidence\"] == {\"checks\": [evidence]}\n        assert fields[\"evidence_status\"] == \"COMPLETE\"\n    unsafe = {**evidence, \"production_allowed\": True}\n    assert \"maintenance_history_evidence\" not in _safe_terminal_fields(\n        {\"maintenance_history_evidence\": {\"checks\": [unsafe]}}\n    )\n\n\ndef test_g4_focused_linkage_is_pseudonymized_and_certification_bound(",
+      "source_sha256": "392e8a25360c4ea418486d14ed5ac714e53d9a221c3e9f566b695ad8e52f3e67",
+      "type": "replace_text"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/service.py",
+        "backend/modules/worker_mcp/server.py",
+        "backend/tests/test_worker_maintenance_history_readonly.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_maintenance_history_readonly.py",
+        "tools/tests/test_worker_mcp_gate2b.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-8F096CBB53D391EF8A94455E",
+  "mode": "MUTATION",
+  "objective": "WK60 R2-D fase 1: exponer evidencia Maintenance History existente y sanitizada mediante get_job_status, tanto local como publicada, preservando contrato y permisos; prueba regresion; no repetir diagnósticos. Desarrollo exclusivamente.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_MCP",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_MCP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
