@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/worker_ingress/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "change_spec",
+          "authorization_ref",
+          "verification_tests",
+          "job_id_override",
+          "source_sha256",
+          "expected_sha256",
+          "replace_text",
+          "write_file",
+          "insert_before",
+          "insert_after",
+          "append_once",
+          "shrink"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_INGRESS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-982CD3AF1790C378E612",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY el contrato exacto de DEVELOPMENT_MUTATION_BOUNDED y constraints.change_spec en Worker Ingress. Extraer campos obligatorios, operaciones permitidas, SHA guards, rutas, authorization_ref, verification_tests, anti-duplicados y validaciones fail-closed. No mutar nada ni tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS",
+    "conflict_domains": [
+      "WORKER_INGRESS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
