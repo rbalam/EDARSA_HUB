@@ -1,0 +1,45 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "isolation": "HERMETIC_READONLY",
+      "paths": [
+        "backend/tests/test_cava_socios_domain.py",
+        "backend/tests/test_cava_socios_adapter_sdk.py",
+        "backend/tests/test_cava_socios_blind_audit.py",
+        "backend/tests/test_cava_socios_blind_audit_operational_service.py",
+        "backend/tests/test_cava_socios_cienfuegos_legacy_adapter.py",
+        "backend/tests/test_cava_socios_cienfuegos_legacy_dryrun.py",
+        "backend/tests/test_cava_socios_evidence_chain.py",
+        "backend/tests/test_cava_socios_migration_engine.py",
+        "backend/tests/test_cavas_gate12e_bos_persona_link_contract.py"
+      ],
+      "type": "pytest"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-5739637C4CFFFCEA3B0857AB",
+  "mode": "READ_ONLY",
+  "objective": "WK60 R2-B: certificacion funcional READ_ONLY hermetica del dominio CAVA_SOCIOS (9 archivos, 66 pruebas).",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CAVA_SOCIOS",
+    "conflict_domains": [
+      "CAVA_SOCIOS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
