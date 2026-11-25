@@ -1,0 +1,66 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "\"Git push authentication failed (e.g. credential.useHttpPath mismatch); \"",
+      "path": "backend/modules/worker_mcp/server.py",
+      "replacement": "\"Upstream Git remote authentication failed (e.g. credential.useHttpPath mismatch); \"",
+      "source_sha256": "08f2291ccc141b55ef7f699c355275a955d07c3ecdd2a875ac1be740090b0ddf",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    assert by_name[\"submit_objective\"].annotations.readOnlyHint is False\n    for ro_name in EXPECTED_AUTHORIZED_MCP_TOOLS - {\"submit_objective\"}:\n        assert by_name[ro_name].annotations.readOnlyHint is True\n        assert by_name[ro_name].annotations.destructiveHint is False",
+      "path": "tools/tests/test_worker_mcp_gate2b.py",
+      "replacement": "    def _ann(tool, snake: str, camel: str):\n        ann = tool.annotations\n        return getattr(ann, snake, getattr(ann, camel, None))\n\n    assert _ann(by_name[\"submit_objective\"], \"read_only_hint\", \"readOnlyHint\") is False\n    for ro_name in EXPECTED_AUTHORIZED_MCP_TOOLS - {\"submit_objective\"}:\n        assert _ann(by_name[ro_name], \"read_only_hint\", \"readOnlyHint\") is True\n        assert _ann(by_name[ro_name], \"destructive_hint\", \"destructiveHint\") is False",
+      "source_sha256": "00b03fb3f0e15d98309d75ce017ea23cdfc63db7bb027ce6e741c895093ce23d",
+      "type": "replace_text"
+    }
+  ],
+  "base_sha": "7b105449a1e02ee05170d9964305c6db508b269d",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_mcp/server.py",
+        "tools/tests/test_worker_mcp_gate2b.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_mcp_r2_b_autonomous_tools_contract.py",
+        "backend/tests/test_worker_contract_stabilization_preflight.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WK50-R2-B-GATE2B-PARITY-R4-20261125",
+  "mode": "MUTATION",
+  "objective": "R2-B Gate2B parity (GO-WK50-MCP-AUTONOMOUS-CONTEXT-PREFLIGHT-R2): alinear redaccion sanitizada de diagnostico en worker_mcp/server.py con la guardia estatica de superficie baja de Gate2B y soportar atributos ToolAnnotations snake/camel en tools/tests/test_worker_mcp_gate2b.py.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_MCP",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_MCP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
