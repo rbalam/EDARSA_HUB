@@ -1,0 +1,58 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/comercial/routes.py",
+          "backend/modules/comercial/canonical_detail_routes.py",
+          "backend/modules/comercial/canonical_detail.py",
+          "backend/modules/comercial_analytics/",
+          "backend/modules/comercial_v2/",
+          "backend/tests/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "validate_server_access_rbac",
+          "server_id",
+          "unidad_negocio_id",
+          "unidad_codigo",
+          "has_server_access",
+          "get_unidades_permitidas_v2",
+          "get_current_user",
+          "detalle-movimientos",
+          "ticket-venta",
+          "comercial",
+          "dashboard"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-VENTAS_COMERCIAL-REPOSITORY_CONTRACT_AUDIT_BOUNDE-0FFAB9C10F8124EB914E",
+  "mode": "READ_ONLY",
+  "objective": "Gate focalizado READ_ONLY de seguridad y compatibilidad Comercial: inspeccionar consumidores frontend y rutas legacy por server_id junto a los resolvers y RBAC canónicos; determinar cómo evitar que usuarios restringidos a ORIGEN accedan a 130QRO y viceversa cuando comparten ServerID. Inventariar archivos, funciones y tests exactos, clasificar rutas activas/legacy y devolver plan de cambio mínimo y pruebas de no regresión para futura autorización. No repetir auditoría general certificada ni modificar código, SQL o Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "VENTAS_COMERCIAL",
+    "conflict_domains": [
+      "VENTAS_COMERCIAL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
