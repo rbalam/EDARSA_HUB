@@ -1,0 +1,36 @@
+{
+  "base_sha": "67c3ce746e36f6b6dd6d61fdbbe6276e6d5b21fd",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "candidate_sha": "b3cfa2113ba3f19d33e356cc52491957f4d54f41",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-11-25T09:34:43Z",
+  "execution_base_sha": "67c3ce746e36f6b6dd6d61fdbbe6276e6d5b21fd",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_worker_self_healing_p2d_concurrency_autoresume.py",
+    "docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md",
+    "docs/agent-governance/decisions/ACTIVE_DECISIONS.md",
+    "tools/mirror_sync/git_divergence_guard.py",
+    "tools/mirror_sync/universal_job_dispatcher.py",
+    "tools/mirror_sync/worker_control_plane.py",
+    "tools/mirror_sync/worker_lifecycle_recovery.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-SELF-HEALING-P2D-CONCURRENCY-AUTORESUME-R2-20261125",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-11-25T09:35:38Z",
+  "quality_gate": "FAIL",
+  "requested_base_sha": "67c3ce746e36f6b6dd6d61fdbbe6276e6d5b21fd",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-25T09:34:27Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
