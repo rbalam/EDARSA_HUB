@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "4ea5c0f364aa6ad983fb1120f4bfc04db8057f88",
-  "generated_at_utc": "2026-11-25T03:23:10Z",
+  "generated_at_utc": "2026-11-25T03:24:32Z",
   "history": {
     "done_total_local": 2067,
     "pending_total_local": 0,
@@ -16,61 +16,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3591,
-      "job_id": "EDARSAHUB-BOS-WK50-R2-0-GOVERNANCE-20261125",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3502,
+      "age_seconds": 3584,
       "job_id": "EDARSAHUB-BOS-WK50-R2-A-OWNERSHIP-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2687,
+      "age_seconds": 2769,
       "job_id": "EDARSAHUB-BOS-WK50-R2-B-GATE2B-PARITY-R4-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3143,
+      "age_seconds": 3225,
       "job_id": "EDARSAHUB-BOS-WK50-R2-B-MCP-TOOLS-CATALOG-DIAG-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3027,
+      "age_seconds": 3109,
       "job_id": "EDARSAHUB-BOS-WK50-R2-B-MCP-TOOLS-CATALOG-DIAG-R2-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2798,
+      "age_seconds": 2880,
       "job_id": "EDARSAHUB-BOS-WK50-R2-B-MCP-TOOLS-CATALOG-DIAG-R3-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1838,
+      "age_seconds": 1920,
       "job_id": "EDARSAHUB-BOS-WK50-R2-F-CHECKPOINT-CLOSE-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2327,
+      "age_seconds": 2409,
       "job_id": "SEM-REQUEST-25EEDF38645B905D3EBAEB30",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2311,
+      "age_seconds": 2393,
       "job_id": "SEM-REQUEST-E533AF2577C3A8A1639824FC",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3394,
+      "age_seconds": 3476,
       "job_id": "WORKER-REPAIR-4bce9340cca11bc84f05-A2",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,14 +78,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 10,
+  "queue_result_ready_recent": 9,
   "queue_running": 0,
   "remote_development_sha": "4ea5c0f364aa6ad983fb1120f4bfc04db8057f88",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-25T03:23:01Z",
-    "last_receive_utc": "2026-11-25T03:22:56Z",
+    "last_cycle_utc": "2026-11-25T03:24:26Z",
+    "last_receive_utc": "2026-11-25T03:24:20Z",
     "last_terminal_utc": "2026-11-25T02:52:32Z",
     "pid": "408197",
     "runtime_fingerprint": {
