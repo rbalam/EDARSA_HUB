@@ -1,0 +1,33 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-EDARSAHUB_BOS_MONGO_RUNTIME_RESI-READ_ONLY_CANARY-211572FF149C16D0BFAE",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en solo lectura el estado ACTUAL de Mongo residual/runtime en EDARSAHUB BOS. Verificar si siguen presentes o activos: proceso/supervisor mongod, backend/core/mongo_stub.py, imports o inicializaciones StubDatabase en backend/server.py, dependencias pymongo/motor, consumidores runtime, fallbacks/caches/locks/auth/RBAC basados en Mongo, y cualquier MONGO_URL/MONGODB_* operativo. Confirmar además que SQL Server EDARSAHUB sigue siendo la fuente canónica y que cualquier acceso read-only usa HRLectura. No modificar archivos, no detener servicios, no cambiar Supervisor, no SQL de escritura, no commit, no push, no migración, no despliegue y no Producción. Entregar blockers y siguiente acción mínima.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB_BOS_MONGO_RUNTIME_RESIDUAL_AUDIT",
+    "conflict_domains": [
+      "EDARSAHUB_BOS_MONGO_RUNTIME_RESIDUAL_AUDIT"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
