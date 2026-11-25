@@ -1,0 +1,58 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/worker_ingress/semantic_capabilities.py",
+          "backend/modules/worker_ingress/service.py",
+          "backend/tests/test_worker_mcp_dev_ingress_gate_b.py"
+        ],
+        "search_terms": [
+          "change_spec",
+          "authorization_ref",
+          "verification_tests",
+          "job_id_override",
+          "source_sha256",
+          "expected_sha256",
+          "expected_occurrences",
+          "replace_text",
+          "write_file",
+          "insert_before",
+          "insert_after",
+          "append_once",
+          "allowed_path",
+          "shrink",
+          "duplicate"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_INGRESS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-9F35121C01EA3C992BD2",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en modo READ_ONLY el contrato exacto de DEVELOPMENT_MUTATION_BOUNDED para extraer la estructura completa de constraints.change_spec y sus guardrails. Revisar semantic_capabilities.py, service.py y test_worker_mcp_dev_ingress_gate_b.py. Devolver campos obligatorios, operaciones declarativas permitidas, reglas de source_sha256 y expected_sha256, rutas permitidas, limites de tamaño/shrink, authorization_ref, verification_tests, anti-duplicados, RBAC y cualquier validacion fail-closed. No publicar mutacion, no modificar archivos, no tocar SQL ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS",
+    "conflict_domains": [
+      "WORKER_INGRESS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
