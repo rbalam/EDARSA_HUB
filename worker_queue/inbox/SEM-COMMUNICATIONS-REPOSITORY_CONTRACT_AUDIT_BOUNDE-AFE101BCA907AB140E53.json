@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/",
+          "backend/core/"
+        ],
+        "search_terms": [
+          "whatsapp",
+          "twilio",
+          "communications",
+          "escalamiento",
+          "cancelacion",
+          "descuento",
+          "rag"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-COMMUNICATIONS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-AFE101BCA907AB140E53",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 funcional WhatsApp EDARSA, auditoria READ_ONLY focalizada. Reutilizar y no repetir Gate 0 certificado SEM-COMMUNICATIONS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-6632A776DA4453CA81E9. Verificar contratos reales de atencion WhatsApp, protocolos de cancelacion, reapertura, descuento y aprobacion; tickets, infografias y documentos, RAG autorizado, consentimiento, identidad, RBAC, aislamiento multiempresa, derivacion a humano y trazabilidad; reconciliar con dispatcher/Twilio existentes. Entregar matriz evidencia archivo/simbolo/contrato, hallazgos y brechas sin suponer implementacion. No cambios, no SQL LIVE, no Produccion, no infraestructura paralela.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMMUNICATIONS",
+    "conflict_domains": [
+      "COMMUNICATIONS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
