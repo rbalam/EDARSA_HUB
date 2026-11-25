@@ -4,62 +4,62 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "a9cd5649c70dd199ee7945d93d6b52e66e3b5fa8",
-  "generated_at_utc": "2026-11-25T08:37:08Z",
+  "generated_at_utc": "2026-11-25T08:38:36Z",
   "history": {
-    "done_total_local": 2083,
+    "done_total_local": 2084,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1403,
-    "results_total_local": 3245
+    "results_total_local": 3246
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3530,
-      "job_id": "EDARSAHUB-BOS-WK60-R2-B-EXTENSIBLE-PYTEST-HERMETIC-R2-20261125",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3431,
+      "age_seconds": 3520,
       "job_id": "EDARSAHUB-BOS-WK60-R2-B-EXTENSIBLE-PYTEST-HERMETIC-R3-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1699,
+      "age_seconds": 1788,
       "job_id": "EDARSAHUB-BOS-WK60-R2-D2-TYPED-HISTORICAL-EVIDENCE-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1598,
+      "age_seconds": 1687,
       "job_id": "EDARSAHUB-BOS-WK60-R2-D2-TYPED-HISTORICAL-EVIDENCE-R2-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1513,
+      "age_seconds": 1602,
       "job_id": "EDARSAHUB-BOS-WK60-R2-D2-TYPED-HISTORICAL-EVIDENCE-R3-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 410,
+      "age_seconds": 499,
       "job_id": "EDARSAHUB-BOS-WK60-R3-FINAL-CHECKPOINT-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2907,
+      "age_seconds": 2996,
       "job_id": "SEM-REQUEST-5739637C4CFFFCEA3B0857AB",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2876,
+      "age_seconds": 2965,
       "job_id": "SEM-REQUEST-82E1470F6EA733E571F58342",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 55,
+      "job_id": "SEM-REQUEST-DBB8AB18E1FBD66E1E5B1F1C",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -78,9 +78,9 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-25T08:37:02Z",
-    "last_receive_utc": "2026-11-25T08:36:57Z",
-    "last_terminal_utc": "2026-11-25T08:30:17Z",
+    "last_cycle_utc": "2026-11-25T08:38:18Z",
+    "last_receive_utc": "2026-11-25T08:38:13Z",
+    "last_terminal_utc": "2026-11-25T08:37:41Z",
     "pid": "2758557",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "abf01c7888c5e2ac869a8bb4645b752a77ae8084",
