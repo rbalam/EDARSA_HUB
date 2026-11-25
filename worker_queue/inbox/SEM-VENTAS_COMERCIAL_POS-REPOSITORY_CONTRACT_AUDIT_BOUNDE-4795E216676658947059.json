@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "comandero",
+          "ventas",
+          "comercial",
+          "portal-proveedores",
+          "POS",
+          "bonificacion",
+          "cancelacion",
+          "devolucion",
+          "Cliente_Catalogo",
+          "motivo"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-VENTAS_COMERCIAL_POS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-4795E216676658947059",
+  "mode": "READ_ONLY",
+  "objective": "READ_ONLY audit of EDARSAHUB Sales/Commercial and restaurant POS/Comandero satellite versus supplier portal navigation pattern. Inspect existing canonical code, shared SQL catalog integration, RBAC and backend endpoints, identify bounded gaps and next gates. No mutations, no Production, no parallel infrastructure.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "VENTAS_COMERCIAL_POS",
+    "conflict_domains": [
+      "VENTAS_COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
