@@ -1,0 +1,65 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Aplicacion de Cajas V1: prepara un expediente sin persistencia implicita.\n\nEl repositorio transaccional y los resolutores canonicos se inyectan cuando\nla migracion SQL sea certificada. No se crea una base de datos alternativa.\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom typing import Protocol\n\nfrom modules.finanzas.incidencias_caja_context import (\n    AlcanceCaja, MotivoCajaCatalogo, RegistroCajaValidado, preparar_registro_caja,\n)\nfrom modules.finanzas.incidencias_caja_contracts import IncidenciaCajaCreate\n\n\nclass PersistenciaCajaNoDisponible(RuntimeError):\n    pass\n\n\nclass RepositorioExpedientesCaja(Protocol):\n    def crear_si_no_existe(self, registro: RegistroCajaValidado) -> str:\n        \"\"\"Transaccion atomica y UNIQUE por idempotencia_ambito.\n\n        Misma solicitud debe devolver el mismo folio.\n        Misma clave con contenido distinto debe rechazarse.\n        No puede implementarse sin SQL validado.\n        \"\"\"\n        ...\n\n\n@dataclass(frozen=True)\nclass DependenciasCrearCaja:\n    contextos_permitidos: frozenset[tuple[str, str, str]]\n    motivos_vigentes: tuple[MotivoCajaCatalogo, ...]\n    repositorio: RepositorioExpedientesCaja | None = None\n\n\ndef preparar_expediente_v1(\n    solicitud: IncidenciaCajaCreate,\n    alcance: AlcanceCaja,\n    dependencias: DependenciasCrearCaja,\n) -> RegistroCajaValidado:\n    \"\"\"Valida contexto y catalogos exclusivamente contra datos canonicos ya resueltos.\"\"\"\n    return preparar_registro_caja(\n        solicitud=solicitud,\n        alcance=alcance,\n        contextos_permitidos=dependencias.contextos_permitidos,\n        motivos_vigentes=dependencias.motivos_vigentes,\n    )\n\n\ndef registrar_expediente_v1(\n    solicitud: IncidenciaCajaCreate,\n    alcance: AlcanceCaja,\n    dependencias: DependenciasCrearCaja,\n) -> str:\n    \"\"\"No declara exito sin repositorio SQL transaccional autorizado.\"\"\"\n    registro = preparar_expediente_v1(solicitud, alcance, dependencias)\n    if dependencias.repositorio is None:\n        raise PersistenciaCajaNoDisponible(\"CAJAS_SQL_PERSISTENCE_NOT_CERTIFIED\")\n    folio = dependencias.repositorio.crear_si_no_existe(registro)\n    if not isinstance(folio, str) or not folio.strip():\n        raise PersistenciaCajaNoDisponible(\"CAJAS_SQL_INSERT_NOT_CONFIRMED\")\n    return folio\n",
+      "path": "backend/modules/finanzas/incidencias_caja_application.py",
+      "type": "write_file"
+    },
+    {
+      "content": "from dataclasses import replace\nimport pytest\n\nfrom modules.finanzas.incidencias_caja_application import (\n    DependenciasCrearCaja, PersistenciaCajaNoDisponible,\n    preparar_expediente_v1, registrar_expediente_v1,\n)\nfrom modules.finanzas.incidencias_caja_context import AlcanceCaja, MotivoCajaCatalogo\nfrom modules.finanzas.incidencias_caja_contracts import IncidenciaCajaCreate\n\n\ndef fixtures():\n    alcance=AlcanceCaja(\"empresa1\",\"unidad1\",\"sucursal1\",7,\"POS\",\"servidor1\")\n    solicitud=IncidenciaCajaCreate(\n        tipo=\"CANCELACION\",motivo_codigo=\"CAPTURA\",descripcion=\"Cargo duplicado\",\n        solicitud_idempotencia=\"solicitud-123\"\n    )\n    deps=DependenciasCrearCaja(\n        contextos_permitidos=frozenset({(\"empresa1\",\"unidad1\",\"sucursal1\")}),\n        motivos_vigentes=(MotivoCajaCatalogo(\n            codigo_canonico=\"CAPTURA\",codigo_origen=\"01\",\n            sistema_origen=\"POS\",empresa_id=\"empresa1\",\n            unidad_id=\"unidad1\",sucursal_id=\"sucursal1\"),)\n    )\n    return alcance,solicitud,deps\n\n\ndef test_preparar_expediente_no_persiste():\n    ctx,sol,deps=fixtures()\n    result=preparar_expediente_v1(sol,ctx,deps)\n    assert result.motivo_codigo_origen==\"01\"\n    assert len(result.idempotencia_ambito)==64\n\n\ndef test_no_simula_exito_si_sql_falta():\n    ctx,sol,deps=fixtures()\n    with pytest.raises(PersistenciaCajaNoDisponible,match=\"NOT_CERTIFIED\"):\n        registrar_expediente_v1(sol,ctx,deps)\n\n\ndef test_no_acepta_repositorio_que_devuelve_folio_vacio():\n    ctx,sol,deps=fixtures()\n    class SinConfirmacion:\n        def crear_si_no_existe(self,registro):\n            return \"\"\n    with pytest.raises(PersistenciaCajaNoDisponible,match=\"NOT_CONFIRMED\"):\n        registrar_expediente_v1(sol,ctx,replace(deps,repositorio=SinConfirmacion()))\n\n\ndef test_delega_clave_al_repositorio_transaccional_sin_generar_folio_local():\n    ctx,sol,deps=fixtures()\n    class RepositorioPrueba:\n        def __init__(self):\n            self.registro=None\n        def crear_si_no_existe(self,registro):\n            self.registro=registro\n            return \"CAJA-0001\"\n    repo=RepositorioPrueba()\n    assert registrar_expediente_v1(sol,ctx,replace(deps,repositorio=repo))==\"CAJA-0001\"\n    assert repo.registro.alcance.usuario_id==7\n\n\ndef test_no_llama_repositorio_si_rls_rechaza():\n    ctx,sol,deps=fixtures()\n    class Nunca:\n        def crear_si_no_existe(self,registro):\n            raise AssertionError(\"Nunca debe escribir\")\n    deps=replace(deps,repositorio=Nunca())\n    with pytest.raises(ValueError,match=\"NO_AUTORIZADA\"):\n        registrar_expediente_v1(sol,replace(ctx,sucursal_id=\"sucursal_ajena\"),deps)\n",
+      "path": "backend/tests/test_incidencias_caja_application.py",
+      "type": "write_file"
+    },
+    {
+      "content": "import React, { useRef, useState } from \"react\";\n\n/**\n * Formulario movil Cajas V1 sin backend simulado.\n * El padre debe proveer catalogos ya filtrados por el servidor y onRegistrar\n * conectado al servicio SQL autorizado; no obtiene permisos del navegador.\n * No modifica el POS ni registra incidencias mientras no haya onRegistrar.\n */\nexport default function IncidenciaCajaForm({\n  tipos = [],\n  motivos = [],\n  contexto = null,\n  onRegistrar,\n  guardando = false,\n}) {\n  const [tipo, setTipo] = useState(\"\");\n  const [motivo, setMotivo] = useState(\"\");\n  const [cuentaFolio, setCuentaFolio] = useState(\"\");\n  const [importe, setImporte] = useState(\"\");\n  const [descripcion, setDescripcion] = useState(\"\");\n  const [error, setError] = useState(\"\");\n  const solicitudId = useRef(null);\n\n  const catalogoMotivos = motivos.filter((m) =>\n    m.activo === true && (!m.tipo || m.tipo === tipo)\n  );\n  const habilitado = Boolean(\n    typeof onRegistrar === \"function\" && contexto?.autorizado === true &&\n    tipo && motivo && descripcion.trim() &&\n    tipos.some((t) => t.codigo === tipo && t.activo === true) &&\n    catalogoMotivos.some((m) => m.codigo === motivo) &&\n    (!importe || (Number.isFinite(Number(importe)) && Number(importe) >= 0))\n  );\n\n  async function registrar(event) {\n    event.preventDefault();\n    if (!habilitado || guardando) return;\n    setError(\"\");\n    try {\n      if (!solicitudId.current) {\n        solicitudId.current = window.crypto?.randomUUID?.();\n      }\n      if (!solicitudId.current) {\n        setError(\"Este dispositivo no puede generar una clave segura. Intenta con otro navegador.\");\n        return;\n      }\n      const result = await onRegistrar({\n        tipo,\n        motivo_codigo: motivo,\n        cuenta_folio: cuentaFolio.trim() || null,\n        importe_involucrado: importe ? Number(importe) : null,\n        descripcion: descripcion.trim(),\n        solicitud_idempotencia: solicitudId.current,\n      });\n      if (!result?.folio) {\n        setError(\"No se confirmó el registro. Verifica su estado antes de reenviar.\");\n        return;\n      }\n      solicitudId.current = null;\n      setTipo(\"\"); setMotivo(\"\"); setCuentaFolio(\"\"); setImporte(\"\"); setDescripcion(\"\");\n    } catch {\n      setError(\"No se confirmó el registro. Verifica el expediente antes de reintentar.\");\n    }\n  }\n\n  const bloqueado = !contexto?.autorizado || typeof onRegistrar !== \"function\";\n  return (\n    <form onSubmit={registrar} aria-label=\"Registrar incidencia de caja\" style={{\n      width: \"100%\", maxWidth: 460, margin: \"0 auto\", display: \"grid\",\n      gap: 14, padding: 16,\n    }}>\n      <h2 style={{ margin: 0 }}>Nueva incidencia de caja</h2>\n      <p style={{ margin: 0 }}>\n        {contexto?.nombreUnidad || \"Selecciona una unidad autorizada desde EDARSAHUB\"}\n      </p>\n      {bloqueado && <p role=\"status\">\n        Registro no disponible hasta confirmar permisos y conexión segura con EDARSAHUB.\n      </p>}\n      <label>¿Qué ocurrió?\n        <select value={tipo} onChange={(e) => {setTipo(e.target.value); setMotivo(\"\");}}\n          required disabled={bloqueado || guardando}>\n          <option value=\"\">Selecciona un tipo</option>\n          {tipos.filter((t) => t.activo).map((t) =>\n            <option key={t.codigo} value={t.codigo}>{t.nombre}</option>)}\n        </select>\n      </label>\n      <label>Motivo\n        <select value={motivo} onChange={(e) => setMotivo(e.target.value)}\n          required disabled={bloqueado || guardando || !tipo}>\n          <option value=\"\">Selecciona un motivo</option>\n          {catalogoMotivos.map((m) =>\n            <option key={m.codigo} value={m.codigo}>{m.nombre}</option>)}\n        </select>\n      </label>\n      <label>Folio de cuenta (opcional)\n        <input value={cuentaFolio} onChange={(e) => setCuentaFolio(e.target.value)}\n          maxLength={100} disabled={bloqueado || guardando} />\n      </label>\n      <label>Importe involucrado (opcional)\n        <input type=\"number\" min=\"0\" step=\"0.01\" inputMode=\"decimal\"\n          value={importe} onChange={(e) => setImporte(e.target.value)}\n          disabled={bloqueado || guardando} />\n      </label>\n      <label>Describe lo sucedido\n        <textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)}\n          required maxLength={2000} rows={4} disabled={bloqueado || guardando} />\n      </label>\n      {error && <p role=\"alert\">{error}</p>}\n      <button type=\"submit\" disabled={!habilitado || guardando}>\n        {guardando ? \"Registrando...\" : \"Registrar incidencia\"}\n      </button>\n      <small>El registro no cancela cuentas ni modifica operaciones del POS.</small>\n    </form>\n  );\n}\n",
+      "path": "frontend/src/components/finanzas/IncidenciaCajaForm.jsx",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/finanzas/incidencias_caja_application.py",
+        "backend/tests/test_incidencias_caja_application.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_incidencias_caja_application.py",
+        "backend/tests/test_incidencias_caja_context.py",
+        "backend/tests/test_incidencias_caja_workflow.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-7C8F49AB3F82E102426174EE",
+  "mode": "MUTATION",
+  "objective": "CAJAS V1 Gate5 servicio aplicacion validado con contexto y repository port inyectado fail closed hasta SQL certificado; formulario movil real con catalogos desde padre autorizados, sin fake API ni operaciones POS; pytest. No registrar rutas HTTP aun. No DDL/Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
