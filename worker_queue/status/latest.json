@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "1a4e8199bf63757338f58bb8f86c57148f4522d9",
-  "generated_at_utc": "2026-11-25T07:03:41Z",
+  "generated_at_utc": "2026-11-25T07:05:08Z",
   "history": {
     "done_total_local": 2077,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1140,
+      "age_seconds": 1227,
       "job_id": "EDARSAHUB-BOS-WK60-R2-A-IDEMPOTENT-DRAFT-RECOVERY-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 180,
+      "age_seconds": 268,
       "job_id": "EDARSAHUB-BOS-WK60-R2-C-CANONICAL-GO-CONTEXT-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 35,
+      "age_seconds": 123,
       "job_id": "EDARSAHUB-BOS-WK60-R2-C-CANONICAL-GO-CONTEXT-R2-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 959,
+      "age_seconds": 1047,
       "job_id": "SEM-REQUEST-14446006023FD9F0BD75B226",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 923,
+      "age_seconds": 1011,
       "job_id": "SEM-REQUEST-D89631359B4BDA16EFCEFFBD",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-25T07:03:31Z",
-    "last_receive_utc": "2026-11-25T07:03:26Z",
+    "last_cycle_utc": "2026-11-25T07:04:59Z",
+    "last_receive_utc": "2026-11-25T07:04:54Z",
     "last_terminal_utc": "2026-11-25T07:03:05Z",
     "pid": "1817664",
     "runtime_fingerprint": {
