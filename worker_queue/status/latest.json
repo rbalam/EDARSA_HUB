@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "a9cd5649c70dd199ee7945d93d6b52e66e3b5fa8",
-  "generated_at_utc": "2026-11-25T08:41:21Z",
+  "generated_at_utc": "2026-11-25T08:42:56Z",
   "history": {
     "done_total_local": 2086,
     "pending_total_local": 0,
@@ -16,55 +16,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1953,
+      "age_seconds": 2048,
       "job_id": "EDARSAHUB-BOS-WK60-R2-D2-TYPED-HISTORICAL-EVIDENCE-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1851,
+      "age_seconds": 1947,
       "job_id": "EDARSAHUB-BOS-WK60-R2-D2-TYPED-HISTORICAL-EVIDENCE-R2-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1767,
+      "age_seconds": 1862,
       "job_id": "EDARSAHUB-BOS-WK60-R2-D2-TYPED-HISTORICAL-EVIDENCE-R3-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 664,
+      "age_seconds": 759,
       "job_id": "EDARSAHUB-BOS-WK60-R3-FINAL-CHECKPOINT-20261125",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 152,
+      "age_seconds": 247,
       "job_id": "SEM-COMERCIAL_POS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-5E45491AE68AF579643A",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3160,
+      "age_seconds": 3256,
       "job_id": "SEM-REQUEST-5739637C4CFFFCEA3B0857AB",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3130,
+      "age_seconds": 3225,
       "job_id": "SEM-REQUEST-82E1470F6EA733E571F58342",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 220,
+      "age_seconds": 315,
       "job_id": "SEM-REQUEST-DBB8AB18E1FBD66E1E5B1F1C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 29,
+      "age_seconds": 124,
       "job_id": "SEM-REQUEST-FC0457AFBE643EC37E2B5766",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,8 +84,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-25T08:41:07Z",
-    "last_receive_utc": "2026-11-25T08:41:02Z",
+    "last_cycle_utc": "2026-11-25T08:42:54Z",
+    "last_receive_utc": "2026-11-25T08:42:49Z",
     "last_terminal_utc": "2026-11-25T08:40:52Z",
     "pid": "2758557",
     "runtime_fingerprint": {
