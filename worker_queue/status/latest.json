@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "690c3b9dcf2bee179fd3b31211b37f56ed0e3ef3",
-  "generated_at_utc": "2026-11-25T05:57:05Z",
+  "generated_at_utc": "2026-11-25T05:58:24Z",
   "history": {
     "done_total_local": 2074,
     "pending_total_local": 0,
@@ -16,43 +16,43 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3521,
+      "age_seconds": 3600,
       "job_id": "SEM-REQUEST-0C04BA7A8D40110E8311114B",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 863,
+      "age_seconds": 943,
       "job_id": "SEM-REQUEST-4FF74338FA8BF61030588859",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 609,
+      "age_seconds": 689,
       "job_id": "SEM-REQUEST-8B9212718BB0F4281173735D",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1027,
+      "age_seconds": 1107,
       "job_id": "SEM-REQUEST-8F096CBB53D391EF8A94455E",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1993,
+      "age_seconds": 2072,
       "job_id": "SEM-REQUEST-A77A6E4B9A7F8046A0BEF8B7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3205,
+      "age_seconds": 3285,
       "job_id": "SEM-REQUEST-BDC2B5015C95097C7EB5A50F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1860,
+      "age_seconds": 1939,
       "job_id": "SEM-REQUEST-DC3048876CC511C07895ABF1",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,8 +72,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-25T05:56:52Z",
-    "last_receive_utc": "2026-11-25T05:57:03Z",
+    "last_cycle_utc": "2026-11-25T05:58:11Z",
+    "last_receive_utc": "2026-11-25T05:58:24Z",
     "last_terminal_utc": "2026-11-25T05:46:55Z",
     "pid": "88",
     "runtime_fingerprint": {
