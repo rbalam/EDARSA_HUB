@@ -1,0 +1,64 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "_DEV_CONTEXT_PATH_OWNERSHIP: dict[str, frozenset[str]] = {\n    \"COMUNICACIONES_CFDI\": frozenset({\n        \"backend/routes/portal_proveedores.py\",\n        \"backend/routes/portal_proveedores_repository_sql.py\",\n    }),\n}",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "_DEV_CONTEXT_PATH_OWNERSHIP: dict[str, frozenset[str]] = {\n    \"COMUNICACIONES_CFDI\": frozenset({\n        \"backend/routes/portal_proveedores.py\",\n        \"backend/routes/portal_proveedores_repository_sql.py\",\n    }),\n    \"WORKER_MCP\": frozenset({\n        \"tools/tests/test_worker_mcp_gate2b.py\",\n    }),\n}",
+      "source_sha256": "4bf66825303ca82392ad8d0669edee7fe18441d4c82e364692faab7ab6e08522",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_control_plane_context_ownership_gate_p0.py",
+      "replacement": "\n\ndef test_worker_mcp_context_owns_exact_gate2b_test_path():\n    path = \"tools/tests/test_worker_mcp_gate2b.py\"\n    assert caps._dev_validate_path(path, context=\"WORKER_MCP\") == path\n\n\ndef test_other_context_cannot_mutate_worker_mcp_gate2b_test_path():\n    with pytest.raises(caps.SemanticCapabilityError, match=\"SEMANTIC_DEV_PATH_FORBIDDEN\"):\n        caps._dev_validate_path(\n            \"tools/tests/test_worker_mcp_gate2b.py\",\n            context=\"COMUNICACIONES_CFDI\",\n        )\n    with pytest.raises(caps.SemanticCapabilityError, match=\"SEMANTIC_DEV_PATH_FORBIDDEN\"):\n        caps._dev_validate_path(\n            \"tools/tests/test_worker_mcp_gate2b.py\",\n            context=\"FINANZAS\",\n        )\n\n\ndef test_arbitrary_tools_tests_paths_remain_forbidden_even_for_worker_mcp():\n    with pytest.raises(caps.SemanticCapabilityError, match=\"SEMANTIC_DEV_PATH_FORBIDDEN\"):\n        caps._dev_validate_path(\n            \"tools/tests/test_worker_mcp_oauth_server_r1.py\",\n            context=\"WORKER_MCP\",\n        )\n    with pytest.raises(caps.SemanticCapabilityError, match=\"SEMANTIC_DEV_PATH_FORBIDDEN\"):\n        caps._dev_validate_path(\n            \"tools/tests/other_test.py\",\n            context=\"WORKER_MCP\",\n        )\n\n\ndef test_capability_catalog_exposes_worker_mcp_exact_ownership():\n    catalog = {item[\"code\"]: item for item in caps.capability_catalog()}\n    ownership = catalog[\"DEVELOPMENT_MUTATION_BOUNDED\"][\"bounded_context_path_ownership\"]\n    assert ownership[\"WORKER_MCP\"] == [\"tools/tests/test_worker_mcp_gate2b.py\"]\n",
+      "source_sha256": "404b7e41928f149677deb08ac589cd12b9fb436c42aa2680d4fd7406e3846272",
+      "type": "append_once"
+    }
+  ],
+  "base_sha": "48a485212a1ea504f19d47e68048a83e96835ce1",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_control_plane_context_ownership_gate_p0.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_control_plane_context_ownership_gate_p0.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WK50-R2-A-OWNERSHIP-20261125",
+  "mode": "MUTATION",
+  "objective": "R2-A Ownership (GO-WK50-MCP-AUTONOMOUS-CONTEXT-PREFLIGHT-R2): habilitar exclusivamente al contexto WORKER_MCP la ruta exacta tools/tests/test_worker_mcp_gate2b.py en _DEV_CONTEXT_PATH_OWNERSHIP sin abrir tools/tests/ globalmente, con pruebas positivas y negativas.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_MCP",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_MCP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
