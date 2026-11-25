@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 75,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "connection",
+          "database",
+          "SQLServer",
+          "servidor",
+          "sucursal",
+          "sync",
+          "registry",
+          "canonical",
+          "rbac"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-EDARSAHUB_CONNECTIONS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-1AE239EA555F4BEA910F",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en modo estrictamente READ_ONLY los contratos de EDARSAHUB para acceso SQL Server canonico y registro de conexiones a servidores/sucursales. Identificar si existe mecanismo autorizado para consultar datos sincronizados y si el conector MCP Universal Worker v4 expone capacidad de consultas SQL desde el chat. Limitarse a evidencia de codigo y contratos, sin conectarse a BD/servidores LIVE, sin consultar credenciales o datos sensibles, sin escribir archivos, sin modificar produccion ni sincronizadores de ventas abiertas/cerradas. Diferenciar implementacion en repositorio de conectividad runtime real, y documentar bloqueos reales.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB_CONNECTIONS",
+    "conflict_domains": [
+      "EDARSAHUB_CONNECTIONS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
