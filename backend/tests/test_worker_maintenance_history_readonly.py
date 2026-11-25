@@ -175,6 +175,32 @@ def test_publisher_certifies_maintenance_history_readonly_and_truncates_large_re
     assert ex.sanitize_repository_contract_payload(bad_repo) is None
 
 
+def test_ingress_preserves_sanitized_maintenance_evidence():
+    from modules.worker_ingress.service import _safe_terminal_fields
+
+    evidence = {
+        "schema": "edarsahub.worker-maintenance-history-readonly.v1",
+        "mode": "READ_ONLY",
+        "status": "PASS",
+        "production_allowed": False,
+        "incident_count": 3,
+        "focused_linkage": {"match_count": 1, "raw_identifiers_exposed": False},
+    }
+    local = {"checks": [{
+        "type": "worker_maintenance_history_readonly",
+        "maintenance_history_evidence": evidence,
+    }]}
+    published = {"maintenance_history_evidence": {"checks": [evidence]}}
+    for result in (local, published):
+        fields = _safe_terminal_fields(result)
+        assert fields["maintenance_history_evidence"] == {"checks": [evidence]}
+        assert fields["evidence_status"] == "COMPLETE"
+    unsafe = {**evidence, "production_allowed": True}
+    assert "maintenance_history_evidence" not in _safe_terminal_fields(
+        {"maintenance_history_evidence": {"checks": [unsafe]}}
+    )
+
+
 def test_g4_focused_linkage_is_pseudonymized_and_certification_bound(
     tmp_path,
     monkeypatch,

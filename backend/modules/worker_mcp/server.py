@@ -857,6 +857,9 @@ def get_job_status_tool(
         "repository_contract_evidence": result.get(
             "repository_contract_evidence"
         ),
+        "maintenance_history_evidence": result.get(
+            "maintenance_history_evidence"
+        ),
         "evidence_status": result.get("evidence_status"),
         "evidence_truncated": result.get("evidence_truncated"),
     }

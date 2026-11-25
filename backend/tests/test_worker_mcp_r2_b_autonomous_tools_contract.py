@@ -46,6 +46,18 @@ def _mock_token(monkeypatch, scopes: list[str], token: str = "tok-r2b"):
     )
 
 
+def test_r2_d_status_exposes_maintenance_history_with_read_scope(monkeypatch):
+    _configure_server()
+    _mock_token(monkeypatch, ["worker:status"])
+    evidence = {"checks": [{"incident_count": 3}]}
+    monkeypatch.setattr(mcp_server, "backend_get_job_status", lambda **kw: {
+        "job_id": kw["job_id"], "status": "READ_ONLY_COMPLETE",
+        "maintenance_history_evidence": evidence, "production_touched": False,
+    })
+    result = mcp_server.get_job_status_tool("SEM-REQUEST-EXAMPLE")
+    assert result["maintenance_history_evidence"] == evidence
+
+
 def test_r2_b_tool_required_scopes_keep_least_privilege():
     assert set(mcp_server.TOOL_REQUIRED_SCOPES) == EXPECTED_TOOLS
     assert mcp_server.TOOL_REQUIRED_SCOPES["submit_objective"] == "worker:submit"

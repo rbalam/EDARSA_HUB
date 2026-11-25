@@ -739,6 +739,7 @@ def _read_json_if_object(path: Path) -> dict[str, Any]:
 
 def _safe_terminal_fields(payload: Mapping[str, Any]) -> dict[str, Any]:
     from tools.mirror_sync.universal_job_result_publisher import (
+        sanitize_maintenance_history_evidence,
         sanitize_repository_evidence,
         sanitize_result_detail_evidence,
     )
@@ -752,6 +753,24 @@ def _safe_terminal_fields(payload: Mapping[str, Any]) -> dict[str, Any]:
         if key in payload
     }
     payload_dict = dict(payload)
+
+    # Reuse the canonical publisher sanitizer for local and published results.
+    maintenance = sanitize_maintenance_history_evidence(payload_dict)
+    if maintenance is None:
+        published = payload.get("maintenance_history_evidence")
+        if isinstance(published, Mapping):
+            checks = published.get("checks")
+            if isinstance(checks, list) and len(checks) == 1:
+                maintenance = sanitize_maintenance_history_evidence({
+                    "checks": [{
+                        "type": "worker_maintenance_history_readonly",
+                        "maintenance_history_evidence": checks[0],
+                    }],
+                })
+    if maintenance is not None:
+        fields["maintenance_history_evidence"] = maintenance
+        fields.setdefault("evidence_status", "COMPLETE")
+        fields.setdefault("evidence_truncated", False)
 
     if fields.get("result_detail_evidence") is None:
         extracted = sanitize_result_detail_evidence(payload_dict)
