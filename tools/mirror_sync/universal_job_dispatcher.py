@@ -612,15 +612,20 @@ def run_check_process(
     cwd: Path,
     timeout: int,
     env_extra: dict[str, str] | None = None,
+    clean_env: bool = False,
+    preexec_fn: Any = None,
 ):
     """Run one validation while keeping slot ownership fresh."""
-    env = {
-        **os.environ,
-        "GIT_TERMINAL_PROMPT": "0",
-    }
-
-    if env_extra:
-        env.update(env_extra)
+    if clean_env:
+        env = dict(env_extra or {})
+        env.setdefault("GIT_TERMINAL_PROMPT", "0")
+    else:
+        env = {
+            **os.environ,
+            "GIT_TERMINAL_PROMPT": "0",
+        }
+        if env_extra:
+            env.update(env_extra)
 
     effective_timeout = max(1, int(timeout))
     deadline = time.monotonic() + effective_timeout
@@ -629,14 +634,16 @@ def run_check_process(
         mode="w+",
         encoding="utf-8",
     ) as output:
-        proc = subprocess.Popen(
-            args,
-            cwd=str(cwd),
-            text=True,
-            stdout=output,
-            stderr=subprocess.STDOUT,
-            env=env,
-        )
+        popen_kwargs: dict[str, Any] = {
+            "cwd": str(cwd),
+            "text": True,
+            "stdout": output,
+            "stderr": subprocess.STDOUT,
+            "env": env,
+        }
+        if preexec_fn is not None:
+            popen_kwargs["preexec_fn"] = preexec_fn
+        proc = subprocess.Popen(args, **popen_kwargs)
 
         while True:
             heartbeat_active_slot()
@@ -676,6 +683,11 @@ def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False, bas
     kind = str(check.get("type"))
     started = now()
     env_extra: dict[str, str] = {}
+    clean_env = False
+    check_timeout = MAX_SECONDS
+    preexec_fn: Any = None
+    hermetic_tmpdir: tempfile.TemporaryDirectory[str] | None = None
+    isolation_profile: str | None = None
     if kind == "git_diff_check":
         cmd = (
             ["git", "diff", "--check", base_sha, "HEAD"]
@@ -701,10 +713,10 @@ def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False, bas
             elif path.startswith("backend/"):
                 path = path[len("backend/"):]
             paths.append(path)
+        hermetic = str(check.get("isolation") or "").strip().upper() == "HERMETIC_READONLY"
         pytest_args = ["-q"]
-        if readonly:
+        if readonly or hermetic:
             pytest_args.extend(["-p", "no:cacheprovider"])
-        cmd = [PYTHON_BIN, "-m", "pytest", *pytest_args, *paths]
         cwd = backend
         python_path = os.pathsep.join(
             (
@@ -712,12 +724,40 @@ def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False, bas
                 str(worktree),
             )
         )
-        env_extra = {
-            **load_backend_runtime_env(),
-            "PYTHONPATH": python_path,
-        }
-        if readonly:
-            env_extra["PYTHONDONTWRITEBYTECODE"] = "1"
+        if hermetic:
+            try:
+                from tools.mirror_sync.hermetic_pytest_plugin import (
+                    HERMETIC_ISOLATION_PROFILE,
+                    HERMETIC_PYTEST_MAX_SECONDS,
+                    build_hermetic_pytest_env,
+                    make_hermetic_preexec_fn,
+                )
+            except ModuleNotFoundError:
+                from hermetic_pytest_plugin import (
+                    HERMETIC_ISOLATION_PROFILE,
+                    HERMETIC_PYTEST_MAX_SECONDS,
+                    build_hermetic_pytest_env,
+                    make_hermetic_preexec_fn,
+                )
+            pytest_args.extend(["-p", "tools.mirror_sync.hermetic_pytest_plugin"])
+            hermetic_tmpdir = tempfile.TemporaryDirectory(prefix="edarsahub-hermetic-pytest-")
+            env_extra = build_hermetic_pytest_env(
+                pythonpath=python_path,
+                tmpdir=hermetic_tmpdir.name,
+                path_env=os.environ.get("PATH", ""),
+            )
+            clean_env = True
+            check_timeout = min(MAX_SECONDS, HERMETIC_PYTEST_MAX_SECONDS)
+            preexec_fn = make_hermetic_preexec_fn(check_timeout)
+            isolation_profile = HERMETIC_ISOLATION_PROFILE
+        else:
+            env_extra = {
+                **load_backend_runtime_env(),
+                "PYTHONPATH": python_path,
+            }
+            if readonly:
+                env_extra["PYTHONDONTWRITEBYTECODE"] = "1"
+        cmd = [PYTHON_BIN, "-m", "pytest", *pytest_args, *paths]
     elif kind == "repository_contract_audit":
         helper = worktree / "tools" / "mirror_sync" / "repository_contract_audit.py"
         if not helper.is_file():
@@ -809,14 +849,20 @@ def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False, bas
     else:
         raise ValueError(f"UNSUPPORTED_CHECK:{kind}")
     try:
-        result = run_check_process(
-            cmd,
-            cwd=cwd,
-            timeout=MAX_SECONDS,
-            env_extra=env_extra or None,
-        )
+        proc_kwargs: dict[str, Any] = {
+            "cwd": cwd,
+            "timeout": check_timeout,
+            "env_extra": env_extra or None,
+        }
+        if clean_env:
+            proc_kwargs["clean_env"] = True
+        if preexec_fn is not None:
+            proc_kwargs["preexec_fn"] = preexec_fn
+        result = run_check_process(cmd, **proc_kwargs)
         full_output = result.stdout or ""
         response = {"type": kind, "status": "PASS" if result.returncode == 0 else "FAIL", "returncode": result.returncode, "started_at_utc": started, "completed_at_utc": now(), "output": full_output[-12000:]}
+        if isolation_profile is not None:
+            response["isolation"] = isolation_profile
         if kind in {"sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract", "worker_maintenance_history_readonly", "worker_result_detail_read"}:
             try:
                 structured_evidence = json.loads(full_output.strip())
@@ -836,7 +882,13 @@ def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False, bas
         return response
     except subprocess.TimeoutExpired as exc:
         text = exc.stdout if isinstance(exc.stdout, str) else ""
-        return {"type": kind, "status": "FAIL", "returncode": 124, "started_at_utc": started, "completed_at_utc": now(), "output": f"TIMEOUT\n{text[-8000:]}"}
+        timeout_resp = {"type": kind, "status": "FAIL", "returncode": 124, "started_at_utc": started, "completed_at_utc": now(), "output": f"TIMEOUT\n{text[-8000:]}"}
+        if isolation_profile is not None:
+            timeout_resp["isolation"] = isolation_profile
+        return timeout_resp
+    finally:
+        if hermetic_tmpdir is not None:
+            hermetic_tmpdir.cleanup()
 
 
 def changed_files(worktree: Path, base_sha: str) -> list[str]:

@@ -216,6 +216,10 @@ def validate_check(check: Any, index: int) -> list[str]:
         paths = check.get("paths")
         if not isinstance(paths, list) or not paths or not all(safe_repo_path(p) for p in paths):
             return [f"{prefix}_INVALID_PATHS"]
+        if kind == "pytest" and check.get("isolation") is not None:
+            iso = str(check.get("isolation") or "").strip().upper()
+            if iso != "HERMETIC_READONLY":
+                return [f"{prefix}_INVALID_PYTEST_ISOLATION"]
     if kind == "frontend_build":
         directory = check.get("directory", "frontend")
         if not safe_repo_path(directory):

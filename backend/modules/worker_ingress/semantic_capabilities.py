@@ -435,42 +435,184 @@ register_capability(
 )
 
 
-# Fixed-target READ_ONLY pytest certification, owned by the capability.
-# Each context has a reviewed immutable suite; callers cannot supply paths,
-# commands, checks, actions, or arbitrary test selections.
+# Extensible declarative READ_ONLY pytest certification registry, owned by the
+# single canonical capability WORKER_PYTEST_CERTIFICATION_READONLY.
+# Callers can never supply paths, commands, checks, actions, or arbitrary tests.
 _WORKER_PYTEST_CONTEXT = "WORKER_REPAIR_KNOWLEDGE_LOOP"
 _WORKER_PYTEST_TARGET = (
     "backend/tests/"
     "test_worker_repair_planner_canonical_ingress_capability.py"
 )
-_WORKER_PYTEST_FIXED_SUITES = {
-    _WORKER_PYTEST_CONTEXT: (_WORKER_PYTEST_TARGET,),
-    "IA_ASSISTANT": (
-        "backend/tests/test_ia_global_rbac_data_scope_r14.py",
-        "backend/tests/test_ia_global_authorized_contract.py",
-        "backend/tests/test_ia_contextual_comercial_contract.py",
-        "backend/tests/test_comercial_analytics_tickets.py",
-    ),
-    "BOS_EXECUTIVE": (
-        "backend/tests/test_bos_executive_e3a.py",
-        "backend/tests/test_bos_executive_e3b.py",
-        "backend/tests/test_bos_executive_e3c.py",
-        "backend/tests/test_bos_executive_e3d.py",
-    ),
-}
+_PYTEST_SUITE_ALLOWED_ROOTS: tuple[str, ...] = ("backend/tests/", "tools/tests/")
+_PYTEST_SUITE_FORBIDDEN_TOKENS: tuple[str, ...] = (
+    "uat",
+    "e2e",
+    "canary",
+    "live_db",
+    "real_db",
+    "production",
+    "destructive",
+    "sql_write",
+    "seed_exec",
+)
+_PYTEST_SUITE_ISOLATION_PROFILES = frozenset({"HERMETIC_READONLY", "STANDARD_READONLY"})
+_PYTEST_SUITE_CONTEXT_RE = _g3_re.compile(r"^[A-Z0-9][A-Z0-9._-]{1,119}$")
+
+
+@dataclass(frozen=True)
+class PytestCertificationSuite:
+    bounded_context: str
+    paths: tuple[str, ...]
+    tier: str = "UNIT_CONTRACT_READONLY"
+    isolation: str = "HERMETIC_READONLY"
+    requires_sql: bool = False
+    requires_network: bool = False
+    allows_server_import: bool = False
+
+
+_PYTEST_CERTIFICATION_SUITES: dict[str, PytestCertificationSuite] = {}
+_WORKER_PYTEST_FIXED_SUITES: dict[str, tuple[str, ...]] = {}
+
+
+def _validate_pytest_suite_path(raw_path: Any) -> str:
+    value = str(raw_path or "").strip()
+    if (
+        not value
+        or ".." in value
+        or value.startswith("/")
+        or chr(92) in value
+        or not value.endswith(".py")
+        or not any(value.startswith(root) for root in _PYTEST_SUITE_ALLOWED_ROOTS)
+    ):
+        raise SemanticCapabilityError(f"PYTEST_SUITE_PATH_FORBIDDEN:{value}")
+    lower = value.lower()
+    for token in _PYTEST_SUITE_FORBIDDEN_TOKENS:
+        if token in lower:
+            raise SemanticCapabilityError(f"PYTEST_SUITE_PATH_UNSAFE:{token}")
+    return value
+
+
+def register_pytest_certification_suite(suite: PytestCertificationSuite) -> PytestCertificationSuite:
+    """Register one immutable, audited, fail-closed READ_ONLY pytest suite for a domain."""
+    if not isinstance(suite, PytestCertificationSuite):
+        raise SemanticCapabilityError("PYTEST_SUITE_INVALID")
+    context = str(suite.bounded_context or "").strip().upper()
+    if not context or not _PYTEST_SUITE_CONTEXT_RE.fullmatch(context):
+        raise SemanticCapabilityError("PYTEST_SUITE_CONTEXT_INVALID")
+    if context in _PYTEST_CERTIFICATION_SUITES:
+        raise SemanticCapabilityError(f"PYTEST_SUITE_DUPLICATE_DOMAIN:{context}")
+    if suite.requires_sql is not False:
+        raise SemanticCapabilityError("PYTEST_SUITE_SQL_FORBIDDEN")
+    if suite.requires_network is not False:
+        raise SemanticCapabilityError("PYTEST_SUITE_NETWORK_FORBIDDEN")
+    if suite.allows_server_import is not False:
+        raise SemanticCapabilityError("PYTEST_SUITE_SERVER_IMPORT_FORBIDDEN")
+    isolation = str(suite.isolation or "").strip().upper()
+    if isolation not in _PYTEST_SUITE_ISOLATION_PROFILES:
+        raise SemanticCapabilityError(f"PYTEST_SUITE_ISOLATION_INVALID:{isolation}")
+    if not isinstance(suite.paths, (tuple, list)) or not suite.paths:
+        raise SemanticCapabilityError("PYTEST_SUITE_EMPTY")
+    normalized_paths = tuple(_validate_pytest_suite_path(p) for p in suite.paths)
+    if len(set(normalized_paths)) != len(normalized_paths):
+        raise SemanticCapabilityError("PYTEST_SUITE_DUPLICATE_PATHS")
+    normalized = PytestCertificationSuite(
+        bounded_context=context,
+        paths=normalized_paths,
+        tier=str(suite.tier or "UNIT_CONTRACT_READONLY").strip().upper(),
+        isolation=isolation,
+        requires_sql=False,
+        requires_network=False,
+        allows_server_import=False,
+    )
+    _PYTEST_CERTIFICATION_SUITES[context] = normalized
+    _WORKER_PYTEST_FIXED_SUITES[context] = normalized_paths
+    return normalized
+
+
+def pytest_certification_suites() -> dict[str, PytestCertificationSuite]:
+    return dict(_PYTEST_CERTIFICATION_SUITES)
+
+
+register_pytest_certification_suite(
+    PytestCertificationSuite(
+        bounded_context=_WORKER_PYTEST_CONTEXT,
+        paths=(_WORKER_PYTEST_TARGET,),
+        isolation="STANDARD_READONLY",
+    )
+)
+register_pytest_certification_suite(
+    PytestCertificationSuite(
+        bounded_context="IA_ASSISTANT",
+        paths=(
+            "backend/tests/test_ia_global_rbac_data_scope_r14.py",
+            "backend/tests/test_ia_global_authorized_contract.py",
+            "backend/tests/test_ia_contextual_comercial_contract.py",
+            "backend/tests/test_comercial_analytics_tickets.py",
+        ),
+        isolation="STANDARD_READONLY",
+    )
+)
+register_pytest_certification_suite(
+    PytestCertificationSuite(
+        bounded_context="BOS_EXECUTIVE",
+        paths=(
+            "backend/tests/test_bos_executive_e3a.py",
+            "backend/tests/test_bos_executive_e3b.py",
+            "backend/tests/test_bos_executive_e3c.py",
+            "backend/tests/test_bos_executive_e3d.py",
+        ),
+        isolation="STANDARD_READONLY",
+    )
+)
+
+# WK60 R2-B: Hermetically isolated audited domain suites (CAVA_SOCIOS & CAVAS_CORPORATIVAS).
+# Strictly excludes gate12n_uat_controlled, gate13b_e2e_controlled, gate12m_canary,
+# and server-coupled tests (test_cava_socios.py, test_cava_socios_persona_link.py).
+register_pytest_certification_suite(
+    PytestCertificationSuite(
+        bounded_context="CAVA_SOCIOS",
+        paths=(
+            "backend/tests/test_cava_socios_domain.py",
+            "backend/tests/test_cava_socios_adapter_sdk.py",
+            "backend/tests/test_cava_socios_blind_audit.py",
+            "backend/tests/test_cava_socios_blind_audit_operational_service.py",
+            "backend/tests/test_cava_socios_cienfuegos_legacy_adapter.py",
+            "backend/tests/test_cava_socios_cienfuegos_legacy_dryrun.py",
+            "backend/tests/test_cava_socios_evidence_chain.py",
+            "backend/tests/test_cava_socios_migration_engine.py",
+            "backend/tests/test_cavas_gate12e_bos_persona_link_contract.py",
+        ),
+        isolation="HERMETIC_READONLY",
+    )
+)
+register_pytest_certification_suite(
+    PytestCertificationSuite(
+        bounded_context="CAVAS_CORPORATIVAS",
+        paths=(
+            "backend/tests/test_cavas_corporativas_domain.py",
+            "backend/tests/test_cavas_corporativas_repository.py",
+            "backend/tests/test_cavas_corporativas_routes.py",
+            "backend/tests/test_cavas_corporativas_service.py",
+        ),
+        isolation="HERMETIC_READONLY",
+    )
+)
 
 
 def _worker_pytest_certification_readonly_builder(request):
     context = str(request.get("bounded_context") or "").strip().upper()
-    paths = _WORKER_PYTEST_FIXED_SUITES.get(context)
-    if paths is None:
+    suite = _PYTEST_CERTIFICATION_SUITES.get(context)
+    if suite is None:
         raise SemanticCapabilityError(
             "SEMANTIC_BOUNDED_CONTEXT_UNSUPPORTED"
         )
     _g3_constraints(request, set())
+    check: dict[str, Any] = {"type": "pytest", "paths": list(suite.paths)}
+    if suite.isolation == "HERMETIC_READONLY":
+        check["isolation"] = "HERMETIC_READONLY"
     return {
         "actions": [],
-        "checks": [{"type": "pytest", "paths": list(paths)}],
+        "checks": [check],
         "scheduling": _g3_scheduling(context),
     }
 
@@ -1054,12 +1196,22 @@ def _capability_contract_details(code: str, meta: Mapping[str, Any]) -> dict[str
         ownership["fixed_suites"] = {
             ctx: list(paths) for ctx, paths in sorted(_WORKER_PYTEST_FIXED_SUITES.items())
         }
+        ownership["registered_suite_domains"] = sorted(_PYTEST_CERTIFICATION_SUITES)
+        ownership["suite_isolation_profiles"] = {
+            ctx: suite.isolation for ctx, suite in sorted(_PYTEST_CERTIFICATION_SUITES.items())
+        }
+        ownership["suite_path_counts"] = {
+            ctx: len(suite.paths) for ctx, suite in sorted(_PYTEST_CERTIFICATION_SUITES.items())
+        }
         return {
             "required_fields": list(_BASE_REQUIRED_OBJECTIVE_FIELDS),
             "required_constraints": [],
             "allowed_operations": [],
             "formats": {},
-            "limits": {"fixed_suites_only": True},
+            "limits": {
+                "fixed_suites_only": True,
+                "hermetic_isolation_default": "HERMETIC_READONLY",
+            },
             "ownership": ownership,
             "safe_example": {
                 "objective": "Ejecutar suite pytest fija certificada READ_ONLY.",
@@ -1185,14 +1337,16 @@ def capability_catalog() -> list[dict[str, Any]]:
         cap = _CAPABILITIES[code]
         meta = _CAPABILITY_METADATA.get(code, {})
         details = _capability_contract_details(cap.code, meta)
+        rule = (
+            "|".join(sorted(_PYTEST_CERTIFICATION_SUITES))
+            if cap.code == "WORKER_PYTEST_CERTIFICATION_READONLY"
+            else meta.get("bounded_context_rule", "CAPABILITY_OWNED")
+        )
         items.append(
             {
                 "code": cap.code,
                 "modes": list(cap.modes),
-                "bounded_context_rule": meta.get(
-                    "bounded_context_rule",
-                    "CAPABILITY_OWNED",
-                ),
+                "bounded_context_rule": rule,
                 "allowed_constraints": list(
                     meta.get("allowed_constraints", ())
                 ),

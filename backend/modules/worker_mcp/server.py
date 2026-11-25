@@ -738,7 +738,7 @@ def submit_objective_tool(
     - WORKER_RESULT_DETAIL_READ (mode=READ_ONLY): constraints={"source_job_id": "..."}
     - WORKER_MAINTENANCE_HISTORY_READONLY (mode=READ_ONLY, bounded_context="WORKER_REPAIR_KNOWLEDGE_LOOP"):
       constraints={} or constraints={"source_job_id": "..."} for pseudonymized focused linkage
-    - WORKER_PYTEST_CERTIFICATION_READONLY (mode=READ_ONLY, bounded_context="IA_ASSISTANT|WORKER_REPAIR_KNOWLEDGE_LOOP"): constraints={}
+    - WORKER_PYTEST_CERTIFICATION_READONLY (mode=READ_ONLY, bounded_context="BOS_EXECUTIVE|CAVA_SOCIOS|CAVAS_CORPORATIVAS|IA_ASSISTANT|WORKER_REPAIR_KNOWLEDGE_LOOP"; see list_capabilities): constraints={}
     - WORKER_REPAIR_BOUNDED (mode=MUTATION, bounded_context="WORKER_RUNTIME_CONVERGENCE"):
       constraints={"incident_id": "...", "capability_code": "..."}
     - COA_FISCAL_STATUS_SEED_DEVELOPMENT (mode=MUTATION, bounded_context="COA"):
