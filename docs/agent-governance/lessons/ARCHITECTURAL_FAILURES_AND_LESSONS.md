@@ -45,3 +45,12 @@ Comprobar consumidor, retries, locks e idempotencia.
 
 ## Estados abiertos
 Un resultado desconocido nunca debe convertirse implícitamente en éxito.
+
+## Propagar overrides Git useHttpPath en publishers
+Si git credential reject borra credenciales con path y queda entrada host-only, los publishers deben propagar credential.<url>.useHttpPath=false sin tocar credenciales.
+
+## Dos venvs Python en MCP vs Backend
+Backend y Worker usan /root/.venv; edarsahub-worker-mcp y Gate2B usan /app/.runtime/worker_mcp/venv (mcp 2.x con ToolAnnotations snake_case).
+
+## Aislamiento de stubs en pruebas de gateway MCP
+Nunca mutar atributos de gateway_router sin restaurar en finally; stubs async deben reflejar Discovery V2 y scopes worker:status/worker:submit.
