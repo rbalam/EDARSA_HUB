@@ -1,0 +1,122 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "            if backend_ok:\n                deadline = time.time() + 25.0\n                while time.time() < deadline:\n                    if _probe_local_backend_health():\n                        ready = True\n                        break\n                    time.sleep(1.0)\n            mcp_ok = _restart_service(MCP_SERVICE, \"MCP_BACKEND_CODE_TREE_DRIFT_AUTOCONVERGENCE\") if ready else False\n            if ready and mcp_ok and _supervisor_service_running(MCP_SERVICE):",
+      "path": "tools/mirror_sync/worker_control_plane.py",
+      "replacement": "            if backend_ok:\n                deadline = time.time() + 65.0\n                while time.time() < deadline:\n                    if _probe_local_backend_health():\n                        ready = True\n                        break\n                    time.sleep(1.5)\n            mcp_ok = _restart_service(MCP_SERVICE, \"MCP_BACKEND_CODE_TREE_DRIFT_AUTOCONVERGENCE\") if ready else False\n            if ready and mcp_ok:\n                mcp_deadline = time.time() + 15.0\n                mcp_running = False\n                while time.time() < mcp_deadline:\n                    if _supervisor_service_running(MCP_SERVICE):\n                        mcp_running = True\n                        break\n                    time.sleep(1.0)\n            else:\n                mcp_running = False\n            if ready and mcp_ok and mcp_running:",
+      "source_sha256": "f8af77e5170d5d51a6f0662f084d123910da0a2d4642481ee76b79070a1abef4",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "SCHEMA_MCP_CONNECTOR_INCIDENTS = \"edarsahub.mcp-connector-incident-summary.v1\"\n\nMCP_INCIDENTS_FILENAME = \"mcp_connector_incidents.jsonl\"",
+      "path": "tools/mirror_sync/worker_lifecycle_recovery.py",
+      "replacement": "SCHEMA_MCP_CONNECTOR_INCIDENTS = \"edarsahub.mcp-connector-incident-summary.v1\"\nSCHEMA_SESSION_INTERRUPTION = \"edarsahub.agent-session-interruption-incident.v1\"\nSCHEMA_INTERRUPTED_RECOVERY_EVAL = \"edarsahub.interrupted-objective-recovery-eval.v1\"\n\nMCP_INCIDENTS_FILENAME = \"mcp_connector_incidents.jsonl\"\nSESSION_INTERRUPTION_INCIDENTS_FILENAME = \"session_interruption_incidents.jsonl\"",
+      "source_sha256": "d18f6157e757999bceeb3a2283516e9a8dd95455845e503f2b4229a008a056f9",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    mcp_connector_summary = summarize_mcp_connector_incidents(\n        state_root=qroot,\n        now_epoch=now_ts,\n    )\n    mcp_failures += int(mcp_connector_summary.get(\"total_recent\") or 0)",
+      "path": "tools/mirror_sync/worker_lifecycle_recovery.py",
+      "replacement": "    mcp_connector_summary = summarize_mcp_connector_incidents(\n        state_root=qroot,\n        now_epoch=now_ts,\n    )\n    mcp_failures += int(mcp_connector_summary.get(\"total_recent\") or 0)\n    session_interruption_incidents = list_agent_session_interruption_incidents(\n        state_root=qroot,\n        limit=25,\n    )",
+      "source_sha256": "7cc2647f0cad9ed0466ae0c73715db0307a171b33365aa97623c6e456dd2bef1",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "        \"mcp_connector_incidents\": mcp_connector_summary,\n        \"persistent_drafts_by_domain\": dict(sorted(by_domain.items())),",
+      "path": "tools/mirror_sync/worker_lifecycle_recovery.py",
+      "replacement": "        \"mcp_connector_incidents\": mcp_connector_summary,\n        \"agent_session_interruption_incidents\": session_interruption_incidents,\n        \"persistent_drafts_by_domain\": dict(sorted(by_domain.items())),",
+      "source_sha256": "a7d733ba49a99811fdfa874103b28dc412f30556297a5587b7bbb311b7c50000",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "        \"publication_status\": pub_status,\n        \"production_touched\": False,\n    }",
+      "path": "tools/mirror_sync/worker_lifecycle_recovery.py",
+      "replacement": "        \"publication_status\": pub_status,\n        \"production_touched\": False,\n    }\n\n\ndef record_agent_session_interruption_incident(\n    *,\n    incident_id: str,\n    interrupted_session_id: str,\n    base_head_sha: str,\n    checkpoint_ref: str,\n    prepared_paths: list[str] | tuple[str, ...] = (),\n    authorization_id: str | None = None,\n    interrupted_command_class: str = \"SESSION_INTERRUPTED\",\n    remediation_channel: str = \"gate_chain_publisher.submit\",\n    status: str = \"RECORDED\",\n    state_root: Path | None = None,\n) -> dict[str, Any]:\n    \"\"\"Record a transversal, secret-free agent session interruption incident in canonical maintenance storage.\"\"\"\n    root = Path(os.environ.get(\"EDARSAHUB_ROOT\", \"/app\"))\n    qroot = state_root or (root / \".git\" / \"universal-worker-queue\")\n    log_path = qroot / \"maintenance\" / SESSION_INTERRUPTION_INCIDENTS_FILENAME\n    log_path.parent.mkdir(parents=True, exist_ok=True)\n    record: dict[str, Any] = {\n        \"schema\": SCHEMA_SESSION_INTERRUPTION,\n        \"incident_id\": str(incident_id or \"\").strip(),\n        \"incident_class\": \"AGENT_SESSION_INTERRUPTION\",\n        \"scope\": \"TRANSVERSAL\",\n        \"interrupted_session_id\": str(interrupted_session_id or \"\").strip(),\n        \"recorded_at_utc\": utc_now(),\n        \"base_head_sha\": str(base_head_sha or \"\").strip(),\n        \"checkpoint_ref\": str(checkpoint_ref or \"\").strip(),\n        \"prepared_paths\": sorted({str(p).strip().lstrip(\"./\") for p in prepared_paths if str(p).strip()}),\n        \"authorization_id\": str(authorization_id or \"\").strip() or None,\n        \"interrupted_command_class\": str(interrupted_command_class or \"SESSION_INTERRUPTED\").strip(),\n        \"remediation_channel\": str(remediation_channel or \"gate_chain_publisher.submit\").strip(),\n        \"non_destructive_preservation\": True,\n        \"status\": str(status or \"RECORDED\").strip().upper(),\n        \"production_touched\": False,\n    }\n    if not record[\"incident_id\"]:\n        raise ValueError(\"SESSION_INTERRUPTION_INCIDENT_ID_REQUIRED\")\n    with log_path.open(\"a\", encoding=\"utf-8\") as fh:\n        fh.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + \"\\n\")\n    return record\n\n\ndef list_agent_session_interruption_incidents(\n    *,\n    state_root: Path | None = None,\n    limit: int = 25,\n) -> list[dict[str, Any]]:\n    \"\"\"Return most recent transversal agent session interruption incidents (deduplicated by incident_id).\"\"\"\n    root = Path(os.environ.get(\"EDARSAHUB_ROOT\", \"/app\"))\n    qroot = state_root or (root / \".git\" / \"universal-worker-queue\")\n    log_path = qroot / \"maintenance\" / SESSION_INTERRUPTION_INCIDENTS_FILENAME\n    if not log_path.is_file():\n        return []\n    by_id: dict[str, dict[str, Any]] = {}\n    try:\n        lines = log_path.read_text(encoding=\"utf-8\").splitlines()\n    except OSError:\n        return []\n    for raw in lines:\n        raw = raw.strip()\n        if not raw:\n            continue\n        try:\n            item = json.loads(raw)\n        except json.JSONDecodeError:\n            continue\n        if not isinstance(item, dict):\n            continue\n        iid = str(item.get(\"incident_id\") or \"\").strip()\n        if iid:\n            by_id[iid] = item\n    ordered = sorted(\n        by_id.values(),\n        key=lambda x: str(x.get(\"recorded_at_utc\") or \"\"),\n        reverse=True,\n    )\n    return ordered[: max(1, int(limit))]\n\n\ndef evaluate_interrupted_objective_recovery(\n    *,\n    domain: str,\n    checkpoint_path: Path,\n    prepared_paths: list[str] | tuple[str, ...] = (),\n    base_sha: str | None = None,\n    production_allowed: bool = False,\n    repo_root: Path | None = None,\n    state_root: Path | None = None,\n    now_utc: datetime | None = None,\n) -> dict[str, Any]:\n    \"\"\"Evaluate fail-closed automatic recovery eligibility of an interrupted objective from persistent checkpoint + materialized authorization.\"\"\"\n    root = repo_root or Path(os.environ.get(\"EDARSAHUB_ROOT\", \"/app\"))\n    qroot = state_root or (root / \".git\" / \"universal-worker-queue\")\n    norm_domain = str(domain or \"\").strip().upper()\n    norm_paths = sorted({str(p).strip().lstrip(\"./\") for p in prepared_paths if str(p).strip()})\n\n    if production_allowed is not False:\n        return {\n            \"schema\": SCHEMA_INTERRUPTED_RECOVERY_EVAL,\n            \"recoverable\": False,\n            \"action\": \"BLOCK_PRODUCTION_FORBIDDEN\",\n            \"reason\": \"PRODUCTION_FORBIDDEN\",\n            \"remediation_channel\": \"NONE\",\n            \"production_touched\": False,\n        }\n    if not checkpoint_path.is_file():\n        return {\n            \"schema\": SCHEMA_INTERRUPTED_RECOVERY_EVAL,\n            \"recoverable\": False,\n            \"action\": \"ESCALATE_CHECKPOINT_MISSING\",\n            \"reason\": \"PERSISTENT_CHECKPOINT_MISSING\",\n            \"remediation_channel\": \"HUMAN_AUDIT\",\n            \"production_touched\": False,\n        }\n\n    auth = resolve_active_domain_authorization(\n        norm_domain,\n        state_root=qroot,\n        required_class=\"DEVELOPMENT_MUTATION\",\n        requested_paths=norm_paths or None,\n        now_utc=now_utc,\n    )\n    if not auth:\n        return {\n            \"schema\": SCHEMA_INTERRUPTED_RECOVERY_EVAL,\n            \"recoverable\": False,\n            \"action\": \"ESCALATE_AUTHORIZATION_REQUIRED\",\n            \"reason\": \"ACTIVE_GATE_AUTHORIZATION_REQUIRED\",\n            \"domain\": norm_domain,\n            \"prepared_paths\": norm_paths,\n            \"remediation_channel\": \"HUMAN_GO_REQUIRED\",\n            \"production_touched\": False,\n        }\n\n    # Check base drift on prepared paths when base_sha is provided\n    drifted_paths: list[str] = []\n    if base_sha and norm_paths:\n        changed = _git_diff_names_between(root, base_sha, \"HEAD\")\n        if changed is None:\n            return {\n                \"schema\": SCHEMA_INTERRUPTED_RECOVERY_EVAL,\n                \"recoverable\": False,\n                \"action\": \"ESCALATE_BASE_UNVERIFIABLE\",\n                \"reason\": \"CHECKPOINT_BASE_NOT_ANCESTOR\",\n                \"domain\": norm_domain,\n                \"remediation_channel\": \"HUMAN_AUDIT\",\n                \"production_touched\": False,\n            }\n        drifted_paths = sorted(changed & set(norm_paths))\n        if drifted_paths:\n            return {\n                \"schema\": SCHEMA_INTERRUPTED_RECOVERY_EVAL,\n                \"recoverable\": False,\n                \"action\": \"ESCALATE_SCOPE_DRIFT\",\n                \"reason\": \"PREPARED_PATHS_DRIFTED_SINCE_INTERRUPTION\",\n                \"domain\": norm_domain,\n                \"drifted_paths\": drifted_paths,\n                \"remediation_channel\": \"REBASE_ON_CANONICAL_HEAD\",\n                \"production_touched\": False,\n            }\n\n    return {\n        \"schema\": SCHEMA_INTERRUPTED_RECOVERY_EVAL,\n        \"recoverable\": True,\n        \"action\": \"RECOVER_VIA_CANONICAL_PUBLISHER\",\n        \"reason\": \"CHECKPOINT_AND_AUTHORIZATION_VERIFIED\",\n        \"domain\": norm_domain,\n        \"authorization_id\": auth.get(\"authorization_id\"),\n        \"gate_id\": auth.get(\"gate_id\"),\n        \"prepared_paths\": norm_paths,\n        \"remediation_channel\": \"gate_chain_publisher.submit\",\n        \"direct_push_allowed\": False,\n        \"destructive_git_allowed\": False,\n        \"production_touched\": False,\n    }",
+      "source_sha256": "d675d1526e9c27a0242876866acb9e085752b2b761daa1afa373a8463605ac56",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    assert det[\"historical_reconciled_pending_audit_count\"] == 1\n    assert det[\"counts\"][\"orphan_branches\"] == 0",
+      "path": "backend/tests/test_worker_autonomous_final_acceptance.py",
+      "replacement": "    assert det[\"historical_reconciled_pending_audit_count\"] == 1\n    assert det[\"counts\"][\"orphan_branches\"] == 0\n\n\ndef test_07_agent_session_interruption_incident_and_checkpoint_recovery(tmp_path):\n    repo, sha1 = _init_git_repo(tmp_path)\n    qroot = _setup_queue(repo)\n    ckpt = repo / \"MCP_CHECKPOINT.md\"\n    ckpt.write_text(\"WORKSTREAM=EDARSAHUB_MCP_RECOVERY\\nSTATUS=IN_PROGRESS\\n\", encoding=\"utf-8\")\n\n    # 1. Verify worker_control_plane.py uses 65s backend readiness window & 15s MCP wait\n    wcp_src = (REPO_ROOT / \"tools\" / \"mirror_sync\" / \"worker_control_plane.py\").read_text(encoding=\"utf-8\")\n    assert \"deadline = time.time() + 65.0\" in wcp_src\n    assert \"mcp_deadline = time.time() + 15.0\" in wcp_src\n\n    # 2. Record transversal agent session interruption incident\n    rec = lr.record_agent_session_interruption_incident(\n        incident_id=\"AGENT-SESSION-INTERRUPTION-TEST-001\",\n        interrupted_session_id=\"41f7a06c-test\",\n        base_head_sha=sha1,\n        checkpoint_ref=\"docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md\",\n        prepared_paths=[\"a.py\"],\n        authorization_id=\"GO-TEST-SESSION-RECOVERY\",\n        interrupted_command_class=\"DIRECT_PUSH_STOPPED_BY_GOVERNANCE_POLICY\",\n        state_root=qroot,\n    )\n    assert rec[\"schema\"] == lr.SCHEMA_SESSION_INTERRUPTION\n    assert rec[\"scope\"] == \"TRANSVERSAL\"\n    assert rec[\"remediation_channel\"] == \"gate_chain_publisher.submit\"\n    assert rec[\"production_touched\"] is False\n\n    # 3. Surfaced non-blockingly in global lifecycle scanner\n    det = lr.scan_global_lifecycle_blockers(\n        repo_root=repo,\n        state_root=qroot,\n        claims_dir=repo / \".git\" / \"agent-guard\" / \"state\" / \"claims\",\n        attestations_dir=repo / \".git\" / \"mirror-sync\" / \"reporting\" / \"test_attestations\",\n        force_full=True,\n        remote_inbox_ids=set(),\n        remote_result_ids=set(),\n    )\n    assert len(det[\"agent_session_interruption_incidents\"]) == 1\n    assert det[\"agent_session_interruption_incidents\"][0][\"incident_id\"] == \"AGENT-SESSION-INTERRUPTION-TEST-001\"\n\n    # 4. Fail-closed in Production and without materialized authorization\n    prod_blocked = lr.evaluate_interrupted_objective_recovery(\n        domain=\"WORKER_CONTROL_PLANE\",\n        checkpoint_path=ckpt,\n        prepared_paths=[\"a.py\"],\n        base_sha=sha1,\n        production_allowed=True,\n        repo_root=repo,\n        state_root=qroot,\n    )\n    assert prod_blocked[\"recoverable\"] is False\n    assert prod_blocked[\"reason\"] == \"PRODUCTION_FORBIDDEN\"\n\n    unauth = lr.evaluate_interrupted_objective_recovery(\n        domain=\"WORKER_CONTROL_PLANE\",\n        checkpoint_path=ckpt,\n        prepared_paths=[\"a.py\"],\n        base_sha=sha1,\n        repo_root=repo,\n        state_root=qroot,\n    )\n    assert unauth[\"recoverable\"] is False\n    assert unauth[\"reason\"] == \"ACTIVE_GATE_AUTHORIZATION_REQUIRED\"\n\n    # 5. With active materialized authorization -> ready for canonical gate_chain_publisher.submit() handoff\n    lr.materialize_gate_authorization(\n        gate_id=\"SESSION-RECOVERY-TEST\",\n        authorization_id=\"GO-TEST-SESSION-RECOVERY\",\n        granted_by=\"ricardo@edarsa.com.mx\",\n        domains=[\"WORKER_CONTROL_PLANE\"],\n        allowed_paths=[\"a.py\"],\n        state_root=qroot,\n    )\n    ok = lr.evaluate_interrupted_objective_recovery(\n        domain=\"WORKER_CONTROL_PLANE\",\n        checkpoint_path=ckpt,\n        prepared_paths=[\"a.py\"],\n        base_sha=sha1,\n        repo_root=repo,\n        state_root=qroot,\n    )\n    assert ok[\"recoverable\"] is True\n    assert ok[\"action\"] == \"RECOVER_VIA_CANONICAL_PUBLISHER\"\n    assert ok[\"remediation_channel\"] == \"gate_chain_publisher.submit\"\n    assert ok[\"direct_push_allowed\"] is False\n    assert ok[\"destructive_git_allowed\"] is False\n    assert ok[\"production_touched\"] is False",
+      "source_sha256": "31d40d83b78b3e0444d93bab7648287b95ada604a7b154220d6185d2d82baef2",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "## Indice incremental persistente en disco para cold-cache MCP\nUn cache solo en memoria sigue provocando latencia alta tras reinicios de backend o MCP cuando existen miles de resultados historicos (~230 MB); persistir runtime/go_context_snapshot_index.v1.json validado por (mtime_ns, size) y evitar parsear resultados sin bounded_context reduce cold-cache en mas de 10x sin servir datos obsoletos.",
+      "path": "docs/agent-governance/lessons/ARCHITECTURAL_FAILURES_AND_LESSONS.md",
+      "replacement": "## Indice incremental persistente en disco para cold-cache MCP\nUn cache solo en memoria sigue provocando latencia alta tras reinicios de backend o MCP cuando existen miles de resultados historicos (~230 MB); persistir runtime/go_context_snapshot_index.v1.json validado por (mtime_ns, size) y evitar parsear resultados sin bounded_context reduce cold-cache en mas de 10x sin servir datos obsoletos.\n\n## Incidente transversal: interrupcion de sesion del agente y recuperacion via checkpoints persistentes\nCuando una sesion de agente se interrumpe antes de integrar cambios preparados (por ejemplo al detenerse un intento de push directo a Edarsahub_Desarrollo), la recuperacion debe preservar el estado sin reset/stash/checkout destructivos, registrar el incidente transversal en maintenance/session_interruption_incidents.jsonl, evaluar elegibilidad fail-closed contra el checkpoint persistente y la autorizacion materializada vigente (evaluate_interrupted_objective_recovery), y entregar el cambio exclusivamente via gate_chain_publisher.submit() para ejecucion y certificacion en Universal Worker V4.",
+      "source_sha256": "985bfe0643acf3bed09d8465404c95ca0033b80a39bb5bfae91b144b8303a26e",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "FINAL_ACCEPTANCE_P0_TESTS=PASS\nFINAL_ACCEPTANCE_P0_QUALITY_GATE=PASS\nIMPLEMENTATION_AUTHORIZED=NO",
+      "path": "docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md",
+      "replacement": "FINAL_ACCEPTANCE_P0_TESTS=PASS\nFINAL_ACCEPTANCE_P0_QUALITY_GATE=PASS\nFINAL_ACCEPTANCE_SESSION_RECOVERY_INCIDENT=AGENT-SESSION-INTERRUPTION-41F7A06C-20261125\nFINAL_ACCEPTANCE_SESSION_RECOVERY_JOB=EDARSAHUB-BOS-FINAL-ACCEPTANCE-SESSION-RECOVERY-R2-20261125\nFINAL_ACCEPTANCE_CAJAS_SQL_INTEGRATED_JOB=SEM-REQUEST-45E86754143071F6978E4C61\nFINAL_ACCEPTANCE_CAJAS_SQL_INTEGRATED_SHA=3483f481acf5c9ef2efce1668bf1ba2208b943ae\nFINAL_ACCEPTANCE_DIRECT_PUSH_REPLACED_BY=gate_chain_publisher.submit\nIMPLEMENTATION_AUTHORIZED=NO",
+      "source_sha256": "605525a1c0d39981801e1bb0df0646484cc188db52c353b0ddb1f83dfc3225ed",
+      "type": "replace_text"
+    }
+  ],
+  "base_sha": "3483f481acf5c9ef2efce1668bf1ba2208b943ae",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_control_plane.py",
+        "tools/mirror_sync/worker_lifecycle_recovery.py",
+        "backend/tests/test_worker_autonomous_final_acceptance.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_autonomous_final_acceptance.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_control_plane_supervisor_ownership_contract.py",
+        "backend/tests/test_worker_cajas_schema_metadata_profile.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-FINAL-ACCEPTANCE-SESSION-RECOVERY-R2-20261125",
+  "metadata": {
+    "authorization_ref": "GO-AUTONOMOUS-WORKER-FINAL-ACCEPTANCE-20261125",
+    "replaced_direct_push_with": "gate_chain_publisher.submit",
+    "session_interruption_incident_id": "AGENT-SESSION-INTERRUPTION-41F7A06C-20261125"
+  },
+  "mode": "MUTATION",
+  "objective": "Recuperacion canonica de sesion interrumpida y cierre Final Acceptance P0 via gate_chain_publisher.submit() (sustituyendo push directo detenido): integrar ventana de espera de 65s/15s en autoconvergencia de worker_control_plane.py, registrar mecanismo canonico de incidente transversal de interrupcion de sesion y evaluacion fail-closed de recuperacion por checkpoints persistentes en worker_lifecycle_recovery.py, pruebas de aceptacion y leccion arquitectonica. Sin push directo, sin infraestructura paralela ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "final-acceptance-session-recovery",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
