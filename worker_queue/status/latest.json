@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "38e33e2b8e115fda9e25492c303d3512242fece1",
-  "generated_at_utc": "2026-11-25T15:42:55Z",
+  "generated_at_utc": "2026-11-25T15:44:17Z",
   "history": {
     "done_total_local": 2119,
     "pending_total_local": 0,
@@ -16,13 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3561,
-      "job_id": "EDARSAHUB-BOS-AUTOCONVERGENCE-DISJOINT-DIRTY-FIX-R2-20261125",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2477,
+      "age_seconds": 2559,
       "job_id": "SEM-REQUEST-EE7599E9E8CA3C92B93F3D8C",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,14 +30,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 1,
   "queue_running": 0,
   "remote_development_sha": "38e33e2b8e115fda9e25492c303d3512242fece1",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-25T15:42:40Z",
-    "last_receive_utc": "2026-11-25T15:42:51Z",
+    "last_cycle_utc": "2026-11-25T15:44:03Z",
+    "last_receive_utc": "2026-11-25T15:44:14Z",
     "last_terminal_utc": "2026-11-25T15:01:38Z",
     "pid": "930506",
     "runtime_fingerprint": {
