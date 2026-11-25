@@ -1606,6 +1606,37 @@ def resolve_runtime_git_credential_helper() -> str:
     return configured
 
 
+def resolve_runtime_git_url_use_http_path() -> tuple[str, str] | None:
+    """Propagate any explicit per-URL credential.useHttpPath setting from local repo config."""
+    remote_url = subprocess.run(
+        ["git", "remote", "get-url", REMOTE],
+        cwd=str(ROOT),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+    ).stdout.strip()
+    if not remote_url:
+        return None
+    override = subprocess.run(
+        [
+            "git",
+            "config",
+            "--local",
+            "--get",
+            f"credential.{remote_url}.useHttpPath",
+        ],
+        cwd=str(ROOT),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+    ).stdout.strip()
+    if override in {"true", "false"}:
+        return remote_url, override
+    return None
+
+
 def runtime_git_command(*args: str) -> list[str]:
     helper = resolve_runtime_git_credential_helper()
 
@@ -1624,6 +1655,15 @@ def runtime_git_command(*args: str) -> list[str]:
                 "credential.useHttpPath=true",
             ]
         )
+        url_override = resolve_runtime_git_url_use_http_path()
+        if url_override:
+            remote_url, use_http_path = url_override
+            cmd.extend(
+                [
+                    "-c",
+                    f"credential.{remote_url}.useHttpPath={use_http_path}",
+                ]
+            )
 
     cmd.extend(args)
     return cmd

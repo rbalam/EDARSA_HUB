@@ -88,3 +88,9 @@ def test_result_publisher_preserves_noncertified_promotion_path():
     assert 'if "certification=CERTIFIED" in marker_text:' in text
     assert "public = sanitize(load(path))" in text
     assert "marker_satisfied(marker, public)" in text
+
+
+def test_result_publisher_propagates_per_url_use_http_path_override():
+    text = _text()
+    assert "resolve_runtime_git_url_use_http_path" in text
+    assert "credential.{remote_url}.useHttpPath" in text
