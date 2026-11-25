@@ -51,8 +51,11 @@ SCHEMA_RECOVERY = "edarsahub.worker-lifecycle-recovery.v1"
 SCHEMA_DIAGNOSTIC = "edarsahub.worker-unknown-incident-diagnostic.v1"
 SCHEMA_FORENSIC = "edarsahub.worker-corrupt-draft-forensic.v1"
 SCHEMA_MCP_CONNECTOR_INCIDENTS = "edarsahub.mcp-connector-incident-summary.v1"
+SCHEMA_SESSION_INTERRUPTION = "edarsahub.agent-session-interruption-incident.v1"
+SCHEMA_INTERRUPTED_RECOVERY_EVAL = "edarsahub.interrupted-objective-recovery-eval.v1"
 
 MCP_INCIDENTS_FILENAME = "mcp_connector_incidents.jsonl"
+SESSION_INTERRUPTION_INCIDENTS_FILENAME = "session_interruption_incidents.jsonl"
 MCP_INCIDENT_WINDOW_SECONDS = int(os.environ.get("EDARSAHUB_MCP_INCIDENT_WINDOW_SECONDS", "3600"))
 
 DRAFT_GRACE_SECONDS = int(os.environ.get("EDARSAHUB_DRAFT_PERSISTENCE_GRACE_SECONDS", "300"))
@@ -711,6 +714,10 @@ def scan_global_lifecycle_blockers(
         now_epoch=now_ts,
     )
     mcp_failures += int(mcp_connector_summary.get("total_recent") or 0)
+    session_interruption_incidents = list_agent_session_interruption_incidents(
+        state_root=qroot,
+        limit=25,
+    )
 
     degraded = bool(
         (isinstance(runtime, Mapping) and runtime.get("runtime_repair_needed") is True)
@@ -747,6 +754,7 @@ def scan_global_lifecycle_blockers(
             "unknown_failures": unknown_failures,
         },
         "mcp_connector_incidents": mcp_connector_summary,
+        "agent_session_interruption_incidents": session_interruption_incidents,
         "persistent_drafts_by_domain": dict(sorted(by_domain.items())),
         "persistent_drafts": persistent_drafts[:100],
         "transient_drafts": transient_drafts[:50],
@@ -2124,5 +2132,182 @@ def resume_authorized_concurrency_blocked_objective(
         "source_job_id": source_job_id,
         "resume_job_id": resume_job_id,
         "publication_status": pub_status,
+        "production_touched": False,
+    }
+
+
+def record_agent_session_interruption_incident(
+    *,
+    incident_id: str,
+    interrupted_session_id: str,
+    base_head_sha: str,
+    checkpoint_ref: str,
+    prepared_paths: list[str] | tuple[str, ...] = (),
+    authorization_id: str | None = None,
+    interrupted_command_class: str = "SESSION_INTERRUPTED",
+    remediation_channel: str = "gate_chain_publisher.submit",
+    status: str = "RECORDED",
+    state_root: Path | None = None,
+) -> dict[str, Any]:
+    """Record a transversal, secret-free agent session interruption incident in canonical maintenance storage."""
+    root = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
+    qroot = state_root or (root / ".git" / "universal-worker-queue")
+    log_path = qroot / "maintenance" / SESSION_INTERRUPTION_INCIDENTS_FILENAME
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    record: dict[str, Any] = {
+        "schema": SCHEMA_SESSION_INTERRUPTION,
+        "incident_id": str(incident_id or "").strip(),
+        "incident_class": "AGENT_SESSION_INTERRUPTION",
+        "scope": "TRANSVERSAL",
+        "interrupted_session_id": str(interrupted_session_id or "").strip(),
+        "recorded_at_utc": utc_now(),
+        "base_head_sha": str(base_head_sha or "").strip(),
+        "checkpoint_ref": str(checkpoint_ref or "").strip(),
+        "prepared_paths": sorted({str(p).strip().lstrip("./") for p in prepared_paths if str(p).strip()}),
+        "authorization_id": str(authorization_id or "").strip() or None,
+        "interrupted_command_class": str(interrupted_command_class or "SESSION_INTERRUPTED").strip(),
+        "remediation_channel": str(remediation_channel or "gate_chain_publisher.submit").strip(),
+        "non_destructive_preservation": True,
+        "status": str(status or "RECORDED").strip().upper(),
+        "production_touched": False,
+    }
+    if not record["incident_id"]:
+        raise ValueError("SESSION_INTERRUPTION_INCIDENT_ID_REQUIRED")
+    with log_path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+    return record
+
+
+def list_agent_session_interruption_incidents(
+    *,
+    state_root: Path | None = None,
+    limit: int = 25,
+) -> list[dict[str, Any]]:
+    """Return most recent transversal agent session interruption incidents (deduplicated by incident_id)."""
+    root = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
+    qroot = state_root or (root / ".git" / "universal-worker-queue")
+    log_path = qroot / "maintenance" / SESSION_INTERRUPTION_INCIDENTS_FILENAME
+    if not log_path.is_file():
+        return []
+    by_id: dict[str, dict[str, Any]] = {}
+    try:
+        lines = log_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    for raw in lines:
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            item = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(item, dict):
+            continue
+        iid = str(item.get("incident_id") or "").strip()
+        if iid:
+            by_id[iid] = item
+    ordered = sorted(
+        by_id.values(),
+        key=lambda x: str(x.get("recorded_at_utc") or ""),
+        reverse=True,
+    )
+    return ordered[: max(1, int(limit))]
+
+
+def evaluate_interrupted_objective_recovery(
+    *,
+    domain: str,
+    checkpoint_path: Path,
+    prepared_paths: list[str] | tuple[str, ...] = (),
+    base_sha: str | None = None,
+    production_allowed: bool = False,
+    repo_root: Path | None = None,
+    state_root: Path | None = None,
+    now_utc: datetime | None = None,
+) -> dict[str, Any]:
+    """Evaluate fail-closed automatic recovery eligibility of an interrupted objective from persistent checkpoint + materialized authorization."""
+    root = repo_root or Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
+    qroot = state_root or (root / ".git" / "universal-worker-queue")
+    norm_domain = str(domain or "").strip().upper()
+    norm_paths = sorted({str(p).strip().lstrip("./") for p in prepared_paths if str(p).strip()})
+
+    if production_allowed is not False:
+        return {
+            "schema": SCHEMA_INTERRUPTED_RECOVERY_EVAL,
+            "recoverable": False,
+            "action": "BLOCK_PRODUCTION_FORBIDDEN",
+            "reason": "PRODUCTION_FORBIDDEN",
+            "remediation_channel": "NONE",
+            "production_touched": False,
+        }
+    if not checkpoint_path.is_file():
+        return {
+            "schema": SCHEMA_INTERRUPTED_RECOVERY_EVAL,
+            "recoverable": False,
+            "action": "ESCALATE_CHECKPOINT_MISSING",
+            "reason": "PERSISTENT_CHECKPOINT_MISSING",
+            "remediation_channel": "HUMAN_AUDIT",
+            "production_touched": False,
+        }
+
+    auth = resolve_active_domain_authorization(
+        norm_domain,
+        state_root=qroot,
+        required_class="DEVELOPMENT_MUTATION",
+        requested_paths=norm_paths or None,
+        now_utc=now_utc,
+    )
+    if not auth:
+        return {
+            "schema": SCHEMA_INTERRUPTED_RECOVERY_EVAL,
+            "recoverable": False,
+            "action": "ESCALATE_AUTHORIZATION_REQUIRED",
+            "reason": "ACTIVE_GATE_AUTHORIZATION_REQUIRED",
+            "domain": norm_domain,
+            "prepared_paths": norm_paths,
+            "remediation_channel": "HUMAN_GO_REQUIRED",
+            "production_touched": False,
+        }
+
+    # Check base drift on prepared paths when base_sha is provided
+    drifted_paths: list[str] = []
+    if base_sha and norm_paths:
+        changed = _git_diff_names_between(root, base_sha, "HEAD")
+        if changed is None:
+            return {
+                "schema": SCHEMA_INTERRUPTED_RECOVERY_EVAL,
+                "recoverable": False,
+                "action": "ESCALATE_BASE_UNVERIFIABLE",
+                "reason": "CHECKPOINT_BASE_NOT_ANCESTOR",
+                "domain": norm_domain,
+                "remediation_channel": "HUMAN_AUDIT",
+                "production_touched": False,
+            }
+        drifted_paths = sorted(changed & set(norm_paths))
+        if drifted_paths:
+            return {
+                "schema": SCHEMA_INTERRUPTED_RECOVERY_EVAL,
+                "recoverable": False,
+                "action": "ESCALATE_SCOPE_DRIFT",
+                "reason": "PREPARED_PATHS_DRIFTED_SINCE_INTERRUPTION",
+                "domain": norm_domain,
+                "drifted_paths": drifted_paths,
+                "remediation_channel": "REBASE_ON_CANONICAL_HEAD",
+                "production_touched": False,
+            }
+
+    return {
+        "schema": SCHEMA_INTERRUPTED_RECOVERY_EVAL,
+        "recoverable": True,
+        "action": "RECOVER_VIA_CANONICAL_PUBLISHER",
+        "reason": "CHECKPOINT_AND_AUTHORIZATION_VERIFIED",
+        "domain": norm_domain,
+        "authorization_id": auth.get("authorization_id"),
+        "gate_id": auth.get("gate_id"),
+        "prepared_paths": norm_paths,
+        "remediation_channel": "gate_chain_publisher.submit",
+        "direct_push_allowed": False,
+        "destructive_git_allowed": False,
         "production_touched": False,
     }

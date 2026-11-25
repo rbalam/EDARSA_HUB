@@ -69,3 +69,6 @@ universal_job_worker.sh debe registrar HEAD:tools/mirror_sync en runtime/active_
 
 ## Indice incremental persistente en disco para cold-cache MCP
 Un cache solo en memoria sigue provocando latencia alta tras reinicios de backend o MCP cuando existen miles de resultados historicos (~230 MB); persistir runtime/go_context_snapshot_index.v1.json validado por (mtime_ns, size) y evitar parsear resultados sin bounded_context reduce cold-cache en mas de 10x sin servir datos obsoletos.
+
+## Incidente transversal: interrupcion de sesion del agente y recuperacion via checkpoints persistentes
+Cuando una sesion de agente se interrumpe antes de integrar cambios preparados (por ejemplo al detenerse un intento de push directo a Edarsahub_Desarrollo), la recuperacion debe preservar el estado sin reset/stash/checkout destructivos, registrar el incidente transversal en maintenance/session_interruption_incidents.jsonl, evaluar elegibilidad fail-closed contra el checkpoint persistente y la autorizacion materializada vigente (evaluate_interrupted_objective_recovery), y entregar el cambio exclusivamente via gate_chain_publisher.submit() para ejecucion y certificacion en Universal Worker V4.

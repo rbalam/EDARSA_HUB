@@ -337,3 +337,92 @@ def test_06_historical_reconciliation_ledger_non_destructive(tmp_path):
     assert det["counts"]["pending_audit_stale"] == 0
     assert det["historical_reconciled_pending_audit_count"] == 1
     assert det["counts"]["orphan_branches"] == 0
+
+
+def test_07_agent_session_interruption_incident_and_checkpoint_recovery(tmp_path):
+    repo, sha1 = _init_git_repo(tmp_path)
+    qroot = _setup_queue(repo)
+    ckpt = repo / "MCP_CHECKPOINT.md"
+    ckpt.write_text("WORKSTREAM=EDARSAHUB_MCP_RECOVERY\nSTATUS=IN_PROGRESS\n", encoding="utf-8")
+
+    # 1. Verify worker_control_plane.py uses 65s backend readiness window & 15s MCP wait
+    wcp_src = (REPO_ROOT / "tools" / "mirror_sync" / "worker_control_plane.py").read_text(encoding="utf-8")
+    assert "deadline = time.time() + 65.0" in wcp_src
+    assert "mcp_deadline = time.time() + 15.0" in wcp_src
+
+    # 2. Record transversal agent session interruption incident
+    rec = lr.record_agent_session_interruption_incident(
+        incident_id="AGENT-SESSION-INTERRUPTION-TEST-001",
+        interrupted_session_id="41f7a06c-test",
+        base_head_sha=sha1,
+        checkpoint_ref="docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md",
+        prepared_paths=["a.py"],
+        authorization_id="GO-TEST-SESSION-RECOVERY",
+        interrupted_command_class="DIRECT_PUSH_STOPPED_BY_GOVERNANCE_POLICY",
+        state_root=qroot,
+    )
+    assert rec["schema"] == lr.SCHEMA_SESSION_INTERRUPTION
+    assert rec["scope"] == "TRANSVERSAL"
+    assert rec["remediation_channel"] == "gate_chain_publisher.submit"
+    assert rec["production_touched"] is False
+
+    # 3. Surfaced non-blockingly in global lifecycle scanner
+    det = lr.scan_global_lifecycle_blockers(
+        repo_root=repo,
+        state_root=qroot,
+        claims_dir=repo / ".git" / "agent-guard" / "state" / "claims",
+        attestations_dir=repo / ".git" / "mirror-sync" / "reporting" / "test_attestations",
+        force_full=True,
+        remote_inbox_ids=set(),
+        remote_result_ids=set(),
+    )
+    assert len(det["agent_session_interruption_incidents"]) == 1
+    assert det["agent_session_interruption_incidents"][0]["incident_id"] == "AGENT-SESSION-INTERRUPTION-TEST-001"
+
+    # 4. Fail-closed in Production and without materialized authorization
+    prod_blocked = lr.evaluate_interrupted_objective_recovery(
+        domain="WORKER_CONTROL_PLANE",
+        checkpoint_path=ckpt,
+        prepared_paths=["a.py"],
+        base_sha=sha1,
+        production_allowed=True,
+        repo_root=repo,
+        state_root=qroot,
+    )
+    assert prod_blocked["recoverable"] is False
+    assert prod_blocked["reason"] == "PRODUCTION_FORBIDDEN"
+
+    unauth = lr.evaluate_interrupted_objective_recovery(
+        domain="WORKER_CONTROL_PLANE",
+        checkpoint_path=ckpt,
+        prepared_paths=["a.py"],
+        base_sha=sha1,
+        repo_root=repo,
+        state_root=qroot,
+    )
+    assert unauth["recoverable"] is False
+    assert unauth["reason"] == "ACTIVE_GATE_AUTHORIZATION_REQUIRED"
+
+    # 5. With active materialized authorization -> ready for canonical gate_chain_publisher.submit() handoff
+    lr.materialize_gate_authorization(
+        gate_id="SESSION-RECOVERY-TEST",
+        authorization_id="GO-TEST-SESSION-RECOVERY",
+        granted_by="ricardo@edarsa.com.mx",
+        domains=["WORKER_CONTROL_PLANE"],
+        allowed_paths=["a.py"],
+        state_root=qroot,
+    )
+    ok = lr.evaluate_interrupted_objective_recovery(
+        domain="WORKER_CONTROL_PLANE",
+        checkpoint_path=ckpt,
+        prepared_paths=["a.py"],
+        base_sha=sha1,
+        repo_root=repo,
+        state_root=qroot,
+    )
+    assert ok["recoverable"] is True
+    assert ok["action"] == "RECOVER_VIA_CANONICAL_PUBLISHER"
+    assert ok["remediation_channel"] == "gate_chain_publisher.submit"
+    assert ok["direct_push_allowed"] is False
+    assert ok["destructive_git_allowed"] is False
+    assert ok["production_touched"] is False

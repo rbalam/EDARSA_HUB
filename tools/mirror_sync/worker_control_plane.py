@@ -2166,14 +2166,24 @@ def converge_runtime_permanently(
             backend_ok = _restart_service(BACKEND_SERVICE, "MCP_BACKEND_CODE_TREE_DRIFT_AUTOCONVERGENCE")
             ready = False
             if backend_ok:
-                deadline = time.time() + 25.0
+                deadline = time.time() + 65.0
                 while time.time() < deadline:
                     if _probe_local_backend_health():
                         ready = True
                         break
-                    time.sleep(1.0)
+                    time.sleep(1.5)
             mcp_ok = _restart_service(MCP_SERVICE, "MCP_BACKEND_CODE_TREE_DRIFT_AUTOCONVERGENCE") if ready else False
-            if ready and mcp_ok and _supervisor_service_running(MCP_SERVICE):
+            if ready and mcp_ok:
+                mcp_deadline = time.time() + 15.0
+                mcp_running = False
+                while time.time() < mcp_deadline:
+                    if _supervisor_service_running(MCP_SERVICE):
+                        mcp_running = True
+                        break
+                    time.sleep(1.0)
+            else:
+                mcp_running = False
+            if ready and mcp_ok and mcp_running:
                 tmp_marker = ACTIVE_MCP_BACKEND_TREE.with_name(
                     f"active_mcp_backend_tree_sha.tmp.{os.getpid()}"
                 )
