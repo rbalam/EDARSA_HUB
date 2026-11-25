@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "SEM-CONNECTIONS_SCHEDULER_CAPABILITY-WORKER_RESULT_SEMANTIC_EXTRACT-2D8BA8A244FE7685B16F"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-CONNECTIONS_SCHEDULER_CAPABILITY-WORKER_RESULT_DETAIL_READ-03D1B8BA960BDFD48697",
+  "mode": "READ_ONLY",
+  "objective": "Leer de forma READ_ONLY el detalle saneado del resultado terminal de la extracción semántica de la auditoría de Capability Registry. Recuperar únicamente evidencia técnica suficiente para decidir si existe una capability autorizada que inspeccione backend/core y backend/core/scheduler o si se requiere una ampliación mínima del registro existente. No modificar archivos ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONNECTIONS_SCHEDULER_CAPABILITY_RESULT_DETAIL",
+    "conflict_domains": [
+      "CONNECTIONS_SCHEDULER_CAPABILITY_RESULT_DETAIL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
