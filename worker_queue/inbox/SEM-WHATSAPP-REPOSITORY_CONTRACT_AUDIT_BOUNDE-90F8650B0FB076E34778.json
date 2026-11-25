@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "backend/tests/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "whatsapp",
+          "twilio",
+          "cancelacion",
+          "reapertura",
+          "descuento",
+          "bonificacion",
+          "ticket",
+          "rag",
+          "escalamiento"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WHATSAPP-REPOSITORY_CONTRACT_AUDIT_BOUNDE-90F8650B0FB076E34778",
+  "mode": "READ_ONLY",
+  "objective": "Gate 0 READ_ONLY: inventariar contratos funcionales existentes de WhatsApp EDARSA, protocolos de cancelaciones/reaperturas/descuentos/bonificaciones/CxC, tickets, IA/RAG, autorización y escalamiento; reportar rutas y evidencia sin modificaciones. No repetir trabajos existentes.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WHATSAPP",
+    "conflict_domains": [
+      "WHATSAPP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
