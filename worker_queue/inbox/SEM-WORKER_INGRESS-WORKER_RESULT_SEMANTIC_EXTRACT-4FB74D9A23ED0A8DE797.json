@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/SEM-WORKER_INGRESS-REPOSITORY_CONTRACT_AUDIT_BOUNDE-C10DB687A3E3F35BC37B.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-WORKER_INGRESS-WORKER_RESULT_SEMANTIC_EXTRACT-4FB74D9A23ED0A8DE797",
+  "mode": "READ_ONLY",
+  "objective": "Extraer semanticamente, en READ_ONLY, las conclusiones del resultado ya certificado de la auditoria del Capability Registry para identificar capacidades existentes relevantes a SQL_CONNECTIONS_8OF10 y cualquier bloqueo concreto para ampliar el semantic ingress sin duplicar infraestructura.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS",
+    "conflict_domains": [
+      "WORKER_INGRESS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
