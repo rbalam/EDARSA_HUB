@@ -93,6 +93,7 @@ Excepcion EDARSAHUB_MCP_RECOVERY (unica y de alcance limitado):
 - Alcance base: auditoria READ_ONLY y preparacion de gobernanza mediante el Universal Worker existente.
 - Remediaciones acotadas de seguridad OAuth/MCP en Edarsahub_Desarrollo solo se permiten cuando exista aprobacion humana explicita (GO) registrada en ACTIVE_DECISIONS.md y en docs/agent-governance/checkpoints/MCP_UNIVERSAL_WORKER.md; al cerrar el slice autorizado, IMPLEMENTATION_AUTHORIZED vuelve a NO.
 - No autoriza publicacion de JOB MCP tecnico no aprobado, activar EDARSAHUB_MCP_INPROCESS=1 ni cambios en Produccion.
+- Politica de herramientas MCP (GO-WK50-MCP-AUTONOMOUS-CONTEXT-PREFLIGHT-R2): sustituye la restriccion historica de exactamente dos herramientas MCP por una politica basada en capacidades autorizadas, ownership de contexto, OAuth 2.1, RBAC efectivo, minimo privilegio y riesgo (herramientas nuevas READ_ONLY bajo `worker:status` sin ampliar escritura).
 - CxP permanece pausado durante el trabajo MCP. No hay ejecucion paralela y se permite un solo writer.
 - Si falta aprobacion, existe duplicado/conflicto o el contexto no coincide, detenerse sin modificar archivos.
 
