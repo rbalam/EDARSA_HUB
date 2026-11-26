@@ -1,0 +1,45 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "profile_code": "UNIDADES_NEGOCIO_CANONICAL_CATALOG",
+      "queries": [
+        {
+          "name": "unidades_negocio_activas_resumen",
+          "sql": "SELECT COUNT_BIG(*) AS total_unidades, COALESCE(SUM(CASE WHEN ISNULL(activo, 1) = 1 THEN 1 ELSE 0 END), 0) AS unidades_activas, COALESCE(SUM(CASE WHEN ISNULL(activo, 1) = 0 THEN 1 ELSE 0 END), 0) AS unidades_inactivas FROM dbo.Unidades_Negocio"
+        },
+        {
+          "name": "unidades_negocio_por_sistema",
+          "sql": "SELECT ISNULL(system_type, 'NO_DEFINIDO') AS system_type, COUNT_BIG(*) AS total_activas FROM dbo.Unidades_Negocio WHERE ISNULL(activo, 1) = 1 GROUP BY ISNULL(system_type, 'NO_DEFINIDO') ORDER BY system_type"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-8381C0E352496B12B7B6CE98",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 2 READ_ONLY_SQL de VENTAS_COMERCIAL: validar mediante perfil SQL canónico registrado la identidad y distribución de unidades de negocio y sistemas en EDARSAHUB, para fundamentar posterior corrección de acceso canónico a rutas comerciales legacy por server_id, especialmente ORIGEN y 130QRO. No usar consultas arbitrarias, no tocar producción ni modificar datos. No repetir el Gate 1 de repositorio ya certificado.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "VENTAS_COMERCIAL",
+    "conflict_domains": [
+      "VENTAS_COMERCIAL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
