@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "backend/tests/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "fabric",
+          "marketplace",
+          "licensing",
+          "license",
+          "extension",
+          "certification",
+          "package_registry",
+          "tenant_isolation"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-360E7FFA6E47293437434A70",
+  "mode": "READ_ONLY",
+  "objective": "Gate 0 Fabric Marketplace: inventariar referencias existentes de Fabric, marketplace, licenciamiento, extensiones, certificacion y distribucion de paquetes; identificar reutilizacion y limites de dominio sin modificar codigo ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC.MARKETPLACE",
+    "conflict_domains": [
+      "FABRIC.MARKETPLACE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
