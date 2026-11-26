@@ -1,0 +1,65 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/",
+          "tools/mirror_sync/",
+          "backend/core/"
+        ],
+        "search_terms": [
+          "GIS",
+          "GeoJSON",
+          "geometry",
+          "geography",
+          "polygon",
+          "multipolygon",
+          "centroid",
+          "geofence",
+          "GPS",
+          "geospatial",
+          "Mapbox",
+          "Leaflet",
+          "OpenLayers",
+          "parcel",
+          "pasture",
+          "geocoding",
+          "offline",
+          "outbox",
+          "logistics",
+          "RFID"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-86E129C2980CD6D591AAC4E8",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en modo READ_ONLY las capacidades de EDARSAHUB BOS relacionadas con geoespacialidad y operación territorial para Primary Industries y Logistics: mapas, geometrías, parcelas, medición de superficies, GPS/GIS, cercas, cultivos, rendimientos, rentabilidad por parcela, inventarios, activos, rutas, QR/RFID, básculas y sincronización offline. Clasificar hallazgos como REUTILIZAR, EXTENDER, HUECO_REAL o PENDIENTE_DE_EVIDENCIA, citando rutas, símbolos y contratos reales. No repetir Gates 0A, 0B ni Gate 1. No implementar ni modificar archivos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "PRIMARY_INDUSTRIES",
+    "conflict_domains": [
+      "PRIMARY_INDUSTRIES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
