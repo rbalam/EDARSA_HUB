@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "AF_Activos",
+          "activos",
+          "assets",
+          "mantenimiento",
+          "responsiva",
+          "resguardo",
+          "depreciacion",
+          "capitalizacion",
+          "asset_id"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-2014934562AEB962C0422FFE",
+  "mode": "READ_ONLY",
+  "objective": "Gate 0 ASSETS: inventario de contratos existentes de activos fijos, mantenimiento, responsivas RH, CRM, compras y contabilidad. Identificar rutas, referencias SQL, permisos y pruebas reutilizables; solo lectura, sin Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "ASSETS",
+    "conflict_domains": [
+      "ASSETS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
