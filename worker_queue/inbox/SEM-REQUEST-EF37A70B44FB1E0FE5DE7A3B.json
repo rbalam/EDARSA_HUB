@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "frontend/src/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "consignacion",
+          "consignment",
+          "consignatario",
+          "consignador"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-EF37A70B44FB1E0FE5DE7A3B",
+  "mode": "READ_ONLY",
+  "objective": "Auditoría focalizada READ_ONLY de contratos de mercancías en consignación, propiedad de terceros, liquidación y devoluciones. Reutilizar auditorías de inventarios certificadas; no repetirlas. No modificar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INVENTARIOS",
+    "conflict_domains": [
+      "INVENTARIOS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
