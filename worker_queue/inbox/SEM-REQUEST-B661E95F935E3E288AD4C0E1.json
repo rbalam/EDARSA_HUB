@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "mise_en_place",
+          "MiseEnPlace",
+          "mise-en-place",
+          "MisePlace",
+          "line_check",
+          "LineCheck",
+          "line-check",
+          "preparacion_operativa"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-B661E95F935E3E288AD4C0E1",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1A Mise en Place: localizar exclusivamente contratos específicos de mise en place, line check y preparación operativa, diferenciando sus responsabilidades y evitando duplicidades. Complementar evidencia truncada del Gate 0 certificado SEM-REQUEST-E2148E3E0EDAC2D90ED56414, sin repetir búsqueda genérica ni modificar archivos o Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "OPERACIONES.MISE_EN_PLACE",
+    "conflict_domains": [
+      "OPERACIONES.MISE_EN_PLACE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
