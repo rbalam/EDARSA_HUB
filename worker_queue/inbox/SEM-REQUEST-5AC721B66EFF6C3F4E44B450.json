@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "backend/modules/costos_margenes/",
+          "backend/modules/comercial/alertas_margen_service.py",
+          "backend/modules/comercial/alertas_margen_repository.py",
+          "frontend/src/pages/comercial/CostosMargenes.jsx",
+          "backend/tests/test_resolver_margen_usuario_canonico_atomico.py"
+        ],
+        "search_terms": [
+          "resolve_authorized_unidad_scope",
+          "UNIDAD_CANONICA_REQUERIDA",
+          "get_resumen_costos_margenes",
+          "resolver_margen_esperado",
+          "calcular_simulacion",
+          "snapshot",
+          "margen"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-5AC721B66EFF6C3F4E44B450",
+  "mode": "READ_ONLY",
+  "objective": "GATE A incremental para COSTOS_MARGENES: inspección READ_ONLY acotada del código actual, exclusivamente para identificar diferencias funcionales aún no cubiertas por Gates Costos/POS 1-4 certificados. Inspeccionar alcance multiunidad CIENFUEGOS/HTTP409, composición del margen efectivo único, simulación y precios, alertas y trazabilidad. NO repetir auditorías SQL históricas ni crear estructuras, scripts, Workers o servicios. Entregar evidencia por archivo/símbolo con defectos concretos y plan mínimo; sin modificación de código, datos ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COSTOS_MARGENES",
+    "conflict_domains": [
+      "COSTOS_MARGENES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
