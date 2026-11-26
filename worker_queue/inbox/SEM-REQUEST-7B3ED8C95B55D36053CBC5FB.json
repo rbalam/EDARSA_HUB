@@ -1,0 +1,58 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/agent_harness/",
+          "backend/core/agent_runtime_activation.py",
+          "backend/core/agent_execution_gate.py",
+          "backend/core/agent_reach_runtime_executor.py",
+          "backend/core/agent_reach_public_search_executor.py",
+          "backend/core/ai_gateway_policy_adapter.py"
+        ],
+        "search_terms": [
+          "subprocess",
+          "runtime",
+          "sandbox",
+          "timeout",
+          "json_schema",
+          "session",
+          "provider",
+          "authorize",
+          "evidence",
+          "adapter",
+          "antigravity",
+          "agy"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-7B3ED8C95B55D36053CBC5FB",
+  "mode": "READ_ONLY",
+  "objective": "WK70 G3 READ_ONLY auditoria focalizada de interfaces existentes para integrar Antigravity CLI AGY mediante Agent Harness, autorizacion de runtime y ejecucion externa. Identificar contrato de adaptador, aislamiento, validacion JSON, timeout, sesiones y evidencia; preservar canary AGY exitoso aportado, no invocar proveedores, no modificar credenciales ni codigo. No repetir G0 G1 G2.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "UNIVERSAL_AI_INTEGRATION",
+    "conflict_domains": [
+      "UNIVERSAL_AI_INTEGRATION"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
