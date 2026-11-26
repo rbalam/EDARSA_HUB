@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "line_check",
+          "LineCheck",
+          "foto_finish",
+          "mise_en_place",
+          "sensorial",
+          "inocuidad"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-404BBF1106102C49B4EDA067",
+  "mode": "READ_ONLY",
+  "objective": "Auditar cobertura existente de Line Check: evaluación sensorial, estándares de recetas, Foto Finish, inocuidad, lotes, liberación de estaciones, disponibilidad POS, acciones correctivas y pruebas; identificar reutilización y brechas sin modificar código ni duplicar dominios.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "LINE_CHECK",
+    "conflict_domains": [
+      "LINE_CHECK"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
