@@ -1,0 +1,47 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/"
+        ],
+        "search_terms": [
+          "PersonaID",
+          "mesero",
+          "capitan",
+          "vendedor_id",
+          "EmpleadoID",
+          "SmartShift"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-66BBD40CA6458975708D2520",
+  "mode": "READ_ONLY",
+  "objective": "GATE 2 READ_ONLY de KPIs RRHH: localizar contratos existentes de identidad de colaboradores, PersonaID, homologación de vendedores POS, asignación de capitanes y turnos en dominios HCM/RH; identificar componentes reutilizables y brechas de atribución individual sin repetir auditorías comerciales G0/G1, sin cambios ni acceso a Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_VENTAS_RESTAURANTES",
+    "conflict_domains": [
+      "COMERCIAL_VENTAS_RESTAURANTES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
