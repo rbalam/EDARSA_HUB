@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/compras/",
+          "backend/modules/inventarios/",
+          "backend/modules/sync_recetas/",
+          "backend/tests/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "cobertura",
+          "lead_time",
+          "consumo_teorico",
+          "dias_surtido",
+          "auditoria_operativa",
+          "orden_compra",
+          "calendario_proveedor"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-56C1BA758F8256F69677FB94",
+  "mode": "READ_ONLY",
+  "objective": "Gate específico READ_ONLY: localizar contratos y pruebas de auditoría previa a autorización de pedidos/OC: cobertura proyectada de inventario al arribo, consumo teórico, lead time, calendario proveedor y cierre de mes; identificar integración existente sin repetir auditorías de recepciones, convenios o CxP. Sin mutaciones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMPRAS",
+    "conflict_domains": [
+      "COMPRAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
