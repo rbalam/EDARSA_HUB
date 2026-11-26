@@ -1,0 +1,51 @@
+{
+  "base_sha": "6bf494a6671a6a29036a09bd3183b009940e1349",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-26T04:54:40Z",
+  "execution_base_sha": "6bf494a6671a6a29036a09bd3183b009940e1349",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-ABBFDC364E721CA7C2A6FE8D",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-26T04:58:13Z",
+  "quality_gate": "PASS",
+  "result_detail_evidence": {
+    "checks": [
+      {
+        "blockers": [],
+        "certification": "NOT_CERTIFIED",
+        "evidence_availability": {
+          "maintenance_history_evidence": "NOT_APPLICABLE",
+          "repository_contract_evidence": "NOT_APPLICABLE",
+          "sql_readonly_evidence": "NOT_APPLICABLE",
+          "worker_result_semantic_evidence": "NOT_APPLICABLE"
+        },
+        "evidence_status": "FAILED_RESULT_NO_STRUCTURED_EVIDENCE",
+        "evidence_truncated": false,
+        "failed_checks": [],
+        "files_changed": [],
+        "percent_complete": 0,
+        "production_touched": false,
+        "quality_gate": null,
+        "result_status": "REJECTED",
+        "source_job_id": "EDARSAHUB-TABLAJERIA-RECOVERY-AUDIT-WORKER-JOB-V2-R1",
+        "source_terminal": true,
+        "tests": null,
+        "work_completion": "NOT_CERTIFIED"
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-26T04:54:40Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
