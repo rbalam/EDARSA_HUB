@@ -1,0 +1,62 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/agent_harness/",
+          "backend/core/",
+          "backend/modules/worker_ingress/",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/worker_job_factory.py",
+          "tools/mirror_sync/worker_requester_rbac.py"
+        ],
+        "search_terms": [
+          "parent_job_id",
+          "correlation_id",
+          "idempotency",
+          "AgentRequest",
+          "agent_execution_gate",
+          "agent_capability_policy",
+          "authorization_ref",
+          "permission_scope",
+          "expected_output_schema",
+          "delegation",
+          "timeout",
+          "budget_limit",
+          "sandbox",
+          "production_allowed",
+          "request_key",
+          "result_schema"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-4DE7DA63D877E699CFB29F17",
+  "mode": "READ_ONLY",
+  "objective": "WK70 G1 READ_ONLY auditoria acotada de contratos Agent Harness y Worker para delegacion externa: autorizacion, identidad padre-hijo, idempotencia, limites, normalizacion de resultados, aislamiento y evidencia; identificar reutilizacion y brechas sin ejecutar proveedores ni modificar codigo",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "UNIVERSAL_AI_INTEGRATION",
+    "conflict_domains": [
+      "UNIVERSAL_AI_INTEGRATION"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
