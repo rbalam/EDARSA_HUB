@@ -1,0 +1,46 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 25,
+        "paths": [
+          "backend/modules/worker_ingress/semantic_capabilities.py",
+          "backend/modules/finanzas/cuentas_por_pagar.py"
+        ],
+        "search_terms": [
+          "SQL_PROFILE_SOURCE_MUST_BE_EDARSAHUB",
+          "HRLectura",
+          "Pago_CXP",
+          "Pc_ID"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-373622090120E285B8975EF1",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-FINANZASCXP-WORKERCONTROLP-70960C56CB4CF88B FINANZAS_CXP->WORKER_CONTROL_PLANE] Solicitar al dominio responsable del Worker habilitar mediante el registro canonico de perfiles SQL una auditoria sellada READ_ONLY de autoridad Pc_ID de MPRO para FINANZAS_CXP, reutilizando conexiones autorizadas y catalogos canonicos, sin SQL arbitrario, sin LIVE operativo ni Produccion. Recuperar borradores historicos J0 y 3F-J sin duplicarlos; verificar visibilidad de metadata y autoridad real, sin inferir MAX+1.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
