@@ -1,0 +1,596 @@
+{
+  "base_sha": "9180def915004acbff7244428069c98a0dff9149",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-26T05:30:46Z",
+  "execution_base_sha": "9180def915004acbff7244428069c98a0dff9149",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-5AC721B66EFF6C3F4E44B450",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-26T05:31:36Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.costos_margenes.routes"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "margen"
+            ],
+            "path": "backend/modules/costos_margenes/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "__getattr__"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.connections.edarsahub_writer_connection",
+              "core.sql_first.db",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "margen"
+            ],
+            "path": "backend/modules/costos_margenes/configuracion_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_fetchone",
+              "_leer_config_empresa",
+              "_leer_config_unidad",
+              "_leer_config_usuario",
+              "guardar_configuracion_usuario",
+              "resolver_configuracion_efectiva",
+              "resolver_empresa_id_desde_unidad"
+            ],
+            "tables_referenced": [
+              "Comercial_CostosMargenesConfiguracion",
+              "Comercial_CostosMargenesConfiguracionUsuario",
+              "Sistema_Empresas",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "decimal",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "margen"
+            ],
+            "path": "backend/modules/costos_margenes/redondeo.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_decimal",
+              "redondear_a_multiplo"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "logging",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "margen"
+            ],
+            "path": "backend/modules/costos_margenes/reglas_margen_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_conn",
+              "_safe_decimal",
+              "_safe_isoformat",
+              "actualizar_regla",
+              "cargar_reglas_margen_vigentes",
+              "crear_regla",
+              "desactivar_regla",
+              "determinar_severidad",
+              "listar_reglas",
+              "obtener_estadisticas_reglas",
+              "obtener_regla_por_id",
+              "obtener_umbrales_severidad",
+              "resolver_regla_aplicable",
+              "verificar_duplicado_regla"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "logging",
+              "modules.costos_margenes.configuracion_repository",
+              "modules.costos_margenes.reglas_margen_repository",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "margen",
+              "resolver_margen_esperado"
+            ],
+            "path": "backend/modules/costos_margenes/reglas_margen_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AlertasMargenError",
+              "__init__",
+              "_get_conn",
+              "_safe_decimal",
+              "_seleccionar_regla_margen_desde_contexto",
+              "_validar_nivel_aplicacion",
+              "_validar_porcentaje",
+              "_validar_severidad",
+              "_validar_vigencia",
+              "actualizar_regla_margen",
+              "crear_regla_margen",
+              "desactivar_regla_margen",
+              "evaluar_margen_producto",
+              "listar_reglas_margen",
+              "obtener_estadisticas",
+              "obtener_regla",
+              "obtener_umbrales",
+              "resolver_margen_esperado",
+              "resolver_margenes_esperados_batch",
+              "scope_rank"
+            ],
+            "tables_referenced": [
+              "Producto_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "get_resumen_costos_margenes",
+              "margen"
+            ],
+            "path": "backend/modules/costos_margenes/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_edarsahub_connection",
+              "_mpro_comercial_where",
+              "_mpro_menu_pos_where",
+              "_safe_decimal",
+              "get_familias_productos",
+              "get_insumos_producto",
+              "get_producto_by_id",
+              "get_productos_con_costos",
+              "get_receta_elaborado",
+              "get_receta_producto",
+              "get_resumen_costos_margenes",
+              "get_subfamilias_productos",
+              "get_sync_status",
+              "get_unidades_negocio"
+            ],
+            "tables_referenced": [
+              "Comercial_ClasificacionesProducto",
+              "Comercial_MPRO_MenuPOS_Sync",
+              "Producto_MapeoOrigen"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "core.server_registry",
+              "datetime",
+              "decimal",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "calcular_simulacion",
+              "margen"
+            ],
+            "path": "backend/modules/costos_margenes/repository_precios.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_generar_folio",
+              "_get_edarsahub_connection",
+              "_mapear_solicitud",
+              "_registrar_historial",
+              "_safe_decimal",
+              "calcular_simulacion",
+              "cambiar_estatus_solicitud",
+              "crear_solicitud_cambio_precio",
+              "guardar_simulacion",
+              "listar_solicitudes",
+              "obtener_datos_producto_para_simulacion",
+              "obtener_historial_solicitud",
+              "obtener_solicitud"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.request_resolver",
+              "core.rbac_helper_sql",
+              "core.rbac_sql.service",
+              "core.security",
+              "csv",
+              "datetime",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "logging",
+              "math",
+              "modules.costos_margenes.configuracion_repository",
+              "modules.costos_margenes.reglas_margen_service",
+              "modules.costos_margenes.repository",
+              "modules.costos_margenes.schemas",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "get_resumen_costos_margenes",
+              "margen",
+              "resolve_authorized_unidad_scope",
+              "unidad_canonica_requerida"
+            ],
+            "path": "backend/modules/costos_margenes/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/configuracion/usuario",
+              "/exportar",
+              "/familias",
+              "/productos",
+              "/productos/{producto_id}/insumos",
+              "/productos/{producto_id}/receta",
+              "/resumen",
+              "/subfamilias",
+              "/sync-status",
+              "/unidades-negocio"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_check_admin_or_comercial",
+              "_contar_productos_margen_bajo_canonico",
+              "_fetch_productos",
+              "_get_sql_usuario_id",
+              "_normalize_unit_selector",
+              "_resolve_configuracion_efectiva",
+              "_resolve_receta_servidor_filtro",
+              "_resolve_servidor_filtro",
+              "_resolver_margen_efectivo_productos",
+              "_verify_costos_margenes_access",
+              "actualizar_configuracion_personal",
+              "exportar_productos_csv",
+              "listar_familias",
+              "listar_productos",
+              "listar_subfamilias",
+              "listar_unidades_negocio",
+              "obtener_insumos_producto",
+              "obtener_receta_producto",
+              "obtener_resumen",
+              "obtener_sync_status"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.rbac_helper_sql",
+              "core.security",
+              "core.unidades_service",
+              "fastapi",
+              "math",
+              "modules.costos_margenes.repository_precios",
+              "modules.costos_margenes.routes",
+              "modules.costos_margenes.schemas_precios",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "calcular_simulacion",
+              "margen",
+              "unidad_canonica_requerida"
+            ],
+            "path": "backend/modules/costos_margenes/routes_precios.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "get_current_user"
+            ],
+            "routes": [
+              "/simulacion",
+              "/solicitudes-precio",
+              "/solicitudes-precio/{solicitud_id}",
+              "/solicitudes-precio/{solicitud_id}/aplicar",
+              "/solicitudes-precio/{solicitud_id}/aprobar",
+              "/solicitudes-precio/{solicitud_id}/cancelar",
+              "/solicitudes-precio/{solicitud_id}/enviar",
+              "/solicitudes-precio/{solicitud_id}/historial",
+              "/solicitudes-precio/{solicitud_id}/rechazar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_assert_solicitud_scope",
+              "_get_acciones_disponibles",
+              "_get_user_permissions",
+              "_require_permission",
+              "_resolve_precio_scope",
+              "aplicar_solicitud",
+              "aprobar_solicitud",
+              "cancelar_solicitud",
+              "crear_solicitud",
+              "enviar_solicitud",
+              "listar_solicitudes_precio",
+              "obtener_historial",
+              "obtener_solicitud_precio",
+              "rechazar_solicitud",
+              "simular_precio"
+            ],
+            "tables_referenced": [
+              "Usuario_Roles"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "enum",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "margen"
+            ],
+            "path": "backend/modules/costos_margenes/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ComponenteReceta",
+              "Config",
+              "ConfiguracionCostosMargenesUsuarioPatch",
+              "ConteoPorServidor",
+              "ConteoPorSistema",
+              "ConteoTabla",
+              "CostosMargenesResumen",
+              "EstadoImpuesto",
+              "InsumoConsolidado",
+              "InsumosProductoResponse",
+              "ProductoCostoMargen",
+              "ProductosListResponse",
+              "RecetaExpandida",
+              "SourceType",
+              "SyncStatusResponse",
+              "TipoComponente"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "enum",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "margen"
+            ],
+            "path": "backend/modules/costos_margenes/schemas_precios.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AccionSolicitud",
+              "AccionSolicitudRequest",
+              "AccionSolicitudResponse",
+              "EstatusSolicitud",
+              "HistorialSolicitudItem",
+              "HistorialSolicitudResponse",
+              "RecomendacionPrecio",
+              "SimulacionPrecioRequest",
+              "SimulacionPrecioResponse",
+              "SolicitudCambioPrecioCreate",
+              "SolicitudCambioPrecioListItem",
+              "SolicitudCambioPrecioResponse",
+              "SolicitudCambioPrecioUpdate",
+              "SolicitudesListResponse"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.costos_margenes.reglas_margen_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "margen",
+              "resolver_margen_esperado"
+            ],
+            "path": "backend/modules/comercial/alertas_margen_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.costos_margenes.reglas_margen_repository"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "margen"
+            ],
+            "path": "backend/modules/comercial/alertas_margen_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "margen"
+            ],
+            "path": "frontend/src/pages/comercial/CostosMargenes.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.costos_margenes"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "margen",
+              "resolver_margen_esperado"
+            ],
+            "path": "backend/tests/test_resolver_margen_usuario_canonico_atomico.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "regla",
+              "test_empresa_fallback_sin_override_usuario",
+              "test_producto_gana_si_usuario_no_override",
+              "test_sin_usuario_conserva_cascada_negocio",
+              "test_unidad_fallback_sin_override_usuario",
+              "test_usuario_gana_sobre_producto",
+              "test_usuario_sin_unidad_no_se_inventa"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 15,
+          "scanned_files": 15,
+          "skipped_sensitive": 11
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-26T05:30:44Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
