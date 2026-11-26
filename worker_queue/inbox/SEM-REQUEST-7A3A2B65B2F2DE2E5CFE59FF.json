@@ -1,0 +1,47 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "frontend/src/",
+          "backend/modules/"
+        ],
+        "search_terms": [
+          "servidores",
+          "conexiones",
+          "integraciones",
+          "connections",
+          "servers"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-7A3A2B65B2F2DE2E5CFE59FF",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente los contratos existentes del Menu Universal de Servidores y Conexiones en frontend y backend; identificar brechas funcionales verificables y reutilizacion de catalogos, APIs, MCP, sincronizaciones, monitoreo y permisos, sin implementar ni duplicar infraestructura.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONEXIONES_COMUNICACIONES",
+    "conflict_domains": [
+      "CONEXIONES_COMUNICACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
