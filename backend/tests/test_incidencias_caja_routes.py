@@ -21,6 +21,9 @@ def test_bootstrap_requires_canonical_auth_and_rbac():
     assert '"registro_habilitado": False' in text
     assert '"motivos": []' in text
     assert "registrar_expediente_v1" not in text
+    comercial = (Path(__file__).resolve().parents[1] / "modules/comercial/__init__.py").read_text(encoding="utf-8")
+    assert comercial.count("router.include_router(cajas_router)") == 1
+    assert comercial.count("from modules.finanzas.incidencias_caja_routes import router as cajas_router") == 1
     assert not any(
         isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
         and any(isinstance(d, ast.Call) and getattr(d.func, "attr", "") == "post" for d in n.decorator_list)
