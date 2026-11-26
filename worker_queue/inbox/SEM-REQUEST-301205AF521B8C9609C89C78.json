@@ -1,0 +1,60 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "fabric",
+          "finops",
+          "cloud",
+          "provider",
+          "pricing",
+          "backup",
+          "failover",
+          "deployment",
+          "server",
+          "scheduler",
+          "tenant",
+          "observability",
+          "cost",
+          "gpu",
+          "edge",
+          "disaster_recovery"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-301205AF521B8C9609C89C78",
+  "mode": "READ_ONLY",
+  "objective": "Inventario inicial de contratos reutilizables de Fabric Cloud y Advisor TCO, infraestructura, continuidad, proveedores, costos y aislamiento; identificar evidencia y brechas sin duplicar servicios ni modificar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC.CLOUD",
+    "conflict_domains": [
+      "FABRIC.CLOUD"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
