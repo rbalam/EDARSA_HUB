@@ -1,0 +1,59 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Contrato Cajas V1 para canal de comunicaciones corporativo.\n\nNo envia mensajes, no guarda colas y no cambia el dispatcher.\nLa capa de Comunicaciones debe verificar plantilla aprobada, destinatario,\nconsentimiento y persistencia SQL antes de admitir una entrega real.\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom enum import Enum\nfrom urllib.parse import urlencode, urlsplit\n\nfrom core.communications.notifications.schemas import ChannelType, SendMode\n\n\nclass EventoCajaNotificable(str, Enum):\n    VISTO_BUENO_PENDIENTE = \"CAJAS_VISTO_BUENO_PENDIENTE\"\n    AUTORIZACION_PENDIENTE = \"CAJAS_AUTORIZACION_PENDIENTE\"\n    AUTORIZACION_RECHAZADA = \"CAJAS_AUTORIZACION_RECHAZADA\"\n    SLA_VENCIDO = \"CAJAS_SLA_VENCIDO\"\n    EXPEDIENTE_CERRADO = \"CAJAS_EXPEDIENTE_CERRADO\"\n\n\nclass NotificacionCajaNoAutorizada(ValueError):\n    pass\n\n\n@dataclass(frozen=True)\nclass SolicitudNotificacionCaja:\n    evento: EventoCajaNotificable\n    folio: str\n    empresa_id: str\n    unidad_id: str\n    sucursal_id: str\n    destinatario_usuario_id: int\n    plantilla_codigo: str\n    url_expediente: str\n    idempotencia_evento: str\n\n\n@dataclass(frozen=True)\nclass IntencionComunicacion:\n    modulo: str\n    canal: str\n    modo_envio: str\n    evento: str\n    plantilla_codigo: str\n    destinatario_usuario_id: int\n    folio: str\n    url_expediente: str\n    idempotencia_evento: str\n\n\ndef preparar_intencion_whatsapp_caja(\n    solicitud: SolicitudNotificacionCaja,\n    *,\n    origen_https_permitido: str,\n    evento_habilitado: bool,\n    plantilla_aprobada: bool,\n    destinatario_autorizado: bool,\n    persistencia_sql_certificada: bool,\n) -> IntencionComunicacion:\n    \"\"\"Valida una intencion, pero NUNCA despacha WhatsApp.\n\n    No acepta URLs externas y no incluye tokens en enlaces.\n    El origen HTTPS debe coincidir exactamente con el configurado por el sistema.\n    \"\"\"\n    if not all((\n        evento_habilitado, plantilla_aprobada, destinatario_autorizado,\n        persistencia_sql_certificada,\n    )):\n        raise NotificacionCajaNoAutorizada(\"CANAL_CAJA_NO_HABILITADO\")\n    if not all((\n        solicitud.folio.strip(), solicitud.empresa_id.strip(),\n        solicitud.unidad_id.strip(), solicitud.sucursal_id.strip(),\n        solicitud.plantilla_codigo.strip(), solicitud.idempotencia_evento.strip(),\n        solicitud.destinatario_usuario_id > 0,\n    )):\n        raise NotificacionCajaNoAutorizada(\"CONTEXTO_NOTIFICACION_INCOMPLETO\")\n    expected=urlsplit(origen_https_permitido)\n    target=urlsplit(solicitud.url_expediente)\n    if (\n        expected.scheme != \"https\" or not expected.netloc\n        or expected.username or expected.password\n        or expected.path not in (\"\", \"/\") or expected.query or expected.fragment\n        or target.scheme != \"https\" or target.netloc != expected.netloc\n        or target.username or target.password\n        or not target.path.startswith(\"/comercial/cajas/\")\n        or target.query or target.fragment\n    ):\n        raise NotificacionCajaNoAutorizada(\"URL_EXPEDIENTE_NO_AUTORIZADA\")\n    return IntencionComunicacion(\n        modulo=\"COMERCIAL_POS\",\n        canal=ChannelType.WHATSAPP.value,\n        modo_envio=SendMode.REAL.value,\n        evento=solicitud.evento.value,\n        plantilla_codigo=solicitud.plantilla_codigo,\n        destinatario_usuario_id=solicitud.destinatario_usuario_id,\n        folio=solicitud.folio,\n        url_expediente=solicitud.url_expediente,\n        idempotencia_evento=solicitud.idempotencia_evento,\n    )\n",
+      "path": "backend/modules/finanzas/incidencias_caja_notifications.py",
+      "type": "write_file"
+    },
+    {
+      "content": "from dataclasses import replace\nimport pytest\n\nfrom modules.finanzas.incidencias_caja_notifications import (\n    EventoCajaNotificable, SolicitudNotificacionCaja,\n    NotificacionCajaNoAutorizada, preparar_intencion_whatsapp_caja,\n)\n\n\ndef request():\n    return SolicitudNotificacionCaja(\n        evento=EventoCajaNotificable.AUTORIZACION_PENDIENTE,\n        folio=\"CAJA-1\", empresa_id=\"e\", unidad_id=\"u\", sucursal_id=\"s\",\n        destinatario_usuario_id=22, plantilla_codigo=\"CAJAS_AUTORIZACION\",\n        url_expediente=\"https://bos.example.com/comercial/cajas/CAJA-1\",\n        idempotencia_evento=\"CAJA-1:AUTORIZACION_PENDIENTE:1\",\n    )\n\n\ndef preparar(r=None,**kwargs):\n    defaults=dict(\n        origen_https_permitido=\"https://bos.example.com\",\n        evento_habilitado=True, plantilla_aprobada=True,\n        destinatario_autorizado=True, persistencia_sql_certificada=True\n    )\n    defaults.update(kwargs)\n    return preparar_intencion_whatsapp_caja(r or request(), **defaults)\n\n\ndef test_intencion_reutiliza_esquema_canonico_no_envia():\n    value=preparar()\n    assert value.canal==\"whatsapp\"\n    assert value.modulo==\"COMERCIAL_POS\"\n    assert value.destinatario_usuario_id==22\n    assert value.modo_envio==\"real\"\n\n\n@pytest.mark.parametrize(\"flag\",[\n    \"evento_habilitado\", \"plantilla_aprobada\",\n    \"destinatario_autorizado\",\"persistencia_sql_certificada\",\n])\ndef test_denegacion_por_precondiciones(flag):\n    with pytest.raises(NotificacionCajaNoAutorizada, match=\"NO_HABILITADO\"):\n        preparar(**{flag:False})\n\n\n@pytest.mark.parametrize(\"url\",[\n    \"http://bos.example.com/comercial/cajas/CAJA-1\",\n    \"https://evil.example/comercial/cajas/CAJA-1\",\n    \"https://bos.example.com@evil.example/comercial/cajas/CAJA-1\",\n    \"https://bos.example.com/comercial/cajas/CAJA-1?token=secret\",\n    \"https://bos.example.com/otra/ruta\",\n])\ndef test_bloquea_url_no_canonica(url):\n    with pytest.raises(NotificacionCajaNoAutorizada,match=\"URL_EXPEDIENTE\"):\n        preparar(replace(request(),url_expediente=url))\n\n\ndef test_rechaza_falta_destinatario():\n    with pytest.raises(NotificacionCajaNoAutorizada,match=\"INCOMPLETO\"):\n        preparar(replace(request(),destinatario_usuario_id=0))\n",
+      "path": "backend/tests/test_incidencias_caja_notifications.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/finanzas/incidencias_caja_notifications.py",
+        "backend/tests/test_incidencias_caja_notifications.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_incidencias_caja_notifications.py",
+        "backend/tests/test_incidencias_caja_orchestration.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-E6D10A84DD19456660985C67",
+  "mode": "MUTATION",
+  "objective": "Cajas V1 Gate8 contrato de integracion con canal universal WhatsApp existente core.communications, sin nuevos providers, colas, rutas o envios reales. Validar precondiciones SQL, plantilla, destinatario y URL HTTPS corporativa sin token, fail closed, tests. No tocar Core ni produccion ni SQL.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
