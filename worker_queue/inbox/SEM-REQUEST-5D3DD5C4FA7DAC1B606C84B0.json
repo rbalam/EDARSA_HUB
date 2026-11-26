@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/sistema/",
+          "backend/modules/admin_sql/",
+          "backend/modules/agent_harness/",
+          "backend/modules/worker_console/",
+          "backend/modules/catalogos/"
+        ],
+        "search_terms": [
+          "MenuService",
+          "Sistema_ModulosMenus",
+          "Usuario_MenuFavoritos",
+          "Usuario_PermisosRolModulo",
+          "Usuario_MatrizAutorizacion",
+          "EvidenceBuilder",
+          "tenant",
+          "extension",
+          "customization",
+          "version",
+          "scope"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-5D3DD5C4FA7DAC1B606C84B0",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 Fabric Interna: auditoria focalizada posterior a Gate 0 certificado. Identificar contratos de navegacion y permisos, puntos de extension declarativa y registro de evidencia; delimitar candidatos reutilizables para personalizaciones privadas sin alterar BOS maestro. No repetir inventario general ni inferir aislamiento certificado.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_INTERNA",
+    "conflict_domains": [
+      "FABRIC_INTERNA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
