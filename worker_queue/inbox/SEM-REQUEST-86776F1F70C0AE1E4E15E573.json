@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "manual_usuario",
+          "manual_de_usuario",
+          "SoftRestaurantEnterprise",
+          "softrestaurant_enterprise",
+          "knowledge_base",
+          "document_ingestion",
+          "manuales"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-86776F1F70C0AE1E4E15E573",
+  "mode": "READ_ONLY",
+  "objective": "Auditoría documental focalizada sucesora de SEM-REQUEST-90FDB1E1BA235F487BEEC5BF: localizar referencias específicas a manuales de usuario, documentación Enterprise y mecanismos de ingestión documental de asistencia IA; no repetir búsqueda genérica de integraciones SoftRestaurant. Solo lectura.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SOFTRESTAURANT",
+    "conflict_domains": [
+      "SOFTRESTAURANT"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
