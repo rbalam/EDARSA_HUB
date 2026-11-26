@@ -1,0 +1,57 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "checklist",
+          "receta",
+          "recipe",
+          "bitacora",
+          "quality_control",
+          "food_safety",
+          "lote",
+          "batch",
+          "corrective_action",
+          "release",
+          "evidence",
+          "haccp",
+          "mise",
+          "temperatura"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-01FF4EB1E2BEEBC49804E5E1",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1: localizar contratos reutilizables de recetas versionadas, controles de calidad, checklists, lotes, evidencias, liberación y acciones correctivas para Line Check. Identificar ownership, rutas, tablas referenciadas y pruebas; no repetir búsqueda Gate 0 ni modificar archivos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "LINE_CHECK",
+    "conflict_domains": [
+      "LINE_CHECK"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
