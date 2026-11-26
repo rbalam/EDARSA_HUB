@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "almacen",
+          "warehouse",
+          "slotting",
+          "RFID",
+          "pallet",
+          "digital_twin",
+          "anden",
+          "3PL",
+          "EPCIS",
+          "ubicacion",
+          "peso_variable"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-4876946B5A376A92B11EC05B",
+  "mode": "READ_ONLY",
+  "objective": "Auditoría diferencial nueva de logística almacenes: identificar contratos existentes WMS YMS TMS, gemelo digital, slotting, RFID masivo, arcos, agrupación pallet/caja/unidad, peso variable, IoT, 3PL/4PL. Reutilizar certificaciones previas sin repetirlas; localizar evidencias y brechas, no modificar código ni producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "LOGISTICA.ALMACENES",
+    "conflict_domains": [
+      "LOGISTICA.ALMACENES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
