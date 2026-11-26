@@ -1,0 +1,246 @@
+{
+  "base_sha": "6bf494a6671a6a29036a09bd3183b009940e1349",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-26T04:49:06Z",
+  "execution_base_sha": "6bf494a6671a6a29036a09bd3183b009940e1349",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-AB0E2BBDBCD1F116875916A6",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-26T04:49:54Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agent",
+              "budget",
+              "capability",
+              "model",
+              "registry"
+            ],
+            "path": "backend/modules/agent_harness/registry.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AgentRegistry",
+              "AgentSpec",
+              "RegistryError",
+              "SkillRegistry",
+              "SkillSpec",
+              "_Registry",
+              "__init__",
+              "__post_init__",
+              "_clean_token",
+              "_register",
+              "_unique_tokens",
+              "get",
+              "register",
+              "versions"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "planner",
+              "registry",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agent",
+              "capability",
+              "registry",
+              "route"
+            ],
+            "path": "backend/modules/agent_harness/router.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RouteDecision",
+              "RouteError",
+              "Router",
+              "_eligible_agent",
+              "_eligible_skill",
+              "_privilege_score",
+              "route"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agent",
+              "capability"
+            ],
+            "path": "backend/modules/agent_harness/planner.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "Plan",
+              "PlanError",
+              "PlanStep",
+              "Planner",
+              "__post_init__",
+              "_token",
+              "_tokens",
+              "_validate_acyclic",
+              "build",
+              "topological_steps"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agent",
+              "budget"
+            ],
+            "path": "backend/modules/agent_harness/control_plane.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BudgetEnvelope",
+              "ControlPlane",
+              "ControlPlaneError",
+              "ControlPlaneSnapshot",
+              "EvidenceSummary",
+              "GateState",
+              "__post_init__",
+              "_required",
+              "blockers",
+              "certified_gates",
+              "healthy",
+              "remaining",
+              "snapshot"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.ai_gateway_policy_adapter.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_procedure_policy",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agent",
+              "budget",
+              "capability",
+              "cost",
+              "model",
+              "provider",
+              "route"
+            ],
+            "path": "backend/core/ai_gateway_policy_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ModelCandidate",
+              "ModelRouteDecision",
+              "ModelRouteRequest",
+              "PreparedModelRoute",
+              "_candidate_scope",
+              "_estimate_cost",
+              "authorize_model_route"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agent",
+              "capability",
+              "registry"
+            ],
+            "path": "backend/modules/agent_harness/transversal_capability_registry.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CapabilityRegistryError",
+              "DomainCapabilitySpec",
+              "__post_init__",
+              "accepted_permissions",
+              "get_domain_capability",
+              "list_domain_capabilities"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 6,
+          "scanned_files": 6,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-26T04:49:06Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
