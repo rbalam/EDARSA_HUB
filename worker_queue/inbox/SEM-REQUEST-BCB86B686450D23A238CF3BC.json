@@ -1,0 +1,59 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Cajas V1: bootstrap HTTP protegido, sin persistencia ni catalogos supuestos.\n\nNo emite folios ni permite POST hasta certificar SQL y resolutores canonicos.\nEl registro de este router se efectua en el modulo Comercial ya montado.\n\"\"\"\nfrom fastapi import APIRouter, Depends, HTTPException\n\nfrom core.security import get_current_user\nfrom core.rbac_sql.service import RBACSQLService\nfrom modules.finanzas.incidencias_caja_access import CAJAS_INCIDENCIAS_CREAR\nfrom modules.finanzas.incidencias_caja_contracts import TipoIncidenciaCaja\n\nrouter = APIRouter(prefix=\"/comercial/cajas\", tags=[\"Cajas V1\"])\n\n\n@router.get(\"/bootstrap\")\ndef obtener_bootstrap_cajas(current_user=Depends(get_current_user)):\n    \"\"\"Exige identidad SQL y RBAC antes de exponer capacidades de Caja.\"\"\"\n    if not isinstance(current_user, dict):\n        raise HTTPException(status_code=403, detail=\"IDENTIDAD_SQL_INVALIDA\")\n    value = (\n        current_user.get(\"_sql_usuario_id\")\n        or current_user.get(\"UsuarioID\")\n        or current_user.get(\"usuario_id\")\n    )\n    if isinstance(value, bool):\n        raise HTTPException(status_code=403, detail=\"IDENTIDAD_SQL_INVALIDA\")\n    try:\n        usuario_id = int(value)\n    except (ValueError, TypeError, OverflowError):\n        raise HTTPException(status_code=403, detail=\"IDENTIDAD_SQL_INVALIDA\") from None\n    if usuario_id <= 0:\n        raise HTTPException(status_code=403, detail=\"IDENTIDAD_SQL_INVALIDA\")\n    try:\n        scope = RBACSQLService.get_permission_scope_by_code(\n            usuario_id, CAJAS_INCIDENCIAS_CREAR\n        )\n    except Exception:\n        raise HTTPException(status_code=503, detail=\"RBAC_SQL_NO_VERIFICABLE\") from None\n    if not isinstance(scope, dict) or scope.get(\"permitido\") not in (True, 1):\n        raise HTTPException(status_code=403, detail=\"CAJAS_INCIDENCIAS_CREAR_DENEGADO\")\n\n    return {\n        \"autorizado\": False,\n        \"registro_habilitado\": False,\n        \"razon\": \"CAJAS_SQL_PERSISTENCE_NOT_CERTIFIED\",\n        \"tipos_referencia\": [tipo.value for tipo in TipoIncidenciaCaja],\n        \"motivos\": [],\n        \"contexto\": None,\n    }\n",
+      "path": "backend/modules/finanzas/incidencias_caja_routes.py",
+      "type": "write_file"
+    },
+    {
+      "content": "\"\"\"Contrato de ruta Caja V1 sin dependencias de SQL ni envios.\"\"\"\nimport ast\nfrom pathlib import Path\n\n\ndef test_bootstrap_requires_canonical_auth_and_rbac():\n    path = Path(__file__).resolve().parents[1] / \"modules/finanzas/incidencias_caja_routes.py\"\n    text = path.read_text(encoding=\"utf-8\")\n    tree = ast.parse(text)\n    function = next(\n        node for node in tree.body\n        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))\n        and node.name == \"obtener_bootstrap_cajas\"\n    )\n    assert any(\n        isinstance(d, ast.Call) and isinstance(d.func, ast.Name)\n        and d.func.id == \"Depends\"\n        for arg in function.args.defaults for d in [arg]\n    )\n    assert \"RBACSQLService.get_permission_scope_by_code\" in text\n    assert '\"registro_habilitado\": False' in text\n    assert '\"motivos\": []' in text\n    assert \"registrar_expediente_v1\" not in text\n    assert not any(\n        isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))\n        and any(isinstance(d, ast.Call) and getattr(d.func, \"attr\", \"\") == \"post\" for d in n.decorator_list)\n        for n in tree.body\n    )\n",
+      "path": "backend/tests/test_incidencias_caja_routes.py",
+      "type": "write_file"
+    }
+  ],
+  "authorization_ref": "GO-CAJAS-V1-GATE12-20261126",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/finanzas/incidencias_caja_routes.py",
+        "backend/tests/test_incidencias_caja_routes.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_incidencias_caja_routes.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-BCB86B686450D23A238CF3BC",
+  "mode": "MUTATION",
+  "objective": "CAJAS V1 GATE12A: crear endpoint HTTP de bootstrap de solo lectura protegido con autenticacion y RBAC SQL; no exponer motivos ni scope sin resolver; no registro ni SQL writes; tests de contrato hermeticos. Desarrollo unicamente. Sera montado desde get_router de modulo Comercial en el sucesor Gate12B, sin editar server.py.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
