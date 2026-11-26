@@ -1,22 +1,28 @@
 {
   "ahead_count": 0,
-  "behind_count": 0,
+  "behind_count": 1,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "SYNC",
-  "development_sha": "2f6d79555fd905a82f56ef20c7e96e51820f352e",
-  "generated_at_utc": "2026-11-26T03:02:58Z",
+  "convergence_status": "REMOTE_AHEAD_ONLY",
+  "development_sha": "819826c92f887d52f1aebdfd0fb367a021c6f23e",
+  "generated_at_utc": "2026-11-26T03:04:20Z",
   "history": {
-    "done_total_local": 2124,
+    "done_total_local": 2125,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1411,
-    "results_total_local": 3294
+    "results_total_local": 3295
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 134,
+      "age_seconds": 18,
+      "job_id": "SEM-REQUEST-A4C64168D55CB88B5C401C6D",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 216,
       "job_id": "SEM-REQUEST-B97D33BD6F6556B71284931C",
       "reason": null,
       "state": "RESULT_READY"
@@ -30,15 +36,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
-  "remote_development_sha": "2f6d79555fd905a82f56ef20c7e96e51820f352e",
+  "remote_development_sha": "819826c92f887d52f1aebdfd0fb367a021c6f23e",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-26T03:02:56Z",
-    "last_receive_utc": "2026-11-26T03:02:51Z",
-    "last_terminal_utc": "2026-11-26T03:00:44Z",
+    "last_cycle_utc": "2026-11-26T03:04:13Z",
+    "last_receive_utc": "2026-11-26T03:04:08Z",
+    "last_terminal_utc": "2026-11-26T03:04:01Z",
     "pid": "88",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "df6b87e752ac90b2d124b80d60c0c7841729c29c",
