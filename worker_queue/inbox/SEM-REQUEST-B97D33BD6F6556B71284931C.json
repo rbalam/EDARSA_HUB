@@ -1,0 +1,60 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Acceso a Cajas V1: resuelve RBAC SQL y exige alcance canonico.\n\nNO obtiene contexto del cuerpo HTTP ni concede permisos de Tesoreria.\nUn consumidor posterior inyecta relaciones empresa-unidad-sucursal ya\nresueltas por el catalogo corporativo y conectores autorizados.\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom typing import Any, Callable, Iterable, Mapping\n\nfrom core.rbac_sql.service import RBACSQLService\nfrom modules.finanzas.incidencias_caja_context import AlcanceCaja\n\nCAJAS_INCIDENCIAS_CREAR = \"CAJAS_INCIDENCIAS_CREAR\"\n\n\nclass AccesoCajaDenegado(PermissionError):\n    pass\n\n\n@dataclass(frozen=True)\nclass AccesoCajaValidado:\n    alcance: AlcanceCaja\n    relaciones_permitidas: frozenset[tuple[str, str, str]]\n    permiso_codigo: str\n\n\ndef validar_acceso_creacion_caja(\n    *,\n    usuario_autenticado: Mapping[str, Any],\n    alcance_resuelto: AlcanceCaja,\n    obtener_relaciones_canonicas: Callable[[int], Iterable[tuple[str, str, str]]],\n) -> AccesoCajaValidado:\n    \"\"\"Solo prepara acceso si RBAC y RLS son verificables.\n\n    CAJAS_INCIDENCIAS_CREAR debe existir en el registro canonico de permisos\n    antes de habilitar una ruta. Ausencia => DENEGADO.\n    \"\"\"\n    raw_id = (\n        usuario_autenticado.get(\"_sql_usuario_id\")\n        or usuario_autenticado.get(\"UsuarioID\")\n        or usuario_autenticado.get(\"usuario_id\")\n    )\n    if isinstance(raw_id, bool):\n        raise AccesoCajaDenegado(\"IDENTIDAD_SQL_INVALIDA\")\n    try:\n        usuario_id = int(raw_id)\n    except (TypeError, ValueError, OverflowError):\n        raise AccesoCajaDenegado(\"IDENTIDAD_SQL_INVALIDA\") from None\n    if usuario_id <= 0 or alcance_resuelto.usuario_id != usuario_id:\n        raise AccesoCajaDenegado(\"IDENTIDAD_SQL_NO_COINCIDE\")\n    try:\n        permiso = RBACSQLService.get_permission_scope_by_code(\n            usuario_id, CAJAS_INCIDENCIAS_CREAR\n        )\n    except Exception:\n        raise AccesoCajaDenegado(\"RBAC_SQL_NO_VERIFICABLE\") from None\n    if (\n        not isinstance(permiso, Mapping)\n        or permiso.get(\"permitido\") not in (True, 1)\n    ):\n        raise AccesoCajaDenegado(\"CAJAS_INCIDENCIAS_CREAR_DENEGADO\")\n    try:\n        relaciones = frozenset(obtener_relaciones_canonicas(usuario_id))\n    except Exception:\n        raise AccesoCajaDenegado(\"RELACIONES_CANONICAS_NO_VERIFICABLES\") from None\n    if not relaciones or (\n        alcance_resuelto.empresa_id,\n        alcance_resuelto.unidad_id,\n        alcance_resuelto.sucursal_id,\n    ) not in relaciones:\n        raise AccesoCajaDenegado(\"ALCANCE_EMPRESA_UNIDAD_SUCURSAL_DENEGADO\")\n    return AccesoCajaValidado(\n        alcance=alcance_resuelto,\n        relaciones_permitidas=relaciones,\n        permiso_codigo=CAJAS_INCIDENCIAS_CREAR,\n    )\n",
+      "path": "backend/modules/finanzas/incidencias_caja_access.py",
+      "type": "write_file"
+    },
+    {
+      "content": "from dataclasses import replace\nfrom unittest.mock import patch\n\nimport pytest\nfrom modules.finanzas.incidencias_caja_access import (\n    CAJAS_INCIDENCIAS_CREAR, AccesoCajaDenegado,\n    validar_acceso_creacion_caja,\n)\nfrom modules.finanzas.incidencias_caja_context import AlcanceCaja\n\n\ndef scope():\n    return AlcanceCaja(\"empresa\", \"unidad\", \"sucursal\", 17, \"POS\", \"srv\")\n\n\ndef verificar(permissions=None, uid=17, ctx=None, resolver=None):\n    usuario={\"_sql_usuario_id\":uid}\n    ctx=scope() if ctx is None else ctx\n    resolver=resolver or (lambda x: [(\"empresa\",\"unidad\",\"sucursal\")])\n    with patch(\n        \"modules.finanzas.incidencias_caja_access.RBACSQLService.get_permission_scope_by_code\",\n        return_value=permissions,\n    ) as rb:\n        result=validar_acceso_creacion_caja(\n            usuario_autenticado=usuario,alcance_resuelto=ctx,\n            obtener_relaciones_canonicas=resolver,\n        )\n        rb.assert_called_once_with(17,CAJAS_INCIDENCIAS_CREAR)\n        return result\n\n\ndef test_permite_solo_scope_sql_y_relacion_canonica():\n    r=verificar({\"permitido\":True})\n    assert r.alcance.sucursal_id==\"sucursal\"\n    assert r.relaciones_permitidas==frozenset({(\"empresa\",\"unidad\",\"sucursal\")})\n\n\ndef test_no_autorizado_por_defecto():\n    for permiso in (None, {}, {\"permitido\":False}, {\"permitido\":\"true\"}):\n        with pytest.raises(AccesoCajaDenegado):\n            verificar(permiso)\n\n\ndef test_no_confunde_usuario_o_id_invalido():\n    for uid,ctx in [(99,scope()),(True,scope()),(None,scope()),(17,replace(scope(),usuario_id=18))]:\n        with pytest.raises(AccesoCajaDenegado):\n            verificar({\"permitido\":True},uid=uid,ctx=ctx)\n\n\ndef test_no_acepta_sucursal_ajena():\n    with pytest.raises(AccesoCajaDenegado,match=\"ALCANCE\"):\n        verificar({\"permitido\":True},ctx=replace(scope(),sucursal_id=\"otra\"))\n\n\ndef test_no_convierte_error_canonico_en_acceso_global():\n    def resolver(_):\n        raise RuntimeError(\"SQL indisponible\")\n    with pytest.raises(AccesoCajaDenegado,match=\"NO_VERIFICABLES\"):\n        verificar({\"permitido\":True},resolver=resolver)\n\n\ndef test_error_rbac_sql_denegado():\n    with patch(\n        \"modules.finanzas.incidencias_caja_access.RBACSQLService.get_permission_scope_by_code\",\n        side_effect=RuntimeError(\"conexion\"),\n    ):\n        with pytest.raises(AccesoCajaDenegado,match=\"NO_VERIFICABLE\"):\n            validar_acceso_creacion_caja(\n                usuario_autenticado={\"_sql_usuario_id\":17},\n                alcance_resuelto=scope(),\n                obtener_relaciones_canonicas=lambda _: [(\"empresa\",\"unidad\",\"sucursal\")],\n            )\n",
+      "path": "backend/tests/test_incidencias_caja_access.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/finanzas/incidencias_caja_access.py",
+        "backend/tests/test_incidencias_caja_access.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_incidencias_caja_access.py",
+        "backend/tests/test_incidencias_caja_application.py",
+        "backend/tests/test_incidencias_caja_workflow.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-B97D33BD6F6556B71284931C",
+  "mode": "MUTATION",
+  "objective": "CAJAS V1 Gate6 seguridad integracion: dependencia de acceso autenticado reuse RBACSQLService y relaciones empresa/unidad/sucursal desde resolver SQL canonico inyectado, fail closed, sin rutas HTTP aun ni catalogos duplicados, sin DB write/DDL/POS. Tests hermeticos. No tocar Gates 1-5.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
