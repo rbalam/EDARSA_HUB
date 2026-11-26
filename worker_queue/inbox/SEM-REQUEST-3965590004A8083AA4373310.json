@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/SEM-REQUEST-6CC587A32F49C106B9D1D583.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-3965590004A8083AA4373310",
+  "mode": "READ_ONLY",
+  "objective": "Extraer y sintetizar semánticamente el resultado CERTIFIED_READ_ONLY del Gate 0 de OPERACIONES_RESTAURANTE, específicamente evidencia existente, huecos y archivos relativos a solicitud remota de cuenta, TPV por folios y cortes Z, comandera y siete perfiles RBAC. No repetir auditoría ni modificar archivos; entregar referencias precisas y próximos gates atómicos con riesgos y pruebas.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "OPERACIONES_RESTAURANTE",
+    "conflict_domains": [
+      "OPERACIONES_RESTAURANTE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
