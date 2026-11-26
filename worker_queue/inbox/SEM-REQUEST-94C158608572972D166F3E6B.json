@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "finops",
+          "cloud_advisor",
+          "cloud_pricing",
+          "price_catalog",
+          "cost_estimate",
+          "total_cost_of_ownership",
+          "disaster_recovery",
+          "failover",
+          "backup_restore",
+          "infrastructure_as_code",
+          "cloud_provider",
+          "deployment_manager"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-94C158608572972D166F3E6B",
+  "mode": "READ_ONLY",
+  "objective": "Complementar evidencia truncada del Gate 0 certificado mediante búsqueda específica de contratos FinOps, TCO, catálogo de precios cloud, recuperación, despliegues e infraestructura como código; no repetir búsqueda genérica ni modificar archivos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC.CLOUD",
+    "conflict_domains": [
+      "FABRIC.CLOUD"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
