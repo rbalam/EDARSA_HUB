@@ -1,0 +1,69 @@
+{
+  "base_sha": "9d90736e5fcfd7b4274406500cf712ca423ce762",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-26T03:20:52Z",
+  "execution_base_sha": "9d90736e5fcfd7b4274406500cf712ca423ce762",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-7181E0D9139DA4D5DD2B0838",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-26T03:21:36Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_access",
+              "modules.finanzas.incidencias_caja_application",
+              "modules.finanzas.incidencias_caja_context",
+              "modules.finanzas.incidencias_caja_contracts",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "preparar_caja_autenticada_v1"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_orchestration.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CatalogoCajaNoVerificable",
+              "ResolutoresCajaCanonicos",
+              "preparar_caja_autenticada_v1"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 1,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-26T03:20:52Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
