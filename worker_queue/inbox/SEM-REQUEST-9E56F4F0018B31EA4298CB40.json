@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 30,
+        "paths": [
+          "backend/modules/catalogo_ampliado/canary_delivery.py",
+          "backend/modules/catalogo_ampliado/external_delivery.py",
+          "backend/modules/catalogo_ampliado/routes.py",
+          "backend/core/communications/notifications/schemas.py"
+        ],
+        "search_terms": [
+          "DOCUMENTO_VENCIMIENTO",
+          "confirm_real_send",
+          "lock_item",
+          "enqueue",
+          "EventType"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-9E56F4F0018B31EA4298CB40",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-CATALOGOAMPLIA-WORKERCONTROLP-2C05BEDC875BEB92 CATALOGO_AMPLIADO_NOTIFICATIONS->WORKER_CONTROL_PLANE] Registrar dependencia transversal para cierre operacional Gate 8H-B de Catalogo Ampliado: falta canal autorizado de ejecucion HTTP E2E en Development. Revisar antes de enviar los riesgos de concurrencia entre enqueue y lock, idempotencia durable, autorizacion acotada de destinatarios, EventType DOCUMENTO_VENCIMIENTO y evidencia real de entrega. No ejecutar envios ni modificar codigo en este handoff. No repetir gates certificados.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
