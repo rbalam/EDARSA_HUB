@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "backend/core/",
+          "backend/modules/"
+        ],
+        "search_terms": [
+          "servidores",
+          "Servidores",
+          "get_external_sql_connection",
+          "connection_factory",
+          "server_registry",
+          "conexion",
+          "conexiones",
+          "Conexiones"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-446F573D779A6DD9D3C16522",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 focalizado de AdminPAQ, EXCLUSIVAMENTE auditoria READ_ONLY del contrato de inventario de servidores y conexiones registrado en codigo de EDARSAHUB; identificar archivos, endpoints, modelos y permisos para una futura consulta de metadatos SQL autorizada sin conexiones LIVE. No repetir la busqueda de nombres AdminPAQ del Gate0, no extraer secretos, no tocar Produccion ni crear integraciones. Si la divergencia Git hace insegura la ejecucion, bloquear sin publicar.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INTEGRACIONES",
+    "conflict_domains": [
+      "INTEGRACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
