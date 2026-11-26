@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "forecast",
+          "flujo_proyectado",
+          "proxima_fecha_pago",
+          "calendario_pagos",
+          "cobertura_pago",
+          "fecha_deposito",
+          "fecha_vencimiento"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-84FE7FA0EFE725498657C518",
+  "mode": "READ_ONLY",
+  "objective": "Auditoria diferencial READ_ONLY exclusiva de forecast ventas y cobertura proxima corrida de pagos; reutilizar evidencia financiera previa de CxP, saldos y acreditaciones. Localizar contratos de forecast, calendario de pagos, flujo proyectado y pruebas existentes, sin repetir auditorias bancarias ni tocar produccion. Identificar rutas, simbolos, tablas y componentes reutilizables.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FINANZAS",
+    "conflict_domains": [
+      "FINANZAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
