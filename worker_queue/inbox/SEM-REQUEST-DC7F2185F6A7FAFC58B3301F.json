@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "backend/tests/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "failover",
+          "disaster_recovery",
+          "hot_standby",
+          "backup",
+          "restore",
+          "healthcheck",
+          "heartbeat",
+          "fencing",
+          "idempotency",
+          "leader_election"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-DC7F2185F6A7FAFC58B3301F",
+  "mode": "READ_ONLY",
+  "objective": "Gate 0: inventariar evidencias existentes de continuidad operativa, espejo externo, failover, backups, restauracion, health checks independientes y coordinacion de ejecutores; identificar brechas sin modificar codigo ni produccion; no certificar disponibilidad real por coincidencias de texto.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "BUSINESS_CONTINUITY",
+    "conflict_domains": [
+      "BUSINESS_CONTINUITY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
