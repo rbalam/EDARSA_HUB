@@ -1,0 +1,405 @@
+{
+  "base_sha": "69fad836a5ef1c8fd5e03317b2b86b50fb1f52fa",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-26T05:09:56Z",
+  "execution_base_sha": "69fad836a5ef1c8fd5e03317b2b86b50fb1f52fa",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-6EF6C9860847DDFA2B8F6C88",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-26T05:11:04Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.sync_recetas",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "receta"
+            ],
+            "path": "backend/modules/sync_recetas/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.sync_recetas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "dataclasses",
+              "datetime",
+              "decimal",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "elaborado",
+              "elaborados",
+              "receta",
+              "rendimiento"
+            ],
+            "path": "backend/modules/sync_recetas/models.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ElaboradoLineaSync",
+              "FamiliaSync",
+              "InsumoSync",
+              "ProductoSync",
+              "RecetaLineaSync",
+              "SubFamiliaSync",
+              "SyncRecetasConfig",
+              "SyncRecetasResult"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.sync_recetas",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "core.server_registry",
+              "core.sql_first.connection_factory",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "models",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "elaborado",
+              "elaborados",
+              "inventario",
+              "produccion",
+              "receta",
+              "rendimiento"
+            ],
+            "path": "backend/modules/sync_recetas/sync_recetas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_cat",
+              "_contar_productos_con_receta_mpro",
+              "_contar_productos_con_receta_sr",
+              "_dec",
+              "_ejecutar_sync",
+              "_execute_pos_query_strict",
+              "_guardar_catalogo_filtros",
+              "_guardar_compuestos",
+              "_guardar_elaborados",
+              "_guardar_familias",
+              "_guardar_insumos",
+              "_guardar_productos",
+              "_guardar_recetas",
+              "_guardar_subfamilias",
+              "_obtener_compuestos_mpro",
+              "_obtener_compuestos_sr",
+              "_obtener_elaborados_sr",
+              "_obtener_familias_mpro",
+              "_obtener_familias_sr",
+              "_obtener_filtros_catalogo_sr",
+              "_obtener_insumos_mpro",
+              "_obtener_insumos_sr",
+              "_obtener_productos_mpro",
+              "_obtener_productos_sr",
+              "_obtener_recetas_mpro",
+              "_obtener_recetas_sr",
+              "_obtener_subfamilias_mpro",
+              "_obtener_subfamilias_sr",
+              "_registrar_ejecucion",
+              "_sql_text",
+              "_sync_mpro",
+              "_sync_servidor",
+              "_sync_softrestaurant",
+              "ejecutar_sync_recetas_dry_run",
+              "ejecutar_sync_recetas_real"
+            ],
+            "tables_referenced": [
+              "Sync_Productos",
+              "Sync_Productos_Recetas"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "elaborado",
+              "elaborados",
+              "produccion",
+              "receta",
+              "rendimiento"
+            ],
+            "path": "backend/modules/costos_margenes/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_edarsahub_connection",
+              "_mpro_comercial_where",
+              "_mpro_menu_pos_where",
+              "_safe_decimal",
+              "get_familias_productos",
+              "get_insumos_producto",
+              "get_producto_by_id",
+              "get_productos_con_costos",
+              "get_receta_elaborado",
+              "get_receta_producto",
+              "get_resumen_costos_margenes",
+              "get_subfamilias_productos",
+              "get_sync_status",
+              "get_unidades_negocio"
+            ],
+            "tables_referenced": [
+              "Comercial_ClasificacionesProducto",
+              "Comercial_MPRO_MenuPOS_Sync",
+              "Producto_MapeoOrigen"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.request_resolver",
+              "core.rbac_helper_sql",
+              "core.rbac_sql.service",
+              "core.security",
+              "csv",
+              "datetime",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "logging",
+              "math",
+              "modules.costos_margenes.configuracion_repository",
+              "modules.costos_margenes.reglas_margen_service",
+              "modules.costos_margenes.repository",
+              "modules.costos_margenes.schemas",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "elaborado",
+              "elaborados",
+              "receta",
+              "rendimiento"
+            ],
+            "path": "backend/modules/costos_margenes/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/configuracion/usuario",
+              "/exportar",
+              "/familias",
+              "/productos",
+              "/productos/{producto_id}/insumos",
+              "/productos/{producto_id}/receta",
+              "/resumen",
+              "/subfamilias",
+              "/sync-status",
+              "/unidades-negocio"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_check_admin_or_comercial",
+              "_contar_productos_margen_bajo_canonico",
+              "_fetch_productos",
+              "_get_sql_usuario_id",
+              "_normalize_unit_selector",
+              "_resolve_configuracion_efectiva",
+              "_resolve_receta_servidor_filtro",
+              "_resolve_servidor_filtro",
+              "_resolver_margen_efectivo_productos",
+              "_verify_costos_margenes_access",
+              "actualizar_configuracion_personal",
+              "exportar_productos_csv",
+              "listar_familias",
+              "listar_productos",
+              "listar_subfamilias",
+              "listar_unidades_negocio",
+              "obtener_insumos_producto",
+              "obtener_receta_producto",
+              "obtener_resumen",
+              "obtener_sync_status"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.tablajeria",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "json",
+              "logging",
+              "pymssql",
+              "schemas",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "inventario",
+              "rendimiento"
+            ],
+            "path": "backend/modules/tablajeria/ordenes_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TablajeriaOrdenesService",
+              "__init__",
+              "_generar_folio",
+              "_get_connection",
+              "_now_utc",
+              "_today_mexico",
+              "autorizar_orden",
+              "cancelar_orden",
+              "cerrar_orden",
+              "crear_orden",
+              "crear_orden_captura_directa",
+              "iniciar_ejecucion",
+              "listar_ordenes",
+              "obtener_orden",
+              "registrar_resultados",
+              "to_uuid_safe"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.ia_assistant",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "asyncio",
+              "emergentintegrations.llm.chat",
+              "json",
+              "logging",
+              "modules.ia_assistant",
+              "os",
+              "re",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "inventario",
+              "plan_contextual_actions"
+            ],
+            "path": "backend/modules/ia_assistant/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "LLMProviderError",
+              "LLMTimeoutError",
+              "SessionNotFoundError",
+              "_api_key",
+              "_dataset_candidates",
+              "_dataset_cell",
+              "_parse_planner_response",
+              "_sanitize_assistant_visual_markup",
+              "_send_llm",
+              "build_response_datasets",
+              "crear_sesion",
+              "eliminar_sesion",
+              "enviar_mensaje",
+              "health",
+              "listar_sesiones",
+              "obtener_mensajes",
+              "plan_contextual_actions",
+              "plan_system_queries"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "produccion",
+              "receta"
+            ],
+            "path": "frontend/src/pages/Produccion.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 8,
+          "scanned_files": 9,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-26T05:09:55Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
