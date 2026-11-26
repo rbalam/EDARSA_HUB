@@ -1,0 +1,46 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 20,
+        "paths": [
+          "backend/modules/finanzas/incidencias_caja_authorization_followup.py",
+          "backend/modules/finanzas/incidencias_caja_orchestration.py",
+          "frontend/src/components/finanzas/IncidenciaCajaForm.jsx"
+        ],
+        "search_terms": [
+          "get_current_user",
+          "CAJAS_INCIDENCIAS_CREAR",
+          "preparar_caja_autenticada_v1"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-7181E0D9139DA4D5DD2B0838",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-COMERCIALPOS-WORKERCONTROLP-A68AE3F8E2371839 COMERCIAL_POS->WORKER_CONTROL_PLANE] CAJAS V1 GATE11 - solicitar al dominio rector WORKER_CONTROL_PLANE preflight de autorizacion materializada y acotada para integrar backend HTTP autenticado y frontend movil de COMERCIAL_POS. No solicitar ni ejecutar DDL, no autorizar produccion, no alterar Worker ni conceder privilegios; devolver requisitos de autorizacion y ownership de archivos existentes, con expiracion y RBAC.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
