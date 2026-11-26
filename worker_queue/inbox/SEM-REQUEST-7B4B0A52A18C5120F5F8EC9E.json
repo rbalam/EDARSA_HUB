@@ -1,0 +1,56 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_incidencias_caja_routes.py",
+      "replacement": "\n\ndef test_bootstrap_http_rbac_fail_closed(monkeypatch):\n    \"\"\"HTTP hermetico; no SQL real, cookies reales ni escrituras.\"\"\"\n    from fastapi import FastAPI, HTTPException\n    from fastapi.testclient import TestClient\n    from modules.finanzas import incidencias_caja_routes as cajas\n\n    app = FastAPI()\n    app.include_router(cajas.router)\n    state = {\"user\": {\"_sql_usuario_id\": 17}, \"permission\": {\"permitido\": True}}\n\n    def current_user():\n        if state[\"user\"] is None:\n            raise HTTPException(status_code=401, detail=\"NO_AUTENTICADO\")\n        return state[\"user\"]\n\n    def permission(user_id, code):\n        assert user_id == 17\n        assert code == cajas.CAJAS_INCIDENCIAS_CREAR\n        value = state[\"permission\"]\n        if isinstance(value, Exception):\n            raise value\n        return value\n\n    app.dependency_overrides[cajas.get_current_user] = current_user\n    monkeypatch.setattr(cajas.RBACSQLService, \"get_permission_scope_by_code\", permission)\n\n    with TestClient(app) as client:\n        url = \"/comercial/cajas/bootstrap\"\n        state[\"user\"] = None\n        assert client.get(url).status_code == 401\n        state[\"user\"] = {\"_sql_usuario_id\": 17}\n        state[\"permission\"] = {\"permitido\": False}\n        assert client.get(url).status_code == 403\n        state[\"permission\"] = RuntimeError(\"SQL unavailable\")\n        assert client.get(url).status_code == 503\n        state[\"permission\"] = {\"permitido\": True}\n        response = client.get(url)\n        assert response.status_code == 200\n        payload = response.json()\n        assert payload[\"autorizado\"] is False\n        assert payload[\"registro_habilitado\"] is False\n        assert payload[\"motivos\"] == []\n        assert payload[\"contexto\"] is None\n        assert client.post(url, json={}).status_code == 405\n",
+      "source_sha256": "02ea8f00493675dc47a4a6458b2aa9fc62b8a39e83aeb809c70d5d2203fb94ab",
+      "type": "append_once"
+    }
+  ],
+  "authorization_ref": "GO-CAJAS-V1-GATE12-20261126",
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_incidencias_caja_routes.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_incidencias_caja_routes.py",
+        "backend/tests/test_incidencias_caja_access.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-7B4B0A52A18C5120F5F8EC9E",
+  "mode": "MUTATION",
+  "objective": "CAJAS V1 Gate12D: pruebas HTTP hermeticas RBAC en test existente autorizado. Verificar 401,403,503,200 con registro bloqueado, POST 405 usando mocks sin SQL LIVE. No modificar runtime ni produccion. Solo Desarrollo.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
