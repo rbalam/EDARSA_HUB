@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "frontend/src/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "SoftRestaurant",
+          "softrestaurant",
+          "DOGHOUSE",
+          "manual_usuario",
+          "knowledge_base"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-90FDB1E1BA235F487BEEC5BF",
+  "mode": "READ_ONLY",
+  "objective": "Identificar referencias existentes al manual de usuario SoftRestaurant Enterprise y su incorporación al conocimiento y asistencia IA de EDARSAHUB; localizar contratos de integración relacionados sin repetir auditorías CXP certificadas. Solo lectura, sin conexiones LIVE ni cambios.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SOFTRESTAURANT",
+    "conflict_domains": [
+      "SOFTRESTAURANT"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
