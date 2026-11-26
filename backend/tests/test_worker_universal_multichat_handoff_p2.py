@@ -514,6 +514,13 @@ def test_p2_section7_semantic_validation_rejects_canary_and_preserves_unsatisfie
     assert linked_blocker["handoff"]["evidence_link"]["acceptance_criteria_verified"] is False
     assert linked_blocker["handoff"]["semantic_validation"]["blockers"]
 
+    # 3. Reconciler MUST preserve Section 7 unsatisfied semantic blocker instead of overwriting dependency_satisfied=True
+    handoff_mod.reconcile_cross_domain_handoffs(state_root=qroot, now_utc=datetime(2026, 11, 26, 5, 20, tzinfo=timezone.utc))
+    after_reconcile = handoff_mod.load_handoff(hid, state_root=qroot)
+    assert after_reconcile["dependency_satisfied"] is False
+    assert after_reconcile["lifecycle_state"] == "ESCALATED_HUMAN_REQUIRED"
+    assert after_reconcile["resolution_stage"] == "BLOCKER_IDENTIFIED_EVIDENCE_CERTIFIED"
+
 
 def test_p2b_successor_negative_states_and_controlled_end_to_end_execution(tmp_path, monkeypatch):
     """P2B + P2D: verify NO_SUCCESSOR_DEFINED, WAITING_AUTHORIZATION, CAPABILITY_REQUIRED, REUSE_EXISTING_JOB, and controlled 9-step successor execution."""

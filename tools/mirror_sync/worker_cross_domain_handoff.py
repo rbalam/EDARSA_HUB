@@ -3872,6 +3872,17 @@ def reconcile_cross_domain_handoffs(
                 errors.append({"handoff_id": hid, "error": type(exc).__name__})
             continue
         try:
+            # 0. Preserve Section 7 semantic unsatisfied state when this exact resolution_job_id was already evaluated as unsatisfied
+            existing_sem = record.get("semantic_validation")
+            existing_ev = record.get("evidence_link")
+            if (
+                isinstance(existing_sem, Mapping)
+                and existing_sem.get("satisfied") is False
+                and _clean((existing_ev or {}).get("resolution_job_id")) == _clean(record.get("resolution_job_id"))
+                and _clean(record.get("resolution_job_id"))
+            ):
+                continue
+
             # 1. Check if bound resolution_job_id reached terminal certification
             res_jid = _clean(record.get("resolution_job_id"))
             if res_jid:
