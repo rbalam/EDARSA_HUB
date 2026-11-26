@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "frontend/src/",
+          "backend/modules/",
+          "backend/core/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "PortalProveedoresApp",
+          "portal-proveedores",
+          "hostname",
+          "proveedores.edarsa.com.mx",
+          "REACT_APP_BACKEND_URL",
+          "CORS_ORIGINS",
+          "CORSMiddleware",
+          "hub.edarsa.com.mx"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-54985BD03664B887776044CD",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 READ_ONLY acceso web multidominio: localizar y auditar contratos existentes de App.js, PortalProveedoresApp, hostname, rutas internas, API base, CORS y autenticacion; identificar evidencia y brechas sin modificar codigo ni produccion. DNS TLS proxy y pruebas vivas quedan pendientes si no son observables en repositorio.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "ACCESO_WEB_PORTAL_PROVEEDORES",
+    "conflict_domains": [
+      "ACCESO_WEB_PORTAL_PROVEEDORES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
