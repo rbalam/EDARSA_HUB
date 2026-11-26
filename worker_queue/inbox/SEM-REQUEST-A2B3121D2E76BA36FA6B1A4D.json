@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/compras/",
+          "backend/modules/finanzas/",
+          "backend/tests/",
+          "frontend/src/components/finanzas/"
+        ],
+        "search_terms": [
+          "semaforo",
+          "presupuesto_dinamico",
+          "presupuesto",
+          "bloqueo_presupuestal",
+          "_cxp_block_if_pago_origen_locked",
+          "_cxp_enqueue_pago_origen"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-A2B3121D2E76BA36FA6B1A4D",
+  "mode": "READ_ONLY",
+  "objective": "Continuar auditorías certificadas COMPRAS sin repetirlas: localizar específicamente contratos existentes de semáforo, presupuesto dinámico/fijo, bloqueo presupuestal y autorización final de pago; identificar pruebas y puntos de integración canónicos. Solo lectura, sin producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMPRAS",
+    "conflict_domains": [
+      "COMPRAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
