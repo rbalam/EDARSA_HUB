@@ -1,0 +1,45 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "profile_code": "UNIDADES_NEGOCIO_CANONICAL_CATALOG",
+      "queries": [
+        {
+          "name": "unidades_negocio_activas_resumen",
+          "sql": "SELECT COUNT_BIG(*) AS total_unidades, COALESCE(SUM(CASE WHEN ISNULL(activo, 1) = 1 THEN 1 ELSE 0 END), 0) AS unidades_activas, COALESCE(SUM(CASE WHEN ISNULL(activo, 1) = 0 THEN 1 ELSE 0 END), 0) AS unidades_inactivas FROM dbo.Unidades_Negocio"
+        },
+        {
+          "name": "unidades_negocio_por_sistema",
+          "sql": "SELECT ISNULL(system_type, 'NO_DEFINIDO') AS system_type, COUNT_BIG(*) AS total_activas FROM dbo.Unidades_Negocio WHERE ISNULL(activo, 1) = 1 GROUP BY ISNULL(system_type, 'NO_DEFINIDO') ORDER BY system_type"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-B24B9F663CE10636F023E6E6",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Validar el catálogo canónico de unidades de negocio para el frente COMPRAS_SYNC, verificar la asociación de ORIGEN y 130QRO con server_id y sucursal_origen_id si el perfil registrado expone esos campos. Usar exclusivamente el perfil existente HRLectura sobre EDARSAHUB; no modificar datos, conexiones, credenciales ni Producción. No repetir auditoría de código certificada.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMPRAS_SYNC",
+    "conflict_domains": [
+      "COMPRAS_SYNC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
