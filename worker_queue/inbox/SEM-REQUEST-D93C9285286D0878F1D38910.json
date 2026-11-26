@@ -1,0 +1,57 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "backend/modules/worker_ingress/",
+          "backend/modules/worker_console/",
+          "backend/modules/agent_harness/",
+          "tools/mirror_sync/",
+          "backend/core/"
+        ],
+        "search_terms": [
+          "sandbox",
+          "tenant_id",
+          "worktree",
+          "network_isolation",
+          "secret",
+          "quota",
+          "allowed_paths",
+          "production_allowed",
+          "isolation_profile",
+          "fail_closed",
+          "authorization_scope",
+          "workspace"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-D93C9285286D0878F1D38910",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2 Fabric Interna READ_ONLY: identificar contratos y controles existentes para aislamiento de laboratorios privados por cliente y proyecto, fronteras de repositorio, identidad, secretos, red, cuotas y ejecucion no confiable. Distinguir evidencia estatica de aislamiento real; no certificar seguridad comercial mediante coincidencias ni duplicar UW/AEP.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_INTERNA",
+    "conflict_domains": [
+      "FABRIC_INTERNA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
