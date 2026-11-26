@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "backend/core/communications/notifications/schemas.py",
+          "backend/core/communications/notifications/service.py",
+          "backend/core/communications/notifications/repository_sql.py",
+          "backend/core/communications/dispatcher/dispatcher.py"
+        ],
+        "search_terms": [
+          "EventType",
+          "NotificationEvent",
+          "MockProvider",
+          "NotificationRepository"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-95330FC4C73862AEA4AD7749",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-COMERCIALPOS-COMUNICACIONES-181A191A4675C991 COMERCIAL_POS->COMUNICACIONES] Registrar dependencia READ_ONLY de CAJAS V1 con COMUNICACIONES: homologar eventos CAJAS_VISTO_BUENO_PENDIENTE, CAJAS_AUTORIZACION_PENDIENTE, CAJAS_AUTORIZACION_RECHAZADA, CAJAS_SLA_VENCIDO, CAJAS_EXPEDIENTE_CERRADO con EventType cerrado en core.communications.notifications.schemas, reutilizar dispatcher/orchestrator SQL-first, validar que mock/stub nunca certifique entrega real; no envios, no DDL, no codigo.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMUNICACIONES",
+    "conflict_domains": [
+      "COMUNICACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
