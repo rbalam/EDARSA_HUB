@@ -1,0 +1,60 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Proyeccion segura del motor canonico Usuario_Autorizaciones para Cajas V1.\n\nUn consumidor con RBAC/RLS previamente comprobados provee una fila SQL\nresuelta por la vinculacion polimorfica EntidadNombre + EntidadID.\nNo ejecuta SQL ni modifica autorizaciones, tareas o POS.\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom typing import Any, Mapping\n\nfrom modules.finanzas.incidencias_caja_workflow import EstadoAutorizacion\n\n\nclass AutorizacionCajaNoVerificable(PermissionError):\n    pass\n\n\n@dataclass(frozen=True)\nclass EstadoAutorizacionCajaCanonica:\n    autorizacion_id: str\n    estado: EstadoAutorizacion\n    entidad_nombre: str\n    entidad_id: str\n\n\n_ESTADOS_CANONICOS = {\n    \"PENDIENTE\": EstadoAutorizacion.PENDIENTE,\n    \"EN_PROCESO\": EstadoAutorizacion.EN_PROCESO,\n    \"AUTORIZADA\": EstadoAutorizacion.APROBADA,\n    \"RECHAZADA\": EstadoAutorizacion.RECHAZADA,\n}\n\n\ndef proyectar_autorizacion_caja(\n    fila: Mapping[str, Any] | None,\n    *,\n    entidad_nombre_esperada: str,\n    entidad_id_esperada: str,\n) -> EstadoAutorizacionCajaCanonica:\n    \"\"\"Solo acepta lectura autentica ligada al expediente requerido.\n\n    No confunde ausencia de fila con NO_REQUERIDA y nunca interpreta\n    niveles intermedios como autorizacion completa.\n    \"\"\"\n    if not isinstance(fila, Mapping):\n        raise AutorizacionCajaNoVerificable(\"AUTORIZACION_SQL_NO_DISPONIBLE\")\n    if not entidad_nombre_esperada.strip() or not entidad_id_esperada.strip():\n        raise AutorizacionCajaNoVerificable(\"REFERENCIA_EXPEDIENTE_INCOMPLETA\")\n    raw_id = fila.get(\"AutorizacionID\")\n    if isinstance(raw_id, bool):\n        raise AutorizacionCajaNoVerificable(\"AUTORIZACION_ID_INVALIDA\")\n    try:\n        id_numerico = int(raw_id)\n    except (TypeError, ValueError, OverflowError):\n        raise AutorizacionCajaNoVerificable(\"AUTORIZACION_ID_INVALIDA\") from None\n    if id_numerico <= 0 or str(raw_id).strip() != str(id_numerico):\n        raise AutorizacionCajaNoVerificable(\"AUTORIZACION_ID_INVALIDA\")\n    nombre = fila.get(\"EntidadNombre\")\n    entidad_id = fila.get(\"EntidadID\")\n    if nombre != entidad_nombre_esperada or entidad_id != entidad_id_esperada:\n        raise AutorizacionCajaNoVerificable(\"AUTORIZACION_ENTIDAD_NO_COINCIDE\")\n    if fila.get(\"Activo\") is not True and fila.get(\"Activo\") != 1:\n        raise AutorizacionCajaNoVerificable(\"AUTORIZACION_NO_ACTIVA\")\n    raw_estado = fila.get(\"EstatusAutorizacion\")\n    estado = _ESTADOS_CANONICOS.get(raw_estado)\n    if estado is None:\n        raise AutorizacionCajaNoVerificable(\"AUTORIZACION_ESTADO_NO_RECONOCIDO\")\n    return EstadoAutorizacionCajaCanonica(\n        autorizacion_id=str(id_numerico),\n        estado=estado,\n        entidad_nombre=nombre,\n        entidad_id=entidad_id,\n    )\n",
+      "path": "backend/modules/finanzas/incidencias_caja_authorization_adapter.py",
+      "type": "write_file"
+    },
+    {
+      "content": "from dataclasses import replace\nimport pytest\n\nfrom modules.finanzas.incidencias_caja_workflow import EstadoAutorizacion\nfrom modules.finanzas.incidencias_caja_authorization_adapter import (\n    AutorizacionCajaNoVerificable, proyectar_autorizacion_caja,\n)\n\n\ndef fila(estado=\"PENDIENTE\"):\n    return {\n        \"AutorizacionID\":42, \"EntidadNombre\":\"CAJAS_EXPEDIENTE\",\n        \"EntidadID\":\"EXP-1\", \"Activo\":True, \"EstatusAutorizacion\":estado,\n    }\n\n\ndef proyectar(row=None):\n    return proyectar_autorizacion_caja(\n        fila() if row is None else row,\n        entidad_nombre_esperada=\"CAJAS_EXPEDIENTE\",\n        entidad_id_esperada=\"EXP-1\",\n    )\n\n\n@pytest.mark.parametrize(\"source,target\",[\n    (\"PENDIENTE\",EstadoAutorizacion.PENDIENTE),\n    (\"EN_PROCESO\",EstadoAutorizacion.EN_PROCESO),\n    (\"AUTORIZADA\",EstadoAutorizacion.APROBADA),\n    (\"RECHAZADA\",EstadoAutorizacion.RECHAZADA),\n])\ndef test_estados_canonicos(source,target):\n    assert proyectar(fila(source)).estado == target\n\n\n@pytest.mark.parametrize(\"campo,valor\",[\n    (\"AutorizacionID\",None),(\"AutorizacionID\",0),(\"AutorizacionID\",True),\n    (\"Activo\",False),(\"EntidadNombre\",\"OTRO\"),(\"EntidadID\",\"EXP-2\"),\n    (\"EstatusAutorizacion\",\"APROBADA\"),\n    (\"EstatusAutorizacion\",\"DESCONOCIDO\"),\n])\ndef test_falla_cerrado_si_evidencia_invalida(campo,valor):\n    row=fila()\n    row[campo]=valor\n    with pytest.raises(AutorizacionCajaNoVerificable):\n        proyectar(row)\n\n\ndef test_no_interpreta_ausencia_como_no_requerida():\n    with pytest.raises(AutorizacionCajaNoVerificable,match=\"NO_DISPONIBLE\"):\n        proyectar_autorizacion_caja(\n            None,entidad_nombre_esperada=\"CAJAS_EXPEDIENTE\",\n            entidad_id_esperada=\"EXP-1\",\n        )\n\n\ndef test_en_proceso_nunca_se_considera_aprobada():\n    assert proyectar(fila(\"EN_PROCESO\")).estado != EstadoAutorizacion.APROBADA\n",
+      "path": "backend/tests/test_incidencias_caja_authorization_adapter.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/finanzas/incidencias_caja_authorization_adapter.py",
+        "backend/tests/test_incidencias_caja_authorization_adapter.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_incidencias_caja_authorization_adapter.py",
+        "backend/tests/test_incidencias_caja_workflow.py",
+        "backend/tests/test_incidencias_caja_orchestration.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-1CEAD3634B45DE8A5705431A",
+  "mode": "MUTATION",
+  "objective": "CAJAS V1 Gate9 adaptador de lectura del motor SQL canónico Usuario_Autorizaciones para proyectar estado real AUTORIZADA->APROBADA, PENDIENTE/EN_PROCESO/RECHAZADA, validar EntidadNombre+EntidadID+Activo+ID y fail-closed. No inventar entidad configurada, no SQL, no SP calls, no envios, no endpoints, tests hermeticos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
