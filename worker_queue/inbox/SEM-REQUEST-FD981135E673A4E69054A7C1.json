@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/comercial_analytics",
+          "backend/modules/comercial_v2"
+        ],
+        "search_terms": [
+          "mesero",
+          "capitan",
+          "propina",
+          "empleado",
+          "PersonaID",
+          "ticket"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-FD981135E673A4E69054A7C1",
+  "mode": "READ_ONLY",
+  "objective": "GATE 1 READ_ONLY: identificar cobertura funcional específica de KPIs individuales de meseros y capitanes, contratos de atribución de ventas, tickets, propinas, turnos y vinculación HCM; complementar sin repetir el Gate 0 certificado. Identificar evidencia y brechas, sin cambios.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_VENTAS_RESTAURANTES",
+    "conflict_domains": [
+      "COMERCIAL_VENTAS_RESTAURANTES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
