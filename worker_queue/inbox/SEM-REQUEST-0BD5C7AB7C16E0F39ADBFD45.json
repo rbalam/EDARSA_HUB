@@ -1,0 +1,57 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "comision",
+          "commission",
+          "referido",
+          "referral",
+          "promotor",
+          "influencer",
+          "reserva",
+          "booking",
+          "crm",
+          "liquidacion",
+          "atribucion",
+          "partner",
+          "cuentas_por_pagar"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-0BD5C7AB7C16E0F39ADBFD45",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en modo READ_ONLY los contratos y componentes existentes relacionados con comisiones comerciales, referidos, RPs, promotores, atribucion, CRM, reservas, ventas, cuentas por pagar y liquidaciones. Identificar reutilizacion canonica, brechas y riesgos. No modificar archivos ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL.CRM.COMISIONES_RP",
+    "conflict_domains": [
+      "COMERCIAL.CRM.COMISIONES_RP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
