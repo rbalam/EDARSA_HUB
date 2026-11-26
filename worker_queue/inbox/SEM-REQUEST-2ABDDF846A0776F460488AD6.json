@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "backend/core/"
+        ],
+        "search_terms": [
+          "geolocation",
+          "geofence",
+          "location",
+          "GPS",
+          "consent"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-2ABDDF846A0776F460488AD6",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY el contrato de geolocalizacion celular de EDARSAHUB, reutilizando Field/Mobile Platform y Logistics: identificar componentes reales de GPS, mapas, consentimiento, RBAC, seguridad y sincronizacion para personal y familiares separados. Evaluar acoplamientos existentes, evitar duplicaciones y entregar evidencia de repositorio y brechas. No escribir codigo, base SQL ni Produccion. Verificar trabajos equivalentes.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INTEGRATIONS_MOBILE_GEOLOCATION",
+    "conflict_domains": [
+      "INTEGRATIONS_MOBILE_GEOLOCATION"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
