@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "sys.foreign_keys",
+          "sys.triggers",
+          "sys.sql_modules",
+          "INFORMATION_SCHEMA",
+          "schema",
+          "explorer",
+          "relaciones",
+          "server_registry"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-A2A363486935CE5CE488ADC7",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente contratos de exploración de esquemas y metadatos SQL para MPRO y SoftRestaurant en repositorio EDARSAHUB, sin repetir la auditoría ya certificada de adapters de compras. Localizar reutilización del explorador SQL existente, capacidades de introspección de relaciones, triggers, procedimientos, secuencias, tablas de auditoría y fuente de datos autorizada; distinguir código probado de funcionalidad no verificada en DB y señalar bloqueos para ingeniería inversa de ENTRADA_COMPRA. Exclusivamente lectura de repositorio, cero conexiones LIVE, cero cambios de código o Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INTEGRACIONES_EXTERNAS",
+    "conflict_domains": [
+      "INTEGRACIONES_EXTERNAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
