@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/fase2_operativo",
+          "backend/modules/configuracion",
+          "backend/modules/automatizacion",
+          "backend/modules/inventarios",
+          "backend/core/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "sla",
+          "escalamiento",
+          "vencimiento",
+          "config_asignaciones",
+          "almacenes_sync_service",
+          "inventarios_detector",
+          "SourceQueryResult",
+          "workflow_repository"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-AB59D50719A4FBFD7F31CB46",
+  "mode": "READ_ONLY",
+  "objective": "Auditar duplicidades especificas Inventarios Operativos y SLA: identificar propietarios y referencias de workflows, asignaciones, sincronizacion almacenes, vencimientos, escalamiento y notificaciones; distinguir integracion de duplicacion. Solo lectura, sin produccion ni cambios.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INVENTARIOS",
+    "conflict_domains": [
+      "INVENTARIOS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
