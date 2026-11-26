@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "backend/modules/ia_assistant/",
+          "frontend/src/components/ia/"
+        ],
+        "search_terms": [
+          "skill",
+          "skills",
+          "role",
+          "prompt",
+          "restaurante",
+          "vendedor",
+          "hostess",
+          "cocina",
+          "almacen",
+          "compras"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-425271FA4F22668898C3D700",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente brechas de skills operativas de restaurante sobre el asistente existente: Vendedor de Piso, Capitan, Hostess, Cocina, Pase, Barra, Gerente, Compras, Almacen y Auditor. No repetir auditorias generales IA ni modificar codigo o Produccion. Identificar registro de skills, prompts por rol y contratos reutilizables.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "IA_ASSISTANT",
+    "conflict_domains": [
+      "IA_ASSISTANT"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
