@@ -1,0 +1,179 @@
+{
+  "base_sha": "69fad836a5ef1c8fd5e03317b2b86b50fb1f52fa",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-26T05:08:36Z",
+  "execution_base_sha": "69fad836a5ef1c8fd5e03317b2b86b50fb1f52fa",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-6CC57AEC36F72795E4D022BC",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-26T05:11:29Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.inventarios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "bisect",
+              "dataclasses",
+              "enum",
+              "math",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "bascula"
+            ],
+            "path": "backend/modules/inventarios/bottle_volumetric_engine.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BottleEnvelopeProfile",
+              "BottleOpacity",
+              "CalibrationCurve",
+              "CalibrationCurveValidationError",
+              "CalibrationNode",
+              "ConsolidatedBottleInventory",
+              "CrossSectionType",
+              "EmpiricalAccuracyEvaluation",
+              "GravimetricParametersUnavailableError",
+              "KnownVolumeTrial",
+              "MeasurementMethod",
+              "OpaqueBottleVisualMethodError",
+              "PhysicalBoundsError",
+              "UnvalidatedMeasurementError",
+              "ValidatedOpenBottleMeasurement",
+              "VolumetricEngineError",
+              "VolumetricEstimationResult",
+              "__init__",
+              "__post_init__",
+              "_compute_fritsch_carlson_pchip_slopes",
+              "_evaluate_pchip_with_derivative",
+              "_require_finite",
+              "_require_non_empty_str",
+              "consolidate_bottle_inventory",
+              "convert_ml_to_canonical_unit",
+              "estimate_volume_from_normalized_height",
+              "estimate_volume_gravimetric",
+              "normalize_liquid_height_from_frame",
+              "verify_empirical_trials"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "indexeddb"
+            ],
+            "path": "frontend/src/hooks/useLocalFirst.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "indexeddb"
+            ],
+            "path": "frontend/src/services/localDB.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "indexeddb"
+            ],
+            "path": "frontend/src/services/syncManager.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.inventarios.contracts",
+              "math",
+              "modules.cava_socios.blind_audit",
+              "modules.inventarios.bottle_volumetric_engine",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "bascula"
+            ],
+            "path": "backend/tests/test_bottle_volumetric_engine.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_sample_750ml_curve",
+              "_sample_750ml_profile",
+              "test_empirical_accuracy_verification_against_known_volumes",
+              "test_existing_inventarios_contracts_no_regression",
+              "test_opaque_bottle_blocks_visual_and_computes_gravimetric",
+              "test_out_of_range_heights_and_camera_tilt_rejected",
+              "test_pchip_monotonicity_and_zero_overshoot_across_dense_grid",
+              "test_rejects_nan_inf_and_invalid_types",
+              "test_rejects_non_monotonic_and_invalid_anchor_curves",
+              "test_thick_base_and_narrow_neck_geometry_effects",
+              "test_uncertainty_propagation_with_confidence_tilt_and_opacity",
+              "test_unit_conversions_and_inventory_consolidation_requires_human_validation",
+              "test_valid_monotonic_curve_and_exact_nodal_reproduction"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 5,
+          "scanned_files": 1620,
+          "skipped_sensitive": 422
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-26T05:08:35Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
