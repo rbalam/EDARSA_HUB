@@ -76,8 +76,12 @@ def cycle_chain(chain:dict[str,Any],state_root:Path,persist_root:Path,publish_en
 
             handoff_deps = check_gate_handoff_dependencies(target_gate, state_root=state_root)
             if handoff_deps.get('satisfied') is not True:
-                result['action'] = 'WAIT'
-                result['reason'] = 'HANDOFF_DEPENDENCY_UNSATISFIED'
+                if handoff_deps.get('has_unexecutable_dependencies') is True:
+                    result['action'] = 'STOP'
+                    result['reason'] = 'HANDOFF_DEPENDENCY_NO_EXECUTOR'
+                else:
+                    result['action'] = 'WAIT'
+                    result['reason'] = 'HANDOFF_DEPENDENCY_UNSATISFIED'
                 result['handoff_dependencies'] = handoff_deps
             else:
                 policy_record=evaluate_autonomous_policy(

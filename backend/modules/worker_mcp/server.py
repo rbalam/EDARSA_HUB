@@ -829,6 +829,9 @@ def submit_objective_tool(
             "lifecycle_state",
             "certification",
             "next_allowed_action",
+            "handoff_updated",
+            "executor_status",
+            "exception_code",
         ):
             if extra_key in result:
                 response[extra_key] = result.get(extra_key)

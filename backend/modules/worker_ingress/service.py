@@ -708,7 +708,7 @@ def submit_objective(
             handoff_id = _clean(result.get("handoff_id"))
             if not handoff_id:
                 raise WorkerIngressError("HANDOFF_ID_INVALID")
-            return {
+            handoff_payload = {
                 "status": _clean(result.get("status")) or "REGISTERED",
                 "job_id": _clean(result.get("job_id")) or handoff_id,
                 "handoff_id": handoff_id,
@@ -720,11 +720,16 @@ def submit_objective(
                 "certification": result.get("certification"),
                 "next_allowed_action": result.get("next_allowed_action"),
                 "duplicate_prevented": bool(result.get("duplicate_prevented", False)),
+                "handoff_updated": bool(result.get("handoff_updated", False)),
                 "reused_certified_resolution": bool(result.get("reused_certified_resolution", False)),
                 "production_touched": False,
                 "capability": capability_code,
                 "bounded_context": bounded_context,
             }
+            for extra_key in ("executor_status", "has_executor", "compatible_capabilities", "exception_code"):
+                if extra_key in result:
+                    handoff_payload[extra_key] = result.get(extra_key)
+            return handoff_payload
 
         publication = result.get("publication")
         if not isinstance(publication, dict):
@@ -2774,7 +2779,7 @@ def preflight_semantic_objective(
                     )
                 except handoff_mod.HandoffError as exc:
                     raise WorkerIngressError(str(exc)) from exc
-                if checked.get("duplicate") is True:
+                if checked.get("duplicate") is True and not checked.get("pending_update"):
                     existing_h = checked["existing_handoff"]
                     return {
                         "schema": "edarsahub.worker-semantic-preflight.v1",
@@ -2783,6 +2788,7 @@ def preflight_semantic_objective(
                         "handoff_id": existing_h["handoff_id"],
                         "job_id": existing_h.get("resolution_job_id") or existing_h["handoff_id"],
                         "lifecycle_state": existing_h.get("lifecycle_state"),
+                        "executor_status": existing_h.get("executor_status"),
                         "duplicate_detected": True,
                         "duplicate_prevented": True,
                         "capability": capability.code,
@@ -2802,6 +2808,11 @@ def preflight_semantic_objective(
                     "classification": cls["classification"],
                     "lifecycle_state": cls["lifecycle_state"],
                     "next_allowed_action": cls["next_allowed_action"],
+                    "executor_status": cls.get("executor_status"),
+                    "has_executor": cls.get("has_executor"),
+                    "compatible_capabilities": cls.get("compatible_capabilities", []),
+                    "exception_code": cls.get("exception_code"),
+                    "handoff_update": bool(checked.get("pending_update", False)),
                     "duplicate_detected": False,
                     "capability": capability.code,
                     "bounded_context": bounded_context,
