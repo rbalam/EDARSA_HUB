@@ -1,0 +1,55 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/core/"
+        ],
+        "search_terms": [
+          "SESSION_CONTEXT",
+          "sp_set_session_context",
+          "SECURITY_POLICY",
+          "SECURITY_PREDICATE",
+          "RBACSQLService",
+          "EmpresaID",
+          "UnidadNegocioID",
+          "SucursalID",
+          "ServidorID",
+          "get_sql_connection",
+          "get_edarsahub_pymssql_connection",
+          "pymssql.connect",
+          "pyodbc.connect",
+          "ROW_LEVEL_SECURITY"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-C2381A832706D539CF6E00B1",
+  "mode": "READ_ONLY",
+  "objective": "Complementar exclusivamente RLS Gate 0 certificado con auditoria de backend/core: SESSION_CONTEXT, predicados RLS, aislamiento multiempresa y conexiones SQL, sin cambios.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RLS_GATE0",
+    "conflict_domains": [
+      "RLS_GATE0"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
