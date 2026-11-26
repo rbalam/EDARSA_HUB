@@ -1,0 +1,59 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/agent_harness/registry.py",
+          "backend/modules/agent_harness/router.py",
+          "backend/modules/agent_harness/planner.py",
+          "backend/modules/agent_harness/control_plane.py",
+          "backend/core/ai_gateway_policy_adapter.py",
+          "backend/core/providers/",
+          "backend/modules/agent_harness/transversal_capability_registry.py"
+        ],
+        "search_terms": [
+          "provider",
+          "model",
+          "agent",
+          "registry",
+          "route",
+          "availability",
+          "quota",
+          "cost",
+          "budget",
+          "capability",
+          "enabled",
+          "priority"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-AB0E2BBDBCD1F116875916A6",
+  "mode": "READ_ONLY",
+  "objective": "WK70 G2 READ_ONLY inventario focalizado del registro configurable de agentes, proveedores y modelos, contratos de disponibilidad, seleccion y costos existentes. Identificar interfaces reutilizables y brechas sin repetir G1 ni ejecutar proveedores externos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "UNIVERSAL_AI_INTEGRATION",
+    "conflict_domains": [
+      "UNIVERSAL_AI_INTEGRATION"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
