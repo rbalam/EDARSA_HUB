@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "catch_weight",
+          "peso_individual",
+          "peso_neto",
+          "lonja",
+          "cantidad_piezas",
+          "nota_credito",
+          "recepcion",
+          "conciliacion_xml",
+          "traspaso"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-348442D31F6F7BACB9F59F0B",
+  "mode": "READ_ONLY",
+  "objective": "Auditoría diferencial de cobertura operativa de recepción individual de piezas de peso variable bajo SKU único (KG/PZ), conciliación recepción contra XML, faltantes y notas de crédito, excedentes sin incremento de importe autorizado, persistencia de identidad en traspasos y conexión con lonjas disponibles de Tablajería. Identificar contratos, archivos y brechas, sin repetir auditorías de agentes ni modificar código o Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMPRAS",
+    "conflict_domains": [
+      "COMPRAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
