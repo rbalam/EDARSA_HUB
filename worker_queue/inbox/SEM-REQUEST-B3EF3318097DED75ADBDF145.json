@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "integration",
+          "webhook",
+          "connector",
+          "sync",
+          "MCP",
+          "fabric"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-B3EF3318097DED75ADBDF145",
+  "mode": "READ_ONLY",
+  "objective": "Inventariar contratos y componentes existentes de integración externa, conexiones, sincronización, webhooks, MCP y seguridad; identificar reutilización y límites de Fabric Externa sin modificar código.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_EXTERNA",
+    "conflict_domains": [
+      "FABRIC_EXTERNA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
