@@ -1,0 +1,58 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "import Comercial from '@/pages/Comercial';",
+      "path": "frontend/src/App.js",
+      "replacement": "import Comercial from '@/pages/Comercial';\nimport IncidenciasCaja from '@/pages/comercial/IncidenciasCaja';",
+      "source_sha256": "d2c9f96b3e16ba39eeccd2a40b9f6ecdcfbaaf77534b0a396cc2aa3ce3c6c02f",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "<Route path=\"comercial\" element={<Comercial />} />",
+      "path": "frontend/src/App.js",
+      "replacement": "<Route path=\"comercial\" element={<Comercial />} />\n              <Route path=\"comercial/cajas/incidencias\" element={<IncidenciasCaja />} />",
+      "source_sha256": "9d23aab07078e149e8cd5c6bc59b0fdd75c25da26d6a10fe67aa99e2e7a47188",
+      "type": "replace_text"
+    }
+  ],
+  "authorization_ref": "GO-CAJAS-V1-GATE12-20261126",
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_incidencias_caja_routes.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-39C6C715D931DCA60C939E84",
+  "mode": "MUTATION",
+  "objective": "CAJAS-V1 Gate12C2: importar la pagina movil certificada y registrar React route dentro del Layout protegido; usar SHA encadenado de dos cambios secuenciales del mismo App.js. No POST, SQL writes, DDL, WhatsApp, produccion ni cambios a auth.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
