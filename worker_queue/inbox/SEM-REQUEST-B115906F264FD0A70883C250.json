@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/fase2_operativo/routes/",
+          "backend/modules/fase2_operativo/services/",
+          "backend/tests/",
+          "backend/core/sql_first/db.py"
+        ],
+        "search_terms": [
+          "_execute_sql",
+          "SQLRepositoryNotImplementedError",
+          "DatabaseError",
+          "OperationalError",
+          "HTTPException",
+          "sql_repository",
+          "fail_closed"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-B115906F264FD0A70883C250",
+  "mode": "READ_ONLY",
+  "objective": "G2 diagnóstico focalizado P0: identificar contratos de propagación de errores SQL y pruebas existentes de fallo versus resultado vacío, y consumidores de repositorios Operaciones. No repetir inventario G1 ni auditoría de sesión. Solo lectura.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "ARCHITECTURE_GOVERNANCE",
+    "conflict_domains": [
+      "ARCHITECTURE_GOVERNANCE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
