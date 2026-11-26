@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "backend/modules/comercial/__init__.py",
+          "backend/modules/finanzas/incidencias_caja_orchestration.py",
+          "backend/modules/finanzas/incidencias_caja_access.py",
+          "backend/modules/finanzas/incidencias_caja_notifications.py",
+          "backend/modules/worker_ingress/semantic_capabilities.py",
+          "frontend/src/components/finanzas/IncidenciaCajaForm.jsx"
+        ],
+        "search_terms": [
+          "get_router",
+          "include_router",
+          "preparar_caja_autenticada_v1",
+          "CAJAS_INCIDENCIAS_CREAR",
+          "_DEV_CONTEXT_PATH_OWNERSHIP",
+          "IncidenciaCajaForm"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-DE7001A87BBCE14C937B9A39",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-COMERCIALPOS-WORKERCONTROLP-7E1F787271449AC0 COMERCIAL_POS->WORKER_CONTROL_PLANE] SOLICITUD EJECUTIVA DE DESBLOQUEO, NO AUDITORIA: WORKER_CONTROL_PLANE debe materializar autorizacion especifica CAJAS-V1-GATE12 para COMERCIAL_POS. Antes verificar alternativa de registro HTTP canonico sin tocar backend/server.py; si no existe, tramitar excepcion SOLO para registro del router de Cajas en backend/server.py con SHA, minimo privilegio RBAC, expiracion, pruebas y rollback. Cubrir solo rutas exactas necesarias de backend/modules/finanzas, backend/tests y frontend/src tras verificar archivos. Prohibido ampliar allowed_path_roots globales, alterar Produccion, DDL, SQL writes, WhatsApp real o repetir Gates1-11 y handoffs cerrados. Entregar authorization_id materializado, allowed_paths, evidencia de preflight Gate12 listo; o bloqueo preciso. Solicitud registrada para que al decir GO en el chat WK Worker 6.0 continúe el trabajo; no declarar que se ha ejecutado.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "HIGH",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
