@@ -113,8 +113,39 @@ NO_EXECUTOR_STALL_SECONDS = max(
 
 _SYNTHETIC_SERVICE_EMAILS = frozenset({
     "worker@edarsahub.local",
+    "worker-publisher@edarsahub.local",
     "system@edarsahub.local",
     "noreply@edarsahub.local",
+})
+
+RESOLUTION_STAGES = frozenset({
+    "AUDIT_EXECUTED",
+    "DIAGNOSTIC_COMPLETED",
+    "CAPABILITY_AVAILABLE",
+    "AUTHORIZATION_MATERIALIZED",
+    "BLOCKER_RESOLVED",
+    "IMPLEMENTATION_INTEGRATED",
+    "RESULT_CERTIFIED",
+    "SUCCESSOR_EXECUTED",
+    "BLOCKER_IDENTIFIED_EVIDENCE_CERTIFIED",
+})
+
+SUCCESSOR_STATUSES = frozenset({
+    "NO_SUCCESSOR_DEFINED",
+    "WAITING_AUTHORIZATION",
+    "CAPABILITY_REQUIRED",
+    "REUSE_EXISTING_JOB",
+    "SUCCESSOR_SUBMITTED",
+    "SUCCESSOR_CERTIFIED",
+    "SUCCESSOR_BLOCKED_PREFLIGHT",
+    "SUCCESSOR_BLOCKED_SECURITY",
+})
+
+_GENERIC_ACCEPTANCE_CRITERIA = frozenset({
+    "terminal_certification_valid",
+    "tests_pass",
+    "quality_gate_pass",
+    "production_touched_false",
 })
 
 WORKER_INFRA_DOMAINS = frozenset({
@@ -1858,6 +1889,7 @@ def validate_handoff_constraints(
         "priority_class",
         "auto_dispatch",
         "resolution_job_id",
+        "successor_spec",
     }
     extra = sorted(set(constraints.keys()) - allowed_keys)
     if extra:
@@ -1900,6 +1932,11 @@ def validate_handoff_constraints(
         delegation_chain_in = [str(x) for x in raw_chain]
     else:
         raise HandoffError("HANDOFF_DELEGATION_CHAIN_INVALID")
+
+    successor_spec = _validate_successor_spec(
+        constraints.get("successor_spec"),
+        source_domain=source_domain,
+    )
 
     requester_email = _verify_caller_rbac_and_scope(
         current_user=current_user,
@@ -2181,6 +2218,12 @@ def validate_handoff_constraints(
         "evidence_link": None,
         "source_resumed": False,
         "resumed_job_id": None,
+        "successor_spec": successor_spec,
+        "successor_status": "PENDING_RESOLUTION" if successor_spec else "NO_SUCCESSOR_DEFINED",
+        "successor_certification": None,
+        "successor_evidence_link": None,
+        "resolution_stage": None,
+        "semantic_validation": None,
         "requires_human_intervention": False,
         "human_intervention_reason": None,
         "has_executor": False,
@@ -2543,35 +2586,520 @@ def dispatch_handoff_resolution(
     return {"dispatched": False, "status": pub_status or "DISPATCH_REJECTED", "handoff": handoff, "production_touched": False}
 
 
+def _validate_successor_spec(
+    raw_spec: Any,
+    *,
+    source_domain: str,
+) -> dict[str, Any] | None:
+    """Validate an optional pre-defined authorized successor spec (no raw actions/checks, no cross-domain drift)."""
+    if raw_spec is None:
+        return None
+    if not isinstance(raw_spec, Mapping):
+        raise HandoffError("HANDOFF_SUCCESSOR_SPEC_INVALID")
+    _assert_no_secrets(raw_spec, "successor_spec")
+    _assert_no_untrusted_prompt(raw_spec, "successor_spec")
+    if raw_spec.get("production_allowed") is True:
+        raise HandoffSecurityError("HANDOFF_PRODUCTION_FORBIDDEN")
+
+    allowed_fields = {
+        "objective",
+        "bounded_context",
+        "mode",
+        "capability",
+        "request_key",
+        "constraints",
+        "gate_id",
+        "authorization_ref",
+        "production_allowed",
+    }
+    extra = sorted(set(raw_spec.keys()) - allowed_fields)
+    if extra:
+        raise HandoffError(f"HANDOFF_SUCCESSOR_SPEC_UNSUPPORTED:{','.join(extra)}")
+
+    objective = _clean(raw_spec.get("objective"))
+    if not objective or len(objective) < 5 or len(objective) > MAX_OBJECTIVE_CHARS:
+        raise HandoffError("HANDOFF_SUCCESSOR_OBJECTIVE_INVALID")
+
+    bc = validate_domain_token(raw_spec.get("bounded_context") or source_domain, field_name="successor_bounded_context")
+    if bc != source_domain:
+        raise HandoffSecurityError("HANDOFF_SUCCESSOR_DOMAIN_MISMATCH")
+
+    mode = _clean(raw_spec.get("mode") or "READ_ONLY").upper()
+    if mode not in {"READ_ONLY", "READ_ONLY_SQL", "MUTATION"}:
+        raise HandoffError("HANDOFF_SUCCESSOR_MODE_INVALID")
+
+    cap = _clean(raw_spec.get("capability")).upper()
+    if not cap or not _DOMAIN_RE.fullmatch(cap):
+        raise HandoffError("HANDOFF_SUCCESSOR_CAPABILITY_INVALID")
+    if cap == "CROSS_DOMAIN_HANDOFF_REGISTER":
+        raise HandoffSecurityError("HANDOFF_RECURSIVE_CAPABILITY_FORBIDDEN")
+
+    req_key = _clean(raw_spec.get("request_key"))
+    if not req_key or not _TOKEN_ID_RE.fullmatch(req_key):
+        raise HandoffError("HANDOFF_SUCCESSOR_REQUEST_KEY_REQUIRED")
+
+    raw_constraints = raw_spec.get("constraints")
+    if raw_constraints is None:
+        constraints: dict[str, Any] = {}
+    elif isinstance(raw_constraints, Mapping):
+        constraints = dict(raw_constraints)
+    else:
+        raise HandoffError("HANDOFF_SUCCESSOR_CONSTRAINTS_INVALID")
+    if set(constraints.keys()) & {"actions", "checks", "production_allowed"}:
+        raise HandoffSecurityError("HANDOFF_SUCCESSOR_RAW_FIELDS_FORBIDDEN")
+
+    auth_ref = _validate_optional_token(
+        raw_spec.get("authorization_ref") or constraints.get("authorization_ref"),
+        field_name="successor_authorization_ref",
+        job_id_style=False,
+    )
+    gate_id = _validate_optional_token(raw_spec.get("gate_id"), field_name="successor_gate_id", job_id_style=True)
+
+    return {
+        "objective": objective,
+        "bounded_context": bc,
+        "mode": mode,
+        "capability": cap,
+        "request_key": req_key,
+        "constraints": constraints,
+        "gate_id": gate_id,
+        "authorization_ref": auth_ref,
+        "production_allowed": False,
+    }
+
+
+def evaluate_handoff_semantic_satisfaction(
+    handoff: Mapping[str, Any],
+    certified_evidence: Mapping[str, Any],
+    *,
+    capability_used: str | None = None,
+    semantic_assessment: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Section 7: Verify terminal evidence truly satisfies semantic acceptance criteria (never accept canary as functional substitute)."""
+    criteria = [str(c).strip() for c in (handoff.get("acceptance_criteria") or ()) if str(c).strip()]
+    domain_criteria = [c for c in criteria if c not in _GENERIC_ACCEPTANCE_CRITERIA]
+    eff_cap = _clean(capability_used or handoff.get("requested_capability")).upper() or None
+    cert = _clean(certified_evidence.get("certification")).upper()
+    status = _clean(certified_evidence.get("status")).upper()
+
+    if isinstance(semantic_assessment, Mapping):
+        explicit_sat = semantic_assessment.get("satisfied")
+        unmet = [str(x).strip() for x in (semantic_assessment.get("unmet_criteria") or ()) if str(x).strip()]
+        met = [str(x).strip() for x in (semantic_assessment.get("met_criteria") or ()) if str(x).strip()]
+        blockers = [str(x).strip() for x in (semantic_assessment.get("blockers") or ()) if str(x).strip()]
+        stage = _clean(semantic_assessment.get("resolution_stage")).upper()
+        if stage not in RESOLUTION_STAGES:
+            stage = "BLOCKER_IDENTIFIED_EVIDENCE_CERTIFIED" if (explicit_sat is False or unmet or blockers) else "RESULT_CERTIFIED"
+        if explicit_sat is False or unmet or blockers:
+            return {
+                "satisfied": False,
+                "resolution_stage": stage,
+                "capability_used": eff_cap,
+                "met_criteria": met,
+                "unmet_criteria": unmet or domain_criteria,
+                "blockers": blockers,
+                "exception_code": _clean(semantic_assessment.get("blocker_code")) or "HANDOFF_SEMANTIC_CRITERIA_UNMET",
+                "summary": _clean(semantic_assessment.get("summary")) or "La evidencia certificada documenta un bloqueo o criterios de aceptacion aun insatisfechos.",
+                "details": dict(semantic_assessment.get("details") or {}) if isinstance(semantic_assessment.get("details"), Mapping) else {},
+            }
+        return {
+            "satisfied": True,
+            "resolution_stage": stage,
+            "capability_used": eff_cap,
+            "met_criteria": met or criteria,
+            "unmet_criteria": [],
+            "blockers": [],
+            "exception_code": None,
+            "summary": _clean(semantic_assessment.get("summary")) or "Criterios semanticos de aceptacion verificados con evidencia terminal certificada.",
+            "details": dict(semantic_assessment.get("details") or {}) if isinstance(semantic_assessment.get("details"), Mapping) else {},
+        }
+
+    # Fail-closed guard: READ_ONLY_CANARY NEVER substitutes for domain-specific acceptance criteria
+    if eff_cap == "READ_ONLY_CANARY" and domain_criteria:
+        return {
+            "satisfied": False,
+            "resolution_stage": "AUDIT_EXECUTED",
+            "capability_used": eff_cap,
+            "met_criteria": [c for c in criteria if c in _GENERIC_ACCEPTANCE_CRITERIA],
+            "unmet_criteria": domain_criteria,
+            "blockers": ["READ_ONLY_CANARY_CANNOT_SATISFY_DOMAIN_OBJECTIVE"],
+            "exception_code": "HANDOFF_CANARY_INSUFFICIENT_FOR_OBJECTIVE",
+            "summary": "READ_ONLY_CANARY no sustituye una resolucion funcional o tecnica real; la dependencia permanece insatisfecha.",
+            "details": {},
+        }
+
+    default_stage = "IMPLEMENTATION_INTEGRATED" if status == "INTEGRATED" else ("RESULT_CERTIFIED" if cert in TERMINAL_CERTIFICATIONS else "AUDIT_EXECUTED")
+    return {
+        "satisfied": True,
+        "resolution_stage": default_stage,
+        "capability_used": eff_cap,
+        "met_criteria": criteria,
+        "unmet_criteria": [],
+        "blockers": [],
+        "exception_code": None,
+        "summary": "Evidencia terminal certificada compatible con los criterios de aceptacion.",
+        "details": {},
+    }
+
+
+def register_handoff_successor(
+    handoff_id: str,
+    successor_spec: Mapping[str, Any],
+    *,
+    current_user: Mapping[str, Any] | None = None,
+    requester: Mapping[str, Any] | None = None,
+    state_root: Path | None = None,
+) -> dict[str, Any]:
+    """Attach a strictly validated pre-defined successor spec to an existing handoff without duplicating it."""
+    qroot = state_root or _default_state_root()
+    handoff = load_handoff(handoff_id, state_root=qroot)
+    if handoff is None:
+        raise HandoffError("HANDOFF_NOT_FOUND")
+    source_domain = validate_domain_token(handoff.get("source_domain"), field_name="source_domain")
+    target_domain = validate_domain_token(handoff.get("target_domain"), field_name="target_domain")
+    actor_email = _verify_caller_rbac_and_scope(
+        current_user=current_user,
+        requester=requester,
+        source_domain=source_domain,
+        target_domain=target_domain,
+        handoff_mode=_clean(handoff.get("handoff_mode") or "READ_ONLY").upper(),
+    )
+    validated_spec = _validate_successor_spec(successor_spec, source_domain=source_domain)
+    assert validated_spec is not None
+    handoff["successor_spec"] = validated_spec
+    if not handoff.get("source_resumed"):
+        handoff["successor_status"] = "PENDING_RESOLUTION"
+    handoff["updated_at_utc"] = utc_now()
+    _append_history(
+        handoff,
+        "SUCCESSOR_REGISTERED",
+        actor_email=actor_email,
+        details={
+            "capability": validated_spec["capability"],
+            "mode": validated_spec["mode"],
+            "request_key": validated_spec["request_key"],
+            "authorization_ref": validated_spec.get("authorization_ref"),
+        },
+    )
+    save_handoff(handoff, state_root=qroot)
+    return handoff
+
+
+def execute_handoff_successor(
+    handoff: dict[str, Any],
+    *,
+    current_user: Mapping[str, Any] | None = None,
+    identity_resolver: Any = None,
+    state_root: Path | None = None,
+    repo_root: Path | None = None,
+    submit_fn: Any = None,
+    enforce_runtime_convergence: bool = False,
+    now_utc: datetime | None = None,
+    now_epoch: float | None = None,
+) -> dict[str, Any]:
+    """P2B (Steps 1-14): Autonomously execute an explicitly defined, authorized successor once handoff is satisfied."""
+    qroot = state_root or _default_state_root()
+    rroot = repo_root or Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
+    source_domain = _clean(handoff.get("source_domain")).upper()
+
+    if handoff.get("dependency_satisfied") is not True or _clean(handoff.get("certification")).upper() not in TERMINAL_CERTIFICATIONS:
+        return {"executed": False, "successor_status": "DEPENDENCY_NOT_SATISFIED", "handoff": handoff, "production_touched": False}
+
+    # Already resumed idempotently -> REUSE_EXISTING_JOB without duplicate publication!
+    if handoff.get("source_resumed") is True and _clean(handoff.get("resumed_job_id")):
+        existing_jid = _clean(handoff.get("resumed_job_id"))
+        verified = _verify_terminal_result_certification(existing_jid, state_root=qroot)
+        if verified is not None and not handoff.get("successor_certification"):
+            handoff["successor_certification"] = verified["certification"]
+            handoff["successor_evidence_link"] = verified
+            handoff["successor_status"] = "SUCCESSOR_CERTIFIED"
+            handoff["updated_at_utc"] = utc_now()
+            _append_history(handoff, "SUCCESSOR_CERTIFIED", details={"resumed_job_id": existing_jid, "certification": verified["certification"]})
+            save_handoff(handoff, state_root=qroot)
+        return {
+            "executed": False,
+            "reused": True,
+            "successor_status": handoff.get("successor_status") or "REUSE_EXISTING_JOB",
+            "resumed_job_id": existing_jid,
+            "handoff": handoff,
+            "production_touched": False,
+        }
+
+    spec = handoff.get("successor_spec")
+    if not isinstance(spec, Mapping) or not spec:
+        handoff["successor_status"] = "NO_SUCCESSOR_DEFINED"
+        handoff["updated_at_utc"] = utc_now()
+        save_handoff(handoff, state_root=qroot)
+        return {"executed": False, "successor_status": "NO_SUCCESSOR_DEFINED", "handoff": handoff, "production_touched": False}
+
+    try:
+        validated_spec = _validate_successor_spec(spec, source_domain=source_domain)
+    except HandoffError as exc:
+        handoff["successor_status"] = "SUCCESSOR_BLOCKED_SECURITY"
+        handoff["exception_code"] = str(exc)
+        handoff["updated_at_utc"] = utc_now()
+        _append_history(handoff, "SUCCESSOR_BLOCKED", details={"reason": str(exc)})
+        save_handoff(handoff, state_root=qroot)
+        return {"executed": False, "successor_status": "SUCCESSOR_BLOCKED_SECURITY", "reason": str(exc), "handoff": handoff, "production_touched": False}
+    assert validated_spec is not None
+
+    cap_code = validated_spec["capability"]
+    succ_mode = validated_spec["mode"]
+    succ_constraints = dict(validated_spec["constraints"])
+
+    # Step 5: Verify capability compatibility in Capability Registry
+    cap_check = resolve_compatible_capabilities(
+        target_domain=source_domain,
+        handoff_mode="MUTATION" if succ_mode == "MUTATION" else "READ_ONLY",
+        requested_capability=cap_code,
+        requested_constraints=succ_constraints,
+    )
+    if not cap_check.get("compatible"):
+        reason = _clean(cap_check.get("exception_code")) or "CAPABILITY_REQUIRED"
+        handoff["successor_status"] = "CAPABILITY_REQUIRED"
+        handoff["exception_code"] = reason
+        handoff["updated_at_utc"] = utc_now()
+        _append_history(handoff, "SUCCESSOR_CAPABILITY_REQUIRED", details={"capability": cap_code, "reason": reason})
+        save_handoff(handoff, state_root=qroot)
+        return {"executed": False, "successor_status": "CAPABILITY_REQUIRED", "reason": reason, "handoff": handoff, "production_touched": False}
+
+    # Step 6a: Canonical identity & RBAC (fail-closed, zero artificial SUPERADMIN/wildcard)
+    try:
+        verified_actor = _resolve_canonical_dispatch_identity(
+            {
+                **handoff,
+                "source_domain": source_domain,
+                "target_domain": source_domain,
+                "handoff_mode": "MUTATION" if succ_mode == "MUTATION" else "READ_ONLY",
+            },
+            current_user=current_user,
+            identity_resolver=identity_resolver,
+        )
+    except HandoffSecurityError as exc:
+        handoff["successor_status"] = "SUCCESSOR_BLOCKED_SECURITY"
+        handoff["exception_code"] = str(exc)
+        handoff["requires_human_intervention"] = True
+        handoff["human_intervention_reason"] = f"Identidad/RBAC del sucesor no verificable: {exc}"
+        handoff["updated_at_utc"] = utc_now()
+        _append_history(handoff, "SUCCESSOR_BLOCKED_IDENTITY", details={"reason": str(exc)})
+        save_handoff(handoff, state_root=qroot)
+        return {"executed": False, "successor_status": "SUCCESSOR_BLOCKED_SECURITY", "reason": str(exc), "handoff": handoff, "production_touched": False}
+
+    # Step 6b: Verify active materialized authorization for successor
+    succ_auth_ref = _clean(validated_spec.get("authorization_ref") or succ_constraints.get("authorization_ref")) or None
+    if succ_mode == "MUTATION" or succ_auth_ref:
+        if not succ_auth_ref:
+            active_auth = lifecycle_rec.resolve_active_domain_authorization(
+                source_domain,
+                state_root=qroot,
+                required_class="DEVELOPMENT_MUTATION",
+                now_utc=now_utc,
+            )
+            succ_auth_ref = _clean((active_auth or {}).get("authorization_id")) or None
+        if not succ_auth_ref:
+            handoff["successor_status"] = "WAITING_AUTHORIZATION"
+            handoff["requires_human_intervention"] = True
+            handoff["human_intervention_reason"] = f"El sucesor en {source_domain} requiere autorizacion vigente materializada."
+            handoff["updated_at_utc"] = utc_now()
+            _append_history(handoff, "SUCCESSOR_WAITING_AUTHORIZATION", details={"domain": source_domain})
+            save_handoff(handoff, state_root=qroot)
+            return {"executed": False, "successor_status": "WAITING_AUTHORIZATION", "reason": "SUCCESSOR_AUTHORIZATION_MISSING", "handoff": handoff, "production_touched": False}
+
+        req_paths: list[str] = []
+        req_ops: list[str] = []
+        if isinstance(succ_constraints.get("change_spec"), list):
+            for item in succ_constraints["change_spec"]:
+                if isinstance(item, Mapping):
+                    if _clean(item.get("path")):
+                        req_paths.append(_clean(item.get("path")))
+                    if _clean(item.get("operation")):
+                        req_ops.append(_clean(item.get("operation")))
+        reval = lifecycle_rec.revalidate_gate_authorization_for_mutation(
+            succ_auth_ref,
+            domain=source_domain,
+            requested_paths=req_paths,
+            requested_operations=req_ops,
+            state_root=qroot,
+            repo_root=rroot,
+            verify_live_sha=True,
+            now_utc=now_utc,
+        )
+        if reval.get("authorized") is not True:
+            reason = str(reval.get("reason") or "AUTHORIZATION_DENIED")
+            handoff["successor_status"] = "WAITING_AUTHORIZATION"
+            handoff["requires_human_intervention"] = True
+            handoff["human_intervention_reason"] = f"Autorizacion del sucesor rechazada ({reason})."
+            handoff["exception_code"] = reason
+            handoff["updated_at_utc"] = utc_now()
+            _append_history(handoff, "SUCCESSOR_WAITING_AUTHORIZATION", details={"reason": reason, "authorization_ref": succ_auth_ref})
+            save_handoff(handoff, state_root=qroot)
+            return {"executed": False, "successor_status": "WAITING_AUTHORIZATION", "reason": reason, "handoff": handoff, "production_touched": False}
+        if succ_mode == "MUTATION" and cap_code == "DEVELOPMENT_MUTATION_BOUNDED" and "authorization_ref" not in succ_constraints:
+            succ_constraints["authorization_ref"] = succ_auth_ref
+
+    # Step 7 & 8: Build canonical job, check duplicates/completed work, and execute real preflight
+    from modules.worker_ingress import service as ingress_service
+
+    succ_req = {
+        "objective": validated_spec["objective"],
+        "bounded_context": source_domain,
+        "mode": succ_mode,
+        "capability": cap_code,
+        "request_key": validated_spec["request_key"],
+        "constraints": succ_constraints,
+    }
+    try:
+        canonical_job = ingress_service.build_semantic_job(succ_req, current_user=verified_actor)
+    except Exception as exc:
+        reason = _clean(exc) or type(exc).__name__
+        handoff["successor_status"] = "SUCCESSOR_BLOCKED_PREFLIGHT"
+        handoff["exception_code"] = reason
+        handoff["updated_at_utc"] = utc_now()
+        _append_history(handoff, "SUCCESSOR_PREFLIGHT_REJECTED", details={"reason": reason})
+        save_handoff(handoff, state_root=qroot)
+        return {"executed": False, "successor_status": "SUCCESSOR_BLOCKED_PREFLIGHT", "reason": reason, "handoff": handoff, "production_touched": False}
+
+    candidate_jid = canonical_job["job_id"]
+    # Reuse already-completed certified successor or active in-flight successor (ZERO duplicates!)
+    existing_cert = _verify_terminal_result_certification(candidate_jid, state_root=qroot)
+    if existing_cert is not None:
+        handoff["resumed_job_id"] = candidate_jid
+        handoff["source_resumed"] = True
+        handoff["second_go_required"] = False
+        handoff["successor_status"] = "REUSE_EXISTING_JOB"
+        handoff["successor_certification"] = existing_cert["certification"]
+        handoff["successor_evidence_link"] = existing_cert
+        handoff["resolution_stage"] = "SUCCESSOR_EXECUTED"
+        handoff["updated_at_utc"] = utc_now()
+        _append_history(handoff, "SUCCESSOR_REUSED_CERTIFIED", details={"resumed_job_id": candidate_jid, "certification": existing_cert["certification"]})
+        save_handoff(handoff, state_root=qroot)
+        return {
+            "executed": False,
+            "reused": True,
+            "successor_status": "REUSE_EXISTING_JOB",
+            "resumed_job_id": candidate_jid,
+            "handoff": handoff,
+            "production_touched": False,
+        }
+
+    for dirname in ("pending", "processing"):
+        if (qroot / dirname / f"{candidate_jid}.json").is_file():
+            handoff["resumed_job_id"] = candidate_jid
+            handoff["source_resumed"] = True
+            handoff["successor_status"] = "REUSE_EXISTING_JOB"
+            handoff["updated_at_utc"] = utc_now()
+            _append_history(handoff, "SUCCESSOR_REUSED_IN_FLIGHT", details={"resumed_job_id": candidate_jid, "queue_dir": dirname})
+            save_handoff(handoff, state_root=qroot)
+            return {
+                "executed": False,
+                "reused": True,
+                "successor_status": "REUSE_EXISTING_JOB",
+                "resumed_job_id": candidate_jid,
+                "handoff": handoff,
+                "production_touched": False,
+            }
+
+    if enforce_runtime_convergence:
+        try:
+            ingress_service._require_mutation_runtime_convergence()
+        except Exception as exc:
+            reason = _clean(exc) or "RUNTIME_NOT_CONVERGED"
+            handoff["successor_status"] = "SUCCESSOR_BLOCKED_PREFLIGHT"
+            handoff["exception_code"] = reason
+            handoff["updated_at_utc"] = utc_now()
+            save_handoff(handoff, state_root=qroot)
+            return {"executed": False, "successor_status": "SUCCESSOR_BLOCKED_PREFLIGHT", "reason": reason, "handoff": handoff, "production_touched": False}
+
+    # Step 9-12: Publish ONCE through canonical gate_chain_publisher.submit()
+    publisher = submit_fn or gcp.submit
+    try:
+        pub_out = publisher(canonical_job, require_convergence=False)
+    except TypeError:
+        pub_out = publisher(canonical_job)
+    except Exception as exc:
+        reason = f"SUCCESSOR_PUBLISH_ERROR:{type(exc).__name__}"
+        handoff["successor_status"] = "SUCCESSOR_BLOCKED_PREFLIGHT"
+        handoff["exception_code"] = reason
+        handoff["updated_at_utc"] = utc_now()
+        _append_history(handoff, "SUCCESSOR_PUBLISH_ERROR", details={"error": type(exc).__name__})
+        save_handoff(handoff, state_root=qroot)
+        return {"executed": False, "successor_status": "SUCCESSOR_BLOCKED_PREFLIGHT", "reason": reason, "handoff": handoff, "production_touched": False}
+
+    pub_status = _clean((pub_out or {}).get("status")).upper()
+    pub_job_id = _clean((pub_out or {}).get("job_id")) or candidate_jid
+    if pub_status in {"SUBMITTED", "ALREADY_SUBMITTED", "PUBLISHED", "EXISTS", "ALREADY_PROCESSING", "ALREADY_COMPLETED"}:
+        handoff["resumed_job_id"] = pub_job_id
+        handoff["source_resumed"] = True
+        handoff["second_go_required"] = False
+        handoff["successor_status"] = "REUSE_EXISTING_JOB" if pub_status in {"EXISTS", "ALREADY_SUBMITTED", "ALREADY_PROCESSING", "ALREADY_COMPLETED"} else "SUCCESSOR_SUBMITTED"
+        handoff["resolution_stage"] = "SUCCESSOR_EXECUTED"
+        handoff["updated_at_utc"] = utc_now()
+        _append_history(
+            handoff,
+            "SUCCESSOR_DISPATCHED",
+            actor_email=verified_actor.get("email"),
+            details={
+                "resumed_job_id": pub_job_id,
+                "capability": cap_code,
+                "publication_status": pub_status,
+                "authorization_ref": succ_auth_ref,
+            },
+        )
+        # Check if immediately certified
+        cert_now = _verify_terminal_result_certification(pub_job_id, state_root=qroot)
+        if cert_now is not None:
+            handoff["successor_certification"] = cert_now["certification"]
+            handoff["successor_evidence_link"] = cert_now
+            handoff["successor_status"] = "SUCCESSOR_CERTIFIED"
+        save_handoff(handoff, state_root=qroot)
+        return {
+            "executed": True,
+            "reused": pub_status in {"EXISTS", "ALREADY_SUBMITTED", "ALREADY_PROCESSING", "ALREADY_COMPLETED"},
+            "successor_status": handoff["successor_status"],
+            "resumed_job_id": pub_job_id,
+            "publication_channel": "gate_chain_publisher.submit",
+            "handoff": handoff,
+            "production_touched": False,
+        }
+
+    handoff["successor_status"] = "SUCCESSOR_BLOCKED_PREFLIGHT"
+    handoff["exception_code"] = pub_status or "SUCCESSOR_PUBLISH_REJECTED"
+    handoff["updated_at_utc"] = utc_now()
+    save_handoff(handoff, state_root=qroot)
+    return {"executed": False, "successor_status": "SUCCESSOR_BLOCKED_PREFLIGHT", "reason": pub_status, "handoff": handoff, "production_touched": False}
+
+
 def return_certified_handoff_to_source(
     handoff: dict[str, Any],
     *,
     certified_evidence: Mapping[str, Any],
+    semantic_assessment: Mapping[str, Any] | None = None,
+    capability_used: str | None = None,
+    current_user: Mapping[str, Any] | None = None,
+    identity_resolver: Any = None,
     state_root: Path | None = None,
     repo_root: Path | None = None,
     submit_fn: Any = None,
     now_utc: datetime | None = None,
 ) -> dict[str, Any]:
-    """Fase 4: Link certified terminal evidence, satisfy dependency, and auto-resume authorized work."""
+    """Fase 4 + P2B + Section 7: Verify semantic satisfaction, link certified evidence, and auto-execute authorized successor."""
     qroot = state_root or _default_state_root()
     cert = _clean(certified_evidence.get("certification")).upper()
     if cert not in TERMINAL_CERTIFICATIONS or certified_evidence.get("production_touched") is not False:
         raise HandoffSecurityError("HANDOFF_TERMINAL_CERTIFICATION_INVALID")
 
+    sem_eval = evaluate_handoff_semantic_satisfaction(
+        handoff,
+        certified_evidence,
+        capability_used=capability_used,
+        semantic_assessment=semantic_assessment,
+    )
+
     now_str = utc_now()
     handoff["resolution_job_id"] = _clean(certified_evidence.get("job_id")) or handoff.get("resolution_job_id")
     handoff["certification"] = cert
-    handoff["dependency_satisfied"] = True
-    handoff["lifecycle_state"] = "RETURNED_TO_SOURCE"
-    handoff["next_allowed_action"] = "CONTINUE_AUTONOMOUS"
-    handoff["requires_human_intervention"] = False
-    handoff["human_intervention_reason"] = None
-    handoff["has_executor"] = True
-    handoff["executor_status"] = "RESOLVED"
-    handoff["exception_code"] = None
-    handoff["exception_reason"] = None
-    handoff["resolved_at_utc"] = handoff.get("resolved_at_utc") or now_str
-    handoff["returned_at_utc"] = now_str
+    handoff["resolution_stage"] = sem_eval["resolution_stage"]
+    handoff["semantic_validation"] = sem_eval
     handoff["updated_at_utc"] = now_str
     handoff["evidence_link"] = {
         "resolution_job_id": handoff["resolution_job_id"],
@@ -2584,9 +3112,50 @@ def return_certified_handoff_to_source(
         "published_result_commit": certified_evidence.get("published_result_commit"),
         "completed_at_utc": certified_evidence.get("completed_at_utc"),
         "summary_es": certified_evidence.get("summary_es"),
-        "acceptance_criteria_verified": True,
+        "acceptance_criteria_verified": bool(sem_eval["satisfied"]),
+        "resolution_stage": sem_eval["resolution_stage"],
         "production_touched": False,
     }
+
+    # Section 7 fail-closed: if certified evidence does NOT semantically satisfy acceptance criteria,
+    # preserve dependency_satisfied=False and record concrete blocker/unmet criteria!
+    if sem_eval["satisfied"] is not True:
+        handoff["dependency_satisfied"] = False
+        handoff["lifecycle_state"] = "ESCALATED_HUMAN_REQUIRED"
+        handoff["next_allowed_action"] = "RESOLVE_SEMANTIC_BLOCKER"
+        handoff["requires_human_intervention"] = True
+        handoff["human_intervention_reason"] = sem_eval.get("summary")
+        handoff["has_executor"] = False
+        handoff["executor_status"] = "SEMANTIC_BLOCKER"
+        handoff["exception_code"] = sem_eval.get("exception_code") or "HANDOFF_SEMANTIC_CRITERIA_UNMET"
+        handoff["exception_reason"] = sem_eval.get("summary")
+        handoff["exception_recorded_at_utc"] = now_str
+        handoff["returned_at_utc"] = now_str
+        _append_history(
+            handoff,
+            "SEMANTIC_VALIDATION_UNSATISFIED",
+            details={
+                "resolution_job_id": handoff["resolution_job_id"],
+                "resolution_stage": sem_eval["resolution_stage"],
+                "exception_code": handoff["exception_code"],
+                "unmet_criteria": sem_eval.get("unmet_criteria"),
+                "blockers": sem_eval.get("blockers"),
+            },
+        )
+        save_handoff(handoff, state_root=qroot)
+        return handoff
+
+    handoff["dependency_satisfied"] = True
+    handoff["lifecycle_state"] = "RETURNED_TO_SOURCE"
+    handoff["next_allowed_action"] = "CONTINUE_AUTONOMOUS"
+    handoff["requires_human_intervention"] = False
+    handoff["human_intervention_reason"] = None
+    handoff["has_executor"] = True
+    handoff["executor_status"] = "RESOLVED"
+    handoff["exception_code"] = None
+    handoff["exception_reason"] = None
+    handoff["resolved_at_utc"] = handoff.get("resolved_at_utc") or now_str
+    handoff["returned_at_utc"] = now_str
     _append_history(
         handoff,
         "RETURNED_CERTIFIED_TO_SOURCE",
@@ -2594,10 +3163,11 @@ def return_certified_handoff_to_source(
             "resolution_job_id": handoff["resolution_job_id"],
             "certification": cert,
             "certification_source": certified_evidence.get("certification_source"),
+            "resolution_stage": sem_eval["resolution_stage"],
         },
     )
 
-    # Auto-resume previously authorized source_job_id once without asking for another GO
+    # Auto-resume previously authorized concurrency-blocked source_job_id once without asking for another GO
     source_job_id = _clean(handoff.get("source_job_id"))
     source_domain = _clean(handoff.get("source_domain")).upper()
     if source_job_id and not handoff.get("source_resumed"):
@@ -2628,9 +3198,24 @@ def return_certified_handoff_to_source(
                 if resume_out.get("resumed") is True:
                     handoff["source_resumed"] = True
                     handoff["resumed_job_id"] = resume_out.get("resume_job_id")
+                    handoff["successor_status"] = "SUCCESSOR_SUBMITTED"
+                    handoff["resolution_stage"] = "SUCCESSOR_EXECUTED"
                     handoff["second_go_required"] = False
 
     save_handoff(handoff, state_root=qroot)
+
+    # P2B: Execute explicitly defined authorized successor_spec if present and not yet resumed
+    if isinstance(handoff.get("successor_spec"), Mapping) and not handoff.get("source_resumed"):
+        execute_handoff_successor(
+            handoff,
+            current_user=current_user,
+            identity_resolver=identity_resolver,
+            state_root=qroot,
+            repo_root=repo_root,
+            submit_fn=submit_fn,
+            now_utc=now_utc,
+        )
+
     return handoff
 
 
@@ -2638,14 +3223,17 @@ def link_certified_resolution_to_handoff(
     handoff_id: str,
     resolution_job_id: str,
     *,
+    semantic_assessment: Mapping[str, Any] | None = None,
+    capability_used: str | None = None,
     current_user: Mapping[str, Any] | None = None,
     requester: Mapping[str, Any] | None = None,
+    identity_resolver: Any = None,
     state_root: Path | None = None,
     repo_root: Path | None = None,
     submit_fn: Any = None,
     now_utc: datetime | None = None,
 ) -> dict[str, Any]:
-    """Bind an independently certified terminal Worker resolution to the original handoff (fail-closed)."""
+    """Bind an independently certified terminal Worker resolution to the original handoff with semantic validation."""
     qroot = state_root or _default_state_root()
     handoff = load_handoff(handoff_id, state_root=qroot)
     if handoff is None:
@@ -2691,13 +3279,17 @@ def link_certified_resolution_to_handoff(
     returned = return_certified_handoff_to_source(
         handoff,
         certified_evidence=verified,
+        semantic_assessment=semantic_assessment,
+        capability_used=capability_used,
+        current_user=current_user,
+        identity_resolver=identity_resolver,
         state_root=qroot,
         repo_root=repo_root,
         submit_fn=submit_fn,
         now_utc=now_utc,
     )
     return {
-        "status": "RETURNED_TO_SOURCE",
+        "status": returned["lifecycle_state"],
         "handoff_updated": True,
         "duplicate_prevented": True,
         "handoff_id": returned["handoff_id"],
@@ -2709,6 +3301,11 @@ def link_certified_resolution_to_handoff(
         "classification": returned.get("classification"),
         "lifecycle_state": returned["lifecycle_state"],
         "certification": returned["certification"],
+        "dependency_satisfied": bool(returned.get("dependency_satisfied", False)),
+        "resolution_stage": returned.get("resolution_stage"),
+        "successor_status": returned.get("successor_status"),
+        "source_resumed": bool(returned.get("source_resumed", False)),
+        "resumed_job_id": returned.get("resumed_job_id"),
         "next_allowed_action": returned["next_allowed_action"],
         "production_touched": False,
         "handoff": returned,
@@ -3235,7 +3832,44 @@ def reconcile_cross_domain_handoffs(
     for record in handoffs:
         hid = _clean(record.get("handoff_id"))
         state = _clean(record.get("lifecycle_state")).upper()
-        if state in {"RETURNED_TO_SOURCE", "BLOCKED_CYCLE", "BLOCKED_POLICY"}:
+        if state in {"BLOCKED_CYCLE", "BLOCKED_POLICY"}:
+            continue
+        if state == "RETURNED_TO_SOURCE":
+            try:
+                resumed_jid = _clean(record.get("resumed_job_id"))
+                if resumed_jid and not record.get("successor_certification"):
+                    succ_cert = _verify_terminal_result_certification(resumed_jid, state_root=qroot)
+                    if succ_cert is not None:
+                        record["successor_certification"] = succ_cert["certification"]
+                        record["successor_evidence_link"] = succ_cert
+                        record["successor_status"] = "SUCCESSOR_CERTIFIED"
+                        record["resolution_stage"] = "SUCCESSOR_EXECUTED"
+                        record["updated_at_utc"] = utc_now()
+                        _append_history(
+                            record,
+                            "SUCCESSOR_CERTIFIED",
+                            details={"resumed_job_id": resumed_jid, "certification": succ_cert["certification"]},
+                        )
+                        save_handoff(record, state_root=qroot)
+                elif (
+                    isinstance(record.get("successor_spec"), Mapping)
+                    and not record.get("source_resumed")
+                    and dispatches_left > 0
+                ):
+                    succ_out = execute_handoff_successor(
+                        record,
+                        identity_resolver=identity_resolver,
+                        state_root=qroot,
+                        repo_root=repo_root,
+                        submit_fn=submit_fn,
+                        now_utc=now_dt,
+                        now_epoch=now_epoch,
+                    )
+                    if succ_out.get("executed") is True:
+                        dispatched_ids.append(hid)
+                        dispatches_left -= 1
+            except Exception as exc:
+                errors.append({"handoff_id": hid, "error": type(exc).__name__})
             continue
         try:
             # 1. Check if bound resolution_job_id reached terminal certification
@@ -3429,6 +4063,11 @@ def _compact_handoff_view(h: Mapping[str, Any]) -> dict[str, Any]:
         "evidence_link": h.get("evidence_link"),
         "source_resumed": bool(h.get("source_resumed", False)),
         "resumed_job_id": h.get("resumed_job_id"),
+        "resolution_stage": h.get("resolution_stage"),
+        "semantic_validation": h.get("semantic_validation"),
+        "successor_status": h.get("successor_status"),
+        "successor_certification": h.get("successor_certification"),
+        "successor_evidence_link": h.get("successor_evidence_link"),
         "requires_human_intervention": bool(h.get("requires_human_intervention", False)),
         "human_intervention_reason": h.get("human_intervention_reason"),
         "grants_target_permissions": False,
@@ -3480,6 +4119,10 @@ def summarize_handoffs_for_domain(
                     "target_domain": tgt,
                     "lifecycle_state": state,
                     "resolution_job_id": view["resolution_job_id"],
+                    "resolution_stage": view.get("resolution_stage"),
+                    "exception_code": view.get("exception_code"),
+                    "semantic_validation": view.get("semantic_validation"),
+                    "evidence_link": view.get("evidence_link"),
                     "next_allowed_action": view["next_allowed_action"],
                     "requires_human_intervention": view["requires_human_intervention"],
                 })

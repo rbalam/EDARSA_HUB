@@ -820,7 +820,7 @@ def submit_objective_tool(
             result.get("production_touched", False)
         ),
     }
-    if result.get("handoff_id"):
+    if result.get("handoff_id") or result.get("authorization_id") or result.get("gate_id"):
         for extra_key in (
             "handoff_id",
             "dependency_id",
@@ -832,6 +832,17 @@ def submit_objective_tool(
             "handoff_updated",
             "executor_status",
             "exception_code",
+            "resolution_stage",
+            "successor_status",
+            "resumed_job_id",
+            "source_resumed",
+            "gate_id",
+            "authorization_id",
+            "active",
+            "revoked",
+            "expired",
+            "expires_at_utc",
+            "scope_digest",
         ):
             if extra_key in result:
                 response[extra_key] = result.get(extra_key)

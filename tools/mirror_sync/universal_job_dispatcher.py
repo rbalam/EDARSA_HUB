@@ -2902,6 +2902,32 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                 result["concurrency_replays"] += 1
 
             result["execution_base_sha"] = execution_base_sha
+            # P2A: Revalidate materialized Gate authorization fail-closed BEFORE executing actions
+            job_auth_ref = str(job.get("authorization_ref") or "").strip()
+            if job_auth_ref:
+                try:
+                    try:
+                        from tools.mirror_sync.worker_lifecycle_recovery import revalidate_gate_authorization_for_mutation
+                    except ModuleNotFoundError:
+                        from worker_lifecycle_recovery import revalidate_gate_authorization_for_mutation
+                    job_domain = str((job.get("scheduling") or {}).get("bounded_context") or "").strip().upper()
+                    job_ops = [str(a.get("type") or "").strip() for a in (job.get("actions") or []) if isinstance(a, dict)]
+                    auth_exec_check = revalidate_gate_authorization_for_mutation(
+                        job_auth_ref,
+                        domain=job_domain,
+                        requested_paths=requested_paths,
+                        requested_operations=job_ops,
+                        state_root=STATE,
+                        repo_root=ROOT,
+                    )
+                except Exception as exc:
+                    auth_exec_check = {"authorized": False, "reason": f"AUTHORIZATION_REVALIDATION_ERROR:{type(exc).__name__}"}
+                if auth_exec_check.get("authorized") is not True:
+                    result["status"] = "AUTHORIZATION_REVOKED_OR_INVALID"
+                    result["blockers"].append(f"pre_execute_authorization_denied:{auth_exec_check.get('reason')}")
+                    result["quality_gate"] = "FAIL"
+                    result["tests"] = "NOT_RUN"
+                    break
             worktree, branch = prepare_worktree(job_id, execution_base_sha, requested_paths)
             agent_guard_claim_created = True
             result["job_branch"] = branch
@@ -2975,6 +3001,30 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
             if result["blockers"]:
                 break
+            # P2A: Revalidate materialized Gate authorization fail-closed right BEFORE integrating/pushing
+            if job_auth_ref:
+                try:
+                    try:
+                        from tools.mirror_sync.worker_lifecycle_recovery import revalidate_gate_authorization_for_mutation
+                    except ModuleNotFoundError:
+                        from worker_lifecycle_recovery import revalidate_gate_authorization_for_mutation
+                    job_domain = str((job.get("scheduling") or {}).get("bounded_context") or "").strip().upper()
+                    job_ops = [str(a.get("type") or "").strip() for a in (job.get("actions") or []) if isinstance(a, dict)]
+                    auth_int_check = revalidate_gate_authorization_for_mutation(
+                        job_auth_ref,
+                        domain=job_domain,
+                        requested_paths=sorted(allowed_files),
+                        requested_operations=job_ops,
+                        state_root=STATE,
+                        repo_root=ROOT,
+                    )
+                except Exception as exc:
+                    auth_int_check = {"authorized": False, "reason": f"AUTHORIZATION_REVALIDATION_ERROR:{type(exc).__name__}"}
+                if auth_int_check.get("authorized") is not True:
+                    result["status"] = "AUTHORIZATION_REVOKED_OR_INVALID"
+                    result["blockers"].append(f"pre_integrate_authorization_denied:{auth_int_check.get('reason')}")
+                    result["quality_gate"] = "FAIL"
+                    break
             ok, detail, final_head, integration_evidence = integrate(worktree, branch, head, execution_base_sha, allowed_files, job_id, result["remote_at_start"])
             accumulated_integration.extend(integration_evidence)
             result["concurrency"]["integration"] = accumulated_integration

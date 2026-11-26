@@ -643,6 +643,8 @@ def build_semantic_job(
         "scheduling": dict(expansion.get("scheduling") or {}),
         "requester": requester,
     }
+    if expansion.get("authorization_ref"):
+        raw_job["authorization_ref"] = str(expansion["authorization_ref"]).strip()
     canonical = canonicalize_job(raw_job)
     return gate_chain_publisher.validate_template(canonical)
 
@@ -693,7 +695,7 @@ def submit_objective(
     if capability.submitter is not None:
         submit_payload = (
             {**payload, "_current_user": dict(current_user)}
-            if capability_code == "CROSS_DOMAIN_HANDOFF_REGISTER"
+            if capability_code in {"CROSS_DOMAIN_HANDOFF_REGISTER", "GATE_AUTHORIZATION_LIFECYCLE"}
             else payload
         )
         try:
@@ -703,6 +705,26 @@ def submit_objective(
 
         if not isinstance(result, dict):
             raise WorkerIngressError("SEMANTIC_CAPABILITY_INVALID_RESPONSE")
+
+        if capability_code == "GATE_AUTHORIZATION_LIFECYCLE":
+            gate_id = _clean(result.get("gate_id"))
+            auth_id = _clean(result.get("authorization_id"))
+            return {
+                "status": _clean(result.get("status")) or "OK",
+                "job_id": auth_id or gate_id or "GATE_AUTHORIZATION",
+                "gate_id": gate_id or None,
+                "authorization_id": auth_id or None,
+                "active": result.get("active"),
+                "revoked": result.get("revoked"),
+                "expired": result.get("expired"),
+                "expires_at_utc": result.get("expires_at_utc"),
+                "scope_digest": result.get("scope_digest"),
+                "allowed_paths": result.get("allowed_paths") or ((result.get("scope") or {}).get("allowed_paths") if isinstance(result.get("scope"), Mapping) else None),
+                "duplicate_prevented": bool(result.get("duplicate_prevented", False)),
+                "production_touched": False,
+                "capability": capability_code,
+                "bounded_context": bounded_context,
+            }
 
         if capability_code == "CROSS_DOMAIN_HANDOFF_REGISTER":
             handoff_id = _clean(result.get("handoff_id"))
@@ -726,7 +748,16 @@ def submit_objective(
                 "capability": capability_code,
                 "bounded_context": bounded_context,
             }
-            for extra_key in ("executor_status", "has_executor", "compatible_capabilities", "exception_code"):
+            for extra_key in (
+                "executor_status",
+                "has_executor",
+                "compatible_capabilities",
+                "exception_code",
+                "resolution_stage",
+                "successor_status",
+                "resumed_job_id",
+                "source_resumed",
+            ):
                 if extra_key in result:
                     handoff_payload[extra_key] = result.get(extra_key)
             return handoff_payload
@@ -2599,6 +2630,18 @@ def build_semantic_diagnostic(
         rejected_field = "request_key"
         http_status = 429
         allowed_correction = "Wait for the handoff rate-limit window to reset or reuse an existing active handoff."
+    elif code.startswith("CONSENT_") or code == "SELF_PRIVILEGE_ESCALATION_FORBIDDEN":
+        rejected_field = "constraints.consent_evidence"
+        http_status = 403
+        allowed_correction = "Obtain verifiable human consent bound to the authenticated SQL user and exact Gate scope digest via the canonical approval channel."
+    elif code.startswith("AUTHORIZATION_CONFLICT"):
+        rejected_field = "constraints.gate_id"
+        http_status = 409
+        allowed_correction = "Do not overwrite an active Gate authorization with a diverging scope; inspect or revoke the existing gate_id first."
+    elif code.startswith("AUTHORIZATION_") or code == "GATE_AUTHORIZATION_NOT_FOUND":
+        rejected_field = "constraints.authorization_ref"
+        http_status = 403
+        allowed_correction = "Verify domain, exact paths, authorized operations, live SHA256, base HEAD, and non-revoked/non-expired Gate authorization."
     elif code.startswith("HANDOFF_AUTHORIZATION_") or code.startswith("HANDOFF_RBAC_") or code in {"HANDOFF_SOURCE_DOMAIN_FORBIDDEN", "HANDOFF_TARGET_DOMAIN_RESTRICTED"}:
         rejected_field = "constraints.authorization_ref"
         http_status = 403
@@ -2767,6 +2810,33 @@ def preflight_semantic_objective(
             allowed_keys = set(meta.get("allowed_constraints", ()))
             if set(constraints.keys()) - allowed_keys:
                 raise WorkerIngressError("SEMANTIC_CONSTRAINTS_UNSUPPORTED")
+            if capability.code == "GATE_AUTHORIZATION_LIFECYCLE":
+                from tools.mirror_sync import worker_lifecycle_recovery as lifecycle_mod
+
+                try:
+                    pf_auth = lifecycle_mod.preflight_gate_authorization_lifecycle(
+                        payload,
+                        current_user=current_user,
+                        state_root=STATE_ROOT,
+                        repo_root=REPO_ROOT,
+                    )
+                except lifecycle_mod.GateAuthorizationError as exc:
+                    raise WorkerIngressError(str(exc)) from exc
+                return {
+                    "schema": "edarsahub.worker-semantic-preflight.v1",
+                    "ok": True,
+                    "status": pf_auth.get("status") or "PREFLIGHT_READY",
+                    "action": pf_auth.get("action"),
+                    "gate_id": pf_auth.get("gate_id"),
+                    "authorization_id": pf_auth.get("authorization_id"),
+                    "scope_digest": pf_auth.get("scope_digest"),
+                    "duplicate_detected": bool(pf_auth.get("duplicate_detected", False)),
+                    "capability": capability.code,
+                    "bounded_context": bounded_context,
+                    "mode": requested_mode,
+                    "production_allowed": False,
+                    "production_touched": False,
+                }
             if capability.code == "CROSS_DOMAIN_HANDOFF_REGISTER":
                 from tools.mirror_sync import worker_cross_domain_handoff as handoff_mod
 
@@ -2833,6 +2903,34 @@ def preflight_semantic_objective(
             }
 
         canonical_job = build_semantic_job(payload, current_user=current_user)
+        # P2A: Revalidate materialized Gate authorization before publish whenever authorization_ref matches an artifact
+        job_auth_ref = _clean(canonical_job.get("authorization_ref"))
+        if requested_mode == "MUTATION" and job_auth_ref:
+            from tools.mirror_sync import worker_lifecycle_recovery as lifecycle_mod
+
+            inspected = lifecycle_mod.inspect_gate_authorization(job_auth_ref, state_root=STATE_ROOT)
+            if inspected.get("found") is True:
+                req_paths = [
+                    _clean(a.get("path"))
+                    for a in (canonical_job.get("actions") or [])
+                    if isinstance(a, Mapping) and _clean(a.get("path"))
+                ]
+                req_ops = [
+                    _clean(a.get("type"))
+                    for a in (canonical_job.get("actions") or [])
+                    if isinstance(a, Mapping) and _clean(a.get("type"))
+                ]
+                reval = lifecycle_mod.revalidate_gate_authorization_for_mutation(
+                    job_auth_ref,
+                    domain=bounded_context,
+                    requested_paths=req_paths,
+                    requested_operations=req_ops,
+                    state_root=STATE_ROOT,
+                    repo_root=REPO_ROOT,
+                    verify_live_sha=True,
+                )
+                if reval.get("authorized") is not True:
+                    raise WorkerIngressError(str(reval.get("reason") or "AUTHORIZATION_DENIED"))
         requester = _requester_from_authenticated_user(
             current_user,
             project="EDARSAHUB",

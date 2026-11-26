@@ -961,6 +961,8 @@ def _development_mutation_bounded_builder(request: Mapping[str, Any]) -> dict[st
         "checks": checks,
         "scheduling": scheduling,
     }
+    if auth_ref:
+        expansion["authorization_ref"] = auth_ref.strip()
     if job_id_override:
         expansion["job_id_override"] = job_id_override.strip()
     return expansion
@@ -1421,6 +1423,37 @@ def _capability_contract_details(code: str, meta: Mapping[str, Any]) -> dict[str
                         "quality_gate_pass",
                         "production_touched_false",
                     ],
+                },
+            },
+        }
+
+    if code == "GATE_AUTHORIZATION_LIFECYCLE":
+        return {
+            "required_fields": list(_BASE_REQUIRED_OBJECTIVE_FIELDS),
+            "required_constraints": ["action", "gate_id"],
+            "allowed_operations": ["replace_text", "insert_before", "insert_after", "append_once", "write_file"],
+            "formats": {
+                "action": "PREFLIGHT|INSPECT|MATERIALIZE|REVOKE",
+                "gate_id": _G3_JOB_ID.pattern,
+                "authorization_id": _DEV_AUTH_REF_RE.pattern,
+                "base_head_sha": r"^[0-9a-f]{40}$",
+            },
+            "limits": {
+                "max_paths": 30,
+                "ttl_hours_range": [1, 168],
+                "verifiable_consent_required": True,
+                "wildcard_permissions_forbidden": True,
+                "production_allowed": False,
+            },
+            "ownership": ownership,
+            "safe_example": {
+                "objective": "Materializar o consultar autorizacion acotada y verificable de Gate en Desarrollo.",
+                "bounded_context": "COMERCIAL_POS",
+                "mode": "READ_ONLY",
+                "capability": "GATE_AUTHORIZATION_LIFECYCLE",
+                "constraints": {
+                    "action": "INSPECT",
+                    "gate_id": "CAJAS-V1-GATE12",
                 },
             },
         }
@@ -2009,6 +2042,7 @@ _CROSS_DOMAIN_HANDOFF_ALLOWED_CONSTRAINTS: tuple[str, ...] = (
     "requested_constraints",
     "resolution_job_id",
     "source_job_id",
+    "successor_spec",
     "target_domain",
 )
 
@@ -2045,5 +2079,96 @@ register_capability(
 _CAPABILITY_METADATA["CROSS_DOMAIN_HANDOFF_REGISTER"] = {
     "bounded_context_rule": "ANY_VALID_TOKEN",
     "allowed_constraints": _CROSS_DOMAIN_HANDOFF_ALLOWED_CONSTRAINTS,
+    "allowed_path_roots": (),
+}
+
+
+# P2A: Autonomous Gate Authorization Lifecycle capability (preserves the 6 authorized MCP tools).
+# Fail-closed: requires verifiable consent attestation bound to SQL identity & exact scope digest.
+_GATE_AUTH_LIFECYCLE_ALLOWED_CONSTRAINTS: tuple[str, ...] = (
+    "action",
+    "allowed_paths",
+    "authorization_id",
+    "authorized_operations",
+    "base_head_sha",
+    "consent_evidence",
+    "gate_id",
+    "revocation_reason",
+    "rollback_plan",
+    "source_sha256",
+    "ttl_hours",
+    "verification_tests",
+)
+
+
+def _gate_authorization_lifecycle_submitter(
+    request: Mapping[str, Any],
+    requester: Mapping[str, Any],
+) -> dict[str, Any]:
+    from tools.mirror_sync import worker_lifecycle_recovery as lifecycle_mod
+    from . import service as ingress_service
+
+    del requester
+    current_user = request.get("_current_user") if isinstance(request.get("_current_user"), Mapping) else None
+    clean_req = {k: v for k, v in request.items() if not str(k).startswith("_")}
+    constraints = clean_req.get("constraints") if isinstance(clean_req.get("constraints"), Mapping) else {}
+    action = str(constraints.get("action") or "PREFLIGHT").strip().upper()
+    requested_mode = str(clean_req.get("mode") or "READ_ONLY").strip().upper()
+
+    if action in {"MATERIALIZE", "REVOKE"} and requested_mode != "MUTATION":
+        raise SemanticCapabilityError("SEMANTIC_CAPABILITY_MODE_MISMATCH")
+    if action in {"PREFLIGHT", "INSPECT"} and requested_mode not in {"READ_ONLY", "MUTATION"}:
+        raise SemanticCapabilityError("SEMANTIC_CAPABILITY_MODE_MISMATCH")
+
+    try:
+        if action == "INSPECT":
+            lifecycle_mod.preflight_gate_authorization_lifecycle(
+                clean_req,
+                current_user=current_user,
+                state_root=ingress_service.STATE_ROOT,
+                repo_root=ingress_service.REPO_ROOT,
+            )
+            return lifecycle_mod.inspect_gate_authorization(
+                str(constraints.get("gate_id") or constraints.get("authorization_id") or ""),
+                domain=str(clean_req.get("bounded_context") or ""),
+                state_root=ingress_service.STATE_ROOT,
+            )
+        if action == "PREFLIGHT":
+            return lifecycle_mod.preflight_gate_authorization_lifecycle(
+                clean_req,
+                current_user=current_user,
+                state_root=ingress_service.STATE_ROOT,
+                repo_root=ingress_service.REPO_ROOT,
+            )
+        if action == "MATERIALIZE":
+            return lifecycle_mod.materialize_gate_authorization_authorized(
+                clean_req,
+                current_user=current_user,
+                state_root=ingress_service.STATE_ROOT,
+                repo_root=ingress_service.REPO_ROOT,
+            )
+        if action == "REVOKE":
+            return lifecycle_mod.revoke_gate_authorization(
+                str(constraints.get("gate_id") or constraints.get("authorization_id") or ""),
+                domain=str(clean_req.get("bounded_context") or ""),
+                revocation_reason=str(constraints.get("revocation_reason") or ""),
+                current_user=current_user,
+                state_root=ingress_service.STATE_ROOT,
+            )
+        raise SemanticCapabilityError(f"AUTHORIZATION_ACTION_UNSUPPORTED:{action}")
+    except lifecycle_mod.GateAuthorizationError as exc:
+        raise SemanticCapabilityError(str(exc)) from exc
+
+
+register_capability(
+    SemanticCapability(
+        code="GATE_AUTHORIZATION_LIFECYCLE",
+        modes=("READ_ONLY", "MUTATION"),
+        submitter=_gate_authorization_lifecycle_submitter,
+    )
+)
+_CAPABILITY_METADATA["GATE_AUTHORIZATION_LIFECYCLE"] = {
+    "bounded_context_rule": "ANY_VALID_TOKEN",
+    "allowed_constraints": _GATE_AUTH_LIFECYCLE_ALLOWED_CONSTRAINTS,
     "allowed_path_roots": (),
 }
