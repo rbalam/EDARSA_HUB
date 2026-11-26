@@ -1,0 +1,45 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/comercial/"
+        ],
+        "search_terms": [
+          "alertas_margen",
+          "evaluar_masivo",
+          "UnidadNegocioID",
+          "COSTOS-ALERTAS-001-E"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-B3E584CE3BF0BFB1DF2A3012",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en READ_ONLY contrato de implementación Costos Alertas 001 E, evaluar masivo, eventos, deduplicación, RBAC por UnidadNegocioID y SQL-first en módulos Comercial existentes; identificar brechas sin escrituras y sin repetir jobs certificados.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL",
+    "conflict_domains": [
+      "COMERCIAL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
