@@ -1,0 +1,45 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 25,
+        "paths": [
+          "backend/modules/worker_ingress/semantic_capabilities.py"
+        ],
+        "search_terms": [
+          "_G3_AUDIT_ROOTS",
+          "_PYTEST_SUITE_ALLOWED_ROOTS",
+          "register_pytest_certification_suite",
+          "requires_sql"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-344F6264B7344FF7D4C21042",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-BOSV1QUALITY-WORKERCONTROLP-43EBE4D3C0019ACD BOS.V1.QUALITY->WORKER_CONTROL_PLANE] Registrar handoff READ_ONLY al dominio WORKER_CONTROL_PLANE (WK Worker 6.0) para resolver cobertura autorizada de auditoría V1.0 sobre backend/server.py, backend/tests_guardrails/ y backend/auditorias_p4/, y suite transversal. Evaluar extensión mínima sin permisos globales ni mutaciones; devolver evidencia al dominio origen.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
