@@ -4,31 +4,37 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "adc687329d92e835bddda7f96b7001d4787eb848",
-  "generated_at_utc": "2026-11-26T03:10:02Z",
+  "generated_at_utc": "2026-11-26T03:11:29Z",
   "history": {
-    "done_total_local": 2126,
+    "done_total_local": 2127,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1411,
-    "results_total_local": 3296
+    "results_total_local": 3297
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 360,
+      "age_seconds": 71,
+      "job_id": "SEM-REQUEST-95330FC4C73862AEA4AD7749",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 447,
       "job_id": "SEM-REQUEST-A4C64168D55CB88B5C401C6D",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 558,
+      "age_seconds": 645,
       "job_id": "SEM-REQUEST-B97D33BD6F6556B71284931C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 109,
+      "age_seconds": 195,
       "job_id": "SEM-REQUEST-E6D10A84DD19456660985C67",
       "reason": null,
       "state": "RESULT_READY"
@@ -42,15 +48,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "remote_development_sha": "adc687329d92e835bddda7f96b7001d4787eb848",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-26T03:09:53Z",
-    "last_receive_utc": "2026-11-26T03:09:48Z",
-    "last_terminal_utc": "2026-11-26T03:08:13Z",
+    "last_cycle_utc": "2026-11-26T03:11:26Z",
+    "last_receive_utc": "2026-11-26T03:11:21Z",
+    "last_terminal_utc": "2026-11-26T03:10:17Z",
     "pid": "88",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "df6b87e752ac90b2d124b80d60c0c7841729c29c",
