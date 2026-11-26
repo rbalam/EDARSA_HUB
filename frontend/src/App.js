@@ -12,6 +12,7 @@ import Servidores from '@/pages/Servidores';
 import Reportes from '@/pages/Reportes';
 import Compras from '@/pages/Compras';
 import Comercial from '@/pages/Comercial';
+import IncidenciasCaja from '@/pages/comercial/IncidenciasCaja';
 import TableroEjecutivo from '@/pages/TableroEjecutivo';
 import CatalogoConsultas from '@/pages/CatalogoConsultas';
 import ExploradorBD from '@/pages/ExploradorBD';
@@ -134,6 +135,7 @@ function App() {
               <Route path="ia" element={<IAAsistente />} />
               <Route path="compras" element={<Compras />} />
               <Route path="comercial" element={<Comercial />} />
+              <Route path="comercial/cajas/incidencias" element={<IncidenciasCaja />} />
               {/* Rutas Comercial/Ventas - Integración Menú SQL (FASE 1A) */}
               <Route path="comercial/clientes" element={<Navigate to="/crm/cuentas" replace />} />
               {/* FASE 1C-3D: Costos y Márgenes */}
