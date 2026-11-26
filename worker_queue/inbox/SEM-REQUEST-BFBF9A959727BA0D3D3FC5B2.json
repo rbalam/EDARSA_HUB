@@ -1,0 +1,47 @@
+{
+  "actions": [
+    {
+      "content": "import React, { useEffect, useState } from 'react';\nimport api from '@/lib/api';\nimport IncidenciaCajaForm from '@/components/finanzas/IncidenciaCajaForm';\n\n// Gate12C: solo lectura. No permitir altas hasta certificar SQL y resolutores.\nexport default function IncidenciasCaja() {\n  const [state, setState] = useState({ loading: true, error: '', data: null });\n  useEffect(() => {\n    let active = true;\n    api.get('/comercial/cajas/bootstrap')\n      .then(({ data }) => {\n        if (active) setState({ loading: false, error: '', data });\n      })\n      .catch((error) => {\n        if (!active) return;\n        setState({\n          loading: false,\n          data: null,\n          error: error?.response?.status === 403\n            ? 'No tienes permiso para consultar incidencias de caja.'\n            : 'No se pudo verificar el acceso a Cajas.',\n        });\n      });\n    return () => { active = false; };\n  }, []);\n\n  if (state.loading) return <main><p role=\"status\">Verificando permisos de Cajas...</p></main>;\n  if (state.error) return <main><h1>Incidencias de caja</h1><p role=\"alert\">{state.error}</p></main>;\n\n  return <main>\n    <h1>Incidencias de caja</h1>\n    <p role=\"status\">Registro no disponible hasta certificar el alcance, catalogos y persistencia SQL.</p>\n    <IncidenciaCajaForm tipos={[]} motivos={[]} contexto={null} />\n  </main>;\n}\n",
+      "path": "frontend/src/pages/comercial/IncidenciasCaja.jsx",
+      "type": "write_file"
+    }
+  ],
+  "authorization_ref": "GO-CAJAS-V1-GATE12-20261126",
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_incidencias_caja_routes.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-BFBF9A959727BA0D3D3FC5B2",
+  "mode": "MUTATION",
+  "objective": "CAJAS-V1-GATE12C1: materializar pagina movil de incidencias con GET bootstrap a traves cliente API canonico, errores de auth claros y formulario fail closed sin onRegistrar ni POST. Sin registrar ruta React aun, sin SQL/DDL/WhatsApp ni cambios a Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
