@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "backend/core/"
+        ],
+        "search_terms": [
+          "fabric",
+          "drag",
+          "drop",
+          "builder",
+          "sandbox",
+          "i18n",
+          "accessibility",
+          "workflow",
+          "RBAC"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-3E7734112C352A696852D360",
+  "mode": "READ_ONLY",
+  "objective": "Inventariar capacidades existentes reutilizables para Fabric Studio: diseñador visual drag and drop, formularios, menús, iconos, traducción español sencillo, accesibilidad, laboratorios, versionado, IA y permisos. Identificar brechas y evitar duplicar infraestructura Worker, Cloud y Marketplace. Sin cambios.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_STUDIO",
+    "conflict_domains": [
+      "FABRIC_STUDIO"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
