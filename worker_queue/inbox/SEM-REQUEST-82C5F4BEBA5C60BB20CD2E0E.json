@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 30,
+        "paths": [
+          "tools/mirror_sync/worker_cross_domain_handoff.py",
+          "backend/tests/test_worker_universal_multichat_handoff.py",
+          "backend/tests/test_worker_universal_multichat_handoff_p1.py",
+          "backend/tests/test_worker_universal_multichat_handoff_p2.py",
+          "backend/modules/worker_ingress/semantic_capabilities.py"
+        ],
+        "search_terms": [
+          "HANDOFF_PRODUCTION_FORBIDDEN",
+          "validate_domain_token",
+          "FORBIDDEN_DOMAINS",
+          "PRODUCCION_TABLAJERIA",
+          "production_allowed",
+          "PRODUCCION",
+          "PRODUCTION",
+          "handoff",
+          "RBAC",
+          "SQL_READONLY_PROFILE_AUDIT",
+          "sql_readonly_audit"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-82C5F4BEBA5C60BB20CD2E0E",
+  "mode": "READ_ONLY",
+  "objective": "EDARSAHUB BOS — WORKER_INGRESS: revisar bloqueo G1B de Tablajeria HANDOFF_PRODUCTION_FORBIDDEN. Se verifico que validate_domain_token en tools/mirror_sync/worker_cross_domain_handoff.py rechaza cualquier token con PRODUCCION, por lo que el contexto funcional existente PRODUCCION_TABLAJERIA queda confundido con ambiente productivo. Hacer diagnostico READ_ONLY focalizado, reutilizar resultados existentes, identificar politica correcta sin relajar bloqueo de dominios de Produccion real, revisar pruebas, deduplicacion y RBAC. Proponer cambio minimo atomico solo si el gate de autorizacion correspondiente lo permite; ESTA SOLICITUD NO AUTORIZA MUTACION, NO MODIFICAR ARCHIVOS. Evitar renombrar dominio para eludir el control. Tambien dejar documentada dependencia de perfil SQL_READONLY_PROFILE_AUDIT sellado TABLAJERIA_SCHEMA_METADATA para consulta fisica G1 sin datos operativos. No tocar Produccion, no DDL/DML, no G2. Entregar rutas, causas, riesgos y criterio para autorizacion posterior. Origen de coordinacion: chat Tablajerias Arquitectura; ejecucion tecnica en Universal Worker v4; resultados a Tablajeria 3.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_INGRESS",
+    "conflict_domains": [
+      "WORKER_INGRESS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
