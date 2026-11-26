@@ -1,0 +1,58 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "backend/core/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "twilio",
+          "whatsapp",
+          "chat",
+          "conversation",
+          "mensaje",
+          "notification",
+          "autorizacion",
+          "aprobacion",
+          "incidencia",
+          "nomina",
+          "caja",
+          "actividad",
+          "tarea",
+          "RBAC"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-DDA6EB8DE7B1403C2F117C1A",
+  "mode": "READ_ONLY",
+  "objective": "Gate 0 READ_ONLY de colaboracion multicanal EDARSAHUB BOS. Auditar componentes existentes de Chat Interno y WhatsApp/Twilio, integracion con CRM, RRHH, Compras, Finanzas, actividades, tareas, incidencias, aprobaciones, notificaciones y RBAC. Identificar contratos y riesgos, documentar AS-IS y brechas sin nuevas dependencias ni menus. No modificar repositorio, SQL ni Produccion. No duplicar Gates certificados.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMUNICACIONES",
+    "conflict_domains": [
+      "COMUNICACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
