@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "whatsapp",
+          "twilio",
+          "webhook",
+          "reservaciones",
+          "reservation",
+          "booking",
+          "agenda",
+          "appointment",
+          "disponibilidad",
+          "calendario",
+          "consentimiento",
+          "handoff",
+          "crm",
+          "recordatorio"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-6CF60C531B77FB2747890788",
+  "mode": "READ_ONLY",
+  "objective": "Inventariar contratos existentes de atención omnicanal externa, WhatsApp, reservas de restaurantes, citas de servicios, disponibilidad, calendarios, CRM, consentimiento y escalamiento humano. Reutilizar evidencia IA_ASSISTANT SEM-REQUEST-425271FA4F22668898C3D700 y no repetir su auditoría interna. Identificar ownership y brechas sin modificar archivos, enviar mensajes, ejecutar SQL ni tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "ATENCION_OMNICANAL",
+    "conflict_domains": [
+      "ATENCION_OMNICANAL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
