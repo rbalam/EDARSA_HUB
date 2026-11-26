@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/inventarios/",
+          "frontend/src/",
+          "backend/tests/test_bottle_volumetric_engine.py"
+        ],
+        "search_terms": [
+          "bottle_volumetric_engine",
+          "estimate_volume_gravimetric",
+          "inventario_fisico",
+          "EdarsaTender",
+          "partender",
+          "offline",
+          "bascula"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-BE45A018D1B39193109BCC67",
+  "mode": "READ_ONLY",
+  "objective": "Auditoria READ_ONLY acotada de EdarsaTender: localizar contratos concretos de medicion visual, gravimetria, captura, sesiones, inventario fisico, API, offline y pruebas para preparar comparativa de cuatro referencias Partender, BarInventory, Bar Inventory System y Odoo. Reutilizar auditorias certificadas existentes sin repetirlas; no modificar codigo, datos ni Produccion. Entregar solo evidencia del repositorio y brechas verificables.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INVENTARIOS",
+    "conflict_domains": [
+      "INVENTARIOS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
