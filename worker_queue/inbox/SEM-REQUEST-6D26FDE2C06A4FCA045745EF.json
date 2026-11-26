@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "tools/mirror_sync/worker_maintenance_runtime.py",
+          "tools/mirror_sync/worker_repair_auto_loop.py",
+          "backend/modules/worker_ingress/semantic_capabilities.py"
+        ],
+        "search_terms": [
+          "UNKNOWN",
+          "SUPERSEDED",
+          "capability_registered",
+          "source_job_id",
+          "learned_registry",
+          "certified_successor"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-6D26FDE2C06A4FCA045745EF",
+  "mode": "READ_ONLY",
+  "objective": "Gate 3B READ_ONLY: auditar exclusivamente los contratos de clasificacion UNKNOWN y referencias de capacidades no registradas del historial Maintenance Knowledge Loop. Determinar ruta de reconciliacion de evidencia sin reinterpretar SUPERSEDED como reparacion certificada; evitar jobs repetidos, no mutar archivos, SQL ni Produccion. Devolver hallazgos para resolver unicamente la brecha residual.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_REPAIR_KNOWLEDGE_LOOP",
+    "conflict_domains": [
+      "WORKER_REPAIR_KNOWLEDGE_LOOP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
