@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "cotizacion",
+          "suscripcion",
+          "contrato",
+          "facturacion",
+          "NetPay",
+          "comision",
+          "catalogo",
+          "billing",
+          "pricing"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-031D4113B222D9351791C548",
+  "mode": "READ_ONLY",
+  "objective": "Gate 0 Fabric Comercial: inventariar contratos, rutas, modelos y pruebas existentes reutilizables de CRM, cotizaciones, contratos, suscripciones, facturación, pagos, comisiones, catálogos y medición de costos; identificar brechas y propietarios sin modificar código ni producción. No duplicar Fabric Cloud.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_COMERCIAL",
+    "conflict_domains": [
+      "FABRIC_COMERCIAL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
