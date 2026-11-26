@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "tools/mirror_sync/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "failover",
+          "disaster_recovery",
+          "hot_standby",
+          "active_passive",
+          "active_active",
+          "availability_group",
+          "always_on",
+          "external_probe",
+          "immutable_backup",
+          "backup_restore",
+          "multi_cloud",
+          "fencing_token"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-F227F5F605530A09A85CF941",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 focalizado: localizar contratos especificos de failover multiproveedor, disaster recovery, replica SQL, enrutamiento externo y restauracion independiente; excluir coincidencias genericas de idempotencia y heartbeat ya auditadas. Identificar evidencia documental/codigo, no afirmar infraestructura desplegada.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "BUSINESS_CONTINUITY",
+    "conflict_domains": [
+      "BUSINESS_CONTINUITY"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
