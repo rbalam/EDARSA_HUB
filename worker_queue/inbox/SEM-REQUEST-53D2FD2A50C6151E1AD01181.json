@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/fase2_operativo/router.py",
+          "backend/modules/fase2_operativo/sql_repository.py",
+          "backend/modules/fase2_operativo/repositories/",
+          "backend/core/sql_first/"
+        ],
+        "search_terms": [
+          "get_sql_connection",
+          "except",
+          "include_router",
+          "EDARSAHUB_CONFIG",
+          "commit",
+          "rollback",
+          "automatizacion_compras",
+          "cargos"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-53D2FD2A50C6151E1AD01181",
+  "mode": "READ_ONLY",
+  "objective": "Auditar evidencia acotada de convergencia modular ERP: responsabilidades y acoplamiento de fase2_operativo, conexión SQL canónica, manejo de errores y dependencias Core. Reutilizar resultados equivalentes; no duplicar. Solo lectura, sin cambios ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "ARCHITECTURE_GOVERNANCE",
+    "conflict_domains": [
+      "ARCHITECTURE_GOVERNANCE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
