@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "frontend/src/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "bitacora",
+          "cloracion",
+          "parrilla",
+          "coccion",
+          "mise",
+          "checklist",
+          "corte_caja",
+          "inventario",
+          "sanitizacion",
+          "bascula",
+          "apertura",
+          "cierre"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-D3C5BCA6CB6CAD3A6C501E13",
+  "mode": "READ_ONLY",
+  "objective": "Gate 0 READ_ONLY de consolidacion Bitacoras y Controles. Auditar contratos reales del repositorio Edarsahub_Desarrollo sobre bitacoras de cloracion de agua, cocina/parrilla, higiene, apertura/operacion/cierre, cortes de caja, mise en place, inventarios, basculas, scheduler, evidencias y controles RBAC. Identificar archivos y rutas reales, propietarios por bounded context, reutilizacion y brechas. No repetir Gate0 Parrilla certificado ni modificar Produccion. Entregar evidencia verificable y criterios de aceptacion para diseno canonico transversal.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "OPERACIONES.BITACORAS",
+    "conflict_domains": [
+      "OPERACIONES.BITACORAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
