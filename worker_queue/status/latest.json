@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "6bf494a6671a6a29036a09bd3183b009940e1349",
-  "generated_at_utc": "2026-11-26T04:15:54Z",
+  "generated_at_utc": "2026-11-26T04:17:14Z",
   "history": {
     "done_total_local": 2134,
     "pending_total_local": 0,
@@ -16,37 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2799,
+      "age_seconds": 2880,
       "job_id": "EDARSAHUB-BOS-UNIVERSAL-MULTICHAT-HANDOFF-P1-R1-20261126",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 429,
+      "age_seconds": 509,
       "job_id": "SEM-REQUEST-2E4E4870FF4F8356CD23C853",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2669,
+      "age_seconds": 2750,
       "job_id": "SEM-REQUEST-47448DFC8A984AEAA876F311",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3301,
+      "age_seconds": 3381,
       "job_id": "SEM-REQUEST-7181E0D9139DA4D5DD2B0838",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3557,
-      "job_id": "SEM-REQUEST-82E48C59F63257B24BE8DF66",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1535,
+      "age_seconds": 1616,
       "job_id": "SEM-REQUEST-DC7F2185F6A7FAFC58B3301F",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,14 +54,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "remote_development_sha": "6bf494a6671a6a29036a09bd3183b009940e1349",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-26T04:15:49Z",
-    "last_receive_utc": "2026-11-26T04:15:44Z",
+    "last_cycle_utc": "2026-11-26T04:17:04Z",
+    "last_receive_utc": "2026-11-26T04:16:59Z",
     "last_terminal_utc": "2026-11-26T04:08:44Z",
     "pid": "366446",
     "runtime_fingerprint": {
