@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "convenio",
+          "convenios",
+          "bonificacion",
+          "bonificaciones",
+          "rebate",
+          "rebates",
+          "acuerdo_comercial",
+          "meta_compra",
+          "apoyo_marca",
+          "presupuesto"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-6414DB3708822F24655F2D8C",
+  "mode": "READ_ONLY",
+  "objective": "Auditar específicamente convenios comerciales con proveedores, metas de compra, bonificaciones, rebates y apoyos de marcas; reutilizar evidencia previa de compras SEM-REQUEST-348442D31F6F7BACB9F59F0B sin repetir su alcance. Identificar contratos, rutas, modelos, RBAC, presupuesto y conciliación con recepciones y CxP. Solo lectura, sin producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMPRAS",
+    "conflict_domains": [
+      "COMPRAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
