@@ -1,0 +1,60 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Orquestacion de preparacion de incidencias con alcance SQL canónico.\n\nLos resolutores provienen de servicios existentes, nunca del body HTTP.\nNo registra nada, no conecta a POS externo y no crea fuentes de datos.\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom typing import Any, Callable, Iterable, Mapping\n\nfrom modules.finanzas.incidencias_caja_access import validar_acceso_creacion_caja\nfrom modules.finanzas.incidencias_caja_application import (\n    DependenciasCrearCaja, preparar_expediente_v1,\n)\nfrom modules.finanzas.incidencias_caja_context import (\n    AlcanceCaja, MotivoCajaCatalogo, RegistroCajaValidado,\n)\nfrom modules.finanzas.incidencias_caja_contracts import IncidenciaCajaCreate\n\n\nclass CatalogoCajaNoVerificable(RuntimeError):\n    pass\n\n\n@dataclass(frozen=True)\nclass ResolutoresCajaCanonicos:\n    \"\"\"Adaptadores de lectura hacia RBAC/Unidades/Catálogos ya existentes.\"\"\"\n    relaciones_usuario: Callable[[int], Iterable[tuple[str, str, str]]]\n    motivos_contextuales: Callable[[AlcanceCaja], Iterable[MotivoCajaCatalogo]]\n\n\ndef preparar_caja_autenticada_v1(\n    *,\n    usuario_autenticado: Mapping[str, Any],\n    alcance_resuelto: AlcanceCaja,\n    solicitud: IncidenciaCajaCreate,\n    resolutores: ResolutoresCajaCanonicos,\n) -> RegistroCajaValidado:\n    \"\"\"Primero autoriza, después lee catálogo y prepara.\n\n    La integración HTTP futura debe obtener alcance_resuelto a partir de la\n    sesión y selectores corporativos validados en servidor, no del formulario.\n    \"\"\"\n    acceso = validar_acceso_creacion_caja(\n        usuario_autenticado=usuario_autenticado,\n        alcance_resuelto=alcance_resuelto,\n        obtener_relaciones_canonicas=resolutores.relaciones_usuario,\n    )\n    try:\n        motivos = tuple(resolutores.motivos_contextuales(acceso.alcance))\n    except Exception:\n        raise CatalogoCajaNoVerificable(\"CATALOGO_CANONICO_NO_VERIFICABLE\") from None\n    if not motivos:\n        raise CatalogoCajaNoVerificable(\"CATALOGO_CANONICO_NO_DISPONIBLE\")\n    return preparar_expediente_v1(\n        solicitud,\n        acceso.alcance,\n        DependenciasCrearCaja(\n            contextos_permitidos=acceso.relaciones_permitidas,\n            motivos_vigentes=motivos,\n            repositorio=None,\n        ),\n    )\n",
+      "path": "backend/modules/finanzas/incidencias_caja_orchestration.py",
+      "type": "write_file"
+    },
+    {
+      "content": "from dataclasses import replace\nfrom unittest.mock import patch\nimport pytest\n\nfrom modules.finanzas.incidencias_caja_access import AccesoCajaDenegado\nfrom modules.finanzas.incidencias_caja_context import AlcanceCaja, MotivoCajaCatalogo, CajasContextError\nfrom modules.finanzas.incidencias_caja_contracts import IncidenciaCajaCreate\nfrom modules.finanzas.incidencias_caja_orchestration import (\n    CatalogoCajaNoVerificable, ResolutoresCajaCanonicos, preparar_caja_autenticada_v1,\n)\n\n\ndef datos():\n    alcance=AlcanceCaja(\"e1\",\"u1\",\"s1\",21,\"POS\",\"servidor\")\n    solicitud=IncidenciaCajaCreate(tipo=\"CANCELACION\",motivo_codigo=\"CAPTURA\",\n                                   descripcion=\"Error al cerrar la cuenta\",\n                                   solicitud_idempotencia=\"incidencia-123\")\n    motivo=MotivoCajaCatalogo(\"CAPTURA\",\"OR01\",\"POS\",\"e1\",\"u1\",\"s1\")\n    return alcance,solicitud,motivo\n\n\ndef ejecutar(alcance=None, permiso=True, relaciones=None, motivos=None):\n    ctx,sol,motivo=datos()\n    ctx=alcance or ctx\n    relaciones=relaciones or (lambda usuario: [(\"e1\",\"u1\",\"s1\")])\n    motivos=motivos or (lambda scope: [motivo])\n    resolver=ResolutoresCajaCanonicos(relaciones, motivos)\n    with patch(\n        \"modules.finanzas.incidencias_caja_access.RBACSQLService.get_permission_scope_by_code\",\n        return_value={\"permitido\":permiso},\n    ) as rbac:\n        result=preparar_caja_autenticada_v1(\n            usuario_autenticado={\"_sql_usuario_id\":21},\n            alcance_resuelto=ctx,\n            solicitud=sol,\n            resolutores=resolver,\n        )\n        rbac.assert_called_once()\n        return result\n\n\ndef test_orquestacion_prepara_sin_guardar():\n    result=ejecutar()\n    assert result.motivo_codigo_origen==\"OR01\"\n    assert len(result.idempotencia_ambito)==64\n\n\ndef test_rbac_denegado_no_consulta_catalogos():\n    n=[]\n    def catalogo(_):\n        n.append(\"consultado\")\n        return []\n    with pytest.raises(AccesoCajaDenegado):\n        ejecutar(permiso=False,motivos=catalogo)\n    assert n==[]\n\n\ndef test_rango_sucursal_no_autorizado():\n    ctx,_,_=datos()\n    with pytest.raises(AccesoCajaDenegado):\n        ejecutar(alcance=replace(ctx,sucursal_id=\"otra\"))\n\n\ndef test_catalogo_error_falla_cerrado():\n    def catalogo(_):\n        raise ConnectionError(\"SQL\")\n    with pytest.raises(CatalogoCajaNoVerificable,match=\"NO_VERIFICABLE\"):\n        ejecutar(motivos=catalogo)\n\n\ndef test_catalogo_vacio_falla_cerrado():\n    with pytest.raises(CatalogoCajaNoVerificable,match=\"NO_DISPONIBLE\"):\n        ejecutar(motivos=lambda _: [])\n\n\ndef test_catalogo_de_empresa_ajena_rechazado():\n    _,_,motivo=datos()\n    with pytest.raises(CajasContextError,match=\"MOTIVO_NO_DISPONIBLE\"):\n        ejecutar(motivos=lambda _: [replace(motivo,empresa_id=\"otra\")])\n",
+      "path": "backend/tests/test_incidencias_caja_orchestration.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/finanzas/incidencias_caja_orchestration.py",
+        "backend/tests/test_incidencias_caja_orchestration.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_incidencias_caja_orchestration.py",
+        "backend/tests/test_incidencias_caja_access.py",
+        "backend/tests/test_incidencias_caja_application.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-A4C64168D55CB88B5C401C6D",
+  "mode": "MUTATION",
+  "objective": "CAJAS V1 Gate7: integrar validacion acceso SQL RBAC y alcance empresa-unidad-sucursal, lectura catalogos canonicos resuelta por dependencias, preparacion expediente V1 sin registrar ni SQL DDL. Tests negativos y falla cerrada; no nuevos menus, no endpoints paralelos, sin operaciones POS.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
