@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "MarketingCampaign",
+          "MarketingActivationRequest",
+          "ROMI",
+          "ROAS",
+          "incrementalidad",
+          "attribution",
+          "marketing",
+          "ventas_sin_propina"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-2E3C4F61B1E191570D9689B6",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente la brecha diferida attribution/roi del Gate5 certificado de Marketing, sin repetir su auditoría. Localizar contratos existentes de incrementalidad, ROMI, costos, eventos y ventas para reutilización en Marketing Investment Intelligence. Sin escrituras ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "MARKETING",
+    "conflict_domains": [
+      "MARKETING"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
