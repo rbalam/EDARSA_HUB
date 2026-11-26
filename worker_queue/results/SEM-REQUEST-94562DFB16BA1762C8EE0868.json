@@ -1,0 +1,179 @@
+{
+  "base_sha": "6bf494a6671a6a29036a09bd3183b009940e1349",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_MAINTENANCE_HISTORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-26T04:43:27Z",
+  "execution_base_sha": "6bf494a6671a6a29036a09bd3183b009940e1349",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-94562DFB16BA1762C8EE0868",
+  "maintenance_history_evidence": {
+    "checks": [
+      {
+        "attempts": {
+          "0": 96,
+          "1": 8,
+          "2": 7
+        },
+        "certification": "EVIDENCE_ONLY_NOT_G4_CERTIFIED",
+        "duplicate_repair_refs": 0,
+        "duplicate_source_refs": 1,
+        "focused_linkage": {
+          "match_count": 0,
+          "matches": [],
+          "raw_identifiers_exposed": false,
+          "source_job_fingerprint": "955ab770ede10c0f25e8"
+        },
+        "incident_count": 111,
+        "learned_registry": {
+          "capabilities": [
+            {
+              "code": "JOB_DRAFT_IDEMPOTENT_RECOVERY",
+              "evidence_certified": true,
+              "evidence_repair_job_fingerprint": "335a9fd7a765edaf8678",
+              "evidence_source_job_fingerprint": "169afc8ecb255cf17533",
+              "incident_pattern_count": 2,
+              "learned_from_incident_fingerprint": "67ac8f8f5eb27902b8bd",
+              "problem_signature": "SIG:a2212204580bc48aa3c8",
+              "registered_incident_count": 1,
+              "reusable": true,
+              "reuse_incident_count": 0,
+              "reuse_incident_fingerprints": [],
+              "reuse_observed": false
+            },
+            {
+              "code": "MUTATION_LIFECYCLE_SLOT_HEARTBEAT_V2",
+              "evidence_certified": false,
+              "evidence_repair_job_fingerprint": null,
+              "evidence_source_job_fingerprint": "c4731d9d984d71ed5bd3",
+              "incident_pattern_count": 1,
+              "learned_from_incident_fingerprint": "d4f0aa871eacb29818a8",
+              "problem_signature": "SIG:e4119050bf8dba1b46f4",
+              "registered_incident_count": 1,
+              "reusable": true,
+              "reuse_incident_count": 5,
+              "reuse_incident_fingerprints": [
+                "19062836b8ca2c01fc97",
+                "647a1fa3fb34453ae3a9",
+                "8f4ed60eb3c2ec006d72",
+                "a227a5dc19a8a180e1f7",
+                "928c83572d54b35ba62d"
+              ],
+              "reuse_observed": true
+            },
+            {
+              "code": "MUTATION_LIFECYCLE_STALE_OWNERSHIP",
+              "evidence_certified": false,
+              "evidence_repair_job_fingerprint": null,
+              "evidence_source_job_fingerprint": "8576e2862b6546ba1e97",
+              "incident_pattern_count": 1,
+              "learned_from_incident_fingerprint": "908221dcb84975b5ee0d",
+              "problem_signature": "SIG:3144f26d7c5b847cb197",
+              "registered_incident_count": 1,
+              "reusable": true,
+              "reuse_incident_count": 0,
+              "reuse_incident_fingerprints": [],
+              "reuse_observed": false
+            },
+            {
+              "code": "PREVIEW_WATCHDOG_TRANSIENT_RECOVERY",
+              "evidence_certified": true,
+              "evidence_repair_job_fingerprint": "01cc7e6edd397eea1b74",
+              "evidence_source_job_fingerprint": "01cc7e6edd397eea1b74",
+              "incident_pattern_count": 0,
+              "learned_from_incident_fingerprint": "45a93984d697c7bad84f",
+              "problem_signature": "SIG:14721b5d3dc3da5588af",
+              "registered_incident_count": 1,
+              "reusable": false,
+              "reuse_incident_count": 0,
+              "reuse_incident_fingerprints": [],
+              "reuse_observed": false
+            },
+            {
+              "code": "PUBLISHER_GIT_AUTH_USEHTTPPATH_PROPAGATION",
+              "evidence_certified": false,
+              "evidence_repair_job_fingerprint": null,
+              "evidence_source_job_fingerprint": "73f4fcd0cfdff427225c",
+              "incident_pattern_count": 1,
+              "learned_from_incident_fingerprint": "c6b74c48a52fd03e3cfa",
+              "problem_signature": "SIG:a01d58fc2d72e78d1b1e",
+              "registered_incident_count": 1,
+              "reusable": true,
+              "reuse_incident_count": 0,
+              "reuse_incident_fingerprints": [],
+              "reuse_observed": false
+            },
+            {
+              "code": "SQL_CONNECTIONS_8OF10_SEMANTIC_INGRESS",
+              "evidence_certified": false,
+              "evidence_repair_job_fingerprint": null,
+              "evidence_source_job_fingerprint": "4115f0ebbde39cbd8ac0",
+              "incident_pattern_count": 0,
+              "learned_from_incident_fingerprint": "3ab90fd6034ea14132c0",
+              "problem_signature": "SIG:bf93423cf05eaedd8f37",
+              "registered_incident_count": 1,
+              "reusable": true,
+              "reuse_incident_count": 0,
+              "reuse_incident_fingerprints": [],
+              "reuse_observed": false
+            }
+          ],
+          "count": 6,
+          "raw_identifiers_exposed": false,
+          "reusable_count": 5,
+          "reuse_observed_count": 1
+        },
+        "limitations": [
+          "SUPERSEDED does not prove a certified repair",
+          "Missing repair_job_id does not prove that a repair was never attempted",
+          "Result artifacts are read only for bounded sanitized summaries; they are never mutated",
+          "Only hashes of incident and job identifiers are exported"
+        ],
+        "missing_fields": {
+          "capability_code": 101,
+          "problem_signature": 101,
+          "repair_job_id": 106,
+          "source_job_id": 14
+        },
+        "mode": "READ_ONLY",
+        "pending_sample": [],
+        "pending_total": 0,
+        "production_allowed": false,
+        "production_touched_records": 0,
+        "recurring_signatures": [
+          {
+            "count": 6,
+            "signature": "SIG:e4119050bf8dba1b46f4"
+          }
+        ],
+        "registry_builtin_count": 3,
+        "registry_learned_count": 6,
+        "schema": "edarsahub.worker-maintenance-history-readonly.v1",
+        "states": {
+          "CERTIFIED": 5,
+          "SUPERSEDED": 105,
+          "UNKNOWN": 1
+        },
+        "status": "PASS",
+        "unregistered_referenced_capabilities": [
+          "UNKNOWN:3cb28e242c875aba075a"
+        ]
+      }
+    ]
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-26T04:44:22Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-26T04:43:27Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
