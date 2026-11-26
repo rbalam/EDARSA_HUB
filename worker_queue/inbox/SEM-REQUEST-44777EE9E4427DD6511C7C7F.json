@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/EDARSAHUB-BOS-INVENTARIOS-ALMACENES-CORPORATIVOS-GATE0-R3.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-44777EE9E4427DD6511C7C7F",
+  "mode": "READ_ONLY",
+  "objective": "Extraer evidencia semántica del resultado certificado R3 para matriz de contratos de inventarios físicos corporativos, almacenes por unidad, EdarsaTender, QR/RFID, kardex, MPRO y SoftRestaurant. Distinguir evidencia de brechas; no repetir auditoría.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INVENTARIOS_FISICOS_CORPORATIVOS",
+    "conflict_domains": [
+      "INVENTARIOS_FISICOS_CORPORATIVOS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
