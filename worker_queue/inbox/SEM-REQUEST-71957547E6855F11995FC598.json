@@ -1,0 +1,45 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "frontend/src/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "edarsa_memory_token",
+          "sessionStorage",
+          "maximas"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-71957547E6855F11995FC598",
+  "mode": "READ_ONLY",
+  "objective": "Auditar solo lectura la autenticación frontend sessionStorage y la referencia a Máximas de Oro para localizar la fuente canónica y determinar si corresponde añadir la regla documental sin tocar Producción ni publicar mutaciones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "ARCHITECTURE_GOVERNANCE",
+    "conflict_domains": [
+      "ARCHITECTURE_GOVERNANCE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
