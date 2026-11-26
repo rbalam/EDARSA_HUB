@@ -1,0 +1,57 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "comandero",
+          "TPV",
+          "POS",
+          "NetPay",
+          "propina",
+          "mesa",
+          "comanda",
+          "cocina",
+          "checkout",
+          "payment",
+          "voice",
+          "chatbot",
+          "licencia",
+          "idempotency"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-9A93CBB58253E595D61F2EF8",
+  "mode": "READ_ONLY",
+  "objective": "Auditar brechas específicas Smart TPV AI sin repetir Gates de Caja certificados: identificar contratos existentes de comandero rápido y extendido, mesas, cocina, pagos NetPay, cierre automático, propinas, comprobantes, voz, chatbot, alertas de inactividad, licenciamiento y RBAC. Solo lectura, sin cambios ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "TPV",
+    "conflict_domains": [
+      "TPV"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
