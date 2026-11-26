@@ -1,0 +1,60 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Integracion de lectura entre autorizaciones SQL canonicas y seguimiento Cajas.\n\nNo crea autorizaciones ni las resuelve: solo proyecta una fila ya filtrada por\nRBAC/RLS y vinculada a un expediente previamente autenticado.\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import replace\nfrom typing import Any, Mapping\n\nfrom modules.finanzas.incidencias_caja_authorization_adapter import (\n    proyectar_autorizacion_caja,\n)\nfrom modules.finanzas.incidencias_caja_workflow import (\n    SituacionIncidenciaCaja,\n    SeguimientoIncidenciaCaja,\n    evaluar_seguimiento_v1,\n)\n\n\ndef evaluar_seguimiento_con_autorizacion_sql(\n    *,\n    expediente: SituacionIncidenciaCaja,\n    fila_autorizacion: Mapping[str, Any] | None,\n    entidad_nombre: str,\n    entidad_id: str,\n) -> SeguimientoIncidenciaCaja:\n    \"\"\"Requiere evidencia SQL del motor de autorizaciones, nunca un booleano del cliente.\n\n    No permite inventar NO_REQUERIDA al faltar una fila. Los estados AUTORIZADA\n    y APROBADA se homologan solo a partir de evidencia SQL real.\n    \"\"\"\n    if not expediente.permiso_edarsahub or not expediente.alcance_valido:\n        return evaluar_seguimiento_v1(replace(expediente, autorizacion_ref=None))\n    autorizacion = proyectar_autorizacion_caja(\n        fila_autorizacion,\n        entidad_nombre_esperada=entidad_nombre,\n        entidad_id_esperada=entidad_id,\n    )\n    return evaluar_seguimiento_v1(\n        replace(\n            expediente,\n            autorizacion=autorizacion.estado,\n            autorizacion_ref=autorizacion.autorizacion_id,\n        )\n    )\n",
+      "path": "backend/modules/finanzas/incidencias_caja_authorization_followup.py",
+      "type": "write_file"
+    },
+    {
+      "content": "from dataclasses import replace\n\nimport pytest\n\nfrom modules.finanzas.incidencias_caja_authorization_adapter import AutorizacionCajaNoVerificable\nfrom modules.finanzas.incidencias_caja_authorization_followup import evaluar_seguimiento_con_autorizacion_sql\nfrom modules.finanzas.incidencias_caja_policy import MomentoAutorizacion, PermisoOrigen\nfrom modules.finanzas.incidencias_caja_workflow import (\n    EstadoVistoBueno, EstadoAutorizacion, EstadoOperacion,\n    EstadoConciliacion, SituacionIncidenciaCaja,\n)\n\n\ndef expediente():\n    return SituacionIncidenciaCaja(\n        visto_bueno=EstadoVistoBueno.OTORGADO,\n        autorizacion=EstadoAutorizacion.PENDIENTE,\n        operacion=EstadoOperacion.VERIFICADA_EN_ORIGEN,\n        conciliacion=EstadoConciliacion.CONCILIADA,\n        momento_autorizacion=MomentoAutorizacion.PREVIA,\n        diferimiento_permitido=False,\n        permiso_origen=PermisoOrigen.PERMITIDO,\n        permiso_edarsahub=True, alcance_valido=True,\n        visto_bueno_ref=\"VB-1\",\n    )\n\n\ndef row(estado):\n    return {\n        \"AutorizacionID\": 91, \"EntidadNombre\": \"CAJAS_EXPEDIENTE\",\n        \"EntidadID\": \"EXP-123\", \"Activo\": 1, \"EstatusAutorizacion\": estado,\n    }\n\n\ndef evaluar(s=None,fila=None):\n    return evaluar_seguimiento_con_autorizacion_sql(\n        expediente=s or expediente(), fila_autorizacion=fila,\n        entidad_nombre=\"CAJAS_EXPEDIENTE\", entidad_id=\"EXP-123\",\n    )\n\n\ndef test_autorizada_canonica_permite_cierre_si_todo_resuelto():\n    v=evaluar(fila=row(\"AUTORIZADA\"))\n    assert v.puede_cerrar and v.puede_continuar\n    assert not v.puede_ejecutar_en_origen\n\n\ndef test_pendiente_no_cierra():\n    assert not evaluar(fila=row(\"PENDIENTE\")).puede_cerrar\n\n\ndef test_en_proceso_no_cierra():\n    assert not evaluar(fila=row(\"EN_PROCESO\")).puede_cerrar\n\n\ndef test_rechazada_no_cierra_ni_continua():\n    v=evaluar(fila=row(\"RECHAZADA\"))\n    assert not v.puede_cerrar and not v.puede_continuar\n\n\ndef test_fila_ajena_no_autoriza():\n    r=row(\"AUTORIZADA\")\n    r[\"EntidadID\"]=\"OTRA\"\n    with pytest.raises(AutorizacionCajaNoVerificable):\n        evaluar(fila=r)\n\n\ndef test_sin_fila_no_infiere_no_requerida():\n    with pytest.raises(AutorizacionCajaNoVerificable):\n        evaluar(fila=None)\n\n\ndef test_cliente_no_puede_forzar_aprobada():\n    s=replace(expediente(),autorizacion=EstadoAutorizacion.APROBADA,autorizacion_ref=\"FALSO\")\n    assert not evaluar(s=s,fila=row(\"PENDIENTE\")).puede_cerrar\n\n\ndef test_rls_falla_antes_de_proyectar_autorizacion():\n    s=replace(expediente(),alcance_valido=False)\n    v=evaluar(s=s,fila=None)\n    assert not v.puede_consultar and not v.puede_cerrar\n",
+      "path": "backend/tests/test_incidencias_caja_authorization_followup.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/finanzas/incidencias_caja_authorization_followup.py",
+        "backend/tests/test_incidencias_caja_authorization_followup.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_incidencias_caja_authorization_followup.py",
+        "backend/tests/test_incidencias_caja_authorization_adapter.py",
+        "backend/tests/test_incidencias_caja_workflow.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-82E48C59F63257B24BE8DF66",
+  "mode": "MUTATION",
+  "objective": "CAJAS Gate10 unir adaptador de estado Usuario_Autorizaciones con workflow de seguimiento Cajas, validar vinculacion polimorfica, estados canonicos, RLS fail-closed. READ from data injected; NO crear ni resolver autorizaciones, sin SQL DDL/DML, sin REST ni WhatsApp real. Pruebas negativas.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
