@@ -1,0 +1,55 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "slotting",
+          "digital_twin",
+          "EPCIS",
+          "MonteCarlo",
+          "monte_carlo",
+          "stochastic",
+          "MEIO",
+          "dock_appointment",
+          "demand_forecast",
+          "stockout",
+          "safety_stock",
+          "optimizacion_estocastica",
+          "gemelo_digital"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-ECCFACBCFEEBB1742C16F7A8",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 diferencial complementario al resultado certificado SEM-REQUEST-4876946B5A376A92B11EC05B. Buscar exclusivamente contratos especializados de optimización espacial y abastecimiento probabilístico, sin repetir búsqueda genérica de almacén. Identificar evidencia de slotting, gemelo digital, EPCIS, optimización estocástica, Monte Carlo, forecast, MEIO, citas de andén y límites de integración Compras/Finanzas. No modificar archivos ni producción. Ausencia de coincidencia no prueba ausencia funcional.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "LOGISTICA.ALMACENES",
+    "conflict_domains": [
+      "LOGISTICA.ALMACENES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
