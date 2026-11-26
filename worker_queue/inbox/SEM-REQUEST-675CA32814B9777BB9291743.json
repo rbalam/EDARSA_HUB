@@ -1,0 +1,59 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/core/"
+        ],
+        "search_terms": [
+          "MongoDB",
+          "pymongo",
+          "motor",
+          "mongo_stub",
+          "StubDatabase",
+          "NullLock",
+          "MongoClient",
+          "AsyncIOMotorClient",
+          "count_documents",
+          "find_one",
+          "update_one",
+          "insert_one",
+          "delete_one",
+          "notification_queue",
+          "Scheduler_DistributedLocks",
+          "distributed_lock",
+          "mongodb_id",
+          "MONGO_URL"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-675CA32814B9777BB9291743",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en READ_ONLY dependencias MongoDB del Core EDARSAHUB, con foco en scheduler, locks, comunicaciones, bootstrap de persistencia y compatibilidad de runtime. Identificar referencias a clientes reales, stubs, operaciones documentales, consumidores y rutas activas; distinguir dependencia probada de indicio estático. Preservar Emergent y no retirar nada. SQL Server EDARSAHUB es la fuente canónica. Reutilizar evidencia anterior de PLATFORM_RUNTIME; no repetir auditoría general. Reportar cobertura, truncamiento y bloqueos para certificación de cero dependencia operativa.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "PLATFORM_RUNTIME",
+    "conflict_domains": [
+      "PLATFORM_RUNTIME"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
