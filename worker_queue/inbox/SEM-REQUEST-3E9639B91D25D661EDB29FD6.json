@@ -1,0 +1,59 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 30,
+        "paths": [
+          "backend/modules/rh/repository.py",
+          "backend/modules/rh/service.py",
+          "backend/modules/rh/routes.py",
+          "backend/modules/rh/schemas.py",
+          "backend/modules/rh/solicitudes_catalogo.py"
+        ],
+        "search_terms": [
+          "PersonaID",
+          "CURP",
+          "RFC",
+          "recontratacion",
+          "reingreso",
+          "historial",
+          "empleado",
+          "colaborador",
+          "contrato",
+          "baja",
+          "elegibilidad",
+          "autorizacion",
+          "solicitud",
+          "notificacion"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-3E9639B91D25D661EDB29FD6",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2 RH/HCM: extraer evidencia funcional focalizada del modulo RH existente, excluyendo la auditoria transversal Gate 1 ya certificada. Identificar contratos de identidad PersonaID/CURP/RFC, relaciones laborales, historial, baja, reingreso/recontratacion, elegibilidad, autorizaciones, notificaciones y solicitudes. Entregar rutas, simbolos, tablas y helpers reales; distinguir ausencia de evidencia de ausencia de funcionalidad. Solo lectura, sin cambios, sin Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH_HCM_REHIRE",
+    "conflict_domains": [
+      "RH_HCM_REHIRE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
