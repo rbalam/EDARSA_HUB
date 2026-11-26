@@ -1,0 +1,72 @@
+{
+  "base_sha": "69fad836a5ef1c8fd5e03317b2b86b50fb1f52fa",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-26T05:13:13Z",
+  "execution_base_sha": "69fad836a5ef1c8fd5e03317b2b86b50fb1f52fa",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-B661E95F935E3E288AD4C0E1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-26T05:50:46Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "importlib.util",
+              "pathlib"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "line_check"
+            ],
+            "path": "backend/tests/test_worker_named_readonly_audit_profiles.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_load",
+              "test_api_factory_persistence_profile_is_named_and_readonly",
+              "test_bridge_accepts_profile_without_inline_sql_checks",
+              "test_bridge_rejects_profile_plus_inline_checks",
+              "test_chapur_external_integration_readiness_profile_is_sanitized_and_readonly",
+              "test_chapur_norte_visibility_profile_is_named_and_readonly",
+              "test_chapur_profile_is_allowlisted_and_select_only",
+              "test_sql_runtime_principal_permissions_profile_is_named_and_readonly",
+              "test_unknown_profile_is_rejected"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 1,
+          "scanned_files": 1620,
+          "skipped_sensitive": 422
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-26T05:13:12Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
