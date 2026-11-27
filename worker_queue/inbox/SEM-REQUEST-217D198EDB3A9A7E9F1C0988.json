@@ -1,0 +1,55 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "backend/modules/finanzas/repository_cortes_caja_edarsahub.py",
+          "backend/modules/finanzas/incidencias_caja_routes.py",
+          "backend/modules/finanzas/incidencias_caja_orchestration.py",
+          "backend/modules/finanzas/incidencias_caja_access.py",
+          "backend/modules/finanzas/incidencias_caja_context.py",
+          "backend/core/rbac_sql/service.py",
+          "backend/tests/test_incidencias_caja_routes.py"
+        ],
+        "search_terms": [
+          "Finanzas_CortesCaja",
+          "CorteCajaID",
+          "RBACSQLService",
+          "AlcanceCaja",
+          "motivos_contextuales",
+          "bitacora",
+          "checklist",
+          "evidencia"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-217D198EDB3A9A7E9F1C0988",
+  "mode": "READ_ONLY",
+  "objective": "READ_ONLY auditoria de integracion Caja-Finanzas y Bitacoras Maestro Transversal; distinguir ownership financiero (cortes, pagos, importes, autorizaciones) del registro transversal (evidencias, checklists, seguimiento); identificar contratos efectivos y brechas, RBAC SQL y referencias CorteCajaID sin crear tablas ni duplicar transacciones. No repetir Gate0 Bitacoras ni Gates12 Caja. Entregar rutas y evidencia; sin SQL live ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
