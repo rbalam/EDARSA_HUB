@@ -4,25 +4,25 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "LOCAL_AHEAD_ONLY",
   "development_sha": "f448a7f0ec90019ba45af3acd1472df46a2b559b",
-  "generated_at_utc": "2026-11-27T05:22:05Z",
+  "generated_at_utc": "2026-11-27T05:23:33Z",
   "history": {
-    "done_total_local": 2322,
+    "done_total_local": 2323,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1414,
-    "results_total_local": 3495
+    "results_total_local": 3496
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3561,
-      "job_id": "SEM-REQUEST-D399C7AB5178E194EF37832A",
+      "age_seconds": 3,
+      "job_id": "SEM-REQUEST-993692A1DFBE01FC7EF01748",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3190,
+      "age_seconds": 3278,
       "job_id": "SEM-REQUEST-DECC40AE9FEEB3D057854315",
       "reason": null,
       "state": "RESULT_READY"
@@ -42,9 +42,9 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-27T05:21:57Z",
-    "last_receive_utc": "2026-11-27T05:21:52Z",
-    "last_terminal_utc": "2026-11-27T04:28:55Z",
+    "last_cycle_utc": "2026-11-27T05:23:14Z",
+    "last_receive_utc": "2026-11-27T05:23:31Z",
+    "last_terminal_utc": "2026-11-27T05:23:30Z",
     "pid": "349481",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "70bd308054cc7ce95bc005cdd8e49abcf59b7e58",
