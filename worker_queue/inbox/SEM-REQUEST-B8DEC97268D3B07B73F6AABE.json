@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "tools/mirror_sync/worker_maintenance_history_readonly.py",
+          "tools/mirror_sync/worker_maintenance_controller.py",
+          "backend/tests/test_worker_repair_planner_canonical_ingress_capability.py"
+        ],
+        "search_terms": [
+          "UNKNOWN",
+          "unregistered_referenced_capabilities",
+          "focused_linkage",
+          "source_job_id",
+          "MaintenanceState",
+          "SUPERSEDED"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-B8DEC97268D3B07B73F6AABE",
+  "mode": "READ_ONLY",
+  "objective": "Gate 3C READ_ONLY: auditar contrato de worker_maintenance_history_readonly y tests existentes para diagnosticar la clasificacion UNKNOWN y las referencias de capacidades no registradas. Determinar si existe consulta individual sanitizada permitida, sin enumerar identidades sin permiso ni alterar incidentes. Evidenciar brecha concreta y criterio para resolver con componentes existentes; no ejecutar reparaciones, no repetir Gate3B.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_REPAIR_KNOWLEDGE_LOOP",
+    "conflict_domains": [
+      "WORKER_REPAIR_KNOWLEDGE_LOOP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
