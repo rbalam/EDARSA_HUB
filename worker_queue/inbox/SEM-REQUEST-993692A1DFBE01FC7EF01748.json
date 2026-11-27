@@ -1,0 +1,33 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "worker_maintenance_history_readonly"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-993692A1DFBE01FC7EF01748",
+  "mode": "READ_ONLY",
+  "objective": "Recuperar historial de mantenimiento y vinculacion de incidentes existentes para divergencia HEAD local 358bcf236906660fb99d1d8fd08dd41bb6ae6bb0 frente a remoto f448a7f0ec90019ba45af3acd1472df46a2b559b; identificar receta canonica reutilizable sin ejecutar mutaciones ni repetir auditorias de repositorio.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_REPAIR_KNOWLEDGE_LOOP",
+    "conflict_domains": [
+      "WORKER_REPAIR_KNOWLEDGE_LOOP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
