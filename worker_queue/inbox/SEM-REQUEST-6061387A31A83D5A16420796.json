@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 30,
+        "paths": [
+          "backend/modules/hub/modulo_financiero_proyectos.py",
+          "backend/modules/agent_harness/marketing_cx.py",
+          "backend/modules/rrr/attribution_service.py",
+          "frontend/src/pages/CalendarioCorporativo.jsx",
+          "frontend/src/components/finanzas/FinanzasPresupuestos.jsx",
+          "frontend/src/config/enterpriseMenuConfig.js"
+        ],
+        "search_terms": [
+          "sqlite3",
+          "calcular_pnl_evento_puro",
+          "registrar_movimiento_proyecto",
+          "MarketingActivationRequest",
+          "process_attribution",
+          "calendario",
+          "presupuesto",
+          "eventos"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-6061387A31A83D5A16420796",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 diagnóstico focalizado de contratos existentes para arquitectura de Eventos y Activaciones: verificar persistencia SQLite del módulo financiero de proyectos, contrato MarketingActivationRequest, atribución RRR, calendario corporativo, presupuestos y menú. Identificar límites de propiedad y reutilización sin modificar archivos ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_MARKETING_EVENTOS_ACTIVACIONES",
+    "conflict_domains": [
+      "COMERCIAL_MARKETING_EVENTOS_ACTIVACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
