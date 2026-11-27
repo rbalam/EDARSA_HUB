@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 35,
+        "paths": [
+          "tools/mirror_sync/worker_lifecycle_recovery.py",
+          "backend/modules/worker_ingress/semantic_capabilities.py",
+          "backend/modules/worker_ingress/service.py"
+        ],
+        "search_terms": [
+          "AUTHORIZATION_HEAD_DIVERGED",
+          "source_sha256",
+          "base_head_sha",
+          "preflight_consent_request",
+          "_validate_gate_paths_and_hashes",
+          "invalidate_stale_consent_request",
+          "materialize_gate_authorization_authorized"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-CE3A3EC1AF7067686C84FA76",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-BITACORAS-WORKERCONTROLP-10E510FD3695B336 BITACORAS->WORKER_CONTROL_PLANE] Comunicación interdominio BITACORAS -> WORKER_CONTROL_PLANE (WK Worker 6.0). Investigar READ_ONLY el bloqueo recurrente AUTHORIZATION_HEAD_DIVERGED de consentimientos P0 Sistema_Tareas. R1 APPROVED/MATERIALIZED para HEAD bab667a291a9ff71b5c768af2a916b49030f3f78; R2 PENDING_HUMAN_CONSENT para HEAD 7a1c5562ce8d38be1465881c0d19dd82d17c51c2; HEAD real f2784247e97c9acfbaf5b2220385da30c6d2e157, Git convergente. Auditar la política existente de base_head_sha y source_sha256, ofrecer diseño de revalidación controlada ante commits no relacionados sin permitir modificación de archivos, RBAC, consent o producción, identificar owner y siguiente Gate seguro. No repetir Gates certificados, crear infraestructura ni implementar mutaciones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
