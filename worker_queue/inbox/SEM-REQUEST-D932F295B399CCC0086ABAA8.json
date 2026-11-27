@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "convenio",
+          "convenios",
+          "rebate",
+          "rebates",
+          "bonificacion",
+          "bonificaciones",
+          "trade_marketing",
+          "apoyo_marca",
+          "distribuidor_autorizado"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-D932F295B399CCC0086ABAA8",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1A: identificar contratos específicos existentes de convenios de marca, rebates y apoyos comerciales para completar evidencia truncada del Gate 0 certificado; identificar rutas, modelos, tablas referenciadas y pruebas, sin repetir búsqueda genérica RBAC/compras ni modificar archivos. Distinguir fabricante de distribuidor. Preparar mapa de reutilización y brechas.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_CONVENIOS_MARCAS",
+    "conflict_domains": [
+      "COMERCIAL_CONVENIOS_MARCAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
