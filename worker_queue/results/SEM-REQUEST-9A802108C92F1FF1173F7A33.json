@@ -1,0 +1,24 @@
+{
+  "base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:READONLY_PYTEST_REVISION_MISMATCH:recorded=49000ec2a08ee742703104db52f715903524654e:checkout=49000ec2a08ee742703104db52f715903524654e:tracked_dirty=True"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-11-27T01:42:51Z",
+  "execution_base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-9A802108C92F1FF1173F7A33",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T01:43:37Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T01:42:49Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
