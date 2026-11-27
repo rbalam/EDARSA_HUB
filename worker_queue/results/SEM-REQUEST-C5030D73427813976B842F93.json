@@ -1,0 +1,179 @@
+{
+  "base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T00:34:53Z",
+  "execution_base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-C5030D73427813976B842F93",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T00:35:58Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.inventarios.contracts",
+              "math",
+              "modules.cava_socios.blind_audit",
+              "modules.inventarios.bottle_volumetric_engine",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "bottle_id"
+            ],
+            "path": "backend/tests/test_bottle_volumetric_engine.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_sample_750ml_curve",
+              "_sample_750ml_profile",
+              "test_empirical_accuracy_verification_against_known_volumes",
+              "test_existing_inventarios_contracts_no_regression",
+              "test_opaque_bottle_blocks_visual_and_computes_gravimetric",
+              "test_out_of_range_heights_and_camera_tilt_rejected",
+              "test_pchip_monotonicity_and_zero_overshoot_across_dense_grid",
+              "test_rejects_nan_inf_and_invalid_types",
+              "test_rejects_non_monotonic_and_invalid_anchor_curves",
+              "test_thick_base_and_narrow_neck_geometry_effects",
+              "test_uncertainty_propagation_with_confidence_tilt_and_opacity",
+              "test_unit_conversions_and_inventory_consolidation_requires_human_validation",
+              "test_valid_monotonic_curve_and_exact_nodal_reproduction"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "importlib.util",
+              "pathlib",
+              "pytest",
+              "sys",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "bottle_id"
+            ],
+            "path": "backend/tests/test_cava_socios_cienfuegos_legacy_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_install_package",
+              "_load",
+              "test_adapter_reuses_canonical_sdk",
+              "test_attendance_is_not_canonical_sale",
+              "test_deleted_bottle_is_historical_evidence",
+              "test_duplicate_email_never_authorizes_auto_merge",
+              "test_external_record_uses_canonical_contract",
+              "test_identity_key_is_stable",
+              "test_identity_uses_canonical_source_identity",
+              "test_legacy_rbac_is_not_migrated",
+              "test_naive_timestamp_fails_closed",
+              "test_observed_capacities",
+              "test_unknown_bottle_action_fails_closed"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "importlib.util",
+              "pathlib",
+              "sys",
+              "types",
+              "zoneinfo"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "bottle_id"
+            ],
+            "path": "backend/tests/test_cava_socios_cienfuegos_legacy_dryrun.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_dt",
+              "_install_package",
+              "_load",
+              "_resolver",
+              "test_builds_external_records_and_localizes_legacy_timestamp",
+              "test_deleted_bottle_reference_is_preserved_as_historical_evidence",
+              "test_dry_run_is_review_required_not_execution_ready",
+              "test_reconciliation_requires_explicit_approved_difference",
+              "test_timeless_relation_is_not_fabricated",
+              "test_timezone_is_explicit_mexico_context"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "deduplicate"
+            ],
+            "path": "backend/tests/test_worker_universal_queue_sla_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_dispatcher_claim_is_atomic_and_execution_is_outside_lock",
+              "test_dispatcher_tracks_runtime_and_only_releases_created_claims",
+              "test_dispatcher_treats_missing_slot_as_already_released_only_during_cleanup",
+              "test_dispatcher_uses_serial_slot_runtime_without_parallel_execution",
+              "test_health_exposes_sla_metrics",
+              "test_inbox_is_history_and_results_deduplicate_jobs",
+              "test_long_checks_refresh_existing_slot_ownership",
+              "test_preferred_job_is_boost_not_global_freeze",
+              "test_stale_processing_is_requeued_once_then_terminal"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 4,
+          "scanned_files": 1041,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T00:34:52Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
