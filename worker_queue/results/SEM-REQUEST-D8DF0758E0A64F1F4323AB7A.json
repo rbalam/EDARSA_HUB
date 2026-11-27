@@ -1,0 +1,29 @@
+{
+  "base_sha": "ed84bc4ca8d4fe90403fd8c094cf1a0c7c8d1284",
+  "blockers": [],
+  "candidate_sha": "38691321111712bef14e09a392ae9cff6b383963",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-11-27T09:05:54Z",
+  "development_sha": "38691321111712bef14e09a392ae9cff6b383963",
+  "execution_base_sha": "ed84bc4ca8d4fe90403fd8c094cf1a0c7c8d1284",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_servidores_menu_rbac_contract.py",
+    "frontend/src/pages/Servidores.js"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-D8DF0758E0A64F1F4323AB7A",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T09:06:59Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T09:05:47Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
