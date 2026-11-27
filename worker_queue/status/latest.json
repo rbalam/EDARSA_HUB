@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "38691321111712bef14e09a392ae9cff6b383963",
-  "generated_at_utc": "2026-11-27T09:17:13Z",
+  "generated_at_utc": "2026-11-27T09:18:38Z",
   "history": {
     "done_total_local": 2385,
     "pending_total_local": 0,
@@ -16,43 +16,43 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 46,
+      "age_seconds": 131,
       "job_id": "SEM-REQUEST-11A05F3B7852CC618B6E930E",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3107,
+      "age_seconds": 3192,
       "job_id": "SEM-REQUEST-15DFBA6A6BA1EC8FDA733C39",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1676,
+      "age_seconds": 1761,
       "job_id": "SEM-REQUEST-315F9714A49CE2A7FDB972AE",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 237,
+      "age_seconds": 322,
       "job_id": "SEM-REQUEST-6AB8E43898227A17386589A0",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1435,
+      "age_seconds": 1520,
       "job_id": "SEM-REQUEST-A5E53D11DFC1F924D873E02F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 678,
+      "age_seconds": 763,
       "job_id": "SEM-REQUEST-D8DF0758E0A64F1F4323AB7A",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 452,
+      "age_seconds": 537,
       "job_id": "SEM-REQUEST-E92EC880025E654298670D9F",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,8 +72,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-27T09:17:05Z",
-    "last_receive_utc": "2026-11-27T09:17:00Z",
+    "last_cycle_utc": "2026-11-27T09:18:23Z",
+    "last_receive_utc": "2026-11-27T09:18:18Z",
     "last_terminal_utc": "2026-11-27T09:16:26Z",
     "pid": "992051",
     "runtime_fingerprint": {
