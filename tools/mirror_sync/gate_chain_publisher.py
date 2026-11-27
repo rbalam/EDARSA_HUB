@@ -13,14 +13,17 @@ Canonical publication invariants:
 from __future__ import annotations
 
 import argparse
+import contextlib
+import fcntl
 import json
 import os
 import re
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -415,6 +418,121 @@ def _can_recycle_orphan_publisher_branch(
     return blob.stdout == expected_payload
 
 
+PUBLISH_LOCK_FILENAME = "publisher.lock"
+PUBLISH_LOCK_TIMEOUT_SECONDS = max(
+    0.1,
+    min(float(os.environ.get("EDARSAHUB_PUBLISHER_LOCK_TIMEOUT_SECONDS", "25.0")), 120.0),
+)
+PUBLISH_LOCK_BACKOFF_INITIAL_SECONDS = max(
+    0.01,
+    min(float(os.environ.get("EDARSAHUB_PUBLISHER_LOCK_BACKOFF_INITIAL", "0.08")), 2.0),
+)
+PUBLISH_LOCK_BACKOFF_MAX_SECONDS = max(
+    PUBLISH_LOCK_BACKOFF_INITIAL_SECONDS,
+    min(float(os.environ.get("EDARSAHUB_PUBLISHER_LOCK_BACKOFF_MAX", "0.50")), 5.0),
+)
+
+
+def _publisher_lock_path() -> Path:
+    return ROOT / ".git" / "universal-worker-queue" / PUBLISH_LOCK_FILENAME
+
+
+def _is_agent_guard_contention_output(output: str) -> bool:
+    """Distinguish legitimate concurrent Agent Guard contention from real guard errors."""
+    upper = str(output or "").upper()
+    if any(
+        hard_error in upper
+        for hard_error in (
+            "AGENT_STORAGE_POLICY_V1",
+            "AGENT_STORAGE_GUARD",
+            "RAMA DE PRODUCCION PROHIBIDA",
+            "WORKTREE NO REGISTRADO",
+            "CAMBIO FUERA DEL SCOPE",
+            "SOLO EL INTEGRADOR",
+            "AGENT_GUARD_NOT_FOUND",
+            "WORKTREE_BASE_MISMATCH",
+        )
+    ):
+        return False
+    if "QUEUE_PUBLISHER_CLAIM_BUSY" in upper or "PUBLISHER_LOCK_TIMEOUT" in upper:
+        return True
+    if "DOMINIO FUNCIONAL DUPLICADO" in upper and "WORKER_QUEUE_PUBLICATION" in upper:
+        return True
+    if "WORKTREE YA RESERVADO" in upper and "QUEUE-PUBLISHER-" in upper:
+        return True
+    if "YA TIENE UN CLAIM ACTIVO" in upper and "QUEUE-PUBLISHER-" in upper:
+        return True
+    return False
+
+
+@contextlib.contextmanager
+def _queue_publication_lock(
+    *,
+    job_id: str,
+    timeout_seconds: float | None = None,
+    backoff_initial: float | None = None,
+    backoff_max: float | None = None,
+    lock_path: Path | None = None,
+) -> Iterator[dict[str, Any]]:
+    """Canonical interprocess serialization lock for worker/requests queue publication.
+
+    Uses OS kernel fcntl.flock so process crashes automatically release the lock.
+    Never disables Agent Guard; prevents concurrent publishers from colliding on
+    the shared worker_queue_publication domain.
+    """
+    target_lock = lock_path or _publisher_lock_path()
+    target_lock.parent.mkdir(parents=True, exist_ok=True)
+    timeout = PUBLISH_LOCK_TIMEOUT_SECONDS if timeout_seconds is None else max(0.05, float(timeout_seconds))
+    sleep_s = PUBLISH_LOCK_BACKOFF_INITIAL_SECONDS if backoff_initial is None else max(0.005, float(backoff_initial))
+    max_sleep = PUBLISH_LOCK_BACKOFF_MAX_SECONDS if backoff_max is None else max(sleep_s, float(backoff_max))
+
+    started = time.monotonic()
+    deadline = started + timeout
+    attempts = 0
+    fd = os.open(str(target_lock), os.O_CREAT | os.O_RDWR, 0o600)
+    acquired = False
+    try:
+        while True:
+            attempts += 1
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                acquired = True
+                break
+            except BlockingIOError:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise RuntimeError(
+                        f"QUEUE_PUBLISHER_CLAIM_BUSY:PUBLISHER_LOCK_TIMEOUT:job_id={job_id}:wait_s={timeout:.2f}"
+                    ) from None
+                time.sleep(min(sleep_s, remaining))
+                sleep_s = min(max_sleep, sleep_s * 1.5)
+
+        meta = {
+            "pid": os.getpid(),
+            "job_id": job_id,
+            "acquired_monotonic": round(time.monotonic(), 6),
+        }
+        try:
+            os.ftruncate(fd, 0)
+            os.lseek(fd, 0, os.SEEK_SET)
+            os.write(fd, (json.dumps(meta, sort_keys=True) + "\n").encode("utf-8"))
+        except OSError:
+            pass
+
+        yield {
+            "lock_path": str(target_lock),
+            "wait_seconds": round(max(0.0, time.monotonic() - started), 4),
+            "attempts": attempts,
+        }
+    finally:
+        if acquired:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_UN)
+            except OSError:
+                pass
+        os.close(fd)
+
+
 def _prepare_queue_worktree(
     *,
     job_id: str,
@@ -546,13 +664,26 @@ def _prepare_queue_worktree(
         rel,
     ]
 
-    created = run(command, ROOT)
-
-    if created.returncode != 0:
+    contention_deadline = time.monotonic() + min(PUBLISH_LOCK_TIMEOUT_SECONDS, 10.0)
+    contention_sleep = PUBLISH_LOCK_BACKOFF_INITIAL_SECONDS
+    while True:
+        created = run(command, ROOT)
+        if created.returncode == 0:
+            break
+        out_tail = (created.stdout or "")[-2000:]
+        if _is_agent_guard_contention_output(out_tail):
+            remaining = contention_deadline - time.monotonic()
+            if remaining > 0:
+                time.sleep(min(contention_sleep, remaining))
+                contention_sleep = min(PUBLISH_LOCK_BACKOFF_MAX_SECONDS, contention_sleep * 1.5)
+                continue
+            git("branch", "-D", branch, check=False)
+            raise RuntimeError(
+                "QUEUE_PUBLISHER_CLAIM_BUSY:" + out_tail[-1200:]
+            )
         git("branch", "-D", branch, check=False)
         raise RuntimeError(
-            "AGENT_GUARD_WORKTREE_CREATE_FAILED:"
-            + (created.stdout or "")[-2000:]
+            "AGENT_GUARD_WORKTREE_CREATE_FAILED:" + out_tail
         )
 
     if not worktree.is_dir():
@@ -654,6 +785,25 @@ def publish(
     job_id = str(plan["job_id"])
     template = validate_template(plan["template"])
 
+    with _queue_publication_lock(job_id=job_id) as lock_meta:
+        published = _publish_serialized(
+            job_id=job_id,
+            template=template,
+            remote=remote,
+            queue_branch=queue_branch,
+        )
+        if isinstance(published, dict):
+            published.setdefault("publication_lock", lock_meta)
+        return published
+
+
+def _publish_serialized(
+    *,
+    job_id: str,
+    template: dict[str, Any],
+    remote: str,
+    queue_branch: str,
+) -> dict[str, Any]:
     rel = f"worker_queue/inbox/{job_id}.json"
 
     git("fetch", remote, queue_branch)
@@ -1110,8 +1260,9 @@ def _submit_failure_status(
         return "WRITER_BUSY"
 
     if (
-        "CLAIM" in message
-        and "BUSY" in message
+        "QUEUE_PUBLISHER_CLAIM_BUSY" in message
+        or "PUBLISHER_LOCK_TIMEOUT" in message
+        or ("CLAIM" in message and "BUSY" in message)
     ):
         return "CLAIM_BUSY"
 

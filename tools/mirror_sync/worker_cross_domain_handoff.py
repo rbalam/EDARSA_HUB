@@ -1520,6 +1520,137 @@ def _is_reusable_capability_available(
     return False, None
 
 
+_SOURCE_JOB_RECOVERY_MARKERS = (
+    "AGENT_GUARD_WORKTREE_FAILED",
+    "UNPUBLISHED_DRAFT_RECOVERY",
+    "EXISTING_DRAFT",
+    "RECOVER_EXISTING_DRAFT",
+    "PRESERVE_ORIGINAL_JOB_ID",
+    "EXISTING_JOB_RECOVERED",
+    "BORRADOR",
+    "DRAFT",
+    "RECUPERAR",
+    "RECOVER",
+)
+
+
+def _is_source_job_recovery_handoff(handoff: Mapping[str, Any]) -> bool:
+    """Identify handoffs specifically requesting canonical recovery of an existing source_job_id."""
+    target_domain = _clean(handoff.get("target_domain")).upper()
+    if target_domain not in WORKER_INFRA_DOMAINS:
+        return False
+    source_job_id = _clean(handoff.get("source_job_id"))
+    if not source_job_id or not _JOB_ID_RE.fullmatch(source_job_id):
+        return False
+    if _clean(handoff.get("requested_capability")):
+        return False
+    handoff_mode = _clean(handoff.get("handoff_mode") or "READ_ONLY").upper()
+    if handoff_mode not in {"READ_ONLY", "READ_ONLY_SQL"}:
+        return False
+    if _clean(handoff.get("classification_reason")).upper() == "UNPUBLISHED_DRAFT_RECOVERY":
+        return True
+    haystack = " ".join(
+        [
+            _clean(handoff.get("source_objective")),
+            _clean(handoff.get("request_key")),
+            " ".join(str(c) for c in (handoff.get("acceptance_criteria") or ())),
+        ]
+    ).upper()
+    return any(marker in haystack for marker in _SOURCE_JOB_RECOVERY_MARKERS)
+
+
+def _verify_source_job_terminal_recovery(
+    handoff: Mapping[str, Any],
+    *,
+    state_root: Path,
+) -> dict[str, Any] | None:
+    """Fail-closed verification that a recovery handoff's source_job_id already reached valid terminal certification.
+
+    Verifies:
+    1. Handoff is strictly a source_job_id recovery request targeting Worker infrastructure.
+    2. Handoff payload fingerprint integrity (payload_fingerprint == initial_payload_fingerprint when set).
+    3. Independent terminal certification of source_job_id (tests=PASS, quality_gate=PASS, blockers=[], production_touched=False).
+    4. Exact identity & bounded_context match (source_job_id & source_domain).
+    5. Exact canonical draft/done payload fingerprint match when both draft and done exist.
+    6. Semantic acceptance criteria compatibility (never closes on insufficient evidence or canary substitute).
+    """
+    if not _is_source_job_recovery_handoff(handoff):
+        return None
+
+    source_job_id = _clean(handoff.get("source_job_id"))
+    source_domain = _clean(handoff.get("source_domain")).upper()
+    if not source_job_id or not source_domain:
+        return None
+
+    cur_fp = _clean(handoff.get("payload_fingerprint"))
+    init_fp = _clean(handoff.get("initial_payload_fingerprint"))
+    if cur_fp and init_fp and cur_fp != init_fp:
+        return None
+
+    verified = _verify_terminal_result_certification(source_job_id, state_root=state_root)
+    if verified is None:
+        return None
+
+    res_doc = _read_json_safe(state_root / "results" / f"{source_job_id}.json")
+    if not isinstance(res_doc, dict):
+        return None
+    if _clean(res_doc.get("job_id")) != source_job_id:
+        return None
+
+    res_bc = _extract_result_bounded_context(res_doc, source_job_id, state_root)
+    if res_bc != source_domain:
+        return None
+
+    draft_doc = _read_json_safe(state_root / "drafts" / f"{source_job_id}.json")
+    done_raw = _read_json_safe(state_root / "done" / f"{source_job_id}.json")
+    done_inner = (
+        done_raw.get("job")
+        if isinstance(done_raw, dict) and isinstance(done_raw.get("job"), Mapping)
+        else done_raw
+    )
+    if isinstance(done_inner, Mapping) and _clean(done_inner.get("job_id")) not in {"", source_job_id}:
+        return None
+
+    draft_fp = lifecycle_rec._canonical_draft_fingerprint(draft_doc) if isinstance(draft_doc, Mapping) else None
+    done_fp = lifecycle_rec._canonical_draft_fingerprint(done_inner) if isinstance(done_inner, Mapping) else None
+    if draft_fp and done_fp and draft_fp != done_fp:
+        return None
+    if not done_fp and not (state_root / "published" / f"{source_job_id}.json").is_file():
+        return None
+
+    # Ensure checks inside terminal result actually passed (fail-closed against empty/failed evidence)
+    checks = res_doc.get("checks")
+    if isinstance(checks, list):
+        for chk in checks:
+            if isinstance(chk, Mapping):
+                chk_st = _clean(chk.get("status")).upper()
+                if chk_st and chk_st != "PASS":
+                    return None
+
+    # Validate semantic criteria before allowing terminal resolution reuse
+    sem_preview = evaluate_handoff_semantic_satisfaction(
+        handoff,
+        verified,
+        capability_used=_clean(res_doc.get("capability") or "").upper() or None,
+    )
+    if sem_preview.get("satisfied") is not True:
+        return None
+
+    return {
+        **verified,
+        "source_job_recovery_verified": True,
+        "source_job_fingerprint": done_fp or draft_fp,
+        "recovery_verification": {
+            "identity_matched": True,
+            "domain_matched": True,
+            "fingerprint_matched": bool(draft_fp and done_fp and draft_fp == done_fp),
+            "handoff_payload_integrity_matched": bool(not cur_fp or not init_fp or cur_fp == init_fp),
+            "terminal_certification_verified": True,
+            "semantic_criteria_verified": True,
+        },
+    }
+
+
 def _is_autonomous_recovery_eligible(
     *,
     target_domain: str,
@@ -1596,6 +1727,30 @@ def classify_handoff_request(
             "reason": "EXISTING_CERTIFIED_TERMINAL_RESOLUTION_REUSED",
             "resolution_job_id": certified["job_id"],
             "certified_evidence": certified,
+            "lifecycle_state": "RESOLVED_CERTIFIED",
+            "next_allowed_action": "RETURN_CERTIFIED_RESOLUTION",
+            "requires_human_intervention": False,
+            "dispatch_eligible": False,
+            "has_executor": True,
+            "executor_status": "RESOLVED",
+            "compatible_capabilities": [],
+            "exception_code": None,
+            "exception_reason": None,
+            "production_touched": False,
+        }
+
+    # 1b. Recovery handoff whose source_job_id already reached verified terminal certification
+    source_recovered = _verify_source_job_terminal_recovery(
+        handoff,
+        state_root=qroot,
+    )
+    if source_recovered is not None:
+        return {
+            "schema": SCHEMA_HANDOFF_CLASSIFICATION,
+            "classification": "CERTIFIED_RESOLUTION_EXISTS",
+            "reason": "SOURCE_JOB_TERMINAL_CERTIFICATION_VERIFIED",
+            "resolution_job_id": source_recovered["job_id"],
+            "certified_evidence": source_recovered,
             "lifecycle_state": "RESOLVED_CERTIFIED",
             "next_allowed_action": "RETURN_CERTIFIED_RESOLUTION",
             "requires_human_intervention": False,
@@ -3114,6 +3269,9 @@ def return_certified_handoff_to_source(
         "summary_es": certified_evidence.get("summary_es"),
         "acceptance_criteria_verified": bool(sem_eval["satisfied"]),
         "resolution_stage": sem_eval["resolution_stage"],
+        "source_job_recovery_verified": bool(certified_evidence.get("source_job_recovery_verified", False)),
+        "source_job_fingerprint": certified_evidence.get("source_job_fingerprint"),
+        "recovery_verification": certified_evidence.get("recovery_verification"),
         "production_touched": False,
     }
 
@@ -3925,28 +4083,63 @@ def reconcile_cross_domain_handoffs(
             compat_caps = list(cls.get("compatible_capabilities") or [])
             next_action = cls["next_allowed_action"]
 
+            # Determine whether this handoff is already in steady-state stall escalation
+            # so reconciliation never oscillates between CLASSIFIED/QUEUED and ESCALATED_HUMAN_REQUIRED
+            # and never rewrites the file when nothing meaningful changed.
+            ref_dt = policy_ctrl._parse_utc(record.get("created_at_utc") or record.get("updated_at_utc"))
+            age_s = (now_dt - ref_dt).total_seconds() if ref_dt is not None else 0.0
+            stall_applicable = (
+                not has_exec
+                and not _clean(record.get("resolution_job_id"))
+                and age_s >= float(no_executor_stall_seconds)
+                and cls["lifecycle_state"] in {"REGISTERED", "CLASSIFIED", "QUEUED_IN_TARGET_DOMAIN"}
+            )
+            already_stalled_escalated = (
+                stall_applicable
+                and state == "ESCALATED_HUMAN_REQUIRED"
+                and _clean(record.get("exception_code")) == (cls.get("exception_code") or "HANDOFF_NO_EXECUTOR_STALLED")
+            )
+            effective_state = "ESCALATED_HUMAN_REQUIRED" if already_stalled_escalated else cls["lifecycle_state"]
+            effective_next_action = (
+                (
+                    "ACTIVATE_AUTHORIZED_AUTO_DISPATCH"
+                    if _clean(record.get("requested_capability"))
+                    else "ASSIGN_COMPATIBLE_CAPABILITY"
+                )
+                if already_stalled_escalated
+                else next_action
+            )
+            effective_exception_code = (
+                (cls.get("exception_code") or "HANDOFF_NO_EXECUTOR_STALLED")
+                if already_stalled_escalated
+                else cls.get("exception_code")
+            )
+
             needs_update = (
                 cls["classification"] != record.get("classification")
-                or cls["lifecycle_state"] != state
-                or next_action != record.get("next_allowed_action")
+                or effective_state != state
+                or effective_next_action != record.get("next_allowed_action")
                 or record.get("has_executor") is not has_exec
                 or record.get("executor_status") != exec_status
-                or record.get("exception_code") != cls.get("exception_code")
+                or record.get("exception_code") != effective_exception_code
             )
             if needs_update:
                 _ensure_history(record)
                 record["classification"] = cls["classification"]
                 record["classification_reason"] = cls["reason"]
-                record["lifecycle_state"] = cls["lifecycle_state"]
-                record["next_allowed_action"] = next_action
-                record["requires_human_intervention"] = bool(cls.get("requires_human_intervention", False))
-                record["human_intervention_reason"] = cls.get("human_intervention_reason")
+                record["lifecycle_state"] = effective_state
+                record["next_allowed_action"] = effective_next_action
+                record["requires_human_intervention"] = (
+                    True if already_stalled_escalated else bool(cls.get("requires_human_intervention", False))
+                )
+                if not already_stalled_escalated:
+                    record["human_intervention_reason"] = cls.get("human_intervention_reason")
+                    record["exception_reason"] = cls.get("exception_reason")
                 record["has_executor"] = has_exec
                 record["executor_status"] = exec_status
                 record["compatible_capabilities"] = compat_caps
-                record["exception_code"] = cls.get("exception_code")
-                record["exception_reason"] = cls.get("exception_reason")
-                if cls.get("exception_code"):
+                record["exception_code"] = effective_exception_code
+                if effective_exception_code and not already_stalled_escalated:
                     record["exception_recorded_at_utc"] = utc_now()
                 if cls.get("resolution_job_id"):
                     record["resolution_job_id"] = cls["resolution_job_id"]
@@ -3957,7 +4150,7 @@ def reconcile_cross_domain_handoffs(
                     details={
                         "classification": cls["classification"],
                         "executor_status": exec_status,
-                        "exception_code": cls.get("exception_code"),
+                        "exception_code": effective_exception_code,
                     },
                 )
                 save_handoff(record, state_root=qroot)
@@ -3966,8 +4159,6 @@ def reconcile_cross_domain_handoffs(
             # 3. Identify requests without executor — NEVER leave them indefinitely in WAIT!
             if not has_exec and not _clean(record.get("resolution_job_id")):
                 without_executor_ids.append(hid)
-                ref_dt = policy_ctrl._parse_utc(record.get("created_at_utc") or record.get("updated_at_utc"))
-                age_s = (now_dt - ref_dt).total_seconds() if ref_dt is not None else 0.0
                 if (
                     age_s >= float(no_executor_stall_seconds)
                     and _clean(record.get("lifecycle_state")).upper() in {"REGISTERED", "CLASSIFIED", "QUEUED_IN_TARGET_DOMAIN"}

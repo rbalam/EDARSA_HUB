@@ -220,14 +220,18 @@ def classify_publication_diagnostic(
             "Inspect GET /api/internal/worker/runtime-convergence and reconcile "
             "Development/Mirror before retrying."
         )
-    elif state in {"WRITER_BUSY", "CLAIM_BUSY", "REMOTE_MOVED_RETRYABLE"}:
+    elif (
+        state in {"WRITER_BUSY", "CLAIM_BUSY", "REMOTE_MOVED_RETRYABLE"}
+        or "QUEUE_PUBLISHER_CLAIM_BUSY" in upper_reason
+        or "PUBLISHER_LOCK_TIMEOUT" in upper_reason
+    ):
         category = "CONFLICT_OR_CONTENTION"
-        error_code = state
+        error_code = state if state in {"WRITER_BUSY", "CLAIM_BUSY", "REMOTE_MOVED_RETRYABLE"} else "CLAIM_BUSY"
         retryable = True
         recovery_required = False
         recommended_action = (
             "Check get_job_status for the existing job_id; if still unpublished, "
-            "retry manually once writer/claim contention clears."
+            "retry once writer/claim contention clears."
         )
     elif (
         "IDEMPOTENCY_CONFLICT" in upper_reason
