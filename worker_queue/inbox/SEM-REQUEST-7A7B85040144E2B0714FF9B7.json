@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 30,
+        "paths": [
+          "backend/modules/activos/"
+        ],
+        "search_terms": [
+          "ActivosRepository",
+          "ActivosService",
+          "router",
+          "activo",
+          "depreciacion",
+          "mantenimiento",
+          "resguardo",
+          "get_current_user",
+          "get_sql_connection",
+          "responsiva",
+          "capitalizacion",
+          "asset_id"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-7A7B85040144E2B0714FF9B7",
+  "mode": "READ_ONLY",
+  "objective": "G1 ASSETS: inspeccion focalizada de contratos del modulo existente activos, para determinar simbolos, rutas, referencias SQL, RBAC y conexiones realmente presentes. Complementar G0 certificado sin repetir barrido general; distinguir evidencia ausente de funcionalidad ausente. Solo lectura.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "ASSETS",
+    "conflict_domains": [
+      "ASSETS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
