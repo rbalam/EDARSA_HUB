@@ -1,0 +1,65 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Fabric Marketplace domain.\"\"\"\n",
+      "path": "backend/modules/fabric_marketplace/__init__.py",
+      "type": "write_file"
+    },
+    {
+      "content": "\"\"\"Pure Marketplace domain contracts; no persistence or execution authority.\"\"\"\nfrom dataclasses import dataclass\nfrom enum import Enum\nimport re\n\n\nclass Visibility(str, Enum):\n    PRIVATE = \"PRIVATE\"\n    ORGANIZATION = \"ORGANIZATION\"\n    PUBLIC = \"PUBLIC\"\n\n\ndef _required(value: str) -> None:\n    if not isinstance(value, str) or not value.strip():\n        raise ValueError(\"Non-empty reference required\")\n\n\n@dataclass(frozen=True)\nclass Product:\n    product_id: str\n    publisher_ref: str\n    owner_organization_ref: str\n\n    def __post_init__(self):\n        for value in (self.product_id, self.publisher_ref, self.owner_organization_ref):\n            _required(value)\n\n\n@dataclass(frozen=True)\nclass Release:\n    release_id: str\n    product_id: str\n    version: str\n    artifact_sha256: str\n    manifest_sha256: str\n\n    def __post_init__(self):\n        for value in (self.release_id, self.product_id, self.version):\n            _required(value)\n        for digest in (self.artifact_sha256, self.manifest_sha256):\n            if not isinstance(digest, str) or not re.fullmatch(r\"[0-9a-f]{64}\", digest):\n                raise ValueError(\"Invalid SHA-256 digest\")\n\n\n@dataclass(frozen=True)\nclass Listing:\n    product_id: str\n    release_id: str\n    visibility: Visibility\n    certification_ref: str\n\n    def __post_init__(self):\n        for value in (self.product_id, self.release_id, self.certification_ref):\n            _required(value)\n        if not isinstance(self.visibility, Visibility):\n            raise ValueError(\"Invalid visibility\")\n\n\n@dataclass(frozen=True)\nclass InstallationRequest:\n    release_id: str\n    organization_ref: str\n    entitlement_ref: str\n    authorization_ref: str\n\n    def __post_init__(self):\n        for value in (self.release_id, self.organization_ref, self.entitlement_ref, self.authorization_ref):\n            _required(value)\n",
+      "path": "backend/modules/fabric_marketplace/domain.py",
+      "type": "write_file"
+    },
+    {
+      "content": "import pytest\nfrom modules.fabric_marketplace.domain import (\n    Product, Release, Listing, Visibility, InstallationRequest,\n)\n\n\ndef test_product_requires_owner():\n    with pytest.raises(ValueError):\n        Product(\"p\", \"publisher\", \"\")\n\n\ndef test_release_binds_artifact_and_manifest():\n    release = Release(\"r\", \"p\", \"1.0.0\", \"a\" * 64, \"b\" * 64)\n    assert release.product_id == \"p\"\n    with pytest.raises(ValueError):\n        Release(\"r\", \"p\", \"1.0.0\", \"invalid\", \"b\" * 64)\n\n\ndef test_listing_requires_certification_reference():\n    with pytest.raises(ValueError):\n        Listing(\"p\", \"r\", Visibility.PUBLIC, \"\")\n    with pytest.raises(ValueError):\n        Listing(\"p\", \"r\", \"UNKNOWN\", \"cert\")\n    assert Listing(\"p\", \"r\", Visibility.PRIVATE, \"cert\").release_id == \"r\"\n\n\ndef test_installation_requires_entitlement_and_authorization():\n    with pytest.raises(ValueError):\n        InstallationRequest(\"r\", \"org\", \"\", \"auth\")\n    with pytest.raises(ValueError):\n        InstallationRequest(\"r\", \"org\", \"entitlement\", \"\")\n    assert InstallationRequest(\"r\", \"org\", \"entitlement\", \"auth\").organization_ref == \"org\"\n",
+      "path": "backend/tests/test_fabric_marketplace_domain.py",
+      "type": "write_file"
+    }
+  ],
+  "authorization_ref": "GO-FABRIC-MARKETPLACE-G1B",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/fabric_marketplace/__init__.py",
+        "backend/modules/fabric_marketplace/domain.py",
+        "backend/tests/test_fabric_marketplace_domain.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_fabric_marketplace_domain.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-03EDCF1317307DA46B7D05C4",
+  "mode": "MUTATION",
+  "objective": "Gate 1B: crear contratos puros iniciales Product, Release, Listing e InstallationRequest con referencias canonicas y pruebas unitarias; ninguna autoridad de ejecucion, SQL, endpoints o despliegue.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC.MARKETPLACE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "FABRIC.MARKETPLACE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
