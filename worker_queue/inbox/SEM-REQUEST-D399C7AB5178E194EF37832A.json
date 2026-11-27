@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 30,
+        "paths": [
+          "backend/modules/worker_mcp/oauth_server.py",
+          "backend/modules/worker_mcp/public_origin.py",
+          "tools/mirror_sync/worker_lifecycle_recovery.py",
+          "backend/modules/worker_ingress/service.py"
+        ],
+        "search_terms": [
+          "public_origin",
+          "approval_url",
+          "login_required",
+          "consent",
+          "router",
+          "session"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-D399C7AB5178E194EF37832A",
+  "mode": "READ_ONLY",
+  "objective": "WK Worker 6.0: diagnosticar incidente nuevo de acceso humano externo HTTP 404 del Consent Bridge G1 certificado, sin repetir G1. Revisar resolucion de origen publico MCP y portal humano, router OAuth GET/POST, redireccion login, sesion y routing. Conservar solicitud CONSENT-AUTH-RBAC-P0-B-EXACT-PATH-OWNERSHIP-4D72F9912002; no aprobar ni modificar codigo, credenciales o Produccion. Diferenciar evidencia de codigo de prueba HTTP externa; devolver bloqueo exacto si no hay canal autorizado para HTTP real.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
