@@ -879,3 +879,16 @@ def test_crm_g1_and_compras_sync_consent_bridge_validation_without_business_chan
             repo_root=repo,
         )
         assert cross["authorized"] is False
+
+
+def test_auth_rbac_p0_b_exact_context_ownership():
+    target = "backend/core/auth/sql_user_identity.py"
+    assert sem_caps._dev_context_owned_paths("AUTH_RBAC") == frozenset({target})
+    assert sem_caps._dev_validate_path(target, context="AUTH_RBAC") == target
+    for domain in ("WORKER_CONTROL_PLANE", "SEC_RBAC", "CRM", "WORKER_MCP", None):
+        with pytest.raises(sem_caps.SemanticCapabilityError):
+            sem_caps._dev_validate_path(target, context=domain)
+    for path in ("backend/core/auth/other.py", "backend/core/auth/../auth/sql_user_identity.py", "backend/core/auth/sql_user_identity.py.bak"):
+        with pytest.raises(sem_caps.SemanticCapabilityError):
+            sem_caps._dev_validate_path(path, context="AUTH_RBAC")
+    assert "backend/core/" not in sem_caps._G3_ROOTS

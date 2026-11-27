@@ -723,6 +723,9 @@ _DEV_TEST_ROOTS = ("backend/tests/", "tools/tests/")
 # Reviewed bounded-context ownership for legacy/non-module files.
 # Default mutation scope remains _G3_ROOTS; contexts may only add exact paths.
 _DEV_CONTEXT_PATH_OWNERSHIP: dict[str, frozenset[str]] = {
+    "AUTH_RBAC": frozenset({
+        "backend/core/auth/sql_user_identity.py",
+    }),
     "COMUNICACIONES_CFDI": frozenset({
         "backend/routes/portal_proveedores.py",
         "backend/routes/portal_proveedores_repository_sql.py",
