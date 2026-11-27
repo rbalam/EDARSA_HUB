@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "tools/mirror_sync/worker_lifecycle_recovery.py",
+          "backend/modules/worker_ingress/semantic_capabilities.py",
+          "backend/modules/worker_ingress/service.py"
+        ],
+        "search_terms": [
+          "scope_digest",
+          "CONSENT_SCOPE_MISMATCH",
+          "REQUEST_CONSENT",
+          "MATERIALIZE",
+          "authorization_id",
+          "consent_request_id"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-E8CD2F4187EE2D306FD4E9F7",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-SQLRBAC019-WORKERCONTROLP-6A0864C082C71A6E SQL_RBAC_019->WORKER_CONTROL_PLANE] Transferencia interdominio SQL_RBAC_019 -> WORKER_CONTROL_PLANE (chat rector Worker 6.0). Resolver exceso de consentimientos humanos Preview en multiples chats: P0-A y P0-B ya CERTIFIED 100%; P0-C PENDING_HUMAN_CONSENT, NO emitir otra solicitud ni autorizarla automaticamente. Reutilizar Gate Authorization Lifecycle, scope digest, dedupe, Capability Registry, ownership y handoffs existentes. Unificar planificaciones por paquete exacto antes de consentir, distinguir consentimiento obligatorio por drift material vs repeticion evitable, consolidar notificaciones y conservar RBAC, SHA, HEAD, vencimiento, no escalacion y fail-closed. Recuperar handoffs similares AUTH_RBAC/BITACORAS ya certificados, sin repetirlos. Preparar correccion atomica, pruebas y autorizacion si fuera necesaria; no tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "P1",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
