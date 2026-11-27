@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 20,
+        "paths": [
+          "backend/modules/api_connections/repository.py",
+          "backend/modules/api_connections/routes.py",
+          "backend/modules/comercial/repository.py",
+          "frontend/src/pages/Servidores.js",
+          "frontend/src/services/serversService.js"
+        ],
+        "search_terms": [
+          "sync_all_to_mongo_cache",
+          "sync_to_mongo",
+          "sync-cache",
+          "should_attempt_live_query",
+          "get_servers",
+          "test_connection"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-9654C07A935F27DAF9134D53",
+  "mode": "READ_ONLY",
+  "objective": "Validar especificamente contratos de fuente de verdad y politica no-LIVE del Menu Universal, sobre los archivos identificados en Gate 4: determinar si sync_all_to_mongo_cache y rutas sync-cache siguen operativas, si consultas LIVE son alcanzables y que contratos UI/API usan, sin modificar codigo ni conexiones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONEXIONES_COMUNICACIONES",
+    "conflict_domains": [
+      "CONEXIONES_COMUNICACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
