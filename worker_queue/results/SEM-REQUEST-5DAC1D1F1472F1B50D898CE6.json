@@ -1,0 +1,106 @@
+{
+  "base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T00:07:23Z",
+  "execution_base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-5DAC1D1F1472F1B50D898CE6",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T00:10:35Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.universal_query",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.rbac.middleware",
+              "core.rbac_helper_sql",
+              "core.security",
+              "core.server_registry",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "fastapi",
+              "httpx",
+              "logging",
+              "modules.integrations_runtime.read_only_sql",
+              "pydantic",
+              "pymssql",
+              "re",
+              "server",
+              "time",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_current_user",
+              "pymssql",
+              "sql_libre",
+              "substitute_parameters",
+              "universal-query-test"
+            ],
+            "path": "backend/modules/universal_query/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/servers/{server_id}/universal-query-test"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "APIConfig",
+              "SQLConfig",
+              "UniversalQueryRequest",
+              "_execute_api_test",
+              "_execute_connection_test",
+              "_execute_diagnostic_test",
+              "_execute_sql_test",
+              "apply_row_limit",
+              "execute_api_request",
+              "execute_sql_on_server",
+              "execute_universal_query_test",
+              "get_server_and_validate",
+              "mask_sensitive_headers",
+              "serialize_value",
+              "substitute_parameters",
+              "validate_sql_query"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 1,
+          "scanned_files": 2,
+          "skipped_sensitive": 2
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T00:07:21Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
