@@ -1,0 +1,424 @@
+{
+  "base_sha": "38691321111712bef14e09a392ae9cff6b383963",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T09:16:26Z",
+  "execution_base_sha": "38691321111712bef14e09a392ae9cff6b383963",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-11A05F3B7852CC618B6E930E",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T09:17:47Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.server_registry.py",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.connections.operational_scope",
+              "core.db",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "config",
+              "connection",
+              "permission",
+              "rbac",
+              "scope",
+              "secret",
+              "sucursales",
+              "update_server"
+            ],
+            "path": "backend/core/server_registry.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_execute_sql_write",
+              "_get_server_by_id_from_sql",
+              "_get_servers_from_sql",
+              "_get_unidades_from_sql",
+              "_parse_json_field",
+              "_parse_tipos_movimiento",
+              "_serialize_catalog_field",
+              "_sql_row_to_server_dict",
+              "create_server",
+              "delete_server",
+              "filter_servers_by_user_permissions",
+              "get_connection_config",
+              "get_decrypted_credentials",
+              "get_server_by_id",
+              "get_server_by_unidad_codigo",
+              "get_server_connection_info",
+              "get_server_connection_info_with_secrets",
+              "get_server_sucursales",
+              "get_visible_servers_for_operaciones",
+              "list_operational_servers",
+              "list_servers",
+              "list_unidades_negocio",
+              "map_sql_to_api_server_response",
+              "mask_sensitive_fields",
+              "normalize_server_record",
+              "normalize_system_type",
+              "normalize_unidad_codigo",
+              "resolve_server_context",
+              "resolve_unidad_by_server_sucursal",
+              "update_server",
+              "validate_registry_integrity",
+              "validate_server_payload"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.api_connections",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.cerebro",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.secret_manager",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "modules.consultas_sql.validator",
+              "modules.integrations_runtime.api_local_sync",
+              "modules.integrations_runtime.health",
+              "os",
+              "re",
+              "requests",
+              "time",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "config",
+              "connection",
+              "empresaid",
+              "health",
+              "secret",
+              "sucursales",
+              "update_api_connection"
+            ],
+            "path": "backend/modules/api_connections/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_default_api_replication_policy",
+              "_escape_sql",
+              "_log_operation",
+              "_sql_row_to_api_dict",
+              "check_duplicate_api",
+              "create_api_connection",
+              "delete_api_connection",
+              "execute_test_query",
+              "get_api_connection",
+              "get_api_connection_by_id_full",
+              "get_api_connection_sql",
+              "get_api_connection_with_decrypted_key",
+              "get_api_connections_for_adapters",
+              "get_api_replication_policy",
+              "get_decrypted_api_key",
+              "init_api_connections_repository",
+              "list_api_connections",
+              "list_api_connections_sql",
+              "normalize_api_replication_policy",
+              "parse_json",
+              "sync_all_to_mongo_cache",
+              "test_api_connection_health",
+              "update_api_connection",
+              "update_api_replication_policy"
+            ],
+            "tables_referenced": [
+              "Sistema_EmpresasServidores"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.api_connections",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "assignment_repository",
+              "core.corporate_filters.service",
+              "core.rbac.middleware",
+              "core.unidades_service",
+              "fastapi",
+              "fastapi.security",
+              "logging",
+              "modules.consultas_sql.validator",
+              "pydantic",
+              "repository",
+              "requests",
+              "time",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "config",
+              "connection",
+              "health",
+              "permission",
+              "rbac",
+              "update_api_connection"
+            ],
+            "path": "backend/modules/api_connections/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/check-duplicate",
+              "/sync-cache",
+              "/test",
+              "/test-query-draft",
+              "/{api_id}",
+              "/{api_id}/assignments",
+              "/{api_id}/assignments/{empresa_id}/{rol_conexion}",
+              "/{api_id}/replication-policy",
+              "/{api_id}/test",
+              "/{api_id}/test-query"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ApiConnectionCreate",
+              "ApiConnectionUpdate",
+              "ApiOperationalAssignmentRequest",
+              "ApiReplicationPolicyRequest",
+              "TestConnectionRequest",
+              "TestQueryDraftRequest",
+              "TestQueryRequest",
+              "check_dup",
+              "create_api",
+              "create_or_reactivate_api_assignment",
+              "delete_api",
+              "get_api",
+              "get_current_user",
+              "get_replication_policy",
+              "list_api_assignments",
+              "list_apis",
+              "put_replication_policy",
+              "remove_api_assignment",
+              "set_verify_token",
+              "sync_to_mongo",
+              "test_connection",
+              "test_connection_by_id",
+              "test_query_by_connection",
+              "test_query_draft",
+              "update_api"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.api_connections",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.connections.edarsahub_writer_connection",
+              "core.sql_first.db",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "connection",
+              "empresaid"
+            ],
+            "path": "backend/modules/api_connections/assignment_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_uuid_text",
+              "deactivate_api_operational_assignment",
+              "list_api_operational_assignments",
+              "upsert_api_operational_assignment"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_Empresas",
+              "Sistema_EmpresasServidores"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "api.admin_core_connections",
+              "collections",
+              "core.rbac_helper_sql",
+              "core.server_registry",
+              "homologation",
+              "homologation_repository",
+              "modules.api_connections.repository",
+              "modules.sync_historicos.catalog_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "config",
+              "connection",
+              "empresaid",
+              "health",
+              "permission",
+              "rbac",
+              "scope",
+              "secret",
+              "sucursales"
+            ],
+            "path": "backend/modules/integrations_center/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_attach_health",
+              "_bool",
+              "_id_key",
+              "_normalize_connection",
+              "_scope_sucursales",
+              "get_catalogs",
+              "get_communications_summary",
+              "get_connection_detail",
+              "get_overview",
+              "list_connections"
+            ],
+            "tables_referenced": [
+              "Servidores_ConexionEstado",
+              "Servidores_Conexiones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "ast",
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "connection",
+              "permission",
+              "rbac",
+              "scope",
+              "sucursales",
+              "update_server"
+            ],
+            "path": "backend/tests/test_servers_crud_explicit_rbac_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_function",
+              "_segment",
+              "_source",
+              "_tree",
+              "test_bypass_test_local_no_se_modifica_en_este_parche",
+              "test_get_server_conserva_scope_individual",
+              "test_listado_conserva_sql_first",
+              "test_mutaciones_conservan_no_mongo",
+              "test_no_role_hardcode_en_mutaciones",
+              "test_server_access_accepts_exact_branch_scope_without_global_bypass",
+              "test_servers_crud_usa_rbac_explicito",
+              "test_update_delete_conservan_core_guard"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.rbac.middleware",
+              "fastapi",
+              "fastapi.routing",
+              "httpx",
+              "modules.api_connections",
+              "pytest",
+              "unittest.mock"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "connection",
+              "rbac",
+              "update_api_connection"
+            ],
+            "path": "backend/tests/test_api_connections_crud_rbac_p0a.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_app_and_guard",
+              "allow_access",
+              "deny_access",
+              "test_crud_routes_require_explicit_sql_admin",
+              "test_denied_sql_admin_never_calls_writer",
+              "test_sql_admin_can_reach_existing_writer"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 7,
+          "scanned_files": 7,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T09:16:26Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
