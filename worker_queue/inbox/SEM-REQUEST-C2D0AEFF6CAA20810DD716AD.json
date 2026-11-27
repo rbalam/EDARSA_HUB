@@ -1,0 +1,57 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/core/",
+          "backend/modules/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "X-Twilio-Signature",
+          "RequestValidator",
+          "MessageSid",
+          "WaId",
+          "ProfileName",
+          "MessagingResponse",
+          "TwiML",
+          "x-www-form-urlencoded",
+          "SmsSid",
+          "AccountSid",
+          "SmsStatus",
+          "twilio_webhook",
+          "whatsapp_webhook",
+          "inbound_whatsapp"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-C2D0AEFF6CAA20810DD716AD",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2A: localizar evidencia estática de recepción entrante WhatsApp Twilio, firma X-Twilio-Signature, formulario, MessageSid, TwiML, deduplicación y callbacks. Complementar exclusivamente brechas de auditorías certificadas, sin envío real, secretos, acceso externo ni modificaciones. No inferir ausencia global si existen rutas excluidas.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WHATSAPP",
+    "conflict_domains": [
+      "WHATSAPP"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
