@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "SEM-REQUEST-10AF9C1CEB92756E48252219"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-4AE06F738609AA5C2B8F4064",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-INVENTARIOS-WORKERCONTROLP-26F379ECF026DC78 INVENTARIOS->WORKER_CONTROL_PLANE] Comunicar al dominio rector WK Worker 6.0 la recuperación ya confirmada del incidente histórico AGENT_GUARD_WORKTREE_FAILED del job MPro SEM-REQUEST-10AF9C1CEB92756E48252219. Reconciliar evidencia terminal y registrar cierre histórico sin repetir auditoría ni reparación. Devolver evidencia a INVENTARIOS. No mutaciones de código ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
