@@ -1,0 +1,57 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/agent_harness/",
+          "backend/core/communications/",
+          "frontend/src/pages/CalendarioCorporativo.jsx",
+          "backend/modules/hospitality/"
+        ],
+        "search_terms": [
+          "authorize",
+          "capability",
+          "dispatch",
+          "webhook",
+          "inbound",
+          "dedup",
+          "calendar",
+          "calendario",
+          "handoff",
+          "consent",
+          "reservation",
+          "booking",
+          "scope"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-BC6A98504893D4961A49B5CD",
+  "mode": "READ_ONLY",
+  "objective": "Gate 3: verificar contratos concretos de Agent Harness, comunicaciones y calendario corporativo para integrar atención externa y reservas, sin repetir inventarios anteriores. Identificar autorización de acciones, despacho, deduplicación, recepción de mensajes, escalamiento y referencias de calendario; distinguir diseño de implementación. No enviar mensajes ni modificar código o Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "ATENCION_OMNICANAL",
+    "conflict_domains": [
+      "ATENCION_OMNICANAL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
