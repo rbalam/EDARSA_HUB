@@ -1,0 +1,303 @@
+{
+  "base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T00:59:10Z",
+  "execution_base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-61632B9C08B12E72A31FF81C",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T01:01:40Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.edge",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "json",
+              "sqlite3",
+              "time",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "interceptar_producto_para_maridaje",
+              "precio",
+              "sqlite3",
+              "stock"
+            ],
+            "path": "backend/modules/edge/motor_reglas_comerciales.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "MotorReglasComerciales",
+              "__init__",
+              "calcular_estrategia_barra_lateral",
+              "escanear_alertas_stock_critico",
+              "interceptar_producto_para_maridaje"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.edge",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "json",
+              "sqlite3",
+              "time",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "precio",
+              "registrar_comanda_offline",
+              "sincronizar",
+              "sqlite3",
+              "stock"
+            ],
+            "path": "backend/modules/edge/comandero_local_core.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ComanderoLocalCore",
+              "__init__",
+              "_inicializar_base_datos_local",
+              "despachar_cola_fifo_reconciliacion",
+              "edge_dar_de_baja_producto",
+              "edge_sincronizar_producto",
+              "marcar_transaccion_sincronizada",
+              "registrar_comanda_offline"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.edge",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "interceptar_producto_para_maridaje",
+              "precio",
+              "registrar_comanda_offline"
+            ],
+            "path": "backend/modules/edge/comandero_terminal_ui.ts",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.edge",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "json",
+              "sqlite3",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evaluar_permiso_venta_tablet",
+              "sqlite3",
+              "stock"
+            ],
+            "path": "backend/modules/edge/motor_inventario_parametrico.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "MotorInventarioParametrico",
+              "__init__",
+              "_inicializar_tabla_configuracion_cliente",
+              "evaluar_permiso_venta_tablet"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.edge",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "json",
+              "sqlite3",
+              "time",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "procesar_y_rutear_comanda_a_kds",
+              "sqlite3"
+            ],
+            "path": "backend/modules/edge/orquestador_kds_core.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "OrquestadorKDSCore",
+              "__init__",
+              "_inicializar_tablas_kds",
+              "actualizar_reloj_retenciones_kds",
+              "procesar_y_rutear_comanda_a_kds"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.edge",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "http.server",
+              "json",
+              "sqlite3",
+              "time",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sincronizar",
+              "sqlite3"
+            ],
+            "path": "backend/modules/edge/servidor_local_contingencia.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EdgeServerRequestHandler",
+              "do_POST",
+              "ejecutar_servidor_local",
+              "inicializar_base_servidor_local",
+              "log_message"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "dataclasses",
+              "decimal",
+              "enum",
+              "math",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_conn",
+              "precio"
+            ],
+            "path": "backend/modules/comercial/services/precios_vinos_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EstadoCalculo",
+              "MetodoRedondeo",
+              "ResultadoPrecioSugerido",
+              "_get_conn_params",
+              "_redondear",
+              "calcular_precio_sugerido_vino",
+              "calcular_precios_vinos_masivo",
+              "clasificar_producto_comercial",
+              "get_estadisticas_calculo",
+              "obtener_costo_base_vino",
+              "obtener_rango_margen",
+              "obtener_regla_vinos",
+              "obtener_tasa_impuesto",
+              "to_dict"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "pricing_schemas",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_conn",
+              "menu_digital",
+              "precio",
+              "rbac"
+            ],
+            "path": "backend/modules/comercial/services/perfil_unidad_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_conn",
+              "_row_to_perfil",
+              "actualizar_perfil_digital",
+              "crear_perfil_digital",
+              "inactivar_perfil_digital",
+              "listar_perfiles_digitales",
+              "obtener_perfil_por_id",
+              "obtener_perfil_por_unidad",
+              "obtener_urls_perfil",
+              "verificar_perfil_completo"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 8,
+          "scanned_files": 8,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T00:59:08Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
