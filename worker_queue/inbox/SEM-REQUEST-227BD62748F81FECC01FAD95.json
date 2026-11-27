@@ -1,0 +1,57 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/finanzas/",
+          "backend/modules/crm/",
+          "backend/modules/comercial/crm_router.py",
+          "backend/core/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "facturacion",
+          "cuentas_por_cobrar",
+          "cobranza",
+          "NetPay",
+          "NetLink",
+          "conciliacion",
+          "webhook",
+          "tokenizacion",
+          "reembolso",
+          "devolucion",
+          "CFDI",
+          "recurring"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-227BD62748F81FECC01FAD95",
+  "mode": "READ_ONLY",
+  "objective": "Gate 4 Fabric Comercial READ_ONLY: identificar contratos reutilizables de facturación, cuentas por cobrar, pagos, NetPay, conciliación, devoluciones y webhooks idempotentes; distinguir cobro recurrente y tokenización de referencias genéricas. Mapear propietarios, rutas, tablas y brechas para servicios digitales, sin procesar pagos ni modificar código, SQL o Producción. Reutilizar Gates certificados anteriores.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_COMERCIAL",
+    "conflict_domains": [
+      "FABRIC_COMERCIAL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
