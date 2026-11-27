@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "backend/modules/comercial/",
+          "backend/modules/comercial_analytics/",
+          "backend/modules/rentabilidad/",
+          "backend/tests/test_comercial_analytics_tickets.py",
+          "frontend/src/components/comercial/"
+        ],
+        "search_terms": [
+          "ticket_perfecto",
+          "TicketPerfecto",
+          "query_ticket_perfecto_mpro",
+          "ticket_service",
+          "evaluar_margen_pedido",
+          "utilidad",
+          "margen",
+          "estrella",
+          "puzzle",
+          "score",
+          "repository_tickets"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-69067237BDF7C1BC1817FE66",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1A READ_ONLY: diagnostico focalizado posterior al Gate 0 certificado SEM-REQUEST-8F967DFE84B05B4ACA7EFE8F. Identificar contratos concretos de Ticket Perfecto existente, servicio de tickets, repositorio analitico, rentabilidad y pruebas; localizar simbolos, rutas, tablas y dependencias para consolidar sin duplicar. No repetir auditoria general, no modificar archivos ni produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL.TICKET_PERFECTO",
+    "conflict_domains": [
+      "COMERCIAL.TICKET_PERFECTO"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
