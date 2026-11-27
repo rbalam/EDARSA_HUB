@@ -1901,6 +1901,46 @@ def sql_readonly_profiles() -> dict[str, SqlReadonlyProfile]:
 
 register_sql_readonly_profile(
     SqlReadonlyProfile(
+        profile_code="SERVIDORES_HEALTH_FRESHNESS_CONFIG_METADATA",
+        description="Metadatos SQL de configuracion y evidencia health de conexiones sin filas ni secretos.",
+        bounded_contexts=("CONEXIONES_COMUNICACIONES", "WORKER_CONTROL_PLANE"),
+        queries=(
+            {
+                "name": "servidores_health_metadata_identity",
+                "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS database_user",
+            },
+            {
+                "name": "servidores_health_metadata_tables",
+                "sql": (
+                    "SELECT s.name AS schema_name, t.name AS table_name "
+                    "FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id "
+                    "WHERE s.name='dbo' AND t.name IN ("
+                    "'Servidores_Conexiones','Servidores_ConexionEstado',"
+                    "'Sistema_ServidoresConexionEstado','Sistema_ConfiguracionOperativa'"
+                    ") ORDER BY t.name"
+                ),
+            },
+            {
+                "name": "servidores_health_metadata_columns",
+                "sql": (
+                    "SELECT t.name AS table_name, c.column_id, c.name AS column_name, "
+                    "ty.name AS type_name, c.max_length, c.is_nullable "
+                    "FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id "
+                    "JOIN sys.columns c ON c.object_id=t.object_id "
+                    "JOIN sys.types ty ON ty.user_type_id=c.user_type_id "
+                    "WHERE s.name='dbo' AND t.name IN ("
+                    "'Servidores_Conexiones','Servidores_ConexionEstado',"
+                    "'Sistema_ServidoresConexionEstado','Sistema_ConfiguracionOperativa'"
+                    ") ORDER BY t.name,c.column_id"
+                ),
+            },
+        ),
+    )
+)
+
+
+register_sql_readonly_profile(
+    SqlReadonlyProfile(
         profile_code="SEC_RBAC_PERMISSION_MATRIX",
         description="Auditoria sellada de permisos efectivos RBAC, jerarquia de roles e identidad publica activa.",
         bounded_contexts=("SEC_RBAC", "AUTH_RBAC", "SEGURIDAD"),
