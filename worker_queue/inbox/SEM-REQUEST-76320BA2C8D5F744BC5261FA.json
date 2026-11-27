@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "backend/modules/edge/",
+          "frontend/src/pages/satelites/ComanderoPage.jsx",
+          "frontend/src/components/edge/"
+        ],
+        "search_terms": [
+          "registrar_comanda_offline",
+          "despachar_cola_fifo_reconciliacion",
+          "marcar_transaccion_sincronizada",
+          "sqlite3",
+          "idempotency",
+          "cuenta",
+          "comanda",
+          "sync",
+          "payment",
+          "estado",
+          "api",
+          "token",
+          "uuid"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-76320BA2C8D5F744BC5261FA",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2A: auditar de forma focalizada los componentes Edge y ComanderoPage identificados en Gate 1 certificado SEM-REQUEST-2C22C752CE488CE1F0EC58E7. Determinar contratos existentes de registro offline, reconciliación FIFO, identidad, persistencia canónica, estados de cuenta, idempotencia y conexión UI; no repetir búsqueda general, no modificar archivos ni Producción. Preparar evidencia para diseño mínimo del motor único.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "TPV",
+    "conflict_domains": [
+      "TPV"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
