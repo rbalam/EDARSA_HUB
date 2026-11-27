@@ -1,0 +1,64 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "        usuario_id = resolve_sql_usuario_id(current_user)",
+      "path": "backend/modules/api_connections/universal_test_routes.py",
+      "replacement": "        # Solo el email del token autenticado puede resolver identidad SQL.\n        # Nunca confiar en UsuarioID/_sql_usuario_id precargados en el contexto.\n        verified_email = current_user.get(\"email\")\n        if isinstance(verified_email, str) and verified_email.strip():\n            usuario_id = resolve_sql_usuario_id({\"email\": verified_email.strip()})\n        else:\n            usuario_id = None",
+      "source_sha256": "e90ac915e197ce98eaea537dc4c0121c4ba913e4dc16dcc41ccc708301bf1053",
+      "type": "replace_text"
+    },
+    {
+      "content": "\"\"\"Regression tests: API_LOCAL universal tests must resolve SQL identity from authenticated email only.\"\"\"\nimport pytest\n\nfrom modules.api_connections import universal_test_routes as module\n\n\n@pytest.mark.asyncio\nasync def test_verified_email_allows_authorized_access(monkeypatch):\n    seen = []\n    def resolve(user):\n        seen.append(user)\n        return 101\n    monkeypatch.setattr(module, \"resolve_sql_usuario_id\", resolve)\n    monkeypatch.setattr(module, \"can_access_permission_sql\", lambda uid, permission: uid == 101 and permission == \"SERVIDORES_VER\")\n    monkeypatch.setattr(module, \"can_access_empresa_sql\", lambda uid, empresa: uid == 101 and empresa == 7)\n    result = await module.get_api_connection_access_result(\n        {\"email\": \"verified@example.invalid\", \"usuario_id\": 999, \"_sql_usuario_id\": 999},\n        {\"id\": \"api-1\", \"EmpresaID\": 7},\n    )\n    assert result[\"allowed\"] is True\n    assert seen == [{\"email\": \"verified@example.invalid\"}]\n\n\n@pytest.mark.asyncio\nasync def test_injected_id_without_sql_email_resolution_is_denied(monkeypatch):\n    seen = []\n    def resolve(user):\n        seen.append(user)\n        return None\n    monkeypatch.setattr(module, \"resolve_sql_usuario_id\", resolve)\n    def fail(*args, **kwargs):\n        raise AssertionError(\"RBAC must not execute without verified identity\")\n    monkeypatch.setattr(module, \"can_access_permission_sql\", fail)\n    monkeypatch.setattr(module, \"can_access_empresa_sql\", fail)\n    result = await module.get_api_connection_access_result(\n        {\"email\": \"unknown@example.invalid\", \"usuario_id\": 101, \"UsuarioID\": 101, \"_sql_usuario_id\": 101},\n        {\"id\": \"api-1\", \"EmpresaID\": 7},\n    )\n    assert result[\"allowed\"] is False\n    assert result[\"reason\"] == \"SQL_IDENTITY_NOT_RESOLVED\"\n    assert seen == [{\"email\": \"unknown@example.invalid\"}]\n\n\n@pytest.mark.asyncio\nasync def test_missing_authenticated_email_denies_without_sql_lookup(monkeypatch):\n    def fail(*args, **kwargs):\n        raise AssertionError(\"No SQL lookup or permission check without authenticated email\")\n    monkeypatch.setattr(module, \"resolve_sql_usuario_id\", fail)\n    monkeypatch.setattr(module, \"can_access_permission_sql\", fail)\n    monkeypatch.setattr(module, \"can_access_empresa_sql\", fail)\n    result = await module.get_api_connection_access_result(\n        {\"usuario_id\": 101},\n        {\"id\": \"api-1\", \"EmpresaID\": 7},\n    )\n    assert result[\"allowed\"] is False\n    assert result[\"status_code\"] == 403\n    assert result[\"reason\"] == \"SQL_IDENTITY_NOT_RESOLVED\"\n\n\n@pytest.mark.asyncio\nasync def test_sql_identity_outage_fails_closed(monkeypatch):\n    def outage(user):\n        raise RuntimeError(\"simulated SQL outage\")\n    monkeypatch.setattr(module, \"resolve_sql_usuario_id\", outage)\n    def fail(*args, **kwargs):\n        raise AssertionError(\"No permission or empresa checks when SQL identity fails\")\n    monkeypatch.setattr(module, \"can_access_permission_sql\", fail)\n    monkeypatch.setattr(module, \"can_access_empresa_sql\", fail)\n    result = await module.get_api_connection_access_result(\n        {\"email\": \"verified@example.invalid\", \"usuario_id\": 101},\n        {\"id\": \"api-1\", \"EmpresaID\": 7},\n    )\n    assert result[\"allowed\"] is False\n    assert result[\"status_code\"] == 403\n    assert result[\"reason\"] == \"ACCESS_VALIDATION_EXCEPTION\"\n",
+      "path": "backend/tests/test_api_connections_identity_rbac_p0b.py",
+      "type": "write_file"
+    }
+  ],
+  "authorization_ref": "GO-SQL-RBAC-CONNECTIONS-P0B-20261127",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/api_connections/universal_test_routes.py",
+        "backend/tests/test_api_connections_identity_rbac_p0b.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_api_connections_identity_rbac_p0b.py",
+        "backend/tests/test_api_connections_universal_rbac.py",
+        "backend/tests/test_api_connections_crud_rbac_p0a.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-B89AB7C01F78359A4CB890DE",
+  "mode": "MUTATION",
+  "objective": "P0-B aprobado: en rutas universales API_LOCAL impedir confiar en IDs directos del contexto y resolver identidad mediante SQL usando solo email autenticado; fail-closed si falta email o SQL falla; agregar pruebas, conservar P0-A certificado y no tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SQL_RBAC_019",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "SQL_RBAC_019"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
