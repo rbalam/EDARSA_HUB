@@ -19,16 +19,21 @@ import UniversalQueryTester from '@/components/UniversalQueryTester';
 import { formatNombreSucursal } from '@/lib/formatSucursal';
 import { fetchUnidadesNegocio } from '@/services/unidadesNegocioService';
 
+// Histórico: conservar la fecha recibida sin inferir la zona horaria.
+const historicalCheckLabel = (status) => status?.historical
+  ? `Última prueba registrada: ${status.lastCheck ? String(status.lastCheck).replace('T', ' ') : 'fecha no disponible'}`
+  : null;
+
 // Helper: Renderiza indicador de estado del servidor
 const StatusIndicator = ({ pingStatus }) => {
   if (pingStatus?.loading) {
     return <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-yellow-400 animate-pulse border-2 border-white" title="Verificando..." />;
   }
   if (pingStatus?.status === 'connected') {
-    return <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-white" title="Online" />;
+    return <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-white" title={historicalCheckLabel(pingStatus) || "Online"} />;
   }
   if (pingStatus?.status) {
-    return <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500 border-2 border-white" title="Offline" />;
+    return <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500 border-2 border-white" title={historicalCheckLabel(pingStatus) || "Offline"} />;
   }
   return <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-zinc-300 border-2 border-white" title="Sin verificar" />;
 };
@@ -50,7 +55,7 @@ const StatusButton = ({ pingStatus, serverId, onPing }) => {
         size="sm"
         onClick={() => onPing(serverId)}
         className="h-7 px-3 text-xs bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
-        title={pingStatus?.historical ? `Última prueba registrada: ${pingStatus?.lastCheck || 'fecha desconocida'}` : `Conectado en ${pingStatus?.responseTime}ms`}
+        title={historicalCheckLabel(pingStatus) || `Conectado en ${pingStatus?.responseTime}ms`}
       >
         <Wifi className="h-3 w-3 mr-1" />
         {pingStatus?.historical ? 'Último: Conectado' : `Online (${pingStatus?.responseTime}ms)`}
@@ -64,6 +69,7 @@ const StatusButton = ({ pingStatus, serverId, onPing }) => {
         size="sm"
         onClick={() => onPing(serverId)}
         className="h-7 px-3 text-xs bg-red-50 border-red-300 text-red-700 hover:bg-red-100"
+        title={historicalCheckLabel(pingStatus) || 'Offline'}
       >
         <WifiOff className="h-3 w-3 mr-1" />
         {pingStatus?.historical ? 'Último: Error' : 'Offline'}
@@ -1794,6 +1800,9 @@ const Servidores = () => {
                                 <span className="text-xs">Desconocido</span>
                               </span>
                             )}
+                            {pingStatus[server.id]?.historical && (
+                              <div className="mt-1 text-xs text-zinc-500">{historicalCheckLabel(pingStatus[server.id])}</div>
+                            )}
                           </td>
                           {/* Nombre */}
                           <td className="px-3 py-2 font-medium text-zinc-800">{formatNombreSucursal(server.name)}</td>
@@ -1902,11 +1911,16 @@ const Servidores = () => {
                     </div>
                   </div>
                   {/* Botón de estado Online/Offline */}
-                  <StatusButton 
-                    pingStatus={pingStatus[server.id]} 
-                    serverId={server.id} 
-                    onPing={pingServer} 
-                  />
+                  <div>
+                    <StatusButton
+                      pingStatus={pingStatus[server.id]}
+                      serverId={server.id}
+                      onPing={pingServer}
+                    />
+                    {pingStatus[server.id]?.historical && (
+                      <div className="mt-1 text-xs text-zinc-500">{historicalCheckLabel(pingStatus[server.id])}</div>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -2226,8 +2240,11 @@ const Servidores = () => {
                               <span className="text-xs">Sin probar</span>
                             </span>
                           )}
+                            {apiTestStatus[apiConn.id]?.historical && (
+                              <div className="mt-1 text-xs text-zinc-500">{historicalCheckLabel(apiTestStatus[apiConn.id])}</div>
+                            )}
                         </td>
-                        {/* Nombre */}
+                        {/* Nombre */
                         <td className="px-3 py-2 font-medium text-zinc-800">{apiConn.name}</td>
                         {/* Sistema */}
                         <td className="px-3 py-2">
@@ -2362,6 +2379,9 @@ const Servidores = () => {
                       </Badge>
                     )}
                   </div>
+                    {apiTestStatus[apiConn.id]?.historical && (
+                      <div className="mt-1 text-xs text-zinc-500">{historicalCheckLabel(apiTestStatus[apiConn.id])}</div>
+                    )}
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2 text-sm">

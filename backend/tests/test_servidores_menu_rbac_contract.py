@@ -137,3 +137,15 @@ def test_servidores_health_historico_sin_pings_automaticos():
     assert "pingServerSilent(server.id);" not in source
     assert "await testApiConnection(apiConn);" in source
     assert "onPing={pingServer}" in source
+
+
+def test_servidores_evidencia_historica_con_fecha_en_listas_y_tarjetas():
+    source = (ROOT / "frontend" / "src" / "pages" / "Servidores.js").read_text(encoding="utf-8")
+    assert "const historicalCheckLabel = (status)" in source
+    assert "Última prueba registrada:" in source
+    assert "fecha no disponible" in source
+    assert "pingStatus[server.id]?.historical && (" in source
+    assert "apiTestStatus[apiConn.id]?.historical && (" in source
+    assert 'historicalCheckLabel(pingStatus) || "Online"' in source
+    assert "historicalCheckLabel(pingStatus) || 'Offline'" in source
+    assert "pingServerSilent(server.id);" not in source
