@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "SEM-REQUEST-6CC587A32F49C106B9D1D583"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-1B6409D3AC0FA8D23913872A",
+  "mode": "READ_ONLY",
+  "objective": "Recuperar mediante lector canónico existente el detalle del resultado certificado Gate0 Operación Restaurante SEM-REQUEST-6CC587A32F49C106B9D1D583; verificar disponibilidad real del artefacto y los campos semánticos faltantes reportados por SEM-REQUEST-3965590004A8083AA4373310; no reejecutar auditorías ni modificar repositorio o Producción. Entregar evidencia o bloqueo exacto fail-closed.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "OPERACIONES_RESTAURANTE",
+    "conflict_domains": [
+      "OPERACIONES_RESTAURANTE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
