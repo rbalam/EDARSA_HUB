@@ -1,0 +1,177 @@
+{
+  "base_sha": "ab393668a12cc0af1675446c784ffee1d5ff22b7",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T06:07:20Z",
+  "execution_base_sha": "ab393668a12cc0af1675446c784ffee1d5ff22b7",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-03CE3F0172B468E40827FBEF",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T06:08:30Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.connection_factory",
+              "datetime",
+              "logging",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "afiliado"
+            ],
+            "path": "backend/modules/cava_socios/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CavaSociosService",
+              "_crear_cargo",
+              "_generar_numero_socio",
+              "_get_connection",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_socio",
+              "get_cava_socios_service",
+              "listar_clientes_canonicos",
+              "listar_socios",
+              "obtener_cargos_socio",
+              "obtener_dashboard",
+              "obtener_etiqueta_botella",
+              "obtener_historial_consumos_global",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario_global",
+              "obtener_kardex",
+              "obtener_movimientos_socio",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos"
+            ],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Cliente_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.worker_ingress",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "hashlib",
+              "pathlib",
+              "re",
+              "tools.mirror_sync",
+              "tools.mirror_sync.worker_requester_rbac",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "liquidacion"
+            ],
+            "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "PytestCertificationSuite",
+              "SemanticCapability",
+              "SemanticCapabilityError",
+              "SqlReadonlyProfile",
+              "_capability_contract_details",
+              "_coa_gate6f_status_seed_builder",
+              "_cross_domain_handoff_register_submitter",
+              "_dev_apply_virtual_change",
+              "_dev_context_owned_paths",
+              "_dev_validate_path",
+              "_development_mutation_bounded_builder",
+              "_g3_constraints",
+              "_g3_context",
+              "_g3_repository_builder",
+              "_g3_result_builder",
+              "_g3_scheduling",
+              "_gate_authorization_lifecycle_submitter",
+              "_maintenance_history_readonly_builder",
+              "_read_only_canary_builder",
+              "_repository_contract_audit_builder",
+              "_sec_rbac_gate1b_sql_builder",
+              "_sql_connections_bootstrap_readonly_builder",
+              "_sql_readonly_profile_audit_builder",
+              "_validate_pytest_suite_path",
+              "_validate_readonly_sql_query",
+              "_worker_pytest_certification_readonly_builder",
+              "_worker_repair_bounded_submitter",
+              "_worker_result_detail_builder",
+              "capability_catalog",
+              "pytest_certification_suites",
+              "register_capability",
+              "register_pytest_certification_suite",
+              "register_sql_readonly_profile",
+              "registered_capabilities",
+              "resolve_capability",
+              "sql_readonly_profiles"
+            ],
+            "tables_referenced": [
+              "Alertas_Sistema",
+              "Fiscal_DocumentosEmitidos",
+              "Fiscal_DocumentosEmitidosEstatus",
+              "Sesiones",
+              "Sys_Worker_Capabilities",
+              "Sys_Worker_Incidents",
+              "Sys_Worker_Jobs",
+              "Unidades_Negocio",
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 1279,
+          "skipped_sensitive": 437
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T06:07:19Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
