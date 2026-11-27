@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "frontend/src/components/ui/",
+          "frontend/src/components/crm/PipelineKanban.jsx",
+          "frontend/src/components/navigation/TabbedModuleShell.jsx",
+          "frontend/src/components/ia/visualization/IAVisualizationRenderer.jsx"
+        ],
+        "search_terms": [
+          "export",
+          "forwardRef",
+          "children",
+          "onDragEnd",
+          "draggable",
+          "onDrop",
+          "aria-label",
+          "onChange",
+          "disabled",
+          "className"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-A13641E7C6FF38AFDE886633",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2 preparatorio: inspeccionar contratos de los componentes UI compartidos y candidatos concretos certificados en G1 para diseñar un catálogo declarativo de herramientas visuales. Identificar interfaces, composición, restricciones, accesibilidad y separación del dominio CRM. No repetir barrido frontend general, no crear dependencias ni modificar código.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_STUDIO",
+    "conflict_domains": [
+      "FABRIC_STUDIO"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
