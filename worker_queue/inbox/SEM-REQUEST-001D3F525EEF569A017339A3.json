@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/tests/",
+          "frontend/src/portal/"
+        ],
+        "search_terms": [
+          "portal_proveedores",
+          "portal-proveedores",
+          "ProveedorID",
+          "complemento",
+          "PPD",
+          "UploadInvoicePage",
+          "BatchUploadPage"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-001D3F525EEF569A017339A3",
+  "mode": "READ_ONLY",
+  "objective": "Gate 03: localizar exclusivamente pruebas y contratos de integración existentes del Portal de Proveedores para determinar cobertura de aislamiento, CFDI, conciliación y complementos PPD. No repetir inventario general certificado ni ejecutar mutaciones. Identificar suites reutilizables y brechas de cobertura; no confundir coincidencias con pruebas ejecutadas.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "PORTAL_PROVEEDORES",
+    "conflict_domains": [
+      "PORTAL_PROVEEDORES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
