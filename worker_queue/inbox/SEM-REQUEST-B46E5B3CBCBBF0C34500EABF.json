@@ -1,0 +1,47 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/tests/",
+          "backend/modules/worker_ingress/semantic_capabilities.py",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "test_rrr",
+          "RRR",
+          "HERMETIC_READONLY",
+          "WORKER_PYTEST_CERTIFICATION_READONLY"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-B46E5B3CBCBBF0C34500EABF",
+  "mode": "READ_ONLY",
+  "objective": "Identificar suites pytest RRR existentes y puntos de registro de certificacion hermetica para R11; no repetir auditoria del adapter.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RRR",
+    "conflict_domains": [
+      "RRR"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
