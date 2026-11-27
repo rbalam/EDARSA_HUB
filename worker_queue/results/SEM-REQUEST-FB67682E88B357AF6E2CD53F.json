@@ -1,0 +1,1259 @@
+{
+  "base_sha": "f448a7f0ec90019ba45af3acd1472df46a2b559b",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T05:32:32Z",
+  "execution_base_sha": "f448a7f0ec90019ba45af3acd1472df46a2b559b",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-FB67682E88B357AF6E2CD53F",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T05:34:31Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.catalogos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "modules.catalogos.routes",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "catalogo"
+            ],
+            "path": "backend/modules/catalogos/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "get_db",
+              "get_router",
+              "init_catalogos_module"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "modules.catalogos.schemas",
+              "typing"
+            ],
+            "integrations": [
+              "banorte",
+              "bbva"
+            ],
+            "matched_terms": [
+              "catalogo",
+              "moneda",
+              "servicio"
+            ],
+            "path": "backend/modules/catalogos/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "activar_registro_catalogo",
+              "actualizar_registro_catalogo",
+              "contar_registros_tabla",
+              "crear_registro_catalogo",
+              "desactivar_registro_catalogo",
+              "ejecutar_ddl_tablas_nuevas",
+              "escape_sql_string",
+              "execute_edarsa_query",
+              "get_edarsa_hub_connection",
+              "listar_registros_catalogo",
+              "obtener_conteos_tablas",
+              "obtener_estructura_tabla",
+              "obtener_registro_catalogo",
+              "verificar_tablas_nuevas"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.connections.hrlectura_connection_factory",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.rbac.middleware",
+              "core.rbac_helper_sql",
+              "core.security",
+              "core.unidades_service",
+              "fastapi",
+              "modules.catalogos.schemas",
+              "modules.catalogos.service",
+              "os",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "catalogo"
+            ],
+            "path": "backend/modules/catalogos/routes.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto",
+              "get_current_user"
+            ],
+            "routes": [
+              "/admin/crear-tablas",
+              "/admin/script-ddl",
+              "/admin/verificar-tablas",
+              "/autorizaciones/catalogos",
+              "/autorizaciones/matriz/{matriz_autorizacion_id}",
+              "/autorizaciones/tipos/{tipo_autorizacion_id}/matriz",
+              "/dominios",
+              "/estructura/{tabla}",
+              "/sistemas",
+              "/sistemas/activos",
+              "/sistemas/solicitar",
+              "/sistemas/{sistema_id}",
+              "/sistemas/{sistema_id}/autorizar",
+              "/sistemas/{sistema_id}/rechazar",
+              "/sistemas/{sistema_id}/toggle-activo",
+              "/tabla/{tabla}",
+              "/tabla/{tabla}/{id}",
+              "/tabla/{tabla}/{id}/activar",
+              "/tabla/{tabla}/{id}/desactivar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_tiene_permiso_sistemas",
+              "activar_registro",
+              "actualizar_fila_matriz_autorizacion",
+              "actualizar_registro",
+              "actualizar_sistema",
+              "autorizar_sistema",
+              "crear_fila_matriz_autorizacion",
+              "crear_registro",
+              "crear_sistema",
+              "crear_tablas_nuevas",
+              "desactivar_registro",
+              "listar_catalogo",
+              "listar_dominios",
+              "listar_sistemas",
+              "listar_sistemas_activos",
+              "obtener_catalogos_matriz_autorizacion",
+              "obtener_estructura",
+              "obtener_matriz_autorizacion",
+              "obtener_registro",
+              "obtener_script_ddl",
+              "rechazar_sistema",
+              "solicitar_sistema",
+              "toggle_sistema_activo",
+              "verificar_tablas_nuevas"
+            ],
+            "tables_referenced": [
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_MatrizAutorizacion",
+              "Usuario_Modulos",
+              "Usuario_Roles",
+              "Usuario_RolesContexto",
+              "Usuario_TiposAutorizacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "catalogo",
+              "moneda",
+              "producto"
+            ],
+            "path": "backend/modules/catalogos/schemas.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CatalogoListResponse",
+              "CatalogoRegistroCreate",
+              "CatalogoRegistroResponse",
+              "CatalogoRegistroUpdate",
+              "DominiosResponse",
+              "EstructuraTablaResponse"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "fastapi",
+              "logging",
+              "modules.catalogos",
+              "modules.catalogos.schemas",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "catalogo",
+              "servicio"
+            ],
+            "path": "backend/modules/catalogos/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CatalogosService",
+              "__init__",
+              "activar_registro",
+              "actualizar_registro",
+              "crear_registro",
+              "crear_tablas_nuevas",
+              "desactivar_registro",
+              "get_catalogos_service",
+              "init_catalogos_service",
+              "listar_catalogo",
+              "obtener_dominios",
+              "obtener_estructura_tabla",
+              "obtener_registro",
+              "obtener_script_ddl",
+              "verificar_tablas_nuevas"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "routes"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "catalogo"
+            ],
+            "path": "backend/modules/catalogo/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.request_resolver",
+              "core.db",
+              "core.security",
+              "fastapi",
+              "modules.costos_margenes.repository",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "catalogo",
+              "producto",
+              "sync_productos"
+            ],
+            "path": "backend/modules/catalogo/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/clasificacion"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_build_server_filter",
+              "obtener_clasificacion"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial_enriquecido",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.comercial_enriquecido.routes"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "producto"
+            ],
+            "path": "backend/modules/comercial_enriquecido/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial_enriquecido",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.db",
+              "core.server_registry",
+              "core.sql_first.db",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "catalogo",
+              "precio",
+              "producto",
+              "sync_productos"
+            ],
+            "path": "backend/modules/comercial_enriquecido/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ComercialEnriquecidoRepository",
+              "_build_where",
+              "_conn",
+              "_count",
+              "_distinct",
+              "actualizar",
+              "catalogos_filtros",
+              "crear",
+              "get_by_id",
+              "importar",
+              "listar",
+              "set_activo"
+            ],
+            "tables_referenced": [
+              "Comercial_Productos_Enriquecidos",
+              "Sync_Productos"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial_enriquecido",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.request_resolver",
+              "core.rbac_helper_sql",
+              "core.security",
+              "fastapi",
+              "logging",
+              "modules.comercial_enriquecido.repository",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "catalogo",
+              "precio",
+              "producto"
+            ],
+            "path": "backend/modules/comercial_enriquecido/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/catalogos/filtros",
+              "/importar",
+              "/{id}",
+              "/{id}/activar",
+              "/{id}/desactivar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ProductoEnriquecidoCreate",
+              "ProductoEnriquecidoUpdate",
+              "_allowed_servers",
+              "_puede_editar",
+              "activar_producto",
+              "actualizar_producto_enriquecido",
+              "catalogos_filtros",
+              "crear_producto_enriquecido",
+              "desactivar_producto",
+              "importar_productos",
+              "listar_productos_enriquecidos",
+              "obtener_producto_enriquecido"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "benchmark_service",
+              "competidores_service",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "impuestos_service",
+              "perfil_unidad_service",
+              "precios_vinos_service",
+              "pricing_ai_service",
+              "pricing_schemas",
+              "pricing_sugerido_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "impuesto",
+              "precio",
+              "producto",
+              "servicio"
+            ],
+            "path": "backend/modules/comercial/services/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "core.server_registry",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "catalogo",
+              "precio",
+              "producto",
+              "servicio",
+              "sync_productos"
+            ],
+            "path": "backend/modules/comercial/services/benchmark_sectorial_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_competidor_precios_por_categoria",
+              "_conn",
+              "_desviacion",
+              "_mapa_empresas",
+              "_nuestros_precios_por_categoria",
+              "_q",
+              "_semaforo",
+              "sectores_disponibles",
+              "vista_interno",
+              "vista_por_segmento",
+              "vista_vs_sector"
+            ],
+            "tables_referenced": [
+              "Comercial_Competidores",
+              "Comercial_CompetidoresMenuItems",
+              "Sistema_EmpresasServidores",
+              "Sync_Productos"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "competidores_service",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "perfil_unidad_service",
+              "pricing_schemas",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "precio",
+              "producto",
+              "servicio",
+              "sync_productos"
+            ],
+            "path": "backend/modules/comercial/services/benchmark_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_conn",
+              "_row_to_benchmark",
+              "actualizar_benchmark",
+              "crear_benchmark",
+              "inactivar_benchmark",
+              "listar_benchmarks",
+              "obtener_benchmark_por_id",
+              "obtener_benchmarks_producto",
+              "obtener_estado_preparacion_ia",
+              "obtener_precios_competencia_producto",
+              "obtener_resumen_benchmark",
+              "validar_benchmark"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "catalogo",
+              "precio",
+              "servicio"
+            ],
+            "path": "backend/modules/comercial/services/competidores_enterprise_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_conn",
+              "buscar_competidor_catalogo",
+              "crear_competidor_catalogo",
+              "desrelacionar_competidor_unidad",
+              "estadisticas_competidores_unidad",
+              "listar_competidores_por_unidad",
+              "obtener_competidor_por_unidad",
+              "obtener_unidades_del_competidor",
+              "obtener_unidades_permitidas",
+              "relacionar_competidor_unidad",
+              "sql_str",
+              "validar_acceso_unidad"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "pricing_schemas",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "moneda",
+              "precio",
+              "producto",
+              "servicio"
+            ],
+            "path": "backend/modules/comercial/services/competidores_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_conn",
+              "_row_to_competidor",
+              "_row_to_menu_item",
+              "actualizar_competidor",
+              "actualizar_menu_item",
+              "crear_competidor",
+              "crear_menu_item",
+              "inactivar_competidor",
+              "inactivar_menu_item",
+              "listar_competidores",
+              "listar_menu_items",
+              "obtener_competidor_por_id",
+              "obtener_estadisticas_competidores",
+              "obtener_estadisticas_menu_items",
+              "obtener_menu_item_por_id"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "decimal",
+              "enum",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "catalogo",
+              "impuesto",
+              "precio",
+              "producto",
+              "servicio",
+              "sync_productos",
+              "vigencia"
+            ],
+            "path": "backend/modules/comercial/services/impuestos_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EstadoFiscal",
+              "ResultadoResolucionImpuesto",
+              "__init__",
+              "_get_edarsahub_connection",
+              "get_estado_fiscal_producto",
+              "get_productos_sin_impuesto",
+              "resolver_tasa_impuesto",
+              "to_dict"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "bs4",
+              "core.db",
+              "core.object_storage",
+              "core.server_registry",
+              "csv",
+              "docx",
+              "emergentintegrations.llm.chat",
+              "io",
+              "json",
+              "logging",
+              "openpyxl",
+              "os",
+              "re",
+              "requests",
+              "tempfile",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "moneda",
+              "precio",
+              "producto",
+              "servicio"
+            ],
+            "path": "backend/modules/comercial/services/ingesta_competencia_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_conn",
+              "_docx_a_texto",
+              "_find_or_create_competidor",
+              "_ia_extraer",
+              "_insert_staging",
+              "_normaliza_filas",
+              "_parse_json_array",
+              "_q",
+              "_row_to_dict",
+              "_scrape_link",
+              "actualizar_filas",
+              "confirmar_ingesta",
+              "crear_ingesta_archivo",
+              "crear_ingesta_link",
+              "generar_plantilla_excel",
+              "listar_ingestas",
+              "obtener_ingesta",
+              "parse_tabular",
+              "pick",
+              "rechazar_ingesta"
+            ],
+            "tables_referenced": [
+              "Comercial_Ingesta_Competencia"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "precio",
+              "servicio"
+            ],
+            "path": "backend/modules/comercial/services/listas_competidores_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_ensure_tablas_listas_existen",
+              "_get_conn",
+              "actualizar_lista_competidores",
+              "agregar_competidor_a_lista",
+              "crear_lista_competidores",
+              "desactivar_lista_competidores",
+              "listar_competidores_de_lista",
+              "listar_listas_competidores",
+              "obtener_ids_competidores_de_lista",
+              "obtener_lista_competidores",
+              "obtener_listas_de_competidor",
+              "quitar_competidor_de_lista"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "precio",
+              "producto",
+              "servicio"
+            ],
+            "path": "backend/modules/comercial/services/metricas_ia_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_conn",
+              "obtener_estadisticas_competidores_benchmark",
+              "obtener_metricas_dashboard_ia"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "pricing_schemas",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "moneda",
+              "precio",
+              "servicio"
+            ],
+            "path": "backend/modules/comercial/services/perfil_unidad_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_conn",
+              "_row_to_perfil",
+              "actualizar_perfil_digital",
+              "crear_perfil_digital",
+              "inactivar_perfil_digital",
+              "listar_perfiles_digitales",
+              "obtener_perfil_por_id",
+              "obtener_perfil_por_unidad",
+              "obtener_urls_perfil",
+              "verificar_perfil_completo"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "enum",
+              "logging",
+              "modules.costos_margenes.redondeo",
+              "modules.costos_margenes.reglas_margen_service",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "impuesto",
+              "precio",
+              "producto",
+              "servicio",
+              "sync_productos"
+            ],
+            "path": "backend/modules/comercial/services/precios_sugeridos_consolidado_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EstadoRevision",
+              "FuenteSugerencia",
+              "_calcular_precio_vino",
+              "_es_vino",
+              "_get_conn",
+              "_normalizar_uuid",
+              "_obtener_rangos_vinos",
+              "actualizar_rango_vino",
+              "crear_rango_vino",
+              "desactivar_rango_vino",
+              "obtener_precios_sugeridos",
+              "obtener_rangos_vinos"
+            ],
+            "tables_referenced": [
+              "Comercial_ClasificacionesProducto",
+              "Producto_MapeoOrigen"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "dataclasses",
+              "decimal",
+              "enum",
+              "math",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "impuesto",
+              "precio",
+              "producto",
+              "servicio",
+              "sync_productos",
+              "vigencia"
+            ],
+            "path": "backend/modules/comercial/services/precios_vinos_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EstadoCalculo",
+              "MetodoRedondeo",
+              "ResultadoPrecioSugerido",
+              "_get_conn_params",
+              "_redondear",
+              "calcular_precio_sugerido_vino",
+              "calcular_precios_vinos_masivo",
+              "clasificar_producto_comercial",
+              "get_estadisticas_calculo",
+              "obtener_costo_base_vino",
+              "obtener_rango_margen",
+              "obtener_regla_vinos",
+              "obtener_tasa_impuesto",
+              "to_dict"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "benchmark_service",
+              "competidores_service",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "dotenv",
+              "emergentintegrations.llm.chat",
+              "enum",
+              "json",
+              "logging",
+              "modules.comercial.services.listas_competidores_service",
+              "os",
+              "perfil_unidad_service",
+              "pricing_schemas",
+              "pricing_sugerido_service",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "impuesto",
+              "precio",
+              "producto",
+              "servicio",
+              "sync_productos"
+            ],
+            "path": "backend/modules/comercial/services/pricing_ai_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConfianzaIA",
+              "EstadoAnalisisIA",
+              "TipoAnalisisIA",
+              "_calcular_confianza_analisis",
+              "_ensure_tabla_analisis_existe",
+              "_get_conn",
+              "_get_llm_key",
+              "_guardar_analisis_ia",
+              "_obtener_competidores_para_contexto",
+              "_obtener_contexto_unidad",
+              "_obtener_datos_producto",
+              "analizar_benchmark_con_ia",
+              "analizar_producto_con_ia",
+              "generar_justificacion_con_ia",
+              "obtener_analisis_ia",
+              "sugerir_comparables_con_ia"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "enum",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "impuesto",
+              "moneda",
+              "precio",
+              "producto",
+              "servicio"
+            ],
+            "path": "backend/modules/comercial/services/pricing_schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BenchmarkEstadoPreparacionResponse",
+              "BenchmarkResumenResponse",
+              "BenchmarksListResponse",
+              "CompetidorBase",
+              "CompetidorCreate",
+              "CompetidorMenuItemBase",
+              "CompetidorMenuItemCreate",
+              "CompetidorMenuItemResponse",
+              "CompetidorMenuItemUpdate",
+              "CompetidorResponse",
+              "CompetidorUpdate",
+              "CompetidoresListResponse",
+              "ConfianzaDato",
+              "Config",
+              "EstadoCalculo",
+              "MenuItemsListResponse",
+              "MetodoObtencion",
+              "PaginacionResponse",
+              "PerfilDigitalBase",
+              "PerfilDigitalCreate",
+              "PerfilDigitalResponse",
+              "PerfilDigitalUpdate",
+              "PerfilesDigitalesListResponse",
+              "PosicionVsCompetencia",
+              "PrecioSugeridoCalcularRequest",
+              "PrecioSugeridoCalcularResponse",
+              "PricingBenchmarkProductoBase",
+              "PricingBenchmarkProductoCreate",
+              "PricingBenchmarkProductoResponse",
+              "PricingBenchmarkProductoUpdate",
+              "SegmentoPrecio",
+              "TipoComparacion",
+              "TipoMotorPrecio",
+              "TipoRestaurante",
+              "validar_margen"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "benchmark_service",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "impuestos_service",
+              "logging",
+              "math",
+              "precios_vinos_service",
+              "pricing_schemas",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "impuesto",
+              "precio",
+              "producto",
+              "servicio",
+              "sync_productos"
+            ],
+            "path": "backend/modules/comercial/services/pricing_sugerido_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_calcular_posicion_vs_competencia",
+              "_es_producto_vino",
+              "_get_conn",
+              "_obtener_costo_producto",
+              "_obtener_nombre_producto",
+              "_redondear",
+              "calcular_precio_sugerido_base",
+              "calcular_precios_masivo",
+              "obtener_estadisticas_calculo"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogos_workflow_sql",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "catalogo"
+            ],
+            "path": "backend/modules/catalogos_workflow_sql/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogos_workflow_sql",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "decimal",
+              "json",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "catalogo"
+            ],
+            "path": "backend/modules/catalogos_workflow_sql/fecha_operativa_service.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_json_default",
+              "apply_fecha_operativa",
+              "can_authorize_fecha_operativa",
+              "can_release_fecha_operativa",
+              "current_user_email",
+              "ensure_sql_user_id",
+              "get_fecha_operativa_record",
+              "get_flow_permissions",
+              "get_target_from_payload",
+              "has_any_rbac_action",
+              "has_rbac_action",
+              "insert_rbac_bitacora",
+              "is_fecha_operativa_payload",
+              "json_dumps",
+              "json_loads",
+              "normalize_fecha_operativa_request"
+            ],
+            "tables_referenced": [
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_Modulos",
+              "Usuario_PermisosCatalogosFlujo",
+              "Usuario_PermisosRolModulo",
+              "Usuario_RBAC_Bitacora",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogos_workflow_sql",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.sql_first.db",
+              "modules.catalogos_workflow_sql.fecha_operativa_service"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "catalogo"
+            ],
+            "path": "backend/modules/catalogos_workflow_sql/repository.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CatalogosWorkflowSQLRepository",
+              "aprobar_solicitud",
+              "corregir_solicitud",
+              "crear_solicitud_catalogo",
+              "crear_tarea",
+              "get_catalogos_disponibles",
+              "get_historial_solicitud_catalogo",
+              "get_mis_permisos_catalogos",
+              "get_permisos_catalogo_usuario",
+              "get_solicitud_catalogo",
+              "liberar_solicitud",
+              "listar_mis_tareas",
+              "listar_solicitudes_catalogo",
+              "listar_solicitudes_fecha_operativa_autorizables",
+              "listar_solicitudes_workflow",
+              "listar_tareas",
+              "listar_usuarios_asignables",
+              "rechazar_solicitud",
+              "upsert_niveles_catalogo",
+              "upsert_permisos_catalogo"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogos_workflow_sql",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.security",
+              "fastapi",
+              "modules.catalogos_workflow_sql.repository",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "catalogo"
+            ],
+            "path": "backend/modules/catalogos_workflow_sql/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/config",
+              "/config/{catalogo_id}/niveles",
+              "/permisos",
+              "/permisos/usuario/{user_id}",
+              "/solicitudes",
+              "/solicitudes/{solicitud_id}/estado",
+              "/tareas"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "get_catalogos_disponibles",
+              "get_permisos_catalogo",
+              "get_solicitudes_catalogo",
+              "get_tareas",
+              "post_permisos_catalogo",
+              "post_solicitud_catalogo",
+              "post_tarea",
+              "put_catalogo_niveles",
+              "put_estado_solicitud_catalogo"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 29,
+          "scanned_files": 30,
+          "skipped_sensitive": 30
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T05:32:31Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
