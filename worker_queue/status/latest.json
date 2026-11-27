@@ -4,97 +4,103 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "3db9f6fca03ff0261c47f43c7a041e65f4581b8f",
-  "generated_at_utc": "2026-11-27T05:45:37Z",
+  "generated_at_utc": "2026-11-27T05:47:04Z",
   "history": {
-    "done_total_local": 2336,
+    "done_total_local": 2337,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1414,
-    "results_total_local": 3509
+    "results_total_local": 3510
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 232,
+      "age_seconds": 319,
       "job_id": "EDARSAHUB-BOS-AUTONOMOUS-RUNTIME-RECOVERY-G1-R1-20261127",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 745,
+      "age_seconds": 832,
       "job_id": "SEM-REQUEST-01BB24F7D1133EB523F52EDE",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 868,
+      "age_seconds": 956,
       "job_id": "SEM-REQUEST-07D77BB8203C8DCD8FAFA432",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 725,
+      "age_seconds": 43,
+      "job_id": "SEM-REQUEST-227BD62748F81FECC01FAD95",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 812,
       "job_id": "SEM-REQUEST-29AA79B6CF8090AB80D843E5",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 29,
+      "age_seconds": 117,
       "job_id": "SEM-REQUEST-411D6A6B4548CC520571E5B4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 291,
+      "age_seconds": 379,
       "job_id": "SEM-REQUEST-439185073DAA53BEDF6B3F73",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 796,
+      "age_seconds": 883,
       "job_id": "SEM-REQUEST-547D5DA45EA24A617E431D87",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 894,
+      "age_seconds": 981,
       "job_id": "SEM-REQUEST-6D2ADB70AD1F6554181D185C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1326,
+      "age_seconds": 1414,
       "job_id": "SEM-REQUEST-993692A1DFBE01FC7EF01748",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 857,
+      "age_seconds": 945,
       "job_id": "SEM-REQUEST-A13641E7C6FF38AFDE886633",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 5,
+      "age_seconds": 92,
       "job_id": "SEM-REQUEST-B0D29EA57EFE6860BB1D8D98",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 51,
+      "age_seconds": 138,
       "job_id": "SEM-REQUEST-CBD79CA29757F4836A2E90C2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1,
+      "age_seconds": 89,
       "job_id": "SEM-REQUEST-D6C446A2D57F10E8D17EA511",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 784,
+      "age_seconds": 872,
       "job_id": "SEM-REQUEST-FB67682E88B357AF6E2CD53F",
       "reason": null,
       "state": "RESULT_READY"
@@ -108,15 +114,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 14,
+  "queue_result_ready_recent": 15,
   "queue_running": 0,
   "remote_development_sha": "3db9f6fca03ff0261c47f43c7a041e65f4581b8f",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-27T05:45:12Z",
-    "last_receive_utc": "2026-11-27T05:45:33Z",
-    "last_terminal_utc": "2026-11-27T05:45:35Z",
+    "last_cycle_utc": "2026-11-27T05:46:53Z",
+    "last_receive_utc": "2026-11-27T05:46:48Z",
+    "last_terminal_utc": "2026-11-27T05:46:21Z",
     "pid": "1395431",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "aef9ee3ddceabeb5f9c14c6750a0245563c5d859",
