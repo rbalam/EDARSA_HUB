@@ -1,0 +1,47 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 45,
+        "paths": [
+          "backend/modules/finanzas/",
+          "backend/tests/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "incidencias_caja",
+          "include_router",
+          "cuadres",
+          "cajas"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-012845EC397798ACC86DDEBF",
+  "mode": "READ_ONLY",
+  "objective": "Gate12 CAJAS COMERCIAL_POS auditoria acotada de rutas HTTP existentes y pruebas, determinar ruta exacta, operaciones minimas, ownership y alternativa a backend/server.py. No repetir Gates certificados, no mutaciones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
