@@ -1,0 +1,55 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/catalogos/",
+          "backend/modules/catalogo/",
+          "backend/modules/comercial_enriquecido/",
+          "backend/modules/comercial/services/",
+          "backend/modules/catalogos_workflow_sql/"
+        ],
+        "search_terms": [
+          "producto",
+          "servicio",
+          "unidad_medida",
+          "moneda",
+          "impuesto",
+          "precio",
+          "vigencia",
+          "tarifa",
+          "Sync_Productos",
+          "catalogo"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-FB67682E88B357AF6E2CD53F",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 READ_ONLY Fabric Comercial: verificar contratos del catálogo maestro de productos y servicios para extender sin duplicación la comercialización de software, servicios Cloud, IA, certificación y soporte. Identificar claves canónicas, clasificación, unidades, impuestos, moneda, vigencia, tarifas, permisos, rutas y puntos de extensión; distinguir evidencia disponible de brechas. Reutilizar Gate 0 y R2 certificados, sin modificaciones ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_COMERCIAL",
+    "conflict_domains": [
+      "FABRIC_COMERCIAL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
