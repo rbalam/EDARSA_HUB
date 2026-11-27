@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/inventarios/",
+          "backend/modules/compras/",
+          "backend/modules/fase2_operativo/services/automatizacion_compras_service.py",
+          "backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py"
+        ],
+        "search_terms": [
+          "reposicion",
+          "consumo",
+          "dias_objetivo",
+          "existencias",
+          "traspaso",
+          "recepcion",
+          "proveedor",
+          "recomendacion",
+          "inventario",
+          "autorizacion"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-71BA5E06580C01E31E61CEC6",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2: identificar contratos concretos reutilizables de inventarios y compras para diseño de integración de optimización logística. Complementar Gates certificados sin repetir búsquedas generales ni especializadas. Identificar símbolos, rutas, tablas, permisos, conexiones y posibles equivalencias funcionales de reposición y consumo. Sin cambios ni producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "LOGISTICA.ALMACENES",
+    "conflict_domains": [
+      "LOGISTICA.ALMACENES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
