@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "tools/mirror_sync/worker_cross_domain_handoff.py",
+          "backend/modules/worker_ingress/semantic_capabilities.py",
+          "backend/modules/worker_ingress/service.py",
+          "backend/modules/worker_mcp/server.py"
+        ],
+        "search_terms": [
+          "CROSS_DOMAIN_HANDOFF_REGISTER",
+          "UPDATABLE_HANDOFF_STATES",
+          "validate_handoff_constraints",
+          "IDEMPOTENCY_CONFLICT",
+          "SQL_READONLY_PROFILE_AUDIT",
+          "register_sql_readonly_profile",
+          "preflight_objective",
+          "timeout"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-439185073DAA53BEDF6B3F73",
+  "mode": "READ_ONLY",
+  "objective": "WK Worker 6.0 / WORKER_CONTROL_PLANE: diagnostico READ_ONLY del bloqueo HO-BITACORAS-WORKERCONTROLP-0A8BB6B347CDA64A sin nuevo handoff ni repetir auditoria SQL de Caja SEM-REQUEST-0AF43543EE9736B71858515C. Auditar contratos reales de CROSS_DOMAIN_HANDOFF_REGISTER, preflight (UPSTREAM_TIMEOUT_504), registro de SQL_READONLY_PROFILE_AUDIT y restricciones de perfiles para BITACORAS en archivos canónicos. Identificar causa o hipótesis verificables, propietario y acción correctiva mínima; no modificar código, permisos, repositorio o Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
