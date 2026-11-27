@@ -1,0 +1,41 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "profile_code": "AUTH_ACTIVE_SESSIONS_SUMMARY",
+      "queries": [
+        {
+          "name": "sesiones_agregado_por_tipo",
+          "sql": "SELECT ISNULL(TipoUsuario, 'desconocido') AS tipo_usuario, COUNT_BIG(*) AS total_sesiones, COALESCE(SUM(CASE WHEN EstaActiva = 1 AND FechaRevocacion IS NULL AND FechaExpiracion > GETUTCDATE() THEN 1 ELSE 0 END), 0) AS sesiones_activas, COALESCE(SUM(CASE WHEN FechaRevocacion IS NOT NULL THEN 1 ELSE 0 END), 0) AS sesiones_revocadas FROM dbo.Sesiones GROUP BY ISNULL(TipoUsuario, 'desconocido') ORDER BY tipo_usuario"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-DECC40AE9FEEB3D057854315",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate AUTH_RBAC sesiones SQL en solo lectura: recuperar unicamente agregado canonico de dbo.Sesiones para verificar observabilidad de sesiones activas y revocadas, sin PII ni tokens, con usuario SQL HRLectura. No ejecutar SQL arbitrario, no modificar base de datos, codigo ni Produccion. No confundir resumen de datos con certificacion funcional del login, logout, refresh o revocacion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "AUTH_RBAC",
+    "conflict_domains": [
+      "AUTH_RBAC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
