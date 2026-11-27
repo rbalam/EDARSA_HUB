@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "39250ce751a47b15bcaefe784c412db0c4624b56",
-  "generated_at_utc": "2026-11-27T03:49:34Z",
+  "generated_at_utc": "2026-11-27T03:50:56Z",
   "history": {
     "done_total_local": 2313,
     "pending_total_local": 0,
@@ -16,43 +16,43 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3107,
+      "age_seconds": 3189,
       "job_id": "EDARSAHUB-BOS-AGENT-GUARD-RECOVERY-G2-R1-20261127",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2640,
+      "age_seconds": 2722,
       "job_id": "EDARSAHUB-BOS-AGENT-GUARD-RECOVERY-G3-R1-20261127",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 631,
+      "age_seconds": 713,
       "job_id": "SEM-REQUEST-0AF43543EE9736B71858515C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 486,
+      "age_seconds": 568,
       "job_id": "SEM-REQUEST-2815669F21243263A6DF3D09",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 672,
+      "age_seconds": 754,
       "job_id": "SEM-REQUEST-4268F84F034E3D0937E44CCC",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3225,
+      "age_seconds": 3307,
       "job_id": "SEM-REQUEST-4D93FBA6C63EA89BCE153A9A",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2752,
+      "age_seconds": 2835,
       "job_id": "SEM-REQUEST-6E43F3AA950F0E51B5927771",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,8 +72,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-27T03:49:18Z",
-    "last_receive_utc": "2026-11-27T03:49:33Z",
+    "last_cycle_utc": "2026-11-27T03:50:45Z",
+    "last_receive_utc": "2026-11-27T03:50:40Z",
     "last_terminal_utc": "2026-11-27T03:41:28Z",
     "pid": "87",
     "runtime_fingerprint": {
