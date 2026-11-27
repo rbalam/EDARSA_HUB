@@ -1,0 +1,162 @@
+{
+  "base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T02:45:42Z",
+  "execution_base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-DFB300AD31531F70371C9FFB",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T02:47:08Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.alcance_helper",
+              "core.corporate_filters.service",
+              "core.rbac_helper",
+              "core.security",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.auth",
+              "modules.auth.password_reset",
+              "modules.auth.schemas",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "refresh",
+              "token"
+            ],
+            "path": "backend/modules/auth/service.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_can_manage_user",
+              "_get_role_level",
+              "_p5_extract_usuario_id_from_payload",
+              "create_role",
+              "create_user_admin",
+              "delete_role",
+              "delete_user",
+              "get_roles",
+              "get_user_by_id",
+              "get_users",
+              "login_user",
+              "register_user",
+              "update_role",
+              "update_user",
+              "update_user_permissions"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.auth",
+              "core.auth.user_repository_sql",
+              "core.security",
+              "fastapi",
+              "fastapi.security",
+              "modules.admin_sql",
+              "modules.auth.repository",
+              "modules.auth.schemas",
+              "modules.rbac_context_sql",
+              "modules.rbac_context_sql.context_service",
+              "modules.sistema_users_sql",
+              "pytest",
+              "unittest.mock"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "token"
+            ],
+            "path": "backend/tests/test_bos_usuarios_rbac_implementation_r1.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto",
+              "get_current_user"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FakeConn",
+              "FakeContextConn",
+              "FakeContextCursor",
+              "FakeCursor",
+              "__enter__",
+              "__exit__",
+              "__init__",
+              "cursor",
+              "effective_perms_fetch_all",
+              "execute",
+              "fake_execute_query",
+              "fake_fetch_all",
+              "fetchall",
+              "fetchone",
+              "scoped_admin_fetch_all",
+              "test_admin_sql_get_users_menu_integration_and_isolation",
+              "test_auth_repository_and_user_repo_sql_expose_canonical_identity",
+              "test_get_current_user_rejects_inactive_sql_user_fail_closed",
+              "test_jwt_and_get_current_user_carry_usuario_id_and_public_uuid",
+              "test_rbac_context_routes_enforce_permissions_and_isolation",
+              "test_rbac_context_service_fail_closed_and_scope_isolation",
+              "test_sistema_users_sql_enforces_rbac_and_scope",
+              "test_sql_user_identity_fails_closed_for_inactive_user",
+              "test_sql_user_identity_resolves_usuario_id_and_public_uuid"
+            ],
+            "tables_referenced": [
+              "Usuario_Catalogo",
+              "Usuario_EmpresasAsignacion",
+              "Usuario_PermisosRolModulo",
+              "Usuario_RolesContexto"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T02:45:40Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
