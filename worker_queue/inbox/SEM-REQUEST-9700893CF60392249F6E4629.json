@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "backend/core/"
+        ],
+        "search_terms": [
+          "ElaboradoLineaSync",
+          "Sync_Productos_Recetas",
+          "get_receta_elaborado",
+          "formula_version",
+          "receta_version",
+          "multinivel",
+          "subreceta",
+          "ciclo_receta",
+          "unidad_medida",
+          "conversion_unidad"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-9700893CF60392249F6E4629",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2 READ_ONLY de brechas de fórmulas de insumos elaborados: localizar contratos y pruebas de versionado, composición multinivel, detección de ciclos, conversiones de unidades, escalado y rendimientos; distinguir sincronización de maestro operativo. No repetir G0/G1, no modificar archivos ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "PRODUCCION",
+    "conflict_domains": [
+      "PRODUCCION"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
