@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "profile_code": "SERVIDORES_HEALTH_FRESHNESS_CONFIG_METADATA",
+      "queries": [
+        {
+          "name": "servidores_health_metadata_identity",
+          "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS database_user"
+        },
+        {
+          "name": "servidores_health_metadata_tables",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name='dbo' AND t.name IN ('Servidores_Conexiones','Servidores_ConexionEstado','Sistema_ServidoresConexionEstado','Sistema_ConfiguracionOperativa') ORDER BY t.name"
+        },
+        {
+          "name": "servidores_health_metadata_columns",
+          "sql": "SELECT t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS type_name, c.max_length, c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND t.name IN ('Servidores_Conexiones','Servidores_ConexionEstado','Sistema_ServidoresConexionEstado','Sistema_ConfiguracionOperativa') ORDER BY t.name,c.column_id"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-A5E53D11DFC1F924D873E02F",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate12 ejecutar perfil SQL registrado SERVIDORES_HEALTH_FRESHNESS_CONFIG_METADATA para verificar solo metadatos de esquema de conexiones, estado y configuración en EDARSAHUB, usando exclusivamente HRLectura; sin leer filas de negocio, secretos, consultas LIVE ni cambios a Producción. Continuación tras certificación de implementación SEM-REQUEST-315F9714A49CE2A7FDB972AE.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONEXIONES_COMUNICACIONES",
+    "conflict_domains": [
+      "CONEXIONES_COMUNICACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
