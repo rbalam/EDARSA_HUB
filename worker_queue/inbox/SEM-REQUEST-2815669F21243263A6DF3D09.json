@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "SEM-REQUEST-4268F84F034E3D0937E44CCC"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-2815669F21243263A6DF3D09",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-AUTHRBAC-WORKERCONTROLP-5F55E66A5506E6EE AUTH_RBAC->WORKER_CONTROL_PLANE] TRANSFERENCIA DE RESPONSABILIDAD AL CHAT WK Worker 6.0 / dominio WORKER_CONTROL_PLANE. Por instruccion expresa del usuario, trasladar TODO seguimiento de infraestructura Universal Worker, orquestacion interdominio, capability assignment, NO_COMPATIBLE_CAPABILITY y control de autorizaciones a WORKER_CONTROL_PLANE. Este chat AUTH_RBAC / Usuarios se reserva exclusivamente para gestion funcional de usuarios, autenticacion, contrasenas y Safari. Reutilizar el diagnostico ya CERTIFIED_READ_ONLY SEM-REQUEST-4268F84F034E3D0937E44CCC sin repetir auditoria ni publicar correccion. Vincular handoff previo HO-AUTHRBAC-WORKERCONTROLP-D12CC865F6A5C457, NO duplicarlo ni cambiar su estado artificialmente. Revisar evidencia terminal, explicar desbloqueo de asignacion/autorizacion bajo su ownership y devolver a AUTH_RBAC solamente resultado certificado o bloqueo preciso para retomar correccion P0 de SQL identity. Solo registro READ_ONLY, sin modificar codigo ni Produccion, sin consentimiento de mutacion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
