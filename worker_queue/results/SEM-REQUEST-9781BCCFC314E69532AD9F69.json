@@ -1,0 +1,156 @@
+{
+  "base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T01:59:56Z",
+  "execution_base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-9781BCCFC314E69532AD9F69",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T02:01:16Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "abc",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "dataclasses",
+              "datetime",
+              "enum",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "broker"
+            ],
+            "path": "backend/modules/compras/eventos_compras.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CheckpointManager",
+              "EventDispatcher",
+              "EventoCompras",
+              "EventoTipo",
+              "NuevosRegistrosDetector",
+              "PollingEventDispatcher",
+              "ServiceBrokerEventDispatcher",
+              "SyncType",
+              "__init__",
+              "__post_init__",
+              "_get_connection",
+              "detectar_nuevas_requisiciones",
+              "detectar_nuevos_inventarios",
+              "dispatch",
+              "get_all_checkpoints",
+              "get_checkpoint",
+              "get_checkpoint_manager",
+              "get_detector",
+              "get_event_dispatcher",
+              "get_pending_events",
+              "mark_as_processed",
+              "process_pending_events",
+              "register_handler",
+              "to_dict",
+              "update_checkpoint"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.config.edarsahub_config",
+              "core.db",
+              "core.secret_manager",
+              "core.sql_first.connection_factory",
+              "datetime",
+              "logging",
+              "modules.compras.eventos_compras",
+              "modules.integrations_runtime.sync_ledger",
+              "os",
+              "platform",
+              "pymssql",
+              "signal",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "broker"
+            ],
+            "path": "backend/core/scheduler/jobs/detect_nuevos_compras_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "APScheduler",
+              "scheduler"
+            ],
+            "symbols": [
+              "_acquire_detect_lock",
+              "_execute_with_timeout",
+              "_get_servers_for_detection",
+              "_release_detect_lock",
+              "execute_detect_nuevos",
+              "get_job_config",
+              "run_detect_nuevos_job",
+              "timeout_handler"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 1811,
+          "skipped_sensitive": 562
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T01:59:54Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
