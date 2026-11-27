@@ -1,0 +1,55 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/automatizacion/feature_flags.py",
+          "backend/modules/comercial_v2/feature_flag.py",
+          "backend/modules/sistema/",
+          "backend/modules/worker_ingress/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "feature_flag",
+          "is_enabled",
+          "rollback",
+          "deployment",
+          "release",
+          "activation",
+          "revoke",
+          "authorized_push",
+          "publishable_paths",
+          "production_allowed"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-75CE2A6B9C6D5EC8142B178A",
+  "mode": "READ_ONLY",
+  "objective": "Gate 7 Fabric Interna READ_ONLY: localizar contratos de publicacion privada, activacion selectiva, despliegue autorizado, desactivacion y rollback de extensiones; identificar candidatos reutilizables y brechas. No modificar codigo ni publicar extensiones reales; preservar bloqueo comercial por aislamiento no demostrado.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_INTERNA",
+    "conflict_domains": [
+      "FABRIC_INTERNA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
