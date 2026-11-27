@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/core/consumo_receta_service.py",
+          "backend/core/recetas_service.py",
+          "backend/modules/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "ConsumoRecetaService",
+          "RecetasService",
+          "consumo_receta_service",
+          "recetas_service",
+          "get_componentes",
+          "calcular_consumo"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-326F3F66D201C970C8F1900F",
+  "mode": "READ_ONLY",
+  "objective": "Core Slimming Gate 3 PREPARACION READ_ONLY: caracterizar contratos publicos, imports y consumidores de core.consumo_receta_service / core.recetas_service, elegir propietario por bounded context existente sin crear modulo nuevo, y definir pruebas de caracterizacion, compatibilidad temporal y rollback. Reutilizar Gate2 SEM-REQUEST-EDED885D10CD2CDDDA233B02; no repetirlo ni modificar archivos. Determinar limites de auditoria estatica y consumidores dinamicos pendientes.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "ARCHITECTURE",
+    "conflict_domains": [
+      "ARCHITECTURE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
