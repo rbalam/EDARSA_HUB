@@ -1,0 +1,227 @@
+{
+  "base_sha": "945dccf9699e4c39270afa19689ea0f54d4b1f05",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T07:04:10Z",
+  "execution_base_sha": "945dccf9699e4c39270afa19689ea0f54d4b1f05",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-7A4713CBAA8F44836B2D76A0",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T07:05:21Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.security",
+              "fastapi",
+              "logging",
+              "modules.finanzas.access",
+              "modules.finanzas.models_bancarios",
+              "modules.finanzas.repository_bancarios",
+              "modules.finanzas.utils_bancarios",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cuentas_bancarias"
+            ],
+            "path": "backend/modules/finanzas/cuentas_bancarias.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/bancos",
+              "/cuentas-bancarias",
+              "/cuentas-bancarias/{cuenta_id}",
+              "/cuentas-bancarias/{cuenta_id}/desactivar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "actualizar_cuenta",
+              "crear_cuenta",
+              "desactivar_cuenta",
+              "get_user_id",
+              "listar_bancos",
+              "listar_cuentas_bancarias",
+              "obtener_cuenta_bancaria",
+              "require_cuenta_scope",
+              "require_view_scope",
+              "require_write_scope"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cuentas_bancarias"
+            ],
+            "path": "backend/modules/finanzas/repository_bancarios.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_execute_edarsahub",
+              "_get_valid_usuario_id",
+              "_sql_literal",
+              "_unidad_scope_condition",
+              "actualizar_cuenta_bancaria",
+              "crear_cuenta_bancaria",
+              "crear_saldo_bancario",
+              "cuenta_tiene_saldos_vigentes",
+              "desactivar_cuenta_bancaria",
+              "existe_alias",
+              "existe_numero_cuenta",
+              "existe_saldo_vigente",
+              "get_banco_by_id",
+              "get_bancos_activos",
+              "get_cuenta_by_id",
+              "get_cuentas_bancarias",
+              "get_empresa_id_for_unidad",
+              "get_historial_saldo",
+              "get_saldo_bancario_total",
+              "get_saldo_by_id",
+              "get_saldos_cuenta",
+              "get_ultimo_saldo_vigente",
+              "marcar_saldo_cancelado",
+              "marcar_saldo_corregido"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.security",
+              "fastapi",
+              "logging",
+              "modules.finanzas.access",
+              "modules.finanzas.models_bancarios",
+              "modules.finanzas.repository_bancarios",
+              "modules.finanzas.utils_bancarios",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cuentas_bancarias"
+            ],
+            "path": "backend/modules/finanzas/cuentas_bancarias.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/bancos",
+              "/cuentas-bancarias",
+              "/cuentas-bancarias/{cuenta_id}",
+              "/cuentas-bancarias/{cuenta_id}/desactivar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "actualizar_cuenta",
+              "crear_cuenta",
+              "desactivar_cuenta",
+              "get_user_id",
+              "listar_bancos",
+              "listar_cuentas_bancarias",
+              "obtener_cuenta_bancaria",
+              "require_cuenta_scope",
+              "require_view_scope",
+              "require_write_scope"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cuentas_bancarias"
+            ],
+            "path": "backend/modules/finanzas/repository_bancarios.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_execute_edarsahub",
+              "_get_valid_usuario_id",
+              "_sql_literal",
+              "_unidad_scope_condition",
+              "actualizar_cuenta_bancaria",
+              "crear_cuenta_bancaria",
+              "crear_saldo_bancario",
+              "cuenta_tiene_saldos_vigentes",
+              "desactivar_cuenta_bancaria",
+              "existe_alias",
+              "existe_numero_cuenta",
+              "existe_saldo_vigente",
+              "get_banco_by_id",
+              "get_bancos_activos",
+              "get_cuenta_by_id",
+              "get_cuentas_bancarias",
+              "get_empresa_id_for_unidad",
+              "get_historial_saldo",
+              "get_saldo_bancario_total",
+              "get_saldo_by_id",
+              "get_saldos_cuenta",
+              "get_ultimo_saldo_vigente",
+              "marcar_saldo_cancelado",
+              "marcar_saldo_corregido"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 4,
+          "scanned_files": 1344,
+          "skipped_sensitive": 471
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T07:04:10Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
