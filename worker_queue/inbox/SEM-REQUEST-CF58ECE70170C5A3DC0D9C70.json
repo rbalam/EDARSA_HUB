@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "backend/modules/comercial/",
+          "backend/modules/catalogos/",
+          "backend/modules/auth/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "precio",
+          "rentabilidad",
+          "margen",
+          "receta",
+          "porciones",
+          "familia",
+          "paquete",
+          "reservacion",
+          "cotizacion",
+          "softrestaurant",
+          "rbac",
+          "comandero"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-CF58ECE70170C5A3DC0D9C70",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2 READ_ONLY de profundizacion limitada, NO repetir Gate1: identificar contratos de codigo concretos para el diseno de MKT Paquetes, reutilizacion y puntos de integracion a precios de carta, familias, recetas, rendimientos por gramos/kg/oz, detalle de ventas, margen, cotizaciones, eventos/reservas, aprobaciones RBAC, publicacion POS y marca por unidad. Buscar exclusivamente en archivos y rutas de los modulos ya identificados, documentar contratos, riesgos y brechas sin implementar. No escribir archivos, no Produccion, no conexiones LIVE. Respetar Gates certificados.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "MARKETING_PACKAGES",
+    "conflict_domains": [
+      "MARKETING_PACKAGES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
