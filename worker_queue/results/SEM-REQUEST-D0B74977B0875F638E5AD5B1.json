@@ -1,0 +1,231 @@
+{
+  "base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T01:35:39Z",
+  "execution_base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-D0B74977B0875F638E5AD5B1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T01:37:15Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.manuales_operativos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "routes",
+              "schemas",
+              "service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "manualoperativo",
+              "mongo"
+            ],
+            "path": "backend/modules/manuales_operativos/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "get_router",
+              "init_manuales_module"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.manuales_operativos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "fastapi",
+              "logging",
+              "schemas",
+              "service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_current_user",
+              "manualoperativo",
+              "mongo"
+            ],
+            "path": "backend/modules/manuales_operativos/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/generar/{proceso_id}",
+              "/proceso/{proceso_id}",
+              "/{manual_id}",
+              "/{manual_id}/exportar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "exportar_manual_texto",
+              "generar_manual_manual",
+              "get_service",
+              "init_manuales_module",
+              "listar_manuales",
+              "obtener_manual",
+              "obtener_manual_por_proceso"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.manuales_operativos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "enum",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "documento",
+              "manualoperativo",
+              "mongo"
+            ],
+            "path": "backend/modules/manuales_operativos/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ContenidoManualCienfuegos",
+              "EvidenciaGenerada",
+              "FormatoManual",
+              "ManualOperativoBase",
+              "ManualOperativoCreate",
+              "ManualOperativoDB",
+              "ManualOperativoListResponse",
+              "ManualOperativoResponse",
+              "ManualOperativoTextoPlano",
+              "ModuloOrigen",
+              "PasoOperativo",
+              "ResponsableManual"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.manuales_operativos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "schemas",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "documento",
+              "get_manual_service",
+              "importar",
+              "init_collection",
+              "manualoperativo",
+              "mongo"
+            ],
+            "path": "backend/modules/manuales_operativos/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ManualOperativoService",
+              "__init__",
+              "_bitacora_a_procedimiento",
+              "_calcular_metricas",
+              "_extraer_evidencias",
+              "_extraer_politicas",
+              "_extraer_responsables",
+              "_format_date",
+              "_generar_observaciones",
+              "generar_manual_auditoria_compras",
+              "generar_texto_plano",
+              "get_manual_service",
+              "init_collection",
+              "listar_manuales",
+              "obtener_manual",
+              "obtener_manual_por_proceso"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.manuales_operativos",
+            "connections": [
+              "pymongo"
+            ],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "schemas",
+              "service",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "documento",
+              "manualoperativo",
+              "mongo"
+            ],
+            "path": "backend/modules/manuales_operativos/triggers.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_generar_manual_compras",
+              "_generar_manual_compras_sync",
+              "trigger_generar_manual",
+              "trigger_generar_manual_sync",
+              "verificar_y_generar_manuales_pendientes"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 5,
+          "scanned_files": 5,
+          "skipped_sensitive": 5
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T01:35:37Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
