@@ -50,10 +50,10 @@ const StatusButton = ({ pingStatus, serverId, onPing }) => {
         size="sm"
         onClick={() => onPing(serverId)}
         className="h-7 px-3 text-xs bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
-        title={`Conectado en ${pingStatus?.responseTime}ms`}
+        title={pingStatus?.historical ? `Última prueba registrada: ${pingStatus?.lastCheck || 'fecha desconocida'}` : `Conectado en ${pingStatus?.responseTime}ms`}
       >
         <Wifi className="h-3 w-3 mr-1" />
-        Online ({pingStatus?.responseTime}ms)
+        {pingStatus?.historical ? 'Último: Conectado' : `Online (${pingStatus?.responseTime}ms)`}
       </Button>
     );
   }
@@ -66,7 +66,7 @@ const StatusButton = ({ pingStatus, serverId, onPing }) => {
         className="h-7 px-3 text-xs bg-red-50 border-red-300 text-red-700 hover:bg-red-100"
       >
         <WifiOff className="h-3 w-3 mr-1" />
-        Offline
+        {pingStatus?.historical ? 'Último: Error' : 'Offline'}
       </Button>
     );
   }
@@ -905,6 +905,38 @@ const Servidores = () => {
 
       setServers(sqlConnections);
       setApiConnections(localApis);
+
+      // Evidencia histórica desde EDARSAHUB; nunca iniciar pruebas al cargar.
+      // Las pruebas manuales existentes tienen prioridad sobre el historial.
+      setPingStatus(prev => {
+        const next = { ...prev };
+        sqlConnections.forEach(conn => {
+          if (next[conn.id] || conn.health?.has_evidence !== true) return;
+          const state = String(conn.health.status || '').toUpperCase();
+          next[conn.id] = {
+            loading: false,
+            status: state === 'CONNECTED' ? 'connected' : state === 'ERROR' ? 'error' : null,
+            historical: true,
+            lastCheck: conn.health.last_test_utc || conn.health.last_check || conn.health.updated_at_utc,
+            responseTime: conn.health.latency_ms,
+          };
+        });
+        return next;
+      });
+      setApiTestStatus(prev => {
+        const next = { ...prev };
+        localApis.forEach(conn => {
+          if (next[conn.id] || conn.health?.has_evidence !== true) return;
+          const state = String(conn.health.status || '').toUpperCase();
+          next[conn.id] = {
+            loading: false,
+            status: state === 'CONNECTED' ? 'success' : state === 'ERROR' ? 'error' : null,
+            historical: true,
+            lastCheck: conn.health.last_test_utc || conn.health.last_check || conn.health.updated_at_utc,
+          };
+        });
+        return next;
+      });
     } catch (error) {
       console.error('Error cargando inventario canonico de conexiones:', error);
 
@@ -1746,15 +1778,15 @@ const Servidores = () => {
                                 <Loader2 className="h-3 w-3 animate-spin" />
                                 <span className="text-xs">Ping...</span>
                               </span>
-                            ) : pingStatus[server.id]?.online ? (
+                            ) : pingStatus[server.id]?.status === 'connected' ? (
                               <span className="inline-flex items-center gap-1 text-green-600">
                                 <Wifi className="h-3 w-3" />
-                                <span className="text-xs">Online</span>
+                                <span className="text-xs">{pingStatus[server.id]?.historical ? 'Último: Conectado' : 'Online'}</span>
                               </span>
-                            ) : pingStatus[server.id]?.error ? (
+                            ) : pingStatus[server.id]?.status === 'error' ? (
                               <span className="inline-flex items-center gap-1 text-red-600">
                                 <WifiOff className="h-3 w-3" />
-                                <span className="text-xs">Offline</span>
+                                <span className="text-xs">{pingStatus[server.id]?.historical ? 'Último: Error' : 'Offline'}</span>
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 text-zinc-400">
@@ -2176,17 +2208,17 @@ const Servidores = () => {
                           ) : apiTestStatus[apiConn.id]?.status === 'error' ? (
                             <span className="inline-flex items-center gap-1 text-red-600">
                               <WifiOff className="h-3 w-3" />
-                              <span className="text-xs">Error</span>
+                              <span className="text-xs">{apiTestStatus[apiConn.id]?.historical ? 'Último: Error' : 'Error'}</span>
                             </span>
                           ) : apiTestStatus[apiConn.id]?.status === 'warning' ? (
                             <span className="inline-flex items-center gap-1 text-amber-600">
                               <AlertTriangle className="h-3 w-3" />
-                              <span className="text-xs">Parcial</span>
+                              <span className="text-xs">{apiTestStatus[apiConn.id]?.historical ? 'Último: Parcial' : 'Parcial'}</span>
                             </span>
                           ) : apiTestStatus[apiConn.id]?.status === 'success' ? (
                             <span className="inline-flex items-center gap-1 text-green-600">
                               <Wifi className="h-3 w-3" />
-                              <span className="text-xs">OK</span>
+                              <span className="text-xs">{apiTestStatus[apiConn.id]?.historical ? 'Último: OK' : 'OK'}</span>
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 text-zinc-400">
@@ -2310,7 +2342,7 @@ const Servidores = () => {
                     {/* Badge de status basado en el resultado del test de conexión */}
                     {apiTestStatus[apiConn.id]?.status === 'error' ? (
                       <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                        Sin Conexión
+                        {apiTestStatus[apiConn.id]?.historical ? 'Último: Sin conexión' : 'Sin Conexión'}
                       </Badge>
                     ) : apiTestStatus[apiConn.id]?.status === 'warning' ? (
                       <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
@@ -2318,7 +2350,7 @@ const Servidores = () => {
                       </Badge>
                     ) : apiTestStatus[apiConn.id]?.status === 'success' ? (
                       <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        Conectado
+                        {apiTestStatus[apiConn.id]?.historical ? 'Último: Conectado' : 'Conectado'}
                       </Badge>
                     ) : apiConn.activo ? (
                       <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">

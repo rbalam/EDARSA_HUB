@@ -126,3 +126,14 @@ def test_no_reemplazar_menu_sql_por_permiso_crud():
     # modular del catálogo SQL. Los permisos CRUD
     # se resuelven en la capa funcional.
     assert "RequierePermiso" in source
+
+def test_servidores_health_historico_sin_pings_automaticos():
+    source = (ROOT / "frontend" / "src" / "pages" / "Servidores.js").read_text(encoding="utf-8")
+    assert "conn.health?.has_evidence !== true" in source
+    assert "historical: true" in source
+    assert "Último: Conectado" in source
+    assert "pingStatus[server.id]?.online" not in source
+    assert "pingStatus[server.id]?.error" not in source
+    assert "pingServerSilent(server.id);" not in source
+    assert "await testApiConnection(apiConn);" in source
+    assert "onPing={pingServer}" in source
