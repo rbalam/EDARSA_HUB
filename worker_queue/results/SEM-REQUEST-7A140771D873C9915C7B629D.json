@@ -1,0 +1,910 @@
+{
+  "base_sha": "8081524266e74bba7189fbaa99026d21eb0dc468",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T07:22:00Z",
+  "execution_base_sha": "8081524266e74bba7189fbaa99026d21eb0dc468",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-7A140771D873C9915C7B629D",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T07:23:12Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "re"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotency_key"
+            ],
+            "path": "backend/modules/agent_harness/mobile.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "MobileContractError",
+              "MobileOperationEnvelope",
+              "MobileOperationResult",
+              "__post_init__",
+              "_required",
+              "to_contract"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.bos_executive",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "action_bridge_contracts",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "core.agent_procedure_policy",
+              "datetime",
+              "hashlib",
+              "modules.agent_harness.transversal_capability_registry",
+              "recommendation_contracts",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotency_key"
+            ],
+            "path": "backend/modules/bos_executive/action_bridge.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_audit_ref",
+              "_deny",
+              "_parse_time",
+              "_precondition_reasons",
+              "_requester_reasons",
+              "_unique",
+              "authorize_recommended_action"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.bos_executive",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotency_key"
+            ],
+            "path": "backend/modules/bos_executive/action_bridge_contracts.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AuthorizedActionDecision",
+              "AuthorizedActionRequest"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "migration_engine",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "idempotency_key"
+            ],
+            "path": "backend/modules/cava_socios/adapter_sdk.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AdapterCapabilities",
+              "AdapterCheckpoint",
+              "AdapterContext",
+              "AdapterHealth",
+              "CavasSourceAdapter",
+              "ExtractionBatch",
+              "__post_init__",
+              "adapter_code",
+              "adapter_manifest",
+              "adapter_version",
+              "capabilities",
+              "discover",
+              "extract_delta",
+              "extract_full",
+              "health",
+              "validate_adapter_contract",
+              "validate_context",
+              "validate_extraction"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "blind_audit",
+              "hashlib",
+              "json",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotency_key"
+            ],
+            "path": "backend/modules/cava_socios/blind_audit_operational_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CavaBlindAuditOperationalService",
+              "get_cava_blind_audit_operational_service",
+              "reconcile"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "datetime",
+              "domain",
+              "enum",
+              "hashlib",
+              "json",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotency_key"
+            ],
+            "path": "backend/modules/cava_socios/migration_engine.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "DryRunItem",
+              "DryRunSummary",
+              "ExternalRecord",
+              "MappingDecision",
+              "MappingStatus",
+              "MigrationMode",
+              "ReconciliationMetric",
+              "ReconciliationResult",
+              "SourceIdentity",
+              "__post_init__",
+              "_json_default",
+              "_non_negative_int",
+              "_require_aware",
+              "_required",
+              "accepted_for_execution",
+              "canonical_payload_checksum",
+              "certifiable",
+              "checksum",
+              "execution_ready",
+              "historical_origin_evidence",
+              "idempotency_key",
+              "plan_dry_run",
+              "reconcile_counts",
+              "reconciled",
+              "requires_review"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "blind_audit_operational_service",
+              "core.auth.sql_user_identity",
+              "core.rbac",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "logging",
+              "modules.rbac_context_sql.context_service",
+              "notification_service",
+              "persona_link_service",
+              "pydantic",
+              "report_service",
+              "service",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "blindauditobservationinput",
+              "idempotency_key",
+              "reconciliar_auditoria_ciega"
+            ],
+            "path": "backend/modules/cava_socios/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/auditorias-ciegas/reconciliar",
+              "/botellas/{botella_id}/consumo",
+              "/botellas/{botella_id}/etiqueta",
+              "/clientes-canonicos",
+              "/clientes-canonicos/sync",
+              "/consumos",
+              "/dashboard",
+              "/inventario",
+              "/inventario-fisico/aplicar",
+              "/inventario-fisico/hoja",
+              "/inventario-inicial",
+              "/kardex",
+              "/personas-canonicas",
+              "/reportes/socio/{socio_id}/consumos",
+              "/reportes/socio/{socio_id}/estado-cuenta",
+              "/reportes/socio/{socio_id}/ficha",
+              "/socios",
+              "/socios/promover-cliente",
+              "/socios/{socio_id}",
+              "/socios/{socio_id}/botellas",
+              "/socios/{socio_id}/enviar-reporte",
+              "/socios/{socio_id}/enviar-todos-reportes",
+              "/socios/{socio_id}/persona-link",
+              "/socios/{socio_id}/persona-link/crear-persona"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BlindAuditObservationInput",
+              "BlindAuditReconcileRequest",
+              "BotellaCreate",
+              "ConsumoCreate",
+              "EnvioReporteRequest",
+              "InventarioFisicoAplicarRequest",
+              "InventarioFisicoItem",
+              "InventarioInicialBotellaItem",
+              "InventarioInicialCreate",
+              "PersonaCreateLinkRequest",
+              "PersonaExistingLinkRequest",
+              "PromoverClienteCreate",
+              "SincronizarClientesRequest",
+              "SocioCreate",
+              "SocioUpdate",
+              "_resolve_cava_actor",
+              "_resolve_cava_scope",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_persona_y_vincular",
+              "crear_socio",
+              "descargar_estado_cuenta",
+              "descargar_ficha_socio",
+              "descargar_historial_consumos",
+              "desvincular_persona",
+              "enviar_reporte_socio",
+              "enviar_todos_reportes_socio",
+              "get_dashboard",
+              "listar_clientes_canonicos",
+              "listar_personas_canonicas",
+              "listar_socios",
+              "obtener_consumos",
+              "obtener_etiqueta_botella",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario",
+              "obtener_kardex",
+              "obtener_persona_link",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "reconciliar_auditoria_ciega",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos",
+              "vincular_persona_existente"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.edge",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "json",
+              "sqlite3",
+              "time",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "dispositivo"
+            ],
+            "path": "backend/modules/edge/comandero_local_core.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ComanderoLocalCore",
+              "__init__",
+              "_inicializar_base_datos_local",
+              "despachar_cola_fifo_reconciliacion",
+              "edge_dar_de_baja_producto",
+              "edge_sincronizar_producto",
+              "marcar_transaccion_sincronizada",
+              "registrar_comanda_offline"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.edge",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "dispositivo"
+            ],
+            "path": "backend/modules/edge/comandero_terminal_ui.ts",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.edge",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "os",
+              "socket",
+              "subprocess",
+              "sys",
+              "time",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "dispositivo"
+            ],
+            "path": "backend/modules/edge/coordinador_lan_mesh.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CoordinadorLanMesh",
+              "__init__",
+              "activar_modo_supervivencia_mesh",
+              "orquestar_ciclo_red",
+              "verificar_latencia_servidor_local"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.edge",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "http.server",
+              "json",
+              "sqlite3",
+              "time",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "dispositivo"
+            ],
+            "path": "backend/modules/edge/servidor_local_contingencia.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EdgeServerRequestHandler",
+              "do_POST",
+              "ejecutar_servidor_local",
+              "inicializar_base_servidor_local",
+              "log_message"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "enum",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "conteo_ciclico"
+            ],
+            "path": "backend/modules/fase2_operativo/schemas/auditoria_programada_schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "AuditoriaProgramada",
+              "AuditoriaProgramadaCreate",
+              "AuditoriaProgramadaLog",
+              "AuditoriaProgramadaLogResponse",
+              "AuditoriaProgramadaResponse",
+              "AuditoriaProgramadaUpdate",
+              "AuditoriasKPIsResponse",
+              "AuditoriasProgramadasListResponse",
+              "CalendarioAuditoriasResponse",
+              "Config",
+              "EstadoEjecucion",
+              "FrecuenciaAuditoria",
+              "TipoAuditoria"
+            ],
+            "tables_referenced": [
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_runtime",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotency_key"
+            ],
+            "path": "backend/modules/integrations_runtime/sync_ledger.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_idempotency_key",
+              "_valid_uuid",
+              "enrich_sync_start",
+              "mark_sync_finished"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_Sync_Catalogo",
+              "Sync_Control_Ejecuciones",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.production_quality",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "core.sql_first.db",
+              "datetime",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotency_key"
+            ],
+            "path": "backend/modules/production_quality/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ProductionQualityRepository",
+              "_connection",
+              "_normalize",
+              "create_action",
+              "create_calibration",
+              "create_decision",
+              "create_evidence",
+              "create_measurement",
+              "get_item_scope",
+              "list_devices",
+              "list_items",
+              "list_standards",
+              "resolve_usuario_id"
+            ],
+            "tables_referenced": [
+              "Production_Device",
+              "Production_DeviceCalibration",
+              "Production_Evidence",
+              "Production_Item",
+              "Production_Measurement",
+              "Production_QualityAction",
+              "Production_QualityDecision",
+              "Production_QualityStandard",
+              "Usuario_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.production_quality",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "decimal",
+              "enum",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotency_key"
+            ],
+            "path": "backend/modules/production_quality/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "DeviceCalibrationCreate",
+              "EvidenceCreate",
+              "MeasurementCreate",
+              "QualityActionCreate",
+              "QualityActionType",
+              "QualityDecisionCode",
+              "QualityDecisionCreate",
+              "TenantScope"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "dispositivo"
+            ],
+            "path": "frontend/src/components/finanzas/IncidenciaCajaForm.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "conteo_ciclico"
+            ],
+            "path": "frontend/src/pages/AuditoriasProgramadas.jsx",
+            "rbac_contracts": [
+              "menu-permissions"
+            ],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "idempotency_key"
+            ],
+            "path": "frontend/src/pages/cava-socios/BlindAuditCava.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "asyncio",
+              "core",
+              "core.centro_control",
+              "core.centro_control.websocket",
+              "datetime",
+              "fastapi",
+              "fastapi.security",
+              "fastapi.testclient",
+              "jwt",
+              "modules.auth",
+              "os",
+              "pathlib",
+              "pytest",
+              "starlette.websockets",
+              "threading",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "dispositivo"
+            ],
+            "path": "backend/tests/test_auth_session_revocation_p1_2.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "InMemorySesionesDB",
+              "__init__",
+              "_fake_exec",
+              "_fake_get_user_by_id",
+              "_fake_get_user_sql_only",
+              "_fake_login_user",
+              "_now",
+              "_returns_empty_list",
+              "auth_env",
+              "execute_atomic_rotation_sync",
+              "execute_sql_async",
+              "test_concurrent_refresh_rotation_is_atomic_and_rejects_second_caller",
+              "test_concurrent_sessions_individual_logout_and_logout_all_preserves_mcp",
+              "test_execute_sql_async_fetch_one_empty_returns_none_and_is_session_active_fail_closed",
+              "test_expired_jwt_and_sql_error_fail_closed_in_get_current_user",
+              "test_frontend_auth_clients_compatibility_contract",
+              "test_legacy_token_without_sid_compatible_and_me_blocks_revoked_refresh_cookie",
+              "test_login_valid_and_fail_closed_when_session_creation_fails",
+              "test_logout_and_logout_all_fail_closed_on_sql_error",
+              "test_logout_individual_immediate_revocation_and_me_does_not_remint",
+              "test_logout_via_bearer_only_without_refresh_cookie_revokes_sid",
+              "test_refresh_rotation_and_sequential_replay_revokes_entire_family",
+              "test_static_no_insecure_python_hash_in_auth_routes",
+              "test_websocket_p1_1_regression_rejects_revoked_session_and_accepts_active"
+            ],
+            "tables_referenced": [
+              "Sesiones",
+              "SesionesHistorico"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "modules.agent_harness.mobile",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotency_key"
+            ],
+            "path": "backend/tests/test_bos_agent_harness_mobile.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "envelope",
+              "test_business_scope_is_required",
+              "test_mobile_is_never_source_of_truth",
+              "test_no_generic_last_write_wins_contract",
+              "test_non_accept_requires_reason",
+              "test_offline_contract_requires_idempotency_and_device_identity",
+              "test_payload_hash_is_sha256",
+              "test_server_result_accepts_only_canonical_statuses"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.agent_capability_policy",
+              "modules.bos_executive"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotency_key"
+            ],
+            "path": "backend/tests/test_bos_executive_e3d.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_context",
+              "_recommendation",
+              "_request",
+              "test_e3d_action_must_be_declared_eligible",
+              "test_e3d_allowlisted_action_is_authorized_but_not_executed",
+              "test_e3d_expired_recommendation_is_denied",
+              "test_e3d_requester_rbac_denied_is_fail_closed",
+              "test_e3d_stale_recommendation_is_denied",
+              "test_e3d_unknown_capability_is_denied"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.cava_socios.blind_audit_operational_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotency_key"
+            ],
+            "path": "backend/tests/test_cava_socios_blind_audit_operational_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_service",
+              "test_gate16i_clean_audit_is_confirmed_and_non_mutating",
+              "test_gate16i_difference_never_adjusts_inventory",
+              "test_gate16i_low_confidence_requires_review",
+              "test_gate16i_same_request_has_same_fingerprint"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "importlib.util",
+              "pathlib",
+              "pytest",
+              "sys",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotency_key"
+            ],
+            "path": "backend/tests/test_cava_socios_cienfuegos_legacy_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_install_package",
+              "_load",
+              "test_adapter_reuses_canonical_sdk",
+              "test_attendance_is_not_canonical_sale",
+              "test_deleted_bottle_is_historical_evidence",
+              "test_duplicate_email_never_authorizes_auto_merge",
+              "test_external_record_uses_canonical_contract",
+              "test_identity_key_is_stable",
+              "test_identity_uses_canonical_source_identity",
+              "test_legacy_rbac_is_not_migrated",
+              "test_naive_timestamp_fails_closed",
+              "test_observed_capacities",
+              "test_unknown_bottle_action_fails_closed"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "modules.cava_socios.domain",
+              "modules.cava_socios.migration_engine",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotency_key"
+            ],
+            "path": "backend/tests/test_cava_socios_migration_engine.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_record",
+              "test_checksum_is_order_independent",
+              "test_dry_run_is_ready_only_without_unresolved_records",
+              "test_dry_run_rejects_duplicate_external_identity",
+              "test_dry_run_requires_review_for_probable_match",
+              "test_historical_projection_preserves_existing_cavas_contract",
+              "test_idempotency_key_is_provider_neutral_and_stable",
+              "test_original_occurred_at_requires_timezone",
+              "test_reconciliation_requires_explicitly_approved_difference"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.integrations_runtime",
+              "modules.integrations_runtime.sync_ledger"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotency_key"
+            ],
+            "path": "backend/tests/test_integrations_runtime_gate5c.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_gate5c_health_module_has_no_parallel_table_contract",
+              "test_gate5c_idempotency_key_is_deterministic_and_bounded",
+              "test_gate5c_uuid_parser_fail_closed"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 25,
+          "scanned_files": 1632,
+          "skipped_sensitive": 437
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T07:22:00Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
