@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 65,
+        "paths": [
+          "backend/modules/agent_harness/",
+          "backend/modules/worker_console/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "EvidenceBuilder",
+          "certification",
+          "quality_gate",
+          "canonical_sha256",
+          "provenance",
+          "lineage",
+          "signature",
+          "revocation",
+          "manifest",
+          "certification_basis"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-B0D29EA57EFE6860BB1D8D98",
+  "mode": "READ_ONLY",
+  "objective": "Gate 6 Fabric Interna READ_ONLY: localizar contratos de certificacion independiente, segregacion de funciones, evidencias, procedencia, integridad y revocacion para Software Passport. Identificar candidatos reutilizables y brechas sin modificar codigo ni afirmar certificacion funcional por coincidencias.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_INTERNA",
+    "conflict_domains": [
+      "FABRIC_INTERNA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
