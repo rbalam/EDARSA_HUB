@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "connector_registry",
+          "provider_registry",
+          "adapter_registry",
+          "get_api_connections_for_adapters",
+          "resolve_homologation_binding",
+          "api_local_sync",
+          "netpay",
+          "twilio",
+          "vtiger",
+          "softrestaurant",
+          "mpro",
+          "webhook",
+          "mcp"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-411D6A6B4548CC520571E5B4",
+  "mode": "READ_ONLY",
+  "objective": "Gate 4 Fabric Externa: inventariar conectores y adaptadores existentes, contratos de proveedores y mecanismos de registro, homologación, salud y sincronización; identificar candidatos reutilizables y brechas sin crear conectores paralelos. Auditar referencias a proveedores ERP, pagos, comunicaciones, IA y protocolos externos; no efectuar llamadas externas ni modificar código.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_EXTERNA",
+    "conflict_domains": [
+      "FABRIC_EXTERNA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
