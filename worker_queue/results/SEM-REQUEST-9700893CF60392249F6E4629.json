@@ -1,0 +1,950 @@
+{
+  "base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T00:50:14Z",
+  "execution_base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-9700893CF60392249F6E4629",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T00:52:14Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "enum",
+              "logging",
+              "modules.costos_margenes.redondeo",
+              "modules.costos_margenes.reglas_margen_service",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sync_productos_recetas"
+            ],
+            "path": "backend/modules/comercial/services/precios_sugeridos_consolidado_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EstadoRevision",
+              "FuenteSugerencia",
+              "_calcular_precio_vino",
+              "_es_vino",
+              "_get_conn",
+              "_normalizar_uuid",
+              "_obtener_rangos_vinos",
+              "actualizar_rango_vino",
+              "crear_rango_vino",
+              "desactivar_rango_vino",
+              "obtener_precios_sugeridos",
+              "obtener_rangos_vinos"
+            ],
+            "tables_referenced": [
+              "Comercial_ClasificacionesProducto",
+              "Producto_MapeoOrigen"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "get_receta_elaborado",
+              "subreceta",
+              "sync_productos_recetas",
+              "unidad_medida"
+            ],
+            "path": "backend/modules/costos_margenes/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_edarsahub_connection",
+              "_mpro_comercial_where",
+              "_mpro_menu_pos_where",
+              "_safe_decimal",
+              "get_familias_productos",
+              "get_insumos_producto",
+              "get_producto_by_id",
+              "get_productos_con_costos",
+              "get_receta_elaborado",
+              "get_receta_producto",
+              "get_resumen_costos_margenes",
+              "get_subfamilias_productos",
+              "get_sync_status",
+              "get_unidades_negocio"
+            ],
+            "tables_referenced": [
+              "Comercial_ClasificacionesProducto",
+              "Comercial_MPRO_MenuPOS_Sync",
+              "Producto_MapeoOrigen"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "core.server_registry",
+              "datetime",
+              "decimal",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sync_productos_recetas"
+            ],
+            "path": "backend/modules/costos_margenes/repository_precios.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_generar_folio",
+              "_get_edarsahub_connection",
+              "_mapear_solicitud",
+              "_registrar_historial",
+              "_safe_decimal",
+              "calcular_simulacion",
+              "cambiar_estatus_solicitud",
+              "crear_solicitud_cambio_precio",
+              "guardar_simulacion",
+              "listar_solicitudes",
+              "obtener_datos_producto_para_simulacion",
+              "obtener_historial_solicitud",
+              "obtener_solicitud"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.request_resolver",
+              "core.rbac_helper_sql",
+              "core.rbac_sql.service",
+              "core.security",
+              "csv",
+              "datetime",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "logging",
+              "math",
+              "modules.costos_margenes.configuracion_repository",
+              "modules.costos_margenes.reglas_margen_service",
+              "modules.costos_margenes.repository",
+              "modules.costos_margenes.schemas",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "get_receta_elaborado",
+              "subreceta",
+              "unidad_medida"
+            ],
+            "path": "backend/modules/costos_margenes/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/configuracion/usuario",
+              "/exportar",
+              "/familias",
+              "/productos",
+              "/productos/{producto_id}/insumos",
+              "/productos/{producto_id}/receta",
+              "/resumen",
+              "/subfamilias",
+              "/sync-status",
+              "/unidades-negocio"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_check_admin_or_comercial",
+              "_contar_productos_margen_bajo_canonico",
+              "_fetch_productos",
+              "_get_sql_usuario_id",
+              "_normalize_unit_selector",
+              "_resolve_configuracion_efectiva",
+              "_resolve_receta_servidor_filtro",
+              "_resolve_servidor_filtro",
+              "_resolver_margen_efectivo_productos",
+              "_verify_costos_margenes_access",
+              "actualizar_configuracion_personal",
+              "exportar_productos_csv",
+              "listar_familias",
+              "listar_productos",
+              "listar_subfamilias",
+              "listar_unidades_negocio",
+              "obtener_insumos_producto",
+              "obtener_receta_producto",
+              "obtener_resumen",
+              "obtener_sync_status"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.costos_margenes",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "enum",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "subreceta",
+              "unidad_medida"
+            ],
+            "path": "backend/modules/costos_margenes/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ComponenteReceta",
+              "Config",
+              "ConfiguracionCostosMargenesUsuarioPatch",
+              "ConteoPorServidor",
+              "ConteoPorSistema",
+              "ConteoTabla",
+              "CostosMargenesResumen",
+              "EstadoImpuesto",
+              "InsumoConsolidado",
+              "InsumosProductoResponse",
+              "ProductoCostoMargen",
+              "ProductosListResponse",
+              "RecetaExpandida",
+              "SourceType",
+              "SyncStatusResponse",
+              "TipoComponente"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.economia",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "core.sql_first.db",
+              "decimal",
+              "os",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad_medida"
+            ],
+            "path": "backend/modules/economia/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EconomiaRepository",
+              "_canonical_decimal_28_10",
+              "_conn",
+              "_persistir_valor_versionado",
+              "_query",
+              "listar_contextos_activos",
+              "listar_series",
+              "listar_valores",
+              "obtener_serie",
+              "persistir_valor_versionado",
+              "resolver_proveedor_serie"
+            ],
+            "tables_referenced": [
+              "Economia_ContextoOperativo",
+              "Economia_Proveedores",
+              "Economia_Series",
+              "Economia_Valores",
+              "Servidores_Conexiones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.economia",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad_medida"
+            ],
+            "path": "backend/modules/economia/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ContextoEconomicoResponse",
+              "SerieEconomicaQuery",
+              "SerieEconomicaResponse",
+              "ValorEconomicoResponse"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "document_data_service",
+              "io",
+              "logging",
+              "openpyxl",
+              "openpyxl.styles",
+              "openpyxl.utils",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad_medida"
+            ],
+            "path": "backend/modules/fase2_operativo/services/excel_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ExcelService",
+              "ExcelServiceError",
+              "__init__",
+              "_crear_hoja_auditoria",
+              "_crear_hoja_diferencias",
+              "_crear_hoja_justificaciones",
+              "_crear_hoja_resumen",
+              "_formatear_fecha",
+              "generar_excel_workflow",
+              "get_excel_service"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.rentabilidad",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.config.edarsahub_sql",
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "fastapi"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sync_productos_recetas"
+            ],
+            "path": "backend/modules/rentabilidad/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/productos",
+              "/resumen"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "q",
+              "rentabilidad_productos",
+              "rentabilidad_resumen"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.sync_recetas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "dataclasses",
+              "datetime",
+              "decimal",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "elaboradolineasync",
+              "unidad_medida"
+            ],
+            "path": "backend/modules/sync_recetas/models.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ElaboradoLineaSync",
+              "FamiliaSync",
+              "InsumoSync",
+              "ProductoSync",
+              "RecetaLineaSync",
+              "SubFamiliaSync",
+              "SyncRecetasConfig",
+              "SyncRecetasResult"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.sync_recetas",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "core.server_registry",
+              "core.sql_first.connection_factory",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "models",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "elaboradolineasync",
+              "sync_productos_recetas",
+              "unidad_medida"
+            ],
+            "path": "backend/modules/sync_recetas/sync_recetas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_cat",
+              "_contar_productos_con_receta_mpro",
+              "_contar_productos_con_receta_sr",
+              "_dec",
+              "_ejecutar_sync",
+              "_execute_pos_query_strict",
+              "_guardar_catalogo_filtros",
+              "_guardar_compuestos",
+              "_guardar_elaborados",
+              "_guardar_familias",
+              "_guardar_insumos",
+              "_guardar_productos",
+              "_guardar_recetas",
+              "_guardar_subfamilias",
+              "_obtener_compuestos_mpro",
+              "_obtener_compuestos_sr",
+              "_obtener_elaborados_sr",
+              "_obtener_familias_mpro",
+              "_obtener_familias_sr",
+              "_obtener_filtros_catalogo_sr",
+              "_obtener_insumos_mpro",
+              "_obtener_insumos_sr",
+              "_obtener_productos_mpro",
+              "_obtener_productos_sr",
+              "_obtener_recetas_mpro",
+              "_obtener_recetas_sr",
+              "_obtener_subfamilias_mpro",
+              "_obtener_subfamilias_sr",
+              "_registrar_ejecucion",
+              "_sql_text",
+              "_sync_mpro",
+              "_sync_servidor",
+              "_sync_softrestaurant",
+              "ejecutar_sync_recetas_dry_run",
+              "ejecutar_sync_recetas_real"
+            ],
+            "tables_referenced": [
+              "Sync_Productos",
+              "Sync_Productos_Recetas"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "ast",
+              "modules.costos_margenes.routes",
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sync_productos_recetas"
+            ],
+            "path": "backend/tests/test_costos_margenes_catalogo_server_scope.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_fn",
+              "test_catalogo_conserva_server_scope",
+              "test_catalogo_no_filtra_empresa_legacy",
+              "test_catalogo_no_filtra_unidad_legacy",
+              "test_contexto_unidad_sigue_en_firma",
+              "test_familias_y_subfamilias_no_filtran_unidad_legacy_y_exigen_activo",
+              "test_resumen_corporativo_filtra_insumos_y_recetas_activos",
+              "test_route_resuelve_server_desde_unidad",
+              "test_todas_las_unidades_sentinels_no_disparan_409"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "ast",
+              "pathlib"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "sync_productos_recetas"
+            ],
+            "path": "backend/tests/test_costos_margenes_resumen_canonico.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_summary_source",
+              "test_summary_cost_is_active_recipe_sum",
+              "test_summary_margin_uses_price_without_tax",
+              "test_summary_nonpositive_base_is_not_margin_calculable",
+              "test_summary_only_active_products",
+              "test_summary_recipe_is_active_detail",
+              "test_summary_uses_same_mpro_commercial_filters"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "pymongo",
+              "pyodbc"
+            ],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "datetime",
+              "decimal",
+              "fastapi",
+              "importlib",
+              "os",
+              "pathlib",
+              "pytest",
+              "sys",
+              "unittest.mock"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad_medida"
+            ],
+            "path": "backend/tests/test_economia_backend_offline.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/series/{serie_id}/backfill"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "Client",
+              "Connection",
+              "Context",
+              "Cursor",
+              "Response",
+              "_EconomiaBatchFakeConnection",
+              "_EconomiaBatchFakeContext",
+              "__aenter__",
+              "__aexit__",
+              "__enter__",
+              "__exit__",
+              "__init__",
+              "close",
+              "commit",
+              "cursor",
+              "execute",
+              "fake_backfill",
+              "fake_contract",
+              "fake_decoder",
+              "fake_execute",
+              "fake_http",
+              "fake_observaciones",
+              "fake_persist",
+              "fake_query",
+              "fake_resolved",
+              "fake_resolver",
+              "fetchone",
+              "forbidden_sql_connection",
+              "get",
+              "json",
+              "raise_for_status",
+              "rollback",
+              "run",
+              "test_backfill_rechaza_proveedor_no_autorizado",
+              "test_backfill_rechaza_rango_superior_configurado",
+              "test_backfill_serie_configurable_offline",
+              "test_backfill_serie_transaccion_unica_por_lote",
+              "test_cliente_http_auth_path_no_expone_secreto",
+              "test_cliente_http_auth_query_configurable",
+              "test_cliente_http_auth_tipo_desconocido_fail_closed",
+              "test_cliente_http_generico_offline",
+              "test_cliente_http_metadata_puede_desactivar_auth_del_proveedor",
+              "test_cliente_http_metadata_requires_auth_true_mantiene_auth",
+              "test_cliente_http_no_contiene_logica_especifica_inegi",
+              "test_cliente_http_no_ejecuta_auth_hardcodeada",
+              "test_cliente_http_rechaza_endpoint_ausente",
+              "test_cliente_http_rechaza_requires_auth_no_booleano",
+              "test_cliente_http_response_format_json_default",
+              "test_cliente_http_response_format_xml_configurable",
+              "test_cliente_http_sin_override_conserva_auth_proveedor",
+              "test_consultar_observaciones_proveedor_offline",
+              "test_contrato_http_base_url_metadata_prevalece_sobre_conexion",
+              "test_contrato_http_proveedor_es_configurable",
+              "test_contrato_http_rechaza_metadata_invalida",
+              "test_contrato_http_sin_base_url_metadata_conserva_conexion",
+              "test_contrato_http_usa_url_publica_sin_conexion",
+              "test_no_real_io_modules_used",
+              "test_normalizacion_rechaza_indice_lista_fuera_rango",
+              "test_normalizacion_soporta_lista_anidada_estilo_api",
+              "test_normalizar_observaciones_generico",
+              "test_normalizar_observaciones_rechaza_mapping_incompleto",
+              "test_persistir_valor_versionado_mismo_valor_no_duplica",
+              "test_persistir_valor_versionado_nuevo",
+              "test_persistir_valor_versionado_revision",
+              "test_persistir_valor_versionado_rollback",
+              "test_query_fails_closed_when_config_missing",
+              "test_query_uses_canonical_helper_without_real_io",
+              "test_repository_contextos_contract",
+              "test_repository_listar_series_all_statuses",
+              "test_repository_listar_series_parameter_contract",
+              "test_repository_listar_valores_full_range",
+              "test_repository_listar_valores_without_optional_dates",
+              "test_repository_obtener_serie_none",
+              "test_repository_obtener_serie_parameter_contract",
+              "test_resolver_proveedor_serie_none",
+              "test_resolver_proveedor_serie_usa_cadena_canonica",
+              "test_route_backfill_delega_service",
+              "test_route_contextos_success",
+              "test_route_listar_series_success",
+              "test_route_listar_valores_rejects_invalid_range",
+              "test_route_listar_valores_success",
+              "test_route_obtener_serie_404",
+              "test_route_obtener_serie_success",
+              "test_routes_backfill_no_contiene_proveedor_hardcodeado",
+              "test_routes_backfill_usa_permiso_explicito",
+              "test_routes_expose_exact_permission_dependencies",
+              "test_service_delegates_listar_series",
+              "test_service_delegates_listar_valores",
+              "test_service_resuelve_conexion_api_canonica",
+              "test_service_resuelve_proveedor_sin_conexion",
+              "test_service_resuelve_serie_inexistente",
+              "test_sincronizar_serie_integra_normalizacion_y_versionado",
+              "test_sincronizar_serie_rollback_si_falla_observacion_intermedia",
+              "test_sincronizar_serie_transaccion_unica_por_lote",
+              "test_sincronizar_serie_vacia"
+            ],
+            "tables_referenced": [
+              "Economia_ContextoOperativo",
+              "Economia_Proveedores",
+              "Economia_Series",
+              "Economia_Valores",
+              "Servidores_Conexiones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.inventarios.analysis_mpro_canonical",
+              "core.inventarios.sync_movimientos_canonico",
+              "pathlib"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "sync_productos_recetas"
+            ],
+            "path": "backend/tests/test_inventory_analysis_mpro_canonical.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/reports/inventory-analysis"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_inventory_analysis_mpro_no_longer_returns_pending_guard",
+              "test_mpro_analysis_is_nolive_by_contract",
+              "test_mpro_analysis_preserves_unit_and_branch_scope",
+              "test_mpro_components_prefers_product_kit_contract",
+              "test_mpro_drilldown_preserves_origin_concept_labels",
+              "test_mpro_drilldown_reconciles_to_user_selected_movements",
+              "test_mpro_movement_sync_uses_control_1_not_transaction_quantity",
+              "test_mpro_report_and_drilldown_accept_same_warehouse_identifiers",
+              "test_mpro_report_filters_ledger_at_read_time_and_keeps_sales_separate",
+              "test_mpro_sales_only_apply_to_warehouse_0001",
+              "test_mpro_server_filters_show_complete_selectable_catalog",
+              "test_mpro_sync_keeps_all_concepts_without_deleting_historical_records",
+              "test_mpro_theoretical_does_not_double_count_sales",
+              "test_soft_movement_sql_source_remains_independent_from_mpro_ctrl1"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "decimal",
+              "modules.sync_recetas",
+              "pytest",
+              "unittest.mock"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "sync_productos_recetas",
+              "unidad_medida"
+            ],
+            "path": "backend/tests/test_sync_recetas_transactional_reconciliation.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_connection",
+              "_receta",
+              "test_empty_valid_snapshot_reconciles_server_to_zero_recipes",
+              "test_reactivated_line_is_marked_active_in_merge",
+              "test_recalculation_covers_all_products_of_server",
+              "test_transaction_commits_after_upsert_reconcile_and_recalculate",
+              "test_transaction_rolls_back_if_any_merge_fails"
+            ],
+            "tables_referenced": [
+              "Sync_Productos",
+              "Sync_Productos_Recetas"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.consumo_receta_service.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.recetas_service",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "sync_productos_recetas",
+              "unidad_medida"
+            ],
+            "path": "backend/core/consumo_receta_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConsumoRecetaService",
+              "_key",
+              "calcular_consumo",
+              "calcular_consumo_agregado"
+            ],
+            "tables_referenced": [
+              "Sync_Productos_Recetas"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.insumos_service.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "core.server_registry",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidad_medida"
+            ],
+            "path": "backend/core/insumos_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "InsumosService",
+              "_conn",
+              "get_by_codigo",
+              "get_by_id",
+              "listar"
+            ],
+            "tables_referenced": [
+              "Sync_Productos_Insumos"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.inventarios",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [
+              "resolver_canonico"
+            ],
+            "imports": [
+              "collections",
+              "core.inventarios.movement_filter_config",
+              "core.inventarios.resolver_canonico",
+              "core.sql_first.connection_factory",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "sync_productos_recetas",
+              "unidad_medida"
+            ],
+            "path": "backend/core/inventarios/analysis_mpro_canonical.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "MproInventoryAnalysisSourceError",
+              "__str__",
+              "_fetch_inventory_details",
+              "_fetch_inventory_headers",
+              "_fetch_ledger_net",
+              "_fetch_mpro_sales_components",
+              "_fetch_product_metadata",
+              "_fetch_sales_rows",
+              "_fetch_table_columns",
+              "_filter_candidates",
+              "_float",
+              "_inventory_map",
+              "_movement_display_and_theoretical",
+              "_resolve_product_ids",
+              "_sales_consumption",
+              "_text",
+              "_unique",
+              "generate_mpro_inventory_analysis_canonical",
+              "get_mpro_sales_consumption_detail"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Compras_Inventarios_Fisicos_Detalle_Sync",
+              "Compras_Inventarios_Fisicos_Sync",
+              "Inventario_Almacenes",
+              "Inventario_Movimientos",
+              "Inventario_MovimientosDetalle",
+              "Inventario_TipoMovimiento",
+              "Producto_MapeoOrigen",
+              "Sync_Productos",
+              "Sync_Productos_Compuestos",
+              "Sync_Productos_Recetas"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.recetas_service.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "core.server_registry",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "subreceta",
+              "sync_productos_recetas",
+              "unidad_medida"
+            ],
+            "path": "backend/core/recetas_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RecetasService",
+              "_conn",
+              "get_componentes",
+              "get_componentes_bulk",
+              "get_componentes_by_producto_id",
+              "get_costo_total"
+            ],
+            "tables_referenced": [
+              "Sync_Productos_Recetas"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 20,
+          "scanned_files": 1463,
+          "skipped_sensitive": 561
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T00:50:10Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
