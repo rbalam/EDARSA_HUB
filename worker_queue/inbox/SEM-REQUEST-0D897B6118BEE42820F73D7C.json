@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "backend/modules/catalogos_workflow_sql/repository.py",
+          "backend/modules/catalogo_ampliado/repository.py",
+          "backend/tests/test_catalogo_ampliado_gate8c_alerts.py",
+          "backend/modules/finanzas/incidencias_caja_workflow.py"
+        ],
+        "search_terms": [
+          "Sistema_Tareas",
+          "EntidadTipo",
+          "EntidadID",
+          "CodigoTarea",
+          "EmpresaID",
+          "UnidadNegocioID",
+          "SucursalID",
+          "RBAC",
+          "idempotencia",
+          "CorteCajaID"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-0D897B6118BEE42820F73D7C",
+  "mode": "READ_ONLY",
+  "objective": "BITACORAS Gate READ_ONLY de contrato reutilizable de tareas operativas: auditar implementación real de Sistema_Tareas en catalogos_workflow_sql y sus pruebas, contrastar ownership, EntidadTipo/EntidadID, empresa-unidad-sucursal, RBAC, idempotencia y referencias para futura evidencia Caja/CorteCajaID; identificar brechas sin asumir que tareas equivalen a evidencias/checklists. Reutilizar SQL metadata certificado SEM-REQUEST-0AF43543EE9736B71858515C y auditorías anteriores; no repetirlas, no DDL, SQL LIVE, escrituras ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "BITACORAS",
+    "conflict_domains": [
+      "BITACORAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
