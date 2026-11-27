@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/integrations_center/",
+          "backend/modules/integrations_runtime/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "PublishedApiDefinition",
+          "PublishedApiVersion",
+          "ApiConsumerGrant",
+          "ApiCapabilityBinding",
+          "HomologationProfile",
+          "require_certified_domain",
+          "ensure_external_identifier",
+          "idempotency_key",
+          "materialize_external_sucursal_scope_atomic",
+          "execute_api_local_readonly"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-F7A63E6FE0A8E159318B9A18",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2 Fabric Externa: auditar contratos existentes de publicación y versionado de APIs, permisos de consumidores, homologación certificada, identidad externa, idempotencia, alcance empresarial y sincronización autorizada; identificar brechas para contratos universales de integración sin duplicar API Factory ni modificar código. Examinar también pruebas asociadas cuando coincidan.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_EXTERNA",
+    "conflict_domains": [
+      "FABRIC_EXTERNA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
