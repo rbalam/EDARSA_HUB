@@ -726,6 +726,9 @@ _DEV_CONTEXT_PATH_OWNERSHIP: dict[str, frozenset[str]] = {
     "AUTH_RBAC": frozenset({
         "backend/core/auth/sql_user_identity.py",
     }),
+    "SQL_CONNECTIONS_8OF10": frozenset({
+        "backend/core/pool.py",
+    }),
     "COMUNICACIONES_CFDI": frozenset({
         "backend/routes/portal_proveedores.py",
         "backend/routes/portal_proveedores_repository_sql.py",

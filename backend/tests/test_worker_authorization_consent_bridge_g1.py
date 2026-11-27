@@ -892,3 +892,16 @@ def test_auth_rbac_p0_b_exact_context_ownership():
         with pytest.raises(sem_caps.SemanticCapabilityError):
             sem_caps._dev_validate_path(path, context="AUTH_RBAC")
     assert "backend/core/" not in sem_caps._G3_ROOTS
+
+
+def test_sql_connections_8of10_exact_context_ownership():
+    target = "backend/core/pool.py"
+    assert sem_caps._dev_context_owned_paths("SQL_CONNECTIONS_8OF10") == frozenset({target})
+    assert sem_caps._dev_validate_path(target, context="SQL_CONNECTIONS_8OF10") == target
+    for domain in ("WORKER_CONTROL_PLANE", "AUTH_RBAC", "SEC_RBAC", "CRM", None):
+        with pytest.raises(sem_caps.SemanticCapabilityError):
+            sem_caps._dev_validate_path(target, context=domain)
+    for path in ("backend/core/db.py", "backend/core/auth/sql_user_identity.py", "backend/core/../core/pool.py", "backend/core/pool.py.bak"):
+        with pytest.raises(sem_caps.SemanticCapabilityError):
+            sem_caps._dev_validate_path(path, context="SQL_CONNECTIONS_8OF10")
+    assert "backend/core/" not in sem_caps._G3_ROOTS
