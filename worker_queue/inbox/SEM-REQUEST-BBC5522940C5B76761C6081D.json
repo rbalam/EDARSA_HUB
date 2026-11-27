@@ -1,0 +1,58 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "poliza",
+          "prepoliza",
+          "catalogo_cuentas",
+          "cuenta_contable",
+          "libro_mayor",
+          "balanza",
+          "determinacion_contable",
+          "centro_costo",
+          "depreciacion",
+          "amortizacion",
+          "contabilidad_electronica",
+          "agrupador_sat",
+          "periodo_contable",
+          "intercompany",
+          "consolidacion"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-BBC5522940C5B76761C6081D",
+  "mode": "READ_ONLY",
+  "objective": "Complementar evidencia certificada de Finanzas exclusivamente con descubrimiento de contabilidad general, pólizas, catálogo, determinación, dimensiones, cierres y fiscal. No repetir tesorería, presupuestos ni forecast. Identificar propietarios y contratos, especialmente integración Tablajería. No mutaciones ni producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FINANZAS",
+    "conflict_domains": [
+      "FINANZAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
