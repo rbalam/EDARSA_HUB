@@ -764,6 +764,9 @@ def submit_objective_tool(
     - CROSS_DOMAIN_HANDOFF_REGISTER (mode=READ_ONLY|MUTATION, any valid source bounded_context, requires request_key):
       constraints={"target_domain": "...", "requested_capability": "...", "requested_constraints": {...}, "source_job_id": "...", "incident_id": "...", "dependency_id": "...", "authorization_ref": "...", "acceptance_criteria": [...], "delegation_chain": [...], "priority_class": "...", "auto_dispatch": true|false, "resolution_job_id": "..."}
       Registers a structured cross-domain need without granting permissions to target_domain; classifies, deduplicates, and returns certified evidence in get_go_context.
+    - GATE_AUTHORIZATION_LIFECYCLE (mode=READ_ONLY|MUTATION, any valid domain bounded_context):
+      constraints={"action": "REQUEST_CONSENT|CONSENT_STATUS|PREFLIGHT|MATERIALIZE|INSPECT|REVOKE", "gate_id": "...", "authorization_id": "...", "authorized_operations": [...], "allowed_paths": [...], "source_sha256": {...}, "base_head_sha": "...", "ttl_hours": 1..168, "verification_tests": [...], "rollback_plan": ..., "consent_request_id": "...", "consent_ttl_minutes": 5..120, "consent_evidence": {...}, "handoff_id": "...", "revocation_reason": "..."}
+      Canonical verifiable human consent bridge and Gate authorization lifecycle without agent self-authorization or Production access.
     """
     safe_corr = _safe_correlation_id(request_key)
     if constraints is not None and not isinstance(constraints, dict):
@@ -820,7 +823,12 @@ def submit_objective_tool(
             result.get("production_touched", False)
         ),
     }
-    if result.get("handoff_id") or result.get("authorization_id") or result.get("gate_id"):
+    if (
+        result.get("handoff_id")
+        or result.get("authorization_id")
+        or result.get("gate_id")
+        or result.get("consent_request_id")
+    ):
         for extra_key in (
             "handoff_id",
             "dependency_id",
@@ -843,6 +851,14 @@ def submit_objective_tool(
             "expired",
             "expires_at_utc",
             "scope_digest",
+            "consent_request_id",
+            "approval_id",
+            "approval_path",
+            "approval_url",
+            "human_action_required",
+            "auto_approved",
+            "ready_to_materialize",
+            "consent_channel",
         ):
             if extra_key in result:
                 response[extra_key] = result.get(extra_key)

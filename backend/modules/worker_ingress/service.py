@@ -713,9 +713,10 @@ def submit_objective(
         if capability_code == "GATE_AUTHORIZATION_LIFECYCLE":
             gate_id = _clean(result.get("gate_id"))
             auth_id = _clean(result.get("authorization_id"))
-            return {
+            consent_req_id = _clean(result.get("consent_request_id"))
+            out_auth: dict[str, Any] = {
                 "status": _clean(result.get("status")) or "OK",
-                "job_id": auth_id or gate_id or "GATE_AUTHORIZATION",
+                "job_id": consent_req_id or auth_id or gate_id or "GATE_AUTHORIZATION",
                 "gate_id": gate_id or None,
                 "authorization_id": auth_id or None,
                 "active": result.get("active"),
@@ -729,6 +730,20 @@ def submit_objective(
                 "capability": capability_code,
                 "bounded_context": bounded_context,
             }
+            for extra_key in (
+                "consent_request_id",
+                "approval_id",
+                "approval_path",
+                "approval_url",
+                "human_action_required",
+                "auto_approved",
+                "ready_to_materialize",
+                "handoff_id",
+                "consent_channel",
+            ):
+                if extra_key in result:
+                    out_auth[extra_key] = result.get(extra_key)
+            return out_auth
 
         if capability_code == "CROSS_DOMAIN_HANDOFF_REGISTER":
             handoff_id = _clean(result.get("handoff_id"))
@@ -2367,6 +2382,25 @@ def resolve_go_context(
             "explicit_authorization_id": explicit_auth_id,
             "materialized_gate_authorization": materialized_gate_auth,
             "chain_authorization_status": chain_auth_reason,
+            "consent_bridge": {
+                "available": True,
+                "capability": "GATE_AUTHORIZATION_LIFECYCLE",
+                "actions": [
+                    "REQUEST_CONSENT",
+                    "CONSENT_STATUS",
+                    "PREFLIGHT",
+                    "MATERIALIZE",
+                    "INSPECT",
+                    "REVOKE",
+                ],
+                "approval_endpoint_template": "/api/mcp/oauth/consent/{consent_request_id}",
+                "pending_consent_requests": (
+                    __import__("tools.mirror_sync.worker_lifecycle_recovery", fromlist=["list_domain_consent_requests_summary"])
+                    .list_domain_consent_requests_summary(domain=domain_upper, state_root=STATE_ROOT)
+                ),
+                "self_authorization_allowed": False,
+                "production_allowed": False,
+            },
         },
         "gate_dependencies": gate_dependencies,
         "cross_domain_handoffs": cross_domain_handoffs,
@@ -2634,10 +2668,18 @@ def build_semantic_diagnostic(
         rejected_field = "request_key"
         http_status = 429
         allowed_correction = "Wait for the handoff rate-limit window to reset or reuse an existing active handoff."
+    elif code in {"CONSENT_ALREADY_CONSUMED", "CONSENT_REPLAY_DETECTED", "CONSENT_DENIED_BY_HUMAN", "CONSENT_REQUEST_ALREADY_DECIDED"}:
+        rejected_field = "constraints.consent_request_id"
+        http_status = 409
+        allowed_correction = "Initiate a fresh REQUEST_CONSENT bound to the live Gate scope and obtain explicit interactive human approval via /api/mcp/oauth/consent/{consent_request_id}."
+    elif code == "CONSENT_PENDING_HUMAN_APPROVAL":
+        rejected_field = "constraints.consent_request_id"
+        http_status = 403
+        allowed_correction = "Human approval is still pending; have the authorized SQL human approve at /api/mcp/oauth/consent/{consent_request_id} and re-check with CONSENT_STATUS."
     elif code.startswith("CONSENT_") or code == "SELF_PRIVILEGE_ESCALATION_FORBIDDEN":
         rejected_field = "constraints.consent_evidence"
         http_status = 403
-        allowed_correction = "Obtain verifiable human consent bound to the authenticated SQL user and exact Gate scope digest via the canonical approval channel."
+        allowed_correction = "Obtain verifiable human consent bound to the authenticated SQL user and exact Gate scope digest via REQUEST_CONSENT and /api/mcp/oauth/consent/{consent_request_id}."
     elif code.startswith("AUTHORIZATION_CONFLICT"):
         rejected_field = "constraints.gate_id"
         http_status = 409
@@ -2826,7 +2868,7 @@ def preflight_semantic_objective(
                     )
                 except lifecycle_mod.GateAuthorizationError as exc:
                     raise WorkerIngressError(str(exc)) from exc
-                return {
+                pf_out: dict[str, Any] = {
                     "schema": "edarsahub.worker-semantic-preflight.v1",
                     "ok": True,
                     "status": pf_auth.get("status") or "PREFLIGHT_READY",
@@ -2841,6 +2883,21 @@ def preflight_semantic_objective(
                     "production_allowed": False,
                     "production_touched": False,
                 }
+                for extra_key in (
+                    "consent_request_id",
+                    "approval_id",
+                    "approval_path",
+                    "approval_url",
+                    "human_action_required",
+                    "auto_approved",
+                    "ready_to_materialize",
+                    "handoff_id",
+                    "expires_at_utc",
+                    "consent_channel",
+                ):
+                    if extra_key in pf_auth:
+                        pf_out[extra_key] = pf_auth.get(extra_key)
+                return pf_out
             if capability.code == "CROSS_DOMAIN_HANDOFF_REGISTER":
                 from tools.mirror_sync import worker_cross_domain_handoff as handoff_mod
 

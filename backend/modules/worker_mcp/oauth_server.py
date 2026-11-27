@@ -909,6 +909,325 @@ async def oauth_token(request: Request):
     return _oauth_error("unsupported_grant_type")
 
 
+
+
+def _extract_raw_human_jwt(request: Request) -> str | None:
+    auth_header = str(request.headers.get("authorization") or "").strip()
+    if auth_header.lower().startswith("bearer "):
+        candidate = auth_header[7:].strip()
+        if candidate and candidate not in ("null", "undefined"):
+            return candidate
+    cookie_token = request.cookies.get("edarsa_access_token")
+    if isinstance(cookie_token, str) and cookie_token.strip():
+        return cookie_token.strip()
+    return None
+
+
+def _require_interactive_human_consent_actor(
+    request: Request,
+    user: dict[str, Any],
+) -> tuple[dict[str, Any], str]:
+    """Ensure consent review/approval comes strictly from an interactive human EDARSAHUB session.
+
+    Rejects MCP service tokens, MCP-scoped internal JWTs, synthetic actors, non-RBAC_ADMIN users,
+    and non-SUPERADMIN users fail-closed so agents can never self-authorize.
+    """
+    raw_token = _extract_raw_human_jwt(request)
+    if raw_token:
+        try:
+            claims = verify_token(raw_token)
+        except Exception:
+            claims = None
+        if isinstance(claims, dict):
+            if (
+                "mcp_scopes" in claims
+                or "mcp_resource" in claims
+                or str(claims.get("typ") or "").strip().lower() == ACCESS_SESSION_TYPE
+            ):
+                raise HTTPException(
+                    status_code=403,
+                    detail={
+                        "error": "CONSENT_SELF_AUTHORIZATION_FORBIDDEN",
+                        "production_touched": False,
+                    },
+                )
+
+    session_id = str(user.get("_session_id") or "").strip()
+    if not session_id:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "CONSENT_INTERACTIVE_HUMAN_SESSION_REQUIRED",
+                "production_touched": False,
+            },
+        )
+
+    try:
+        user_id = _sql_user_id(user)
+        _require_worker_permission(user_id)
+    except OAuthServerError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail={"error": exc.code, "production_touched": False},
+        ) from exc
+
+    resolved_user = (
+        user
+        if user.get("role") or user.get("role_code") or user.get("_sql_rol_codigo")
+        else _user_for_id(user_id)
+    )
+    identity_scopes = resolve_identity_scopes(resolved_user)
+    if "worker:submit" not in identity_scopes:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "AUTHORIZATION_WORKER_SUBMIT_SCOPE_REQUIRED",
+                "production_touched": False,
+            },
+        )
+
+    actor = {
+        "id": str(resolved_user.get("id") or user_id),
+        "usuario_id": user_id,
+        "email": str(resolved_user.get("email") or user.get("email") or "").strip().lower(),
+        "role": str(resolved_user.get("role") or "SuperAdministrador").strip(),
+        "role_code": str(
+            resolved_user.get("role_code")
+            or resolved_user.get("_sql_rol_codigo")
+            or "SUPERADMIN"
+        ).strip().upper(),
+        "active": bool(resolved_user.get("active", True)),
+        "permissions": ["RBAC_ADMIN", *sorted(identity_scopes)],
+        "scopes": sorted(identity_scopes),
+        "auth_source": "SQL_CANONICAL_RBAC",
+        "_session_id": session_id,
+    }
+    return actor, session_id
+
+
+def _consent_error_http_status(code: str) -> int:
+    clean = str(code or "").strip().upper()
+    if clean == "CONSENT_REQUEST_NOT_FOUND":
+        return 404
+    if clean in {"CONSENT_EXPIRED", "CONSENT_CHALLENGE_EXPIRED"}:
+        return 410
+    if clean in {
+        "CONSENT_ALREADY_CONSUMED",
+        "CONSENT_REPLAY_DETECTED",
+        "CONSENT_DENIED_BY_HUMAN",
+        "CONSENT_REQUEST_ALREADY_DECIDED",
+        "AUTHORIZATION_CONFLICT_SCOPE_DRIFT",
+    }:
+        return 409
+    if (
+        clean.startswith("CONSENT_IMPERSONATION")
+        or clean.startswith("CONSENT_SELF_AUTHORIZATION")
+        or clean.startswith("CONSENT_INTERACTIVE_HUMAN")
+        or clean.startswith("CONSENT_CHALLENGE")
+        or clean.startswith("CONSENT_SIGNATURE")
+        or clean.startswith("PRODUCTION_")
+        or clean.startswith("AUTHORIZATION_RBAC_")
+        or clean.startswith("AUTHORIZATION_WORKER_SUBMIT")
+        or clean.startswith("AUTHORIZATION_WILDCARD")
+        or clean.startswith("AUTHORIZATION_ACTOR_")
+        or clean == "SELF_PRIVILEGE_ESCALATION_FORBIDDEN"
+    ):
+        return 403
+    return 422
+
+
+def _wants_json_response(request: Request) -> bool:
+    accept = str(request.headers.get("accept") or "").lower()
+    ctype = str(request.headers.get("content-type") or "").lower()
+    return ("application/json" in accept and "text/html" not in accept) or "application/json" in ctype
+
+
+@router.get("/consent/{consent_request_id}")
+async def oauth_gate_consent_review(consent_request_id: str, request: Request):
+    """Canonical human review screen for a scoped Gate authorization consent request."""
+    from tools.mirror_sync import worker_lifecycle_recovery as _consent_lr
+
+    wants_json = _wants_json_response(request)
+    try:
+        user = await get_current_user_dual(request)
+    except HTTPException:
+        if wants_json:
+            return JSONResponse(
+                status_code=401,
+                content={"error": "login_required", "production_touched": False},
+                headers={"Cache-Control": "no-store"},
+            )
+        try:
+            login_url = _public_origin(request) + "/login"
+        except OAuthServerError:
+            login_url = "/login"
+        return HTMLResponse(
+            status_code=200,
+            content=(
+                "<!doctype html><html><body>"
+                "<h2>EDARSAHUB - Aprobar consentimiento de Gate</h2>"
+                "<p>Inicia sesion en EDARSAHUB con tu usuario humano autorizado y vuelve a esta ventana.</p>"
+                f'<p><a href="{html.escape(login_url, quote=True)}" target="_blank">'
+                "Abrir inicio de sesion</a></p>"
+                "<button onclick=\"location.reload()\">Ya inicie sesion - continuar</button>"
+                "</body></html>"
+            ),
+            headers={"Cache-Control": "no-store"},
+        )
+
+    actor, session_id = _require_interactive_human_consent_actor(request, user)
+    try:
+        review = _consent_lr.load_human_consent_request_for_review(
+            consent_request_id,
+            human_user=actor,
+            session_id=session_id,
+        )
+    except _consent_lr.GateAuthorizationError as exc:
+        code = str(exc)
+        status_code = _consent_error_http_status(code)
+        if wants_json:
+            return JSONResponse(
+                status_code=status_code,
+                content={"error": code, "production_touched": False},
+                headers={"Cache-Control": "no-store"},
+            )
+        return HTMLResponse(
+            status_code=status_code,
+            content="<h2>Consentimiento de Gate no disponible</h2><p>" + html.escape(code) + "</p>",
+            headers={"Cache-Control": "no-store"},
+        )
+
+    if wants_json:
+        return JSONResponse(content=review, headers={"Cache-Control": "no-store"})
+
+    paths_html = "".join(
+        f"<li><code>{html.escape(p)}</code> (sha256: <code>{html.escape(str((review.get('source_sha256') or {}).get(p) or 'new_file'))}</code>)</li>"
+        for p in (review.get("allowed_paths") or [])
+    )
+    tests_html = "".join(
+        f"<li><code>{html.escape(t)}</code></li>"
+        for t in (review.get("verification_tests") or [])
+    )
+    ops_text = html.escape(", ".join(review.get("authorized_operations") or []))
+    rollback_raw = review.get("rollback_plan")
+    rollback_text = html.escape(str(rollback_raw))
+    action_url = f"/api/mcp/oauth/consent/{html.escape(str(review['consent_request_id']), quote=True)}"
+    controls = ""
+    if review.get("status") == "PENDING_HUMAN_CONSENT" and review.get("challenge_token"):
+        controls = (
+            f'<form method="post" action="{action_url}">'
+            + _hidden("confirm_scope_digest", str(review["scope_digest"]))
+            + _hidden("challenge_token", str(review["challenge_token"]))
+            + '<button type="submit" name="decision" value="approve">Aprobar alcance exacto</button> '
+            + '<button type="submit" name="decision" value="deny">Rechazar</button>'
+            + "</form>"
+        )
+    else:
+        controls = f"<p><strong>Estado actual:</strong> {html.escape(str(review.get('status')))}</p>"
+
+    return HTMLResponse(
+        content=(
+            "<!doctype html><html><body>"
+            "<h2>EDARSAHUB - Consentimiento Humano Verificable de Gate</h2>"
+            f"<p><strong>Solicitud:</strong> <code>{html.escape(str(review['consent_request_id']))}</code></p>"
+            f"<p><strong>Gate:</strong> <code>{html.escape(str(review['gate_id']))}</code> | "
+            f"<strong>Autorizacion:</strong> <code>{html.escape(str(review['authorization_id']))}</code></p>"
+            f"<p><strong>Dominio:</strong> <code>{html.escape(str(review['domain']))}</code> | "
+            f"<strong>Rama:</strong> <code>Edarsahub_Desarrollo</code> | "
+            f"<strong>Produccion permitida:</strong> <code>false</code></p>"
+            f"<p><strong>Usuario SQL autenticado:</strong> <code>{html.escape(str(review['actor_email']))}</code> "
+            f"(UsuarioID {int(review['sql_usuario_id'])})</p>"
+            f"<p><strong>Objetivo:</strong> {html.escape(str(review['objective']))}</p>"
+            f"<p><strong>HEAD base:</strong> <code>{html.escape(str(review['base_head_sha']))}</code></p>"
+            f"<p><strong>Scope digest:</strong> <code>{html.escape(str(review['scope_digest']))}</code></p>"
+            f"<p><strong>Operaciones permitidas:</strong> <code>{ops_text}</code></p>"
+            f"<p><strong>TTL:</strong> {int(review.get('ttl_hours') or 0)}h | "
+            f"<strong>Expira:</strong> <code>{html.escape(str(review.get('expires_at_utc')))}</code></p>"
+            f"<h3>Archivos y SHA-256 exactos</h3><ul>{paths_html}</ul>"
+            f"<h3>Pruebas de verificacion</h3><ul>{tests_html}</ul>"
+            f"<h3>Plan de rollback</h3><pre>{rollback_text}</pre>"
+            + controls
+            + "</body></html>"
+        ),
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@router.post("/consent/{consent_request_id}")
+async def oauth_gate_consent_submit(consent_request_id: str, request: Request):
+    """Persist explicit interactive human approval/denial bound to exact scope digest and SQL identity."""
+    from tools.mirror_sync import worker_lifecycle_recovery as _consent_lr
+
+    wants_json = _wants_json_response(request)
+    try:
+        user = await get_current_user_dual(request)
+    except HTTPException:
+        return JSONResponse(
+            status_code=401,
+            content={"error": "login_required", "production_touched": False},
+            headers={"Cache-Control": "no-store"},
+        )
+
+    actor, session_id = _require_interactive_human_consent_actor(request, user)
+    ctype = str(request.headers.get("content-type") or "").lower()
+    if "application/json" in ctype:
+        try:
+            body = await request.json()
+            values = dict(body) if isinstance(body, dict) else {}
+        except Exception:
+            return JSONResponse(
+                status_code=422,
+                content={"error": "CONSENT_PAYLOAD_INVALID", "production_touched": False},
+                headers={"Cache-Control": "no-store"},
+            )
+    else:
+        form = await request.form()
+        values = {key: str(val) for key, val in form.items()}
+
+    if values.get("production_allowed") is True or str(values.get("production_allowed") or "").lower() == "true":
+        return JSONResponse(
+            status_code=403,
+            content={"error": "PRODUCTION_AUTHORIZATION_FORBIDDEN", "production_touched": False},
+            headers={"Cache-Control": "no-store"},
+        )
+
+    try:
+        outcome = _consent_lr.record_human_consent_decision(
+            consent_request_id,
+            decision=str(values.get("decision") or ""),
+            human_user=actor,
+            session_id=session_id,
+            confirm_scope_digest=str(values.get("confirm_scope_digest") or ""),
+            challenge_token=str(values.get("challenge_token") or ""),
+            decision_note=str(values.get("decision_note") or ""),
+        )
+    except _consent_lr.GateAuthorizationError as exc:
+        code = str(exc)
+        status_code = _consent_error_http_status(code)
+        return JSONResponse(
+            status_code=status_code,
+            content={"error": code, "production_touched": False},
+            headers={"Cache-Control": "no-store"},
+        )
+
+    if wants_json:
+        return JSONResponse(content=outcome, headers={"Cache-Control": "no-store"})
+
+    return HTMLResponse(
+        content=(
+            "<!doctype html><html><body>"
+            f"<h2>Consentimiento registrado: {html.escape(str(outcome.get('status')))}</h2>"
+            f"<p><strong>Solicitud:</strong> <code>{html.escape(str(outcome.get('consent_request_id')))}</code></p>"
+            f"<p><strong>Gate:</strong> <code>{html.escape(str(outcome.get('gate_id')))}</code></p>"
+            f"<p><strong>Approval ID:</strong> <code>{html.escape(str(outcome.get('approval_id') or 'N/A'))}</code></p>"
+            f"<p><strong>Scope digest:</strong> <code>{html.escape(str(outcome.get('scope_digest')))}</code></p>"
+            "<p>Ya puedes regresar a ChatGPT/MCP para continuar con la materializacion del Gate.</p>"
+            "</body></html>"
+        ),
+        headers={"Cache-Control": "no-store"},
+    )
+
+
 @router.get("/health")
 async def oauth_health():
     return {

@@ -1839,6 +1839,15 @@ def verify_gate_authorization(
 SCHEMA_GATE_CONSENT = "edarsahub.gate-consent.v1"
 SCHEMA_HUMAN_APPROVAL = "edarsahub.gate-human-approval.v1"
 SCHEMA_AUTH_LIFECYCLE_PREFLIGHT = "edarsahub.gate-authorization-preflight.v1"
+SCHEMA_CONSENT_REQUEST = "edarsahub.gate-consent-request.v1"
+SCHEMA_CONSENT_CHALLENGE = "edarsahub.gate-consent-challenge.v1"
+CONSENT_REQUEST_STATES = frozenset({
+    "PENDING_HUMAN_CONSENT",
+    "APPROVED",
+    "DENIED",
+    "EXPIRED",
+    "CONSUMED",
+})
 
 ALLOWED_MUTATION_OPERATIONS = frozenset({
     "replace_text",
@@ -1875,6 +1884,79 @@ class GateAuthorizationConflictError(GateAuthorizationError):
 
 def _approvals_dir(state_root: Path) -> Path:
     return state_root / "maintenance" / "approvals"
+
+
+def _consent_requests_dir(state_root: Path) -> Path:
+    return state_root / "maintenance" / "consent_requests"
+
+
+def _consumed_consents_path(state_root: Path) -> Path:
+    return _approvals_dir(state_root) / ".consumed_consents.json"
+
+
+def _load_consumed_consents(state_root: Path) -> dict[str, dict[str, Any]]:
+    raw = _read_json_safe(_consumed_consents_path(state_root))
+    if isinstance(raw, dict) and isinstance(raw.get("entries"), dict):
+        return {str(k): dict(v) for k, v in raw["entries"].items() if isinstance(v, Mapping)}
+    return {}
+
+
+def _record_consumed_consent(
+    state_root: Path,
+    *,
+    keys: list[str],
+    gate_id: str,
+    domain: str,
+    scope_digest: str,
+    usuario_id: int,
+    email: str,
+    now_str: str,
+) -> None:
+    clean_keys = [str(k).strip() for k in keys if str(k).strip()]
+    if not clean_keys:
+        return
+    entries = _load_consumed_consents(state_root)
+    for key in clean_keys:
+        entries[key] = {
+            "gate_id": _safe_id(gate_id),
+            "domain": str(domain or "").strip().upper(),
+            "scope_digest": str(scope_digest or "").strip().lower(),
+            "usuario_id": int(usuario_id),
+            "email": str(email or "").strip().lower(),
+            "consumed_at_utc": now_str,
+        }
+    _atomic_write_json(
+        _consumed_consents_path(state_root),
+        {"schema": "edarsahub.consumed-consents.v1", "entries": entries},
+    )
+
+
+def _is_active_idempotent_consumption(
+    state_root: Path,
+    entry: Mapping[str, Any],
+    *,
+    expected_gate_id: str,
+    expected_domain: str,
+    expected_scope_digest: str,
+    now_utc: datetime,
+) -> bool:
+    clean_gate = _safe_id(expected_gate_id)
+    clean_dom = str(expected_domain or "").strip().upper()
+    if (
+        _safe_id(str(entry.get("gate_id") or "")) != clean_gate
+        or str(entry.get("domain") or "").strip().upper() != clean_dom
+        or str(entry.get("scope_digest") or "").strip().lower() != expected_scope_digest
+    ):
+        return False
+    existing = _read_json_safe(_authorization_dir(state_root) / f"{clean_gate}.json")
+    if not isinstance(existing, dict) or existing.get("schema") != SCHEMA_GATE_AUTHORIZATION:
+        return False
+    if existing.get("revoked") is True or existing.get("production_allowed") is not False:
+        return False
+    if str(existing.get("scope_digest") or "").strip().lower() != expected_scope_digest:
+        return False
+    exp_dt = _parse_iso_utc_dt(existing.get("expires_at_utc"))
+    return exp_dt is not None and exp_dt > now_utc
 
 
 def _consent_signing_secret() -> bytes:
@@ -2054,6 +2136,7 @@ def verify_consent_attestation(
     expected_scope_digest: str,
     state_root: Path,
     now_utc: datetime | None = None,
+    allow_idempotent_active_gate: bool = False,
 ) -> dict[str, Any]:
     """Verify cryptographic or canonical out-of-band human consent fail-closed.
 
@@ -2096,13 +2179,31 @@ def verify_consent_attestation(
         if exp_dt is None or exp_dt <= now:
             raise GateAuthorizationError("CONSENT_EXPIRED")
 
+        nonce = str(consent_evidence.get("nonce") or "").strip()
+        if not nonce:
+            raise GateAuthorizationError("CONSENT_NONCE_REQUIRED")
+        consumed_entry = _load_consumed_consents(state_root).get(f"nonce:{nonce}")
+        if consumed_entry is not None:
+            if not (
+                allow_idempotent_active_gate
+                and _is_active_idempotent_consumption(
+                    state_root,
+                    consumed_entry,
+                    expected_gate_id=expected_gate_id,
+                    expected_domain=expected_domain,
+                    expected_scope_digest=expected_scope_digest,
+                    now_utc=now,
+                )
+            ):
+                raise GateAuthorizationError("CONSENT_REPLAY_DETECTED")
+
         return {
             "verified": True,
             "channel": channel,
             "verified_usuario_id": int(expected_usuario_id),
             "verified_email": str(expected_email).strip().lower(),
             "scope_digest": expected_scope_digest,
-            "nonce": str(consent_evidence.get("nonce") or ""),
+            "nonce": nonce,
             "session_id": consent_evidence.get("session_id"),
             "issued_at_utc": consent_evidence.get("issued_at_utc"),
             "expires_at_utc": consent_evidence.get("expires_at_utc"),
@@ -2135,6 +2236,26 @@ def verify_consent_attestation(
         if exp_dt is None or exp_dt <= now:
             raise GateAuthorizationError("CONSENT_EXPIRED")
 
+        consumed_entry = _load_consumed_consents(state_root).get(f"approval:{approval_id}")
+        if doc.get("consumed") is True or consumed_entry is not None:
+            check_entry = consumed_entry or {
+                "gate_id": doc.get("consumed_by_gate_id") or doc.get("gate_id"),
+                "domain": doc.get("domain"),
+                "scope_digest": doc.get("scope_digest"),
+            }
+            if not (
+                allow_idempotent_active_gate
+                and _is_active_idempotent_consumption(
+                    state_root,
+                    check_entry,
+                    expected_gate_id=expected_gate_id,
+                    expected_domain=expected_domain,
+                    expected_scope_digest=expected_scope_digest,
+                    now_utc=now,
+                )
+            ):
+                raise GateAuthorizationError("CONSENT_ALREADY_CONSUMED")
+
         return {
             "verified": True,
             "channel": channel,
@@ -2148,6 +2269,1102 @@ def verify_consent_attestation(
         }
 
     raise GateAuthorizationError("CONSENT_CHANNEL_UNVERIFIABLE_FAIL_CLOSED")
+
+
+def _resolve_public_approval_base_url(public_origin: str | None = None) -> str | None:
+    """Resolve canonical HTTPS public origin for human consent review links (no loopback/secrets)."""
+    from urllib.parse import urlsplit
+
+    candidates: list[str] = []
+    if public_origin:
+        candidates.append(str(public_origin).strip())
+    env_pub = str(os.environ.get("EDARSAHUB_MCP_PUBLIC_ORIGIN") or "").strip()
+    if env_pub:
+        candidates.append(env_pub)
+    cors_raw = str(os.environ.get("CORS_ORIGINS") or "").strip()
+    if cors_raw:
+        candidates.extend(part.strip() for part in cors_raw.split(",") if part.strip())
+
+    for raw in candidates:
+        clean = raw.rstrip("/")
+        try:
+            parts = urlsplit(clean)
+        except ValueError:
+            continue
+        host = (parts.hostname or "").lower()
+        if (
+            parts.scheme != "https"
+            or not parts.netloc
+            or not host
+            or host in {"localhost", "127.0.0.1", "0.0.0.0"}
+            or parts.username is not None
+            or parts.password is not None
+            or parts.path not in ("", "/")
+            or parts.query
+            or parts.fragment
+        ):
+            continue
+        return f"https://{parts.netloc}"
+    return None
+
+
+def _build_approval_urls(
+    consent_request_id: str,
+    *,
+    public_origin: str | None = None,
+) -> tuple[str, str | None]:
+    clean_id = _safe_id(consent_request_id)
+    approval_path = f"/api/mcp/oauth/consent/{clean_id}"
+    base = _resolve_public_approval_base_url(public_origin)
+    return approval_path, (f"{base}{approval_path}" if base else None)
+
+
+def _assert_interactive_human_consent_actor(
+    human_user: Mapping[str, Any] | None,
+    *,
+    session_id: str | None,
+) -> str:
+    """Block any agent/MCP/worker caller from approving its own consent request."""
+    if not isinstance(human_user, Mapping):
+        raise GateAuthorizationError("AUTHORIZATION_ACTOR_IDENTITY_REQUIRED")
+    if human_user.get("mcp_scopes") is not None or human_user.get("mcp_resource") is not None:
+        raise GateAuthorizationError("CONSENT_SELF_AUTHORIZATION_FORBIDDEN")
+    if human_user.get("self_granted") is True:
+        raise GateAuthorizationError("CONSENT_SELF_AUTHORIZATION_FORBIDDEN")
+    auth_channel = str(human_user.get("auth_channel") or "").strip().upper()
+    if auth_channel in {"MCP", "MCP_OAUTH", "AGENT", "WORKER", "SERVICE_CREDENTIAL"}:
+        raise GateAuthorizationError("CONSENT_SELF_AUTHORIZATION_FORBIDDEN")
+    source_tag = str(human_user.get("source") or "").strip().lower()
+    if source_tag in {"universal-worker", "worker-self", "mcp", "chatgpt", "agent"}:
+        raise GateAuthorizationError("CONSENT_SELF_AUTHORIZATION_FORBIDDEN")
+    clean_sid = str(session_id or human_user.get("_session_id") or "").strip()
+    if not clean_sid or len(clean_sid) < 6 or len(clean_sid) > 128:
+        raise GateAuthorizationError("CONSENT_INTERACTIVE_HUMAN_SESSION_REQUIRED")
+    return clean_sid
+
+
+def issue_human_consent_challenge_token(
+    *,
+    consent_request_id: str,
+    scope_digest: str,
+    usuario_id: int,
+    session_id: str,
+    ttl_minutes: int = 15,
+    now_utc: datetime | None = None,
+) -> str:
+    """Issue an HMAC-SHA256 challenge token binding interactive human review to exact scope & session."""
+    clean_req = _safe_id(consent_request_id)
+    clean_digest = str(scope_digest or "").strip().lower()
+    clean_sid = str(session_id or "").strip()
+    if not clean_req or not re.fullmatch(r"[0-9a-f]{64}", clean_digest) or not clean_sid:
+        raise GateAuthorizationError("CONSENT_CHALLENGE_INVALID")
+    if isinstance(usuario_id, bool) or int(usuario_id) <= 0:
+        raise GateAuthorizationError("CONSENT_SQL_USER_REQUIRED")
+
+    now = now_utc or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    exp = now + timedelta(minutes=max(1, min(int(ttl_minutes), 60)))
+    claims = {
+        "schema": SCHEMA_CONSENT_CHALLENGE,
+        "consent_request_id": clean_req,
+        "scope_digest": clean_digest,
+        "usuario_id": int(usuario_id),
+        "session_id_hash": hashlib.sha256(clean_sid.encode("utf-8")).hexdigest(),
+        "exp": int(exp.timestamp()),
+        "nonce": secrets.token_hex(12),
+    }
+    raw_claims = json.dumps(claims, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    import base64
+
+    b64 = base64.urlsafe_b64encode(raw_claims).decode("ascii").rstrip("=")
+    sig = hmac.new(_consent_signing_secret(), raw_claims, hashlib.sha256).hexdigest()
+    return f"{b64}.{sig}"
+
+
+def verify_human_consent_challenge_token(
+    challenge_token: str | None,
+    *,
+    expected_consent_request_id: str,
+    expected_scope_digest: str,
+    expected_usuario_id: int,
+    expected_session_id: str,
+    now_utc: datetime | None = None,
+) -> dict[str, Any]:
+    """Fail-closed verification of interactive human consent challenge token."""
+    raw = str(challenge_token or "").strip()
+    if "." not in raw:
+        raise GateAuthorizationError("CONSENT_CHALLENGE_INVALID")
+    b64, supplied_sig = raw.rsplit(".", 1)
+    if not re.fullmatch(r"[0-9a-f]{64}", supplied_sig.lower()):
+        raise GateAuthorizationError("CONSENT_CHALLENGE_INVALID")
+    import base64
+
+    try:
+        padded = b64 + "=" * (-len(b64) % 4)
+        decoded_bytes = base64.urlsafe_b64decode(padded.encode("ascii"))
+        claims = json.loads(decoded_bytes.decode("utf-8"))
+    except Exception:
+        raise GateAuthorizationError("CONSENT_CHALLENGE_INVALID") from None
+    if not isinstance(claims, dict) or claims.get("schema") != SCHEMA_CONSENT_CHALLENGE:
+        raise GateAuthorizationError("CONSENT_CHALLENGE_INVALID")
+
+    canonical_msg = json.dumps(claims, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    expected_sig = hmac.new(_consent_signing_secret(), canonical_msg, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(supplied_sig.lower(), expected_sig):
+        raise GateAuthorizationError("CONSENT_CHALLENGE_INVALID")
+
+    now = now_utc or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    exp_ts = claims.get("exp")
+    if isinstance(exp_ts, bool) or not isinstance(exp_ts, int) or exp_ts <= int(now.timestamp()):
+        raise GateAuthorizationError("CONSENT_CHALLENGE_EXPIRED")
+
+    if _safe_id(str(claims.get("consent_request_id") or "")) != _safe_id(expected_consent_request_id):
+        raise GateAuthorizationError("CONSENT_CHALLENGE_INVALID")
+    if str(claims.get("scope_digest") or "").strip().lower() != str(expected_scope_digest).strip().lower():
+        raise GateAuthorizationError("CONSENT_SCOPE_MISMATCH")
+    if int(claims.get("usuario_id") or 0) != int(expected_usuario_id):
+        raise GateAuthorizationError("CONSENT_IMPERSONATION_FORBIDDEN")
+    expected_sid_hash = hashlib.sha256(str(expected_session_id or "").strip().encode("utf-8")).hexdigest()
+    if not hmac.compare_digest(str(claims.get("session_id_hash") or ""), expected_sid_hash):
+        raise GateAuthorizationError("CONSENT_CHALLENGE_INVALID")
+    return claims
+
+
+def _validate_consent_bound_scope(
+    request: Mapping[str, Any],
+    *,
+    current_user: Mapping[str, Any] | None,
+    repo_root: Path,
+    identity_resolver: Any = None,
+) -> dict[str, Any]:
+    """Single canonical validator for exact Gate scope fields shared across REQUEST_CONSENT/PREFLIGHT/MATERIALIZE."""
+    _assert_no_auth_prompt_injection(request, "authorization_request")
+    if request.get("production_allowed") is True:
+        raise GateAuthorizationError("PRODUCTION_AUTHORIZATION_FORBIDDEN")
+
+    domain = str(request.get("bounded_context") or request.get("domain") or "").strip().upper()
+    if not domain or domain == "*" or "PRODUCTION" in domain or "PRODUCCION" in domain:
+        raise GateAuthorizationError("AUTHORIZATION_DOMAIN_INVALID")
+
+    constraints = request.get("constraints") if isinstance(request.get("constraints"), Mapping) else request
+    if constraints.get("production_allowed") is True:
+        raise GateAuthorizationError("PRODUCTION_AUTHORIZATION_FORBIDDEN")
+
+    gate_id = _safe_id(str(constraints.get("gate_id") or ""))
+    if not gate_id:
+        raise GateAuthorizationError("GATE_AUTHORIZATION_ID_REQUIRED")
+
+    actor = _validate_authorized_actor_identity(current_user, identity_resolver=identity_resolver)
+
+    objective = str(request.get("objective") or constraints.get("objective") or "").strip()
+    if len(objective) < 10 or len(objective) > 2000:
+        raise GateAuthorizationError("AUTHORIZATION_OBJECTIVE_INVALID")
+
+    auth_id = str(constraints.get("authorization_id") or f"GO-{gate_id}").strip()
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{2,120}", auth_id):
+        raise GateAuthorizationError("AUTHORIZATION_ID_INVALID")
+
+    raw_ops = constraints.get("authorized_operations")
+    if not isinstance(raw_ops, (list, tuple)) or not raw_ops:
+        raise GateAuthorizationError("AUTHORIZATION_OPERATIONS_REQUIRED")
+    clean_ops = sorted({str(op).strip() for op in raw_ops if str(op).strip()})
+    if not clean_ops or set(clean_ops) - ALLOWED_MUTATION_OPERATIONS:
+        raise GateAuthorizationError("AUTHORIZATION_OPERATION_FORBIDDEN")
+
+    raw_ttl = constraints.get("ttl_hours", 24)
+    if isinstance(raw_ttl, bool):
+        raise GateAuthorizationError("AUTHORIZATION_TTL_INVALID")
+    try:
+        ttl_hours = int(raw_ttl)
+    except (TypeError, ValueError):
+        raise GateAuthorizationError("AUTHORIZATION_TTL_INVALID") from None
+    if not 1 <= ttl_hours <= 168:
+        raise GateAuthorizationError("AUTHORIZATION_TTL_INVALID")
+
+    rollback_plan = constraints.get("rollback_plan")
+    if isinstance(rollback_plan, Mapping):
+        if not rollback_plan:
+            raise GateAuthorizationError("AUTHORIZATION_ROLLBACK_PLAN_REQUIRED")
+        clean_rollback: dict[str, Any] | str = dict(rollback_plan)
+    elif isinstance(rollback_plan, str) and len(rollback_plan.strip()) >= 10:
+        clean_rollback = rollback_plan.strip()
+    else:
+        raise GateAuthorizationError("AUTHORIZATION_ROLLBACK_PLAN_REQUIRED")
+
+    clean_paths, verified_sha, clean_tests, clean_head = _validate_gate_paths_and_hashes(
+        domain=domain,
+        allowed_paths=constraints.get("allowed_paths") or (),
+        source_sha256=constraints.get("source_sha256") or {},
+        verification_tests=constraints.get("verification_tests") or (),
+        base_head_sha=str(constraints.get("base_head_sha") or ""),
+        repo_root=repo_root,
+    )
+
+    scope_digest = compute_authorization_scope_digest(
+        domain=domain,
+        gate_id=gate_id,
+        objective=objective,
+        authorized_operations=clean_ops,
+        allowed_paths=clean_paths,
+        source_sha256=verified_sha,
+        base_head_sha=clean_head,
+        ttl_hours=ttl_hours,
+        verification_tests=clean_tests,
+        rollback_plan=clean_rollback,
+        production_allowed=False,
+    )
+
+    raw_handoff = str(constraints.get("handoff_id") or "").strip()
+    handoff_id = _safe_id(raw_handoff) if raw_handoff else None
+    if raw_handoff and not handoff_id:
+        raise GateAuthorizationError("CONSENT_HANDOFF_ID_INVALID")
+
+    return {
+        "domain": domain,
+        "gate_id": gate_id,
+        "authorization_id": auth_id,
+        "objective": objective,
+        "authorized_operations": clean_ops,
+        "allowed_paths": clean_paths,
+        "source_sha256": verified_sha,
+        "base_head_sha": clean_head,
+        "ttl_hours": ttl_hours,
+        "verification_tests": clean_tests,
+        "rollback_plan": clean_rollback,
+        "scope_digest": scope_digest,
+        "actor": actor,
+        "handoff_id": handoff_id,
+    }
+
+
+def _resolve_verified_consent_from_request(
+    consent_request_id: str,
+    *,
+    expected_usuario_id: int,
+    expected_email: str,
+    expected_gate_id: str,
+    expected_domain: str,
+    expected_scope_digest: str,
+    state_root: Path,
+    now_utc: datetime | None = None,
+    allow_idempotent_active_gate: bool = False,
+) -> dict[str, Any]:
+    """Verify a human-approved consent request via both canonical channels fail-closed."""
+    clean_id = _safe_id(consent_request_id)
+    if not clean_id:
+        raise GateAuthorizationError("CONSENT_REQUEST_ID_REQUIRED")
+    path = _consent_requests_dir(state_root) / f"{clean_id}.json"
+    doc = _read_json_safe(path)
+    if not isinstance(doc, dict) or doc.get("schema") != SCHEMA_CONSENT_REQUEST:
+        raise GateAuthorizationError("CONSENT_REQUEST_NOT_FOUND")
+    if doc.get("production_allowed") is True:
+        raise GateAuthorizationError("PRODUCTION_AUTHORIZATION_FORBIDDEN")
+
+    req_uid = int(doc.get("requested_by_usuario_id") or 0)
+    req_email = str(doc.get("requested_by_email") or "").strip().lower()
+    if req_uid != int(expected_usuario_id) or req_email != str(expected_email).strip().lower():
+        raise GateAuthorizationError("CONSENT_IMPERSONATION_FORBIDDEN")
+
+    if _safe_id(str(doc.get("gate_id") or "")) != _safe_id(expected_gate_id):
+        raise GateAuthorizationError("CONSENT_GATE_MISMATCH")
+    if str(doc.get("domain") or "").strip().upper() != str(expected_domain).strip().upper():
+        raise GateAuthorizationError("CONSENT_DOMAIN_MISMATCH")
+    if str(doc.get("scope_digest") or "").strip().lower() != str(expected_scope_digest).strip().lower():
+        raise GateAuthorizationError("CONSENT_SCOPE_MISMATCH")
+
+    now = now_utc or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+
+    state = str(doc.get("status") or "").strip().upper()
+    if state == "PENDING_HUMAN_CONSENT":
+        exp_dt = _parse_iso_utc_dt(doc.get("expires_at_utc"))
+        if exp_dt is None or exp_dt <= now:
+            raise GateAuthorizationError("CONSENT_EXPIRED")
+        raise GateAuthorizationError("CONSENT_PENDING_HUMAN_APPROVAL")
+    if state == "DENIED":
+        raise GateAuthorizationError("CONSENT_DENIED_BY_HUMAN")
+    if state == "EXPIRED":
+        raise GateAuthorizationError("CONSENT_EXPIRED")
+    if state == "CONSUMED":
+        consumed_ok = allow_idempotent_active_gate and _is_active_idempotent_consumption(
+            state_root,
+            {
+                "gate_id": doc.get("gate_id"),
+                "domain": doc.get("domain"),
+                "scope_digest": doc.get("scope_digest"),
+            },
+            expected_gate_id=expected_gate_id,
+            expected_domain=expected_domain,
+            expected_scope_digest=expected_scope_digest,
+            now_utc=now,
+        )
+        if not consumed_ok:
+            raise GateAuthorizationError("CONSENT_ALREADY_CONSUMED")
+    elif state != "APPROVED":
+        raise GateAuthorizationError("CONSENT_VERIFICATION_REQUIRED")
+
+    if doc.get("human_approved") is not True:
+        raise GateAuthorizationError("CONSENT_PENDING_HUMAN_APPROVAL")
+
+    attestation = doc.get("consent_attestation")
+    approval_id = _safe_id(str(doc.get("approval_id") or ""))
+    if not isinstance(attestation, Mapping) or not approval_id:
+        raise GateAuthorizationError("CONSENT_VERIFICATION_REQUIRED")
+
+    verified_token = verify_consent_attestation(
+        attestation,
+        expected_usuario_id=expected_usuario_id,
+        expected_email=expected_email,
+        expected_gate_id=expected_gate_id,
+        expected_domain=expected_domain,
+        expected_scope_digest=expected_scope_digest,
+        state_root=state_root,
+        now_utc=now,
+        allow_idempotent_active_gate=allow_idempotent_active_gate,
+    )
+    verified_record = verify_consent_attestation(
+        {"channel": "CANONICAL_APPROVAL_RECORD", "approval_id": approval_id},
+        expected_usuario_id=expected_usuario_id,
+        expected_email=expected_email,
+        expected_gate_id=expected_gate_id,
+        expected_domain=expected_domain,
+        expected_scope_digest=expected_scope_digest,
+        state_root=state_root,
+        now_utc=now,
+        allow_idempotent_active_gate=allow_idempotent_active_gate,
+    )
+    return {
+        **verified_token,
+        "consent_request_id": clean_id,
+        "approval_id": verified_record["approval_id"],
+        "approval_verified": True,
+        "dual_channel_verified": True,
+    }
+
+
+def preflight_consent_request(
+    request: Mapping[str, Any],
+    *,
+    current_user: Mapping[str, Any] | None,
+    state_root: Path | None = None,
+    repo_root: Path | None = None,
+    identity_resolver: Any = None,
+    public_origin: str | None = None,
+    now_utc: datetime | None = None,
+) -> dict[str, Any]:
+    """READ_ONLY preflight for initiating a scoped human consent request (writes nothing, never auto-approves)."""
+    qroot = state_root or (Path(os.environ.get("EDARSAHUB_ROOT", "/app")) / ".git" / "universal-worker-queue")
+    rroot = repo_root or Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
+    constraints = request.get("constraints") if isinstance(request.get("constraints"), Mapping) else request
+    raw_cttl = constraints.get("consent_ttl_minutes", 30)
+    if isinstance(raw_cttl, bool):
+        raise GateAuthorizationError("CONSENT_TTL_INVALID")
+    try:
+        consent_ttl_minutes = int(raw_cttl)
+    except (TypeError, ValueError):
+        raise GateAuthorizationError("CONSENT_TTL_INVALID") from None
+    if not 5 <= consent_ttl_minutes <= 120:
+        raise GateAuthorizationError("CONSENT_TTL_INVALID")
+
+    bound = _validate_consent_bound_scope(
+        request,
+        current_user=current_user,
+        repo_root=rroot,
+        identity_resolver=identity_resolver,
+    )
+    now = now_utc or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+
+    existing_match: dict[str, Any] | None = None
+    cdir = _consent_requests_dir(qroot)
+    if cdir.is_dir():
+        for p in sorted(cdir.glob("*.json")):
+            cand = _read_json_safe(p)
+            if not isinstance(cand, dict) or cand.get("schema") != SCHEMA_CONSENT_REQUEST:
+                continue
+            if (
+                cand.get("gate_id") == bound["gate_id"]
+                and cand.get("domain") == bound["domain"]
+                and cand.get("scope_digest") == bound["scope_digest"]
+                and int(cand.get("requested_by_usuario_id") or 0) == bound["actor"]["usuario_id"]
+                and str(cand.get("status") or "").upper() in {"PENDING_HUMAN_CONSENT", "APPROVED"}
+            ):
+                exp_dt = _parse_iso_utc_dt(cand.get("expires_at_utc"))
+                if exp_dt is not None and exp_dt > now:
+                    existing_match = cand
+                    break
+
+    preview_id = (
+        str(existing_match.get("consent_request_id"))
+        if existing_match
+        else f"CONSENT-{bound['gate_id'][:36]}-{bound['scope_digest'][:12].upper()}"
+    )
+    approval_path, approval_url = _build_approval_urls(preview_id, public_origin=public_origin)
+    return {
+        "schema": SCHEMA_AUTH_LIFECYCLE_PREFLIGHT,
+        "ok": True,
+        "status": (
+            str(existing_match.get("status"))
+            if existing_match
+            else "CONSENT_PREFLIGHT_READY"
+        ),
+        "action": "REQUEST_CONSENT",
+        "duplicate_detected": existing_match is not None,
+        "consent_request_id": preview_id,
+        "approval_path": approval_path,
+        "approval_url": approval_url,
+        "human_action_required": not (existing_match and existing_match.get("status") == "APPROVED"),
+        "auto_approved": False,
+        "ready_to_materialize": bool(existing_match and existing_match.get("status") == "APPROVED"),
+        "approval_id": existing_match.get("approval_id") if existing_match else None,
+        "consent_ttl_minutes": consent_ttl_minutes,
+        **bound,
+        "production_allowed": False,
+        "production_touched": False,
+    }
+
+
+def create_human_consent_request(
+    request: Mapping[str, Any],
+    *,
+    current_user: Mapping[str, Any] | None,
+    state_root: Path | None = None,
+    repo_root: Path | None = None,
+    identity_resolver: Any = None,
+    public_origin: str | None = None,
+    now_utc: datetime | None = None,
+) -> dict[str, Any]:
+    """Create an idempotent, concurrency-safe PENDING human consent request bound to exact scope_digest.
+
+    NEVER auto-approves or issues consent attestations; human approval happens strictly out-of-band
+    via an authenticated interactive EDARSAHUB session.
+    """
+    qroot = state_root or (Path(os.environ.get("EDARSAHUB_ROOT", "/app")) / ".git" / "universal-worker-queue")
+    rroot = repo_root or Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
+    cdir = _consent_requests_dir(qroot)
+    cdir.mkdir(parents=True, exist_ok=True)
+    lock_path = cdir / ".consent_requests.lock"
+
+    with open(lock_path, "a+", encoding="utf-8") as lock_fh:
+        fcntl.flock(lock_fh.fileno(), fcntl.LOCK_EX)
+        try:
+            pf = preflight_consent_request(
+                request,
+                current_user=current_user,
+                state_root=qroot,
+                repo_root=rroot,
+                identity_resolver=identity_resolver,
+                public_origin=public_origin,
+                now_utc=now_utc,
+            )
+            now = now_utc or datetime.now(timezone.utc)
+            if now.tzinfo is None:
+                now = now.replace(tzinfo=timezone.utc)
+            now_str = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+            if pf.get("duplicate_detected") is True:
+                existing_id = str(pf["consent_request_id"])
+                existing_doc = _read_json_safe(cdir / f"{existing_id}.json") or {}
+                approval_path, approval_url = _build_approval_urls(existing_id, public_origin=public_origin)
+                return {
+                    "status": str(existing_doc.get("status") or "PENDING_HUMAN_CONSENT"),
+                    "consent_request_id": existing_id,
+                    "gate_id": existing_doc.get("gate_id"),
+                    "authorization_id": existing_doc.get("authorization_id"),
+                    "domain": existing_doc.get("domain"),
+                    "scope_digest": existing_doc.get("scope_digest"),
+                    "allowed_paths": list(existing_doc.get("allowed_paths") or []),
+                    "approval_path": approval_path,
+                    "approval_url": approval_url,
+                    "approval_id": existing_doc.get("approval_id"),
+                    "expires_at_utc": existing_doc.get("expires_at_utc"),
+                    "handoff_id": existing_doc.get("handoff_id"),
+                    "human_action_required": str(existing_doc.get("status") or "").upper() != "APPROVED",
+                    "auto_approved": False,
+                    "ready_to_materialize": str(existing_doc.get("status") or "").upper() == "APPROVED",
+                    "duplicate_prevented": True,
+                    "production_allowed": False,
+                    "production_touched": False,
+                }
+
+            base_id = _safe_id(f"CONSENT-{pf['gate_id'][:36]}-{pf['scope_digest'][:12].upper()}")
+            consent_request_id = base_id
+            if (cdir / f"{consent_request_id}.json").exists():
+                # Previous request with same base_id was DENIED/EXPIRED/CONSUMED: mint fresh ID, never revive!
+                consent_request_id = _safe_id(
+                    f"CONSENT-{pf['gate_id'][:28]}-{pf['scope_digest'][:12].upper()}-{secrets.token_hex(3).upper()}"
+                )
+
+            exp_dt = now + timedelta(minutes=int(pf["consent_ttl_minutes"]))
+            exp_str = exp_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+            approval_path, approval_url = _build_approval_urls(consent_request_id, public_origin=public_origin)
+            actor = pf["actor"]
+            doc: dict[str, Any] = {
+                "schema": SCHEMA_CONSENT_REQUEST,
+                "consent_request_id": consent_request_id,
+                "status": "PENDING_HUMAN_CONSENT",
+                "human_approved": False,
+                "auto_approved": False,
+                "gate_id": pf["gate_id"],
+                "authorization_id": pf["authorization_id"],
+                "domain": pf["domain"],
+                "objective": pf["objective"],
+                "authorized_operations": pf["authorized_operations"],
+                "allowed_paths": pf["allowed_paths"],
+                "source_sha256": pf["source_sha256"],
+                "base_head_sha": pf["base_head_sha"],
+                "ttl_hours": pf["ttl_hours"],
+                "verification_tests": pf["verification_tests"],
+                "rollback_plan": pf["rollback_plan"],
+                "scope_digest": pf["scope_digest"],
+                "handoff_id": pf.get("handoff_id"),
+                "consent_ttl_minutes": pf["consent_ttl_minutes"],
+                "requested_by_usuario_id": actor["usuario_id"],
+                "requested_by_email": actor["email"],
+                "requested_by_role": actor["role_code"] or actor["role"],
+                "created_at_utc": now_str,
+                "expires_at_utc": exp_str,
+                "approved_at_utc": None,
+                "approved_by_usuario_id": None,
+                "approved_by_email": None,
+                "approved_session_id_hash": None,
+                "approval_id": None,
+                "consent_attestation": None,
+                "denied_at_utc": None,
+                "denied_by_usuario_id": None,
+                "denied_by_email": None,
+                "decision_note": None,
+                "consumed_at_utc": None,
+                "materialized_authorization_id": None,
+                "target_branch": "Edarsahub_Desarrollo",
+                "production_allowed": False,
+                "production_touched": False,
+                "audit_trail": [
+                    {
+                        "event": "CONSENT_REQUESTED",
+                        "at_utc": now_str,
+                        "actor_email": actor["email"],
+                        "sql_usuario_id": actor["usuario_id"],
+                        "scope_digest": pf["scope_digest"],
+                    }
+                ],
+            }
+            path = cdir / f"{consent_request_id}.json"
+            _atomic_write_json(path, doc)
+            return {
+                "status": "PENDING_HUMAN_CONSENT",
+                "consent_request_id": consent_request_id,
+                "gate_id": doc["gate_id"],
+                "authorization_id": doc["authorization_id"],
+                "domain": doc["domain"],
+                "scope_digest": doc["scope_digest"],
+                "allowed_paths": list(doc["allowed_paths"]),
+                "approval_path": approval_path,
+                "approval_url": approval_url,
+                "approval_id": None,
+                "expires_at_utc": exp_str,
+                "handoff_id": doc.get("handoff_id"),
+                "human_action_required": True,
+                "auto_approved": False,
+                "ready_to_materialize": False,
+                "duplicate_prevented": False,
+                "production_allowed": False,
+                "production_touched": False,
+            }
+        finally:
+            fcntl.flock(lock_fh.fileno(), fcntl.LOCK_UN)
+
+
+def load_human_consent_request_for_review(
+    consent_request_id: str,
+    *,
+    human_user: Mapping[str, Any] | None,
+    session_id: str | None = None,
+    state_root: Path | None = None,
+    repo_root: Path | None = None,
+    identity_resolver: Any = None,
+    now_utc: datetime | None = None,
+) -> dict[str, Any]:
+    """Load a scoped consent request for interactive human review and mint a session-bound challenge."""
+    clean_sid = _assert_interactive_human_consent_actor(human_user, session_id=session_id)
+    actor = _validate_authorized_actor_identity(human_user, identity_resolver=identity_resolver)
+    qroot = state_root or (Path(os.environ.get("EDARSAHUB_ROOT", "/app")) / ".git" / "universal-worker-queue")
+    rroot = repo_root or Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
+
+    clean_id = _safe_id(consent_request_id)
+    if not clean_id:
+        raise GateAuthorizationError("CONSENT_REQUEST_ID_REQUIRED")
+    path = _consent_requests_dir(qroot) / f"{clean_id}.json"
+    doc = _read_json_safe(path)
+    if not isinstance(doc, dict) or doc.get("schema") != SCHEMA_CONSENT_REQUEST:
+        raise GateAuthorizationError("CONSENT_REQUEST_NOT_FOUND")
+    if doc.get("production_allowed") is True:
+        raise GateAuthorizationError("PRODUCTION_AUTHORIZATION_FORBIDDEN")
+
+    if (
+        int(doc.get("requested_by_usuario_id") or 0) != actor["usuario_id"]
+        or str(doc.get("requested_by_email") or "").strip().lower() != actor["email"]
+    ):
+        raise GateAuthorizationError("CONSENT_IMPERSONATION_FORBIDDEN")
+
+    now = now_utc or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    state = str(doc.get("status") or "").strip().upper()
+    exp_dt = _parse_iso_utc_dt(doc.get("expires_at_utc"))
+    if state == "PENDING_HUMAN_CONSENT" and (exp_dt is None or exp_dt <= now):
+        raise GateAuthorizationError("CONSENT_EXPIRED")
+
+    challenge_token: str | None = None
+    live_scope_valid = True
+    live_scope_error: str | None = None
+    if state == "PENDING_HUMAN_CONSENT":
+        try:
+            _validate_gate_paths_and_hashes(
+                domain=str(doc.get("domain") or ""),
+                allowed_paths=doc.get("allowed_paths") or (),
+                source_sha256=doc.get("source_sha256") or {},
+                verification_tests=doc.get("verification_tests") or (),
+                base_head_sha=str(doc.get("base_head_sha") or ""),
+                repo_root=rroot,
+            )
+        except GateAuthorizationError as exc:
+            live_scope_valid = False
+            live_scope_error = str(exc)
+        challenge_token = issue_human_consent_challenge_token(
+            consent_request_id=clean_id,
+            scope_digest=str(doc.get("scope_digest") or ""),
+            usuario_id=actor["usuario_id"],
+            session_id=clean_sid,
+            now_utc=now,
+        )
+
+    return {
+        "consent_request_id": clean_id,
+        "status": state,
+        "gate_id": doc.get("gate_id"),
+        "authorization_id": doc.get("authorization_id"),
+        "domain": doc.get("domain"),
+        "objective": doc.get("objective"),
+        "authorized_operations": list(doc.get("authorized_operations") or []),
+        "allowed_paths": list(doc.get("allowed_paths") or []),
+        "source_sha256": dict(doc.get("source_sha256") or {}),
+        "base_head_sha": doc.get("base_head_sha"),
+        "ttl_hours": doc.get("ttl_hours"),
+        "verification_tests": list(doc.get("verification_tests") or []),
+        "rollback_plan": doc.get("rollback_plan"),
+        "scope_digest": doc.get("scope_digest"),
+        "handoff_id": doc.get("handoff_id"),
+        "created_at_utc": doc.get("created_at_utc"),
+        "expires_at_utc": doc.get("expires_at_utc"),
+        "approval_id": doc.get("approval_id"),
+        "approved_at_utc": doc.get("approved_at_utc"),
+        "actor_email": actor["email"],
+        "sql_usuario_id": actor["usuario_id"],
+        "challenge_token": challenge_token,
+        "live_scope_valid": live_scope_valid,
+        "live_scope_error": live_scope_error,
+        "target_branch": "Edarsahub_Desarrollo",
+        "production_allowed": False,
+        "production_touched": False,
+    }
+
+
+def record_human_consent_decision(
+    consent_request_id: str,
+    *,
+    decision: str,
+    human_user: Mapping[str, Any] | None,
+    session_id: str | None = None,
+    confirm_scope_digest: str,
+    challenge_token: str,
+    decision_note: str = "",
+    state_root: Path | None = None,
+    repo_root: Path | None = None,
+    identity_resolver: Any = None,
+    now_utc: datetime | None = None,
+) -> dict[str, Any]:
+    """Record an explicit interactive human approve/deny decision and issue verifiable attestations."""
+    clean_decision = str(decision or "").strip().lower()
+    if clean_decision not in {"approve", "deny"}:
+        raise GateAuthorizationError("CONSENT_DECISION_INVALID")
+
+    clean_sid = _assert_interactive_human_consent_actor(human_user, session_id=session_id)
+    actor = _validate_authorized_actor_identity(human_user, identity_resolver=identity_resolver)
+    qroot = state_root or (Path(os.environ.get("EDARSAHUB_ROOT", "/app")) / ".git" / "universal-worker-queue")
+    rroot = repo_root or Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
+    clean_id = _safe_id(consent_request_id)
+    if not clean_id:
+        raise GateAuthorizationError("CONSENT_REQUEST_ID_REQUIRED")
+
+    cdir = _consent_requests_dir(qroot)
+    cdir.mkdir(parents=True, exist_ok=True)
+    lock_path = cdir / ".consent_requests.lock"
+    clean_note = str(decision_note or "").strip()[:300]
+    _assert_no_auth_prompt_injection(clean_note, "decision_note")
+
+    with open(lock_path, "a+", encoding="utf-8") as lock_fh:
+        fcntl.flock(lock_fh.fileno(), fcntl.LOCK_EX)
+        try:
+            path = cdir / f"{clean_id}.json"
+            doc = _read_json_safe(path)
+            if not isinstance(doc, dict) or doc.get("schema") != SCHEMA_CONSENT_REQUEST:
+                raise GateAuthorizationError("CONSENT_REQUEST_NOT_FOUND")
+            if doc.get("production_allowed") is True:
+                raise GateAuthorizationError("PRODUCTION_AUTHORIZATION_FORBIDDEN")
+
+            if (
+                int(doc.get("requested_by_usuario_id") or 0) != actor["usuario_id"]
+                or str(doc.get("requested_by_email") or "").strip().lower() != actor["email"]
+            ):
+                raise GateAuthorizationError("CONSENT_IMPERSONATION_FORBIDDEN")
+
+            expected_digest = str(doc.get("scope_digest") or "").strip().lower()
+            if str(confirm_scope_digest or "").strip().lower() != expected_digest:
+                raise GateAuthorizationError("CONSENT_SCOPE_MISMATCH")
+
+            now = now_utc or datetime.now(timezone.utc)
+            if now.tzinfo is None:
+                now = now.replace(tzinfo=timezone.utc)
+            now_str = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+            verify_human_consent_challenge_token(
+                challenge_token,
+                expected_consent_request_id=clean_id,
+                expected_scope_digest=expected_digest,
+                expected_usuario_id=actor["usuario_id"],
+                expected_session_id=clean_sid,
+                now_utc=now,
+            )
+
+            state = str(doc.get("status") or "").strip().upper()
+            if state == "DENIED":
+                raise GateAuthorizationError("CONSENT_DENIED_BY_HUMAN")
+            if state == "CONSUMED":
+                raise GateAuthorizationError("CONSENT_ALREADY_CONSUMED")
+            if state == "EXPIRED":
+                raise GateAuthorizationError("CONSENT_EXPIRED")
+            if state == "APPROVED":
+                if clean_decision == "approve":
+                    exp_dt = _parse_iso_utc_dt(doc.get("expires_at_utc"))
+                    if exp_dt is None or exp_dt <= now:
+                        raise GateAuthorizationError("CONSENT_EXPIRED")
+                    return {
+                        "status": "APPROVED",
+                        "consent_request_id": clean_id,
+                        "approval_id": doc.get("approval_id"),
+                        "gate_id": doc.get("gate_id"),
+                        "authorization_id": doc.get("authorization_id"),
+                        "domain": doc.get("domain"),
+                        "scope_digest": expected_digest,
+                        "approved_at_utc": doc.get("approved_at_utc"),
+                        "expires_at_utc": doc.get("expires_at_utc"),
+                        "duplicate_prevented": True,
+                        "production_allowed": False,
+                        "production_touched": False,
+                    }
+                raise GateAuthorizationError("CONSENT_REQUEST_ALREADY_DECIDED")
+            if state != "PENDING_HUMAN_CONSENT":
+                raise GateAuthorizationError("CONSENT_REQUEST_ALREADY_DECIDED")
+
+            exp_dt = _parse_iso_utc_dt(doc.get("expires_at_utc"))
+            if exp_dt is None or exp_dt <= now:
+                doc["status"] = "EXPIRED"
+                _atomic_write_json(path, doc)
+                raise GateAuthorizationError("CONSENT_EXPIRED")
+
+            trail = doc.get("audit_trail") if isinstance(doc.get("audit_trail"), list) else []
+            if clean_decision == "deny":
+                doc["status"] = "DENIED"
+                doc["human_approved"] = False
+                doc["denied_at_utc"] = now_str
+                doc["denied_by_usuario_id"] = actor["usuario_id"]
+                doc["denied_by_email"] = actor["email"]
+                doc["decision_note"] = clean_note or "Rechazado por aprobador humano"
+                trail.append({
+                    "event": "HUMAN_DENIED",
+                    "at_utc": now_str,
+                    "actor_email": actor["email"],
+                    "sql_usuario_id": actor["usuario_id"],
+                })
+                doc["audit_trail"] = trail[-50:]
+                _atomic_write_json(path, doc)
+                return {
+                    "status": "DENIED",
+                    "consent_request_id": clean_id,
+                    "approval_id": None,
+                    "gate_id": doc.get("gate_id"),
+                    "authorization_id": doc.get("authorization_id"),
+                    "domain": doc.get("domain"),
+                    "scope_digest": expected_digest,
+                    "denied_at_utc": now_str,
+                    "duplicate_prevented": False,
+                    "production_allowed": False,
+                    "production_touched": False,
+                }
+
+            # Re-validate live repo HEAD, file SHA-256, and recomputed scope_digest at approval time!
+            clean_paths, verified_sha, clean_tests, clean_head = _validate_gate_paths_and_hashes(
+                domain=str(doc.get("domain") or ""),
+                allowed_paths=doc.get("allowed_paths") or (),
+                source_sha256=doc.get("source_sha256") or {},
+                verification_tests=doc.get("verification_tests") or (),
+                base_head_sha=str(doc.get("base_head_sha") or ""),
+                repo_root=rroot,
+            )
+            recomputed = compute_authorization_scope_digest(
+                domain=str(doc.get("domain") or ""),
+                gate_id=str(doc.get("gate_id") or ""),
+                objective=str(doc.get("objective") or ""),
+                authorized_operations=doc.get("authorized_operations") or (),
+                allowed_paths=clean_paths,
+                source_sha256=verified_sha,
+                base_head_sha=clean_head,
+                ttl_hours=int(doc.get("ttl_hours") or 24),
+                verification_tests=clean_tests,
+                rollback_plan=doc.get("rollback_plan") or "",
+                production_allowed=False,
+            )
+            if recomputed != expected_digest:
+                raise GateAuthorizationError("CONSENT_SCOPE_MISMATCH")
+
+            approval_id = _safe_id(f"APPROVAL-{doc['gate_id'][:36]}-{expected_digest[:12].upper()}")
+            if (_approvals_dir(qroot) / f"{approval_id}.json").exists():
+                approval_id = _safe_id(
+                    f"APPROVAL-{doc['gate_id'][:28]}-{expected_digest[:12].upper()}-{secrets.token_hex(3).upper()}"
+                )
+            consent_ttl_minutes = int(doc.get("consent_ttl_minutes") or 30)
+            approval_doc = record_human_approval_artifact(
+                approval_id=approval_id,
+                usuario_id=actor["usuario_id"],
+                email=actor["email"],
+                gate_id=str(doc["gate_id"]),
+                domain=str(doc["domain"]),
+                scope_digest=expected_digest,
+                ttl_hours=int(doc.get("ttl_hours") or 24),
+                state_root=qroot,
+                now_utc=now,
+            )
+            attestation = issue_verifiable_consent_attestation(
+                usuario_id=actor["usuario_id"],
+                email=actor["email"],
+                gate_id=str(doc["gate_id"]),
+                domain=str(doc["domain"]),
+                scope_digest=expected_digest,
+                session_id=clean_sid,
+                ttl_minutes=consent_ttl_minutes,
+                now_utc=now,
+            )
+            # Immediate fail-closed verification of both canonical consent artifacts
+            verify_consent_attestation(
+                attestation,
+                expected_usuario_id=actor["usuario_id"],
+                expected_email=actor["email"],
+                expected_gate_id=str(doc["gate_id"]),
+                expected_domain=str(doc["domain"]),
+                expected_scope_digest=expected_digest,
+                state_root=qroot,
+                now_utc=now,
+            )
+            verify_consent_attestation(
+                {"channel": "CANONICAL_APPROVAL_RECORD", "approval_id": approval_id},
+                expected_usuario_id=actor["usuario_id"],
+                expected_email=actor["email"],
+                expected_gate_id=str(doc["gate_id"]),
+                expected_domain=str(doc["domain"]),
+                expected_scope_digest=expected_digest,
+                state_root=qroot,
+                now_utc=now,
+            )
+
+            doc["status"] = "APPROVED"
+            doc["human_approved"] = True
+            doc["approved_at_utc"] = now_str
+            doc["approved_by_usuario_id"] = actor["usuario_id"]
+            doc["approved_by_email"] = actor["email"]
+            doc["approved_session_id_hash"] = hashlib.sha256(clean_sid.encode("utf-8")).hexdigest()
+            doc["approval_id"] = approval_id
+            doc["consent_attestation"] = attestation
+            doc["attestation_expires_at_utc"] = attestation.get("expires_at_utc")
+            doc["expires_at_utc"] = attestation.get("expires_at_utc") or doc["expires_at_utc"]
+            doc["decision_note"] = clean_note or "Aprobado mediante sesion humana verificada EDARSAHUB"
+            trail.append({
+                "event": "HUMAN_APPROVED",
+                "at_utc": now_str,
+                "actor_email": actor["email"],
+                "sql_usuario_id": actor["usuario_id"],
+                "approval_id": approval_id,
+                "scope_digest": expected_digest,
+            })
+            doc["audit_trail"] = trail[-50:]
+            _atomic_write_json(path, doc)
+
+            return {
+                "status": "APPROVED",
+                "consent_request_id": clean_id,
+                "approval_id": approval_id,
+                "approval_artifact_path": approval_doc.get("approval_path"),
+                "gate_id": doc.get("gate_id"),
+                "authorization_id": doc.get("authorization_id"),
+                "domain": doc.get("domain"),
+                "scope_digest": expected_digest,
+                "approved_at_utc": now_str,
+                "expires_at_utc": doc.get("expires_at_utc"),
+                "consent_channel": "OAUTH_VERIFIED_CONSENT_TOKEN+CANONICAL_APPROVAL_RECORD",
+                "duplicate_prevented": False,
+                "production_allowed": False,
+                "production_touched": False,
+            }
+        finally:
+            fcntl.flock(lock_fh.fileno(), fcntl.LOCK_UN)
+
+
+def inspect_human_consent_request(
+    consent_request_id_or_gate: str,
+    *,
+    current_user: Mapping[str, Any] | None,
+    domain: str | None = None,
+    state_root: Path | None = None,
+    identity_resolver: Any = None,
+    public_origin: str | None = None,
+    now_utc: datetime | None = None,
+) -> dict[str, Any]:
+    """Read-only status inspection of a scoped human consent request (fail-closed on impersonation)."""
+    actor = _validate_authorized_actor_identity(current_user, identity_resolver=identity_resolver)
+    qroot = state_root or (Path(os.environ.get("EDARSAHUB_ROOT", "/app")) / ".git" / "universal-worker-queue")
+    cdir = _consent_requests_dir(qroot)
+    token = str(consent_request_id_or_gate or "").strip()
+    clean_dom = str(domain or "").strip().upper()
+
+    doc: dict[str, Any] | None = None
+    if cdir.is_dir() and token:
+        direct = cdir / f"{_safe_id(token)}.json"
+        if direct.is_file():
+            cand = _read_json_safe(direct)
+            if isinstance(cand, dict) and cand.get("schema") == SCHEMA_CONSENT_REQUEST:
+                doc = cand
+        if doc is None:
+            matches: list[dict[str, Any]] = []
+            for p in sorted(cdir.glob("*.json")):
+                cand = _read_json_safe(p)
+                if not isinstance(cand, dict) or cand.get("schema") != SCHEMA_CONSENT_REQUEST:
+                    continue
+                if _safe_id(str(cand.get("gate_id") or "")) == _safe_id(token):
+                    if clean_dom and str(cand.get("domain") or "").strip().upper() != clean_dom:
+                        continue
+                    matches.append(cand)
+            if matches:
+                matches.sort(key=lambda item: str(item.get("created_at_utc") or ""), reverse=True)
+                doc = matches[0]
+
+    if doc is None:
+        return {
+            "found": False,
+            "status": "NOT_FOUND",
+            "ready_to_materialize": False,
+            "human_action_required": True,
+            "auto_approved": False,
+            "production_allowed": False,
+            "production_touched": False,
+        }
+
+    if (
+        int(doc.get("requested_by_usuario_id") or 0) != actor["usuario_id"]
+        or str(doc.get("requested_by_email") or "").strip().lower() != actor["email"]
+    ):
+        raise GateAuthorizationError("CONSENT_IMPERSONATION_FORBIDDEN")
+
+    if clean_dom and str(doc.get("domain") or "").strip().upper() != clean_dom:
+        raise GateAuthorizationError("CONSENT_DOMAIN_MISMATCH")
+
+    now = now_utc or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    state = str(doc.get("status") or "").strip().upper()
+    exp_dt = _parse_iso_utc_dt(doc.get("expires_at_utc"))
+    expired = exp_dt is None or exp_dt <= now
+    if state in {"PENDING_HUMAN_CONSENT", "APPROVED"} and expired:
+        state = "EXPIRED"
+
+    cid = str(doc.get("consent_request_id") or "")
+    approval_path, approval_url = _build_approval_urls(cid, public_origin=public_origin)
+    ready = state == "APPROVED" and not expired and doc.get("human_approved") is True
+    return {
+        "found": True,
+        "status": state,
+        "consent_request_id": cid,
+        "gate_id": doc.get("gate_id"),
+        "authorization_id": doc.get("authorization_id"),
+        "domain": doc.get("domain"),
+        "scope_digest": doc.get("scope_digest"),
+        "allowed_paths": list(doc.get("allowed_paths") or []),
+        "approval_path": approval_path,
+        "approval_url": approval_url,
+        "approval_id": doc.get("approval_id") if state in {"APPROVED", "CONSUMED"} else None,
+        "handoff_id": doc.get("handoff_id"),
+        "created_at_utc": doc.get("created_at_utc"),
+        "approved_at_utc": doc.get("approved_at_utc"),
+        "expires_at_utc": doc.get("expires_at_utc"),
+        "consumed_at_utc": doc.get("consumed_at_utc"),
+        "expired": expired,
+        "human_action_required": state == "PENDING_HUMAN_CONSENT",
+        "auto_approved": False,
+        "ready_to_materialize": ready,
+        "consent_channel": "OAUTH_VERIFIED_CONSENT_TOKEN+CANONICAL_APPROVAL_RECORD" if ready else None,
+        "production_allowed": False,
+        "production_touched": False,
+    }
+
+
+def list_domain_consent_requests_summary(
+    *,
+    domain: str,
+    state_root: Path | None = None,
+    now_utc: datetime | None = None,
+    limit: int = 10,
+) -> list[dict[str, Any]]:
+    """Read-only safe summary of recent consent requests for one domain (used by get_go_context)."""
+    qroot = state_root or (Path(os.environ.get("EDARSAHUB_ROOT", "/app")) / ".git" / "universal-worker-queue")
+    cdir = _consent_requests_dir(qroot)
+    dom_upper = str(domain or "").strip().upper()
+    if not dom_upper or not cdir.is_dir():
+        return []
+    now = now_utc or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    items: list[dict[str, Any]] = []
+    for p in sorted(cdir.glob("*.json")):
+        cand = _read_json_safe(p)
+        if not isinstance(cand, dict) or cand.get("schema") != SCHEMA_CONSENT_REQUEST:
+            continue
+        if str(cand.get("domain") or "").strip().upper() != dom_upper:
+            continue
+        state = str(cand.get("status") or "").strip().upper()
+        exp_dt = _parse_iso_utc_dt(cand.get("expires_at_utc"))
+        if state in {"PENDING_HUMAN_CONSENT", "APPROVED"} and (exp_dt is None or exp_dt <= now):
+            state = "EXPIRED"
+        cid = str(cand.get("consent_request_id") or "")
+        approval_path, _ = _build_approval_urls(cid)
+        items.append({
+            "consent_request_id": cid,
+            "gate_id": cand.get("gate_id"),
+            "authorization_id": cand.get("authorization_id"),
+            "status": state,
+            "scope_digest": cand.get("scope_digest"),
+            "approval_path": approval_path,
+            "handoff_id": cand.get("handoff_id"),
+            "created_at_utc": cand.get("created_at_utc"),
+            "expires_at_utc": cand.get("expires_at_utc"),
+            "ready_to_materialize": state == "APPROVED",
+            "production_touched": False,
+        })
+    items.sort(key=lambda item: str(item.get("created_at_utc") or ""), reverse=True)
+    return items[: max(1, min(int(limit), 50))]
 
 
 def _validate_authorized_actor_identity(
@@ -2343,8 +3560,37 @@ def preflight_gate_authorization_lifecycle(
         raise GateAuthorizationError("PRODUCTION_AUTHORIZATION_FORBIDDEN")
 
     action = str(constraints.get("action") or "PREFLIGHT").strip().upper()
-    if action not in {"PREFLIGHT", "INSPECT", "MATERIALIZE", "REVOKE"}:
+    if action not in {"PREFLIGHT", "INSPECT", "REQUEST_CONSENT", "CONSENT_STATUS", "MATERIALIZE", "REVOKE"}:
         raise GateAuthorizationError(f"AUTHORIZATION_ACTION_UNSUPPORTED:{action}")
+
+    if action == "REQUEST_CONSENT":
+        return preflight_consent_request(
+            request,
+            current_user=current_user,
+            state_root=qroot,
+            repo_root=rroot,
+            identity_resolver=identity_resolver,
+            now_utc=now_utc,
+        )
+
+    if action == "CONSENT_STATUS":
+        lookup_id = str(constraints.get("consent_request_id") or constraints.get("gate_id") or "").strip()
+        if not lookup_id:
+            raise GateAuthorizationError("CONSENT_REQUEST_ID_REQUIRED")
+        status_info = inspect_human_consent_request(
+            lookup_id,
+            current_user=current_user,
+            domain=domain,
+            state_root=qroot,
+            identity_resolver=identity_resolver,
+            now_utc=now_utc,
+        )
+        return {
+            "schema": SCHEMA_AUTH_LIFECYCLE_PREFLIGHT,
+            "ok": True,
+            "action": "CONSENT_STATUS",
+            **status_info,
+        }
 
     gate_id = _safe_id(str(constraints.get("gate_id") or ""))
     if not gate_id:
@@ -2440,16 +3686,43 @@ def preflight_gate_authorization_lifecycle(
         production_allowed=False,
     )
 
-    consent_verified = verify_consent_attestation(
-        constraints.get("consent_evidence"),
-        expected_usuario_id=actor["usuario_id"],
-        expected_email=actor["email"],
-        expected_gate_id=gate_id,
-        expected_domain=domain,
-        expected_scope_digest=scope_digest,
-        state_root=qroot,
-        now_utc=now_utc,
-    )
+    raw_consent_req_id = str(constraints.get("consent_request_id") or "").strip()
+    if raw_consent_req_id:
+        consent_verified = _resolve_verified_consent_from_request(
+            raw_consent_req_id,
+            expected_usuario_id=actor["usuario_id"],
+            expected_email=actor["email"],
+            expected_gate_id=gate_id,
+            expected_domain=domain,
+            expected_scope_digest=scope_digest,
+            state_root=qroot,
+            now_utc=now_utc,
+            allow_idempotent_active_gate=True,
+        )
+        if constraints.get("consent_evidence") is not None:
+            verify_consent_attestation(
+                constraints.get("consent_evidence"),
+                expected_usuario_id=actor["usuario_id"],
+                expected_email=actor["email"],
+                expected_gate_id=gate_id,
+                expected_domain=domain,
+                expected_scope_digest=scope_digest,
+                state_root=qroot,
+                now_utc=now_utc,
+                allow_idempotent_active_gate=True,
+            )
+    else:
+        consent_verified = verify_consent_attestation(
+            constraints.get("consent_evidence"),
+            expected_usuario_id=actor["usuario_id"],
+            expected_email=actor["email"],
+            expected_gate_id=gate_id,
+            expected_domain=domain,
+            expected_scope_digest=scope_digest,
+            state_root=qroot,
+            now_utc=now_utc,
+            allow_idempotent_active_gate=True,
+        )
 
     existing = _read_json_safe(_authorization_dir(qroot) / f"{gate_id}.json")
     duplicate_match = False
@@ -2578,9 +3851,53 @@ def materialize_gate_authorization_authorized(
                 ],
             }
             _atomic_write_json(path, payload)
+            cv = pf.get("consent_verified") if isinstance(pf.get("consent_verified"), Mapping) else {}
+            consumed_keys: list[str] = []
+            if str(cv.get("nonce") or "").strip():
+                consumed_keys.append(f"nonce:{str(cv.get('nonce')).strip()}")
+            if str(cv.get("approval_id") or "").strip():
+                app_id = _safe_id(str(cv.get("approval_id")))
+                consumed_keys.append(f"approval:{app_id}")
+                app_path = _approvals_dir(qroot) / f"{app_id}.json"
+                app_doc = _read_json_safe(app_path)
+                if isinstance(app_doc, dict) and app_doc.get("schema") == SCHEMA_HUMAN_APPROVAL:
+                    app_doc["consumed"] = True
+                    app_doc["consumed_at_utc"] = now_str
+                    app_doc["consumed_by_gate_id"] = gate_id
+                    app_doc["consumed_by_authorization_id"] = pf["authorization_id"]
+                    _atomic_write_json(app_path, app_doc)
+            _record_consumed_consent(
+                qroot,
+                keys=consumed_keys,
+                gate_id=gate_id,
+                domain=pf["domain"],
+                scope_digest=pf["scope_digest"],
+                usuario_id=actor["usuario_id"],
+                email=actor["email"],
+                now_str=now_str,
+            )
+            cid = _safe_id(str(cv.get("consent_request_id") or ""))
+            if cid:
+                cpath = _consent_requests_dir(qroot) / f"{cid}.json"
+                cdoc = _read_json_safe(cpath)
+                if isinstance(cdoc, dict) and cdoc.get("schema") == SCHEMA_CONSENT_REQUEST:
+                    cdoc["status"] = "CONSUMED"
+                    cdoc["consumed_at_utc"] = now_str
+                    cdoc["materialized_authorization_id"] = pf["authorization_id"]
+                    ctrail = cdoc.get("audit_trail") if isinstance(cdoc.get("audit_trail"), list) else []
+                    ctrail.append({
+                        "event": "CONSUMED_BY_MATERIALIZATION",
+                        "at_utc": now_str,
+                        "gate_id": gate_id,
+                        "authorization_id": pf["authorization_id"],
+                    })
+                    cdoc["audit_trail"] = ctrail[-50:]
+                    _atomic_write_json(cpath, cdoc)
             return {
                 **payload,
                 "status": "MATERIALIZED",
+                "consent_request_id": cid or None,
+                "approval_id": cv.get("approval_id"),
                 "duplicate_prevented": False,
                 "authorization_path": str(path),
                 "production_touched": False,

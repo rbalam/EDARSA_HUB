@@ -1433,7 +1433,7 @@ def _capability_contract_details(code: str, meta: Mapping[str, Any]) -> dict[str
             "required_constraints": ["action", "gate_id"],
             "allowed_operations": ["replace_text", "insert_before", "insert_after", "append_once", "write_file"],
             "formats": {
-                "action": "PREFLIGHT|INSPECT|MATERIALIZE|REVOKE",
+                "action": "PREFLIGHT|INSPECT|REQUEST_CONSENT|CONSENT_STATUS|MATERIALIZE|REVOKE",
                 "gate_id": _G3_JOB_ID.pattern,
                 "authorization_id": _DEV_AUTH_REF_RE.pattern,
                 "base_head_sha": r"^[0-9a-f]{40}$",
@@ -1441,7 +1441,10 @@ def _capability_contract_details(code: str, meta: Mapping[str, Any]) -> dict[str
             "limits": {
                 "max_paths": 30,
                 "ttl_hours_range": [1, 168],
+                "consent_ttl_minutes_range": [5, 120],
                 "verifiable_consent_required": True,
+                "interactive_human_consent_bridge": True,
+                "self_authorization_forbidden": True,
                 "wildcard_permissions_forbidden": True,
                 "production_allowed": False,
             },
@@ -2092,7 +2095,10 @@ _GATE_AUTH_LIFECYCLE_ALLOWED_CONSTRAINTS: tuple[str, ...] = (
     "authorized_operations",
     "base_head_sha",
     "consent_evidence",
+    "consent_request_id",
+    "consent_ttl_minutes",
     "gate_id",
+    "handoff_id",
     "revocation_reason",
     "rollback_plan",
     "source_sha256",
@@ -2117,10 +2123,24 @@ def _gate_authorization_lifecycle_submitter(
 
     if action in {"MATERIALIZE", "REVOKE"} and requested_mode != "MUTATION":
         raise SemanticCapabilityError("SEMANTIC_CAPABILITY_MODE_MISMATCH")
-    if action in {"PREFLIGHT", "INSPECT"} and requested_mode not in {"READ_ONLY", "MUTATION"}:
+    if action in {"PREFLIGHT", "INSPECT", "REQUEST_CONSENT", "CONSENT_STATUS"} and requested_mode not in {"READ_ONLY", "MUTATION"}:
         raise SemanticCapabilityError("SEMANTIC_CAPABILITY_MODE_MISMATCH")
 
     try:
+        if action == "REQUEST_CONSENT":
+            return lifecycle_mod.create_human_consent_request(
+                clean_req,
+                current_user=current_user,
+                state_root=ingress_service.STATE_ROOT,
+                repo_root=ingress_service.REPO_ROOT,
+            )
+        if action == "CONSENT_STATUS":
+            return lifecycle_mod.inspect_human_consent_request(
+                str(constraints.get("consent_request_id") or constraints.get("gate_id") or ""),
+                current_user=current_user,
+                domain=str(clean_req.get("bounded_context") or ""),
+                state_root=ingress_service.STATE_ROOT,
+            )
         if action == "INSPECT":
             lifecycle_mod.preflight_gate_authorization_lifecycle(
                 clean_req,
