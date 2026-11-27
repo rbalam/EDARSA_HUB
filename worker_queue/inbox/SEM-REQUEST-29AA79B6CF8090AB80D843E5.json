@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/crm/",
+          "backend/modules/comercial/crm_router.py",
+          "backend/modules/costos_margenes/",
+          "backend/modules/finanzas/"
+        ],
+        "search_terms": [
+          "cotizacion",
+          "margen",
+          "costo",
+          "tarifa",
+          "moneda",
+          "descuento",
+          "impuesto",
+          "vigencia",
+          "consumo",
+          "precio"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-29AA79B6CF8090AB80D843E5",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2 Fabric Comercial READ_ONLY: identificar contratos reutilizables de costos, márgenes, cotizaciones y tarifas; delimitar datos de entrada de Fabric Cloud (proveedor, región, unidad de consumo, moneda, vigencia, costo y SLA), separación costo/precio, descuentos, impuestos y snapshot cotizado. Revisar módulos existentes sin repetir Gates 0/R2/1 ni asumir que pricing de inventario aplica a software. Entregar evidencia de rutas, símbolos, tablas y brechas; sin cambios ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_COMERCIAL",
+    "conflict_domains": [
+      "FABRIC_COMERCIAL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
