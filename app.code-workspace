@@ -13,6 +13,10 @@
 			"/^git ls-remote --heads origin Edarsahub_Desarrollo worker/requests worker/results$/": {
 				"approve": true,
 				"matchCommandLine": true
+			},
+			"/^tools/agent_guard/bootstrap_agent_context\\.sh \\| rg '\\^\\(BRANCH\\|HEAD\\|AGENT_BOOTSTRAP_COMPLETE\\)='$/": {
+				"approve": true,
+				"matchCommandLine": true
 			}
 		}
 	}

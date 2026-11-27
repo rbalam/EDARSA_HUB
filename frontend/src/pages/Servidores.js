@@ -2244,7 +2244,7 @@ const Servidores = () => {
                               <div className="mt-1 text-xs text-zinc-500">{historicalCheckLabel(apiTestStatus[apiConn.id])}</div>
                             )}
                         </td>
-                        {/* Nombre */
+                        {/* Nombre */}
                         <td className="px-3 py-2 font-medium text-zinc-800">{apiConn.name}</td>
                         {/* Sistema */}
                         <td className="px-3 py-2">
