@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/finanzas/",
+          "backend/modules/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "timbrado",
+          "TimbreFiscalDigital",
+          "ComplementoPago",
+          "Pagos20",
+          "DocumentoFiscal",
+          "autorizar_decision_pago",
+          "MetodoPago"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-4AD2A5F60927ED19C314900C",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1A precision de evidencia fiscal READ_ONLY, complemento no duplicado del Gate0 certificado SEM-REQUEST-C593AEF7A02E3D73C79747D3: identificar contratos de CFDI, timbrado, CRP y autorizacion CxP, sin terminos ambiguos PAC. No modificar archivos ni produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONTABILIDAD",
+    "conflict_domains": [
+      "CONTABILIDAD"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
