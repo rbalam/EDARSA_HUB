@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "tools/mirror_sync/worker_lifecycle_recovery.py",
+          "backend/tests/test_worker_authorization_consent_bridge_g1.py",
+          "backend/modules/worker_ingress/service.py"
+        ],
+        "search_terms": [
+          "AUTHORIZATION_HEAD_DIVERGED",
+          "_validate_gate_paths_and_hashes",
+          "revalidate_gate_authorization_for_mutation",
+          "materialize_gate_authorization_authorized",
+          "_git_diff_names_between",
+          "consent_scope_mismatch"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-8A06962B5030EAB4B5BBFDAB",
+  "mode": "READ_ONLY",
+  "objective": "WK Worker 6.0 / WORKER_CONTROL_PLANE: resolver el bloqueo tecnico de la transferencia existente HO-BITACORAS-WORKERCONTROLP-9814F81ADEFB08E0 (no duplicar ni republicar handoff), con un Gate READ_ONLY de diseño correctivo. Antecedente certificado SEM-REQUEST-CE3A3EC1AF7067686C84FA76: investigar un mecanismo canónico y fail-closed de revalidación del consentimiento ante commits HEAD ajenos al Gate, verificando ancestro Git, SHA-256 de rutas autorizadas y dependencias, identidad RBAC, scope_digest inmutable, vigencia y consentimiento auténtico. Auditar flujo y tests, entregar algoritmo verificable, criterios de aceptación, propietario y plan mínimo para siguiente Gate autorizado. No ejecutar mutación, no crear servicio ni infraestructura paralela, no tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
