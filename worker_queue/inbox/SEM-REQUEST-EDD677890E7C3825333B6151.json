@@ -1,0 +1,60 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "backend/modules/agent_harness/marketing_cx.py",
+          "backend/modules/rrr/attribution_service.py",
+          "backend/modules/rrr/schemas.py",
+          "backend/modules/comercial_v2/repository_readonly.py",
+          "backend/modules/comercial_v2/periodos.py",
+          "backend/modules/comercial_analytics/temporal_selection.py",
+          "backend/modules/finanzas/cuentas_por_pagar.py",
+          "backend/core/kpis_canonicos/"
+        ],
+        "search_terms": [
+          "MarketingActivationRequest",
+          "process_attribution",
+          "AttributionTransactionRequest",
+          "get_kpis_diarios",
+          "resolver_periodos_comparables",
+          "resolve_temporal_selection",
+          "Finanzas_CxP_Sync",
+          "ventas_total",
+          "ventas_sin_propina",
+          "presupuesto",
+          "incrementalidad",
+          "contribucion_marginal"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-EDD677890E7C3825333B6151",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 contrato económico Marketing vs Finanzas, sucesor de SEM-REQUEST-2E3C4F61B1E191570D9689B6. Inspección focalizada de contratos de atribución RRR, activación, ventas sincronizadas, periodos comparables y obligaciones financieras para definir interfaces reutilizables, base de venta sin propina e impuestos según contrato, costos devengados, baseline, incrementalidad, ROMI y brechas. No repetir descubrimiento general ni modificar archivos o Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "MARKETING",
+    "conflict_domains": [
+      "MARKETING"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
