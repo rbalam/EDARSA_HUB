@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/fabric_marketplace/",
+          "backend/modules/agent_harness/",
+          "backend/modules/worker_console/",
+          "backend/modules/worker_ingress/",
+          "backend/modules/integrations_center/",
+          "backend/core/"
+        ],
+        "search_terms": [
+          "is_certified_success",
+          "assert_status_read_access",
+          "_enforce_tenant_and_domain_scope",
+          "require_worker_console_access",
+          "validate_server_access_rbac",
+          "get_current_user",
+          "authorization_ref",
+          "certification_ref",
+          "entitlement_ref",
+          "verify_signature"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-A62D474D920827317746AA22",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2A Fabric Marketplace: inspeccion focalizada de contratos de seguridad reutilizables, verificacion de evidencia certificada, alcance tenant y autorizacion efectiva; distinguir referencias declarativas de controles reales antes de disenar politica de publicacion e instalacion. No repetir inventario G0/G1A ni modificar codigo.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC.MARKETPLACE",
+    "conflict_domains": [
+      "FABRIC.MARKETPLACE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
