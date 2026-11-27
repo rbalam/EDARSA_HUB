@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "SEM-REQUEST-059943CF1C3034B649FE4D0A"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-287F67735B5E863CCA4CEFF2",
+  "mode": "READ_ONLY",
+  "objective": "Recuperar evidencia terminal detallada EXISTENTE del Gate0 Bitacoras SEM-REQUEST-059943CF1C3034B649FE4D0A, localizar modelos/rutas/tablas reales del motor transversal, diferenciar bitacora RBAC/scheduler de bitacoras operativas, sin repetir auditoria ni modificar produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "BITACORAS",
+    "conflict_domains": [
+      "BITACORAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
